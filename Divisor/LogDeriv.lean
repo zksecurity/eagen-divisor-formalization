@@ -32,16 +32,40 @@ By the log-derivative kernel axiom (classical, Stichtenoth):
 This reduces the log-derivative check to the norm check.
 -/
 
-/-- The log-derivative check function f(A0, A1):
-    f = 0 iff the verifier check passes.
-    Defined abstractly; the concrete evaluation is handled
-    by the norm decomposition axiom. -/
+/-- Evaluate D'/D at a point, scaled by dx/dz.
+    D'(x,y)/D(x,y) * dx/dz = (a'(x) - b'(x)*y) / (a(x) - b(x)*y) * (2y / (3x^2+A-2*lam*y))
+    We compute the numerator and denominator separately. -/
+noncomputable def logDerivTerm
+    (D : CoordRingElt E.q) (curveA : ZMod E.q) (lam : ZMod E.q)
+    (pt : ZMod E.q × ZMod E.q) : ZMod E.q :=
+  let num := D.a.derivative.eval pt.1 - D.b.derivative.eval pt.1 * pt.2
+  let den := D.eval pt.1 pt.2
+  let dxdz_num := 2 * pt.2
+  let dxdz_den := 3 * pt.1 ^ 2 + curveA - 2 * lam * pt.2
+  num * dxdz_num * (den * dxdz_den)⁻¹
+
+/-- The log-derivative check function:
+    f(A₀,A₁) = Σᵢ D'(Aᵢ)/D(Aᵢ) · dx(Aᵢ)/dz - (-1/L(-P) + Σⱼ -mⱼ/L(Bⱼ)) -/
 noncomputable def logDerivCheckFn
     (D : CoordRingElt E.q)
     (P : ZMod E.q × ZMod E.q)
     (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q) : ZMod E.q :=
-  sorry  -- Requires concrete polynomial derivative evaluation
+  let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
+  let L := lineThrough A₀.1 A₀.2 A₁.1 A₁.2
+  -- Compute A₂ = -(A₀+A₁): third intersection point
+  let x₂ := lam ^ 2 - A₀.1 - A₁.1
+  let y₂ := lam * x₂ + (A₀.2 - lam * A₀.1)
+  let A₂ := (x₂, y₂)
+  -- LHS: sum of log-derivative terms
+  let lhs := logDerivTerm E D E.curveA lam A₀ +
+             logDerivTerm E D E.curveA lam A₁ +
+             logDerivTerm E D E.curveA lam A₂
+  -- RHS: -1/L(-P) + sum (-m_j / L(B_j))
+  let negP := (P.1, -P.2)
+  let rhs := -(L.eval negP.1 negP.2)⁻¹ +
+    (Finset.univ (α := Fin k)).sum (fun j => -(m j) * (L.eval (B j).1 (B j).2)⁻¹)
+  lhs - rhs
 
 /-! ## Corollary 1: Schwartz-Zippel for the Log-Derivative Check
 
