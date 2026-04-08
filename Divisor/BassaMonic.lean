@@ -84,10 +84,32 @@ theorem linearFormL_self_zero (A₁ P : ZMod E.q × ZMod E.q) :
 theorem linear_form_zeros_le_three
     (a b d : ZMod E.q) (hab : a ≠ 0 ∨ b ≠ 0) :
     (E.points.filter (fun P => a * P.1 + b * P.2 + d = 0)).card ≤ 3 := by
-  sorry
-  -- Reduce to line_meets_cubic_le_three:
-  -- If b ≠ 0: rewrite as y = (-a/b)*x + (-d/b), apply line_meets_cubic_le_three.
-  -- If b = 0, a ≠ 0: x = -d/a, at most 2 points (y and -y).
+  rcases hab with ha | hb
+  · -- Case b could be anything, a ≠ 0
+    -- The set of solutions is a subset of pointsOnLine for appropriate parameters
+    -- or has at most 2 points (when b = 0, only x is constrained)
+    -- In general: a*x + b*y + d = 0 defines a line, which meets E in ≤ 3 points
+    sorry
+  · -- b ≠ 0: rewrite as y = (-a/b)*x + (-d/b)
+    calc (E.points.filter (fun P => a * P.1 + b * P.2 + d = 0)).card
+        ≤ (pointsOnLine E (-(a * b⁻¹)) (-(d * b⁻¹))).card := by
+          apply Finset.card_le_card
+          intro P hP
+          simp only [Finset.mem_filter, pointsOnLine] at hP ⊢
+          refine ⟨hP.1, ?_⟩
+          have h := hP.2
+          -- a*P.1 + b*P.2 + d = 0
+          -- → b*P.2 = -(a*P.1 + d)
+          -- → P.2 = b⁻¹ * (-(a*P.1 + d))
+          -- → P.2 = -(a*b⁻¹)*P.1 + -(d*b⁻¹)
+          have key : b * P.2 = -(a * P.1 + d) := by
+            have := sub_eq_zero.mpr h
+            ring_nf at this ⊢
+            linear_combination this
+          calc P.2 = b⁻¹ * (b * P.2) := by rw [inv_mul_cancel_left₀ hb]
+            _ = b⁻¹ * (-(a * P.1 + d)) := by rw [key]
+            _ = -(a * b⁻¹) * P.1 + -(d * b⁻¹) := by ring
+      _ ≤ 3 := line_meets_cubic_le_three E _ _
 
 /-- **Non-vanishing of f (proved from Bezout + Hasse-Weil).**
     If {Q_i} ≠ {P_i} as multisets and 3*N < #E, then f is
