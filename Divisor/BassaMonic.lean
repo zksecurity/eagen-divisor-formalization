@@ -186,16 +186,27 @@ theorem f_nonvanishing_proved {N : ℕ}
     (hSmall : 3 * N < E.numPoints) :
     -- There exists (A0, A1) in E x E where f(A0, A1) ≠ 0
     ∃ A₁ ∈ E.points, comparisonFn E Q P (P j) A₁ ≠ 0 := by
+  -- The set of A₁ where the product vanishes has size ≤ 3N.
+  -- Since |E.points| = numAffine = numPoints - 1 ≥ 3N, there exists a good A₁.
+  -- Define the "bad set": A₁ where comparisonFn vanishes
+  set bad := E.points.filter (fun A₁ => comparisonFn E Q P (P j) A₁ = 0) with hbad_def
+  -- It suffices to show bad ⊊ E.points (strict subset)
+  suffices h : bad.card < E.points.card by
+    -- bad ⊂ E.points (strict), so E.points \ bad is nonempty
+    have hsub : bad ⊆ E.points := Finset.filter_subset _ _
+    have hne : (E.points \ bad).Nonempty := by
+      rw [Finset.nonempty_iff_ne_empty]
+      intro hemp
+      have := Finset.card_sdiff hsub
+      rw [hemp, Finset.card_empty] at this
+      omega
+    obtain ⟨A₁, hA₁⟩ := hne
+    simp only [Finset.mem_sdiff, hbad_def, Finset.mem_filter, not_and] at hA₁
+    exact ⟨A₁, hA₁.1, hA₁.2 hA₁.1⟩
+  -- Bound: |bad| ≤ 3*N < numPoints = numAffine + 1 → |bad| ≤ numAffine = |E.points|
+  -- The bound |bad| ≤ 3*N follows from: the product vanishes only when
+  -- some factor vanishes, and each factor vanishes on ≤ 3 points.
   sorry
-  -- Proof:
-  -- At A0 = P_j, the second product has a zero factor (L_{P_j,A1}(P_j) = 0).
-  -- So f(P_j, A1) = prod_i L_{P_j,A1}(Q_i) - 0 = prod_i L_{P_j,A1}(Q_i).
-  -- Each factor L_{P_j,A1}(Q_i) is a linear form in A1.
-  -- Since Q_i ≠ P_j, this linear form is not identically zero on E.
-  -- Each vanishes on at most 3 points of E (Bezout).
-  -- The product vanishes on at most 3*N points.
-  -- Since 3*N < #E = numAffine + 1, and numAffine ≥ 3*N,
-  -- there exists A1 where the product is nonzero.
 
 /-! ## The valid pairs set -/
 
