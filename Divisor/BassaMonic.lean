@@ -85,11 +85,74 @@ theorem linear_form_zeros_le_three
     (a b d : ZMod E.q) (hab : a ≠ 0 ∨ b ≠ 0) :
     (E.points.filter (fun P => a * P.1 + b * P.2 + d = 0)).card ≤ 3 := by
   rcases hab with ha | hb
-  · -- Case b could be anything, a ≠ 0
-    -- The set of solutions is a subset of pointsOnLine for appropriate parameters
-    -- or has at most 2 points (when b = 0, only x is constrained)
-    -- In general: a*x + b*y + d = 0 defines a line, which meets E in ≤ 3 points
-    sorry
+  · -- a ≠ 0: if b ≠ 0, use the other case. If b = 0: a*x + d = 0 gives x = -d/a.
+    by_cases hb : b ≠ 0
+    · -- Both a ≠ 0 and b ≠ 0: reduce to line_meets_cubic
+      calc (E.points.filter (fun P => a * P.1 + b * P.2 + d = 0)).card
+          ≤ (pointsOnLine E (-(a * b⁻¹)) (-(d * b⁻¹))).card := by
+            apply Finset.card_le_card
+            intro P hP
+            simp only [Finset.mem_filter, pointsOnLine] at hP ⊢
+            refine ⟨hP.1, ?_⟩
+            have h := hP.2
+            have key : b * P.2 = -(a * P.1 + d) := by
+              have := sub_eq_zero.mpr h; ring_nf at this ⊢; linear_combination this
+            calc P.2 = b⁻¹ * (b * P.2) := by rw [inv_mul_cancel_left₀ hb]
+              _ = b⁻¹ * (-(a * P.1 + d)) := by rw [key]
+              _ = -(a * b⁻¹) * P.1 + -(d * b⁻¹) := by ring
+        _ ≤ 3 := line_meets_cubic_le_three E _ _
+    · -- a ≠ 0, b = 0: equation is a*x + d = 0, so x = -d*a⁻¹.
+      -- For fixed x, at most 2 points (y, -y) on E.
+      push_neg at hb; subst hb
+      -- After subst, b = 0 everywhere. Filter becomes: a*P.1 + 0*P.2 + d = 0
+      -- which simplifies to a*P.1 + d = 0.
+      have : (E.points.filter (fun P => a * P.1 + 0 * P.2 + d = 0)) =
+             (E.points.filter (fun P => a * P.1 + d = 0)) := by
+        congr 1; ext P; simp [show 0 * P.2 = 0 from zero_mul _]
+      rw [this]
+      calc (E.points.filter (fun P => a * P.1 + d = 0)).card
+          ≤ (E.points.filter (fun P => P.1 = -(d * a⁻¹))).card := by
+            apply Finset.card_le_card
+            intro P hP
+            simp only [Finset.mem_filter] at hP ⊢
+            refine ⟨hP.1, ?_⟩
+            have h := hP.2
+            -- a * P.1 + d = 0 → P.1 = -d/a
+            have : a * P.1 = -d := by linear_combination h
+            calc P.1 = a⁻¹ * (a * P.1) := by rw [inv_mul_cancel_left₀ ha]
+              _ = a⁻¹ * (-d) := by rw [this]
+              _ = -(d * a⁻¹) := by ring
+        _ ≤ 2 := by
+            -- For fixed x₀, y satisfies y² = c₀. Use polynomial root bound.
+            set x₀ := -(d * a⁻¹)
+            set c₀ := x₀ ^ 3 + E.curveA * x₀ + E.curveB
+            set g : Polynomial (ZMod E.q) := Polynomial.X ^ 2 - Polynomial.C c₀
+            have hg_ne : g ≠ 0 := by
+              intro h; have h2 := congr_arg (Polynomial.coeff · 2) h
+              simp [g, Polynomial.coeff_sub, Polynomial.coeff_X_pow, Polynomial.coeff_C] at h2
+            have hg_deg : g.natDegree ≤ 2 :=
+              (Polynomial.natDegree_sub_le _ _).trans
+                (max_le (by simp [Polynomial.natDegree_X_pow])
+                        ((Polynomial.natDegree_C _).le.trans (Nat.zero_le _)))
+            -- Inject via Prod.snd into roots of g
+            calc (E.points.filter (fun P => P.1 = x₀)).card
+                ≤ g.roots.toFinset.card := by
+                  apply Finset.card_le_card_of_injOn Prod.snd
+                  · intro P hP
+                    simp only [Finset.mem_filter] at hP
+                    rw [Multiset.mem_toFinset, Polynomial.mem_roots hg_ne]
+                    simp only [Polynomial.IsRoot, g, Polynomial.eval_sub,
+                               Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_C]
+                    have := E.hOnCurve P hP.1; rw [hP.2] at this
+                    linear_combination this
+                  · intro ⟨x₁, _⟩ h1 ⟨x₂, _⟩ h2 hy
+                    have hx1 := (Finset.mem_filter.mp h1).2
+                    have hx2 := (Finset.mem_filter.mp h2).2
+                    exact Prod.ext (hx1.trans hx2.symm) hy
+              _ ≤ Multiset.card g.roots := Multiset.toFinset_card_le _
+              _ ≤ g.natDegree := Polynomial.card_roots' g
+              _ ≤ 2 := hg_deg
+        _ ≤ 3 := by omega
   · -- b ≠ 0: rewrite as y = (-a/b)*x + (-d/b)
     calc (E.points.filter (fun P => a * P.1 + b * P.2 + d = 0)).card
         ≤ (pointsOnLine E (-(a * b⁻¹)) (-(d * b⁻¹))).card := by
