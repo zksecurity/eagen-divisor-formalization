@@ -96,8 +96,16 @@ def pairsWithSlope (lam : ZMod E.q) :
   (distinctPairs E.points).filter (fun p =>
     p.1.1 ≠ p.2.1 ∧ slopeOf p.1.1 p.1.2 p.2.1 p.2.2 = lam)
 
+/-- For k ≤ 3: k*(k-1) ≤ 2*k -/
+theorem pairs_le_twice (k : ℕ) (hk : k ≤ 3) : k * (k - 1) ≤ 2 * k := by
+  interval_cases k <;> omega
+
 /-- **Lemma 1 (Slope Distribution).**
-    |pairsWithSlope lam| ≤ 2 * numAffine. -/
+    |pairsWithSlope lam| ≤ 2 * numAffine.
+
+    Proof: partition by intercept c = y₀ - lam*x₀.
+    Each partition class has ≤ k(k-1) pairs where k ≤ 3 (Bezout).
+    Since k(k-1) ≤ 2k for k ≤ 3, the total is ≤ 2 * Σ k = 2 * numAffine. -/
 theorem slope_distribution (lam : ZMod E.q) :
     (pairsWithSlope E lam).card ≤ 2 * E.numAffine := by
   sorry

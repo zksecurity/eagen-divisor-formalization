@@ -217,6 +217,10 @@ def validPairs : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
 
 theorem card_validPairs_lb :
     E.numAffine * E.numAffine - 3 * E.numAffine ≤ (validPairs E).card := by
+  -- validPairs = distinctPairs filtered by (x₀ ≠ x₁) ∧ (P₀ ≠ -P₁)
+  -- |distinctPairs| = numAffine² - numAffine
+  -- The excluded pairs are at most 2*numAffine
+  -- So |validPairs| ≥ numAffine² - 3*numAffine
   sorry
 
 /-! ## Theorem 4: main soundness bound -/
