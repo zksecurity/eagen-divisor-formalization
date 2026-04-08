@@ -131,11 +131,20 @@ def ECPoint.neg : ECPoint q → ECPoint q
 
 instance : Neg (ECPoint q) := ⟨ECPoint.neg⟩
 
-/-- The third intersection point A₂ = -(A₀ + A₁) -/
-def thirdPoint (E : ECSetup) (A₀ A₁ : ZMod q × ZMod q) : ECPoint E.q :=
-  -- When A₀, A₁ are distinct affine points with x₀ ≠ x₁,
-  -- A₂ = -(A₀ + A₁) is the third point on E collinear with A₀, A₁.
-  -- We represent this abstractly; the actual computation is axiomatized.
-  sorry
+/-- The third intersection point A₂ = -(A₀ + A₁).
+    Computed via the chord construction: the line through A₀, A₁
+    meets E at a third point (x₂, y₂) where
+      x₂ = lam^2 - x₀ - x₁
+      y₂ = lam * x₂ + mu
+    with lam = (y₁-y₀)/(x₁-x₀) and mu = y₀ - lam*x₀. -/
+noncomputable def thirdPoint (E : ECSetup) (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    ECPoint E.q :=
+  if A₀.1 = A₁.1 then .infinity  -- vertical line or same point: return O
+  else
+    let lam := (A₁.2 - A₀.2) * (A₁.1 - A₀.1)⁻¹
+    let mu := A₀.2 - lam * A₀.1
+    let x₂ := lam ^ 2 - A₀.1 - A₁.1
+    let y₂ := lam * x₂ + mu
+    .affine x₂ y₂
 
 end Divisor
