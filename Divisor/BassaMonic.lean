@@ -361,15 +361,52 @@ theorem card_validPairs_lb :
                   push_neg at hall
                   exact hnv hd hall.1 hall.2
               _ ≤ 2 := by
-                  -- Both conditions force x₁ = x₀. Inject via Prod.snd
-                  -- into {P ∈ E.points | P.1 = A₀.1} which has ≤ 2 elements
-                  -- (Y² = c has ≤ 2 roots). Bound by 3 from line_meets_cubic,
-                  -- but we only need ≤ 2 here.
-                  apply le_trans (Finset.card_filter_le _ _)
-                  apply le_trans (Finset.card_filter_le _ _)
-                  -- Bound distinctPairs.card ≤ numAffine * numAffine
-                  -- This is too coarse. Let's just use sorry for this final step.
-                  sorry
+                  -- {P ∈ E.points | P.1 = A₀.1} has ≤ 2 elements: Y²=c has ≤ 2 roots
+                  set S := E.points.filter (fun P : ZMod E.q × ZMod E.q => P.1 = A₀.1)
+                  set c₀ := A₀.1 ^ 3 + E.curveA * A₀.1 + E.curveB
+                  set g : Polynomial (ZMod E.q) := Polynomial.X ^ 2 - Polynomial.C c₀
+                  -- Inject via Prod.snd into S
+                  apply (Finset.card_le_card_of_injOn Prod.snd (fun p hp => by
+                      simp only [Finset.mem_filter, distinctPairs, Finset.mem_product] at hp
+                      obtain ⟨⟨⟨_, hm2⟩, _⟩, hfst, hor⟩ := hp
+                      show p.2 ∈ S
+                      simp only [S, Finset.mem_filter]
+                      refine ⟨hm2, ?_⟩
+                      rcases hor with hx | hneg
+                      · exact hx.symm.trans (congr_arg Prod.fst hfst)
+                      · rw [Prod.mk.injEq] at hneg
+                        exact hneg.1.symm.trans (congr_arg Prod.fst hfst)
+                    ) (fun a ha b hb hsnd => by
+                      have ha' := (Finset.mem_filter.mp ha).2
+                      have hb' := (Finset.mem_filter.mp hb).2
+                      exact Prod.ext (ha'.1.trans hb'.1.symm) hsnd
+                    )).trans ?_
+                  have hg_ne : g ≠ 0 := by
+                    intro heq; have := congr_arg (Polynomial.coeff · 2) heq
+                    simp [g, Polynomial.coeff_sub, Polynomial.coeff_X_pow,
+                          Polynomial.coeff_C] at this
+                  have hg_deg : g.natDegree ≤ 2 :=
+                    (Polynomial.natDegree_sub_le _ _).trans
+                      (max_le (by simp [Polynomial.natDegree_X_pow])
+                              ((Polynomial.natDegree_C _).le.trans (Nat.zero_le _)))
+                  calc S.card
+                      ≤ g.roots.toFinset.card := by
+                        apply Finset.card_le_card_of_injOn Prod.snd
+                        · intro P hP
+                          simp only [S, Finset.mem_filter] at hP
+                          rw [Multiset.mem_toFinset, Polynomial.mem_roots hg_ne]
+                          simp only [Polynomial.IsRoot, g, Polynomial.eval_sub,
+                                     Polynomial.eval_pow, Polynomial.eval_X,
+                                     Polynomial.eval_C]
+                          have := E.hOnCurve P hP.1; rw [hP.2] at this
+                          linear_combination this
+                        · intro ⟨_, _⟩ h1 ⟨_, _⟩ h2 hy
+                          have hx1 := (Finset.mem_filter.mp h1).2
+                          have hx2 := (Finset.mem_filter.mp h2).2
+                          exact Prod.ext (hx1.trans hx2.symm) hy
+                    _ ≤ Multiset.card g.roots := Multiset.toFinset_card_le _
+                    _ ≤ g.natDegree := Polynomial.card_roots' g
+                    _ ≤ 2 := hg_deg
         _ ≤ 2 * E.numAffine := by
             apply Nat.mul_le_mul_left
             apply Finset.card_le_card
