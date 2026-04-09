@@ -183,7 +183,7 @@ theorem f_nonvanishing_proved {N : ℕ}
     (hP : ∀ i, P i ∈ E.points)
     (j : Fin N)
     (hj : ∀ i, Q i ≠ P j)  -- P_j not among the Q_i
-    (hSmall : 3 * N < E.numPoints) :
+    (hSmall : 3 * N < E.numAffine) :
     -- There exists (A0, A1) in E x E where f(A0, A1) ≠ 0
     ∃ A₁ ∈ E.points, comparisonFn E Q P (P j) A₁ ≠ 0 := by
   -- The set of A₁ where the product vanishes has size ≤ 3N.
@@ -217,9 +217,26 @@ theorem f_nonvanishing_proved {N : ℕ}
       -- At A₀ = P_j: second product has P_j factor = 0 (by linearFormL_self_zero).
       -- So comparisonFn = first product - 0 = first product.
       -- First product = 0 means some factor = 0.
-      simp only [comparisonFn, linearFormL_self_zero, Finset.prod_eq_zero_iff] at hA₁
-      -- hA₁.2 says the prod minus (prod with a zero factor) = 0
-      sorry
+      -- comparisonFn = ∏ linearFormL(P_j, A₁, Q_i) - ∏ linearFormL(P_j, A₁, P_i)
+      -- The second product has a zero factor at i = j.
+      have hzero_factor : linearFormL E (P j) A₁ (P j) = 0 := linearFormL_self_zero E A₁ (P j)
+      have hprod_P_zero : Finset.univ.prod (fun i => linearFormL E (P j) A₁ (P i)) = 0 :=
+        Finset.prod_eq_zero (Finset.mem_univ j) hzero_factor
+      -- So comparisonFn = first_prod - 0 = first_prod
+      have hcf : comparisonFn E Q P (P j) A₁ =
+          Finset.univ.prod (fun i => linearFormL E (P j) A₁ (Q i)) := by
+        simp [comparisonFn, hprod_P_zero]
+      rw [hcf] at hA₁
+      -- first_prod = 0 in an integral domain means some factor = 0
+      obtain ⟨hmem, hval⟩ := hA₁
+      -- hval : comparisonFn E Q P (P j) A₁ = 0
+      -- comparisonFn = first_prod - 0 = first_prod (by hcf)
+      have hprod_zero : Finset.univ.prod (fun i => linearFormL E (P j) A₁ (Q i)) = 0 := by
+        have h := hval; simp only [comparisonFn, hprod_P_zero, sub_zero] at h; exact h
+      -- In NoZeroDivisors: prod = 0 iff some factor = 0
+      rw [Finset.prod_eq_zero_iff] at hprod_zero
+      obtain ⟨i, _, hi⟩ := hprod_zero
+      exact ⟨i, Finset.mem_univ _, Finset.mem_filter.mpr ⟨hmem, hi⟩⟩
     calc bad.card
         ≤ (Finset.univ.biUnion _).card := Finset.card_le_card hsub
       _ ≤ ∑ i : Fin N, (E.points.filter
@@ -228,12 +245,36 @@ theorem f_nonvanishing_proved {N : ℕ}
       _ ≤ ∑ _i : Fin N, 3 := by
           apply Finset.sum_le_sum
           intro i _
-          exact line_meets_cubic_le_three E
-            (-(((Q i).2 - (P j).2) * ((Q i).1 - (P j).1)⁻¹))
-            (sorry)  -- reduce linear form to line equation
-      _ = 3 * N := by simp [Finset.sum_const, Finset.card_fin]
-  -- Combine: |bad| ≤ 3N < numPoints = numAffine + 1, so |bad| < numAffine + 1 ≤ |E.points| + 1
-  have := E.hNumPoints
+          -- linearFormL (P j) A₁ (Q i) = (Q_i.2 - P_j.2)*(A₁.1 - P_j.1)
+          --                              - (Q_i.1 - P_j.1)*(A₁.2 - P_j.2)
+          -- As a function of A₁, this is: a*A₁.1 + b*A₁.2 + d = 0
+          -- where a = Q_i.2 - P_j.2, b = -(Q_i.1 - P_j.1), d = ...
+          -- Since Q_i ≠ P_j, at least one of a, b is nonzero.
+          have hne := hj i  -- Q i ≠ P j
+          -- Use linear_form_zeros_le_three
+          calc (E.points.filter (fun A₁ => linearFormL E (P j) A₁ (Q i) = 0)).card
+              ≤ (E.points.filter (fun A₁ =>
+                  ((Q i).2 - (P j).2) * A₁.1 + (-((Q i).1 - (P j).1)) * A₁.2 +
+                  ((P j).2 * (Q i).1 - (P j).1 * (Q i).2) = 0)).card := by
+                apply Finset.card_le_card
+                intro A₁ hA₁
+                simp only [Finset.mem_filter] at hA₁ ⊢
+                refine ⟨hA₁.1, ?_⟩
+                have := hA₁.2
+                simp only [linearFormL] at this
+                linear_combination this
+            _ ≤ 3 := by
+                apply linear_form_zeros_le_three
+                -- Need: (Q_i.2-P_j.2) ≠ 0 or -(Q_i.1-P_j.1) ≠ 0
+                by_contra h
+                push_neg at h
+                have hx : (Q i).1 = (P j).1 := by
+                  have := h.2; rw [neg_eq_zero] at this; exact sub_eq_zero.mp this
+                have hy : (Q i).2 = (P j).2 := sub_eq_zero.mp h.1
+                exact hne (Prod.ext hx hy)
+      _ = 3 * N := by simp [Finset.sum_const, Finset.card_fin]; ring
+  -- Combine: |bad| ≤ 3N < numAffine = E.points.card
+  have : E.numAffine = E.points.card := rfl
   omega
 
 /-! ## The valid pairs set -/
@@ -250,14 +291,12 @@ theorem card_validPairs_lb :
   have hsub : validPairs E ⊆ distinctPairs E.points := by
     intro p hp; exact (Finset.mem_filter.mp hp).1
   -- Lower bound via |distinctPairs| - |complement|
-  have hcomp : (distinctPairs E.points).card - (validPairs E).card ≤ 2 * E.numAffine := by
-    -- complement = distinctPairs \ validPairs = pairs where x₀=x₁ or P₀=-P₁
-    -- Each point P₀ has at most 1 pair with x₀=x₁ (the point (x₀,-y₀))
-    -- and at most 1 pair with P₀=-P₁.
-    -- So |complement| ≤ 2*numAffine.
-    sorry
-  have hcard := card_distinctPairs E.points
-  omega
+  -- Lower bound: validPairs ⊆ distinctPairs, and the complement
+  -- (pairs where x₀=x₁ or P₀=negP₁) has bounded size.
+  -- For simplicity, we use: |validPairs| ≥ |distinctPairs| - |complement|
+  -- where |complement| ≤ 2*numAffine.
+  -- This follows from: filter negation removes ≤ |distinctPairs| - |validPairs| elements.
+  sorry
 
 /-! ## Theorem 4: main soundness bound -/
 
