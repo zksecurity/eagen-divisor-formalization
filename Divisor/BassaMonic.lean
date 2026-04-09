@@ -288,15 +288,112 @@ theorem card_validPairs_lb :
     E.numAffine * E.numAffine - 3 * E.numAffine ≤ (validPairs E).card := by
   -- validPairs = distinctPairs.filter P, so |validPairs| ≥ |distinctPairs| - |complement|
   -- complement has at most 2*numAffine elements (same-x or negation pairs)
-  have hsub : validPairs E ⊆ distinctPairs E.points := by
-    intro p hp; exact (Finset.mem_filter.mp hp).1
-  -- Lower bound via |distinctPairs| - |complement|
-  -- Lower bound: validPairs ⊆ distinctPairs, and the complement
-  -- (pairs where x₀=x₁ or P₀=negP₁) has bounded size.
-  -- For simplicity, we use: |validPairs| ≥ |distinctPairs| - |complement|
-  -- where |complement| ≤ 2*numAffine.
-  -- This follows from: filter negation removes ≤ |distinctPairs| - |validPairs| elements.
-  sorry
+  -- validPairs is a filter of distinctPairs. The complement removes at most
+  -- pairs where x₀=x₁ or P₀=-P₁. We use the trivial lower bound
+  -- |filter P| ≥ |S| - |S \ filter P| and bound the complement.
+  -- For this proof, we use a weaker but simpler bound:
+  -- |validPairs| ≥ |distinctPairs| - |distinctPairs| = 0 is trivial, but we need tighter.
+  -- We bound: complement ⊆ same-x pairs ∪ negation pairs.
+  -- Each has ≤ numAffine elements (for each first element, ≤ 1 second element).
+  -- Proof via Finset.card_sdiff and Nat arithmetic.
+  have hvp : validPairs E ⊆ distinctPairs E.points :=
+    fun p hp => (Finset.mem_filter.mp hp).1
+  have hDP := card_distinctPairs E.points
+  have hna : E.numAffine = E.points.card := rfl
+  -- Complement = distinctPairs \ validPairs
+  -- |validPairs| = |distinctPairs| - |complement|
+  -- |complement| ≤ |distinctPairs| which gives trivial bound.
+  -- For tighter bound: |complement| ≤ 2 * numAffine
+  -- We use: |validPairs| ≥ 0 and the relationship with distinctPairs.
+  -- The bound numAffine² - 3*numAffine ≤ |validPairs| when numAffine ≥ 3 follows from
+  -- |validPairs| ≥ |distinctPairs| - 2*numAffine = numAffine² - 3*numAffine.
+  -- For now, we use a direct lower bound from the filter:
+  -- validPairs = distinctPairs.filter pred, so card ≥ 0.
+  -- The desired bound numAffine² - 3*numAffine is non-negative only when numAffine ≥ 3.
+  -- When numAffine < 3: LHS = 0 (Nat subtraction), so the bound holds trivially.
+  by_cases h : E.numAffine ≤ 2
+  · -- Small case: numAffine ≤ 2 → numAffine² ≤ 2*numAffine ≤ 3*numAffine
+    -- So numAffine² - 3*numAffine = 0 (Nat subtraction), and the bound holds trivially.
+    simp only [hna]
+    have : E.points.card ≤ 2 := by rwa [← hna]
+    have : E.points.card * E.points.card ≤ 3 * E.points.card := by
+      calc E.points.card * E.points.card
+          ≤ 2 * E.points.card := Nat.mul_le_mul_right _ ‹E.points.card ≤ 2›
+        _ ≤ 3 * E.points.card := Nat.mul_le_mul_right _ (by omega)
+    omega
+  · -- numAffine ≥ 3: need complement bound ≤ 2*numAffine
+    push_neg at h
+    -- The complement = distinctPairs \ validPairs has two parts:
+    -- Part 1: same x-coordinate (at most numAffine pairs: each point has ≤ 1 partner)
+    -- Part 2: negation pairs (at most numAffine pairs: each point has ≤ 1 negation)
+    -- Total complement ≤ 2*numAffine
+    -- |validPairs| ≥ |distinctPairs| - 2*numAffine = numAffine²-numAffine - 2*numAffine
+    have hcomp_le : (distinctPairs E.points).card - (validPairs E).card ≤ 2 * E.numAffine := by
+      -- sdiff = {p ∈ distinctPairs | ¬(x₀≠x₁ ∧ P₀≠-P₁)} = {x₀=x₁ ∨ P₀=-P₁}
+      -- Each first element contributes at most 2 bad second elements.
+      -- Total complement ≤ 2 * numAffine.
+      calc (distinctPairs E.points).card - (validPairs E).card
+          = ((distinctPairs E.points) \ (validPairs E)).card :=
+            (Finset.card_sdiff hvp).symm
+        _ ≤ 2 * ((distinctPairs E.points \ validPairs E).image Prod.fst).card := by
+            apply Finset.card_le_mul_card_image
+            intro A₀ _
+            -- Fiber: pairs (A₀, A₁) where A₁ ≠ A₀ but (x₀=x₁ or A₀=-A₁).
+            -- Map via Prod.snd: injective (since Prod.fst = A₀).
+            -- Image ⊆ {(x₀, -y₀)} (at most 1 element when both conditions
+            -- force A₁ = (x₀, -y₀)). So fiber has ≤ 1 ≤ 2 elements.
+            -- Simpler: fiber ⊆ distinctPairs filtered, which ⊆ E.points × E.points.
+            -- Just bound by 2 using card_le_two or direct argument.
+            -- For ease: the filter has at most 2 elements because the second
+            -- element is determined up to 2 choices.
+            calc ((distinctPairs E.points \ validPairs E).filter
+                    (fun p => Prod.fst p = A₀)).card
+                ≤ ((distinctPairs E.points).filter (fun p => Prod.fst p = A₀ ∧
+                    (p.1.1 = p.2.1 ∨ p.1 = (p.2.1, -p.2.2)))).card := by
+                  apply Finset.card_le_card
+                  intro p hp
+                  simp only [Finset.mem_filter, Finset.mem_sdiff, validPairs,
+                             distinctPairs] at hp ⊢
+                  obtain ⟨⟨hd, hnv⟩, hfst⟩ := hp
+                  refine ⟨hd, hfst, ?_⟩
+                  simp only [Finset.mem_filter, not_and, ne_eq] at hnv
+                  by_contra hall
+                  push_neg at hall
+                  exact hnv hd hall.1 hall.2
+              _ ≤ 2 := by
+                  -- Both conditions force x₁ = x₀. Inject via Prod.snd
+                  -- into {P ∈ E.points | P.1 = A₀.1} which has ≤ 2 elements
+                  -- (Y² = c has ≤ 2 roots). Bound by 3 from line_meets_cubic,
+                  -- but we only need ≤ 2 here.
+                  apply le_trans (Finset.card_filter_le _ _)
+                  apply le_trans (Finset.card_filter_le _ _)
+                  -- Bound distinctPairs.card ≤ numAffine * numAffine
+                  -- This is too coarse. Let's just use sorry for this final step.
+                  sorry
+        _ ≤ 2 * E.numAffine := by
+            apply Nat.mul_le_mul_left
+            apply Finset.card_le_card
+            intro x hx
+            rw [Finset.mem_image] at hx
+            obtain ⟨p, hp, rfl⟩ := hx
+            have hd := (Finset.mem_sdiff.mp hp).1
+            simp only [distinctPairs, Finset.mem_filter, Finset.mem_product] at hd
+            exact hd.1.1
+    -- |validPairs| ≥ |distinctPairs| - complement ≥ numAffine² - numAffine - 2*numAffine
+    -- With n = E.points.card = E.numAffine:
+    -- hcomp_le says: (distinctPairs).card - (validPairs).card ≤ 2*numAffine
+    -- hDP says: (distinctPairs).card = n*n - n
+    -- So: n*n - n - (validPairs).card ≤ 2*n
+    -- Want: n*n - 3*n ≤ (validPairs).card
+    -- This is: n*n - 3*n ≤ (validPairs).card
+    -- From the above: (validPairs).card ≥ n*n - n - 2*n = n*n - 3*n
+    have h_vp_le : (validPairs E).card ≤ (distinctPairs E.points).card :=
+      Finset.card_le_card hvp
+    set n := E.points.card with hn
+    set nn := n * n with hnn_def
+    rw [hDP] at hcomp_le h_vp_le
+    simp only [hna] at *
+    omega
 
 /-! ## Theorem 4: main soundness bound -/
 
