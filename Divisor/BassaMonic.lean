@@ -203,10 +203,38 @@ theorem f_nonvanishing_proved {N : ℕ}
     obtain ⟨A₁, hA₁⟩ := hne
     simp only [Finset.mem_sdiff, hbad_def, Finset.mem_filter, not_and] at hA₁
     exact ⟨A₁, hA₁.1, hA₁.2 hA₁.1⟩
-  -- Bound: |bad| ≤ 3*N < numPoints = numAffine + 1 → |bad| ≤ numAffine = |E.points|
-  -- The bound |bad| ≤ 3*N follows from: the product vanishes only when
-  -- some factor vanishes, and each factor vanishes on ≤ 3 points.
-  sorry
+  -- |bad| ≤ 3*N: the product vanishes only when some factor vanishes.
+  -- bad ⊆ ⋃_i {A₁ : linearFormL(P_j, A₁, Q_i) = 0}
+  -- Each set has ≤ 3 elements (line meets cubic).
+  -- |⋃| ≤ Σ_i 3 = 3*N.
+  have hbad_bound : bad.card ≤ 3 * N := by
+    have hsub : bad ⊆ Finset.univ.biUnion (fun i : Fin N =>
+        E.points.filter (fun A₁ => linearFormL E (P j) A₁ (Q i) = 0)) := by
+      intro A₁ hA₁
+      rw [hbad_def, Finset.mem_filter] at hA₁
+      rw [Finset.mem_biUnion]
+      -- comparisonFn vanishes means the product minus product = 0.
+      -- At A₀ = P_j: second product has P_j factor = 0 (by linearFormL_self_zero).
+      -- So comparisonFn = first product - 0 = first product.
+      -- First product = 0 means some factor = 0.
+      simp only [comparisonFn, linearFormL_self_zero, Finset.prod_eq_zero_iff] at hA₁
+      -- hA₁.2 says the prod minus (prod with a zero factor) = 0
+      sorry
+    calc bad.card
+        ≤ (Finset.univ.biUnion _).card := Finset.card_le_card hsub
+      _ ≤ ∑ i : Fin N, (E.points.filter
+            (fun A₁ => linearFormL E (P j) A₁ (Q i) = 0)).card :=
+          Finset.card_biUnion_le
+      _ ≤ ∑ _i : Fin N, 3 := by
+          apply Finset.sum_le_sum
+          intro i _
+          exact line_meets_cubic_le_three E
+            (-(((Q i).2 - (P j).2) * ((Q i).1 - (P j).1)⁻¹))
+            (sorry)  -- reduce linear form to line equation
+      _ = 3 * N := by simp [Finset.sum_const, Finset.card_fin]
+  -- Combine: |bad| ≤ 3N < numPoints = numAffine + 1, so |bad| < numAffine + 1 ≤ |E.points| + 1
+  have := E.hNumPoints
+  omega
 
 /-! ## The valid pairs set -/
 
@@ -217,11 +245,19 @@ def validPairs : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
 
 theorem card_validPairs_lb :
     E.numAffine * E.numAffine - 3 * E.numAffine ≤ (validPairs E).card := by
-  -- validPairs = distinctPairs filtered by (x₀ ≠ x₁) ∧ (P₀ ≠ -P₁)
-  -- |distinctPairs| = numAffine² - numAffine
-  -- The excluded pairs are at most 2*numAffine
-  -- So |validPairs| ≥ numAffine² - 3*numAffine
-  sorry
+  -- validPairs = distinctPairs.filter P, so |validPairs| ≥ |distinctPairs| - |complement|
+  -- complement has at most 2*numAffine elements (same-x or negation pairs)
+  have hsub : validPairs E ⊆ distinctPairs E.points := by
+    intro p hp; exact (Finset.mem_filter.mp hp).1
+  -- Lower bound via |distinctPairs| - |complement|
+  have hcomp : (distinctPairs E.points).card - (validPairs E).card ≤ 2 * E.numAffine := by
+    -- complement = distinctPairs \ validPairs = pairs where x₀=x₁ or P₀=-P₁
+    -- Each point P₀ has at most 1 pair with x₀=x₁ (the point (x₀,-y₀))
+    -- and at most 1 pair with P₀=-P₁.
+    -- So |complement| ≤ 2*numAffine.
+    sorry
+  have hcard := card_distinctPairs E.points
+  omega
 
 /-! ## Theorem 4: main soundness bound -/
 

@@ -1,39 +1,25 @@
 /-
-  Divisor/NormVanish.lean
-
-  Theorem 2 (Norm Vanishing): proved from Lemma 1 (slope distribution).
-
-  If D vanishes at Q_1,...,Q_N and P != Q_i, then for random line L:
-    Pr[N(D)(L(P)) = 0] <= 2*N / (#E(F_q) - 1)
+  Divisor/NormVanish.lean — Theorem 2 (Norm Vanishing)
 -/
 import Divisor.Defs
 import Divisor.SlopeDist
+
+open Finset
 
 namespace Divisor
 
 variable (E : ECSetup)
 
-/-! ## Norm vanishing reduces to slope distribution
-
-N(D)(L(P)) = 0 iff L(P) = L(Q_i) for some zero Q_i of D.
-This requires the slope lam = (y(P)-y(Q_i))/(x(P)-x(Q_i)).
-At most N such slopes exist. Each occurs with probability
-<= 2/(#E-1) by slope distribution (Lemma 1).
-Union bound gives 2N/(#E-1).
--/
-
-/-- Bad slopes: slopes lam such that L(P) = L(Q_i) for some zero Q_i -/
+/-- Bad slopes: slopes where L(P) = L(Q_i) for some zero Q_i -/
 def badSlopes (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q) :
     Finset (ZMod E.q) :=
   ((zeros D E.points).filter (fun Q => Q.1 ≠ P.1)).image
     (fun Q => slopeOf P.1 P.2 Q.1 Q.2)
 
-/-- At most N bad slopes -/
 theorem card_badSlopes_le (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     (N : ℕ) (hN : (zeros D E.points).card ≤ N) :
     (badSlopes E D P).card ≤ N := by
-  unfold badSlopes
-  calc (((zeros D E.points).filter _).image _).card
+  calc (badSlopes E D P).card
       ≤ ((zeros D E.points).filter _).card := Finset.card_image_le
     _ ≤ (zeros D E.points).card := Finset.card_filter_le _ _
     _ ≤ N := hN
@@ -47,21 +33,35 @@ def normVanishPairs (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q) :
       slopeOf pair.1.1 pair.1.2 pair.2.1 pair.2.2 = s)
 
 /-- **Theorem 2 (Norm Vanishing).**
-    The number of pairs where the norm vanishes at L(P) is at most
-    2 * N * numAffine, giving Pr <= 2N / (numAffine - 1).
+    |normVanishPairs| ≤ 2 * N * numAffine.
 
-    Proof: union bound over at most N bad slopes, each contributing
-    at most 2 * numAffine pairs by Lemma 1. -/
+    Proof: normVanishPairs ⊆ ⋃_{s ∈ badSlopes} pairsWithSlope s.
+    By Lemma 1 each has ≤ 2*numAffine elements.
+    By card_biUnion_le and card_badSlopes_le. -/
 theorem norm_vanishing (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     (N : ℕ) (hN : (zeros D E.points).card ≤ N)
     (hP : P ∈ E.points)
     (hPnotZero : P ∉ zeros D E.points) :
     (normVanishPairs E D P).card ≤ 2 * N * E.numAffine := by
-  sorry
-  -- Proof outline:
   -- normVanishPairs ⊆ ⋃_{s ∈ badSlopes} pairsWithSlope s
-  -- By Lemma 1: each |pairsWithSlope s| ≤ 2 * numAffine
-  -- By card_biUnion_le: |⋃| ≤ Σ_{s ∈ badSlopes} 2 * numAffine
-  -- = |badSlopes| * 2 * numAffine ≤ N * 2 * numAffine
+  have hsub : normVanishPairs E D P ⊆
+      (badSlopes E D P).biUnion (fun s => pairsWithSlope E s) := by
+    intro p hp
+    simp only [normVanishPairs, Finset.mem_filter, Finset.mem_biUnion] at hp ⊢
+    obtain ⟨hdist, hx, s, hs, hslope⟩ := hp
+    exact ⟨s, hs, Finset.mem_filter.mpr ⟨hdist, hx, hslope⟩⟩
+  calc (normVanishPairs E D P).card
+      ≤ ((badSlopes E D P).biUnion (fun s => pairsWithSlope E s)).card :=
+        Finset.card_le_card hsub
+    _ ≤ ∑ s ∈ badSlopes E D P, (pairsWithSlope E s).card :=
+        Finset.card_biUnion_le
+    _ ≤ ∑ s ∈ badSlopes E D P, (2 * E.numAffine) :=
+        Finset.sum_le_sum (fun s _ => slope_distribution E s)
+    _ = (badSlopes E D P).card * (2 * E.numAffine) := by
+        simp [Finset.sum_const]
+    _ ≤ N * (2 * E.numAffine) := by
+        apply Nat.mul_le_mul_right
+        exact card_badSlopes_le E D P N hN
+    _ = 2 * N * E.numAffine := by ring
 
 end Divisor

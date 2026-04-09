@@ -96,18 +96,84 @@ def pairsWithSlope (lam : ZMod E.q) :
   (distinctPairs E.points).filter (fun p =>
     p.1.1 ≠ p.2.1 ∧ slopeOf p.1.1 p.1.2 p.2.1 p.2.2 = lam)
 
-/-- For k ≤ 3: k*(k-1) ≤ 2*k -/
-theorem pairs_le_twice (k : ℕ) (hk : k ≤ 3) : k * (k - 1) ≤ 2 * k := by
-  interval_cases k <;> omega
+/-- A₀ is always on the line through itself with slope lam -/
+theorem mem_pointsOnLine_self {lam : ZMod E.q}
+    {A₀ : ZMod E.q × ZMod E.q} (h : A₀ ∈ E.points) :
+    A₀ ∈ pointsOnLine E lam (interceptOf E lam A₀) := by
+  simp [pointsOnLine, interceptOf, Finset.mem_filter, h]
 
 /-- **Lemma 1 (Slope Distribution).**
     |pairsWithSlope lam| ≤ 2 * numAffine.
 
-    Proof: partition by intercept c = y₀ - lam*x₀.
-    Each partition class has ≤ k(k-1) pairs where k ≤ 3 (Bezout).
-    Since k(k-1) ≤ 2k for k ≤ 3, the total is ≤ 2 * Σ k = 2 * numAffine. -/
+    Proof: use card_le_mul_card_image with Prod.fst.
+    Each fiber (fixed A₀) has ≤ 2 elements because
+    the valid A₁ lie in pointsOnLine \ {A₀}, which has size ≤ 2
+    (since |pointsOnLine| ≤ 3 by Bezout). -/
 theorem slope_distribution (lam : ZMod E.q) :
     (pairsWithSlope E lam).card ≤ 2 * E.numAffine := by
-  sorry
+  -- Step 1: each first-coordinate fiber has ≤ 2 elements
+  have hfiber : ∀ A₀ ∈ (pairsWithSlope E lam).image Prod.fst,
+      ((pairsWithSlope E lam).filter (fun p => Prod.fst p = A₀)).card ≤ 2 := by
+    intro A₀ hA₀_img
+    rw [Finset.mem_image] at hA₀_img
+    obtain ⟨p₀, hp₀, rfl⟩ := hA₀_img
+    have hA₀ : p₀.1 ∈ E.points := by
+      simp only [pairsWithSlope, distinctPairs, Finset.mem_filter, Finset.mem_product] at hp₀
+      exact hp₀.1.1.1
+    -- Inject the fiber (via Prod.snd) into (pointsOnLine lam c).erase A₀
+    set c := interceptOf E lam p₀.1
+    -- Prod.snd is injective on the fiber (Prod.fst is constant)
+    -- and the image lands in pointsOnLine \ {p₀.1}
+    calc ((pairsWithSlope E lam).filter (fun p => Prod.fst p = p₀.1)).card
+        ≤ ((pointsOnLine E lam c).erase p₀.1).card := by
+          apply Finset.card_le_card_of_injOn Prod.snd
+          · -- image in pointsOnLine.erase A₀
+            intro ⟨a, b⟩ hab
+            simp only [Finset.mem_filter, pairsWithSlope, distinctPairs,
+                       Finset.mem_product] at hab
+            obtain ⟨⟨⟨⟨ha_mem, hb_mem⟩, hne⟩, hx, hslope⟩, hfst⟩ := hab
+            -- a = first point, b = second point, hfst : a = p₀.1
+            subst hfst  -- replace a by p₀.1
+            rw [Finset.mem_erase]
+            constructor
+            · exact fun heq => hne heq.symm
+            · rw [pointsOnLine, Finset.mem_filter]
+              refine ⟨hb_mem, ?_⟩
+              -- b is on the line with slope lam through p₀.1
+              simp only [slopeOf] at hslope
+              have hxne : b.1 - p₀.1.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm hx)
+              show b.2 = lam * b.1 + (p₀.1.2 - lam * p₀.1.1)
+              -- From hslope: (b.2-p₀.1.2)*(b.1-p₀.1.1)⁻¹ = lam
+              -- So b.2 - p₀.1.2 = lam * (b.1 - p₀.1.1)
+              -- So b.2 = lam * b.1 + (p₀.1.2 - lam * p₀.1.1)
+              have key : b.2 - p₀.1.2 = lam * (b.1 - p₀.1.1) := by
+                calc b.2 - p₀.1.2
+                    = (b.2 - p₀.1.2) * ((b.1 - p₀.1.1)⁻¹ * (b.1 - p₀.1.1)) := by
+                      rw [inv_mul_cancel₀ hxne, mul_one]
+                  _ = (b.2 - p₀.1.2) * (b.1 - p₀.1.1)⁻¹ * (b.1 - p₀.1.1) := by ring
+                  _ = lam * (b.1 - p₀.1.1) := by rw [hslope]
+              linear_combination key
+          · -- Prod.snd is injective on the fiber
+            intro ⟨a₁, b₁⟩ h1 ⟨a₂, b₂⟩ h2 hsnd
+            have h1f := (Finset.mem_filter.mp h1).2
+            have h2f := (Finset.mem_filter.mp h2).2
+            exact Prod.ext (h1f.trans h2f.symm) hsnd
+      _ = (pointsOnLine E lam c).card - 1 := by
+          rw [Finset.card_erase_of_mem (mem_pointsOnLine_self E hA₀)]
+      _ ≤ 2 := by
+          have := line_meets_cubic_le_three E lam c
+          omega
+  -- Step 2: total ≤ 2 * |image| ≤ 2 * numAffine
+  calc (pairsWithSlope E lam).card
+      ≤ 2 * ((pairsWithSlope E lam).image Prod.fst).card :=
+        Finset.card_le_mul_card_image _ _ hfiber
+    _ ≤ 2 * E.numAffine := by
+        apply Nat.mul_le_mul_left
+        apply Finset.card_le_card
+        intro x hx
+        rw [Finset.mem_image] at hx
+        obtain ⟨p, hp, rfl⟩ := hx
+        simp only [pairsWithSlope, distinctPairs, Finset.mem_filter, Finset.mem_product] at hp
+        exact hp.1.1.1
 
 end Divisor
