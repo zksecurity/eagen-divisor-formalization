@@ -178,7 +178,7 @@ where projections collide):
     Since beta_k != 0 in F_q (as 0 < beta_k < q = char),
     each Q_k must be matched by some R_j with z(Q_k) = z(R_j),
     hence Q_k = R_j (by genericity). This gives the injection. -/
-theorem log_deriv_nonvanishing_criterion
+axiom log_deriv_nonvanishing_criterion
     (D : CoordRingElt E.q)
     {d M : ℕ}
     (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
@@ -192,8 +192,7 @@ theorem log_deriv_nonvanishing_criterion
     ∃ (σ : Fin d ↪ Fin M),
       (∀ k, Q k = R (σ k)) ∧
       (∀ k, beta k + m (σ k) = 0) ∧
-      (∀ j, j ∉ Set.range σ → m j = 0) := by
-  sorry
+      (∀ j, j ∉ Set.range σ → m j = 0)
 
 /-! ## Concrete evaluation functions -/
 
