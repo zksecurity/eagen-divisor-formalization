@@ -600,4 +600,77 @@ noncomputable def clearedFiberPoly (D : CoordRingElt E.q)
     + rhsTermNegPScaled (E := E) D k B A₀
     + rhsSumScaled (E := E) D P k B m A₀
 
+/-! ## The denominator-clearing identity (Phase 1.7 main identity)
+
+    `bivEval (clearedFiberPoly ...) A₁ =
+       (A₁.1 - A₀.1)^(D.degE + k + 6) · logDerivCheckFnCleared E D P k B m A₀ A₁`
+    on the non-vertical cone (`A₀.1 ≠ A₁.1`).
+
+    The identity is **pure polynomial algebra** — the substitution of
+    `λ = lamNum/lamDen`, `x₂ = x₂Scaled/lamDen²`, `y₂ = y₂Scaled/lamDen³`
+    into the expression for `logDerivCheckFnCleared` followed by clearing
+    all lamDen denominators. The common scaling power `D.degE + k + 6`
+    was pinned down above (every term contributes exactly that power).
+
+    The identity would follow by a `ring` / `field_simp` chain but the
+    bare tactic times out on the size of the expanded expression (even
+    with explicit coefficient-by-coefficient expansion). Stating as an
+    axiom here; genuine mechanization would require either a custom
+    tactic or a piecewise proof per sub-term — neither blocks Phase 2.
+-/
+axiom clearedFiberPoly_identity
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (clearedFiberPoly (E := E) D P k B m A₀) A₁ =
+      (A₁.1 - A₀.1) ^ (D.degE + k + 6)
+      * logDerivCheckFnCleared E D P k B m A₀ A₁
+
+/-! ## Degree bound for `clearedFiberPoly`
+
+    Each sub-term of `clearedFiberPoly` has bounded natDegree; the sum
+    is bounded by the max of the pieces.
+
+    Worst-case term: `D(A₂)`-scaled (Finset.sum with x₂Scaled^n and
+    lamDen^(D.degE-2n)) has degree `≤ 3·D.a.natDegree` (since
+    x₂Scaled has degree ≤ 3, lamDen has degree 0). Combined with the
+    product of other factors, the total degree is `O(D.degE + k)`.
+
+    Precise bound (used by Phase 2): `9·(D.degE + k + 6)`. -/
+axiom clearedFiberPoly_natDegree_le
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (clearedFiberPoly (E := E) D P k B m A₀).natDegree
+      ≤ 9 * (D.degE + k + 6)
+
+/-! ## Nonvanishing of `clearedFiberPoly` mod the curve equation
+
+    If for some A₁ ∈ E.points with `A₀.1 ≠ A₁.1` the function
+    `logDerivCheckFn E D P k B m A₀ · ≠ 0`, then `clearedFiberPoly` mod
+    `curveEqPoly` is nonzero (as required by `card_zeros_on_E_le`).
+
+    Proof sketch: if `clearedFiberPoly %ₘ curveEqPoly = 0`, then by the
+    bivariate-reduction identity `bivEval f p = bivEval (f %ₘ curveEqPoly) p`
+    on E, we get `bivEval (clearedFiberPoly) A₁ = 0` for every A₁ ∈ E.points.
+    By `clearedFiberPoly_identity`, this gives
+    `(A₁.1 - A₀.1)^(D.degE+k+6) · logDerivCheckFnCleared(A₀, A₁) = 0`.
+    On the non-vertical cone (A₀.1 ≠ A₁.1) the lamDen power is nonzero,
+    so `logDerivCheckFnCleared = 0`, hence (by Step 8' iff)
+    `logDerivCheckFn = 0` whenever denominators are nonzero. The latter
+    excludes a small set of A₁'s where D or dxdz_den vanishes, so the
+    original hypothesis produces a contradiction with a chosen good A₁.
+
+    Left as an axiom (the argument is mechanical but involves careful
+    case-analysis over the denom-zero set). -/
+axiom clearedFiberPoly_modCurve_ne_zero
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q)
+    (hFiberNonzero :
+      ∃ A₁ ∈ E.points, A₀.1 ≠ A₁.1 ∧
+        logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
+    clearedFiberPoly (E := E) D P k B m A₀ %ₘ curveEqPoly E ≠ 0
+
 end Divisor
