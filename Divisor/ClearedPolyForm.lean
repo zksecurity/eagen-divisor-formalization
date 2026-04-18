@@ -401,4 +401,64 @@ noncomputable def dxdzDenA₂Scaled (A₀ : ZMod E.q × ZMod E.q) :
   simp [dxdzDenA₂Scaled, bivEval_sub, bivEval_add, bivEval_mul,
         bivEval_pow]
 
+/-! ## `D(A₂)` scaled polynomial.
+
+    `D(A₂) = D.a.eval(x₂) - D.b.eval(x₂) · y₂`. Substituting
+    `x₂ = x₂Scaled / lamDen²`, `y₂ = y₂Scaled / lamDen³`, and scaling by
+    `lamDen^D.degE` (where `D.degE = max(2·a.natDegree, 3 + 2·b.natDegree)`)
+    produces a polynomial.
+
+    Explicit expansion (over `n` ranging over `D.a.support`):
+    ```
+    D(A₂) · lamDen^D.degE =
+      Σ_n D.a.coeff(n) · x₂Scaled^n · lamDen^(D.degE - 2n)
+      - Σ_n D.b.coeff(n) · x₂Scaled^n · y₂Scaled · lamDen^(D.degE - 2n - 3).
+    ```
+-/
+
+/-- Contribution from the `a(x)` part of `D`: `Σ_n a_n · x₂Scaled^n · lamDen^(D.degE-2n)`. -/
+noncomputable def DAPartAtA₂Scaled (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  ∑ n ∈ Finset.range (D.a.natDegree + 1),
+    embedScalar (E := E) (D.a.coeff n)
+      * x₂Scaled (E := E) A₀ ^ n
+      * lamDenPoly (E := E) A₀ ^ (D.degE - 2 * n)
+
+/-- Contribution from the `b(x)·y` part of `D` evaluated at `A₂`:
+    `Σ_n b_n · x₂Scaled^n · y₂Scaled · lamDen^(D.degE-2n-3)`. -/
+noncomputable def DBPartAtA₂Scaled (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  ∑ n ∈ Finset.range (D.b.natDegree + 1),
+    embedScalar (E := E) (D.b.coeff n)
+      * x₂Scaled (E := E) A₀ ^ n
+      * y₂Scaled (E := E) A₀
+      * lamDenPoly (E := E) A₀ ^ (D.degE - 2 * n - 3)
+
+/-- `D(A₂) · lamDen^D.degE` as a polynomial. -/
+noncomputable def DAtA₂Scaled (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  DAPartAtA₂Scaled (E := E) D A₀ - DBPartAtA₂Scaled (E := E) D A₀
+
+/-- Analog of `DAPartAtA₂Scaled` for the derivative of `D`. -/
+noncomputable def DDerivAPartAtA₂Scaled (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  ∑ n ∈ Finset.range ((Polynomial.derivative D.a).natDegree + 1),
+    embedScalar (E := E) ((Polynomial.derivative D.a).coeff n)
+      * x₂Scaled (E := E) A₀ ^ n
+      * lamDenPoly (E := E) A₀ ^ (D.degE - 2 * n)
+
+/-- Analog of `DBPartAtA₂Scaled` for the derivative of `D`. -/
+noncomputable def DDerivBPartAtA₂Scaled (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  ∑ n ∈ Finset.range ((Polynomial.derivative D.b).natDegree + 1),
+    embedScalar (E := E) ((Polynomial.derivative D.b).coeff n)
+      * x₂Scaled (E := E) A₀ ^ n
+      * y₂Scaled (E := E) A₀
+      * lamDenPoly (E := E) A₀ ^ (D.degE - 2 * n - 3)
+
+/-- `D'(A₂) · lamDen^D.degE` as a polynomial. -/
+noncomputable def DDerivAtA₂Scaled (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  DDerivAPartAtA₂Scaled (E := E) D A₀ - DDerivBPartAtA₂Scaled (E := E) D A₀
+
 end Divisor
