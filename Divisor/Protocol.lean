@@ -2,6 +2,8 @@
   Divisor/Protocol.lean — Protocol definitions for the discrete log relation.
 -/
 import Divisor.Defs
+import Divisor.Axioms
+import Divisor.LogDeriv
 
 open Polynomial Finset
 
@@ -43,6 +45,56 @@ structure MAProverMsg (q : ℕ) [Fact (Nat.Prime q)] where
 def MAProverMsg.toD (msg : MAProverMsg q) : CoordRingElt q :=
   { a := msg.polyA, b := msg.polyB }
 
+/-! ### Honest-prover divisor encoding
+
+Paper `\protMA`: the honest prover constructs `D = msg.toD` so that its
+divisor on `E` is `(-P) + Σ_i n_i · (B_i) - degE(D) · (∞)`, where
+`n_i = wit.scalars i`, `B_i = stmt.bases i`, `P = stmt.target`.
+
+Concretely, `honestDivisorCoeffs` spells out this target coefficient
+function on `ECPoint E.q`, and `isHonestFor` requires (i) `msg.m_i` to
+reduce correctly to `wit.scalars i` in `ZMod E.q`, and (ii) the formal
+divisor to be principal (i.e. it is in fact `div(f)` for some nonzero
+rational function `f ∈ F_q(E)×`). By `principal_divisor_iff`, condition
+(ii) is equivalent to two concrete checks; by construction it also
+subsumes the curve-side claim `P = Σ [n_i] · B_i`. -/
+
+/-- Target divisor coefficients for the honest prover's `D`:
+    `+1` at `-P`, `n_i` at each `B_i` (with duplicates summed), and
+    `-degE(D)` at `∞`. All other points get `0`. -/
+noncomputable def honestDivisorCoeffs (E : ECSetup) (stmt : DlogStatement E.q)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) : ECPoint E.q → ℤ :=
+  fun P => match P with
+    | .infinity => -(msg.toD.degE : ℤ)
+    | .affine x y =>
+        (if (x, y) = (stmt.target.1, -stmt.target.2) then 1 else 0) +
+        ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
+          (fun i => stmt.bases i = (x, y)),
+          ((wit.scalars (hk ▸ i) : ℤ))
+
+/-- Predicate: `msg` is the honest prover's first-round message for
+    `(stmt, wit)`.
+
+    Two conditions:
+    * `msg.m_i ≡ wit.scalars i (mod q)` — the reduced scalar vector matches.
+    * The divisor `(-P) + Σ_i n_i · (B_i) - degE(D) · (∞)` is principal
+      (so `D = msg.toD` can be interpreted as a rational function with
+      this divisor, via `IsPrincipal` from `Axioms.lean`).
+
+    Replaces the previous `True` placeholder, which was a soundness hole:
+    with `True`, `weil_reciprocity_honest` could be invoked for an
+    arbitrary (possibly malicious) `msg`, yielding the false conclusion
+    that `logDerivCheckFn = 0` everywhere for it. The two conjuncts here
+    cannot hold jointly unless `msg` genuinely encodes the honest
+    witness, closing the hole. -/
+def MAProverMsg.isHonestFor (E : ECSetup) (msg : MAProverMsg E.q)
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k) (hkm : stmt.k = msg.k) : Prop :=
+  (∀ i : Fin stmt.k,
+      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ℤ) : ZMod E.q))
+  ∧ IsPrincipal E (honestDivisorCoeffs E stmt wit hk msg)
+
 structure MAChallenge (q : ℕ) [Fact (Nat.Prime q)] where
   A₀ : ZMod q × ZMod q
   A₁ : ZMod q × ZMod q
@@ -50,13 +102,35 @@ structure MAChallenge (q : ℕ) [Fact (Nat.Prime q)] where
 def verifierDegreeCheck (msg : MAProverMsg q) (d : ℕ) : Prop :=
   msg.toD.degE ≤ d
 
-/-- The MA verifier accepts iff the degree and log-derivative checks pass -/
+/-- Helper to evaluate `msg.m` at an index of statement type,
+    transporting via `hk : stmt.k = msg.k`. Hides the `hk ▸` cast. -/
+def MAProverMsg.mAt {stmt : DlogStatement q} {msg : MAProverMsg q}
+    (hk : stmt.k = msg.k) (i : Fin stmt.k) : ZMod q :=
+  msg.m (hk ▸ i)
+
+/-- The MA verifier accepts iff the degree, log-derivative, AND
+    `-P`-vanishing checks all pass.
+
+    The `-P`-vanishing check `D(-P) = 0` enforces that `-P` is in
+    `supp((D)_0)` — i.e. that the divisor of zeros structurally contains
+    `(-P)` with multiplicity ≥ 1. Without this check, a malicious prover
+    can exploit `B_j = -P` overlap (or duplicates at `-P`) to construct
+    an accepting transcript from which no valid witness can be extracted:
+    they set `m_j = q - 1` so the combined residue `1 + m_j ≡ 0 (mod q)`
+    matches a divisor with multiplicity `0` at `-P`, but then the
+    principal-divisor relation gives a sum that does *not* equal `P`.
+    The D(-P) = 0 check rules this out at the protocol level rather than
+    forcing the proof to handle it via a vacuous hypothesis.
+
+    Requires an explicit equality `hk : stmt.k = msg.k` to transport the
+    statement's basis indices into the message's scalar vector. -/
 def maVerifierAccepts (E : ECSetup) (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (chal : MAChallenge E.q) : Prop :=
+    (msg : MAProverMsg E.q) (chal : MAChallenge E.q)
+    (hk : stmt.k = msg.k) : Prop :=
   verifierDegreeCheck msg stmt.k ∧
-  -- The log-derivative identity holds at the challenge points.
-  -- Concrete check defined in LogDeriv.lean; here we state it abstractly.
-  True
+  msg.toD.eval stmt.target.1 (-stmt.target.2) = 0 ∧
+  logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+    (fun i => msg.m (hk ▸ i)) chal.A₀ chal.A₁ = 0
 
 /-! ## Three-Round IP Protocol -/
 
