@@ -323,7 +323,7 @@ axiom weil_reciprocity_honest
     Hence rejection forces the challenge into the bad set. -/
 theorem ma_completeness
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (hValid : dlogHolds stmt wit hk)
+    (hk : stmt.k = wit.k) (hValid : dlogHolds E stmt wit hk)
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (hDeg : msg.toD.degE ≤ wit.degBound)
     (hDegK : msg.toD.degE ≤ stmt.k)

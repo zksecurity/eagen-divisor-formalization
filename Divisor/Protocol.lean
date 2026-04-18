@@ -45,15 +45,14 @@ structure DlogWitness (q : ℕ) [Fact (Nat.Prime q)] where
   degBound : ℕ
   hRange : ∀ i, (scalars i).natAbs < degBound
 
-/-- The relation: witnessed by a coordinate ring element D
-    whose divisor encodes P = Σ [n_i] * B_i. -/
-def dlogHolds (stmt : DlogStatement q) (wit : DlogWitness q)
+/-- The discrete-log relation `P = Σ [n_i] · B_i` in the group `E(F_q)`,
+    expressed via `ECPoint.weightedSum`. Matches paper `relDlog`. -/
+def dlogHolds (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) : Prop :=
-  ∃ D : CoordRingElt q,
-    D.degE ≤ wit.degBound ∧
-    -- The zeros of D encode: (-P) + Σ n_i·(B_i)
-    -- This is the divisor-based formulation of the dlog relation.
-    True
+  (ECPoint.affine stmt.target.1 stmt.target.2 : ECPoint E.q) =
+    ECPoint.weightedSum E (Finset.univ : Finset (Fin stmt.k))
+      (fun i => ECPoint.zsmul E (wit.scalars (hk ▸ i))
+                  (ECPoint.affine (stmt.bases i).1 (stmt.bases i).2))
 
 /-! ## MA Protocol -/
 
