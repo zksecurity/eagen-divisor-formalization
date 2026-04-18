@@ -477,45 +477,70 @@ Committed (master → several commits):
   and `log_deriv_kernel_classical` along with the opaque wrappers
   `normAtZero` and `logDerivNormAtZero`.
 
-Current `#print axioms ma_extractable`:
+Final `#print axioms ma_extractable` (end of session 2026-04-19):
 ```
 propext, Classical.choice, Quot.sound,
 Divisor.ECPoint.add_comm, Divisor.ECPoint.add_assoc,
-Divisor.extractorSucceeds_of_logDerivCheck_identically_zero,
-Divisor.logDerivCheckFn_zero_set_bound
+Divisor.extractorSucceeds_of_logDerivCheck_identically_zero_general,
+Divisor.logDerivCheckFn_badA₀_bound,
+Divisor.logDerivCheckFn_fiber_count_bound
 ```
 
-Remaining work for a future session:
+Additional commits in session (after Phase 1 scaffolding):
 
-1. **Phase 1.7-1.8** — assemble the monolithic `clearedFiberPoly`
-   (the combined expression for `logDerivCheckFnCleared · lamDen^N`),
-   prove the main identity on the non-vertical cone, and the non-
-   vanishing lemma. This is the biggest mechanical chunk (~130 LOC
-   of polynomial algebra).
+* Phase 1.7 (`cbc75e7`): `clearedFiberPoly` full polynomial assembly.
+* Phase 1.7 cont. (`3b79ee4`): `D(A₂)`, `D'(A₂)` scaled via `Finset.sum`.
+* Phase 1 bis (`46ff5c0`): `dxdzDenA₂Scaled` definition.
+* Phase 1.8 (`9c6cc7a`): polynomial identity/degree/nonvanishing axioms.
+* Phase 2 (`ef71a68`): mechanized `logDerivCheckFn_zero_set_bound` as a
+  theorem via `fiber_argument` + two narrow axioms
+  (`logDerivCheckFn_fiber_count_bound`, `logDerivCheckFn_badA₀_bound`).
+  `log_deriv_sz` now a theorem. Looser bound constant propagated to
+  `ma_extractable` and `ip_knowledge_sound` (added `2 ≤ d` hypothesis
+  required by the new direct special-case proof).
+* Phase 3 (`8a17c31`): narrowed bridge axiom to general case
+  (`extractorSucceeds_of_logDerivCheck_identically_zero_general`);
+  proved `extractorSucceeds_special` directly. `ma_extractable` now
+  case-splits on `-P ∈ {B_j}` and uses the narrowed axiom only in
+  the general branch.
 
-2. **Phase 2** — fiber argument application and removal of
-   `logDerivCheckFn_zero_set_bound`. Depends on Phase 1.7-1.8.
+Delta from pre-continuation session:
 
-3. **Phase 3** — restate `log_deriv_nonvanishing_criterion` for
-   `clearedFiberPoly` (or directly `logDerivCheckFn`), prove the
-   general case via `principal_divisor_iff`, and remove
-   `extractorSucceeds_of_logDerivCheck_identically_zero`.
+* Before: 2 monolithic bridge axioms
+  (`logDerivCheckFn_zero_set_bound`,
+  `extractorSucceeds_of_logDerivCheck_identically_zero`).
+* After: 3 narrower paper-faithful axioms
+  (fiber count, bad-A₀ count, general-case extractor).
+* Raw axiom count +1, but each is strictly narrower and
+  corresponds more directly to paper-cited classical content.
 
-4. **Phase 4.2-4.4** — final audit and any cleanup.
+### Remaining work for a future session
 
-Key observations for continuation:
+1. **Mechanize the Phase 1 polynomial identity + nonvanishing**
+   (would remove `logDerivCheckFn_fiber_count_bound` and
+   `logDerivCheckFn_badA₀_bound`): prove the full identity
+   `bivEval (clearedFiberPoly ...) A₁ = lamDen^N · logDerivCheckFnCleared`
+   on the non-vertical cone, plus natDegree/nonvanishing lemmas. The
+   polynomial construction is ready; the identity is pure algebra
+   but huge (requires either a piecewise proof per sub-term or a
+   custom tactic to avoid the `ring`/`field_simp` heartbeat limit).
+2. **Mechanize the general-case extractor** (would remove
+   `extractorSucceeds_of_logDerivCheck_identically_zero_general`):
+   derive it from `log_deriv_nonvanishing_criterion` + grouping
+   arithmetic + `principal_divisor_iff`. Per plan §3.2, this is the
+   high-risk ~150-LOC combinatorial piece.
 
-* `fiber_argument` (already proved) is ready to combine per-fiber
-  bound + bad-A₀ bound into the global bound. The missing piece is
-  only the polynomial construction for each fiber.
-* The "field_simp + ring" tactic pattern used in
-  `bivEval_x₂Scaled_eq` etc. works well for per-piece identities.
-  The assembly identity for the full `clearedFiberPoly` will need
-  the same pattern but scaled to a much larger expression.
-* `natDegree` bookkeeping via `natDegree_mul_le`,
-  `natDegree_sub_le`, `natDegree_add_le`, `natDegree_pow_le` works
-  smoothly for the per-piece bounds; the assembly bound will
-  propagate through the same primitives.
+Observations for continuation:
+
+* The polynomial construction (`clearedFiberPoly` etc.) in
+  `ClearedPolyForm.lean` is ready and bivEval'd on the
+  non-vertical cone term by term; the wholeidentity would follow
+  by careful staging.
+* `fiber_argument` combines per-fiber + bad-A₀ into the global
+  bound; already used in Phase 2.
+* `natDegree` tracking is subtle for `(ZMod E.q)[X][X]`:
+  `natDegree` refers to outer variable only; inner degree must be
+  tracked separately for `resultantX` natDegree bounds.
 
 ---
 
