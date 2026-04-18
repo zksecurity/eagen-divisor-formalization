@@ -144,4 +144,71 @@ theorem bivEval_lineEvalNumAt_eq_ellP
     bivEval (lineEvalNumAt (E := E) A₀ pt) A₁ = ellP E pt A₀ A₁ := by
   simp [bivEval_lineEvalNumAt, ellP]
 
+/-! ## Scaled `x₂`, `y₂` polynomials
+
+    Paper `fig:ma`: `A₂ = -(A₀ + A₁)`, so
+    `x₂ = λ² - A₀.1 - A₁.1`, `y₂ = λ·x₂ + (A₀.2 - λ·A₀.1)`.
+
+    Scaling by `lamDen^2` and `lamDen^3` clears the λ denominators:
+    * `x₂Scaled A₀` = `lamNum² - (A₀.1 + A₁.1) · lamDen²`
+    * `y₂Scaled A₀` = `lamNum · x₂Scaled + (A₀.2 - λ·A₀.1) · lamDen³` where
+      the `λ` is re-expanded to `lamNum / lamDen`.
+
+    Identities:
+    * `bivEval (x₂Scaled A₀) A₁ = lamDen² · x₂(A₀, A₁)`
+      (when `A₁.1 ≠ A₀.1`).
+    * `bivEval (y₂Scaled A₀) A₁ = lamDen³ · y₂(A₀, A₁)`
+      (when `A₁.1 ≠ A₀.1`). -/
+
+/-- Scaled `x₂`-polynomial: `lamNum² - (A₀.1 + A₁.1) · lamDen²`. Equals
+    `lamDen² · x₂` when `lamDen ≠ 0`. -/
+noncomputable def x₂Scaled (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  lamNumPoly (E := E) A₀ ^ 2
+  - (embedScalar (E := E) A₀.1 + innerA₁x (E := E)) * lamDenPoly (E := E) A₀ ^ 2
+
+/-- Scaled `y₂`-polynomial: expanded out using `y₂ = λ·x₂ + (A₀.2 -
+    λ·A₀.1)` with all λ's re-expressed as `lamNum / lamDen` and scaled
+    by `lamDen^3`. Equals `lamDen³ · y₂` when `lamDen ≠ 0`. -/
+noncomputable def y₂Scaled (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  lamNumPoly (E := E) A₀ * x₂Scaled (E := E) A₀
+  + (embedScalar (E := E) A₀.2 * lamDenPoly (E := E) A₀
+        - embedScalar (E := E) A₀.1 * lamNumPoly (E := E) A₀)
+      * lamDenPoly (E := E) A₀ ^ 2
+
+@[simp] theorem bivEval_x₂Scaled (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval (x₂Scaled (E := E) A₀) A₁ =
+      (A₁.2 - A₀.2) ^ 2 - (A₀.1 + A₁.1) * (A₁.1 - A₀.1) ^ 2 := by
+  simp [x₂Scaled, bivEval_sub, bivEval_mul, bivEval_pow, bivEval_add]
+
+@[simp] theorem bivEval_y₂Scaled (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval (y₂Scaled (E := E) A₀) A₁ =
+      (A₁.2 - A₀.2) *
+        ((A₁.2 - A₀.2) ^ 2 - (A₀.1 + A₁.1) * (A₁.1 - A₀.1) ^ 2)
+      + (A₀.2 * (A₁.1 - A₀.1) - A₀.1 * (A₁.2 - A₀.2))
+        * (A₁.1 - A₀.1) ^ 2 := by
+  simp [y₂Scaled, bivEval_sub, bivEval_mul, bivEval_pow, bivEval_add]
+
+/-- When `A₁.1 ≠ A₀.1`, `x₂Scaled` at `A₁` equals `(A₁.1 - A₀.1)² · x₂`. -/
+theorem bivEval_x₂Scaled_eq (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (x₂Scaled (E := E) A₀) A₁ =
+      (A₁.1 - A₀.1) ^ 2 *
+        ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1) := by
+  have hden : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr hNV.symm
+  simp only [bivEval_x₂Scaled, slopeOf]
+  field_simp
+  ring
+
+/-- When `A₁.1 ≠ A₀.1`, `y₂Scaled` at `A₁` equals `(A₁.1 - A₀.1)³ · y₂`. -/
+theorem bivEval_y₂Scaled_eq (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (y₂Scaled (E := E) A₀) A₁ =
+      (A₁.1 - A₀.1) ^ 3 *
+        (let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
+         lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1)) := by
+  have hden : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr hNV.symm
+  simp only [bivEval_y₂Scaled, slopeOf]
+  field_simp
+  ring
+
 end Divisor
