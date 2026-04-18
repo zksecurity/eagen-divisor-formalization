@@ -374,4 +374,31 @@ theorem lineEvalNumAt_natDegree_le (A₀ pt : ZMod E.q × ZMod E.q) :
     rw [embedScalar_natDegree_le, Nat.zero_add]
     exact lamNumPoly_natDegree_le E A₀
 
+/-! ## `dxdz_den(A₂)` scaled.
+
+    `dxdz_den(A₂) = 3·x₂² + curveA - 2·λ·y₂`. Scaling by `lamDen^4` and
+    substituting `x₂ = x₂Scaled / lamDen²`, `y₂ = y₂Scaled / lamDen³`,
+    `λ = lamNum / lamDen`:
+    ```
+    dxdz_den(A₂) · lamDen^4 = 3·x₂Scaled² + curveA·lamDen^4 - 2·lamNum·y₂Scaled.
+    ```
+-/
+noncomputable def dxdzDenA₂Scaled (A₀ : ZMod E.q × ZMod E.q) :
+    (ZMod E.q)[X][X] :=
+  embedScalar (E := E) 3 * x₂Scaled (E := E) A₀ ^ 2
+  + embedScalar (E := E) E.curveA * lamDenPoly (E := E) A₀ ^ 4
+  - embedScalar (E := E) 2 * lamNumPoly (E := E) A₀ * y₂Scaled (E := E) A₀
+
+@[simp] theorem bivEval_dxdzDenA₂Scaled (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval (dxdzDenA₂Scaled (E := E) A₀) A₁ =
+      3 * ((A₁.2 - A₀.2) ^ 2 - (A₀.1 + A₁.1) * (A₁.1 - A₀.1) ^ 2) ^ 2
+      + E.curveA * (A₁.1 - A₀.1) ^ 4
+      - 2 * (A₁.2 - A₀.2)
+        * ((A₁.2 - A₀.2) *
+            ((A₁.2 - A₀.2) ^ 2 - (A₀.1 + A₁.1) * (A₁.1 - A₀.1) ^ 2)
+          + (A₀.2 * (A₁.1 - A₀.1) - A₀.1 * (A₁.2 - A₀.2))
+            * (A₁.1 - A₀.1) ^ 2) := by
+  simp [dxdzDenA₂Scaled, bivEval_sub, bivEval_add, bivEval_mul,
+        bivEval_pow]
+
 end Divisor
