@@ -13,6 +13,7 @@ import Divisor.Defs
 import Divisor.Axioms
 import Divisor.SupportDisjoint
 import Divisor.LogDeriv
+import Divisor.ClearedPolyForm
 import Divisor.Protocol
 
 namespace Divisor
@@ -301,7 +302,7 @@ theorem ma_extractable
         ∧ dlogHolds E stmt wit) ∨
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ 18 * (d + stmt.k) * E.q := by
+      ≤ (36 * (d + stmt.k + 6) + 4) * E.points.card := by
   classical
   -- Case on whether `logDerivCheckFn` is identically zero on `E × E`.
   by_cases hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧
@@ -325,10 +326,12 @@ theorem ma_extractable
     have hBound :=
       log_deriv_sz E msg.toD stmt.target stmt.bases
         (fun i => msg.m (hkm ▸ i)) hDegLt hNV
-    have hMono : 18 * (msg.toD.degE + stmt.k) * E.q ≤ 18 * (d + stmt.k) * E.q := by
+    have hMono : (36 * (msg.toD.degE + stmt.k + 6) + 4) * E.points.card
+                 ≤ (36 * (d + stmt.k + 6) + 4) * E.points.card := by
       apply Nat.mul_le_mul_right
-      apply Nat.mul_le_mul_left
-      exact Nat.add_le_add_right hDeg _
+      have : msg.toD.degE + stmt.k + 6 ≤ d + stmt.k + 6 := by
+        exact Nat.add_le_add_right (Nat.add_le_add_right hDeg _) _
+      omega
     exact le_trans hCardLe (le_trans hBound hMono)
   · -- Identically zero on `E × E`. Sub-case on admSet membership.
     push_neg at hNV
@@ -458,7 +461,7 @@ theorem ip_knowledge_sound
          ∧ dlogHolds E stmt wit) ∨
      ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
-      ≤ 18 * (d + stmt.k) * E.q)
+      ≤ (36 * (d + stmt.k + 6) + 4) * E.points.card)
     -- (2) Uniqueness of third-round message.
     ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
         (msg3 msg3' : IPProverMsg3 E.q),

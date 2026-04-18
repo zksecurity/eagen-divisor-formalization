@@ -218,54 +218,11 @@ noncomputable def badChallengesNotEq
     Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
   (validPairs E).filter (fun p => logDerivCheckFn E D P k B m p.1 p.2 = 0)
 
-/-- **Specialized variety bound** (DKL / EOT, specialized to
-    `logDerivCheckFn` on E × E). Replaces the generic
-    `variety_sz_on_ExE` axiom whose `hBiDegree : True` side-condition
-    was a soundness hole. The bi-degree of `logDerivCheckFn` (after
-    denominator clearing via `polyG`) on E × E is
-    `(D.degE + k - 1, D.degE + k - 1)`; this is determined structurally
-    by the definition of `logDerivCheckFn`, not an informal hypothesis.
-
-    Classical DKL/EOT variety bound: a bi-degree (N, N) function on the
-    degree-9 surface E × E ⊂ P⁴ has at most `18 * N * q` rational zeros
-    when it is not identically zero. -/
-axiom logDerivCheckFn_zero_set_bound
-    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
-    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
-    (hDeg : D.degE < E.q)
-    (hNonzero : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧
-      logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
-    ((E.points ×ˢ E.points).filter
-      (fun p => logDerivCheckFn E D P k B m p.1 p.2 = 0)).card
-      ≤ 18 * (D.degE + k) * E.q
-
-/-- **Corollary 1 (Schwartz-Zippel for Log-Derivative Check).**
-
-    If `logDerivCheckFn` is not identically zero on `E.points × E.points`,
-    then the number of valid challenges where it vanishes is at most
-    `18 * (D.degE + k) * E.q`. Lift of `logDerivCheckFn_zero_set_bound`
-    from `E.points ×ˢ E.points` to `validPairs E`. -/
-theorem log_deriv_sz (D : CoordRingElt E.q)
-    (P : ZMod E.q × ZMod E.q)
-    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
-    (hDeg : D.degE < E.q)
-    (hNonvanishing : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧
-       logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
-    (badChallengesNotEq E D P B m).card ≤ 18 * (D.degE + k) * E.q := by
-  have hBound :=
-    logDerivCheckFn_zero_set_bound E D P B m hDeg hNonvanishing
-  -- badChallengesNotEq ⊆ (validPairs E) ⊆ distinctPairs E.points ⊆ E.points ×ˢ E.points.
-  have hsub : badChallengesNotEq E D P B m ⊆
-      (E.points ×ˢ E.points).filter
-        (fun p => logDerivCheckFn E D P k B m p.1 p.2 = 0) := by
-    intro p hp
-    simp only [badChallengesNotEq, Finset.mem_filter] at hp
-    obtain ⟨hVP, hf⟩ := hp
-    have hDP : p ∈ distinctPairs E.points := (Finset.mem_filter.mp hVP).1
-    have hEE : p ∈ E.points ×ˢ E.points :=
-      (Finset.mem_filter.mp hDP).1
-    exact Finset.mem_filter.mpr ⟨hEE, hf⟩
-  exact le_trans (Finset.card_le_card hsub) hBound
+/-! The mechanized variety bound is derived in
+    `Divisor/ClearedPolyForm.lean` from two narrow axioms
+    (`logDerivCheckFn_fiber_count_bound`, `logDerivCheckFn_badA₀_bound`)
+    plus the `fiber_argument` infrastructure. `log_deriv_sz` below
+    lifts the resulting bound from `E.points ×ˢ E.points` to `validPairs E`. -/
 
 /-! ## Non-vanishing criterion (Remark in the paper)
 
