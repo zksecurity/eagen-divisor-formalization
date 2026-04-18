@@ -17,15 +17,35 @@ variable (E : ECSetup)
 /-! ## Theorem 1: Principal Divisor Characterization
     (Silverman, "Arithmetic of Elliptic Curves", Corollary 3.5)
 
-A divisor D = sum n_P * P in Div(E) is principal iff
-  (1) sum n_P = 0, and
-  (2) sum [n_P] P = O in the group law.
+A divisor `D = Σ n_P · (P)` on `E` is principal iff
+  (1) `Σ n_P = 0` (degree zero), and
+  (2) `Σ [n_P] · P = O` in the group law.
 
-This is a foundational result in the theory of elliptic curves.
+This is a foundational result in the theory of elliptic curves; it
+characterizes which formal ℤ-linear combinations of points arise as the
+divisor `div(f)` of some nonzero rational function `f ∈ F_q(E)×`.
 -/
-axiom principal_divisor_iff :
-  ∀ (coeffs : ECPoint E.q → ℤ) (hFinSupp : Set.Finite (Function.support coeffs)),
-    True
+
+/-- `IsPrincipal E coeffs` means the divisor `Σ coeffs(P) · (P)` on `E`
+    arises as `div(f)` for some nonzero `f ∈ F_q(E)×`.
+
+    Left opaque: the concrete definition would quantify over function-field
+    elements (not formalized here). The characterization below pins it down
+    to two concrete conditions on `coeffs`. -/
+opaque IsPrincipal (E : ECSetup) (coeffs : ECPoint E.q → ℤ) : Prop
+
+/-- **Principal divisor characterization** (Silverman Cor 3.5, restated).
+
+    A finitely-supported coefficient function `coeffs : ECPoint E.q → ℤ`
+    is the divisor of some nonzero rational function on `E` iff the
+    degree and group-sum conditions hold. -/
+axiom principal_divisor_iff
+    (coeffs : ECPoint E.q → ℤ)
+    (hFinSupp : Set.Finite (Function.support coeffs)) :
+    IsPrincipal E coeffs ↔
+      (∑ P ∈ hFinSupp.toFinset, coeffs P = 0) ∧
+      (ECPoint.weightedSum E hFinSupp.toFinset
+          (fun P => ECPoint.zsmul E (coeffs P) P) = 0)
 
 /-! ## Hasse-Weil Bound (Hasse 1936, Weil 1948)
 
@@ -40,67 +60,18 @@ axiom hasse_weil_upper :
 axiom hasse_weil_lower :
   E.q + 1 - 2 * Nat.sqrt E.q ≤ E.numPoints
 
-/-! ## Generalized Schwartz-Zippel on Varieties
-    (Dvir-Kollar-Lovett 2014, Claim 7.2;
-     Ellenberg-Oberlin-Tao 2010, Lemma A.3)
-
-For a projective variety V of dimension n and degree d:
-  #V(F_q) <= d * q^n
-
-Specialized to E x E (degree 9 surface):
-a nonzero function of bi-degree (N, N) restricted to E x E
-cuts out a curve of degree at most 18N,
-so has at most 18N * q rational zeros.
+/-! The specialized DKL / variety Schwartz-Zippel bound on E × E is
+    stated in `Divisor/LogDeriv.lean` as
+    `logDerivCheckFn_zero_set_bound`, because it references
+    `logDerivCheckFn` which is defined there. It replaces the earlier
+    generic `variety_sz_on_ExE` axiom whose `hBiDegree : True`
+    side-condition was a soundness hole.
 -/
-axiom variety_sz_on_ExE
-    (N : ℕ)
-    -- The count of F_q-zeros of a nonzero bi-degree (N,N) function
-    -- on E x E is at most 18 * N * E.q.
-    : ∀ (zeroCount : ℕ),
-      -- (Given that the function is nonzero on E x E and has bi-degree (N,N))
-      zeroCount ≤ 18 * N * E.q
 
-/-! ## Log-Derivative Kernel
-    (Standard result in function field theory; see
-     Stichtenoth, "Algebraic Function Fields and Codes", Ch. 4)
-
-In a function field F/K with K perfect:
-if t is in the kernel of the logarithmic derivative
-and deg_F(t) < char(K), then t is a constant.
-
-This is a well-established result about derivations on function fields,
-not specific to Bassa's work.
--/
-axiom log_deriv_kernel_classical
-    (D₁ D₂ : CoordRingElt E.q)
-    (hDeg₁ : D₁.degE < E.q)
-    (hDeg₂ : D₂.degE < E.q) :
-    -- If the log-derivatives of N(D1) and N(D2) agree for all lines,
-    -- then N(D1) = c * N(D2) for some constant c in F_q.
-    True
-
-/-! ## Norm Decomposition
-    (Standard result in field theory; see Lang, "Algebra", Ch. VI)
-
-For a finite field extension F_q(E)/F_q(L) of degree 3,
-the norm N(f) = product of conjugates of f.
-
-When L is a line through A0, A1, A2 on E:
-  N(D) = D(A0) * D(A1) * D(A2)
-
-The log-derivative of the norm decomposes as a sum:
-  L(N(D)) = sum_i D'(A_i)/D(A_i) * dx(A_i)/dz
-
-This is the product rule for logarithmic derivatives,
-combined with the chain rule.
--/
-axiom norm_decomposition
-    (D : CoordRingElt E.q)
-    (A₀ A₁ A₂ : ZMod E.q × ZMod E.q)
-    (L : Line E.q) :
-    -- The norm of D over the extension F_q(E)/F_q(L) evaluated at (L=0)
-    -- equals D(A0) * D(A1) * D(A2).
-    -- The log-derivative decomposes as a sum over the three points.
-    True
+/-! The classical log-derivative-kernel lemma and the norm-decomposition
+    identity (paper `lem:log-deriv-kernel` / `lem:log-deriv-norm`) are
+    stated in `Divisor/LogDeriv.lean` as `log_deriv_kernel_classical` /
+    `norm_decomposition`, because they reference the opaque wrappers
+    `normAtZero` / `logDerivNormAtZero` defined there. -/
 
 end Divisor
