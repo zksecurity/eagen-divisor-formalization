@@ -46,13 +46,17 @@ structure DlogWitness (q : ℕ) [Fact (Nat.Prime q)] where
   hRange : ∀ i, (scalars i).natAbs < degBound
 
 /-- The discrete-log relation `P = Σ [n_i] · B_i` in the group `E(F_q)`,
-    expressed via `ECPoint.weightedSum`. Matches paper `relDlog`. -/
+    expressed via `ECPoint.weightedSum`. Matches paper `relDlog`.
+    The sum iterates over `Fin wit.k`; basis points are looked up via
+    `Fin.cast hk.symm` (same convention as `extractorBases`). -/
 def dlogHolds (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) : Prop :=
   (ECPoint.affine stmt.target.1 stmt.target.2 : ECPoint E.q) =
-    ECPoint.weightedSum E (Finset.univ : Finset (Fin stmt.k))
-      (fun i => ECPoint.zsmul E (wit.scalars (hk ▸ i))
-                  (ECPoint.affine (stmt.bases i).1 (stmt.bases i).2))
+    ECPoint.weightedSum E (Finset.univ : Finset (Fin wit.k))
+      (fun i => ECPoint.zsmul E (wit.scalars i)
+                  (ECPoint.affine
+                    (stmt.bases (Fin.cast hk.symm i)).1
+                    (stmt.bases (Fin.cast hk.symm i)).2))
 
 /-! ## MA Protocol -/
 

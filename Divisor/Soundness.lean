@@ -185,7 +185,95 @@ axiom extractorSucceeds_of_logDerivCheck_identically_zero
       A₀ ∈ E.points → A₁ ∈ E.points →
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
         (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
-    extractorSucceeds E stmt msg d hkm
+    extractorSucceeds E stmt msg d hkm ∧
+    ECPoint.affine stmt.target.1 stmt.target.2 =
+      ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
+        (fun i => ECPoint.zsmul E
+                   (extractedScalars E stmt msg hkm i)
+                   (ECPoint.affine (extractorBases E stmt msg hkm i).1
+                                   (extractorBases E stmt msg hkm i).2))
+
+/-! ## Step 4: special-case extractor validity (unconditional).
+
+    When `-P ∈ {B_j}`, the `extractedScalars` definition returns
+    `(-1)` at `j* := min{j : B_j = -P}` and `0` at all other indices,
+    regardless of `msg.m`. We prove unconditionally that this satisfies
+    the dlog relation `target = Σ [n_i] · bases i` = `-bases j*` =
+    `-(-P)` = `P`. -/
+theorem extracted_scalars_valid_special
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hNegP : (negPIndexSet E stmt msg hkm).Nonempty) :
+    ECPoint.affine stmt.target.1 stmt.target.2 =
+      ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
+        (fun i => ECPoint.zsmul E
+                   (extractedScalars E stmt msg hkm i)
+                   (ECPoint.affine (extractorBases E stmt msg hkm i).1
+                                   (extractorBases E stmt msg hkm i).2)) := by
+  classical
+  set j_star : Fin msg.k :=
+    (negPIndexSet E stmt msg hkm).min' hNegP with hJStar_def
+  -- Base point at j_star is -P (by def of negPIndexSet).
+  have hBase : extractorBases E stmt msg hkm j_star =
+               (stmt.target.1, -stmt.target.2) := by
+    have hInSet : j_star ∈ negPIndexSet E stmt msg hkm :=
+      Finset.min'_mem _ _
+    simpa [negPIndexSet] using hInSet
+  -- Only the j_star term contributes.
+  rw [ECPoint.weightedSum_eq_single (E := E)
+       (s := (Finset.univ : Finset (Fin msg.k)))
+       (f := fun i => ECPoint.zsmul E
+                        (extractedScalars E stmt msg hkm i)
+                        (ECPoint.affine (extractorBases E stmt msg hkm i).1
+                                        (extractorBases E stmt msg hkm i).2))
+       (a := j_star) (Finset.mem_univ j_star)]
+  · have hExtracted : extractedScalars E stmt msg hkm j_star = -1 := by
+      show (if hne : (negPIndexSet E stmt msg hkm).Nonempty
+            then (if j_star = (negPIndexSet E stmt msg hkm).min' hne then (-1 : ℤ) else 0)
+            else _) = -1
+      rw [dif_pos hNegP]
+      simp [hJStar_def]
+    simp only [hExtracted, ECPoint.zsmul_neg_one, hBase]
+    show (ECPoint.affine stmt.target.1 stmt.target.2 : ECPoint E.q) =
+         ECPoint.neg (ECPoint.affine stmt.target.1 (-stmt.target.2))
+    simp [ECPoint.neg]
+  · intro i _ hi_ne
+    have hExtracted : extractedScalars E stmt msg hkm i = 0 := by
+      show (if hne : (negPIndexSet E stmt msg hkm).Nonempty
+            then (if i = (negPIndexSet E stmt msg hkm).min' hne
+                  then (-1 : ℤ) else 0)
+            else _) = 0
+      rw [dif_pos hNegP, if_neg]
+      exact fun h => hi_ne (h.trans hJStar_def.symm)
+    simp only [hExtracted, ECPoint.zsmul_zero]
+
+/-- **Step 4: extractor validity (both cases).** Whenever the
+    `extractorSucceeds_of_logDerivCheck_identically_zero` hypotheses
+    hold, the extracted witness satisfies `dlogHolds`.
+
+    * Special case (`-P ∈ {B_j}`): reduces to
+      `extracted_scalars_valid_special` — unconditional, no axioms.
+    * General case (`-P ∉ {B_j}`): reduces to the second conjunct of
+      the upgraded bridge axiom. -/
+theorem extracted_scalars_valid
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
+    (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points →
+      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
+    ECPoint.affine stmt.target.1 stmt.target.2 =
+      ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
+        (fun i => ECPoint.zsmul E
+                   (extractedScalars E stmt msg hkm i)
+                   (ECPoint.affine (extractorBases E stmt msg hkm i).1
+                                   (extractorBases E stmt msg hkm i).2)) := by
+  classical
+  by_cases hNegP : (negPIndexSet E stmt msg hkm).Nonempty
+  · exact extracted_scalars_valid_special E stmt msg hkm hNegP
+  · exact (extractorSucceeds_of_logDerivCheck_identically_zero
+            E stmt msg d hDeg hd hkm hAdm hAllZero).2
 
 /-! ## Theorem 6: Extractable MA protocol -/
 
@@ -268,9 +356,9 @@ theorem ma_extractable
       · -- Bridging axiom gives `extractorSucceeds`, contradicting `hSucc`.
         exfalso
         apply hSucc
-        exact extractorSucceeds_of_logDerivCheck_identically_zero E
+        exact (extractorSucceeds_of_logDerivCheck_identically_zero E
           stmt msg d hDeg hd hkm hAdm
-          (fun A₀ A₁ hA₀ hA₁ => hNV A₀ A₁ hA₀ hA₁)
+          (fun A₀ A₁ hA₀ hA₁ => hNV A₀ A₁ hA₀ hA₁)).1
       · -- Not in admSet: no challenge accepts; accept set is empty.
         have hEmpty : acceptSet = ∅ := by
           apply Finset.eq_empty_of_forall_not_mem

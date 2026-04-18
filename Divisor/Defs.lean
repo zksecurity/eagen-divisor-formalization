@@ -220,6 +220,23 @@ noncomputable def ECPoint.zsmul (E : ECSetup) (n : ℤ) (p : ECPoint E.q) :
   | Int.ofNat m => ECPoint.nsmul E m p
   | Int.negSucc m => -(ECPoint.nsmul E (m + 1) p)
 
+@[simp] theorem ECPoint.zsmul_zero (E : ECSetup) (p : ECPoint E.q) :
+    ECPoint.zsmul E 0 p = 0 := rfl
+
+@[simp] theorem ECPoint.zsmul_one (E : ECSetup) (p : ECPoint E.q) :
+    ECPoint.zsmul E 1 p = p := by
+  show ECPoint.nsmul E 1 p = p
+  show ECPoint.add E p (ECPoint.nsmul E 0 p) = p
+  show ECPoint.add E p 0 = p
+  exact ECPoint.add_zero_curve E p
+
+@[simp] theorem ECPoint.zsmul_neg_one (E : ECSetup) (p : ECPoint E.q) :
+    ECPoint.zsmul E (-1) p = -p := by
+  show -(ECPoint.nsmul E 1 p) = -p
+  show -(ECPoint.add E p (ECPoint.nsmul E 0 p)) = -p
+  show -(ECPoint.add E p 0) = -p
+  rw [ECPoint.add_zero_curve]
+
 /-- Group-sum of a family of `(coefficient, point)` weighted terms over a
     `Finset`. Implemented via `Finset.fold` of `ECPoint.add E`; independence
     of iteration order is supplied by the `Std.Commutative` / `Std.Associative`
@@ -227,6 +244,60 @@ noncomputable def ECPoint.zsmul (E : ECSetup) (n : ℤ) (p : ECPoint E.q) :
 noncomputable def ECPoint.weightedSum (E : ECSetup) {α : Type*}
     (s : Finset α) (f : α → ECPoint E.q) : ECPoint E.q :=
   s.fold (ECPoint.add E) 0 f
+
+@[simp] theorem ECPoint.weightedSum_empty (E : ECSetup) {α : Type*}
+    (f : α → ECPoint E.q) : ECPoint.weightedSum E (∅ : Finset α) f = 0 := rfl
+
+theorem ECPoint.weightedSum_insert (E : ECSetup) {α : Type*} [DecidableEq α]
+    {s : Finset α} {a : α} (ha : a ∉ s) (f : α → ECPoint E.q) :
+    ECPoint.weightedSum E (insert a s) f =
+      ECPoint.add E (f a) (ECPoint.weightedSum E s f) :=
+  Finset.fold_insert ha
+
+theorem ECPoint.weightedSum_congr (E : ECSetup) {α : Type*}
+    {s : Finset α} {f g : α → ECPoint E.q}
+    (h : ∀ a ∈ s, f a = g a) :
+    ECPoint.weightedSum E s f = ECPoint.weightedSum E s g :=
+  Finset.fold_congr (fun a ha => h a ha)
+
+theorem ECPoint.weightedSum_zero_of_forall_zero (E : ECSetup) {α : Type*}
+    [DecidableEq α] {s : Finset α} {f : α → ECPoint E.q}
+    (h : ∀ a ∈ s, f a = 0) :
+    ECPoint.weightedSum E s f = 0 := by
+  induction s using Finset.induction_on with
+  | empty => rfl
+  | @insert b s' hbnmem ih =>
+      rw [ECPoint.weightedSum_insert E hbnmem]
+      rw [h b (Finset.mem_insert_self b s'), ECPoint.zero_add_curve]
+      exact ih (fun a ha => h a (Finset.mem_insert_of_mem ha))
+
+/-- If `f` is zero except at one point `a` of `s`, the weighted sum
+    equals `f a`. -/
+theorem ECPoint.weightedSum_eq_single (E : ECSetup) {α : Type*} [DecidableEq α]
+    {s : Finset α} {f : α → ECPoint E.q} {a : α} (ha : a ∈ s)
+    (hOther : ∀ b ∈ s, b ≠ a → f b = 0) :
+    ECPoint.weightedSum E s f = f a := by
+  induction s using Finset.induction_on with
+  | empty => exact absurd ha (Finset.not_mem_empty a)
+  | @insert b s' hbnmem ih =>
+      rw [ECPoint.weightedSum_insert E hbnmem]
+      by_cases hab : b = a
+      · -- b = a: sum over s' is 0 (by hOther applied to every member of s')
+        subst hab
+        have hs' : ECPoint.weightedSum E s' f = 0 := by
+          apply ECPoint.weightedSum_zero_of_forall_zero E
+          intro c hc
+          have hc_insert : c ∈ insert b s' := Finset.mem_insert_of_mem hc
+          have hne : c ≠ b := fun heq => hbnmem (heq ▸ hc)
+          exact hOther c hc_insert hne
+        rw [hs', ECPoint.add_zero_curve]
+      · -- b ≠ a, so f b = 0; recurse on s'.
+        have hb_zero : f b = 0 := hOther b (Finset.mem_insert_self b s') hab
+        rw [hb_zero, ECPoint.zero_add_curve]
+        have ha_s' : a ∈ s' := by
+          rw [Finset.mem_insert] at ha
+          exact ha.resolve_left (Ne.symm hab)
+        exact ih ha_s' (fun c hc hne => hOther c (Finset.mem_insert_of_mem hc) hne)
 
 /-! ## Derived group-law lemmas -/
 
