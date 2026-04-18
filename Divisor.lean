@@ -4,6 +4,8 @@ import Divisor.SlopeDist
 import Divisor.SupportDisjoint
 import Divisor.NormVanish
 import Divisor.BassaMonic
+import Divisor.CubicIntersection
 import Divisor.LogDeriv
+import Divisor.ClearedPolyForm
 import Divisor.Protocol
 import Divisor.Soundness
