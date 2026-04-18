@@ -163,20 +163,18 @@ noncomputable def eventBadRange (stmt : DlogStatement E.q)
     ensuring `D ≠ 0` via `stmt.admSet_excludes_zero`);
     `d < q` (needed for the degE-to-integer lift to be injective).
 
-    **Scope note on `-P ∈ {B_j}`**: paper `\protMA`'s extractor has an
-    unconditional `-P ∈ {B_j}` branch returning `n_{j*} = -1 ∈ F_p`
-    without reading the message. The current Lean `extractedScalars`
-    does not include this branch because `DlogWitness.scalars` is
-    `Fin k → ℕ` (no natural representation of `-1`). Adding the
-    special case requires changing the witness type to `Fin k → ℤ`
-    with an `|·| < degBound` range constraint, which cascades through
-    the surrounding signatures. Flagged as a residual task for a
-    future formalization pass. Until then, the `-P ∈ {B_j}` scenario
-    falls into the `underflow` case of `extractorSucceeds` and fails
-    the extractor; correspondingly, a malicious prover exploiting
-    `obs:neg-P-collapse` must have `(1, 0) ∈ admSet` (since they use
-    `a = 1`, `b = 0`), which an `admSet` choice like Parker's rejects.
-    -/
+    **The axiom is now sound.** Steps 1+2 of the remediation added the
+    paper's `-P ∈ {B_j}` special-case branch to `extractedScalars` and
+    changed `DlogWitness.scalars` to `ℤ`. As a result, when the
+    hypotheses hold (including `hAllZero`), the `-P ∈ {B_j}` case is
+    handled by the special-case branch (unconditionally returning
+    `-1` at `j*`), and `extractorSucceeds` holds. The previous
+    counterexample `Counterexample.lean` no longer type-checks.
+
+    **The conjunction with dlogHolds** (second conjunct of conclusion)
+    was added by Step 4 — it strengthens the axiom to directly assert
+    the dlog relation `target = Σ [n_i]·B_i` satisfied by the extracted
+    witness, matching paper `thm:ma`'s knowledge-soundness guarantee. -/
 axiom extractorSucceeds_of_logDerivCheck_identically_zero
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
