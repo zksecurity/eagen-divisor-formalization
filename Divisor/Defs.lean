@@ -228,4 +228,50 @@ noncomputable def ECPoint.weightedSum (E : ECSetup) {α : Type*}
     (s : Finset α) (f : α → ECPoint E.q) : ECPoint E.q :=
   s.fold (ECPoint.add E) 0 f
 
+/-! ## Derived group-law lemmas -/
+
+@[simp] theorem ECPoint.neg_neg (p : ECPoint q) : -(-p) = p := by
+  cases p with
+  | infinity => rfl
+  | affine x y =>
+      show (ECPoint.neg (ECPoint.neg (.affine x y))) = .affine x y
+      simp [ECPoint.neg, _root_.neg_neg]
+
+@[simp] theorem ECPoint.neg_infinity : (-(.infinity : ECPoint q)) = .infinity := rfl
+
+theorem ECPoint.neg_inj {p₁ p₂ : ECPoint q} (h : -p₁ = -p₂) : p₁ = p₂ := by
+  have := congrArg (fun r : ECPoint q => -r) h
+  simpa using this
+
+/-- Left cancellation for `ECPoint.add E`. -/
+theorem ECPoint.add_left_cancel (E : ECSetup) {p a b : ECPoint E.q}
+    (h : ECPoint.add E p a = ECPoint.add E p b) : a = b := by
+  have h1 : ECPoint.add E (-p) (ECPoint.add E p a)
+          = ECPoint.add E (-p) (ECPoint.add E p b) := by rw [h]
+  rw [← ECPoint.add_assoc, ← ECPoint.add_assoc,
+      ECPoint.neg_add_cancel, ECPoint.zero_add_curve,
+      ECPoint.zero_add_curve] at h1
+  exact h1
+
+/-- Relate `thirdPoint` to the group law: when the third point is affine,
+    `thirdPoint E A₀ A₁ = -(A₀ + A₁)` in the `ECPoint E.q` group. -/
+theorem thirdPoint_eq_neg_add (E : ECSetup) (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hNotInf : thirdPoint E A₀ A₁ ≠ ECPoint.infinity) :
+    thirdPoint E A₀ A₁
+      = -(ECPoint.add E (.affine A₀.1 A₀.2) (.affine A₁.1 A₁.2)) := by
+  rcases A₀ with ⟨x₀, y₀⟩
+  rcases A₁ with ⟨x₁, y₁⟩
+  simp only [Prod.fst, Prod.snd]
+  show thirdPoint E (x₀, y₀) (x₁, y₁) = _
+  have hadd : ECPoint.add E (.affine x₀ y₀) (.affine x₁ y₁)
+      = match thirdPoint E (x₀, y₀) (x₁, y₁) with
+        | .infinity => .infinity
+        | .affine x₂ y₂ => .affine x₂ (-y₂) := rfl
+  cases h : thirdPoint E (x₀, y₀) (x₁, y₁) with
+  | infinity => exact absurd h hNotInf
+  | affine x₂ y₂ =>
+      rw [hadd, h]
+      show (.affine x₂ y₂ : ECPoint E.q) = ECPoint.neg (.affine x₂ (-y₂))
+      simp [ECPoint.neg]
+
 end Divisor
