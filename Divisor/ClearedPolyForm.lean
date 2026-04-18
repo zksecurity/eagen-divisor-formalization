@@ -364,4 +364,14 @@ theorem lamDenPoly_natDegree_le (A₀ : ZMod E.q × ZMod E.q) :
         (map_sub C X (C A₀.1)).symm]
   exact natDegree_C _
 
+theorem lineEvalNumAt_natDegree_le (A₀ pt : ZMod E.q × ZMod E.q) :
+    (lineEvalNumAt (E := E) A₀ pt).natDegree ≤ 1 := by
+  unfold lineEvalNumAt
+  refine (natDegree_sub_le _ _).trans (max_le ?_ ?_)
+  · refine natDegree_mul_le.trans ?_
+    rw [embedScalar_natDegree_le, lamDenPoly_natDegree_le]; omega
+  · refine natDegree_mul_le.trans ?_
+    rw [embedScalar_natDegree_le, Nat.zero_add]
+    exact lamNumPoly_natDegree_le E A₀
+
 end Divisor
