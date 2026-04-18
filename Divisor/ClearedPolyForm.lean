@@ -302,4 +302,66 @@ theorem bivEval_dxdzDenA₁Scaled_eq (A₀ A₁ : ZMod E.q × ZMod E.q)
   field_simp
   ring
 
+/-! ## Derivative-numerator polynomials `num(A_i) = D'.a(A_i.1) - D'.b(A_i.1) · A_i.2`.
+
+    Paper `sections/ip.tex:240`. Mirror of `DAtA₀Poly` / `DAtA₁Poly` with
+    `D.a.derivative` / `D.b.derivative` in place of `D.a` / `D.b`. -/
+
+/-- `D'(A₀)` as a constant in `(ZMod E.q)[X][X]`. -/
+noncomputable def DDerivAtA₀Poly (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  embedScalar (E := E)
+    ((Polynomial.derivative D.a).eval A₀.1
+      - (Polynomial.derivative D.b).eval A₀.1 * A₀.2)
+
+/-- `D'(A₁)` = `embed(a') - embed(b') · outerY`. -/
+noncomputable def DDerivAtA₁Poly (D : CoordRingElt E.q) : (ZMod E.q)[X][X] :=
+  embedInnerPoly (E := E) (Polynomial.derivative D.a)
+  - embedInnerPoly (E := E) (Polynomial.derivative D.b) * outerA₁y (E := E)
+
+@[simp] theorem bivEval_DDerivAtA₀Poly (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval (DDerivAtA₀Poly (E := E) D A₀) A₁ =
+      (Polynomial.derivative D.a).eval A₀.1
+        - (Polynomial.derivative D.b).eval A₀.1 * A₀.2 := by
+  simp [DDerivAtA₀Poly]
+
+@[simp] theorem bivEval_DDerivAtA₁Poly (D : CoordRingElt E.q)
+    (A₁ : ZMod E.q × ZMod E.q) :
+    bivEval (DDerivAtA₁Poly (E := E) D) A₁ =
+      (Polynomial.derivative D.a).eval A₁.1
+        - (Polynomial.derivative D.b).eval A₁.1 * A₁.2 := by
+  simp [DDerivAtA₁Poly, bivEval_sub, bivEval_mul]
+
+/-! ## Degree bookkeeping -/
+
+theorem embedScalar_natDegree_le (c : ZMod E.q) :
+    (embedScalar (E := E) c).natDegree = 0 := by
+  simp [embedScalar]
+
+theorem embedInnerPoly_natDegree_le (p : (ZMod E.q)[X]) :
+    (embedInnerPoly (E := E) p).natDegree = 0 := by
+  simp [embedInnerPoly]
+
+@[simp] theorem innerA₁x_natDegree :
+    (innerA₁x (E := E)).natDegree = 0 := by
+  simp [innerA₁x]
+
+@[simp] theorem outerA₁y_natDegree :
+    (outerA₁y (E := E)).natDegree = 1 := by
+  simp [outerA₁y]
+
+theorem lamNumPoly_natDegree_le (A₀ : ZMod E.q × ZMod E.q) :
+    (lamNumPoly (E := E) A₀).natDegree ≤ 1 := by
+  unfold lamNumPoly
+  refine (natDegree_sub_le _ _).trans ?_
+  simp [outerA₁y, embedScalar_natDegree_le]
+
+theorem lamDenPoly_natDegree_le (A₀ : ZMod E.q × ZMod E.q) :
+    (lamDenPoly (E := E) A₀).natDegree = 0 := by
+  unfold lamDenPoly innerA₁x embedScalar
+  rw [show (C X - C (C A₀.1) : (ZMod E.q)[X][X]) = C (X - C A₀.1) from
+        (map_sub C X (C A₀.1)).symm]
+  exact natDegree_C _
+
 end Divisor
