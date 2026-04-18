@@ -91,6 +91,37 @@ noncomputable def polyG
     (Finset.univ.prod (fun k => ellP E (Q k) A₀ A₁)) *
     ((Finset.univ.erase j).prod (fun j' => ellP E (R j') A₀ A₁))))
 
+/-! ## Denominator-clearing (algebraic)
+
+The core algebraic step in paper `cor:log-derivative`'s proof:
+`Σ c_i / p_i = 0` is equivalent to `Σ c_i · Π_{j≠i} p_j = 0`, under the
+assumption that every `p_i ≠ 0`. Applied in the soundness argument to
+clear the denominators `L(Q_k)` and `L(R_j)` in the log-derivative
+identity, turning the identity into a polynomial equation that can be
+bounded via variety SZ. -/
+
+theorem sum_div_iff_sum_mul_prod_erase {α : Type*} [DecidableEq α]
+    {K : Type*} [Field K] (s : Finset α) (p c : α → K)
+    (hNonzero : ∀ i ∈ s, p i ≠ 0) :
+    (∑ i ∈ s, c i / p i) = 0 ↔
+    (∑ i ∈ s, c i * ∏ j ∈ s.erase i, p j) = 0 := by
+  have hProd : ∏ i ∈ s, p i ≠ 0 := Finset.prod_ne_zero_iff.mpr hNonzero
+  have hEq : (∑ i ∈ s, c i * ∏ j ∈ s.erase i, p j)
+           = (∏ i ∈ s, p i) * ∑ i ∈ s, c i / p i := by
+    rw [Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intro i hi
+    rw [← Finset.mul_prod_erase s p hi]
+    have hpi : p i ≠ 0 := hNonzero i hi
+    field_simp
+    ring
+  constructor
+  · intro h
+    rw [hEq, h, mul_zero]
+  · intro h
+    rw [hEq] at h
+    exact (mul_eq_zero.mp h).resolve_left hProd
+
 /-! ## Function-field wrappers
 
 Thin wrappers naming the field-theoretic objects that appear in the paper's
