@@ -461,4 +461,143 @@ noncomputable def DDerivAtA₂Scaled (D : CoordRingElt E.q)
     (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
   DDerivAPartAtA₂Scaled (E := E) D A₀ - DDerivBPartAtA₂Scaled (E := E) D A₀
 
+/-! ## Full `clearedFiberPoly` assembly
+
+    With uniform scaling `N := D.degE + k + 6`, the polynomial
+    `clearedFiberPoly A₀` satisfies (on the non-vertical cone where
+    `A₀.1 ≠ A₁.1`):
+    ```
+    bivEval (clearedFiberPoly ...) A₁ =
+      (A₁.1 - A₀.1)^N · logDerivCheckFnCleared E D P k B m A₀ A₁.
+    ```
+
+    Structure — six terms, each scaled to `lamDen^N`:
+    * LHS-i terms (Σ num(A_i)·2y_i·products), for `i ∈ {0, 1, 2}`.
+    * RHS `-1/L(-P)`-term → `+D_{all} · dxdz_all · ∏L(B_j)`.
+    * RHS `Σ m_j / L(B_j)`-sum → `+D_{all} · dxdz_all · L(-P) · Σ_j m_j · ∏_{j'≠j} L(B_{j'})`.
+
+    (The `-` in `logDerivCheckFn = lhs - rhs` + the `-1` / `-m_j`
+    prefactors in `rhs` combine to make the RHS contribution add with a
+    `+` sign after multiplication by `denom`.)
+-/
+
+/-- Line-product `L(-P) · ∏_j L(B_j)`, polynomial form. Scales by
+    `lamDen^(k+1)`. -/
+noncomputable def linesProductScaled
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  lineEvalNumAt (E := E) A₀ (P.1, -P.2)
+    * ∏ j : Fin k, lineEvalNumAt (E := E) A₀ (B j)
+
+/-- Line-product with the `L(-P)` factor replaced by `1` (for the
+    `-1/L(-P) · denom` term). Scales by `lamDen^k`. -/
+noncomputable def linesProductNoNegPScaled
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  ∏ j : Fin k, lineEvalNumAt (E := E) A₀ (B j)
+
+/-- Line-product with the `L(B_j₀)` factor replaced by `1` (for the
+    `m_{j₀}/L(B_{j₀}) · denom` term). Scales by `lamDen^k`. -/
+noncomputable def linesProductSkipBjScaled
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) (j₀ : Fin k) : (ZMod E.q)[X][X] :=
+  lineEvalNumAt (E := E) A₀ (P.1, -P.2)
+    * ∏ j ∈ (Finset.univ (α := Fin k)).erase j₀,
+        lineEvalNumAt (E := E) A₀ (B j)
+
+/-- `dxdz_den(A₀) · dxdz_den(A₁) · dxdz_den(A₂) · lamDen^6` product. -/
+noncomputable def dxdzAllScaled (A₀ : ZMod E.q × ZMod E.q) :
+    (ZMod E.q)[X][X] :=
+  dxdzDenA₀Scaled (E := E) A₀
+    * dxdzDenA₁Scaled (E := E) A₀
+    * dxdzDenA₂Scaled (E := E) A₀
+
+/-- `D(A₀) · D(A₁) · D(A₂) · lamDen^D.degE` product. -/
+noncomputable def DAllScaled (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  DAtA₀Poly (E := E) D A₀ * DAtA₁Poly (E := E) D
+    * DAtA₂Scaled (E := E) D A₀
+
+/-- LHS i=0 term: `num(A₀)·2·A₀.2·D(A₁)·D(A₂)·dxdz_den(A₁)·dxdz_den(A₂) · L(-P) · ∏L(B_j)`,
+    scaled polynomial (scales to `lamDen^(D.degE+k+6)`). -/
+noncomputable def lhsTerm0Scaled (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  DDerivAtA₀Poly (E := E) D A₀
+    * embedScalar (E := E) (2 * A₀.2)
+    * DAtA₁Poly (E := E) D
+    * DAtA₂Scaled (E := E) D A₀
+    * dxdzDenA₁Scaled (E := E) A₀
+    * dxdzDenA₂Scaled (E := E) A₀
+    * linesProductScaled (E := E) P k B A₀
+
+/-- LHS i=1 term (symmetric to `lhsTerm0Scaled` with roles of A₀, A₁ swapped
+    for the `num`, `2·y` factors). -/
+noncomputable def lhsTerm1Scaled (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  DDerivAtA₁Poly (E := E) D
+    * (embedScalar (E := E) 2 * outerA₁y (E := E))
+    * DAtA₀Poly (E := E) D A₀
+    * DAtA₂Scaled (E := E) D A₀
+    * dxdzDenA₀Scaled (E := E) A₀
+    * dxdzDenA₂Scaled (E := E) A₀
+    * linesProductScaled (E := E) P k B A₀
+
+/-- LHS i=2 term. `num(A₂)·2·y_2` uses `DDerivAtA₂Scaled` (`lamDen^D.degE`)
+    and `2·y₂Scaled` (`lamDen^3`). -/
+noncomputable def lhsTerm2Scaled (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  DDerivAtA₂Scaled (E := E) D A₀
+    * (embedScalar (E := E) 2 * y₂Scaled (E := E) A₀)
+    * DAtA₀Poly (E := E) D A₀
+    * DAtA₁Poly (E := E) D
+    * dxdzDenA₀Scaled (E := E) A₀
+    * dxdzDenA₁Scaled (E := E) A₀
+    * linesProductScaled (E := E) P k B A₀
+
+/-- RHS `-1/L(-P)` term (signed): `+D_{all} · dxdz_all · ∏L(B_j)`.
+    The `+` sign is because `logDerivCheckFn = lhs - rhs` and the RHS
+    itself has `-1/L(-P)`. -/
+noncomputable def rhsTermNegPScaled (D : CoordRingElt E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  DAllScaled (E := E) D A₀
+    * dxdzAllScaled (E := E) A₀
+    * linesProductNoNegPScaled (E := E) k B A₀
+
+/-- RHS `Σ m_j / L(B_j)` sum (signed): `+Σ_j m_j · D_{all} · dxdz_all · L(-P) · ∏_{j'≠j} L(B_{j'})`. -/
+noncomputable def rhsSumScaled (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (m : Fin k → ZMod E.q) (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  ∑ j : Fin k,
+    embedScalar (E := E) (m j)
+      * DAllScaled (E := E) D A₀
+      * dxdzAllScaled (E := E) A₀
+      * linesProductSkipBjScaled (E := E) P k B A₀ j
+
+/-- **The full cleared-fiber polynomial** (Phase 1.7 assembly).
+
+    Satisfies (on the non-vertical cone):
+    `bivEval (clearedFiberPoly ...) A₁ =
+       (A₁.1 - A₀.1)^(D.degE + k + 6) · logDerivCheckFnCleared E D P k B m A₀ A₁`.
+
+    Equal (by definition of `logDerivCheckFn = lhs - rhs` multiplied by
+    `logDerivCheckFnDenom`) to
+    `lhsTerm0 + lhsTerm1 + lhsTerm2 - rhsTermNegP - rhsSum`.
+
+    Note sign: `logDerivCheckFn = lhs - rhs = lhs - (-1/L(-P)) - Σ(-m_j/L(B_j))
+    = lhs + 1/L(-P) + Σ m_j/L(B_j)`. So multiplying by the positive
+    `logDerivCheckFnDenom`:
+    `lhs·denom + denom/L(-P) + Σ_j m_j·denom/L(B_j)`. -/
+noncomputable def clearedFiberPoly (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (m : Fin k → ZMod E.q) (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  lhsTerm0Scaled (E := E) D P k B A₀
+    + lhsTerm1Scaled (E := E) D P k B A₀
+    + lhsTerm2Scaled (E := E) D P k B A₀
+    + rhsTermNegPScaled (E := E) D k B A₀
+    + rhsSumScaled (E := E) D P k B m A₀
+
 end Divisor
