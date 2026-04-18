@@ -277,50 +277,40 @@ theorem extracted_scalars_valid
 
 /-! ## Theorem 6: Extractable MA protocol -/
 
-/-- **Theorem 6 (MA extractability) — disjunctive form.**
+/-- **Theorem 6 (MA extractability) — upgraded form with valid witness.**
 
-    Knowledge soundness of the MA protocol: for every first-round
-    message, either
+    Knowledge soundness of the MA protocol. For every first-round message,
+    one of the two branches holds:
 
-    * the full-grouping extractor succeeds outright (left disjunct),
-      and the caller reads a valid witness out of it; or
+    * **Witness branch**: there exists a witness `wit` satisfying the
+      dlog relation `dlogHolds E stmt wit hkm` such that the extractor
+      returns `some wit`; or
 
-    * the set of accepting challenges in `validPairs` has size at most
-      `18 * (d + stmt.k) * E.q`, i.e. ≈ `18(d+k)/q` relative to the
-      `≈ q²` valid challenges — so "accept without extract" is rare.
+    * **Bound branch**: the set of accepting challenges in `validPairs`
+      has cardinality at most `18 · (d + stmt.k) · E.q`, i.e.
+      ≈ `18(d+k)/q` relative to the ≈ `q²` valid challenges.
 
-    The previous formulation bundled a `hExtHonest` hypothesis (that
-    acceptance off the NotEq bad set ⇒ extractor succeeds) which hid
-    the protocol's content behind a prover-supplied assumption and made
-    one of the bound conjuncts vacuous (acceptance always forces
-    `logDerivCheckFn = 0`, which *is* the NotEq bad set).
-
-    Proof: case-split on whether `logDerivCheckFn` vanishes identically
-    on `E × E`. If not, `log_deriv_sz` (Corollary 1) bounds the NotEq
-    bad set, and the accept set is contained in it. If yes, then either
-    the verifier's `D(-P) = 0` check fails (in which case no challenge
-    accepts, so the accept set is empty), or it passes and the
-    partial-fraction uniqueness criterion forces the extractor to
-    succeed (via the narrow bridging axiom above). -/
+    Upgrade over the previous `isSome`-only formulation: the witness is
+    now explicitly provided and certified to satisfy the dlog relation
+    (via `extracted_scalars_valid`), matching paper `thm:ma`'s
+    knowledge-soundness guarantee. -/
 theorem ma_extractable
     (stmt : DlogStatement E.q) (d : ℕ) (hd : d < E.q)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ d)
     (hkm : stmt.k = msg.k) :
-    (maExtractor E stmt msg d hd hkm).isSome ∨
+    (∃ wit : DlogWitness E.q,
+        maExtractor E stmt msg d hd hkm = some wit
+        ∧ dlogHolds E stmt wit) ∨
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ 18 * (d + stmt.k) * E.q := by
-  -- Case on whether the extractor succeeds.
-  by_cases hSucc : extractorSucceeds E stmt msg d hkm
-  · -- Left disjunct: extractor is `some _`.
-    left
-    unfold maExtractor
-    rw [dif_pos hSucc]
-    rfl
-  · -- Right disjunct: bound the accepting-challenges set.
+  classical
+  -- Case on whether `logDerivCheckFn` is identically zero on `E × E`.
+  by_cases hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧
+     logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+       (fun i => msg.m (hkm ▸ i)) A₀ A₁ ≠ 0
+  · -- Nonvanishing: `log_deriv_sz` bounds the NotEq bad set (→ bound branch).
     right
-    -- The accept set is a subset of the NotEq bad set (acceptance forces
-    -- `logDerivCheckFn = 0`).
     set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
       (validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hAS
@@ -333,40 +323,53 @@ theorem ma_extractable
       simp only [hBS, badChallengesNotEq, Finset.mem_filter]
       exact ⟨hp.1, hp.2.2.2⟩
     have hCardLe : acceptSet.card ≤ badSet.card := Finset.card_le_card hSub
-    -- Case on whether `logDerivCheckFn` is identically zero on `E × E`.
-    by_cases hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧
-       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-         (fun i => msg.m (hkm ▸ i)) A₀ A₁ ≠ 0
-    · -- Nonvanishing: `log_deriv_sz` bounds the NotEq bad set.
-      have hDegLt : msg.toD.degE < E.q := lt_of_le_of_lt hDeg hd
-      have hBound :=
-        log_deriv_sz E msg.toD stmt.target stmt.bases
-          (fun i => msg.m (hkm ▸ i)) hDegLt hNV
-      have hMono : 18 * (msg.toD.degE + stmt.k) * E.q ≤ 18 * (d + stmt.k) * E.q := by
-        apply Nat.mul_le_mul_right
-        apply Nat.mul_le_mul_left
-        exact Nat.add_le_add_right hDeg _
-      exact le_trans hCardLe (le_trans hBound hMono)
-    · -- Identically zero on `E × E`. Push to "identically zero everywhere".
-      push_neg at hNV
-      -- Sub-case on whether the prover's (polyA, polyB) passes the
-      -- admissible-set check at least once (equivalently, is in admSet
-      -- at all, since it's a constant predicate on the message).
-      by_cases hAdm : stmt.admSet (msg.polyA, msg.polyB)
-      · -- Bridging axiom gives `extractorSucceeds`, contradicting `hSucc`.
-        exfalso
-        apply hSucc
-        exact (extractorSucceeds_of_logDerivCheck_identically_zero E
-          stmt msg d hDeg hd hkm hAdm
-          (fun A₀ A₁ hA₀ hA₁ => hNV A₀ A₁ hA₀ hA₁)).1
-      · -- Not in admSet: no challenge accepts; accept set is empty.
-        have hEmpty : acceptSet = ∅ := by
-          apply Finset.eq_empty_of_forall_not_mem
-          intro p hp
-          simp only [hAS, Finset.mem_filter] at hp
-          exact hAdm hp.2.2.1
-        rw [hEmpty]
-        simp
+    have hDegLt : msg.toD.degE < E.q := lt_of_le_of_lt hDeg hd
+    have hBound :=
+      log_deriv_sz E msg.toD stmt.target stmt.bases
+        (fun i => msg.m (hkm ▸ i)) hDegLt hNV
+    have hMono : 18 * (msg.toD.degE + stmt.k) * E.q ≤ 18 * (d + stmt.k) * E.q := by
+      apply Nat.mul_le_mul_right
+      apply Nat.mul_le_mul_left
+      exact Nat.add_le_add_right hDeg _
+    exact le_trans hCardLe (le_trans hBound hMono)
+  · -- Identically zero on `E × E`. Sub-case on admSet membership.
+    push_neg at hNV
+    by_cases hAdm : stmt.admSet (msg.polyA, msg.polyB)
+    · -- admSet holds: bridge axiom gives extractor succeeds AND dlog relation.
+      left
+      obtain ⟨hSucc, hRelation⟩ :=
+        extractorSucceeds_of_logDerivCheck_identically_zero E stmt msg d
+          hDeg hd hkm hAdm (fun A₀ A₁ hA₀ hA₁ => hNV A₀ A₁ hA₀ hA₁)
+      let wit : DlogWitness E.q :=
+        ⟨msg.k, extractedScalars E stmt msg hkm, d, hSucc⟩
+      have hWit_k : wit.k = msg.k := rfl
+      refine ⟨wit, ?_, ?_⟩
+      · -- maExtractor = some wit
+        show (if h : extractorSucceeds E stmt msg d hkm
+              then some (⟨msg.k, extractedScalars E stmt msg hkm, d, h⟩ : DlogWitness E.q)
+              else none) = _
+        rw [dif_pos hSucc]
+      · -- dlogHolds wraps ∃ hk, ... — supply hkm (wit.k = msg.k reducibly).
+        refine ⟨hkm, ?_⟩
+        show (ECPoint.affine stmt.target.1 stmt.target.2 : ECPoint E.q) =
+          ECPoint.weightedSum E (Finset.univ : Finset (Fin wit.k))
+            (fun i => ECPoint.zsmul E (wit.scalars i)
+              (ECPoint.affine
+                (stmt.bases (Fin.cast hkm.symm i)).1
+                (stmt.bases (Fin.cast hkm.symm i)).2))
+        convert hRelation using 1
+    · -- admSet fails: no challenge accepts; bound is 0 ≤ 18(d+k)·q.
+      right
+      set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+        (validPairs E).filter
+          (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hAS
+      have hEmpty : acceptSet = ∅ := by
+        apply Finset.eq_empty_of_forall_not_mem
+        intro p hp
+        simp only [hAS, Finset.mem_filter] at hp
+        exact hAdm hp.2.2.1
+      rw [hEmpty]
+      simp
 
 /-! ## Completeness -/
 
@@ -411,7 +414,7 @@ axiom weil_reciprocity_honest
     Hence rejection forces the challenge into the bad set. -/
 theorem ma_completeness
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (hValid : dlogHolds E stmt wit hk)
+    (hk : stmt.k = wit.k) (hValid : dlogHolds E stmt wit)
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (hDeg : msg.toD.degE ≤ wit.degBound)
     (hDegK : msg.toD.degE ≤ stmt.k)
@@ -451,8 +454,10 @@ theorem ip_knowledge_sound
     (stmt : DlogStatement E.q) (d : ℕ) (hd : d < E.q)
     (msg1 : MAProverMsg E.q) (hDeg : msg1.toD.degE ≤ d)
     (hkm : stmt.k = msg1.k) :
-    -- (1) Same knowledge guarantee as MA.
-    ((maExtractor E stmt msg1 d hd hkm).isSome ∨
+    -- (1) Same knowledge guarantee as MA (valid witness or small accept set).
+    ((∃ wit : DlogWitness E.q,
+         maExtractor E stmt msg1 d hd hkm = some wit
+         ∧ dlogHolds E stmt wit) ∨
      ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
       ≤ 18 * (d + stmt.k) * E.q)
