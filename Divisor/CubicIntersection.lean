@@ -308,4 +308,113 @@ theorem card_zeros_on_E_le
       ≤ 2 * xProj.card := Finset.card_le_mul_card_image _ _ hFiber
     _ ≤ 2 * R.natDegree := Nat.mul_le_mul_left 2 hxProj_card
 
+/-! ## Fiber argument (Step 10' infrastructure)
+
+Generic lemma: if a binary function `f : (ZMod E.q × ZMod E.q) →
+(ZMod E.q × ZMod E.q) → ZMod E.q` has, for each fixed `A₀`, bounded
+zeros on `E.points` (either few zeros OR the fiber is identically
+zero), and the "bad" `A₀`'s (where fiber is identically zero) are
+also few, then the total zero count on `E.points × E.points` is
+bounded. This is the combinatorial skeleton of `logDerivCheckFn_zero_set_bound`. -/
+
+theorem fiber_argument
+    (f : (ZMod E.q × ZMod E.q) → (ZMod E.q × ZMod E.q) → ZMod E.q)
+    (K : ℕ)
+    (hFiber : ∀ A₀ ∈ E.points,
+      (E.points.filter (fun A₁ => f A₀ A₁ = 0)).card ≤ K
+      ∨ (∀ A₁ ∈ E.points, f A₀ A₁ = 0))
+    (hBadA₀ :
+      (E.points.filter
+        (fun A₀ => ∀ A₁ ∈ E.points, f A₀ A₁ = 0)).card ≤ K) :
+    ((E.points ×ˢ E.points).filter (fun p => f p.1 p.2 = 0)).card
+      ≤ 2 * K * E.points.card := by
+  classical
+  set zSet := (E.points ×ˢ E.points).filter (fun p => f p.1 p.2 = 0)
+  set badA₀ := E.points.filter (fun A₀ => ∀ A₁ ∈ E.points, f A₀ A₁ = 0)
+  -- Split zSet by whether A₀ is in badA₀.
+  set zBad := zSet.filter (fun p => p.1 ∈ badA₀)
+  set zGood := zSet.filter (fun p => p.1 ∉ badA₀)
+  have hSplit : zSet = zBad ∪ zGood := by
+    ext p
+    simp only [zBad, zGood, Finset.mem_filter, Finset.mem_union]
+    constructor
+    · intro h
+      by_cases hb : p.1 ∈ badA₀
+      · exact Or.inl ⟨h, hb⟩
+      · exact Or.inr ⟨h, hb⟩
+    · rintro (⟨h, _⟩ | ⟨h, _⟩) <;> exact h
+  have hDisjoint : Disjoint zBad zGood := by
+    rw [Finset.disjoint_filter]
+    intros p _ hmem hnmem
+    exact hnmem hmem
+  -- Bound |zBad|: zBad ⊆ badA₀ × E.points.
+  have hBadCard : zBad.card ≤ K * E.points.card := by
+    have hSub : zBad ⊆ badA₀ ×ˢ E.points := by
+      intro p hp
+      simp only [zBad, zSet, Finset.mem_filter, Finset.mem_product] at hp
+      simp only [Finset.mem_product]
+      exact ⟨hp.2, hp.1.1.2⟩
+    calc zBad.card
+        ≤ (badA₀ ×ˢ E.points).card := Finset.card_le_card hSub
+      _ = badA₀.card * E.points.card := Finset.card_product _ _
+      _ ≤ K * E.points.card := Nat.mul_le_mul_right _ hBadA₀
+  -- Bound |zGood|: fiber over each A₀ ∉ badA₀ has ≤ K zeros.
+  have hGoodCard : zGood.card ≤ E.points.card * K := by
+    -- Each fiber (fixing p.1 = A₀ ∉ badA₀) has ≤ K elements.
+    have hFiberGood : ∀ A₀ ∈ E.points,
+        (zGood.filter (fun p => p.1 = A₀)).card ≤ K := by
+      intro A₀ hA₀
+      by_cases hAbad : A₀ ∈ badA₀
+      · -- A₀ ∈ badA₀ but we filter p.1 ∉ badA₀ ⟹ the filter is empty.
+        have : (zGood.filter (fun p => p.1 = A₀)) = ∅ := by
+          apply Finset.eq_empty_of_forall_not_mem
+          intro p hp
+          simp only [Finset.mem_filter, zGood, zSet] at hp
+          exact hp.1.2 (hp.2 ▸ hAbad)
+        rw [this]
+        simp
+      · -- A₀ ∉ badA₀. Use hFiber.
+        have := hFiber A₀ hA₀
+        rcases this with hle | hall
+        · calc (zGood.filter (fun p => p.1 = A₀)).card
+              ≤ (E.points.filter (fun A₁ => f A₀ A₁ = 0)).card := by
+                apply Finset.card_le_card_of_injOn Prod.snd
+                · intro p hp
+                  simp only [Finset.mem_filter, zGood, zSet, Finset.mem_product] at hp
+                  simp only [Finset.mem_filter]
+                  obtain ⟨⟨⟨⟨_, hp2⟩, hpf⟩, _⟩, hpeq⟩ := hp
+                  exact ⟨hp2, hpeq ▸ hpf⟩
+                · intro p hp q hq heq
+                  have hp' : p ∈ zGood.filter (fun r => r.1 = A₀) := hp
+                  have hq' : q ∈ zGood.filter (fun r => r.1 = A₀) := hq
+                  have hpe : p.1 = A₀ := (Finset.mem_filter.mp hp').2
+                  have hqe : q.1 = A₀ := (Finset.mem_filter.mp hq').2
+                  exact Prod.ext (hpe.trans hqe.symm) heq
+            _ ≤ K := hle
+        · -- A₀ ∉ badA₀ but fiber ≡ 0 on E.points: contradicts hAbad.
+          exfalso
+          apply hAbad
+          simp only [badA₀, Finset.mem_filter]
+          exact ⟨hA₀, hall⟩
+    -- Sum over A₀ via card_le_mul_card_image.
+    have hImgSub : zGood.image Prod.fst ⊆ E.points := by
+      intro A₀ hA₀
+      rw [Finset.mem_image] at hA₀
+      obtain ⟨p, hp, rfl⟩ := hA₀
+      simp only [zGood, zSet, Finset.mem_filter, Finset.mem_product] at hp
+      exact hp.1.1.1
+    calc zGood.card
+        ≤ K * (zGood.image Prod.fst).card := by
+          exact Finset.card_le_mul_card_image _ _
+            (fun A₀ hA₀ => hFiberGood A₀ (hImgSub hA₀))
+      _ ≤ K * E.points.card := Nat.mul_le_mul_left _ (Finset.card_le_card hImgSub)
+      _ = E.points.card * K := Nat.mul_comm _ _
+  -- Combine.
+  calc zSet.card
+      = zBad.card + zGood.card := by
+        rw [hSplit, Finset.card_union_of_disjoint hDisjoint]
+    _ ≤ K * E.points.card + E.points.card * K := by
+        exact Nat.add_le_add hBadCard hGoodCard
+    _ = 2 * K * E.points.card := by ring
+
 end Divisor
