@@ -33,11 +33,17 @@ structure DlogStatement (q : ℕ) [Fact (Nat.Prime q)] where
   admSet : Polynomial (ZMod q) × Polynomial (ZMod q) → Prop
   admSet_excludes_zero : ¬ admSet (0, 0)
 
+/-- Witness for the discrete-log relation. Scalars are signed integers so
+    that the paper's extractor special case `n_{j*} = -1` (for
+    `-P ∈ {B_j}`) can be represented natively. The range condition
+    `|scalars i| < degBound` bounds the absolute value by the divisor
+    degree (paper requires `n_i ∈ F_p` with `Σ n_i ≤ degBound`; for the
+    soundness analysis the looser `|n_i| < degBound` is what matters). -/
 structure DlogWitness (q : ℕ) [Fact (Nat.Prime q)] where
   k : ℕ
-  scalars : Fin k → ℕ
+  scalars : Fin k → ℤ
   degBound : ℕ
-  hRange : ∀ i, scalars i < degBound
+  hRange : ∀ i, (scalars i).natAbs < degBound
 
 /-- The relation: witnessed by a coordinate ring element D
     whose divisor encodes P = Σ [n_i] * B_i. -/
@@ -109,7 +115,7 @@ noncomputable def honestDivisorCoeffs (E : ECSetup) (stmt : DlogStatement E.q)
         (if (x, y) = (stmt.target.1, -stmt.target.2) then 1 else 0) +
         ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
           (fun i => stmt.bases i = (x, y)),
-          ((wit.scalars (hk ▸ i) : ℤ))
+          (wit.scalars (hk ▸ i))
 
 /-- Predicate: `msg` is the honest prover's first-round message for
     `(stmt, wit)`.
@@ -130,7 +136,7 @@ def MAProverMsg.isHonestFor (E : ECSetup) (msg : MAProverMsg E.q)
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (hkm : stmt.k = msg.k) : Prop :=
   (∀ i : Fin stmt.k,
-      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ℤ) : ZMod E.q))
+      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
   ∧ IsPrincipal E (honestDivisorCoeffs E stmt wit hk msg)
 
 structure MAChallenge (q : ℕ) [Fact (Nat.Prime q)] where

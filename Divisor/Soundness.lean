@@ -68,52 +68,55 @@ noncomputable def extractorIsCanonical (stmt : DlogStatement E.q)
   (extractorGroup E stmt msg hk i).min'
     (extractorGroup_nonempty E stmt msg hk i) = i
 
-/-- Scalars extracted from the first-round message, after full grouping.
+/-- Set of indices whose base point equals `-P`. -/
+noncomputable def negPIndexSet (stmt : DlogStatement E.q)
+    (msg : MAProverMsg E.q) (hk : stmt.k = msg.k) : Finset (Fin msg.k) :=
+  (Finset.univ : Finset (Fin msg.k)).filter
+    (fun j => extractorBases E stmt msg hk j = (stmt.target.1, -stmt.target.2))
 
-    Semantics:
-    * Non-canonical positions get `0` (the group's total lives at the
-      canonical representative).
-    * The canonical position of the group sitting at `-P` gets
-      `(1 + groupSum).val - 1`: the residue-side sum at `-P` is
-      `1 + Σ m_j`, and the structural `+1` corresponds to the target
-      itself (not to any witness scalar). Nat-subtraction underflows to
-      `0` when `(1 + groupSum).val = 0`; the `extractorSucceeds`
-      predicate forbids that case.
-    * The canonical position of every other group gets `groupSum.val`.
--/
+/-- Scalars extracted from the first-round message.
+
+    Paper `\protMA` extractor (two branches):
+
+    * **Special case `-P ∈ {B_j}`**: set `n_{j*} = -1` at the
+      minimum-index `j*` with `B_{j*} = -P`, and `n_i = 0` elsewhere.
+      Ignores `msg.m` entirely. The resulting witness `[-1]·B_{j*} =
+      [-1]·(-P) = P` is valid unconditionally.
+
+    * **General case `-P ∉ {B_j}`**: residue matching. Non-canonical
+      positions get `0`; canonical positions get the integer-representative
+      of the group-sum. Since `-P` is not among the bases, no group is
+      at `-P`, so no residue `+1` correction is needed — the witness
+      scalar at each canonical position is simply `(groupSum).val`
+      (cast to `ℤ`). -/
 noncomputable def extractedScalars (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (hk : stmt.k = msg.k) : Fin msg.k → ℕ :=
+    (msg : MAProverMsg E.q) (hk : stmt.k = msg.k) : Fin msg.k → ℤ :=
   fun i =>
-    let negP : ZMod E.q × ZMod E.q := (stmt.target.1, -stmt.target.2)
-    if extractorIsCanonical E stmt msg hk i then
-      if extractorBases E stmt msg hk i = negP then
-        (1 + extractorGroupSum E stmt msg hk i).val - 1
-      else
-        (extractorGroupSum E stmt msg hk i).val
-    else 0
+    if hNegP : (negPIndexSet E stmt msg hk).Nonempty then
+      -- Special case: -P ∈ {B_j}. Trivial witness at j* = min.
+      if i = (negPIndexSet E stmt msg hk).min' hNegP then (-1 : ℤ) else 0
+    else
+      -- General case: -P ∉ {B_j}. Residue matching.
+      if extractorIsCanonical E stmt msg hk i then
+        ((extractorGroupSum E stmt msg hk i).val : ℤ)
+      else 0
 
 /-- Predicate: the extractor succeeds at bound `d`.
 
-    Captures both the range condition (`scalar_i < d` for every `i`)
-    and the `(1 + gSum).val ≥ 1` constraint needed to subtract the
-    structural `+1` at the `-P` group without underflow. -/
+    Simplified after the `-P ∈ {B_j}` special case: the only
+    requirement is that every extracted scalar has absolute value
+    `< d`. The old no-underflow guard is no longer needed because
+    the residue `+1` at `-P` is absorbed into the special-case branch
+    (which returns `-1` directly, with `|-1|.natAbs = 1 < d` for any
+    reasonable `d ≥ 2`). -/
 noncomputable def extractorSucceeds (stmt : DlogStatement E.q)
     (msg : MAProverMsg E.q) (d : ℕ) (hk : stmt.k = msg.k) : Prop :=
-  (∀ i, extractedScalars E stmt msg hk i < d) ∧
-  (∀ i,
-    extractorIsCanonical E stmt msg hk i →
-    extractorBases E stmt msg hk i = (stmt.target.1, -stmt.target.2) →
-    (1 + extractorGroupSum E stmt msg hk i).val ≥ 1)
+  ∀ i, ((extractedScalars E stmt msg hk i).natAbs) < d
 
 /-- The full-grouping extractor.
 
-    Returns `some` iff `extractorSucceeds` (range + no-underflow at the
-    `-P` group). This fixes the `\mha{GAP}` noted in the paper: the
-    naive lift returned invalid witnesses when `B_j = -P` or `B`
-    contained duplicates; here the combined coefficient at each
-    distinct basis point is recovered as an integer in `[0, d)` and
-    redistributed onto the minimum-index position in each equal-base
-    group. -/
+    Returns `some` iff `extractorSucceeds` (range condition on every
+    extracted scalar). -/
 noncomputable def maExtractor (stmt : DlogStatement E.q)
     (msg : MAProverMsg E.q) (d : ℕ) (hd : d < E.q)
     (hk : stmt.k = msg.k) :
@@ -123,7 +126,7 @@ noncomputable def maExtractor (stmt : DlogStatement E.q)
       k := msg.k
       scalars := extractedScalars E stmt msg hk
       degBound := d
-      hRange := h.1
+      hRange := h
     }
   else
     none
