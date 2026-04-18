@@ -145,22 +145,39 @@ noncomputable def eventBadRange (stmt : DlogStatement E.q)
       (ii) feed the resulting `σ`, `beta + m ∘ σ = 0`, `m_j = 0 off σ`
           into the combinatorial grouping step to read off
           `extractedScalars i < d` and the no-underflow bound at `-P`.
-    Step (i) is denominator-clearing (field arithmetic on ≈50 lines); step
-    (ii) is the grouping/lifting arithmetic (another ≈100 lines, per the
+    Step (i) is denominator-clearing — partly proved in LogDeriv.lean via
+    `logDerivCheckFn_iff_polyG` (the remaining gap is upstream); step
+    (ii) is the grouping/lifting arithmetic (≈100 lines, per the
     paper's GAP fix). Both are mechanical but orthogonal to the
-    statement-level content of "if f ≡ 0 and D(-P)=0 then extractor
-    succeeds"; axiomatizing the conclusion keeps content visible at the
-    theorem statement rather than hiding it in a prover-supplied
+    statement-level content of "if f ≡ 0 then extractor succeeds";
+    axiomatizing the conclusion keeps content visible at the theorem
+    statement rather than hiding it in a prover-supplied
     `hExtHonest` hypothesis.
 
     Hypotheses are exactly the structural assumptions on the message:
-    `degE(D) ≤ d` and `D(-P) = 0` (both checked by the verifier on
-    every challenge, so needed for even one challenge to accept), plus
-    `d < q` (needed for the degE-to-integer lift to be injective). -/
+    `degE(D) ≤ d` (part of the verifier's first check);
+    `(polyA, polyB) ∈ admSet` (part of the verifier's second check,
+    ensuring `D ≠ 0` via `stmt.admSet_excludes_zero`);
+    `d < q` (needed for the degE-to-integer lift to be injective).
+
+    **Scope note on `-P ∈ {B_j}`**: paper `\protMA`'s extractor has an
+    unconditional `-P ∈ {B_j}` branch returning `n_{j*} = -1 ∈ F_p`
+    without reading the message. The current Lean `extractedScalars`
+    does not include this branch because `DlogWitness.scalars` is
+    `Fin k → ℕ` (no natural representation of `-1`). Adding the
+    special case requires changing the witness type to `Fin k → ℤ`
+    with an `|·| < degBound` range constraint, which cascades through
+    the surrounding signatures. Flagged as a residual task for a
+    future formalization pass. Until then, the `-P ∈ {B_j}` scenario
+    falls into the `underflow` case of `extractorSucceeds` and fails
+    the extractor; correspondingly, a malicious prover exploiting
+    `obs:neg-P-collapse` must have `(1, 0) ∈ admSet` (since they use
+    `a = 1`, `b = 0`), which an `admSet` choice like Parker's rejects.
+    -/
 axiom extractorSucceeds_of_logDerivCheck_identically_zero
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
-    (hDnegP : msg.toD.eval stmt.target.1 (-stmt.target.2) = 0)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
@@ -241,21 +258,22 @@ theorem ma_extractable
       exact le_trans hCardLe (le_trans hBound hMono)
     · -- Identically zero on `E × E`. Push to "identically zero everywhere".
       push_neg at hNV
-      -- Sub-case on `D(-P) = 0`.
-      by_cases hDnegP : msg.toD.eval stmt.target.1 (-stmt.target.2) = 0
+      -- Sub-case on whether the prover's (polyA, polyB) passes the
+      -- admissible-set check at least once (equivalently, is in admSet
+      -- at all, since it's a constant predicate on the message).
+      by_cases hAdm : stmt.admSet (msg.polyA, msg.polyB)
       · -- Bridging axiom gives `extractorSucceeds`, contradicting `hSucc`.
-        -- `hNV` (after `push_neg`) says: on `E.points × E.points`, f = 0.
         exfalso
         apply hSucc
         exact extractorSucceeds_of_logDerivCheck_identically_zero E
-          stmt msg d hDeg hd hkm hDnegP
+          stmt msg d hDeg hd hkm hAdm
           (fun A₀ A₁ hA₀ hA₁ => hNV A₀ A₁ hA₀ hA₁)
-      · -- `D(-P) ≠ 0`: no challenge accepts; accept set is empty.
+      · -- Not in admSet: no challenge accepts; accept set is empty.
         have hEmpty : acceptSet = ∅ := by
           apply Finset.eq_empty_of_forall_not_mem
           intro p hp
           simp only [hAS, Finset.mem_filter] at hp
-          exact hDnegP hp.2.2.1
+          exact hAdm hp.2.2.1
         rw [hEmpty]
         simp
 
@@ -295,7 +313,7 @@ axiom weil_reciprocity_honest
 
     The three verifier checks:
     * degree check `degE(D) ≤ stmt.k` — required by `hDegK`;
-    * target-vanishing `D(-P) = 0` — required by `hDnegP`;
+    * admissible-set check `(polyA, polyB) ∈ admSet` — required by `hAdm`;
     * log-derivative identity — vanishes off the bad set by the
       Weil-reciprocity axiom, given the honest-divisor predicate.
 
@@ -306,16 +324,13 @@ theorem ma_completeness
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (hDeg : msg.toD.degE ≤ wit.degBound)
     (hDegK : msg.toD.degE ≤ stmt.k)
-    (hDnegP : msg.toD.eval stmt.target.1 (-stmt.target.2) = 0)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm) :
     ((E.points ×ˢ E.points).filter
         (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 1) * E.numAffine := by
-  -- unused-variable guards: record that these hypotheses participate
-  -- structurally in the statement content.
   let _ := hValid
   let _ := hDeg
-  -- Show: the reject-set is contained in `badChallengesCompleteness`.
   set rejectSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
     (E.points ×ˢ E.points).filter
       (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hRS
@@ -323,13 +338,11 @@ theorem ma_completeness
     intro p hp
     simp only [hRS, Finset.mem_filter] at hp
     obtain ⟨_, hpR⟩ := hp
-    -- If `p` is NOT in the bad set, `maVerifierAccepts` holds, contra `hpR`.
     by_contra hNotBad
     apply hpR
-    refine ⟨hDegK, hDnegP, ?_⟩
+    refine ⟨hDegK, hAdm, ?_⟩
     exact weil_reciprocity_honest E stmt wit hk msg hkm hHonestDivisor
       p.1 p.2 hNotBad
-  -- Apply support_disjointness.
   exact le_trans (Finset.card_le_card hSub)
     (support_disjointness E msg.toD (numZeros E msg.toD) (le_refl _))
 

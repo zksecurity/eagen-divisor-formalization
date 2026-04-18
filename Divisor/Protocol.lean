@@ -13,10 +13,25 @@ variable {q : ℕ} [hq : Fact (Nat.Prime q)]
 
 /-! ## The discrete log relation -/
 
+/-- A discrete-log statement together with an admissible set `admSet`
+    ⊆ `F_q[x]²` (with `(0, 0) ∉ admSet`) that the verifier uses to rule
+    out the zero divisor at the protocol level.
+
+    Paper `\protMA` (Eagen, Bassa25) parameterizes soundness by
+    `admSet`. Common choices:
+    * Maximal:    `{(a, b) : (a, b) ≠ (0, 0)}`
+    * Parker:     `{(a, b) : a₁ = 1}` (coefficient of x in a is 1)
+    * Eagen:      `{(a, b) : a₀ = 1}` (constant coefficient of a is 1)
+    * Hash:       `{(a, b) : ⟨r, a ‖ b⟩ ≠ 0}` for some challenge r ∈ F_q^n.
+
+    Axiomatic use of `admSet`: downstream proofs only depend on
+    `(0, 0) ∉ admSet`, captured by the `admSet_excludes_zero` field. -/
 structure DlogStatement (q : ℕ) [Fact (Nat.Prime q)] where
   k : ℕ
   bases : Fin k → ZMod q × ZMod q
   target : ZMod q × ZMod q
+  admSet : Polynomial (ZMod q) × Polynomial (ZMod q) → Prop
+  admSet_excludes_zero : ¬ admSet (0, 0)
 
 structure DlogWitness (q : ℕ) [Fact (Nat.Prime q)] where
   k : ℕ
@@ -44,6 +59,29 @@ structure MAProverMsg (q : ℕ) [Fact (Nat.Prime q)] where
 
 def MAProverMsg.toD (msg : MAProverMsg q) : CoordRingElt q :=
   { a := msg.polyA, b := msg.polyB }
+
+/-- A `CoordRingElt` is the zero element of `F_q[E]` iff both its `a(x)`
+    and `b(x)` polynomials are zero. (Canonical representation makes
+    this a syntactic check.) -/
+def CoordRingElt.isZero (D : CoordRingElt q) : Prop :=
+  D.a = 0 ∧ D.b = 0
+
+/-- Consequence of the admSet side-condition `(0, 0) ∉ admSet`: a message
+    passing the admissible-set check has `D = msg.toD ≠ 0` in `F_q[E]`.
+    This is the form the soundness proof actually consumes (paper
+    obs:zero-divisor: the log-derivative identity requires `D ≠ 0`). -/
+theorem admSet_implies_toD_nonzero (stmt : DlogStatement q)
+    (msg : MAProverMsg q) (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    ¬ msg.toD.isZero := by
+  intro hZero
+  obtain ⟨ha, hb⟩ := hZero
+  -- `msg.toD.a = msg.polyA`, `msg.toD.b = msg.polyB` by construction
+  have ha' : msg.polyA = 0 := ha
+  have hb' : msg.polyB = 0 := hb
+  apply stmt.admSet_excludes_zero
+  have h : (msg.polyA, msg.polyB) = ((0 : Polynomial (ZMod q)), 0) :=
+    Prod.ext ha' hb'
+  exact h ▸ hAdm
 
 /-! ### Honest-prover divisor encoding
 
@@ -108,27 +146,21 @@ def MAProverMsg.mAt {stmt : DlogStatement q} {msg : MAProverMsg q}
     (hk : stmt.k = msg.k) (i : Fin stmt.k) : ZMod q :=
   msg.m (hk ▸ i)
 
-/-- The MA verifier accepts iff the degree, log-derivative, AND
-    `-P`-vanishing checks all pass.
+/-- The MA verifier accepts iff the degree, admissible-set, AND
+    log-derivative checks all pass. This matches paper `\protMA`
+    (fig:ma): the admissible-set check `(a, b) ∈ admSet` ensures
+    `D = a(x) - b(x) y ≠ 0` in `F_q[E]` (since `(0, 0) ∉ admSet`),
+    which discharges the `D ≠ 0` hypothesis of the log-derivative
+    soundness argument (paper obs:zero-divisor).
 
-    The `-P`-vanishing check `D(-P) = 0` enforces that `-P` is in
-    `supp((D)_0)` — i.e. that the divisor of zeros structurally contains
-    `(-P)` with multiplicity ≥ 1. Without this check, a malicious prover
-    can exploit `B_j = -P` overlap (or duplicates at `-P`) to construct
-    an accepting transcript from which no valid witness can be extracted:
-    they set `m_j = q - 1` so the combined residue `1 + m_j ≡ 0 (mod q)`
-    matches a divisor with multiplicity `0` at `-P`, but then the
-    principal-divisor relation gives a sum that does *not* equal `P`.
-    The D(-P) = 0 check rules this out at the protocol level rather than
-    forcing the proof to handle it via a vacuous hypothesis.
-
-    Requires an explicit equality `hk : stmt.k = msg.k` to transport the
-    statement's basis indices into the message's scalar vector. -/
+    The extractor handles `-P ∈ {B_j}` overlap through a dedicated
+    branch in `extractedScalars` (the paper's special case), rather than
+    through a verifier-side check on `D(-P)`. -/
 def maVerifierAccepts (E : ECSetup) (stmt : DlogStatement E.q)
     (msg : MAProverMsg E.q) (chal : MAChallenge E.q)
     (hk : stmt.k = msg.k) : Prop :=
   verifierDegreeCheck msg stmt.k ∧
-  msg.toD.eval stmt.target.1 (-stmt.target.2) = 0 ∧
+  stmt.admSet (msg.polyA, msg.polyB) ∧
   logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
     (fun i => msg.m (hk ▸ i)) chal.A₀ chal.A₁ = 0
 
