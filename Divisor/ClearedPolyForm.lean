@@ -211,4 +211,95 @@ theorem bivEval_y₂Scaled_eq (A₀ A₁ : ZMod E.q × ZMod E.q)
   field_simp
   ring
 
+/-! ## `D`-polynomial at `A₀`, `A₁`, `A₂`
+
+    `D : CoordRingElt E.q` with `D = D.a(X) - D.b(X)·Y`.
+
+    * `DAtA₀Poly` is a constant: `D.eval A₀.1 A₀.2 = D.a(A₀.1) - D.b(A₀.1)·A₀.2`.
+    * `DAtA₁Poly` is linear in A₁.2: `embed(D.a) - embed(D.b) · outerY`.
+    * `DAtA₂Scaled` is `D(A₂)` scaled by an appropriate power of `lamDen`
+      to clear all `λ` denominators introduced by `x₂, y₂`.
+
+    For `DAtA₂Scaled` the scaling factor is `lamDen^(2 · a.natDegree + 3 + 2 · b.natDegree)`,
+    which upper-bounds the denominator from substituting `x₂ = x₂Scaled / lamDen²`
+    and `y₂ = y₂Scaled / lamDen³` into `D.a(x₂) - D.b(x₂) · y₂`. To keep
+    the polynomial construction uniform we use `2 · D.degE` as a common
+    (slightly loose) bound. -/
+
+/-- `D` evaluated at `A₀`, as a constant polynomial in `(ZMod E.q)[X][X]`. -/
+noncomputable def DAtA₀Poly (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  embedScalar (E := E) (D.eval A₀.1 A₀.2)
+
+/-- `D` evaluated at `A₁` = `(innerX, outerY)`: `embed(a) - embed(b) · outerY`. -/
+noncomputable def DAtA₁Poly (D : CoordRingElt E.q) : (ZMod E.q)[X][X] :=
+  embedInnerPoly (E := E) D.a - embedInnerPoly (E := E) D.b * outerA₁y (E := E)
+
+@[simp] theorem bivEval_DAtA₀Poly (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval (DAtA₀Poly (E := E) D A₀) A₁ = D.eval A₀.1 A₀.2 := by
+  simp [DAtA₀Poly]
+
+@[simp] theorem bivEval_DAtA₁Poly (D : CoordRingElt E.q)
+    (A₁ : ZMod E.q × ZMod E.q) :
+    bivEval (DAtA₁Poly (E := E) D) A₁ = D.eval A₁.1 A₁.2 := by
+  simp [DAtA₁Poly, bivEval_sub, bivEval_mul, CoordRingElt.eval]
+
+/-! ## `dxdz_den` polynomials (paper `sections/ip.tex:240`).
+
+    `dxdz_den(A) = 3·A.1² + curveA - 2·λ·A.2`.
+
+    * At `A₀`, `A₁`: scaled by `lamDen^1` to clear the `λ` in `2·λ·A.2`.
+    * At `A₂`: `y₂` is already `y₂Scaled / lamDen^3`, so the scaling combines.
+
+    Here we only introduce the scaled forms at `A₀` and `A₁`. The `A₂`
+    version is subsumed by later bookkeeping. -/
+
+/-- `dxdz_den(A₀) · lamDen = (3·A₀.1² + curveA) · lamDen - 2·A₀.2 · lamNum`. -/
+noncomputable def dxdzDenA₀Scaled (A₀ : ZMod E.q × ZMod E.q) :
+    (ZMod E.q)[X][X] :=
+  embedScalar (E := E) (3 * A₀.1 ^ 2 + E.curveA) * lamDenPoly (E := E) A₀
+  - embedScalar (E := E) (2 * A₀.2) * lamNumPoly (E := E) A₀
+
+/-- `dxdz_den(A₁) · lamDen = (3·A₁.1² + curveA) · lamDen - 2·A₁.2 · lamNum`. -/
+noncomputable def dxdzDenA₁Scaled (A₀ : ZMod E.q × ZMod E.q) :
+    (ZMod E.q)[X][X] :=
+  (embedScalar (E := E) 3 * innerA₁x (E := E) ^ 2
+      + embedScalar (E := E) E.curveA) * lamDenPoly (E := E) A₀
+  - embedScalar (E := E) 2 * outerA₁y (E := E) * lamNumPoly (E := E) A₀
+
+@[simp] theorem bivEval_dxdzDenA₀Scaled (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval (dxdzDenA₀Scaled (E := E) A₀) A₁ =
+      (3 * A₀.1 ^ 2 + E.curveA) * (A₁.1 - A₀.1)
+      - 2 * A₀.2 * (A₁.2 - A₀.2) := by
+  simp [dxdzDenA₀Scaled, bivEval_sub, bivEval_mul]
+
+@[simp] theorem bivEval_dxdzDenA₁Scaled (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval (dxdzDenA₁Scaled (E := E) A₀) A₁ =
+      (3 * A₁.1 ^ 2 + E.curveA) * (A₁.1 - A₀.1)
+      - 2 * A₁.2 * (A₁.2 - A₀.2) := by
+  simp [dxdzDenA₁Scaled, bivEval_sub, bivEval_mul, bivEval_pow, bivEval_add]
+
+/-- On the non-vertical cone, `dxdzDenA₀Scaled` at `A₁` equals
+    `lamDen · dxdz_den(A₀)`. -/
+theorem bivEval_dxdzDenA₀Scaled_eq (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (dxdzDenA₀Scaled (E := E) A₀) A₁ =
+      (A₁.1 - A₀.1) * (3 * A₀.1 ^ 2 + E.curveA - 2 *
+        slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2) := by
+  have hden : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr hNV.symm
+  simp only [bivEval_dxdzDenA₀Scaled, slopeOf]
+  field_simp
+  ring
+
+theorem bivEval_dxdzDenA₁Scaled_eq (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (dxdzDenA₁Scaled (E := E) A₀) A₁ =
+      (A₁.1 - A₀.1) * (3 * A₁.1 ^ 2 + E.curveA - 2 *
+        slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2) := by
+  have hden : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr hNV.symm
+  simp only [bivEval_dxdzDenA₁Scaled, slopeOf]
+  field_simp
+  ring
+
 end Divisor
