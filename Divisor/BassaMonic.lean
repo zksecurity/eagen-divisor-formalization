@@ -432,41 +432,23 @@ theorem card_validPairs_lb :
     simp only [hna] at *
     omega
 
-/-! ## Theorem 4: main soundness bound -/
+/-! ## Theorems 4 / 5 (Schwartz-Zippel on E × E for the norm check)
 
-/-- **Theorem 4 (Schwartz-Zippel on E x E, monic case).**
-    For monic D with (D)_0 ≠ Σ P_i, the norm check passes
-    with probability at most 18*N*q / #validPairs ≈ 18*N/q.
+Paper `thm:bassa-monic` and `thm:bassa-soundness` give probability
+bounds for the norm-based verifier equation. These are **not on the
+dependency chain for `ma_extractable`** — the live soundness proof
+goes through `cor:log-derivative` (`log_deriv_sz` here) rather than
+the norm-based route — so the detailed statements were placeholder
+stubs returning `True`. The supporting infrastructure in this file
+(`f_nonvanishing_proved`, `linear_form_zeros_le_three`) remains useful
+for a future formalization of the alternative three-cases proof, but
+the top-level `bassa_monic` / `bassa_soundness_*` stubs carried no
+content. Removed to avoid giving the impression that the norm-check
+branch is mechanized.
 
-    Proof structure:
-    1. f ≠ 0 on E x E (by f_nonvanishing_proved, from Bezout + Hasse-Weil)
-    2. #zeros(f) on E x E ≤ 18*N*q (by variety SZ, DKL 2014)
-    3. Divide by #validPairs
--/
-theorem bassa_monic (N : ℕ)
-    (D : CoordRingElt E.q)
-    (hMonic : True)
-    (hDeg : D.degE = N)
-    (P : Fin N → ZMod E.q × ZMod E.q)
-    (hP : ∀ i, P i ∈ E.points)
-    (hNeq : True)
-    (hSmall : 3 * N < E.numPoints) :
-    True := trivial
-
-/-! ## Theorem 5: three cases (general soundness) -/
-
-theorem bassa_soundness_zero (N : ℕ)
-    (P : Fin N → ZMod E.q × ZMod E.q) (hP : ∀ i, P i ∈ E.points)
-    (hLargeField : E.q > N) : True := trivial
-
-theorem bassa_soundness_neq
-    (D : CoordRingElt E.q) (N₁ N₂ : ℕ)
-    (P : Fin N₁ → ZMod E.q × ZMod E.q) (hP : ∀ i, P i ∈ E.points)
-    (hGroupNeq : True) (hLargeField : E.q > max N₁ N₂) : True := trivial
-
-theorem bassa_soundness_lc
-    (D : CoordRingElt E.q) (N₁ : ℕ)
-    (P : Fin N₁ → ZMod E.q × ZMod E.q) (hP : ∀ i, P i ∈ E.points)
-    (hGroupEq : True) (hLC : True) (hLargeField : E.q > N₁) : True := trivial
+The norm-check bounds for the full alternative route would state,
+roughly, `#{(A₀,A₁) : norm equality holds and (D)_0 ≠ Σ(P_i)} ≤ 18 N q`.
+Restore these as concrete `Finset.card ≤ ...` theorems when that route
+is mechanized. -/
 
 end Divisor

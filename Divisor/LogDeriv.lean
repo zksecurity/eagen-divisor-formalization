@@ -91,25 +91,6 @@ noncomputable def polyG
     (Finset.univ.prod (fun k => ellP E (Q k) A₀ A₁)) *
     ((Finset.univ.erase j).prod (fun j' => ellP E (R j') A₀ A₁))))
 
-/-! ## Degree bound for G
-
-Each ell_P has degree 2 in (X0,Y0,X1,Y1) (it's bilinear in the two points).
-On E x E, each ell_P has bi-degree (1,1).
-
-Each summand in G has (d-1+M) factors of ell, so bi-degree (d+M-1, d+M-1),
-giving degree 2*(d+M-1) as a polynomial on E x E.
--/
-
-/-- The bi-degree of G on E x E is at most (degE(D)+M-1, degE(D)+M-1) -/
-theorem polyG_bidegree_le {d M : ℕ}
-    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
-    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
-    (N : ℕ) (D : CoordRingElt E.q) (hd : d ≤ N) (hN : N = D.degE) :
-    -- The "effective degree" of G for the variety SZ bound is
-    -- 2 * (d + M - 1), and the intersection with E x E (degree 9)
-    -- gives a curve of degree at most 18 * (d + M - 1).
-    True := trivial
-
 /-! ## Function-field wrappers
 
 Thin wrappers naming the field-theoretic objects that appear in the paper's
