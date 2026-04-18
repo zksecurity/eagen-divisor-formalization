@@ -68,10 +68,4 @@ axiom hasse_weil_lower :
     side-condition was a soundness hole.
 -/
 
-/-! The classical log-derivative-kernel lemma and the norm-decomposition
-    identity (paper `lem:log-deriv-kernel` / `lem:log-deriv-norm`) are
-    stated in `Divisor/LogDeriv.lean` as `log_deriv_kernel_classical` /
-    `norm_decomposition`, because they reference the opaque wrappers
-    `normAtZero` / `logDerivNormAtZero` defined there. -/
-
 end Divisor

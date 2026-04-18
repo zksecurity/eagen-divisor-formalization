@@ -122,29 +122,6 @@ theorem sum_div_iff_sum_mul_prod_erase {α : Type*} [DecidableEq α]
     rw [hEq] at h
     exact (mul_eq_zero.mp h).resolve_left hProd
 
-/-! ## Function-field wrappers
-
-Thin wrappers naming the field-theoretic objects that appear in the paper's
-`lem:log-deriv-norm`: the field norm `N_{F_q(E)/F_q(L)}(D)` evaluated at the
-place `(L = 0)`, and its logarithmic derivative. These are left opaque
-because a concrete definition would require the function field `F_q(E)` and
-its degree-3 subfield `F_q(L)` — infrastructure beyond current Mathlib.
-Downstream uses access them only through the two classical identities
-stated as axioms below (`norm_decomposition`, `log_deriv_kernel_classical`). -/
-
-/-- The norm `N_{F_q(E)/F_q(L)}(D)` evaluated at the place `(L = 0)`, as
-    an element of `F_q`. By Galois theory this equals
-    `lc(D)^3 · ∏_α (-L(Q_α))^{n_α}` where `(D)_0 = Σ n_α · (Q_α)`, but
-    for axiomatic use we keep it opaque. -/
-opaque normAtZero (E : ECSetup) (D : CoordRingElt E.q) (L : Line E.q) :
-    ZMod E.q
-
-/-- The logarithmic derivative of `N_{F_q(E)/F_q(L)}(D)` with respect to
-    `L`, evaluated at the place `(L = 0)`. Equals
-    `-Σ_α n_α / L(Q_α)` modulo the characteristic (Bassa24b §4). -/
-opaque logDerivNormAtZero (E : ECSetup) (D : CoordRingElt E.q) (L : Line E.q) :
-    ZMod E.q
-
 /-! ## Concrete evaluation functions -/
 
 /-- Evaluate D'/D at a point, scaled by dx/dz -/
@@ -175,75 +152,6 @@ noncomputable def logDerivCheckFn
   let rhs := -(L.eval negP.1 negP.2)⁻¹ +
     (Finset.univ (α := Fin k)).sum (fun j => -(m j) * (L.eval (B j).1 (B j).2)⁻¹)
   lhs - rhs
-
-/-! ## Paper `lem:log-deriv-norm` and `lem:log-deriv-kernel` (axioms)
-
-These are the two classical function-field identities supplying the LHS
-and characterizing the kernel of the log-derivative. Restated here with
-real content (formerly vacuous `True` bodies in `Divisor/Axioms.lean`);
-axiom status retained per the "classical AG as axioms" policy.
-
-They are not yet consumed by a mechanized proof further upstream — that
-requires Gap 3 (the denominator-clearing / variety SZ bound for
-`logDerivCheckFn`) to be formalized, at which point
-`norm_decomposition` supplies the identification of the LHS sum of
-`logDerivTerm`s with `logDerivNormAtZero`, and `log_deriv_kernel_classical`
-is used to conclude that two functions with the same log-derivative
-differ only by a constant factor on the norm. -/
-
-/-- **Paper `lem:log-deriv-norm` (Bassa24b §4).**
-
-    Identifies the sum of per-point log-derivative terms with the
-    logarithmic derivative of the norm `N_{F_q(E)/F_q(L)}(D)` at the
-    place `(L = 0)`.
-
-    Side-conditions mirror the paper's hypotheses:
-    * `D ≠ 0` in `F_q[E]` (paper writes "`D ∈ F_q[E] ∖ {0}`"),
-    * non-vertical line (`A₀.1 ≠ A₁.1`),
-    * `D` does not vanish at any of the three collinear points (no poles
-      of `D'/D`), and
-    * `A₂` is the third intersection of the chord `A₀ A₁` with `E`.
-
-    Equivalent axiomatization of paper Eq. (after `lem:log-deriv-norm`):
-        `Σ_i (a'(x_i) - (3x_i²+A)/(2y_i)·b(x_i) - y_i b'(x_i))
-              / (a(x_i) - y_i b(x_i)) · 2y_i/(3x_i²+A-2λy_i)
-           = L(N(D))|_{(L=0)}`. -/
-axiom norm_decomposition
-    (D : CoordRingElt E.q)
-    (A₀ A₁ : ZMod E.q × ZMod E.q) (x₂ y₂ : ZMod E.q)
-    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
-    (hNonVert : A₀.1 ≠ A₁.1)
-    (hA₂ : thirdPoint E A₀ A₁ = ECPoint.affine x₂ y₂)
-    (hD₀ : D.eval A₀.1 A₀.2 ≠ 0)
-    (hD₁ : D.eval A₁.1 A₁.2 ≠ 0)
-    (hD₂ : D.eval x₂ y₂ ≠ 0) :
-    let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
-    let L := lineThrough A₀.1 A₀.2 A₁.1 A₁.2
-    logDerivTerm E D E.curveA lam A₀
-      + logDerivTerm E D E.curveA lam A₁
-      + logDerivTerm E D E.curveA lam (x₂, y₂)
-    = logDerivNormAtZero E D L
-
-/-- **Paper `lem:log-deriv-kernel` (Bassa24b Lem 1; Stichtenoth Ch 4).**
-
-    Low-degree kernel of the logarithmic derivative consists of constants.
-    Stated in the form actually consumed by `cor:log-derivative`'s
-    non-vanishing remark: two low-degree `CoordRingElt`s whose norms have
-    the same log-derivative on every line differ by a (line-independent)
-    multiplicative constant.
-
-    Formally: if `logDerivNormAtZero E D₁ L = logDerivNormAtZero E D₂ L`
-    for every line `L`, and both `degE(D_i) < q`, then there is a
-    nonzero constant `c ∈ F_q` with `normAtZero E D₁ L = c · normAtZero E D₂ L`
-    for every `L`. -/
-axiom log_deriv_kernel_classical
-    (D₁ D₂ : CoordRingElt E.q)
-    (hDeg₁ : D₁.degE < E.q)
-    (hDeg₂ : D₂.degE < E.q)
-    (hLogEq : ∀ L : Line E.q,
-      logDerivNormAtZero E D₁ L = logDerivNormAtZero E D₂ L) :
-    ∃ c : ZMod E.q, c ≠ 0 ∧
-      ∀ L : Line E.q, normAtZero E D₁ L = c * normAtZero E D₂ L
 
 /-! ## Denominator-cleared form of `logDerivCheckFn` (Step 8')
 
