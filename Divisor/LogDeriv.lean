@@ -245,6 +245,61 @@ axiom log_deriv_kernel_classical
     ∃ c : ZMod E.q, c ≠ 0 ∧
       ∀ L : Line E.q, normAtZero E D₁ L = c * normAtZero E D₂ L
 
+/-! ## Denominator-cleared form of `logDerivCheckFn` (Step 8')
+
+    The `logDerivCheckFn` definition uses several inverses — one in each
+    `logDerivTerm` (the factor `(D.eval · (3x² + A - 2λy))⁻¹`) and one
+    per evaluation point in the `-1/L(·)` RHS sum. To bound its zero
+    set via a `polynomial_zeros_on_cubic`-style argument we work with
+    the *denominator-cleared* product
+    `logDerivCheckFnCleared := logDerivCheckFn · denom`,
+    which vanishes iff `logDerivCheckFn` vanishes on the valid-challenge
+    subspace (`denom ≠ 0`). -/
+
+/-- Product of all denominators appearing in `logDerivCheckFn`. -/
+noncomputable def logDerivCheckFnDenom
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) : ZMod E.q :=
+  let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
+  let L := lineThrough A₀.1 A₀.2 A₁.1 A₁.2
+  let x₂ := lam ^ 2 - A₀.1 - A₁.1
+  let y₂ := lam * x₂ + (A₀.2 - lam * A₀.1)
+  D.eval A₀.1 A₀.2 * D.eval A₁.1 A₁.2 * D.eval x₂ y₂ *
+  (3 * A₀.1 ^ 2 + E.curveA - 2 * lam * A₀.2) *
+  (3 * A₁.1 ^ 2 + E.curveA - 2 * lam * A₁.2) *
+  (3 * x₂ ^ 2 + E.curveA - 2 * lam * y₂) *
+  L.eval P.1 (-P.2) *
+  (Finset.univ : Finset (Fin k)).prod (fun j => L.eval (B j).1 (B j).2)
+
+/-- The denominator-cleared log-derivative check. Defined as the product
+    of `logDerivCheckFn` with all its denominators; equals zero iff
+    `logDerivCheckFn = 0` on the valid-challenge subspace. -/
+noncomputable def logDerivCheckFnCleared
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) : ZMod E.q :=
+  logDerivCheckFn E D P k B m A₀ A₁ * logDerivCheckFnDenom E D P B A₀ A₁
+
+/-- **Denominator-clearing equivalence.** On the valid-challenge
+    subspace (where all denominators are nonzero), `logDerivCheckFn = 0`
+    iff `logDerivCheckFnCleared = 0`. This is the field arithmetic
+    step; no algebraic-geometry content. -/
+theorem logDerivCheckFn_eq_zero_iff_cleared
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hDenom : logDerivCheckFnDenom E D P B A₀ A₁ ≠ 0) :
+    logDerivCheckFn E D P k B m A₀ A₁ = 0 ↔
+    logDerivCheckFnCleared E D P k B m A₀ A₁ = 0 := by
+  unfold logDerivCheckFnCleared
+  constructor
+  · intro h; rw [h, zero_mul]
+  · intro h
+    rcases mul_eq_zero.mp h with h1 | h2
+    · exact h1
+    · exact absurd h2 hDenom
+
 /-! ## Corollary 1: the probability bound -/
 
 /-- The "NotEq" bad set: pairs `(A₀, A₁) ∈ validPairs` for which the
