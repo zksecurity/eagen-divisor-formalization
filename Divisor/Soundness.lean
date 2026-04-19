@@ -342,7 +342,7 @@ theorem ma_extractable
         ∧ dlogHolds E stmt wit) ∨
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (54 * (d + stmt.k + 6) + 4) * E.points.card := by
+      ≤ (72 * (d + stmt.k + 6) + 4) * E.points.card := by
   classical
   -- Case on whether `logDerivCheckFn` is nonzero on some *defined* pair.
   -- The defined subset is where Lean and paper semantics coincide;
@@ -371,8 +371,8 @@ theorem ma_extractable
     have hBound :=
       log_deriv_sz E msg.toD stmt.target stmt.bases
         (fun i => msg.m (hkm ▸ i)) hDegLt hNV
-    have hMono : (54 * (msg.toD.degE + stmt.k + 6) + 4) * E.points.card
-                 ≤ (54 * (d + stmt.k + 6) + 4) * E.points.card := by
+    have hMono : (72 * (msg.toD.degE + stmt.k + 6) + 4) * E.points.card
+                 ≤ (72 * (d + stmt.k + 6) + 4) * E.points.card := by
       apply Nat.mul_le_mul_right
       have : msg.toD.degE + stmt.k + 6 ≤ d + stmt.k + 6 := by
         exact Nat.add_le_add_right (Nat.add_le_add_right hDeg _) _
@@ -527,7 +527,7 @@ theorem ip_knowledge_sound
          ∧ dlogHolds E stmt wit) ∨
      ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
-      ≤ (54 * (d + stmt.k + 6) + 4) * E.points.card)
+      ≤ (72 * (d + stmt.k + 6) + 4) * E.points.card)
     -- (2) Uniqueness of third-round message.
     ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
         (msg3 msg3' : IPProverMsg3 E.q),

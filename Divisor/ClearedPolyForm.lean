@@ -788,6 +788,58 @@ theorem thirdPoint_of_xne (A₀ A₁ : ZMod E.q × ZMod E.q) (h : A₀.1 ≠ A�
     thirdPoint E A₀ A₁ = ECPoint.affine (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) := by
   simp only [thirdPoint, chordX₂, chordY₂, slopeOf, if_neg h]
 
+/-! ### Symmetry of slope, chord, and line under `A₀ ↔ A₁` swap
+
+    `slopeOf`, `chordX₂`, `chordY₂`, and `lineThrough` are symmetric in the
+    pair `(A₀, A₁)` (with the latter two requiring `A₀.1 ≠ A₁.1`).
+    These facts flow through to symmetry of `logDerivCheckFnDenom` and
+    `logDerivCheckFn` on the non-vertical cone, which is needed by T2. -/
+
+theorem slopeOf_symm (x₀ y₀ x₁ y₁ : ZMod E.q) :
+    slopeOf x₀ y₀ x₁ y₁ = slopeOf x₁ y₁ x₀ y₀ := by
+  unfold slopeOf
+  by_cases h : x₀ = x₁
+  · subst h
+    have hzero : (x₀ - x₀ : ZMod E.q) = 0 := sub_self x₀
+    rw [hzero]; simp
+  · rw [show (x₀ - x₁ : ZMod E.q) = -(x₁ - x₀) from by ring, inv_neg]
+    ring
+
+theorem chordX₂_symm (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    chordX₂ A₀ A₁ = chordX₂ A₁ A₀ := by
+  unfold chordX₂
+  rw [slopeOf_symm E A₀.1 A₀.2 A₁.1 A₁.2]; ring
+
+theorem chordY₂_symm (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    chordY₂ A₀ A₁ = chordY₂ A₁ A₀ := by
+  unfold chordY₂
+  have hslope := slopeOf_symm E A₀.1 A₀.2 A₁.1 A₁.2
+  have hchord := chordX₂_symm E A₀ A₁
+  rw [hslope, hchord]
+  -- Need: lam' · cx + (A₀.2 - lam' · A₀.1) = lam' · cx + (A₁.2 - lam' · A₁.1).
+  -- Suffices: A₀.2 - lam' · A₀.1 = A₁.2 - lam' · A₁.1, i.e., lam' · (A₁.1 - A₀.1) = A₁.2 - A₀.2.
+  set lam' := slopeOf A₁.1 A₁.2 A₀.1 A₀.2 with hlam_def
+  have hcancel : lam' * (A₁.1 - A₀.1) = A₁.2 - A₀.2 := by
+    have hne : (A₀.1 - A₁.1 : ZMod E.q) ≠ 0 := sub_ne_zero.mpr hNV
+    simp only [hlam_def, slopeOf]
+    field_simp
+    ring
+  linear_combination hcancel
+
+theorem lineThrough_symm (x₀ y₀ x₁ y₁ : ZMod E.q) (h : x₀ ≠ x₁) :
+    lineThrough x₀ y₀ x₁ y₁ = lineThrough x₁ y₁ x₀ y₀ := by
+  unfold lineThrough
+  refine Line.mk.injEq .. |>.mpr ⟨?_, ?_⟩
+  · exact slopeOf_symm E x₀ y₀ x₁ y₁
+  · have hslope := slopeOf_symm E x₀ y₀ x₁ y₁
+    rw [hslope]
+    have hcancel : slopeOf x₁ y₁ x₀ y₀ * (x₁ - x₀) = y₁ - y₀ := by
+      unfold slopeOf
+      have hne : (x₀ - x₁ : ZMod E.q) ≠ 0 := sub_ne_zero.mpr h
+      field_simp
+      ring
+    linear_combination hcancel
+
 /-! ## Phase B1: Finset-sum bivEval identities for D@A₂ parts
 
     The `DAtA₂Scaled`, `DDerivAtA₂Scaled` polynomials are Finset sums
@@ -1492,6 +1544,34 @@ theorem logDerivTerm_eq_explicit
         * (D.eval pt.1 pt.2 * (3 * pt.1 ^ 2 + curveA - 2 * lam * pt.2))⁻¹ := by
   unfold logDerivTerm
   rfl
+
+/-! ### Symmetry of `logDerivCheckFnDenom` and `logDerivCheckFn` on the
+      non-vertical cone (A₀ ↔ A₁ swap). Used in T2. -/
+
+theorem logDerivCheckFnDenom_symm
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    logDerivCheckFnDenom E D P B A₀ A₁ = logDerivCheckFnDenom E D P B A₁ A₀ := by
+  rw [logDerivCheckFnDenom_eq_explicit, logDerivCheckFnDenom_eq_explicit]
+  rw [slopeOf_symm E A₁.1 A₁.2 A₀.1 A₀.2,
+      chordX₂_symm E A₁ A₀,
+      chordY₂_symm E A₁ A₀ (Ne.symm hNV),
+      lineThrough_symm E A₁.1 A₁.2 A₀.1 A₀.2 (Ne.symm hNV)]
+  ring
+
+theorem logDerivCheckFn_symm
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    logDerivCheckFn E D P k B m A₀ A₁ = logDerivCheckFn E D P k B m A₁ A₀ := by
+  rw [logDerivCheckFn_eq_positive_form E D P B m A₀ A₁,
+      logDerivCheckFn_eq_positive_form E D P B m A₁ A₀,
+      slopeOf_symm E A₁.1 A₁.2 A₀.1 A₀.2,
+      chordX₂_symm E A₁ A₀,
+      chordY₂_symm E A₁ A₀ (Ne.symm hNV),
+      lineThrough_symm E A₁.1 A₁.2 A₀.1 A₀.2 (Ne.symm hNV)]
+  ring
 
 /-- Per-term clearing (i=0): `polyForm0 = LT(A₀) · denom`, under the two
     nonzero factors `D(A₀) ≠ 0` and `dxdzDen(A₀) ≠ 0`. -/
@@ -4132,6 +4212,98 @@ theorem resultantX_clearedFiberPoly_natDegree_le
   simp only [hMdef, hNdef]
   omega
 
+/-! ## `denomScaledPoly`: polynomial witness for the `logDerivCheckFnDenom`
+      zero-set slice. Used together with `clearedFiberPoly` to bound `bad_A₀_set`
+      in T2 via a role-swap argument. -/
+
+/-- Polynomial encoding of the full `logDerivCheckFnDenom` after clearing
+    slope inverses. On the non-vertical cone, its `bivEval` equals
+    `(A₁.1 - A₀.1)^(D.degE+k+7) · logDerivCheckFnDenom E D P B A₀ A₁`. -/
+noncomputable def denomScaledPoly (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  DAllScaled (E := E) D A₀
+    * dxdzAllScaled (E := E) A₀
+    * linesProductScaled (E := E) P k B A₀
+
+theorem bivEval_denomScaledPoly_eq (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (denomScaledPoly (E := E) D P k B A₀) A₁
+      = (A₁.1 - A₀.1) ^ (D.degE + k + 7) *
+          logDerivCheckFnDenom E D P B A₀ A₁ := by
+  unfold denomScaledPoly
+  rw [bivEval_mul, bivEval_mul,
+      bivEval_DAllScaled_eq E D A₀ A₁ hNV,
+      bivEval_dxdzAllScaled_eq E A₀ A₁ hNV,
+      bivEval_linesProductScaled_eq E P k B A₀ A₁ hNV,
+      logDerivCheckFnDenom_eq_explicit]
+  have hpow : (A₁.1 - A₀.1) ^ (D.degE + k + 7)
+            = (A₁.1 - A₀.1) ^ D.degE * (A₁.1 - A₀.1) ^ 6
+              * (A₁.1 - A₀.1) ^ (k + 1) := by
+    rw [show D.degE + k + 7 = D.degE + 6 + (k + 1) from by omega,
+        pow_add, pow_add]
+  rw [hpow]; ring
+
+theorem denomScaledPoly_natDegree_le (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    (denomScaledPoly (E := E) D P k B A₀).natDegree ≤ D.degE + k + 9 := by
+  unfold denomScaledPoly
+  have h1 := DAllScaled_natDegree_le E D A₀
+  have h2 := dxdzAllScaled_natDegree_le E A₀
+  have h3 := linesProductScaled_natDegree_le E P k B A₀
+  refine natDegree_mul_le.trans ?_
+  refine (Nat.add_le_add (natDegree_mul_le.trans (Nat.add_le_add h1 h2)) h3).trans ?_
+  omega
+
+theorem InnerDegLe_denomScaledPoly (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (denomScaledPoly (E := E) D P k B A₀)
+              (3 * D.degE + k + 11) := by
+  unfold denomScaledPoly
+  have h1 := InnerDegLe_DAllScaled (E := E) D A₀
+  have h2 := InnerDegLe_dxdzAllScaled (E := E) A₀
+  have h3 := InnerDegLe_linesProductScaled (E := E) P k B A₀
+  exact ((h1.mul h2).mul h3).weaken (by omega)
+
+theorem resultantX_denomScaledPoly_natDegree_le (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (resultantX E (denomScaledPoly (E := E) D P k B A₀)).natDegree
+      ≤ 9 * D.degE + 5 * k + 55 := by
+  set N := D.degE + k + 9 with hNdef
+  set M := 3 * D.degE + k + 11 with hMdef
+  set k_ind := (N + 1) / 2 with hkIndDef
+  have hNcon : (denomScaledPoly (E := E) D P k B A₀).natDegree ≤ 2 * k_ind + 1 := by
+    have hfn : (denomScaledPoly (E := E) D P k B A₀).natDegree ≤ N :=
+      denomScaledPoly_natDegree_le (E := E) D P k B A₀
+    simp only [hkIndDef]; omega
+  have hM_dsp : InnerDegLe (E := E) (denomScaledPoly (E := E) D P k B A₀) M :=
+    InnerDegLe_denomScaledPoly (E := E) D P k B A₀
+  have hRes := resultantX_natDegree_le_of_InnerDegLe (E := E)
+                (denomScaledPoly (E := E) D P k B A₀) M k_ind hM_dsp hNcon
+  refine hRes.trans ?_
+  have hbd : 2 * (M + 3 * k_ind) + 3 ≤ 2 * M + 3 * (N + 1) + 3 := by
+    simp only [hkIndDef]; omega
+  refine hbd.trans ?_
+  simp only [hMdef, hNdef]; omega
+
+theorem denomScaledPoly_modCurve_ne_zero
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (A₀ : ZMod E.q × ZMod E.q)
+    (hWitness : ∃ A₁ ∈ E.points, A₀.1 ≠ A₁.1 ∧
+      logDerivCheckFnDefined E D P B A₀ A₁) :
+    denomScaledPoly (E := E) D P k B A₀ %ₘ curveEqPoly E ≠ 0 := by
+  obtain ⟨A₁, hA₁, hNV, hDef⟩ := hWitness
+  intro hModZero
+  have hBiv : bivEval (denomScaledPoly (E := E) D P k B A₀) A₁ = 0 := by
+    rw [bivEval_eq_modByMonic_on_E E _ hA₁, hModZero]
+    unfold bivEval; simp
+  rw [bivEval_denomScaledPoly_eq E D P k B A₀ A₁ hNV] at hBiv
+  have hLam : (A₁.1 - A₀.1) ^ (D.degE + k + 7) ≠ 0 :=
+    pow_ne_zero _ (sub_ne_zero.mpr (Ne.symm hNV))
+  exact hDef ((mul_eq_zero.mp hBiv).resolve_left hLam)
+
 section Phase2
 open Classical
 
@@ -4229,8 +4401,15 @@ theorem logDerivCheckFn_fiber_count_bound
     non-identically-zero on non-vertical defined pairs, the set of A₀
     with fiber ≡ 0 on the non-vertical defined part of E.points is bounded.
 
-    Weakened to the non-vertical sub-filter to match T1's Or.inr. -/
-axiom logDerivCheckFn_badA₀_bound
+    Proof strategy: fix the hGlobalNonzero witness pair `(A₀*, A₁*)` and
+    bound `bad_A₀_set` via a role-swap + `card_zeros_on_E_le` on two
+    polynomials anchored at `A₁*`:
+    * `clearedFiberPoly A₁*`: captures bad `A₀`'s with `defined(A₀, A₁*)`
+      via the B3 identity + symmetry (f(A₀, A₁*) = 0 from bad ⇒ bivEval = 0).
+    * `denomScaledPoly A₁*`: captures bad `A₀`'s with `¬ defined(A₀, A₁*)`
+      (its bivEval vanishes exactly when `denom = 0` on the non-vertical cone).
+    * Plus a 2-point "vertical at A₁*" contribution. -/
+theorem logDerivCheckFn_badA₀_bound
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (hGlobalNonzero :
@@ -4241,7 +4420,96 @@ axiom logDerivCheckFn_badA₀_bound
       (fun A₀ => ∀ A₁ ∈ E.points, A₀.1 ≠ A₁.1 →
          logDerivCheckFnDefined E D P B A₀ A₁ →
          logDerivCheckFn E D P k B m A₀ A₁ = 0)).card
-      ≤ 18 * (D.degE + k + 6) + 2
+      ≤ 36 * (D.degE + k + 6) + 2 := by
+  classical
+  obtain ⟨A₀s, A₁s, hA₀s, hA₁s, hNVs, hDefs, hfnes⟩ := hGlobalNonzero
+  -- Swap roles: witness for `clearedFiberPoly_modCurve_ne_zero` at A₁s.
+  have hCFPNz : clearedFiberPoly (E := E) D P k B m A₁s %ₘ curveEqPoly E ≠ 0 := by
+    apply clearedFiberPoly_modCurve_ne_zero E D P B m A₁s
+    refine ⟨A₀s, hA₀s, Ne.symm hNVs, ?_, ?_⟩
+    · -- defined (A₁s, A₀s) by symm of denom on non-vertical.
+      unfold logDerivCheckFnDefined
+      rw [logDerivCheckFnDenom_symm E D P B A₁s A₀s (Ne.symm hNVs)]
+      exact hDefs
+    · -- f (A₁s, A₀s) ≠ 0 by symm of f.
+      rw [logDerivCheckFn_symm E D P B m A₁s A₀s (Ne.symm hNVs)]
+      exact hfnes
+  -- And for `denomScaledPoly_modCurve_ne_zero`.
+  have hDSPNz : denomScaledPoly (E := E) D P k B A₁s %ₘ curveEqPoly E ≠ 0 := by
+    apply denomScaledPoly_modCurve_ne_zero E D P k B A₁s
+    refine ⟨A₀s, hA₀s, Ne.symm hNVs, ?_⟩
+    unfold logDerivCheckFnDefined
+    rw [logDerivCheckFnDenom_symm E D P B A₁s A₀s (Ne.symm hNVs)]
+    exact hDefs
+  -- Zero sets.
+  set cfp_zeros : Finset (ZMod E.q × ZMod E.q) := E.points.filter (fun A₀ =>
+      bivEval (clearedFiberPoly (E := E) D P k B m A₁s) A₀ = 0) with hcfp_zeros
+  set dsp_zeros : Finset (ZMod E.q × ZMod E.q) := E.points.filter (fun A₀ =>
+      bivEval (denomScaledPoly (E := E) D P k B A₁s) A₀ = 0) with hdsp_zeros
+  set vert_set : Finset (ZMod E.q × ZMod E.q) := E.points.filter
+      (fun A₀ => A₀.1 = A₁s.1) with hvert_set
+  -- Cardinalities.
+  have hZCFP : cfp_zeros.card ≤ 2 * (9 * D.degE + 5 * k + 50) := by
+    calc cfp_zeros.card
+        ≤ 2 * (resultantX E (clearedFiberPoly (E := E) D P k B m A₁s)).natDegree :=
+          card_zeros_on_E_le E _ hCFPNz
+      _ ≤ 2 * (9 * D.degE + 5 * k + 50) :=
+          Nat.mul_le_mul_left 2 (resultantX_clearedFiberPoly_natDegree_le E D P k B m A₁s)
+  have hZDSP : dsp_zeros.card ≤ 2 * (9 * D.degE + 5 * k + 55) := by
+    calc dsp_zeros.card
+        ≤ 2 * (resultantX E (denomScaledPoly (E := E) D P k B A₁s)).natDegree :=
+          card_zeros_on_E_le E _ hDSPNz
+      _ ≤ 2 * (9 * D.degE + 5 * k + 55) :=
+          Nat.mul_le_mul_left 2 (resultantX_denomScaledPoly_natDegree_le E D P k B A₁s)
+  have hZVert : vert_set.card ≤ 2 := card_points_with_fst_eq_le E A₁s.1
+  -- bad_A₀_set is contained in the union of the three.
+  set bad_A₀_set : Finset (ZMod E.q × ZMod E.q) := E.points.filter
+    (fun A₀ => ∀ A₁ ∈ E.points, A₀.1 ≠ A₁.1 →
+       logDerivCheckFnDefined E D P B A₀ A₁ →
+       logDerivCheckFn E D P k B m A₀ A₁ = 0) with hbadA₀
+  have hSub : bad_A₀_set ⊆ cfp_zeros ∪ vert_set ∪ dsp_zeros := by
+    intro A₀ hA₀
+    simp only [hbadA₀, Finset.mem_filter] at hA₀
+    obtain ⟨hA₀E, hbadP⟩ := hA₀
+    simp only [Finset.mem_union, hcfp_zeros, hvert_set, hdsp_zeros,
+               Finset.mem_filter]
+    by_cases hV : A₀.1 = A₁s.1
+    · left; right; exact ⟨hA₀E, hV⟩
+    · -- Non-vertical cases. Let hVne : A₁s.1 ≠ A₀.1 (role-swap order).
+      have hVne : A₁s.1 ≠ A₀.1 := Ne.symm hV
+      by_cases hDef : logDerivCheckFnDefined E D P B A₀ A₁s
+      · -- Defined case: in cfp_zeros via B3 identity + bad predicate.
+        left; left
+        refine ⟨hA₀E, ?_⟩
+        -- Apply the identity at (A₁s, A₀) using role-swap.
+        have hDefSwap : logDerivCheckFnDenom E D P B A₁s A₀ ≠ 0 := by
+          rw [logDerivCheckFnDenom_symm E D P B A₁s A₀ hVne]
+          exact hDef
+        rw [clearedFiberPoly_identity E D P B m A₁s A₀ hVne hDefSwap]
+        unfold logDerivCheckFnCleared
+        have hfZero : logDerivCheckFn E D P k B m A₁s A₀ = 0 := by
+          rw [logDerivCheckFn_symm E D P B m A₁s A₀ hVne]
+          exact hbadP A₁s hA₁s hV hDef
+        rw [hfZero]; ring
+      · -- Undefined case: in dsp_zeros.
+        right
+        refine ⟨hA₀E, ?_⟩
+        rw [bivEval_denomScaledPoly_eq E D P k B A₁s A₀ hVne]
+        have hDenomZero : logDerivCheckFnDenom E D P B A₁s A₀ = 0 := by
+          unfold logDerivCheckFnDefined at hDef
+          push_neg at hDef
+          rw [logDerivCheckFnDenom_symm E D P B A₁s A₀ hVne]
+          exact hDef
+        rw [hDenomZero]; ring
+  -- Combine.
+  calc bad_A₀_set.card
+      ≤ (cfp_zeros ∪ vert_set ∪ dsp_zeros).card := Finset.card_le_card hSub
+    _ ≤ (cfp_zeros ∪ vert_set).card + dsp_zeros.card := Finset.card_union_le _ _
+    _ ≤ (cfp_zeros.card + vert_set.card) + dsp_zeros.card :=
+        Nat.add_le_add_right (Finset.card_union_le _ _) _
+    _ ≤ (2 * (9 * D.degE + 5 * k + 50) + 2) + 2 * (9 * D.degE + 5 * k + 55) :=
+        Nat.add_le_add (Nat.add_le_add hZCFP hZVert) hZDSP
+    _ ≤ 36 * (D.degE + k + 6) + 2 := by omega
 
 open Classical in
 /-- **Bad event bound** (mechanized). The undefined subset (pairs where
@@ -4401,9 +4669,10 @@ theorem logDerivCheckFn_zero_set_bound
       logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     ((E.points ×ˢ E.points).filter
       (fun p => logDerivCheckFn E D P k B m p.1 p.2 = 0)).card
-      ≤ (54 * (D.degE + k + 6) + 4) * E.points.card := by
+      ≤ (72 * (D.degE + k + 6) + 4) * E.points.card := by
   classical
   set K := 18 * (D.degE + k + 6) + 2 with hKdef
+  set K' := 36 * (D.degE + k + 6) + 2 with hK'def
   -- Split: zeros = (defined zeros) ⊎ (some subset of undefined).
   set zSet := (E.points ×ˢ E.points).filter
     (fun p => logDerivCheckFn E D P k B m p.1 p.2 = 0) with hzSet
@@ -4430,11 +4699,11 @@ theorem logDerivCheckFn_zero_set_bound
     (fun A₀ => ∀ A₁ ∈ E.points, A₀.1 ≠ A₁.1 →
        logDerivCheckFnDefined E D P B A₀ A₁ →
        logDerivCheckFn E D P k B m A₀ A₁ = 0) with hbadA₀
-  have hBadBound : bad_A₀_set.card ≤ K :=
+  have hBadBound : bad_A₀_set.card ≤ K' :=
     logDerivCheckFn_badA₀_bound E D P k B m
       (by obtain ⟨A₀, A₁, hA₀, hA₁, hNV, hDef, hne⟩ := hNonzero
           exact ⟨A₀, A₁, hA₀, hA₁, hNV, hDef, hne⟩)
-  have hDefZ : defZ.card ≤ 2 * K * E.points.card := by
+  have hDefZ : defZ.card ≤ (K + K') * E.points.card := by
     -- Split defZ by whether A₀ is "bad" (fully identically-zero on defined fiber)
     -- or "good" (fiber count bounded by K).
     set goodZ := defZ.filter (fun p => p.1 ∉ bad_A₀_set) with hgoodZ
@@ -4442,7 +4711,7 @@ theorem logDerivCheckFn_zero_set_bound
     have hZsplit : defZ.card = goodZ.card + badZ.card := by
       rw [hgoodZ, hbadZ, Nat.add_comm,
           Finset.filter_card_add_filter_neg_card_eq_card]
-    have hBadZcard : badZ.card ≤ K * E.points.card := by
+    have hBadZcard : badZ.card ≤ K' * E.points.card := by
       have hSub : badZ ⊆ bad_A₀_set ×ˢ E.points := by
         intro p hp
         simp only [hbadZ, hdefZ, Finset.mem_filter, Finset.mem_product] at hp
@@ -4451,7 +4720,7 @@ theorem logDerivCheckFn_zero_set_bound
       calc badZ.card
           ≤ (bad_A₀_set ×ˢ E.points).card := Finset.card_le_card hSub
         _ = bad_A₀_set.card * E.points.card := Finset.card_product _ _
-        _ ≤ K * E.points.card := Nat.mul_le_mul_right _ hBadBound
+        _ ≤ K' * E.points.card := Nat.mul_le_mul_right _ hBadBound
     have hGoodZcard : goodZ.card ≤ E.points.card * K := by
       -- Each good A₀'s fiber in goodZ has ≤ K elements.
       have hFiberGood : ∀ A₀ ∈ E.points,
@@ -4500,9 +4769,9 @@ theorem logDerivCheckFn_zero_set_bound
         _ ≤ K * E.points.card := Nat.mul_le_mul_left _ (Finset.card_le_card hImgSub)
         _ = E.points.card * K := Nat.mul_comm _ _
     calc defZ.card = goodZ.card + badZ.card := hZsplit
-      _ ≤ E.points.card * K + K * E.points.card := by
+      _ ≤ E.points.card * K + K' * E.points.card := by
           exact Nat.add_le_add hGoodZcard hBadZcard
-      _ = 2 * K * E.points.card := by ring
+      _ = (K + K') * E.points.card := by ring
   -- Derive `hD` (D is not identically zero) from hNonzero: if `D.a = 0`
   -- and `D.b = 0`, then `D.eval` is identically zero, so
   -- `logDerivCheckFnDenom` has a factor `D.eval A₀ = 0` everywhere,
@@ -4520,11 +4789,11 @@ theorem logDerivCheckFn_zero_set_bound
   -- Combine.
   calc zSet.card
       ≤ defZ.card + undefAll.card := hSplit
-    _ ≤ 2 * K * E.points.card + 18 * (D.degE + k + 6) * E.points.card := by
+    _ ≤ (K + K') * E.points.card + 18 * (D.degE + k + 6) * E.points.card := by
         exact Nat.add_le_add hDefZ hUndef
-    _ = (2 * K + 18 * (D.degE + k + 6)) * E.points.card := by ring
-    _ = (54 * (D.degE + k + 6) + 4) * E.points.card := by
-        rw [hKdef]; ring
+    _ = ((K + K') + 18 * (D.degE + k + 6)) * E.points.card := by ring
+    _ = (72 * (D.degE + k + 6) + 4) * E.points.card := by
+        rw [hKdef, hK'def]; ring
 
 /-- Lift of Phase 2 bound from `E.points ×ˢ E.points` to `validPairs E`.
     Requires a **non-vertical** witness of `logDerivCheckFn ≠ 0` on the
@@ -4537,7 +4806,7 @@ theorem log_deriv_sz (D : CoordRingElt E.q)
        logDerivCheckFnDefined E D P B A₀ A₁ ∧
        logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     (badChallengesNotEq E D P B m).card
-      ≤ (54 * (D.degE + k + 6) + 4) * E.points.card := by
+      ≤ (72 * (D.degE + k + 6) + 4) * E.points.card := by
   have hBound := logDerivCheckFn_zero_set_bound E D P B m hDeg hNonvanishing
   have hsub : badChallengesNotEq E D P B m ⊆
       (E.points ×ˢ E.points).filter
