@@ -2002,20 +2002,145 @@ axiom logDerivCheckFn_badA₀_bound
       ≤ 18 * (D.degE + k + 6) + 2
 
 open Classical in
-/-- **Bad event bound.** The undefined subset (pairs where some
-    `logDerivCheckFn` denominator vanishes) has cardinality bounded
-    polynomially in `D.degE + k` times `|E.points|`. Justification:
-    each of the `2·(D.degE) + k + 3` denominator factors vanishes on a
-    set of pairs with structure "polynomial relation in (A₀, A₁)";
-    applying `card_zeros_on_E_le`-style bounds to each and summing
-    yields the stated bound. -/
-axiom logDerivCheckFn_undefined_set_bound
+/-- **Bad event bound** (mechanized). The undefined subset (pairs where
+    some `logDerivCheckFn` denominator vanishes) has cardinality bounded
+    polynomially in `D.degE + k` times `|E.points|`.
+
+    Derived from F1-F8 factor-zero bounds via union-bound; hypothesis
+    `hD : ¬ (D.a = 0 ∧ D.b = 0)` is needed for F1/F2/F3 to have
+    finitely-many zeros. -/
+theorem logDerivCheckFn_undefined_set_bound
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
-    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) :
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     ((E.points ×ˢ E.points).filter
       (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
         ¬ logDerivCheckFnDefined E D P B p.1 p.2)).card
-      ≤ 18 * (D.degE + k + 6) * E.points.card
+      ≤ 18 * (D.degE + k + 6) * E.points.card := by
+  classical
+  -- Define the 8 sub-events (one per `logDerivCheckFnDenom` factor).
+  set S1 := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      D.eval p.1.1 p.1.2 = 0) with hS1def
+  set S2 := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      D.eval p.2.1 p.2.2 = 0) with hS2def
+  set S3 := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      D.eval (chordX₂ p.1 p.2) (chordY₂ p.1 p.2) = 0) with hS3def
+  set S4 := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      3 * p.1.1 ^ 2 + E.curveA
+        - 2 * slopeOf p.1.1 p.1.2 p.2.1 p.2.2 * p.1.2 = 0) with hS4def
+  set S5 := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      3 * p.2.1 ^ 2 + E.curveA
+        - 2 * slopeOf p.1.1 p.1.2 p.2.1 p.2.2 * p.2.2 = 0) with hS5def
+  set S6 := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      3 * (chordX₂ p.1 p.2) ^ 2 + E.curveA
+        - 2 * slopeOf p.1.1 p.1.2 p.2.1 p.2.2 * (chordY₂ p.1 p.2) = 0) with hS6def
+  set S7 := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      (lineThrough p.1.1 p.1.2 p.2.1 p.2.2).eval P.1 (-P.2) = 0) with hS7def
+  set S8 := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      ∃ j : Fin k, (lineThrough p.1.1 p.1.2 p.2.1 p.2.2).eval (B j).1 (B j).2 = 0)
+    with hS8def
+  -- The undefined set is contained in the union of the 8 sub-events.
+  set U := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      ¬ logDerivCheckFnDefined E D P B p.1 p.2) with hUdef
+  have hSub : U ⊆ S1 ∪ S2 ∪ S3 ∪ S4 ∪ S5 ∪ S6 ∪ S7 ∪ S8 := by
+    intro p hp
+    simp only [hUdef, Finset.mem_filter, Finset.mem_product] at hp
+    obtain ⟨⟨h1E, h2E⟩, hNotDef⟩ := hp
+    have hDenom : logDerivCheckFnDenom E D P B p.1 p.2 = 0 := by
+      unfold logDerivCheckFnDefined at hNotDef
+      exact not_not.mp hNotDef
+    unfold logDerivCheckFnDenom at hDenom
+    simp only [Finset.mem_union, hS1def, hS2def, hS3def, hS4def, hS5def,
+               hS6def, hS7def, hS8def, Finset.mem_filter, Finset.mem_product]
+    -- Chain of mul_eq_zero: 8 possibilities.
+    have h1 := hDenom
+    rcases mul_eq_zero.mp h1 with h | h
+    · rcases mul_eq_zero.mp h with h | h
+      · rcases mul_eq_zero.mp h with h | h
+        · rcases mul_eq_zero.mp h with h | h
+          · rcases mul_eq_zero.mp h with h | h
+            · rcases mul_eq_zero.mp h with h | h
+              · rcases mul_eq_zero.mp h with h | h
+                · -- Factor 1: D.eval A₀
+                  exact Or.inl (Or.inl (Or.inl (Or.inl (Or.inl (Or.inl
+                    (Or.inl ⟨⟨h1E, h2E⟩, h⟩))))))
+                · -- Factor 2: D.eval A₁
+                  exact Or.inl (Or.inl (Or.inl (Or.inl (Or.inl (Or.inl
+                    (Or.inr ⟨⟨h1E, h2E⟩, h⟩))))))
+              · -- Factor 3: D.eval A₂ (= D.eval chordX₂ chordY₂)
+                exact Or.inl (Or.inl (Or.inl (Or.inl (Or.inl (Or.inr
+                  ⟨⟨h1E, h2E⟩, h⟩)))))
+            · -- Factor 4: dxdz(A₀)
+              exact Or.inl (Or.inl (Or.inl (Or.inl (Or.inr
+                ⟨⟨h1E, h2E⟩, h⟩))))
+          · -- Factor 5: dxdz(A₁)
+            exact Or.inl (Or.inl (Or.inl (Or.inr ⟨⟨h1E, h2E⟩, h⟩)))
+        · -- Factor 6: dxdz(A₂)
+          exact Or.inl (Or.inl (Or.inr ⟨⟨h1E, h2E⟩, h⟩))
+      · -- Factor 7: L(-P)
+        exact Or.inl (Or.inr ⟨⟨h1E, h2E⟩, h⟩)
+    · -- Factor 8: ∏ L(B_j). Convert product=0 into ∃ j, factor = 0.
+      right
+      refine ⟨⟨h1E, h2E⟩, ?_⟩
+      rw [Finset.prod_eq_zero_iff] at h
+      obtain ⟨j, _, hj⟩ := h
+      exact ⟨j, hj⟩
+  -- Bound each sub-event.
+  have hS1 : S1.card ≤ 2 * D.degE * E.points.card :=
+    DAtA₀_zero_pairs_card_le E D hD
+  have hS2 : S2.card ≤ 2 * D.degE * E.points.card :=
+    DAtA₁_zero_pairs_card_le E D hD
+  have hS3 : S3.card ≤ (2 * D.degE + 2) * E.points.card :=
+    DAtA₂_zero_pairs_card_le E D hD
+  have hS4 : S4.card ≤ 14 * E.points.card :=
+    dxdzA₀_zero_pairs_card_le E
+  have hS5 : S5.card ≤ 14 * E.points.card :=
+    dxdzA₁_zero_pairs_card_le E
+  have hS6 : S6.card ≤ 32 * E.points.card :=
+    dxdzA₂_zero_pairs_card_le E
+  have hS7 : S7.card ≤ 9 * E.points.card :=
+    linePNeg_zero_pairs_card_le E P
+  have hS8 : S8.card ≤ 9 * k * E.points.card :=
+    lineBj_zero_pairs_card_le E B
+  -- Assemble.
+  calc U.card
+      ≤ (S1 ∪ S2 ∪ S3 ∪ S4 ∪ S5 ∪ S6 ∪ S7 ∪ S8).card :=
+        Finset.card_le_card hSub
+    _ ≤ S1.card + S2.card + S3.card + S4.card + S5.card + S6.card
+         + S7.card + S8.card := by
+        refine le_trans (Finset.card_union_le _ _) ?_
+        refine Nat.add_le_add ?_ le_rfl
+        refine le_trans (Finset.card_union_le _ _) ?_
+        refine Nat.add_le_add ?_ le_rfl
+        refine le_trans (Finset.card_union_le _ _) ?_
+        refine Nat.add_le_add ?_ le_rfl
+        refine le_trans (Finset.card_union_le _ _) ?_
+        refine Nat.add_le_add ?_ le_rfl
+        refine le_trans (Finset.card_union_le _ _) ?_
+        refine Nat.add_le_add ?_ le_rfl
+        refine le_trans (Finset.card_union_le _ _) ?_
+        refine Nat.add_le_add ?_ le_rfl
+        exact Finset.card_union_le _ _
+    _ ≤ 2 * D.degE * E.points.card + 2 * D.degE * E.points.card
+         + (2 * D.degE + 2) * E.points.card + 14 * E.points.card
+         + 14 * E.points.card + 32 * E.points.card + 9 * E.points.card
+         + 9 * k * E.points.card := by
+        exact Nat.add_le_add (Nat.add_le_add (Nat.add_le_add
+          (Nat.add_le_add (Nat.add_le_add (Nat.add_le_add
+            (Nat.add_le_add hS1 hS2) hS3) hS4) hS5) hS6) hS7) hS8
+    _ = (6 * D.degE + 9 * k + 71) * E.points.card := by ring
+    _ ≤ 18 * (D.degE + k + 6) * E.points.card := by
+        apply Nat.mul_le_mul_right
+        omega
 
 /-- **Phase 2 main theorem**: mechanized zero-set bound on `E × E`.
     Derived from the defined-fiber + bad-A₀ + undefined-bad-event
@@ -2132,9 +2257,20 @@ theorem logDerivCheckFn_zero_set_bound
       _ ≤ E.points.card * K + K * E.points.card := by
           exact Nat.add_le_add hGoodZcard hBadZcard
       _ = 2 * K * E.points.card := by ring
-  -- Bound undefAll via the bad-event axiom.
+  -- Derive `hD` (D is not identically zero) from hNonzero: if `D.a = 0`
+  -- and `D.b = 0`, then `D.eval` is identically zero, so
+  -- `logDerivCheckFnDenom` has a factor `D.eval A₀ = 0` everywhere,
+  -- contradicting the nonzero-denominator witness.
+  have hD : ¬ (D.a = 0 ∧ D.b = 0) := by
+    intro hDab
+    obtain ⟨A₀, A₁, hA₀, _, hDef, _⟩ := hNonzero
+    apply hDef
+    unfold logDerivCheckFnDenom CoordRingElt.eval
+    rw [hDab.1, hDab.2]
+    simp
+  -- Bound undefAll via the mechanized undefined-set-bound theorem.
   have hUndef : undefAll.card ≤ 18 * (D.degE + k + 6) * E.points.card :=
-    logDerivCheckFn_undefined_set_bound E D P k B
+    logDerivCheckFn_undefined_set_bound E D P k B hD
   -- Combine.
   calc zSet.card
       ≤ defZ.card + undefAll.card := hSplit
