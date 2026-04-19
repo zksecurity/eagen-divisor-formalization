@@ -1121,3 +1121,74 @@ alone.
 
 **Axiom count after session 8**: 4 remaining (T1, T2, T4, T5). Phase B
 is infrastructure — no axiom removed until B5 enables T1.
+
+### Session 9 (2026-04-19) — Phase B3 landed
+
+Commits (this session):
+- `bce25e2` — Phase B3: `clearedFiberPoly_identity` via five per-term
+  sub-lemmas. ~324 LOC. Build clean.
+
+**What landed**: the master identity
+`bivEval (clearedFiberPoly ...) A₁ = (A₁.1 - A₀.1)^(D.degE + k + 6)
+ · logDerivCheckFnCleared`, provable on the non-vertical cone with
+`logDerivCheckFnDenom ≠ 0`.
+
+New helpers (all public except per-term private sub-lemmas):
+- `logDerivCheckFnDenom_factors_ne_zero`: extract 8 individual nonzero
+  facts from `denom ≠ 0` (D(A₀), D(A₁), D(A₂), three dxdz(Aᵢ), L(-P),
+  each L(Bⱼ)).
+- `logDerivCheckFn_eq_positive_form`: rewrite `logDerivCheckFn` as a
+  pure `+` sum (folds `lhs - rhs` + per-summand `-` signs into a
+  single positive Σⱼ with `m_j · L(Bⱼ)⁻¹`).
+- `logDerivCheckFnDenom_eq_explicit` and `logDerivTerm_eq_explicit`:
+  let-free explicit product forms. Critical for avoiding `whnf`
+  heartbeat timeouts in `field_simp`.
+- Five private sub-lemmas (`clearedFiberPoly_{lhs0,lhs1,lhs2}_eq_LT_mul_denom`,
+  `clearedFiberPoly_negP_eq_Linv_mul_denom`,
+  `clearedFiberPoly_sumj_eq_Linv_mul_denom`) each clear the inverse in
+  one contribution via `field_simp + ring` after the explicit-form
+  rewrites.
+
+**Key techniques that resolved session 8's blockers**:
+
+1. **Explicit-form helpers** (`logDerivCheckFnDenom_eq_explicit`,
+   `logDerivTerm_eq_explicit`): the session-8 proofs timed out at
+   `whnf` when unfolding `logDerivCheckFnDenom`'s 4 nested
+   `let`-bindings (`lam, L, x₂, y₂`). Rewriting via `rfl` through
+   these helpers sidesteps the whnf blow-up.
+
+2. **`simp only [logDerivCheckFnCleared, logDerivCheckFn]` beta-reduces
+   lets** whereas plain `unfold` leaves them as unreduced redexes.
+   Needed before `set`-style abstraction to make the pattern-match
+   catch occurrences on both sides of the goal.
+
+3. **`generalize` over `(A₁.1 - A₀.1) ^ (D.degE + k + 6)`**: `set` +
+   local `let` wasn't enough to prevent `ring` from partially
+   expanding the `^6` piece into monomials (while keeping `^D.degE`
+   and `^k` atomic). `generalize ... = N` creates N as a *free
+   variable*, so `ring` treats it as fully opaque.
+
+4. **Positive-form rewrite before sign/distributivity dance**: pulling
+   the `logDerivCheckFn = LT(A₀) + LT(A₁) + LT(A₂) + L(-P)⁻¹ +
+   Σⱼ m_j · L(Bⱼ)⁻¹` rewrite out as a separate lemma localizes the
+   `Finset.sum_neg_distrib` + `sub_neg_eq_add` manipulation, so the
+   main theorem's final `ring` only needs `Finset.sum_mul` to close.
+
+**Main theorem strategy** (3 phases):
+
+1. Apply the five B2 per-term `bivEval_*_eq` rewrites.
+2. Apply the four simple per-term sub-lemmas + `Finset.sum_congr` for
+   the Σⱼ term.
+3. `unfold logDerivCheckFnCleared` + `rw [logDerivCheckFn_eq_positive_form]`
+   + `generalize` N + `set` LBinv + `Finset.sum_mul` + `ring`.
+
+**Continuation**: Phase B4 (natDegree bounds for `clearedFiberPoly`,
+~80 LOC, low risk) + B5 (nonvanishing, ~50 LOC, low risk). These use
+the B3 main theorem to relate the polynomial's zeros to the scalar
+check-function zeros. After B5, T1 (fiber count bound, ~150 LOC)
+becomes a direct application of `card_zeros_on_E_le` to
+`clearedFiberPoly %ₘ curveEqPoly`.
+
+**Axiom count after session 9**: 4 remaining (T1, T2, T4, T5) —
+unchanged. B3 is infrastructure; axiom removal starts with T1 after
+B4 + B5.
