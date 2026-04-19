@@ -1032,5 +1032,92 @@ Additional helper needed: `bivEval_linesProductScaled_eq` (~60 LOC)
 for the product `L(-P) · ∏ L(B_j)` factor. Pattern similar to B1 but
 with `Finset.prod` instead of `Finset.sum`.
 
-**Axiom count after session 7**: 4 remaining (T1, T2, T4, T5). Phase B
+### Session 8 (2026-04-19) — Phase B2 landed; B3 deferred
+
+Commits (this session):
+- `737f2fa` — Phase B2: line-product and dxdz(A₂) bivEval helpers
+  (~142 LOC).
+- `41d8de1` — Phase B2: per-term bivEval identities for
+  clearedFiberPoly summands (~224 LOC).
+
+**What landed**: Phase B2 sub-phase in full.
+
+Phase B2 helpers (commit `737f2fa`):
+- `bivEval_dxdzDenA₂Scaled_eq`: non-vertical extraction
+  `bivEval (dxdzDenA₂Scaled A₀) A₁ = (A₁.1-A₀.1)^4 · (3·chordX₂² + A
+  - 2·λ·chordY₂)`. Reused the `linear_combination` structure from
+  the existing F6 identity.
+- `bivEval_lineEvalNumAt_eq_mul`: `(A₁.1-A₀.1) · L.eval pt.1 pt.2`
+  form via `ellP_eq_lineEval_mul`.
+- `bivEval_finset_prod`: `bivEval` distributes over `Finset.prod`.
+- Three `linesProduct*_eq` variants (`Scaled`, `NoNegP`, `SkipBj`)
+  giving `(A₁.1-A₀.1)^(k+1)` or `^k` factor extraction.
+
+Per-term identities (commit `41d8de1`):
+- `bivEval_DAllScaled_eq`, `bivEval_dxdzAllScaled_eq`: combined
+  factor-group identities feeding into rhsTermNegPScaled and
+  rhsSumScaled.
+- Five per-term identities: `bivEval_lhsTerm{0,1,2}Scaled_eq`,
+  `bivEval_rhsTermNegPScaled_eq`, `bivEval_rhsSumScaled_eq`. Each
+  expresses `bivEval of term = (A₁.1-A₀.1)^N · <concrete expression>`
+  on the non-vertical cone, where N = D.degE + k + 6 and the
+  concrete expression matches the corresponding term of
+  `logDerivCheckFn · denom` (after cancellation of the shared factor).
+
+**Fix applied during B2**: `Fin.pos_iff_nonempty` is an `iff`, not
+dot notation on a term. Use as `Fin.pos_iff_nonempty.mpr ⟨j₀⟩`.
+
+**B3 attempted and deferred** (three attempts all failed, reverted):
+1. **Direct monolithic**: unfold clearedFiberPoly, rw per-term
+   identities, unfold logDerivCheckFnCleared / logDerivCheckFn /
+   logDerivCheckFnDenom / logDerivTerm, field_simp, ring. Ran for
+   ~3 minutes, killed manually. The combined polynomial identity
+   has ~40+ factor-atoms; `ring` on this size appears infeasible.
+2. **Via polynomial-form intermediate**: introduce a private
+   `logDerivCheckFnClearedPolyForm` polynomial expression (no
+   inverses). Ordering issue: `logDerivCheckFnDefined` is defined
+   after B2 in the file. More importantly, `simp` timeout (200k
+   heartbeats) on the intermediate proof.
+3. **Decomposed into 5 sub-lemmas**: each sub-lemma proves
+   `PolyX_i = logDerivTerm(A_i) · denom` or `L⁻¹ · denom = Poly_i`
+   with a local `field_simp + ring`. Plus a factor-extraction
+   helper `logDerivCheckFnDenom_factors_ne_zero_aux` (parametrized
+   by `denom ≠ 0` instead of the predicate, to avoid ordering).
+   Result: `whnf` timeout errors on the sub-lemma `ring` calls
+   (line 1525 = `polyLhs2_eq_logDerivTerm_mul_denom`'s ring) plus
+   on the **type signature** of the main theorem (line 1583/1593
+   on `logDerivCheckFnCleared E D P k B m A₀ A₁` in the signature).
+   The whnf timeout on the type signature suggests Lean is trying
+   to whnf-normalize `logDerivCheckFnCleared` or elaborate something
+   related, and stuck in the expansion of `logDerivCheckFnDenom`'s
+   let-bindings.
+
+**Root cause analysis**: The `logDerivCheckFnDenom` uses multiple
+`let` bindings (lam, L, x₂, y₂) referring to each other. After
+`unfold logDerivCheckFnDenom`, these lets create beta-reducible
+redexes. `field_simp` or `ring` internally tries to whnf-normalize,
+which expands the lets, which creates more redexes recursively via
+the `y₂ = lam * x₂ + ...` self-reference, leading to polynomial
+expression blowup.
+
+**Suggested next attempts** for B3:
+1. **Pre-normalize `logDerivCheckFnDenom` to a let-free form** via
+   `show` or `change` before any `field_simp`. Turn the let-expanded
+   expression into a bare polynomial product once.
+2. **Move `logDerivCheckFnDefined` and a let-free version of
+   `logDerivCheckFnDenom` to `LogDeriv.lean`**, to ensure the
+   expression is normalized when imported.
+3. **Use `linear_combination` instead of `ring`** with manual
+   witness coefficients for each sub-lemma. More verbose but
+   avoids the ring normalization blowup.
+4. **Split the main identity into `bivEval clearedFiberPoly =
+   polyForm` (pure polynomial, fast `ring`) and `polyForm · 1 =
+   (A₁-A₀)^N · logDerivCheckFnCleared` (field_simp on the
+   multiplication)**. Two small steps instead of one large one.
+
+**B3 budget realistic**: 200-300 LOC when counting all the
+normalization work needed. Session should be dedicated to B3
+alone.
+
+**Axiom count after session 8**: 4 remaining (T1, T2, T4, T5). Phase B
 is infrastructure — no axiom removed until B5 enables T1.
