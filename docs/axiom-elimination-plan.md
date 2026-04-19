@@ -1456,3 +1456,106 @@ until T4 is mechanized.
    high-risk step.
 3. **T4** (Phase D): mechanize extractor bridge via T5 + polyG.
    ~380 LOC. After T4 lands, T5 becomes a visible dependency.
+
+### Session 13 (2026-04-19) — T2 eliminated
+
+Commits (this session):
+- T2: `logDerivCheckFn_badA₀_bound` as theorem. Introduced symm
+  lemmas (`slopeOf_symm`, `chordX₂_symm`, `chordY₂_symm`,
+  `lineThrough_symm`, `logDerivCheckFnDenom_symm`,
+  `logDerivCheckFn_symm`) and a second polynomial witness
+  `denomScaledPoly` (product of `DAllScaled · dxdzAllScaled ·
+  linesProductScaled`). ~290 LOC in `ClearedPolyForm.lean`, ~8 LOC
+  in `Soundness.lean` (constant cascade). Build clean.
+
+**What landed**:
+
+*Symmetry infrastructure* (in `ClearedPolyForm.lean`, placed after
+`thirdPoint_of_xne` and within the `logDerivTerm_eq_explicit` block):
+- `slopeOf_symm`: unconditional (handles the `x₀ = x₁` case where
+  both inverses are 0).
+- `chordX₂_symm`: unconditional (follows from slopeOf symmetry).
+- `chordY₂_symm`: non-vertical (needs `μ` equality via
+  `slopeOf · (A₁.1 − A₀.1) = A₁.2 − A₀.2`).
+- `lineThrough_symm`: non-vertical (same μ-cancellation).
+- `logDerivCheckFnDenom_symm`: non-vertical. Via
+  `logDerivCheckFnDenom_eq_explicit` + rewrite of slope/chord/line
+  terms + `ring`.
+- `logDerivCheckFn_symm`: non-vertical. Via
+  `logDerivCheckFn_eq_positive_form` + same symmetry rewrites.
+
+*Polynomial witness for denom zero set*:
+- `denomScaledPoly D P k B A₀ := DAllScaled D A₀ · dxdzAllScaled A₀
+  · linesProductScaled P k B A₀`.
+- `bivEval_denomScaledPoly_eq` (non-vertical): bivEval =
+  `(A₁.1-A₀.1)^(D.degE+k+7) · logDerivCheckFnDenom`.
+- `denomScaledPoly_natDegree_le` ≤ `D.degE + k + 9`.
+- `InnerDegLe_denomScaledPoly` ≤ `3·D.degE + k + 11`.
+- `resultantX_denomScaledPoly_natDegree_le` ≤ `9·D.degE + 5·k + 55`.
+- `denomScaledPoly_modCurve_ne_zero`: under witness
+  `∃ A₁ ∈ E.points, A₀.1 ≠ A₁.1 ∧ defined(A₀, A₁)`.
+
+*T2 theorem*: `logDerivCheckFn_badA₀_bound` with bound
+`≤ 36·(D.degE + k + 6) + 2` (twice the T1 constant).
+
+Strategy: let `(A₀*, A₁*)` = hGlobalNonzero witness. Apply swap
+via symm to get both `clearedFiberPoly A₁* %ₘ curveEq ≠ 0` (via B5
+at A₁*, needing `defined(A₁*, A₀*)` and `f(A₁*, A₀*) ≠ 0` — both
+from symm) AND `denomScaledPoly A₁* %ₘ curveEq ≠ 0`. Then split
+`bad_A₀_set` into 3 cases:
+- Vertical at A₁*: ≤ 2 via `card_points_with_fst_eq_le`.
+- Non-vertical ∧ defined(A₀, A₁*): in zeros of `clearedFiberPoly A₁*`
+  via B3 identity + f symm (bad ⇒ f(A₀,A₁*) = 0 ⇒ f(A₁*,A₀) = 0 ⇒
+  bivEval = 0). Bound ≤ `2·(9·D+5·k+50) = 18·D+10·k+100`.
+- Non-vertical ∧ ¬ defined(A₀, A₁*): in zeros of
+  `denomScaledPoly A₁*` via `bivEval = (A.1-A₁*.1)^N · denom(A₁*, A) =
+  (non-zero) · 0 = 0` (using denom symm). Bound ≤ `2·(9·D+5·k+55)
+  = 18·D+10·k+110`.
+
+Sum: `(18·D+10k+100) + 2 + (18·D+10k+110) = 36·D+20k+212 ≤
+36·(D+k+6)+2 = 36D+36k+218`. Slack = `16k + 6`.
+
+*Constant cascade*: Downstream uses moved from `54` to `72`:
+- `logDerivCheckFn_zero_set_bound`: `54 → 72` (defZ bound becomes
+  `(K + K')·|E|` where K' = `36·(D+k+6)+2` is the new T2 constant).
+- `log_deriv_sz`: `54 → 72`.
+- `ma_extractable`, `ip_knowledge_sound`: `54 → 72`.
+
+The final `(72·(d+k+6)+4)·|E.points|` soundness bound replaces the
+previous `(54·(d+k+6)+4)·|E.points|`. Asymptotically the same
+`O((d+k)·|E|)`; the constant grows by ~33%.
+
+**Axiom state after session 13**:
+```
+propext, Classical.choice, Quot.sound
+Divisor.ECPoint.add_comm, add_assoc, neg_add_cancel
+Divisor.extractorSucceeds_of_logDerivCheck_identically_zero_general  [T4]
+```
+
+**2 axioms remaining** (T4 at `ma_extractable`; T5 hidden inside T4).
+Remaining work:
+
+1. **T5** (Phase A1-A5): mechanize `log_deriv_nonvanishing_criterion`.
+   ~560 LOC across 2-3 sessions. High-risk step is A3 (per-slope
+   counting via Schwartz-Zippel–like averaging over slopes).
+2. **T4** (Phase D1-D5): mechanize extractor bridge via T5 + polyG.
+   ~380 LOC. Final axiom elimination.
+
+**Session 13 technical notes**:
+
+1. **No undef slice bound needed**. The two-polynomial approach
+   (clearedFiberPoly + denomScaledPoly) covers both defined and
+   undefined cases uniformly via bivEval zero sets on E.points,
+   avoiding the explicit per-factor undef slice analysis.
+
+2. **Symm lemmas via `*_eq_explicit` helpers**. The existing
+   `logDerivCheckFnDenom_eq_explicit` and
+   `logDerivCheckFn_eq_positive_form` helpers (from session 9)
+   gave let-free forms amenable to `rw`+`ring`. Without them, a
+   direct `unfold` + `ring` approach on the `let`-heavy definitions
+   would hit `whnf` timeouts (same blocker as Phase B3 in session 8).
+
+3. **Constant cascade is benign**. The `54 → 72` shift affects only
+   the multiplicative constant in the soundness error bound, not
+   the asymptotic order. No re-proof of downstream theorems required
+   beyond the constant update.
