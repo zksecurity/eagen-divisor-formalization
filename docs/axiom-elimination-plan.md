@@ -819,3 +819,56 @@ After F3-F8: assemble union bound + thread `hD` through
 contradicting the defined non-zero witness). Then replace T3 axiom
 with theorem. Bound constants sum to ≤ `4·D.degE + 2·D.degE + 2 + 3 +
 3 + C₆ + 3 + 3k` ≤ 18·(D.degE + k + 6) with some slack.
+
+### Session 4 (2026-04-19) — T3 F3 + generic per-A₀ helpers
+
+Commits (this session):
+- `015898c` — T3 F3: `DAtA₂_zero_pairs_card_le` via thirdPoint + S₃
+  extraction. Added `chordX₂`/`chordY₂` defs and `thirdPoint_of_xne`
+  lemma for non-vertical identification. Extracted
+  `card_thirdPoint_affine_D_zero_pairs_le` from `support_disjointness`
+  as a reusable standalone theorem. Refactored `support_disjointness`
+  to use it. ~200 LOC.
+- `ba4b2ee` — Generic helpers: `card_vertical_pairs_le` and
+  `card_bivEval_Q_zero_pairs_le`. The latter is a reusable bound
+  `|{(A₀,A₁) : bivEval (Q A₀) A₁ = 0}| ≤ 2·degBound·|E| +
+  |{A₀ : Q A₀ = 0}|·|E|` parameterized by a polynomial family
+  `Q : (ZMod q × ZMod q) → (ZMod q)[X][X]` with outer natDeg < 2.
+  ~105 LOC.
+
+**What landed**: T3 F3 (= `D(A₂) = 0`) and two generic helpers for F4-F8.
+
+**F4-F8 blockage**: attempted F4 (`dxdz@A₀`) this session but hit
+simp/ring issues extracting xPart/yPart coefficients of
+`dxdzDenA₀Scaled`. The clean structure is:
+
+1. `dxdzDenA₀Scaled_eq`: canonical form `C (big inner poly) - C (scalar) · X`.
+2. `dxdzDenA₀Scaled_coeff_zero`: = big inner poly.
+3. `dxdzDenA₀Scaled_coeff_one`: = -(C (2·A₀.2)).
+4. `resultantX_dxdzDenA₀Scaled_natDegree_le 3`.
+5. `card_dxdzDenA₀Scaled_zero_le 4` (exceptional A₀'s).
+6. F4 body via `card_bivEval_Q_zero_pairs_le` + `card_vertical_pairs_le`.
+
+The `_eq` form via `ring` works; coeff extraction via `simp only` +
+`ring` tripped on lingering `C (X^2).coeff 0` reductions. Need to add
+`← C_pow`, `← C_mul`, `← C_add` to push the `C` reduction back, OR
+use `Polynomial.C_injective` with a full-form equation.
+
+Also `(3 : (ZMod E.q)[X]).natDegree = 0` tripped because Lean doesn't
+auto-unfold `3 = C 3`; need `Polynomial.natDegree_ofNat` or `show C 3`.
+
+Separately, `hpolyR_ne : 3·X²+C curveA ≠ 0` needs `coeff 2 = 3`
+extraction, which hit the same simp issues.
+
+**Next session**: fresh approach for F4 via these canonical forms:
+- Prove `_eq` (canonical `C xPart - C yPart * X` form) via `ring`.
+- `coeff 0` and `coeff 1` lemmas by applying `Polynomial.coeff_sub`
+  etc. plus `ring`.
+- For `(3 : R[X]).natDegree = 0`, use `by show (C 3).natDegree = 0;
+  exact natDegree_C _` explicitly.
+- Expected LOC: F4 = ~120 LOC, F5 ~80 (mirror), F7 ~100, F8 ~70, F6
+  ~150 (more complex), assembly ~130. Total ~650 LOC across 2-3 more
+  sessions.
+
+Axiom count unchanged this session. F3 helper infrastructure is the
+main delivery.
