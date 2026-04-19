@@ -1192,3 +1192,84 @@ becomes a direct application of `card_zeros_on_E_le` to
 **Axiom count after session 9**: 4 remaining (T1, T2, T4, T5) —
 unchanged. B3 is infrastructure; axiom removal starts with T1 after
 B4 + B5.
+
+### Session 10 (2026-04-19) — Phase B4 + B5 landed
+
+Commits (this session):
+- `a3aa113` — Phase B4+B5: outer natDegree bound and nonvanishing
+  (~504 LOC).
+
+**What landed**: full Phase B4 (outer natDegree bookkeeping for
+`clearedFiberPoly`) plus Phase B5 (nonvanishing under a witness
+hypothesis).
+
+Phase B4 sub-lemmas (outer natDegree bounds):
+- `x₂Scaled_natDegree_le` (≤ 2), `y₂Scaled_natDegree_le` (≤ 3).
+- `dxdzDenA₁Scaled_natDegree_le` (≤ 2),
+  `dxdzDenA₂Scaled_natDegree_le` (≤ 4).
+- `DAtA₀Poly_natDegree_le` (= 0), `DDerivAtA₀Poly_natDegree_le` (= 0),
+  `DDerivAtA₁Poly_natDegree_le` (≤ 1).
+- `DAPartAtA₂Scaled_natDegree_le` (≤ `D.degE`),
+  `DBPartAtA₂Scaled_natDegree_le` (≤ `D.degE`),
+  `DAtA₂Scaled_natDegree_le` (≤ `D.degE`).
+- `DDerivAPartAtA₂Scaled_natDegree_le`,
+  `DDerivBPartAtA₂Scaled_natDegree_le`,
+  `DDerivAtA₂Scaled_natDegree_le` (all ≤ `D.degE`,
+  using `Polynomial.natDegree_derivative_le` to bound derivative
+  degrees by D.a/D.b degrees).
+- `linesProductScaled_natDegree_le` (≤ `k + 1`),
+  `linesProductNoNegPScaled_natDegree_le` (≤ `k`),
+  `linesProductSkipBjScaled_natDegree_le` (≤ `k`; uses
+  `Finset.card_erase_of_mem` + `Nat.sub_add_cancel`).
+- `dxdzAllScaled_natDegree_le` (≤ 7),
+  `DAllScaled_natDegree_le` (≤ `D.degE + 1`).
+- `lhsTerm{0,1,2}Scaled_natDegree_le`,
+  `rhsTermNegPScaled_natDegree_le`,
+  `rhsSumScaled_natDegree_le` (all ≤ `D.degE + k + 8`).
+
+`clearedFiberPoly_natDegree_le` (final Phase B4 theorem): ≤
+`D.degE + k + 8`. The five summands combine via
+`natDegree_add_le` + `max_le`.
+
+Phase B5: `clearedFiberPoly_modCurve_ne_zero`. Under the hypothesis
+`∃ A₁ ∈ E.points, A₀.1 ≠ A₁.1 ∧ defined ∧ logDerivCheckFn ≠ 0`,
+proves `clearedFiberPoly %ₘ curveEqPoly ≠ 0` by contradiction:
+B3 identity + three-way factorization (lamPow, logDerivCheckFn,
+denom) give each factor nonzero from hypotheses.
+
+**Tactical notes**:
+1. `Nat.add_le_add` has implicit `{a b c d}` that Lean can't infer
+   from `natDegree_mul_le.trans ?_` fragments — the `b` metavar is
+   undetermined. Workaround: introduce named `have` bindings for
+   each intermediate product bound, then chain via explicit
+   `(Nat.add_le_add h_lhs h_rhs).trans (by omega)`. This pattern
+   repeats across lhsTerm{0,1,2}, rhsTermNegP, rhsSum, dxdzAllScaled,
+   DAllScaled bounds.
+2. `D.degE = max(2·D.a.natDegree, 3 + 2·D.b.natDegree)`: bound
+   `2·n + 3 ≤ D.degE` via `3 + 2·D.b.natDegree ≤ D.degE` from
+   `le_max_right` + `omega` (the max doesn't commute defeq-wise
+   with `Nat.add_comm`).
+3. `Polynomial.natDegree_pow` rewrites `(p^n).natDegree` to
+   `n * p.natDegree`, not `p.natDegree * n`. Multiplying bounds
+   then needs a `calc`-step to swap: `n * p.natDegree ≤ n * 2 =
+   2 * n`.
+
+**Continuation**: T1 (fiber count bound) is now a direct
+application of `card_zeros_on_E_le` to `clearedFiberPoly` modulo
+an inner-coefficient natDegree bound for resultantX. The clean
+shape:
+```
+card fiber ≤ 2 + 2·(resultantX clearedFiberPoly).natDegree
+         ≤ 2 + 2·(2·maxInner + 3·outer + 3)
+         ≤ 2 + 2·(2·maxInner + 3·(D.degE+k+8) + 3)
+         ≤ 18·(D.degE+k+6) + 2
+```
+The inner-coefficient bound (`maxInner(clearedFiberPoly) ≤
+C·(D.degE+k)` for some explicit C) is Phase B4.5 (new work,
+~150-200 LOC). Alternatively, T1 can be proved by a different
+route without an explicit inner bound — perhaps combining the
+outer bound with a direct modByMonic-of-curveEqPoly bookkeeping
+on xPart and yPart coefficients.
+
+**Axiom count after session 10**: 4 remaining (T1, T2, T4, T5).
+B4+B5 are infrastructure for T1.
