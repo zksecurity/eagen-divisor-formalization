@@ -3889,7 +3889,248 @@ theorem InnerDegLe_clearedFiberPoly (D : CoordRingElt E.q) (P : ZMod E.q × ZMod
   have h4 := InnerDegLe_rhsSumScaled (E := E) D P k B m A₀
   exact ((((h0.add h1).add h2).add h3).add h4).weaken (by simp)
 
+/-! ### Inner bound on mod-by-curveEqPoly.
+
+    Reducing `f ∈ R[X][Y]` mod the curve equation `Y² - curveX` replaces
+    each `Y^{2k}` by `curveX^k` and each `Y^{2k+1}` by `Y · curveX^k`.
+    Since `curveX.natDegree ≤ 3`, each reduction step grows the inner
+    degree by at most 3. The total growth is ≤ `3 · ⌈f.natDegree/2⌉`.
+
+    Proved by induction on `k`, where `2k+1 ≥ f.natDegree`. Each step
+    kills the top two outer powers (X^N and X^{N-1}) by subtracting
+    `C(f.coeff N) · X^{N-2} · curveEqPoly` and analogous for N-1,
+    adding at most 3 to the inner bound. -/
+
+/-- `(p + q · m) %ₘ m = p %ₘ m` when `m` is monic. -/
+private lemma add_mul_monic_modByMonic_aux {R : Type*} [CommRing R] [Nontrivial R]
+    {m : R[X]} (hm : m.Monic) (p q : R[X]) :
+    (p + q * m) %ₘ m = p %ₘ m := by
+  apply (Polynomial.div_modByMonic_unique (q + p /ₘ m) (p %ₘ m) hm ?_).2
+  refine ⟨?_, Polynomial.degree_modByMonic_lt p hm⟩
+  have h1 := Polynomial.modByMonic_add_div p hm
+  calc (p %ₘ m) + m * (q + p /ₘ m)
+      = m * q + ((p %ₘ m) + m * (p /ₘ m)) := by ring
+    _ = m * q + p := by rw [h1]
+    _ = p + q * m := by ring
+
+/-- Inner bound for `curveEqPoly E = X² - C (curveX E)`: inner ≤ 3. -/
+theorem InnerDegLe_curveEqPoly : InnerDegLe (E := E) (curveEqPoly E) 3 := by
+  unfold curveEqPoly
+  have hX2 : InnerDegLe (E := E) ((X : (ZMod E.q)[X][X]) ^ 2) 0 := by
+    intro i
+    simp only [Polynomial.coeff_X_pow]
+    split <;> simp
+  have hCurveX : InnerDegLe (E := E) (C (curveX E) : (ZMod E.q)[X][X]) 3 :=
+    (InnerDegLe_embedInnerPoly (E := E) (curveX E)).weaken
+      (curveX_natDegree_le_three E)
+  exact (hX2.sub hCurveX).weaken (by simp)
+
+/-- Inner bound for `X^n` in `R[X][X]`: inner ≤ 0 (coefficients are 0 or 1). -/
+theorem InnerDegLe_Xpow (n : ℕ) :
+    InnerDegLe (E := E) ((X : (ZMod E.q)[X][X]) ^ n) 0 := by
+  intro i
+  simp only [Polynomial.coeff_X_pow]
+  split <;> simp
+
+/-- Inner bound for `C c * X^n * curveEqPoly E`: inner ≤ c.natDegree + 3. -/
+theorem InnerDegLe_C_mul_Xpow_mul_curveEqPoly (c : (ZMod E.q)[X]) (n : ℕ) :
+    InnerDegLe (E := E) (C c * X ^ n * curveEqPoly E) (c.natDegree + 3) := by
+  have hC : InnerDegLe (E := E) (C c : (ZMod E.q)[X][X]) c.natDegree :=
+    InnerDegLe_embedInnerPoly (E := E) c
+  have hXn : InnerDegLe (E := E) ((X : (ZMod E.q)[X][X]) ^ n) 0 :=
+    InnerDegLe_Xpow n
+  have hCurve : InnerDegLe (E := E) (curveEqPoly E) 3 := InnerDegLe_curveEqPoly (E := E)
+  exact ((hC.mul hXn).mul hCurve).weaken (by omega)
+
+/-- **Inner bound for mod-by-curveEqPoly.** If `f.natDegree ≤ 2k+1` and
+    all outer coefficients of `f` have inner natDegree ≤ M, then the outer
+    coefficients of `f %ₘ curveEqPoly E` have inner natDegree ≤ M + 3k. -/
+theorem InnerDegLe_modByMonic_curveEqPoly (f : (ZMod E.q)[X][X]) (M k : ℕ)
+    (hM : InnerDegLe (E := E) f M) (hN : f.natDegree ≤ 2 * k + 1) :
+    InnerDegLe (E := E) (f %ₘ curveEqPoly E) (M + 3 * k) := by
+  induction k generalizing f M with
+  | zero =>
+    -- Base: f.natDegree ≤ 1 < 2, so f %ₘ curveEq = f.
+    have hself : f %ₘ curveEqPoly E = f := by
+      by_cases hfz : f = 0
+      · rw [hfz, Polynomial.zero_modByMonic]
+      · apply (Polynomial.modByMonic_eq_self_iff (curveEqPoly_monic E)).mpr
+        rw [Polynomial.degree_eq_natDegree hfz,
+            Polynomial.degree_eq_natDegree (curveEqPoly_monic E).ne_zero,
+            curveEqPoly_natDegree_eq]
+        exact_mod_cast (show f.natDegree < 2 by omega)
+    rw [hself]
+    simpa using hM
+  | succ k ih =>
+    -- hN : f.natDegree ≤ 2 * (k + 1) + 1 = 2k+3. Set N := 2k+3.
+    set N := 2 * (k + 1) + 1 with hNdef
+    have hN2_sub : N - 2 + 2 = N := by omega
+    have hN3_sub : N - 3 + 2 = N - 1 := by omega
+    -- Define the reduction step.
+    set cN := f.coeff N
+    set cNm1 := f.coeff (N - 1)
+    set A : (ZMod E.q)[X][X] := C cN * X ^ (N - 2) * curveEqPoly E with hAdef
+    set B : (ZMod E.q)[X][X] := C cNm1 * X ^ (N - 3) * curveEqPoly E with hBdef
+    set g := f - A - B with hgdef
+    -- (1) InnerDegLe g (M + 3)
+    have hInner_A : InnerDegLe (E := E) A (M + 3) := by
+      have := InnerDegLe_C_mul_Xpow_mul_curveEqPoly (E := E) cN (N - 2)
+      exact this.weaken (by
+        have : cN.natDegree ≤ M := hM N
+        omega)
+    have hInner_B : InnerDegLe (E := E) B (M + 3) := by
+      have := InnerDegLe_C_mul_Xpow_mul_curveEqPoly (E := E) cNm1 (N - 3)
+      exact this.weaken (by
+        have : cNm1.natDegree ≤ M := hM (N - 1)
+        omega)
+    have hInner_g : InnerDegLe (E := E) g (M + 3) := by
+      have := ((hM.weaken (by omega : M ≤ M + 3)).sub hInner_A).sub hInner_B
+      exact this.weaken (by simp)
+    -- (2) g.natDegree ≤ 2k+1 = N-2.
+    -- Compute A and B's coefficients explicitly.
+    have hA_eq : A = C cN * X ^ N - C (cN * curveX E) * X ^ (N - 2) := by
+      simp only [hAdef, curveEqPoly, mul_sub]
+      congr 1
+      · rw [mul_assoc, ← pow_add, hN2_sub]
+      · rw [show C cN * X ^ (N - 2) * C (curveX E) = C (cN * curveX E) * X ^ (N - 2) by
+              rw [C_mul]; ring]
+    have hB_eq : B = C cNm1 * X ^ (N - 1) - C (cNm1 * curveX E) * X ^ (N - 3) := by
+      simp only [hBdef, curveEqPoly, mul_sub]
+      congr 1
+      · rw [mul_assoc, ← pow_add, hN3_sub]
+      · rw [show C cNm1 * X ^ (N - 3) * C (curveX E) = C (cNm1 * curveX E) * X ^ (N - 3) by
+              rw [C_mul]; ring]
+    -- Coefficient of g at indices ≥ N-1 are zero; g.natDegree ≤ N - 2.
+    have hg_nd : g.natDegree ≤ 2 * k + 1 := by
+      have hNrel : 2 * k + 1 = N - 2 := by omega
+      rw [hNrel]
+      refine Polynomial.natDegree_le_iff_coeff_eq_zero.mpr ?_
+      intro i hi
+      -- hi : N - 2 < i
+      simp only [hgdef, hA_eq, hB_eq, Polynomial.coeff_sub,
+                 Polynomial.coeff_C_mul, Polynomial.coeff_X_pow]
+      by_cases h_iN : i = N
+      · -- i = N: A's X^N term contributes cN; everything else cancels f.coeff N.
+        subst h_iN
+        have hne1 : ¬ (N = N - 1) := by omega
+        have hne2 : ¬ (N = N - 2) := by omega
+        have hne3 : ¬ (N = N - 3) := by omega
+        have hN_self : (N = N) := rfl
+        simp only [hne1, hne2, hne3, hN_self, if_true, if_false,
+                   mul_one, mul_zero]
+        show cN - (cN - 0) - (0 - 0) = 0
+        ring
+      · by_cases h_iNm1 : i = N - 1
+        · -- i = N - 1: B's X^(N-1) term contributes cNm1; cancels f.coeff (N-1).
+          subst h_iNm1
+          have hne0 : ¬ (N - 1 = N) := by omega
+          have hne2 : ¬ (N - 1 = N - 2) := by omega
+          have hne3 : ¬ (N - 1 = N - 3) := by omega
+          have h_self : (N - 1 = N - 1) := rfl
+          simp only [hne0, hne2, hne3, h_self, if_true, if_false,
+                     mul_one, mul_zero]
+          show cNm1 - (0 - 0) - (cNm1 - 0) = 0
+          ring
+        · -- i ∉ {N, N-1} and i > N-2 ⇒ i > N.
+          have hi_gt : i > N := by omega
+          have hfi : f.coeff i = 0 := by
+            apply Polynomial.coeff_eq_zero_of_natDegree_lt
+            omega
+          have hne2 : ¬ (i = N - 2) := by omega
+          have hne3 : ¬ (i = N - 3) := by omega
+          simp only [hfi, h_iN, h_iNm1, hne2, hne3, if_false, mul_zero, sub_zero]
+    -- (3) f %ₘ curveEq = g %ₘ curveEq.
+    have hMod : f %ₘ curveEqPoly E = g %ₘ curveEqPoly E := by
+      have hfeq : f = g + (C cN * X ^ (N - 2) + C cNm1 * X ^ (N - 3)) * curveEqPoly E := by
+        simp only [hgdef, hAdef, hBdef]
+        ring
+      rw [hfeq]
+      exact add_mul_monic_modByMonic_aux (curveEqPoly_monic E) g _
+    rw [hMod]
+    have := ih g (M + 3) hInner_g hg_nd
+    exact this.weaken (by omega)
+
 end InnerDegBookkeeping
+
+/-! ### From InnerDegLe to `xPart`/`yPart`/`resultantX` bounds.
+
+    Applying `InnerDegLe_modByMonic_curveEqPoly` gives the inner bound
+    for `f %ₘ curveEqPoly`. Since `xPart` and `yPart` of a polynomial
+    with outer natDegree < 2 are just its outer coefficients 0 and 1,
+    their natDegrees are bounded by the InnerDegLe value. The
+    `resultantX` bound is `2·M' + 3` where `M'` is the mod'd inner bound. -/
+
+/-- Bound the natDegree of `xPart (f %ₘ curveEqPoly E)` via InnerDegLe. -/
+theorem xPart_modByMonic_curveEqPoly_natDegree_le
+    (f : (ZMod E.q)[X][X]) (M k : ℕ)
+    (hM : InnerDegLe (E := E) f M) (hN : f.natDegree ≤ 2 * k + 1) :
+    (xPart E (f %ₘ curveEqPoly E)).natDegree ≤ M + 3 * k :=
+  InnerDegLe_modByMonic_curveEqPoly (E := E) f M k hM hN 0
+
+/-- Bound the natDegree of `yPart (f %ₘ curveEqPoly E)` via InnerDegLe. -/
+theorem yPart_modByMonic_curveEqPoly_natDegree_le
+    (f : (ZMod E.q)[X][X]) (M k : ℕ)
+    (hM : InnerDegLe (E := E) f M) (hN : f.natDegree ≤ 2 * k + 1) :
+    (yPart E (f %ₘ curveEqPoly E)).natDegree ≤ M + 3 * k :=
+  InnerDegLe_modByMonic_curveEqPoly (E := E) f M k hM hN 1
+
+/-- **Generic `resultantX` natDegree bound** from InnerDegLe and outer degree. -/
+theorem resultantX_natDegree_le_of_InnerDegLe
+    (f : (ZMod E.q)[X][X]) (M k : ℕ)
+    (hM : InnerDegLe (E := E) f M) (hN : f.natDegree ≤ 2 * k + 1) :
+    (resultantX E f).natDegree ≤ 2 * (M + 3 * k) + 3 := by
+  unfold resultantX
+  have hX : (xPart E (f %ₘ curveEqPoly E)).natDegree ≤ M + 3 * k :=
+    xPart_modByMonic_curveEqPoly_natDegree_le (E := E) f M k hM hN
+  have hY : (yPart E (f %ₘ curveEqPoly E)).natDegree ≤ M + 3 * k :=
+    yPart_modByMonic_curveEqPoly_natDegree_le (E := E) f M k hM hN
+  refine (Polynomial.natDegree_sub_le _ _).trans (max_le ?_ ?_)
+  · -- (xPart _)^2.natDegree ≤ 2 · (M + 3k)
+    rw [Polynomial.natDegree_pow]
+    calc 2 * (xPart E (f %ₘ curveEqPoly E)).natDegree
+        ≤ 2 * (M + 3 * k) := Nat.mul_le_mul_left 2 hX
+      _ ≤ 2 * (M + 3 * k) + 3 := Nat.le_add_right _ _
+  · -- ((yPart _)^2 * curveX E).natDegree ≤ 2 * (M + 3k) + 3
+    refine Polynomial.natDegree_mul_le.trans ?_
+    rw [Polynomial.natDegree_pow]
+    calc 2 * (yPart E (f %ₘ curveEqPoly E)).natDegree + (curveX E).natDegree
+        ≤ 2 * (M + 3 * k) + 3 :=
+          Nat.add_le_add (Nat.mul_le_mul_left 2 hY) (curveX_natDegree_le_three E)
+
+/-- **Resultant bound for `clearedFiberPoly`.** Bounded by `9·D.degE + 5k + 50`.
+    This feeds T1's fiber bound: `2·(9D+5k+50) + 2 = 18D+10k+102 ≤ 18·(D+k+6)+2`. -/
+theorem resultantX_clearedFiberPoly_natDegree_le
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (resultantX E (clearedFiberPoly (E := E) D P k B m A₀)).natDegree
+      ≤ 9 * D.degE + 5 * k + 50 := by
+  -- Inner M = 3·D.degE + k + 10, outer N ≤ D.degE + k + 8.
+  -- Choose k_ind = (N + 1) / 2; then 2·k_ind + 1 ≥ N.
+  set N := D.degE + k + 8 with hNdef
+  set M := 3 * D.degE + k + 10 with hMdef
+  set k_ind := (N + 1) / 2 with hkIndDef
+  have hNcon : (clearedFiberPoly (E := E) D P k B m A₀).natDegree ≤ 2 * k_ind + 1 := by
+    have hfn : (clearedFiberPoly (E := E) D P k B m A₀).natDegree ≤ N :=
+      clearedFiberPoly_natDegree_le (E := E) D P B m A₀
+    have h2k : 2 * k_ind + 1 ≥ N := by
+      simp only [hkIndDef]
+      omega
+    omega
+  have hM_cfp : InnerDegLe (E := E) (clearedFiberPoly (E := E) D P k B m A₀) M :=
+    InnerDegLe_clearedFiberPoly (E := E) D P k B m A₀
+  have hRes := resultantX_natDegree_le_of_InnerDegLe (E := E)
+                (clearedFiberPoly (E := E) D P k B m A₀) M k_ind hM_cfp hNcon
+  refine hRes.trans ?_
+  have hki : 2 * k_ind ≤ N + 1 := by simp only [hkIndDef]; omega
+  -- 2·(M + 3·k_ind) + 3 ≤ 2M + 3(N+1) + 3.
+  have : 2 * (M + 3 * k_ind) + 3 ≤ 2 * M + 3 * (N + 1) + 3 := by
+    have : 6 * k_ind ≤ 3 * (N + 1) := by omega
+    omega
+  refine this.trans ?_
+  -- 2M + 3(N+1) + 3 = 2·(3D+k+10) + 3·(D+k+9) + 3 = 9D+5k+50.
+  simp only [hMdef, hNdef]
+  omega
 
 section Phase2
 open Classical
