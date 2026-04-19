@@ -1559,3 +1559,49 @@ Remaining work:
    the multiplicative constant in the soundness error bound, not
    the asymptotic order. No re-proof of downstream theorems required
    beyond the constant update.
+
+### Session 14 (2026-04-19) — T5 A1 landed
+
+Commits (this session):
+- T5 A1: `simple_pole_fraction_zero` lemma in new module
+  `Divisor/PartialFraction.lean`. ~63 LOC. Build clean.
+
+**What landed**: the simple-pole partial-fraction uniqueness lemma as a
+standalone `Divisor`-namespace theorem:
+
+```
+lemma simple_pole_fraction_zero {K : Type*} [Field K] {ι : Type*}
+    [DecidableEq ι] (s : Finset ι) (α : ι → K) (c : ι → K)
+    (hα : Set.InjOn α s)
+    (h : (∑ i ∈ s, C (c i) * ∏ j ∈ s.erase i, (X - C (α j))) = 0) :
+    ∀ k ∈ s, c k = 0
+```
+
+Proof: evaluate the polynomial identity at `α k`. For `i ≠ k`, the
+`i`-th summand's product contains the factor `(X - C (α k))` (since
+`k ∈ s.erase i`), so it evaluates to zero. By `Finset.sum_eq_single`,
+only the `k`-th term survives, yielding `c k · ∏_{j ≠ k} (α k - α j) = 0`.
+The product is non-zero by injectivity of `α` on `s`, so `c k = 0`.
+
+Module independent of rest of `Divisor` development. Imports only
+`Mathlib.Algebra.BigOperators.GroupWithZero.Finset` and
+`Mathlib.Algebra.Polynomial.Eval`. Added to `Divisor.lean` aggregator
+between `Divisor.Axioms` and `Divisor.SlopeDist`.
+
+**Axiom state after session 14**:
+```
+propext, Classical.choice, Quot.sound
+Divisor.ECPoint.add_comm, add_assoc, neg_add_cancel
+Divisor.extractorSucceeds_of_logDerivCheck_identically_zero_general  [T4]
+```
+
+Unchanged — A1 is infrastructure for T5 (A5 is where the axiom is
+replaced). T5 still hidden inside T4 axiom at `ma_extractable`.
+
+**Continuation**: Phase A2+A4 (~200 LOC). A2 defines the slope-µ
+projection polynomial `polyFibK` and the connection lemma
+`polyG_eq_polyFibK_eval`. A4 proves generic-λ distinctness of the
+z_λ-projected point set `{Q_k} ∪ {R_j}`: only ≤ binom(d+M, 2) slopes
+force a projection collision. A2 lands in a new module
+`Divisor/PolyFibK.lean`; A4 can go in the same module or in
+`SlopeDist.lean` near the slope counting lemmas.
