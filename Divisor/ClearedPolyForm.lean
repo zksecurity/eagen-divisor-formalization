@@ -461,6 +461,23 @@ noncomputable def DDerivAtA₂Scaled (D : CoordRingElt E.q)
     (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
   DDerivAPartAtA₂Scaled (E := E) D A₀ - DDerivBPartAtA₂Scaled (E := E) D A₀
 
+/-! ## Phase B1: Finset-sum bivEval identities
+
+    The `DAtA₂Scaled`, `DDerivAtA₂Scaled` polynomials are expressed as
+    Finset sums indexed by monomial degrees. Their bivEval values, on
+    the non-vertical cone, collapse to `lamDen^D.degE · D.eval(x₂, y₂)`
+    via per-term factor extraction. -/
+
+/-- `bivEval` distributes over `Finset.sum`. -/
+theorem bivEval_finset_sum {α : Type*} (s : Finset α)
+    (f : α → (ZMod E.q)[X][X]) (p : ZMod E.q × ZMod E.q) :
+    bivEval (∑ i ∈ s, f i) p = ∑ i ∈ s, bivEval (f i) p := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simp [bivEval]
+  | insert h ih =>
+      rw [Finset.sum_insert h, bivEval_add, Finset.sum_insert h, ih]
+
 /-! ## Full `clearedFiberPoly` assembly
 
     With uniform scaling `N := D.degE + k + 6`, the polynomial
@@ -770,6 +787,238 @@ noncomputable def chordY₂ {q : ℕ} [Fact (Nat.Prime q)]
 theorem thirdPoint_of_xne (A₀ A₁ : ZMod E.q × ZMod E.q) (h : A₀.1 ≠ A₁.1) :
     thirdPoint E A₀ A₁ = ECPoint.affine (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) := by
   simp only [thirdPoint, chordX₂, chordY₂, slopeOf, if_neg h]
+
+/-! ## Phase B1: Finset-sum bivEval identities for D@A₂ parts
+
+    The `DAtA₂Scaled`, `DDerivAtA₂Scaled` polynomials are Finset sums
+    indexed by monomial degrees. Their bivEval values, on the
+    non-vertical cone with `A₀.1 ≠ A₁.1`, collapse to
+    `lamDen^D.degE · D.eval(chordX₂, chordY₂)` via per-term factor
+    extraction. -/
+
+/-- On the non-vertical cone, `bivEval (DAPartAtA₂Scaled D A₀) A₁`
+    equals `(A₁.1 − A₀.1)^D.degE · D.a.eval (chordX₂ A₀ A₁)`. -/
+theorem bivEval_DAPartAtA₂Scaled_eq (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (DAPartAtA₂Scaled (E := E) D A₀) A₁
+      = (A₁.1 - A₀.1) ^ D.degE * D.a.eval (chordX₂ A₀ A₁) := by
+  unfold DAPartAtA₂Scaled
+  rw [bivEval_finset_sum, Polynomial.eval_eq_sum_range, Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro n hn
+  have h2nle : 2 * n ≤ D.degE := by
+    have hn' : n ≤ D.a.natDegree := Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+    unfold CoordRingElt.degE
+    omega
+  simp only [bivEval_mul, bivEval_pow, bivEval_embedScalar, bivEval_lamDenPoly,
+             bivEval_x₂Scaled_eq _ _ _ hNV]
+  unfold chordX₂
+  have hpow : (A₁.1 - A₀.1) ^ (2 * n) * (A₁.1 - A₀.1) ^ (D.degE - 2 * n)
+            = (A₁.1 - A₀.1) ^ D.degE := by
+    rw [← pow_add]; congr 1; omega
+  have hsq : ((A₁.1 - A₀.1) ^ 2) ^ n = (A₁.1 - A₀.1) ^ (2 * n) := by
+    rw [← pow_mul, Nat.mul_comm]
+  calc D.a.coeff n * ((A₁.1 - A₀.1) ^ 2 *
+          ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1)) ^ n
+         * (A₁.1 - A₀.1) ^ (D.degE - 2 * n)
+      = D.a.coeff n
+         * (((A₁.1 - A₀.1) ^ 2) ^ n
+             * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1) ^ n)
+         * (A₁.1 - A₀.1) ^ (D.degE - 2 * n) := by rw [mul_pow]
+    _ = D.a.coeff n
+         * ((A₁.1 - A₀.1) ^ (2 * n)
+             * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1) ^ n)
+         * (A₁.1 - A₀.1) ^ (D.degE - 2 * n) := by rw [hsq]
+    _ = D.a.coeff n
+         * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1) ^ n
+         * ((A₁.1 - A₀.1) ^ (2 * n) * (A₁.1 - A₀.1) ^ (D.degE - 2 * n)) := by ring
+    _ = D.a.coeff n
+         * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1) ^ n
+         * (A₁.1 - A₀.1) ^ D.degE := by rw [hpow]
+    _ = (A₁.1 - A₀.1) ^ D.degE
+         * (D.a.coeff n
+             * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1) ^ n) := by ring
+
+/-- On the non-vertical cone, `bivEval (DBPartAtA₂Scaled D A₀) A₁`
+    equals `(A₁.1 − A₀.1)^D.degE · D.b.eval (chordX₂ A₀ A₁) · chordY₂ A₀ A₁`. -/
+theorem bivEval_DBPartAtA₂Scaled_eq (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (DBPartAtA₂Scaled (E := E) D A₀) A₁
+      = (A₁.1 - A₀.1) ^ D.degE * D.b.eval (chordX₂ A₀ A₁) * chordY₂ A₀ A₁ := by
+  unfold DBPartAtA₂Scaled
+  rw [bivEval_finset_sum, Polynomial.eval_eq_sum_range, mul_assoc,
+      Finset.sum_mul, Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro n hn
+  have h2n3le : 2 * n + 3 ≤ D.degE := by
+    have hn' : n ≤ D.b.natDegree := Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+    unfold CoordRingElt.degE
+    omega
+  simp only [bivEval_mul, bivEval_pow, bivEval_embedScalar, bivEval_lamDenPoly,
+             bivEval_x₂Scaled_eq _ _ _ hNV,
+             bivEval_y₂Scaled_eq _ _ _ hNV]
+  unfold chordY₂ chordX₂ slopeOf
+  have hpow : (A₁.1 - A₀.1) ^ (2 * n)
+              * (A₁.1 - A₀.1) ^ 3
+              * (A₁.1 - A₀.1) ^ (D.degE - 2 * n - 3)
+            = (A₁.1 - A₀.1) ^ D.degE := by
+    rw [← pow_add, ← pow_add]; congr 1; omega
+  have hsq : ((A₁.1 - A₀.1) ^ 2) ^ n = (A₁.1 - A₀.1) ^ (2 * n) := by
+    rw [← pow_mul, Nat.mul_comm]
+  set lam := (A₁.2 - A₀.2) * (A₁.1 - A₀.1)⁻¹
+  calc D.b.coeff n
+        * ((A₁.1 - A₀.1) ^ 2 * (lam ^ 2 - A₀.1 - A₁.1)) ^ n
+        * ((A₁.1 - A₀.1) ^ 3 *
+              (lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1)))
+        * (A₁.1 - A₀.1) ^ (D.degE - 2 * n - 3)
+      = D.b.coeff n
+        * (((A₁.1 - A₀.1) ^ 2) ^ n * (lam ^ 2 - A₀.1 - A₁.1) ^ n)
+        * ((A₁.1 - A₀.1) ^ 3 *
+              (lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1)))
+        * (A₁.1 - A₀.1) ^ (D.degE - 2 * n - 3) := by rw [mul_pow]
+    _ = D.b.coeff n
+        * ((A₁.1 - A₀.1) ^ (2 * n) * (lam ^ 2 - A₀.1 - A₁.1) ^ n)
+        * ((A₁.1 - A₀.1) ^ 3 *
+              (lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1)))
+        * (A₁.1 - A₀.1) ^ (D.degE - 2 * n - 3) := by rw [hsq]
+    _ = D.b.coeff n * (lam ^ 2 - A₀.1 - A₁.1) ^ n
+         * (lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
+         * ((A₁.1 - A₀.1) ^ (2 * n) * (A₁.1 - A₀.1) ^ 3
+             * (A₁.1 - A₀.1) ^ (D.degE - 2 * n - 3)) := by ring
+    _ = D.b.coeff n * (lam ^ 2 - A₀.1 - A₁.1) ^ n
+         * (lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
+         * (A₁.1 - A₀.1) ^ D.degE := by rw [hpow]
+    _ = (A₁.1 - A₀.1) ^ D.degE
+         * (D.b.coeff n * (lam ^ 2 - A₀.1 - A₁.1) ^ n
+             * (lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))) := by ring
+
+/-- On the non-vertical cone, `bivEval DAtA₂Scaled` equals
+    `(A₁.1 − A₀.1)^D.degE · D.eval (chordX₂, chordY₂)`. -/
+theorem bivEval_DAtA₂Scaled_eq (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (DAtA₂Scaled (E := E) D A₀) A₁
+      = (A₁.1 - A₀.1) ^ D.degE *
+          D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) := by
+  unfold DAtA₂Scaled CoordRingElt.eval
+  rw [bivEval_sub, bivEval_DAPartAtA₂Scaled_eq E D A₀ A₁ hNV,
+      bivEval_DBPartAtA₂Scaled_eq E D A₀ A₁ hNV]
+  ring
+
+theorem bivEval_DDerivAPartAtA₂Scaled_eq (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (DDerivAPartAtA₂Scaled (E := E) D A₀) A₁
+      = (A₁.1 - A₀.1) ^ D.degE *
+          (Polynomial.derivative D.a).eval (chordX₂ A₀ A₁) := by
+  unfold DDerivAPartAtA₂Scaled
+  rw [bivEval_finset_sum, Polynomial.eval_eq_sum_range, Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro n hn
+  have h2nle : 2 * n ≤ D.degE := by
+    have hn' : n ≤ (Polynomial.derivative D.a).natDegree :=
+      Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+    have hda : (Polynomial.derivative D.a).natDegree ≤ D.a.natDegree :=
+      (Polynomial.natDegree_derivative_le _).trans (Nat.sub_le _ _)
+    have : n ≤ D.a.natDegree := hn'.trans hda
+    unfold CoordRingElt.degE
+    omega
+  simp only [bivEval_mul, bivEval_pow, bivEval_embedScalar, bivEval_lamDenPoly,
+             bivEval_x₂Scaled_eq _ _ _ hNV]
+  unfold chordX₂
+  have hpow : (A₁.1 - A₀.1) ^ (2 * n) * (A₁.1 - A₀.1) ^ (D.degE - 2 * n)
+            = (A₁.1 - A₀.1) ^ D.degE := by
+    rw [← pow_add]; congr 1; omega
+  have hsq : ((A₁.1 - A₀.1) ^ 2) ^ n = (A₁.1 - A₀.1) ^ (2 * n) := by
+    rw [← pow_mul, Nat.mul_comm]
+  calc (Polynomial.derivative D.a).coeff n
+          * ((A₁.1 - A₀.1) ^ 2 *
+              ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1)) ^ n
+         * (A₁.1 - A₀.1) ^ (D.degE - 2 * n)
+      = (Polynomial.derivative D.a).coeff n
+         * (((A₁.1 - A₀.1) ^ 2) ^ n
+             * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1) ^ n)
+         * (A₁.1 - A₀.1) ^ (D.degE - 2 * n) := by rw [mul_pow]
+    _ = (Polynomial.derivative D.a).coeff n
+         * ((A₁.1 - A₀.1) ^ (2 * n)
+             * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1) ^ n)
+         * (A₁.1 - A₀.1) ^ (D.degE - 2 * n) := by rw [hsq]
+    _ = (Polynomial.derivative D.a).coeff n
+         * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1) ^ n
+         * ((A₁.1 - A₀.1) ^ (2 * n) * (A₁.1 - A₀.1) ^ (D.degE - 2 * n)) := by ring
+    _ = (Polynomial.derivative D.a).coeff n
+         * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1) ^ n
+         * (A₁.1 - A₀.1) ^ D.degE := by rw [hpow]
+    _ = (A₁.1 - A₀.1) ^ D.degE
+         * ((Polynomial.derivative D.a).coeff n
+             * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1) ^ n) := by ring
+
+theorem bivEval_DDerivBPartAtA₂Scaled_eq (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (DDerivBPartAtA₂Scaled (E := E) D A₀) A₁
+      = (A₁.1 - A₀.1) ^ D.degE *
+          (Polynomial.derivative D.b).eval (chordX₂ A₀ A₁) *
+          chordY₂ A₀ A₁ := by
+  unfold DDerivBPartAtA₂Scaled
+  rw [bivEval_finset_sum, Polynomial.eval_eq_sum_range, mul_assoc,
+      Finset.sum_mul, Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro n hn
+  have h2n3le : 2 * n + 3 ≤ D.degE := by
+    have hn' : n ≤ (Polynomial.derivative D.b).natDegree :=
+      Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+    have hdb : (Polynomial.derivative D.b).natDegree ≤ D.b.natDegree :=
+      (Polynomial.natDegree_derivative_le _).trans (Nat.sub_le _ _)
+    have : n ≤ D.b.natDegree := hn'.trans hdb
+    unfold CoordRingElt.degE
+    omega
+  simp only [bivEval_mul, bivEval_pow, bivEval_embedScalar, bivEval_lamDenPoly,
+             bivEval_x₂Scaled_eq _ _ _ hNV,
+             bivEval_y₂Scaled_eq _ _ _ hNV]
+  unfold chordY₂ chordX₂ slopeOf
+  have hpow : (A₁.1 - A₀.1) ^ (2 * n)
+              * (A₁.1 - A₀.1) ^ 3
+              * (A₁.1 - A₀.1) ^ (D.degE - 2 * n - 3)
+            = (A₁.1 - A₀.1) ^ D.degE := by
+    rw [← pow_add, ← pow_add]; congr 1; omega
+  have hsq : ((A₁.1 - A₀.1) ^ 2) ^ n = (A₁.1 - A₀.1) ^ (2 * n) := by
+    rw [← pow_mul, Nat.mul_comm]
+  set lam := (A₁.2 - A₀.2) * (A₁.1 - A₀.1)⁻¹
+  calc (Polynomial.derivative D.b).coeff n
+        * ((A₁.1 - A₀.1) ^ 2 * (lam ^ 2 - A₀.1 - A₁.1)) ^ n
+        * ((A₁.1 - A₀.1) ^ 3 *
+              (lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1)))
+        * (A₁.1 - A₀.1) ^ (D.degE - 2 * n - 3)
+      = (Polynomial.derivative D.b).coeff n
+        * (((A₁.1 - A₀.1) ^ 2) ^ n * (lam ^ 2 - A₀.1 - A₁.1) ^ n)
+        * ((A₁.1 - A₀.1) ^ 3 *
+              (lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1)))
+        * (A₁.1 - A₀.1) ^ (D.degE - 2 * n - 3) := by rw [mul_pow]
+    _ = (Polynomial.derivative D.b).coeff n
+        * ((A₁.1 - A₀.1) ^ (2 * n) * (lam ^ 2 - A₀.1 - A₁.1) ^ n)
+        * ((A₁.1 - A₀.1) ^ 3 *
+              (lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1)))
+        * (A₁.1 - A₀.1) ^ (D.degE - 2 * n - 3) := by rw [hsq]
+    _ = (Polynomial.derivative D.b).coeff n * (lam ^ 2 - A₀.1 - A₁.1) ^ n
+         * (lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
+         * ((A₁.1 - A₀.1) ^ (2 * n) * (A₁.1 - A₀.1) ^ 3
+             * (A₁.1 - A₀.1) ^ (D.degE - 2 * n - 3)) := by ring
+    _ = (Polynomial.derivative D.b).coeff n * (lam ^ 2 - A₀.1 - A₁.1) ^ n
+         * (lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
+         * (A₁.1 - A₀.1) ^ D.degE := by rw [hpow]
+    _ = (A₁.1 - A₀.1) ^ D.degE
+         * ((Polynomial.derivative D.b).coeff n * (lam ^ 2 - A₀.1 - A₁.1) ^ n
+             * (lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))) := by ring
+
+theorem bivEval_DDerivAtA₂Scaled_eq (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (DDerivAtA₂Scaled (E := E) D A₀) A₁
+      = (A₁.1 - A₀.1) ^ D.degE *
+          ((Polynomial.derivative D.a).eval (chordX₂ A₀ A₁)
+            - (Polynomial.derivative D.b).eval (chordX₂ A₀ A₁) * chordY₂ A₀ A₁) := by
+  unfold DDerivAtA₂Scaled
+  rw [bivEval_sub,
+      bivEval_DDerivAPartAtA₂Scaled_eq E D A₀ A₁ hNV,
+      bivEval_DDerivBPartAtA₂Scaled_eq E D A₀ A₁ hNV]
+  ring
 
 /-- F3: pairs `(A₀, A₁) ∈ E × E` with `D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) = 0`
     are at most `(2·D.degE + 2) · |E|`.
