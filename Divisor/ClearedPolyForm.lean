@@ -746,6 +746,107 @@ theorem DAtA₁_zero_pairs_card_le (D : CoordRingElt E.q)
           Nat.mul_le_mul_left _ (numZeros_le_two_degE E D hD)
     _ = 2 * D.degE * E.points.card := by ring
 
+/-! ### Chord-case `x₂, y₂` formulas
+
+    `logDerivCheckFn` and `logDerivCheckFnDenom` use `x₂ := λ² − A₀.1 − A₁.1`,
+    `y₂ := λ · x₂ + (A₀.2 − λ · A₀.1)` with `λ := slopeOf A₀ A₁`. On the
+    non-vertical cone (`A₀.1 ≠ A₁.1`) these match `thirdPoint E A₀ A₁` as
+    an affine point. -/
+
+/-- Chord-case `x₂` formula. -/
+noncomputable def chordX₂ {q : ℕ} [Fact (Nat.Prime q)]
+    (A₀ A₁ : ZMod q × ZMod q) : ZMod q :=
+  (slopeOf A₀.1 A₀.2 A₁.1 A₁.2)^2 - A₀.1 - A₁.1
+
+/-- Chord-case `y₂` formula. -/
+noncomputable def chordY₂ {q : ℕ} [Fact (Nat.Prime q)]
+    (A₀ A₁ : ZMod q × ZMod q) : ZMod q :=
+  slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * chordX₂ A₀ A₁
+    + (A₀.2 - slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.1)
+
+/-- On non-vertical pairs (`A₀.1 ≠ A₁.1`), `thirdPoint E A₀ A₁` is the
+    affine point `(chordX₂ A₀ A₁, chordY₂ A₀ A₁)`. -/
+theorem thirdPoint_of_xne (A₀ A₁ : ZMod E.q × ZMod E.q) (h : A₀.1 ≠ A₁.1) :
+    thirdPoint E A₀ A₁ = ECPoint.affine (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) := by
+  simp only [thirdPoint, chordX₂, chordY₂, slopeOf, if_neg h]
+
+/-- F3: pairs `(A₀, A₁) ∈ E × E` with `D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) = 0`
+    are at most `(2·D.degE + 2) · |E|`.
+
+    Split: vertical (`A₀.1 = A₁.1`, ≤ 2·|E|) via curve-fiber; non-vertical
+    (≤ |E|·numZeros D via `thirdPoint_inj_on_A₁` from support-disjoint lemma). -/
+theorem DAtA₂_zero_pairs_card_le (D : CoordRingElt E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    ((E.points ×ˢ E.points).filter
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+        D.eval (chordX₂ p.1 p.2) (chordY₂ p.1 p.2) = 0)).card
+    ≤ (2 * D.degE + 2) * E.points.card := by
+  classical
+  set S := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      D.eval (chordX₂ p.1 p.2) (chordY₂ p.1 p.2) = 0) with hSdef
+  set Svert := S.filter (fun p => p.1.1 = p.2.1) with hSvertdef
+  set Snv := S.filter (fun p => p.1.1 ≠ p.2.1) with hSnvdef
+  have hSplit : Svert.card + Snv.card = S.card := by
+    rw [hSvertdef, hSnvdef]
+    exact Finset.filter_card_add_filter_neg_card_eq_card _
+  -- Svert bound: Svert ⊆ {A₀.1 = A₁.1}, fiberwise ≤ 2 per A₀ ⇒ ≤ 2·|E|.
+  have hSvert_bd : Svert.card ≤ 2 * E.points.card := by
+    set T := (E.points ×ˢ E.points).filter
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+         p.1.1 = p.2.1) with hTdef
+    have hSub : Svert ⊆ T := by
+      intro p hp
+      simp only [hSvertdef, hSdef, Finset.mem_filter, Finset.mem_product] at hp
+      simp only [hTdef, Finset.mem_filter, Finset.mem_product]
+      exact ⟨hp.1.1, hp.2⟩
+    have hTcard : T.card ≤ 2 * E.points.card := by
+      have hfib : T.card = ∑ A₀ ∈ E.points,
+          (E.points.filter (fun A₁ => A₀.1 = A₁.1)).card :=
+        card_filter_product_fiber_eq E E.points E.points
+          (fun a b => a.1 = b.1)
+      rw [hfib]
+      have hper : ∀ A₀ ∈ E.points,
+          (E.points.filter (fun A₁ => A₀.1 = A₁.1)).card ≤ 2 := by
+        intro A₀ _
+        have heq : E.points.filter (fun A₁ => A₀.1 = A₁.1)
+                 = E.points.filter (fun A₁ => A₁.1 = A₀.1) := by
+          apply Finset.filter_congr; intros; tauto
+        rw [heq]
+        exact card_points_with_fst_eq_le E A₀.1
+      calc ∑ A₀ ∈ E.points, (E.points.filter (fun A₁ => A₀.1 = A₁.1)).card
+          ≤ ∑ A₀ ∈ E.points, 2 := Finset.sum_le_sum hper
+        _ = 2 * E.points.card := by
+            rw [Finset.sum_const, smul_eq_mul, Nat.mul_comm]
+    exact le_trans (Finset.card_le_card hSub) hTcard
+  -- Snv bound: Snv ⊆ S₃-style set via thirdPoint ≡ (chordX₂, chordY₂) on non-vert.
+  have hSnv_bd : Snv.card ≤ E.points.card * numZeros E D := by
+    set T := (E.points ×ˢ E.points).filter (fun p =>
+      match thirdPoint E p.1 p.2 with
+      | ECPoint.infinity => False
+      | ECPoint.affine x y => D.eval x y = 0) with hTdef
+    have hSub : Snv ⊆ T := by
+      intro p hp
+      simp only [hSnvdef, hSdef, Finset.mem_filter, Finset.mem_product] at hp
+      obtain ⟨⟨hmem, hDval⟩, hn⟩ := hp
+      simp only [hTdef, Finset.mem_filter, Finset.mem_product]
+      refine ⟨hmem, ?_⟩
+      rw [thirdPoint_of_xne E p.1 p.2 hn]
+      exact hDval
+    calc Snv.card ≤ T.card := Finset.card_le_card hSub
+      _ ≤ E.numAffine * numZeros E D :=
+          card_thirdPoint_affine_D_zero_pairs_le E D
+      _ = E.points.card * numZeros E D := rfl
+  have hSnv_bd' : Snv.card ≤ 2 * D.degE * E.points.card := by
+    calc Snv.card ≤ E.points.card * numZeros E D := hSnv_bd
+      _ ≤ E.points.card * (2 * D.degE) :=
+            Nat.mul_le_mul_left _ (numZeros_le_two_degE E D hD)
+      _ = 2 * D.degE * E.points.card := by ring
+  calc S.card = Svert.card + Snv.card := hSplit.symm
+    _ ≤ 2 * E.points.card + 2 * D.degE * E.points.card :=
+        Nat.add_le_add hSvert_bd hSnv_bd'
+    _ = (2 * D.degE + 2) * E.points.card := by ring
+
 /-! ## Phase 2: `logDerivCheckFn_zero_set_bound` as a theorem.
 
     Issue 2 fix: the count is split into two bounds, corresponding to

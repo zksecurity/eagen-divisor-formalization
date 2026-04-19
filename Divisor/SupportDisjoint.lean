@@ -261,7 +261,7 @@ theorem card_thirdPoint_infinity_fiber (A₀ : ZMod E.q × ZMod E.q)
 
 /-- Fiberwise decomposition of a Finset of pairs filtered by first coordinate
     followed by an A₀-dependent predicate. -/
-private theorem card_filter_product_fiber_eq
+theorem card_filter_product_fiber_eq
     (S T : Finset (ZMod E.q × ZMod E.q))
     (Q : (ZMod E.q × ZMod E.q) → (ZMod E.q × ZMod E.q) → Prop)
     [∀ a b, Decidable (Q a b)] :
@@ -298,6 +298,99 @@ private theorem card_filter_product_fiber_eq
   · intro p hp
     simp only [Finset.mem_filter, Finset.mem_product] at hp
     exact hp.1.1
+
+/-! ## Standalone: third-point-affine zeros of D on E × E
+
+    Extracted from `support_disjointness`: the set of pairs `(A₀, A₁)` such
+    that `thirdPoint A₀ A₁` is affine and its coordinates are a zero of `D`
+    has cardinality at most `E.numAffine * numZeros E D`. Used by the T3
+    factor bound on `D(A₂) = 0`. -/
+
+theorem card_thirdPoint_affine_D_zero_pairs_le (D : CoordRingElt E.q) :
+    ((E.points ×ˢ E.points).filter (fun p =>
+       match thirdPoint E p.1 p.2 with
+       | ECPoint.infinity => False
+       | ECPoint.affine x y => D.eval x y = 0)).card
+      ≤ E.numAffine * numZeros E D := by
+  classical
+  set S := (E.points ×ˢ E.points).filter (fun p =>
+      match thirdPoint E p.1 p.2 with
+      | ECPoint.infinity => False
+      | ECPoint.affine x y => D.eval x y = 0)
+  have hfib : S.card = ∑ A₀ ∈ E.points,
+        (E.points.filter (fun A₁ =>
+          match thirdPoint E A₀ A₁ with
+          | ECPoint.infinity => False
+          | ECPoint.affine x y => D.eval x y = 0)).card :=
+    card_filter_product_fiber_eq E E.points E.points
+      (fun a b =>
+        match thirdPoint E a b with
+        | ECPoint.infinity => False
+        | ECPoint.affine x y => D.eval x y = 0)
+  rw [hfib]
+  have hper_A0 :
+      ∀ A₀ ∈ E.points,
+        (E.points.filter (fun A₁ =>
+            match thirdPoint E A₀ A₁ with
+            | ECPoint.infinity => False
+            | ECPoint.affine x y => D.eval x y = 0)).card ≤ numZeros E D := by
+    intro A₀ hA₀
+    set fiber := E.points.filter (fun A₁ =>
+        match thirdPoint E A₀ A₁ with
+        | ECPoint.infinity => False
+        | ECPoint.affine x y => D.eval x y = 0) with hfiberdef
+    have hfib_aff : ∀ A₁ ∈ fiber,
+        A₁ ∈ E.points ∧ thirdPoint E A₀ A₁ ≠ ECPoint.infinity ∧
+        ∃ x y, thirdPoint E A₀ A₁ = ECPoint.affine x y ∧ D.eval x y = 0 := by
+      intro A₁ hA₁
+      simp only [hfiberdef, Finset.mem_filter] at hA₁
+      obtain ⟨hmem, hcond⟩ := hA₁
+      have hT_eq : ∃ x y, thirdPoint E A₀ A₁ = ECPoint.affine x y := by
+        cases hT : thirdPoint E A₀ A₁ with
+        | infinity =>
+          rw [hT] at hcond
+          exact absurd hcond (by simp)
+        | affine x y => exact ⟨x, y, rfl⟩
+      obtain ⟨x, y, hT⟩ := hT_eq
+      rw [hT] at hcond
+      refine ⟨hmem, ?_, x, y, hT, hcond⟩
+      rw [hT]; exact (by simp)
+    let thirdAffine : (ZMod E.q × ZMod E.q) → (ZMod E.q × ZMod E.q) := fun A₁ =>
+      match thirdPoint E A₀ A₁ with
+      | ECPoint.infinity => (0, 0)
+      | ECPoint.affine x y => (x, y)
+    have hInj' : Set.InjOn thirdAffine ↑fiber := by
+      intro a ha b hb hab
+      obtain ⟨hamem, haninf, xa, ya, hTa, _⟩ := hfib_aff a ha
+      obtain ⟨hbmem, hbninf, xb, yb, hTb, _⟩ := hfib_aff b hb
+      simp only [thirdAffine, hTa, hTb] at hab
+      rw [Prod.mk.injEq] at hab
+      have htp : thirdPoint E A₀ a = thirdPoint E A₀ b := by
+        rw [hTa, hTb, hab.1, hab.2]
+      exact thirdPoint_inj_on_A₁ E A₀ hA₀ ⟨hamem, haninf⟩ ⟨hbmem, hbninf⟩ htp
+    have hImgSub : (fiber.image thirdAffine) ⊆ zeros D E.points := by
+      intro q hq
+      simp only [Finset.mem_image] at hq
+      obtain ⟨A₁, hA₁fib, hA₁eq⟩ := hq
+      obtain ⟨hA₁mem, _, x, y, hT, hDval⟩ := hfib_aff A₁ hA₁fib
+      simp only [thirdAffine, hT] at hA₁eq
+      rw [← hA₁eq]
+      simp only [zeros, Finset.mem_filter]
+      exact ⟨third_point_on_curve E A₀ A₁ hA₀ hA₁mem hT, hDval⟩
+    have hcard_fiber : fiber.card = (fiber.image thirdAffine).card :=
+      (Finset.card_image_of_injOn hInj').symm
+    rw [hcard_fiber]
+    exact Finset.card_le_card hImgSub
+  calc (∑ A₀ ∈ E.points,
+          (E.points.filter (fun A₁ =>
+            match thirdPoint E A₀ A₁ with
+            | ECPoint.infinity => False
+            | ECPoint.affine x y => D.eval x y = 0)).card)
+      ≤ ∑ A₀ ∈ E.points, numZeros E D :=
+        Finset.sum_le_sum hper_A0
+    _ = E.points.card * numZeros E D := by
+        rw [Finset.sum_const, smul_eq_mul]
+    _ = E.numAffine * numZeros E D := rfl
 
 /-- **Lemma 2 (Support Disjointness).**
 
@@ -386,86 +479,9 @@ theorem support_disjointness (D : CoordRingElt E.q)
       _ = E.points.card := by
             rw [Finset.sum_const, smul_eq_mul]; ring
       _ = E.numAffine := rfl
-  -- S₃: per-A₀ ≤ numZeros via injectivity (on affine-output fiber).
-  have hS3_card : S₃.card ≤ E.numAffine * numZeros E D := by
-    have hfib : S₃.card = ∑ A₀ ∈ E.points,
-          (E.points.filter (fun A₁ =>
-            match thirdPoint E A₀ A₁ with
-            | ECPoint.infinity => False
-            | ECPoint.affine x y => D.eval x y = 0)).card :=
-      card_filter_product_fiber_eq E E.points E.points
-        (fun a b =>
-          match thirdPoint E a b with
-          | ECPoint.infinity => False
-          | ECPoint.affine x y => D.eval x y = 0)
-    rw [hfib]
-    have hper_A0 :
-        ∀ A₀ ∈ E.points,
-          (E.points.filter (fun A₁ =>
-              match thirdPoint E A₀ A₁ with
-              | ECPoint.infinity => False
-              | ECPoint.affine x y => D.eval x y = 0)).card ≤ numZeros E D := by
-      intro A₀ hA₀
-      set fiber := E.points.filter (fun A₁ =>
-          match thirdPoint E A₀ A₁ with
-          | ECPoint.infinity => False
-          | ECPoint.affine x y => D.eval x y = 0) with hfiberdef
-      -- For A₁ ∈ fiber, thirdPoint is affine (not infinity).
-      have hfib_aff : ∀ A₁ ∈ fiber,
-          A₁ ∈ E.points ∧ thirdPoint E A₀ A₁ ≠ ECPoint.infinity ∧
-          ∃ x y, thirdPoint E A₀ A₁ = ECPoint.affine x y ∧ D.eval x y = 0 := by
-        intro A₁ hA₁
-        simp only [hfiberdef, Finset.mem_filter] at hA₁
-        obtain ⟨hmem, hcond⟩ := hA₁
-        have hT_eq : ∃ x y, thirdPoint E A₀ A₁ = ECPoint.affine x y := by
-          cases hT : thirdPoint E A₀ A₁ with
-          | infinity =>
-            rw [hT] at hcond
-            exact absurd hcond (by simp)
-          | affine x y => exact ⟨x, y, rfl⟩
-        obtain ⟨x, y, hT⟩ := hT_eq
-        rw [hT] at hcond
-        refine ⟨hmem, ?_, x, y, hT, hcond⟩
-        rw [hT]; exact (by simp)
-      -- Define the map to (x, y) coordinates.
-      let thirdAffine : (ZMod E.q × ZMod E.q) → (ZMod E.q × ZMod E.q) := fun A₁ =>
-        match thirdPoint E A₀ A₁ with
-        | ECPoint.infinity => (0, 0)
-        | ECPoint.affine x y => (x, y)
-      -- Injectivity on fiber (via the axiom restricted to thirdPoint ≠ ∞).
-      have hInj' : Set.InjOn thirdAffine ↑fiber := by
-        intro a ha b hb hab
-        obtain ⟨hamem, haninf, xa, ya, hTa, _⟩ := hfib_aff a ha
-        obtain ⟨hbmem, hbninf, xb, yb, hTb, _⟩ := hfib_aff b hb
-        simp only [thirdAffine, hTa, hTb] at hab
-        rw [Prod.mk.injEq] at hab
-        have htp : thirdPoint E A₀ a = thirdPoint E A₀ b := by
-          rw [hTa, hTb, hab.1, hab.2]
-        exact thirdPoint_inj_on_A₁ E A₀ hA₀ ⟨hamem, haninf⟩ ⟨hbmem, hbninf⟩ htp
-      -- Image is in zeros D E.points.
-      have hImgSub : (fiber.image thirdAffine) ⊆ zeros D E.points := by
-        intro q hq
-        simp only [Finset.mem_image] at hq
-        obtain ⟨A₁, hA₁fib, hA₁eq⟩ := hq
-        obtain ⟨hA₁mem, _, x, y, hT, hDval⟩ := hfib_aff A₁ hA₁fib
-        simp only [thirdAffine, hT] at hA₁eq
-        rw [← hA₁eq]
-        simp only [zeros, Finset.mem_filter]
-        exact ⟨third_point_on_curve E A₀ A₁ hA₀ hA₁mem hT, hDval⟩
-      have hcard_fiber : fiber.card = (fiber.image thirdAffine).card :=
-        (Finset.card_image_of_injOn hInj').symm
-      rw [hcard_fiber]
-      exact Finset.card_le_card hImgSub
-    calc (∑ A₀ ∈ E.points,
-            (E.points.filter (fun A₁ =>
-              match thirdPoint E A₀ A₁ with
-              | ECPoint.infinity => False
-              | ECPoint.affine x y => D.eval x y = 0)).card)
-        ≤ ∑ A₀ ∈ E.points, numZeros E D :=
-          Finset.sum_le_sum hper_A0
-      _ = E.points.card * numZeros E D := by
-          rw [Finset.sum_const, smul_eq_mul]
-      _ = E.numAffine * numZeros E D := rfl
+  -- S₃: standalone lemma above.
+  have hS3_card : S₃.card ≤ E.numAffine * numZeros E D :=
+    card_thirdPoint_affine_D_zero_pairs_le E D
   have hCombine : (badChallengesCompleteness E D).card ≤
       S₀.card + S₁.card + S₂.card + S₃.card := by
     calc (badChallengesCompleteness E D).card
