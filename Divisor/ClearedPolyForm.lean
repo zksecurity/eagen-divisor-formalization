@@ -692,6 +692,60 @@ theorem numZeros_le_two_degE (D : CoordRingElt E.q)
   refine le_trans (card_zeros_on_E_le E (DAtA₁Poly (E := E) D) hMod_nz) ?_
   exact Nat.mul_le_mul_left 2 (resultantX_DAtA₁Poly_natDegree_le E D)
 
+/-! ## T3 per-factor bounds.
+
+    The `logDerivCheckFnDenom` is a product of eight factor groups. For
+    each factor the "pairs where it vanishes" is bounded by a constant
+    times `|E|`. The lemmas below handle the D-factors F1 (`D(A₀) = 0`)
+    and F2 (`D(A₁) = 0`). Remaining factors handled in follow-up work. -/
+
+/-- F1: pairs `(A₀, A₁) ∈ E × E` with `D.eval A₀.1 A₀.2 = 0` are at most
+    `numZeros D · |E| ≤ 2·D.degE · |E|`. -/
+theorem DAtA₀_zero_pairs_card_le (D : CoordRingElt E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    ((E.points ×ˢ E.points).filter
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+        D.eval p.1.1 p.1.2 = 0)).card
+    ≤ 2 * D.degE * E.points.card := by
+  classical
+  have hEq :
+      (E.points ×ˢ E.points).filter
+          (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+            D.eval p.1.1 p.1.2 = 0)
+      = zeros D E.points ×ˢ E.points := by
+    ext ⟨a, b⟩
+    simp only [Finset.mem_filter, Finset.mem_product, zeros]
+    tauto
+  rw [hEq, Finset.card_product]
+  calc (zeros D E.points).card * E.points.card
+      = numZeros E D * E.points.card := rfl
+    _ ≤ (2 * D.degE) * E.points.card :=
+          Nat.mul_le_mul_right _ (numZeros_le_two_degE E D hD)
+
+/-- F2: pairs `(A₀, A₁) ∈ E × E` with `D.eval A₁.1 A₁.2 = 0` are at most
+    `|E| · numZeros D ≤ 2·D.degE · |E|` (symmetric to F1). -/
+theorem DAtA₁_zero_pairs_card_le (D : CoordRingElt E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    ((E.points ×ˢ E.points).filter
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+        D.eval p.2.1 p.2.2 = 0)).card
+    ≤ 2 * D.degE * E.points.card := by
+  classical
+  have hEq :
+      (E.points ×ˢ E.points).filter
+          (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+            D.eval p.2.1 p.2.2 = 0)
+      = E.points ×ˢ zeros D E.points := by
+    ext ⟨a, b⟩
+    simp only [Finset.mem_filter, Finset.mem_product, zeros]
+    tauto
+  rw [hEq, Finset.card_product]
+  calc E.points.card * (zeros D E.points).card
+      = E.points.card * numZeros E D := rfl
+    _ ≤ E.points.card * (2 * D.degE) :=
+          Nat.mul_le_mul_left _ (numZeros_le_two_degE E D hD)
+    _ = 2 * D.degE * E.points.card := by ring
+
 /-! ## Phase 2: `logDerivCheckFn_zero_set_bound` as a theorem.
 
     Issue 2 fix: the count is split into two bounds, corresponding to
