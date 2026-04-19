@@ -617,3 +617,17 @@ Compared to earlier rough estimate (3–5 sessions, 1150 LOC), this extensive pl
 ## Next action
 
 Implement P0 (extractor sign fix) as first commit. It's independent, ~40 LOC, and removes a real soundness gap before any axiom elimination begins.
+
+---
+
+## Execution log
+
+### Session 1 — P0 complete
+
+**P0 — Extractor sign correction**: Done (`fe227de`).
+- Changed general case of `extractedScalars` from `(groupSum).val` to `(-groupSum).val`.
+- Captures paper's integer multiplicity `β_k` rather than `q − β_k`.
+- No Lean downstream proofs broke (special case and valid_special lemmas untouched).
+- Build clean.
+
+Axiom count unchanged (fix was correctness, not axiom-removal).
