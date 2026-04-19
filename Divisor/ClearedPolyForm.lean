@@ -1418,6 +1418,216 @@ theorem dxdzA₁_zero_pairs_card_le :
         Nat.add_le_add hSvert_bd hSbiv_bd
     _ = 14 * E.points.card := by ring
 
+/-! ### F7 / F8: line factor bounds
+
+    The factor `(lineThrough A₀ A₁).eval pt.1 pt.2` (for some fixed `pt`,
+    either `(P.1, -P.2)` or one of the `B_j`s) vanishes iff `pt` lies on
+    the chord `A₀A₁`. On non-vertical pairs, `(A₁.1 - A₀.1)·factor` equals
+    `bivEval (lineEvalNumAt A₀ pt) A₁` (which has outer natDegree ≤ 1).
+
+    `resultantX (lineEvalNumAt A₀ pt)` has natDegree ≤ 3; Exc (≤ 1) is
+    when `A₀ = pt`. Total F7-shape bound per line: ≤ 9·|E|. -/
+
+theorem lineEvalNumAt_natDegree_lt_two (A₀ pt : ZMod E.q × ZMod E.q) :
+    (lineEvalNumAt (E := E) A₀ pt).natDegree < 2 :=
+  lt_of_le_of_lt (lineEvalNumAt_natDegree_le E A₀ pt) (by omega)
+
+theorem lineEvalNumAt_modByMonic_self (A₀ pt : ZMod E.q × ZMod E.q) :
+    lineEvalNumAt (E := E) A₀ pt %ₘ curveEqPoly E
+      = lineEvalNumAt (E := E) A₀ pt := by
+  by_cases hZ : lineEvalNumAt (E := E) A₀ pt = 0
+  · rw [hZ, Polynomial.zero_modByMonic]
+  · apply (Polynomial.modByMonic_eq_self_iff (curveEqPoly_monic E)).mpr
+    rw [Polynomial.degree_eq_natDegree hZ,
+        Polynomial.degree_eq_natDegree (curveEqPoly_monic E).ne_zero,
+        curveEqPoly_natDegree_eq]
+    exact_mod_cast lineEvalNumAt_natDegree_lt_two E A₀ pt
+
+theorem lineEvalNumAt_eq (A₀ pt : ZMod E.q × ZMod E.q) :
+    lineEvalNumAt (E := E) A₀ pt =
+      C (C (pt.2 - A₀.2) * (Polynomial.X - C A₀.1)
+           + C ((pt.1 - A₀.1) * A₀.2))
+        + C (C (-(pt.1 - A₀.1))) * X := by
+  simp only [lineEvalNumAt, embedScalar, lamDenPoly, lamNumPoly,
+             innerA₁x, outerA₁y, map_mul, map_sub, map_add, map_neg]
+  ring
+
+theorem lineEvalNumAt_coeff_zero (A₀ pt : ZMod E.q × ZMod E.q) :
+    (lineEvalNumAt (E := E) A₀ pt).coeff 0 =
+      C (pt.2 - A₀.2) * (Polynomial.X - C A₀.1)
+        + C ((pt.1 - A₀.1) * A₀.2) := by
+  rw [lineEvalNumAt_eq, Polynomial.coeff_add, Polynomial.coeff_C_zero,
+      Polynomial.coeff_mul_X_zero, add_zero]
+
+theorem lineEvalNumAt_coeff_one (A₀ pt : ZMod E.q × ZMod E.q) :
+    (lineEvalNumAt (E := E) A₀ pt).coeff 1 = C (-(pt.1 - A₀.1)) := by
+  rw [lineEvalNumAt_eq, Polynomial.coeff_add,
+      Polynomial.coeff_C_ne_zero (by norm_num : (1 : ℕ) ≠ 0),
+      Polynomial.coeff_C_mul_X, if_pos rfl, zero_add]
+
+theorem lineEvalNumAt_xPart (A₀ pt : ZMod E.q × ZMod E.q) :
+    xPart E (lineEvalNumAt (E := E) A₀ pt %ₘ curveEqPoly E) =
+      C (pt.2 - A₀.2) * (Polynomial.X - C A₀.1)
+        + C ((pt.1 - A₀.1) * A₀.2) := by
+  rw [lineEvalNumAt_modByMonic_self, xPart, lineEvalNumAt_coeff_zero]
+
+theorem lineEvalNumAt_yPart (A₀ pt : ZMod E.q × ZMod E.q) :
+    yPart E (lineEvalNumAt (E := E) A₀ pt %ₘ curveEqPoly E) =
+      C (-(pt.1 - A₀.1)) := by
+  rw [lineEvalNumAt_modByMonic_self, yPart, lineEvalNumAt_coeff_one]
+
+theorem resultantX_lineEvalNumAt_natDegree_le (A₀ pt : ZMod E.q × ZMod E.q) :
+    (resultantX E (lineEvalNumAt (E := E) A₀ pt)).natDegree ≤ 3 := by
+  unfold resultantX
+  rw [lineEvalNumAt_xPart, lineEvalNumAt_yPart]
+  have hXp : (C (pt.2 - A₀.2) * (Polynomial.X - C A₀.1)
+                + C ((pt.1 - A₀.1) * A₀.2) : (ZMod E.q)[X]).natDegree ≤ 1 := by
+    refine (Polynomial.natDegree_add_le _ _).trans ?_
+    refine max_le ?_ ((Polynomial.natDegree_C _).le.trans (by omega))
+    refine Polynomial.natDegree_C_mul_le _ _ |>.trans ?_
+    exact (Polynomial.natDegree_X_sub_C _).le
+  refine (Polynomial.natDegree_sub_le _ _).trans (max_le ?_ ?_)
+  · rw [Polynomial.natDegree_pow]
+    omega
+  · refine Polynomial.natDegree_mul_le.trans ?_
+    rw [Polynomial.natDegree_pow, Polynomial.natDegree_C]
+    have := curveX_natDegree_le_three E
+    omega
+
+/-- Exceptional A₀ set (where `lineEvalNumAt A₀ pt = 0`) on `E.points` has
+    size ≤ 1. Reason: `yPart = 0` forces `A₀.1 = pt.1`; evaluating `xPart`
+    at `A₀.1 + 1` (using `A₀.1 = pt.1`) forces `A₀.2 = pt.2`. -/
+theorem card_lineEvalNumAt_zero_A₀_le (pt : ZMod E.q × ZMod E.q) :
+    (E.points.filter
+      (fun A₀ => lineEvalNumAt (E := E) A₀ pt = 0)).card ≤ 1 := by
+  classical
+  refine le_trans (Finset.card_le_card (?_ : _ ⊆ ({pt} : Finset _))) (by simp)
+  intro A₀ hA₀
+  simp only [Finset.mem_filter] at hA₀
+  obtain ⟨_, hZ⟩ := hA₀
+  -- Step 1: pt.1 = A₀.1 via coeff 1 of lineEvalNumAt.
+  have hy : (lineEvalNumAt (E := E) A₀ pt).coeff 1 = 0 := by rw [hZ]; simp
+  rw [lineEvalNumAt_coeff_one] at hy
+  have hy' : -(pt.1 - A₀.1) = 0 := by
+    have := congrArg (fun p : (ZMod E.q)[X] => p.eval 0) hy
+    simpa using this
+  have hx1_sub : pt.1 - A₀.1 = 0 := neg_eq_zero.mp hy'
+  have hx1 : pt.1 = A₀.1 := sub_eq_zero.mp hx1_sub
+  -- Step 2: pt.2 = A₀.2 via coeff 0 evaluated at A₀.1 + 1.
+  have hx : (lineEvalNumAt (E := E) A₀ pt).coeff 0 = 0 := by rw [hZ]; simp
+  rw [lineEvalNumAt_coeff_zero] at hx
+  have heval : ((C (pt.2 - A₀.2) * (Polynomial.X - C A₀.1)
+                  + C ((pt.1 - A₀.1) * A₀.2)).eval (A₀.1 + 1) : ZMod E.q) = 0 := by
+    rw [hx]; simp
+  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+             Polynomial.eval_X, Polynomial.eval_C] at heval
+  -- heval : (pt.2 - A₀.2) * (A₀.1 + 1 - A₀.1) + (pt.1 - A₀.1) * A₀.2 = 0
+  have hx2_sub : pt.2 - A₀.2 = 0 := by linear_combination heval - A₀.2 * hx1_sub
+  have hx2 : pt.2 = A₀.2 := sub_eq_zero.mp hx2_sub
+  rw [Finset.mem_singleton]
+  exact Prod.ext hx1.symm hx2.symm
+
+/-- Generic line-factor bound: pairs `(A₀, A₁) ∈ E × E` with the chord
+    `A₀A₁` passing through `pt` have cardinality ≤ `9 · |E|`. -/
+theorem lineEval_at_point_zero_pairs_card_le (pt : ZMod E.q × ZMod E.q) :
+    ((E.points ×ˢ E.points).filter
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+        (lineThrough p.1.1 p.1.2 p.2.1 p.2.2).eval pt.1 pt.2 = 0)).card
+    ≤ 9 * E.points.card := by
+  classical
+  set S := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      (lineThrough p.1.1 p.1.2 p.2.1 p.2.2).eval pt.1 pt.2 = 0) with hSdef
+  set Svert := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      p.1.1 = p.2.1) with hSvertdef
+  set Sbiv := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+       bivEval (lineEvalNumAt (E := E) p.1 pt) p.2 = 0) with hSbivdef
+  have hSub : S ⊆ Svert ∪ Sbiv := by
+    intro p hp
+    simp only [hSdef, Finset.mem_filter, Finset.mem_product] at hp
+    rw [Finset.mem_union]
+    by_cases hV : p.1.1 = p.2.1
+    · left
+      simp only [hSvertdef, Finset.mem_filter, Finset.mem_product]
+      exact ⟨hp.1, hV⟩
+    · right
+      simp only [hSbivdef, Finset.mem_filter, Finset.mem_product]
+      refine ⟨hp.1, ?_⟩
+      rw [bivEval_lineEvalNumAt]
+      have hFactor := hp.2
+      simp only [Line.eval, lineThrough] at hFactor
+      have hden : p.2.1 - p.1.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm hV)
+      have hlam : slopeOf p.1.1 p.1.2 p.2.1 p.2.2 * (p.2.1 - p.1.1)
+                  = p.2.2 - p.1.2 := by
+        unfold slopeOf
+        field_simp
+      linear_combination (p.2.1 - p.1.1) * hFactor + (pt.1 - p.1.1) * hlam
+  have hSvert_bd : Svert.card ≤ 2 * E.points.card := card_vertical_pairs_le E
+  have hSbiv_bd : Sbiv.card ≤ 2 * 3 * E.points.card + 1 * E.points.card := by
+    have hbd :=
+      card_bivEval_Q_zero_pairs_le E
+        (fun A₀ => lineEvalNumAt (E := E) A₀ pt)
+        (fun A₀ => lineEvalNumAt_natDegree_lt_two E A₀ pt)
+        3
+        (fun A₀ _ => resultantX_lineEvalNumAt_natDegree_le E A₀ pt)
+    refine le_trans hbd ?_
+    exact Nat.add_le_add_left
+      (Nat.mul_le_mul_right _ (card_lineEvalNumAt_zero_A₀_le E pt)) _
+  calc S.card ≤ (Svert ∪ Sbiv).card := Finset.card_le_card hSub
+    _ ≤ Svert.card + Sbiv.card := Finset.card_union_le _ _
+    _ ≤ 2 * E.points.card + (2 * 3 * E.points.card + 1 * E.points.card) :=
+        Nat.add_le_add hSvert_bd hSbiv_bd
+    _ = 9 * E.points.card := by ring
+
+/-- F7: `L(-P) = 0` pair count bound. -/
+theorem linePNeg_zero_pairs_card_le (P : ZMod E.q × ZMod E.q) :
+    ((E.points ×ˢ E.points).filter
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+        (lineThrough p.1.1 p.1.2 p.2.1 p.2.2).eval P.1 (-P.2) = 0)).card
+    ≤ 9 * E.points.card :=
+  lineEval_at_point_zero_pairs_card_le E (P.1, -P.2)
+
+/-- F8: `∏_j L(B_j) = 0` pair count bound (union over `j`). -/
+theorem lineBj_zero_pairs_card_le
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    ((E.points ×ˢ E.points).filter
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+        ∃ j : Fin k,
+          (lineThrough p.1.1 p.1.2 p.2.1 p.2.2).eval (B j).1 (B j).2 = 0)).card
+    ≤ 9 * k * E.points.card := by
+  classical
+  set S := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      ∃ j : Fin k,
+        (lineThrough p.1.1 p.1.2 p.2.1 p.2.2).eval (B j).1 (B j).2 = 0) with hSdef
+  have hSub : S ⊆ (Finset.univ : Finset (Fin k)).biUnion (fun j =>
+      (E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          (lineThrough p.1.1 p.1.2 p.2.1 p.2.2).eval (B j).1 (B j).2 = 0)) := by
+    intro p hp
+    simp only [hSdef, Finset.mem_filter] at hp
+    obtain ⟨hmem, j, hj⟩ := hp
+    simp only [Finset.mem_biUnion, Finset.mem_univ, true_and, Finset.mem_filter]
+    exact ⟨j, hmem, hj⟩
+  calc S.card
+      ≤ ((Finset.univ : Finset (Fin k)).biUnion (fun j =>
+          (E.points ×ˢ E.points).filter
+            (fun p => (lineThrough p.1.1 p.1.2 p.2.1 p.2.2).eval
+                        (B j).1 (B j).2 = 0))).card := Finset.card_le_card hSub
+    _ ≤ ∑ j : Fin k, ((E.points ×ˢ E.points).filter
+          (fun p => (lineThrough p.1.1 p.1.2 p.2.1 p.2.2).eval
+                      (B j).1 (B j).2 = 0)).card :=
+        Finset.card_biUnion_le
+    _ ≤ ∑ _j : Fin k, 9 * E.points.card := by
+        apply Finset.sum_le_sum
+        intros j _
+        exact lineEval_at_point_zero_pairs_card_le E (B j)
+    _ = k * (9 * E.points.card) := by
+        rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul]
+    _ = 9 * k * E.points.card := by ring
+
 /-! ## Phase 2: `logDerivCheckFn_zero_set_bound` as a theorem.
 
     Issue 2 fix: the count is split into two bounds, corresponding to
