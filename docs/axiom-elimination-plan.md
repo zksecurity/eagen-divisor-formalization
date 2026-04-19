@@ -708,6 +708,69 @@ infrastructure built for different polynomial shapes (the generic
 `clearedFiberPoly` machinery is higher-degree and has different
 structural bounds).
 
+### Session 2 (2026-04-19) — T3 helper landed
+
+Commits:
+- `0901e71` — T3 helper: `numZeros_le_two_degE` via `DAtA₁Poly` +
+  `card_zeros_on_E_le`. ~94 LOC. Build clean.
+
+**What landed**: The foundational helper plus its supporting lemmas in
+`Divisor/ClearedPolyForm.lean`:
+- `DAtA₁Poly_natDegree_lt_two`
+- `DAtA₁Poly_coeff_zero` / `DAtA₁Poly_coeff_one` (= `D.a`, `-D.b`)
+- `DAtA₁Poly_modByMonic_self` (mod-curve = self since natDegree < 2)
+- `DAtA₁Poly_ne_zero_of_ab` (from `(D.a, D.b) ≠ (0,0)`)
+- `DAtA₁Poly_xPart` / `DAtA₁Poly_yPart` (= `D.a`, `-D.b`)
+- `resultantX_DAtA₁Poly_natDegree_le` (= `D.a² - D.b²·curveX`,
+  natDegree ≤ `D.degE`)
+- `numZeros_le_two_degE` (the headline result)
+
+Hypothesis required: `¬ (D.a = 0 ∧ D.b = 0)`. When `D ≡ 0`, every pair
+in `E × E` has denom = 0, so the `T3` axiom would need this hypothesis
+in any case (or fail when `|E|^2 > 18·9·|E|`).
+
+**Continuation path for T3** (next session, ~250 LOC):
+
+The undefined set is `denom = 0`, where denom factors as
+`D(A₀)·D(A₁)·D(A₂)·dxdz(A₀)·dxdz(A₁)·dxdz(A₂)·L(-P)·∏ⱼ L(Bⱼ)`
+(7 + k factors). Bound each via union, with hypothesis
+`hD : ¬ (D.a = 0 ∧ D.b = 0)` propagated from `logDerivCheckFn_zero_set_bound`.
+
+Per-factor bounds (each is `≤ Cⱼ · |E|`):
+
+| Factor | Approach | Cⱼ | LOC |
+|---|---|---|---|
+| F1 `D@A₀` | `(zeros D) ×ˢ E.points`, card ≤ `numZeros · |E| ≤ 2D.degE · |E|` | `2D.degE` | 20 |
+| F2 `D@A₁` | symmetric to F1 | `2D.degE` | 15 |
+| F3 `D@A₂` | per-A₀ slicing; A₂ via `thirdPoint_inj_on_A₁` (already proved) plus vertical-case ≤ 2|E| | `2D.degE+2` | 50 |
+| F4 `dxdz@A₀` | per-A₀ via `bivEval_dxdzDenA₀Scaled`; resultantX natDeg ≤ 3, plus 4|E| degenerate | `7` | 50 |
+| F5 `dxdz@A₁` | symmetric to F4 | `7` | 30 |
+| F6 `dxdz@A₂` | per-A₀ via `bivEval_dxdzDenA₂Scaled`; natDegree analysis on the 4-th-power scaled polynomial | `~15` | 80 |
+| F7 `L(-P)` | per-A₀, ≤ 3 collinear A₁'s on E | `4` | 40 |
+| F8 `L(Bⱼ)` | union over j, ≤ 4 per j | `4k` | 40 |
+
+Sum of constants: `4D.degE + 4k + ~40` ≤ `18·(D.degE + k + 6)`. ✓
+
+**Key insights** for the per-factor proofs:
+1. For F1, F2: just use `Finset.card_product` on `zeros(D) ×ˢ E.points`.
+2. For F4, F5: the `bivEval_dxdzDenA*Scaled` identities (already in
+   `ClearedPolyForm.lean`) give the polynomial form. The polynomial form
+   captures `factor = 0` modulo a small (≤ 4) edge-case set; bound the
+   polynomial zero set per A₀ via `card_zeros_on_E_le`.
+3. For F3, F6: use the existing `*Scaled` polynomials (`DAtA₂Scaled`,
+   `dxdzDenA₂Scaled`) and natDegree analysis. The non-vertical /
+   vertical case split is needed.
+4. For F7, F8: the line factor `L.eval Q` becomes a linear form
+   `(Qy-A₀.2)·(A₁.1-A₀.1) - (Qx-A₀.1)·(A₁.2-A₀.2)`. For each A₀ ≠ Q,
+   per-A₀ ≤ 3 zeros (line meets cubic).
+
+**Cascade after T3 lands**:
+- `logDerivCheckFn_zero_set_bound` needs `hD` propagation: extract from
+  `hNonzero` (since `¬defined ∨ logDerivCheckFn ≠ 0` at some pair
+  implies some denom factor is ≠ 0, which implies in particular
+  `D.eval ≠ 0` somewhere, hence `D.a ≠ 0 ∨ D.b ≠ 0`).
+- Soundness statement unchanged at the type level.
+
 ### Session boundary guidance
 
 Future sessions should:
