@@ -85,11 +85,19 @@ noncomputable def negPIndexSet (stmt : DlogStatement E.q)
       [-1]·(-P) = P` is valid unconditionally.
 
     * **General case `-P ∉ {B_j}`**: residue matching. Non-canonical
-      positions get `0`; canonical positions get the integer-representative
-      of the group-sum. Since `-P` is not among the bases, no group is
-      at `-P`, so no residue `+1` correction is needed — the witness
-      scalar at each canonical position is simply `(groupSum).val`
-      (cast to `ℤ`). -/
+      positions get `0`; canonical positions get the paper's integer
+      multiplicity `n_i = β_{σ⁻¹(i)}` of D's zero at `B_i`.
+
+      Paper's partial-fraction argument yields `Σ_{j : B_j = B_i} m_j
+      ≡ -β_{σ⁻¹(i)} (mod q)` at matched B_i's. So the integer
+      multiplicity is recovered as `(-groupSum).val`, giving a value
+      in `[0, q) ∩ [0, degE(D)]`. Using `.val` of the raw groupSum
+      would give `q - β_{σ⁻¹(i)}` (large positive), yielding a group
+      element differing from `P` by an integer multiple of `[q]·B_i`
+      — a real soundness gap for curves with group order not dividing q.
+
+      Taking `(-groupSum).val` corrects the sign at the ZMod level
+      before integer lifting. -/
 noncomputable def extractedScalars (stmt : DlogStatement E.q)
     (msg : MAProverMsg E.q) (hk : stmt.k = msg.k) : Fin msg.k → ℤ :=
   fun i =>
@@ -97,9 +105,9 @@ noncomputable def extractedScalars (stmt : DlogStatement E.q)
       -- Special case: -P ∈ {B_j}. Trivial witness at j* = min.
       if i = (negPIndexSet E stmt msg hk).min' hNegP then (-1 : ℤ) else 0
     else
-      -- General case: -P ∉ {B_j}. Residue matching.
+      -- General case: -P ∉ {B_j}. Residue matching with sign correction.
       if extractorIsCanonical E stmt msg hk i then
-        ((extractorGroupSum E stmt msg hk i).val : ℤ)
+        ((-(extractorGroupSum E stmt msg hk i)).val : ℤ)
       else 0
 
 /-- Predicate: the extractor succeeds at bound `d`.
