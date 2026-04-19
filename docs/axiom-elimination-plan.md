@@ -873,6 +873,48 @@ extraction, which hit the same simp issues.
 Axiom count unchanged this session. F3 helper infrastructure is the
 main delivery.
 
+### Session 6 (2026-04-19) — T3 complete (F6 + assembly)
+
+Commits (this session):
+- `780aaa1` — T3 F6: `dxdzA₂_zero_pairs_card_le` via curve-reduced
+  polynomial `dxdzDenA₂Reduced`. Defines `dxdzDenA₂xPart` (natDegree ≤ 6)
+  and `dxdzDenA₂yPart` (natDegree ≤ 3) directly and proves bivEval
+  equivalence on `E.points` via single `linear_combination` on
+  curve-equation residual. Non-vertical factor = 0 ⇒ bivEval reduced = 0
+  proved via multiplication by `lamDen^4` and `hlam` (inverse-free).
+  Exc bound ≤ 6 via reflection A₁ = (A₀.1, -A₀.2) yielding
+  `16·A₀.2⁴ = 0` ⇒ A₀.2 = 0 ⇒ A₀.1 is a curveX root.
+  Total bound: `|F6| ≤ 32·|E|`. ~310 LOC.
+- `2c353e8` — T3 assembly: `logDerivCheckFn_undefined_set_bound` as
+  theorem (replacing axiom). Unions F1-F8 via chained `mul_eq_zero` on
+  denom product form; bounds each factor with its `card_le` lemma.
+  Total: `(6·D.degE + 9k + 71)·|E| ≤ 18·(D.degE + k + 6)·|E|`.
+  `hD : ¬(D.a = 0 ∧ D.b = 0)` propagated from `hNonzero` in the
+  downstream caller (`logDerivCheckFn_zero_set_bound`) — identically
+  zero `D` would contradict the defined-nonzero witness. ~150 LOC.
+
+**Axiom state after T3**:
+
+```
+propext, Classical.choice, Quot.sound                        [Lean]
+Divisor.ECPoint.add_comm, add_assoc, neg_add_cancel          [kept]
+Divisor.weil_reciprocity_honest                              [kept]
+Divisor.extractorSucceeds_of_logDerivCheck_identically_zero_general  [T4]
+Divisor.logDerivCheckFn_badA₀_bound                          [T2]
+Divisor.logDerivCheckFn_fiber_count_bound                    [T1]
+Divisor.log_deriv_nonvanishing_criterion                     [T5]
+```
+
+**4 axioms remaining** (T1, T2, T4, T5). Remaining phases per the plan
+recommended order:
+
+1. Phase B (polynomial identity for `clearedFiberPoly`): ~720 LOC, 4
+   sub-commits. Enables T1, T2, T4.
+2. T1 (fiber count bound): ~150 LOC.
+3. T2 (bad A₀ bound via symmetry): ~100 LOC.
+4. T5 Phase A1-A5 (log-deriv nonvanishing): ~560 LOC.
+5. T4 D1-D5 (extractor general-case bridge): ~380 LOC.
+
 ### Session 5 (2026-04-19) — T3 F4, F5, F7, F8 factor bounds
 
 Commits (this session):
