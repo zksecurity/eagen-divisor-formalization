@@ -22,6 +22,7 @@
 import Divisor.Defs
 import Divisor.LogDeriv
 import Divisor.CubicIntersection
+import Divisor.SupportDisjoint
 import Mathlib.Algebra.Polynomial.Eval
 
 open Polynomial Finset
@@ -597,6 +598,99 @@ noncomputable def clearedFiberPoly (D : CoordRingElt E.q)
     + lhsTerm2Scaled (E := E) D P k B A₀
     + rhsTermNegPScaled (E := E) D k B A₀
     + rhsSumScaled (E := E) D P k B m A₀
+
+/-! ## Helper: `numZeros E D ≤ 2 · D.degE`
+
+    Concrete bound via `card_zeros_on_E_le` applied to `DAtA₁Poly D`. -/
+
+theorem DAtA₁Poly_natDegree_lt_two (D : CoordRingElt E.q) :
+    (DAtA₁Poly (E := E) D).natDegree < 2 := by
+  refine lt_of_le_of_lt ?_ (Nat.lt_succ_self 1)
+  unfold DAtA₁Poly
+  refine (natDegree_sub_le _ _).trans (max_le ?_ ?_)
+  · rw [embedInnerPoly_natDegree_le]; exact Nat.zero_le _
+  · refine natDegree_mul_le.trans ?_
+    rw [embedInnerPoly_natDegree_le, outerA₁y_natDegree]
+
+theorem DAtA₁Poly_coeff_zero (D : CoordRingElt E.q) :
+    (DAtA₁Poly (E := E) D).coeff 0 = D.a := by
+  unfold DAtA₁Poly embedInnerPoly outerA₁y
+  simp
+
+theorem DAtA₁Poly_coeff_one (D : CoordRingElt E.q) :
+    (DAtA₁Poly (E := E) D).coeff 1 = -D.b := by
+  unfold DAtA₁Poly embedInnerPoly outerA₁y
+  simp
+
+/-- `DAtA₁Poly D %ₘ curveEqPoly = DAtA₁Poly D` (since natDegree < 2). -/
+theorem DAtA₁Poly_modByMonic_self (D : CoordRingElt E.q) :
+    DAtA₁Poly (E := E) D %ₘ curveEqPoly E = DAtA₁Poly (E := E) D := by
+  by_cases hZ : DAtA₁Poly (E := E) D = 0
+  · rw [hZ, Polynomial.zero_modByMonic]
+  · apply (Polynomial.modByMonic_eq_self_iff (curveEqPoly_monic E)).mpr
+    rw [Polynomial.degree_eq_natDegree hZ,
+        Polynomial.degree_eq_natDegree (curveEqPoly_monic E).ne_zero,
+        curveEqPoly_natDegree_eq]
+    exact_mod_cast DAtA₁Poly_natDegree_lt_two E D
+
+/-- `(D.a, D.b) ≠ (0, 0) ⇒ DAtA₁Poly D ≠ 0`. -/
+theorem DAtA₁Poly_ne_zero_of_ab (D : CoordRingElt E.q)
+    (hab : ¬ (D.a = 0 ∧ D.b = 0)) :
+    DAtA₁Poly (E := E) D ≠ 0 := by
+  intro h
+  apply hab
+  refine ⟨?_, ?_⟩
+  · have h0 : (DAtA₁Poly (E := E) D).coeff 0 = 0 := by rw [h]; simp
+    rw [DAtA₁Poly_coeff_zero] at h0; exact h0
+  · have h1 : (DAtA₁Poly (E := E) D).coeff 1 = 0 := by rw [h]; simp
+    rw [DAtA₁Poly_coeff_one] at h1
+    exact neg_eq_zero.mp h1
+
+theorem DAtA₁Poly_xPart (D : CoordRingElt E.q) :
+    xPart E (DAtA₁Poly (E := E) D %ₘ curveEqPoly E) = D.a := by
+  rw [DAtA₁Poly_modByMonic_self, xPart, DAtA₁Poly_coeff_zero]
+
+theorem DAtA₁Poly_yPart (D : CoordRingElt E.q) :
+    yPart E (DAtA₁Poly (E := E) D %ₘ curveEqPoly E) = -D.b := by
+  rw [DAtA₁Poly_modByMonic_self, yPart, DAtA₁Poly_coeff_one]
+
+/-- `(resultantX (DAtA₁Poly D)).natDegree ≤ D.degE`. -/
+theorem resultantX_DAtA₁Poly_natDegree_le (D : CoordRingElt E.q) :
+    (resultantX E (DAtA₁Poly (E := E) D)).natDegree ≤ D.degE := by
+  unfold resultantX
+  rw [DAtA₁Poly_xPart, DAtA₁Poly_yPart]
+  refine (Polynomial.natDegree_sub_le _ _).trans ?_
+  refine max_le ?_ ?_
+  · -- (D.a^2).natDegree ≤ 2·D.a.natDegree ≤ D.degE
+    rw [Polynomial.natDegree_pow]
+    exact le_max_left _ _
+  · -- ((-D.b)^2 * curveX).natDegree ≤ 2·D.b.natDegree + 3 ≤ D.degE
+    refine Polynomial.natDegree_mul_le.trans ?_
+    rw [Polynomial.natDegree_pow, Polynomial.natDegree_neg]
+    refine le_trans (Nat.add_le_add_left (curveX_natDegree_le_three E) _) ?_
+    rw [Nat.add_comm]
+    exact le_max_right _ _
+
+/-- **Helper**: `numZeros E D ≤ 2 · D.degE` whenever `D` is not the zero
+    coord-ring element. -/
+theorem numZeros_le_two_degE (D : CoordRingElt E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    numZeros E D ≤ 2 * D.degE := by
+  classical
+  have hMod_nz : DAtA₁Poly (E := E) D %ₘ curveEqPoly E ≠ 0 := by
+    rw [DAtA₁Poly_modByMonic_self]
+    exact DAtA₁Poly_ne_zero_of_ab E D hD
+  have hZeros_eq :
+      zeros D E.points
+        = E.points.filter (fun p => bivEval (DAtA₁Poly (E := E) D) p = 0) := by
+    unfold zeros
+    apply Finset.filter_congr
+    intro p _
+    rw [bivEval_DAtA₁Poly]
+  unfold numZeros
+  rw [hZeros_eq]
+  refine le_trans (card_zeros_on_E_le E (DAtA₁Poly (E := E) D) hMod_nz) ?_
+  exact Nat.mul_le_mul_left 2 (resultantX_DAtA₁Poly_natDegree_le E D)
 
 /-! ## Phase 2: `logDerivCheckFn_zero_set_bound` as a theorem.
 
