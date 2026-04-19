@@ -1373,3 +1373,86 @@ session), requires rippling constant change. Tight route: cleaner
 **Axiom count after session 11**: 4 remaining (T1, T2, T4, T5) —
 unchanged. B4.5 is infrastructure.
 B4+B5 are infrastructure for T1.
+
+### Session 12 (2026-04-19) — T1 eliminated
+
+Commits (this session):
+- `47e0c37` — Phase B4.5+: mod-curve inner bound and resultantX for
+  clearedFiberPoly. ~241 LOC.
+- `b2caeff` — T1: `logDerivCheckFn_fiber_count_bound` as theorem.
+  ~121 LOC (102 additions to ClearedPolyForm.lean + 6 to Soundness.lean).
+
+**What landed** (B4.5+):
+- `add_mul_monic_modByMonic_aux` (private helper):
+  `(p + q · m) %ₘ m = p %ₘ m` for `m.Monic`.
+- `InnerDegLe_curveEqPoly` (≤ 3), `InnerDegLe_Xpow` (≤ 0),
+  `InnerDegLe_C_mul_Xpow_mul_curveEqPoly` (≤ c.natDegree + 3).
+- `InnerDegLe_modByMonic_curveEqPoly`: the master tight inner bound
+  under curve-reduction (`f.natDegree ≤ 2k+1` ∧ `InnerDegLe f M` ⇒
+  `InnerDegLe (f %ₘ curveEqPoly E) (M + 3k)`).
+- `xPart/yPart_modByMonic_curveEqPoly_natDegree_le` (≤ M + 3k).
+- `resultantX_natDegree_le_of_InnerDegLe` (≤ 2(M+3k)+3).
+- `resultantX_clearedFiberPoly_natDegree_le`: ≤ 9·D.degE + 5·k + 50.
+
+**What landed** (T1):
+- `logDerivCheckFn_fiber_count_bound` as theorem (replacing axiom).
+  Case analysis on existence of non-vertical witness of `defined ∧ f ≠ 0`:
+  - Non-vertical witness: B5 + `card_zeros_on_E_le` + vertical split
+    give fiber ≤ 18·(D.degE+k+6)+2.
+  - No non-vertical witness: Or.inr (weakened to non-vertical).
+
+**Cascading weakenings** (needed because original Or.inr was too strong):
+- T1's Or.inr restricted to `∀ A₁, A₀.1 ≠ A₁.1 → defined → f = 0`.
+  Rationale: `clearedFiberPoly_identity` only couples polynomial
+  vanishing to `logDerivCheckFn = 0` on the non-vertical cone; at
+  vertical A₁, the identity's `(A₁.1 - A₀.1)^N` factor is zero and
+  carries no information. The original axiom was unprovable as stated.
+- T2 axiom's filter predicate similarly restricted to non-vertical.
+- T2 axiom's hypothesis strengthened to require a non-vertical witness.
+- `logDerivCheckFn_zero_set_bound`: `bad_A₀_set` and `hNonzero`
+  restricted to non-vertical.
+- `log_deriv_sz`: `hNonvanishing` strengthened to non-vertical.
+- `ma_extractable` in Soundness.lean: `by_cases hNV` strengthened to
+  non-vertical.
+- T4 axiom (`extractorSucceeds_of_logDerivCheck_identically_zero_general`):
+  `hAllZero` hypothesis restricted to non-vertical (weaker hypothesis).
+
+The downstream bound `(54·(D.degE+k+6)+4)·|E.points|` is unchanged.
+
+**Key techniques**:
+1. Pair-reduction induction: at each step, subtract
+   `C(f.coeff N) · X^(N-2) · curveEqPoly E` and
+   `C(f.coeff (N-1)) · X^(N-3) · curveEqPoly E` to kill coeff N and N-1
+   simultaneously, contributing +3 to inner bound (not +6 as naively
+   expected — both contributions land at different positions).
+2. `div_modByMonic_unique` for the mod-by-monic identity
+   `f %ₘ m = (f - q·m) %ₘ m`.
+3. Canonical (`C c * X^n * curveEqPoly E` = `C c * X^(n+2) -
+   C (c * curveX) * X^n`) decomposition for coefficient analysis.
+
+**Axiom state after session 12**:
+```
+propext, Classical.choice, Quot.sound
+Divisor.ECPoint.add_comm, add_assoc, neg_add_cancel
+Divisor.extractorSucceeds_of_logDerivCheck_identically_zero_general  [T4]
+Divisor.logDerivCheckFn_badA₀_bound                                  [T2]
+```
+
+**3 axioms remaining** (T2, T4, T5). T5 not visible at `ma_extractable`
+until T4 is mechanized.
+
+**Continuation path**:
+1. **T2** (next session): prove `logDerivCheckFn_badA₀_bound` via
+   `logDerivCheckFn_symm` (non-vertical case). Requires:
+   - `logDerivCheckFn_symm` (~60 LOC): unfold and observe
+     slopeOf/lineThrough/A₂ are symmetric on non-vertical pairs.
+   - `logDerivCheckFnDefined_symm` (~40 LOC).
+   - Apply symm + T1 to bound `bad_A₀_set` via `T1(A₁* fixed)` for
+     a non-vertical witness A₁*. Requires a side-bound on A₁*-undefined
+     subset, or avoid by using role-swapped zero-set bound.
+   - ~150-200 LOC.
+2. **T5** (Phase A): mechanize `log_deriv_nonvanishing_criterion`.
+   ~560 LOC across 2-3 sessions; A3 (per-slope counting) is the
+   high-risk step.
+3. **T4** (Phase D): mechanize extractor bridge via T5 + polyG.
+   ~380 LOC. After T4 lands, T5 becomes a visible dependency.
