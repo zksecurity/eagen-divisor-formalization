@@ -985,3 +985,52 @@ assemble T3.
 
 Axiom count unchanged this session. T3 not yet removed — F6 and
 assembly pending.
+
+### Session 7 (2026-04-19) — Phase B1 landed
+
+Commits (this session):
+- `2f7fde3` — Phase B1: bivEval identities for DAt/DDerivAt A₂ scaled
+  parts. ~249 LOC (stash applied + fixes).
+
+**What landed**: Five theorems relating `bivEval (D?PartAtA₂Scaled D A₀) A₁`
+on the non-vertical cone to `(A₁.1 - A₀.1)^D.degE · (polynomial
+evaluation at chord coords)`:
+- `bivEval_finset_sum` (general: `bivEval` distributes over `Finset.sum`).
+- `bivEval_DAPartAtA₂Scaled_eq`, `bivEval_DBPartAtA₂Scaled_eq`,
+  `bivEval_DAtA₂Scaled_eq` (the combined form).
+- `bivEval_DDerivAPartAtA₂Scaled_eq`, `bivEval_DDerivBPartAtA₂Scaled_eq`,
+  `bivEval_DDerivAtA₂Scaled_eq` (combined).
+
+**Fixes applied to the session-6 stash**:
+1. First calc step `(X*Y)^n = X^n * Y^n`: replaced `by ring` with
+   `by rw [mul_pow]`. Lean's `ring` normal form does not expand
+   symbolic `^n` into monomial form, so ring couldn't close the
+   identity when both sides had different power groupings.
+2. Type mismatch on `Polynomial.natDegree_derivative_le`: the lemma
+   returns `≤ natDegree - 1`, not `≤ natDegree`. Fixed via
+   `.trans (Nat.sub_le _ _)`.
+3. `unfold chordX₂ chordY₂` order: `chordY₂`'s body references
+   `chordX₂`, so unfolding `chordX₂` first leaves new `chordX₂`
+   references after `chordY₂` unfolds. Reordered to `unfold chordY₂
+   chordX₂ slopeOf`.
+4. Last calc step parenthesization: `(A*B)*C` vs `A*(B*C)` is not
+   defeq, and calc-final-step must match the goal's RHS defeq. Fixed
+   by moving the closing `)` in the final step's RHS.
+
+**Next: Phase B2** (~420 LOC estimated, likely 500-700 actual). Prove
+per-term bivEval identities for the five `lhsTerm*Scaled` and
+`rhsSumScaled` sub-polynomials feeding into `clearedFiberPoly`. Each
+sub-term's proof:
+- Unfold the sub-term definition.
+- Use `bivEval_mul` repeatedly for the 7-factor product.
+- Apply the per-factor identities (including Phase B1's
+  `bivEval_D*AtA₂Scaled_eq`).
+- Factor out `(A₁.1 - A₀.1)^N` via `pow_add`/`mul_comm`.
+- Close with `ring` or explicit rewrites.
+
+Additional helper needed: `bivEval_linesProductScaled_eq` (~60 LOC)
+for the product `L(-P) · ∏ L(B_j)` factor. Pattern similar to B1 but
+with `Finset.prod` instead of `Finset.sum`.
+
+**Axiom count after session 7**: 4 remaining (T1, T2, T4, T5). Phase B
+is infrastructure — no axiom removed until B5 enables T1.
