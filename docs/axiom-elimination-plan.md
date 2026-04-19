@@ -631,3 +631,52 @@ Implement P0 (extractor sign fix) as first commit. It's independent, ~40 LOC, an
 - Build clean.
 
 Axiom count unchanged (fix was correctness, not axiom-removal).
+
+### T3 attempted — blocked on degree infrastructure
+
+**Finding**: Proving `numZeros_le_two_degE` (the key helper for T3) requires ~100 LOC of degree-parity reasoning that duplicates the logic already present in `CubicIntersection.lean`'s `resultantX_aux_ne_zero` + `card_zeros_on_E_le`. The cleanest path is to:
+
+1. Instantiate `card_zeros_on_E_le` on `DAtA₁Poly` (the bivariate form of D).
+2. Prove `DAtA₁Poly %ₘ curveEqPoly = DAtA₁Poly ≠ 0` when `¬ D.isZero` (outer degree already < 2, so mod-curve is identity).
+3. Extract `numZeros ≤ 2·(resultantX DAtA₁Poly).natDegree ≤ 2·D.degE`.
+
+Estimated ~60 LOC for `numZeros_le` via this route, then ~120 LOC for T3 assembly. Deferred pending Phase B work which shares the same infrastructure pattern.
+
+### Revised realistic scope
+
+The 8-session estimate assumed focused, single-topic sessions. In a continuous-execution setting, context constraints apply:
+
+- **P0** achievable in a single response (done).
+- **T3, T1, T2** are mechanical but each is ~150-250 LOC of intricate Lean polynomial algebra with high setup cost per session.
+- **Phase B (polynomial identity)** is ~720 LOC and shares natDegree/bivEval infrastructure with T1-T3. Best done as one focused multi-session effort.
+- **T5 (log_deriv_nonvanishing_criterion)** is ~560 LOC with a high-risk core step (A3, per-slope counting).
+- **T4 (extractor general-case bridge)** is ~380 LOC, depends on B + T5.
+
+### Current axiom state after P0
+
+```
+propext, Classical.choice, Quot.sound
+Divisor.ECPoint.add_comm, add_assoc, neg_add_cancel             [kept]
+Divisor.hasse_weil_upper, hasse_weil_lower                      [kept]
+Divisor.principal_divisor_iff                                   [kept]
+Divisor.weil_reciprocity_honest                                 [kept]
+Divisor.log_deriv_nonvanishing_criterion                        [T5 target]
+Divisor.extractorSucceeds_of_logDerivCheck_identically_zero_general  [T4 target]
+Divisor.logDerivCheckFn_fiber_count_bound                       [T1 target]
+Divisor.logDerivCheckFn_badA₀_bound                             [T2 target]
+Divisor.logDerivCheckFn_undefined_set_bound                     [T3 target]
+```
+
+5 axioms to eliminate. Each session carves off one or two via the ordering in the plan's "Recommended order" section. Checkpoint commits at milestones per that ordering.
+
+### Continuation path
+
+Per the plan's dependency ordering:
+1. **Next**: T3 via `numZeros_le_two_degE` helper + `support_disjointness` + per-factor bounds (dedicated session, ~200 LOC).
+2. **Then**: Phase B sub-phases (B1 → B5, ~720 LOC over 2 sessions).
+3. **Then**: T1 + T2 (~250 LOC, one session).
+4. **Then**: T5 Phase A sub-phases (~560 LOC, two sessions, A3 is the risk checkpoint).
+5. **Then**: T4 sub-phases (~380 LOC, one session).
+6. **Finally**: audit + plan close-out.
+
+Each step is a separate focused session.
