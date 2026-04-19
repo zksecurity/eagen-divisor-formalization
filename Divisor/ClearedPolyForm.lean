@@ -4136,9 +4136,16 @@ section Phase2
 open Classical
 
 /-- Per-fiber bound restricted to the defined subset: for each
-    A₀ ∈ E.points, either the defined fiber is identically zero, or its
-    zero count is bounded by `K := 18·(D.degE+k+6)+2`. -/
-axiom logDerivCheckFn_fiber_count_bound
+    A₀ ∈ E.points, either the defined fiber is identically zero on the
+    **non-vertical** subset, or its zero count is bounded by
+    `K := 18·(D.degE+k+6)+2`.
+
+    The Or.inr is restricted to non-vertical pairs because
+    `clearedFiberPoly_identity` only connects the polynomial vanishing
+    to `logDerivCheckFn = 0` on the non-vertical cone `A₀.1 ≠ A₁.1`.
+    At vertical pairs, the polynomial's zero carries no information
+    about `logDerivCheckFn`. -/
+theorem logDerivCheckFn_fiber_count_bound
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (A₀ : ZMod E.q × ZMod E.q) (_hA₀ : A₀ ∈ E.points) :
@@ -4146,22 +4153,92 @@ axiom logDerivCheckFn_fiber_count_bound
        logDerivCheckFnDefined E D P B A₀ A₁ ∧
          logDerivCheckFn E D P k B m A₀ A₁ = 0)).card
       ≤ 18 * (D.degE + k + 6) + 2
-    ∨ (∀ A₁ ∈ E.points,
+    ∨ (∀ A₁ ∈ E.points, A₀.1 ≠ A₁.1 →
          logDerivCheckFnDefined E D P B A₀ A₁ →
-         logDerivCheckFn E D P k B m A₀ A₁ = 0)
+         logDerivCheckFn E D P k B m A₀ A₁ = 0) := by
+  classical
+  by_cases hNVWitness :
+    ∃ A₁ ∈ E.points, A₀.1 ≠ A₁.1 ∧
+       logDerivCheckFnDefined E D P B A₀ A₁ ∧
+       logDerivCheckFn E D P k B m A₀ A₁ ≠ 0
+  · -- Non-vertical witness: apply B5 + card_zeros_on_E_le.
+    left
+    have hCFPNz : clearedFiberPoly (E := E) D P k B m A₀ %ₘ curveEqPoly E ≠ 0 :=
+      clearedFiberPoly_modCurve_ne_zero E D P B m A₀ hNVWitness
+    -- Split fiber by vertical vs. non-vertical.
+    set fiber := E.points.filter (fun A₁ =>
+       logDerivCheckFnDefined E D P B A₀ A₁ ∧
+         logDerivCheckFn E D P k B m A₀ A₁ = 0) with hfiber_def
+    set vertFiber := fiber.filter (fun A₁ => A₁.1 = A₀.1) with hvfdef
+    set nvFiber := fiber.filter (fun A₁ => A₁.1 ≠ A₀.1) with hnvfdef
+    have hDisj : Disjoint vertFiber nvFiber := by
+      simp only [hvfdef, hnvfdef, Finset.disjoint_filter]
+      intros _ _ hx hy
+      exact hy hx
+    have hUnion : vertFiber ∪ nvFiber = fiber := by
+      ext x
+      simp only [hvfdef, hnvfdef, Finset.mem_union, Finset.mem_filter]
+      constructor
+      · rintro (⟨hx, _⟩ | ⟨hx, _⟩) <;> exact hx
+      · intro hx
+        by_cases h : x.1 = A₀.1
+        · exact Or.inl ⟨hx, h⟩
+        · exact Or.inr ⟨hx, h⟩
+    have hSplit : fiber.card = vertFiber.card + nvFiber.card := by
+      rw [← hUnion, Finset.card_union_of_disjoint hDisj]
+    -- vertFiber has ≤ 2 elements (vertical points on E).
+    have hVert : vertFiber.card ≤ 2 := by
+      calc vertFiber.card
+          ≤ (E.points.filter (fun A₁ => A₁.1 = A₀.1)).card := by
+            apply Finset.card_le_card
+            intro p hp
+            simp only [hvfdef, hfiber_def, Finset.mem_filter] at hp
+            exact Finset.mem_filter.mpr ⟨hp.1.1, hp.2⟩
+        _ ≤ 2 := card_points_with_fst_eq_le E A₀.1
+    -- nvFiber ⊆ zeros of clearedFiberPoly on E.points (by B3 identity).
+    have hNV : nvFiber.card ≤ 2 * (9 * D.degE + 5 * k + 50) := by
+      have hSubZ : nvFiber ⊆ E.points.filter
+          (fun A₁ => bivEval (clearedFiberPoly (E := E) D P k B m A₀) A₁ = 0) := by
+        intro A₁ hA₁
+        simp only [hnvfdef, hfiber_def, Finset.mem_filter] at hA₁
+        obtain ⟨⟨hA₁E, hDef, hfZero⟩, hNVA₁⟩ := hA₁
+        simp only [Finset.mem_filter]
+        refine ⟨hA₁E, ?_⟩
+        rw [clearedFiberPoly_identity E D P B m A₀ A₁ (Ne.symm hNVA₁) hDef]
+        unfold logDerivCheckFnCleared
+        rw [hfZero]
+        ring
+      calc nvFiber.card
+          ≤ (E.points.filter
+                (fun A₁ => bivEval (clearedFiberPoly (E := E) D P k B m A₀) A₁ = 0)).card :=
+            Finset.card_le_card hSubZ
+        _ ≤ 2 * (resultantX E (clearedFiberPoly (E := E) D P k B m A₀)).natDegree :=
+            card_zeros_on_E_le E _ hCFPNz
+        _ ≤ 2 * (9 * D.degE + 5 * k + 50) :=
+            Nat.mul_le_mul_left 2 (resultantX_clearedFiberPoly_natDegree_le E D P k B m A₀)
+    calc fiber.card
+        = vertFiber.card + nvFiber.card := hSplit
+      _ ≤ 2 + 2 * (9 * D.degE + 5 * k + 50) := Nat.add_le_add hVert hNV
+      _ ≤ 18 * (D.degE + k + 6) + 2 := by omega
+  · -- No non-vertical witness: Or.inr.
+    right
+    push_neg at hNVWitness
+    exact hNVWitness
 
 /-- Bad-A₀ count on the defined subset: when the check is globally
-    non-identically-zero on defined `E × E`, the set of A₀ with fiber ≡ 0
-    on the defined part of E.points is bounded. -/
+    non-identically-zero on non-vertical defined pairs, the set of A₀
+    with fiber ≡ 0 on the non-vertical defined part of E.points is bounded.
+
+    Weakened to the non-vertical sub-filter to match T1's Or.inr. -/
 axiom logDerivCheckFn_badA₀_bound
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (hGlobalNonzero :
-      ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧
+      ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
         logDerivCheckFnDefined E D P B A₀ A₁ ∧
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     (E.points.filter
-      (fun A₀ => ∀ A₁ ∈ E.points,
+      (fun A₀ => ∀ A₁ ∈ E.points, A₀.1 ≠ A₁.1 →
          logDerivCheckFnDefined E D P B A₀ A₁ →
          logDerivCheckFn E D P k B m A₀ A₁ = 0)).card
       ≤ 18 * (D.degE + k + 6) + 2
@@ -4319,7 +4396,7 @@ theorem logDerivCheckFn_zero_set_bound
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (_hDeg : D.degE < E.q)
-    (hNonzero : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧
+    (hNonzero : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
       logDerivCheckFnDefined E D P B A₀ A₁ ∧
       logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     ((E.points ×ˢ E.points).filter
@@ -4345,14 +4422,18 @@ theorem logDerivCheckFn_zero_set_bound
       · exact Or.inr ⟨hp.1, hDef⟩
     exact le_trans (Finset.card_le_card hSub) (Finset.card_union_le _ _)
   -- Bound defZ by summing per-A₀ contributions.
+  -- `bad_A₀_set`: A₀'s where the fiber is identically zero on the
+  -- **non-vertical** defined subset. Matches the weakened T1/T2 form,
+  -- since `clearedFiberPoly_identity` only couples polynomial vanishing
+  -- to `logDerivCheckFn = 0` on the non-vertical cone.
   set bad_A₀_set : Finset (ZMod E.q × ZMod E.q) := E.points.filter
-    (fun A₀ => ∀ A₁ ∈ E.points,
+    (fun A₀ => ∀ A₁ ∈ E.points, A₀.1 ≠ A₁.1 →
        logDerivCheckFnDefined E D P B A₀ A₁ →
        logDerivCheckFn E D P k B m A₀ A₁ = 0) with hbadA₀
   have hBadBound : bad_A₀_set.card ≤ K :=
     logDerivCheckFn_badA₀_bound E D P k B m
-      (by obtain ⟨A₀, A₁, hA₀, hA₁, hDef, hne⟩ := hNonzero
-          exact ⟨A₀, A₁, hA₀, hA₁, hDef, hne⟩)
+      (by obtain ⟨A₀, A₁, hA₀, hA₁, hNV, hDef, hne⟩ := hNonzero
+          exact ⟨A₀, A₁, hA₀, hA₁, hNV, hDef, hne⟩)
   have hDefZ : defZ.card ≤ 2 * K * E.points.card := by
     -- Split defZ by whether A₀ is "bad" (fully identically-zero on defined fiber)
     -- or "good" (fiber count bounded by K).
@@ -4428,7 +4509,7 @@ theorem logDerivCheckFn_zero_set_bound
   -- contradicting the nonzero-denominator witness.
   have hD : ¬ (D.a = 0 ∧ D.b = 0) := by
     intro hDab
-    obtain ⟨A₀, A₁, hA₀, _, hDef, _⟩ := hNonzero
+    obtain ⟨A₀, A₁, hA₀, _, _, hDef, _⟩ := hNonzero
     apply hDef
     unfold logDerivCheckFnDenom CoordRingElt.eval
     rw [hDab.1, hDab.2]
@@ -4445,12 +4526,14 @@ theorem logDerivCheckFn_zero_set_bound
     _ = (54 * (D.degE + k + 6) + 4) * E.points.card := by
         rw [hKdef]; ring
 
-/-- Lift of Phase 2 bound from `E.points ×ˢ E.points` to `validPairs E`. -/
+/-- Lift of Phase 2 bound from `E.points ×ˢ E.points` to `validPairs E`.
+    Requires a **non-vertical** witness of `logDerivCheckFn ≠ 0` on the
+    defined subset. -/
 theorem log_deriv_sz (D : CoordRingElt E.q)
     (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (hDeg : D.degE < E.q)
-    (hNonvanishing : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧
+    (hNonvanishing : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
        logDerivCheckFnDefined E D P B A₀ A₁ ∧
        logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     (badChallengesNotEq E D P B m).card

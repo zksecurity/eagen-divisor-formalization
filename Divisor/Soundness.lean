@@ -197,7 +197,7 @@ axiom extractorSucceeds_of_logDerivCheck_identically_zero_general
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
-      A₀ ∈ E.points → A₁ ∈ E.points →
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
         (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
@@ -298,7 +298,7 @@ theorem extracted_scalars_valid
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
-      A₀ ∈ E.points → A₁ ∈ E.points →
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
         (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
@@ -348,7 +348,7 @@ theorem ma_extractable
   -- The defined subset is where Lean and paper semantics coincide;
   -- undefined-denominator pairs are accepted as a "bad event" absorbed
   -- into the total bound.
-  by_cases hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧
+  by_cases hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ ∧
      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
        (fun i => msg.m (hkm ▸ i)) A₀ A₁ ≠ 0
