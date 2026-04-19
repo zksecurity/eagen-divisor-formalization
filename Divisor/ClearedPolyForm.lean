@@ -3410,6 +3410,487 @@ theorem clearedFiberPoly_modCurve_ne_zero
     · exact hne h'
     · exact hDef h'
 
+/-! ## Phase B4.5: inner natDegree bookkeeping
+
+    For `f : (ZMod E.q)[X][X]`, the "inner natDegree" is the maximum
+    natDegree of its outer coefficients (each of which is a univariate
+    polynomial in the inner variable). The predicate `InnerDegLe f m`
+    says every `f.coeff i` has natDegree ≤ m.
+
+    Combined with the outer natDegree bound `f.natDegree ≤ N`, this
+    feeds a generic `resultantX f`.natDegree bound via the modByMonic
+    structure of `f %ₘ curveEqPoly`.
+
+    Inner bounds are tracked compositionally (add, sub, mul, pow,
+    sum, prod) and applied to each component of `clearedFiberPoly`.
+-/
+
+section InnerDegBookkeeping
+variable {E : ECSetup}
+
+/-- All outer coefficients of `f` have inner natDegree ≤ `m`. -/
+def InnerDegLe (f : (ZMod E.q)[X][X]) (m : ℕ) : Prop :=
+  ∀ i, (f.coeff i).natDegree ≤ m
+
+namespace InnerDegLe
+
+theorem weaken {f : (ZMod E.q)[X][X]} {m n : ℕ}
+    (hf : InnerDegLe (E := E) f m) (h : m ≤ n) :
+    InnerDegLe (E := E) f n :=
+  fun i => (hf i).trans h
+
+theorem zero : InnerDegLe (E := E) (0 : (ZMod E.q)[X][X]) 0 :=
+  fun _ => by simp
+
+theorem one : InnerDegLe (E := E) (1 : (ZMod E.q)[X][X]) 0 := fun i => by
+  rw [Polynomial.coeff_one]
+  split <;> simp
+
+theorem add {f g : (ZMod E.q)[X][X]} {m n : ℕ}
+    (hf : InnerDegLe (E := E) f m) (hg : InnerDegLe (E := E) g n) :
+    InnerDegLe (E := E) (f + g) (max m n) := fun i => by
+  rw [Polynomial.coeff_add]
+  exact (Polynomial.natDegree_add_le _ _).trans (max_le_max (hf i) (hg i))
+
+theorem sub {f g : (ZMod E.q)[X][X]} {m n : ℕ}
+    (hf : InnerDegLe (E := E) f m) (hg : InnerDegLe (E := E) g n) :
+    InnerDegLe (E := E) (f - g) (max m n) := fun i => by
+  rw [Polynomial.coeff_sub]
+  exact (Polynomial.natDegree_sub_le _ _).trans (max_le_max (hf i) (hg i))
+
+theorem neg {f : (ZMod E.q)[X][X]} {m : ℕ}
+    (hf : InnerDegLe (E := E) f m) :
+    InnerDegLe (E := E) (-f) m := fun i => by
+  rw [Polynomial.coeff_neg, Polynomial.natDegree_neg]
+  exact hf i
+
+theorem mul {f g : (ZMod E.q)[X][X]} {m n : ℕ}
+    (hf : InnerDegLe (E := E) f m) (hg : InnerDegLe (E := E) g n) :
+    InnerDegLe (E := E) (f * g) (m + n) := fun i => by
+  rw [Polynomial.coeff_mul]
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ ?_
+  rintro ⟨a, b⟩ _
+  exact Polynomial.natDegree_mul_le.trans (Nat.add_le_add (hf a) (hg b))
+
+theorem pow {f : (ZMod E.q)[X][X]} {m : ℕ}
+    (hf : InnerDegLe (E := E) f m) (n : ℕ) :
+    InnerDegLe (E := E) (f ^ n) (n * m) := by
+  induction n with
+  | zero => simp only [pow_zero, Nat.zero_mul]; exact one
+  | succ k ih =>
+    rw [pow_succ, Nat.succ_mul]
+    exact ih.mul hf
+
+theorem sum {α : Type*} (s : Finset α) (f : α → (ZMod E.q)[X][X]) (m : ℕ)
+    (hf : ∀ a ∈ s, InnerDegLe (E := E) (f a) m) :
+    InnerDegLe (E := E) (∑ a ∈ s, f a) m := fun i => by
+  rw [Polynomial.finset_sum_coeff]
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ ?_
+  intro a ha
+  exact hf a ha i
+
+theorem prod {α : Type*} (s : Finset α) (f : α → (ZMod E.q)[X][X]) (ms : α → ℕ)
+    (hf : ∀ a ∈ s, InnerDegLe (E := E) (f a) (ms a)) :
+    InnerDegLe (E := E) (∏ a ∈ s, f a) (∑ a ∈ s, ms a) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty =>
+    simp only [Finset.prod_empty, Finset.sum_empty]
+    exact one
+  | @insert a s hmem ih =>
+    rw [Finset.prod_insert hmem, Finset.sum_insert hmem]
+    exact (hf _ (Finset.mem_insert_self _ _)).mul
+      (ih (fun b hb => hf b (Finset.mem_insert_of_mem hb)))
+
+end InnerDegLe
+
+/-! ### Inner bounds for primitive embeddings. -/
+
+theorem InnerDegLe_embedScalar (c : ZMod E.q) :
+    InnerDegLe (E := E) (embedScalar (E := E) c) 0 := fun i => by
+  unfold embedScalar
+  rw [Polynomial.coeff_C]
+  split <;> simp
+
+theorem InnerDegLe_embedInnerPoly (p : (ZMod E.q)[X]) :
+    InnerDegLe (E := E) (embedInnerPoly (E := E) p) p.natDegree := fun i => by
+  unfold embedInnerPoly
+  rw [Polynomial.coeff_C]
+  split
+  · exact le_refl _
+  · simp
+
+theorem InnerDegLe_innerA₁x : InnerDegLe (E := E) (innerA₁x (E := E)) 1 := fun i => by
+  unfold innerA₁x
+  rw [Polynomial.coeff_C]
+  split
+  · exact Polynomial.natDegree_X_le
+  · simp
+
+theorem InnerDegLe_outerA₁y : InnerDegLe (E := E) (outerA₁y (E := E)) 0 := fun i => by
+  unfold outerA₁y
+  rw [Polynomial.coeff_X]
+  split <;> simp
+
+/-! ### Inner bounds for lam, x₂, y₂, dxdz, line factors. -/
+
+theorem InnerDegLe_lamNumPoly (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (lamNumPoly (E := E) A₀) 0 := by
+  unfold lamNumPoly
+  exact (InnerDegLe_outerA₁y.sub (InnerDegLe_embedScalar _)).weaken (by simp)
+
+theorem InnerDegLe_lamDenPoly (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (lamDenPoly (E := E) A₀) 1 := by
+  unfold lamDenPoly
+  exact (InnerDegLe_innerA₁x.sub (InnerDegLe_embedScalar _)).weaken (by simp)
+
+theorem InnerDegLe_lineEvalNumAt (A₀ pt : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (lineEvalNumAt (E := E) A₀ pt) 1 := by
+  unfold lineEvalNumAt
+  exact (((InnerDegLe_embedScalar _).mul (InnerDegLe_lamDenPoly A₀)).sub
+    ((InnerDegLe_embedScalar _).mul (InnerDegLe_lamNumPoly A₀))).weaken (by simp)
+
+theorem InnerDegLe_x₂Scaled (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (x₂Scaled (E := E) A₀) 3 := by
+  unfold x₂Scaled
+  have h1 : InnerDegLe (E := E) ((lamNumPoly (E := E) A₀) ^ 2) 0 :=
+    ((InnerDegLe_lamNumPoly A₀).pow 2).weaken (by simp)
+  have h2 : InnerDegLe (E := E) (embedScalar (E := E) A₀.1 + innerA₁x (E := E)) 1 :=
+    ((InnerDegLe_embedScalar _).add InnerDegLe_innerA₁x).weaken (by simp)
+  have h3 : InnerDegLe (E := E) ((lamDenPoly (E := E) A₀) ^ 2) 2 :=
+    (InnerDegLe_lamDenPoly A₀).pow 2
+  have h4 : InnerDegLe (E := E) ((embedScalar (E := E) A₀.1 + innerA₁x (E := E))
+                                  * (lamDenPoly (E := E) A₀) ^ 2) 3 := h2.mul h3
+  exact (h1.sub h4).weaken (by simp)
+
+theorem InnerDegLe_y₂Scaled (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (y₂Scaled (E := E) A₀) 3 := by
+  unfold y₂Scaled
+  have h1 : InnerDegLe (E := E) (lamNumPoly (E := E) A₀ * x₂Scaled (E := E) A₀) 3 :=
+    (InnerDegLe_lamNumPoly A₀).mul (InnerDegLe_x₂Scaled A₀)
+  have h2 : InnerDegLe (E := E) (embedScalar (E := E) A₀.2 * lamDenPoly (E := E) A₀) 1 :=
+    (InnerDegLe_embedScalar _).mul (InnerDegLe_lamDenPoly A₀)
+  have h3 : InnerDegLe (E := E) (embedScalar (E := E) A₀.1 * lamNumPoly (E := E) A₀) 0 :=
+    ((InnerDegLe_embedScalar _).mul (InnerDegLe_lamNumPoly A₀)).weaken (by simp)
+  have h4 : InnerDegLe (E := E) (embedScalar (E := E) A₀.2 * lamDenPoly (E := E) A₀
+                                  - embedScalar (E := E) A₀.1 * lamNumPoly (E := E) A₀) 1 :=
+    (h2.sub h3).weaken (by simp)
+  have h5 : InnerDegLe (E := E) (lamDenPoly (E := E) A₀ ^ 2) 2 :=
+    (InnerDegLe_lamDenPoly A₀).pow 2
+  have h6 : InnerDegLe (E := E) ((embedScalar (E := E) A₀.2 * lamDenPoly (E := E) A₀
+                                  - embedScalar (E := E) A₀.1 * lamNumPoly (E := E) A₀)
+                                  * lamDenPoly (E := E) A₀ ^ 2) 3 := h4.mul h5
+  have h7 : InnerDegLe (E := E)
+      (lamNumPoly (E := E) A₀ * x₂Scaled (E := E) A₀
+        + (embedScalar (E := E) A₀.2 * lamDenPoly (E := E) A₀
+           - embedScalar (E := E) A₀.1 * lamNumPoly (E := E) A₀)
+          * lamDenPoly (E := E) A₀ ^ 2) 3 :=
+    (h1.add h6).weaken (by simp)
+  exact h7
+
+theorem InnerDegLe_dxdzDenA₀Scaled (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (dxdzDenA₀Scaled (E := E) A₀) 1 := by
+  unfold dxdzDenA₀Scaled
+  have h1 : InnerDegLe (E := E) (embedScalar (E := E) (3 * A₀.1 ^ 2 + E.curveA)
+                                  * lamDenPoly (E := E) A₀) 1 :=
+    (InnerDegLe_embedScalar _).mul (InnerDegLe_lamDenPoly A₀)
+  have h2 : InnerDegLe (E := E) (embedScalar (E := E) (2 * A₀.2)
+                                  * lamNumPoly (E := E) A₀) 0 :=
+    ((InnerDegLe_embedScalar _).mul (InnerDegLe_lamNumPoly A₀)).weaken (by simp)
+  exact (h1.sub h2).weaken (by simp)
+
+theorem InnerDegLe_dxdzDenA₁Scaled (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (dxdzDenA₁Scaled (E := E) A₀) 3 := by
+  unfold dxdzDenA₁Scaled
+  have h1 : InnerDegLe (E := E) (embedScalar (E := E) 3 * innerA₁x (E := E) ^ 2) 2 :=
+    ((InnerDegLe_embedScalar _).mul (InnerDegLe_innerA₁x.pow 2)).weaken (by simp)
+  have h2 : InnerDegLe (E := E) (embedScalar (E := E) 3 * innerA₁x (E := E) ^ 2
+                                  + embedScalar (E := E) E.curveA) 2 :=
+    (h1.add (InnerDegLe_embedScalar _)).weaken (by simp)
+  have h3 : InnerDegLe (E := E) ((embedScalar (E := E) 3 * innerA₁x (E := E) ^ 2
+                                  + embedScalar (E := E) E.curveA)
+                                  * lamDenPoly (E := E) A₀) 3 :=
+    h2.mul (InnerDegLe_lamDenPoly A₀)
+  have h4 : InnerDegLe (E := E) (embedScalar (E := E) 2 * outerA₁y (E := E)) 0 :=
+    ((InnerDegLe_embedScalar _).mul InnerDegLe_outerA₁y).weaken (by simp)
+  have h5 : InnerDegLe (E := E) (embedScalar (E := E) 2 * outerA₁y (E := E)
+                                  * lamNumPoly (E := E) A₀) 0 :=
+    (h4.mul (InnerDegLe_lamNumPoly A₀)).weaken (by simp)
+  exact (h3.sub h5).weaken (by simp)
+
+theorem InnerDegLe_dxdzDenA₂Scaled (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (dxdzDenA₂Scaled (E := E) A₀) 6 := by
+  unfold dxdzDenA₂Scaled
+  have h1 : InnerDegLe (E := E) (embedScalar (E := E) 3 * (x₂Scaled (E := E) A₀) ^ 2) 6 :=
+    ((InnerDegLe_embedScalar _).mul ((InnerDegLe_x₂Scaled A₀).pow 2)).weaken (by simp)
+  have h2 : InnerDegLe (E := E) (embedScalar (E := E) E.curveA
+                                  * (lamDenPoly (E := E) A₀) ^ 4) 4 :=
+    ((InnerDegLe_embedScalar _).mul ((InnerDegLe_lamDenPoly A₀).pow 4)).weaken (by simp)
+  have h3 : InnerDegLe (E := E) (embedScalar (E := E) 3 * (x₂Scaled (E := E) A₀) ^ 2
+                                  + embedScalar (E := E) E.curveA
+                                    * (lamDenPoly (E := E) A₀) ^ 4) 6 :=
+    (h1.add h2).weaken (by simp)
+  have h4 : InnerDegLe (E := E) (embedScalar (E := E) 2 * lamNumPoly (E := E) A₀) 0 :=
+    ((InnerDegLe_embedScalar _).mul (InnerDegLe_lamNumPoly A₀)).weaken (by simp)
+  have h5 : InnerDegLe (E := E) (embedScalar (E := E) 2 * lamNumPoly (E := E) A₀
+                                  * y₂Scaled (E := E) A₀) 3 :=
+    (h4.mul (InnerDegLe_y₂Scaled A₀)).weaken (by simp)
+  exact (h3.sub h5).weaken (by simp)
+
+/-! ### Inner bounds for D-evaluated polynomials. -/
+
+theorem InnerDegLe_DAtA₀Poly (D : CoordRingElt E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (DAtA₀Poly (E := E) D A₀) 0 := by
+  unfold DAtA₀Poly
+  exact InnerDegLe_embedScalar _
+
+theorem InnerDegLe_DDerivAtA₀Poly (D : CoordRingElt E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (DDerivAtA₀Poly (E := E) D A₀) 0 := by
+  unfold DDerivAtA₀Poly
+  exact InnerDegLe_embedScalar _
+
+theorem InnerDegLe_DAtA₁Poly (D : CoordRingElt E.q) :
+    InnerDegLe (E := E) (DAtA₁Poly (E := E) D) D.degE := by
+  unfold DAtA₁Poly
+  have h1 : InnerDegLe (E := E) (embedInnerPoly (E := E) D.a) D.a.natDegree :=
+    InnerDegLe_embedInnerPoly _
+  have h2 : InnerDegLe (E := E) (embedInnerPoly (E := E) D.b) D.b.natDegree :=
+    InnerDegLe_embedInnerPoly _
+  have h3 : InnerDegLe (E := E) (embedInnerPoly (E := E) D.b * outerA₁y (E := E))
+                      D.b.natDegree := (h2.mul InnerDegLe_outerA₁y).weaken (by simp)
+  have hDa : 2 * D.a.natDegree ≤ D.degE := le_max_left _ _
+  have hDb : 3 + 2 * D.b.natDegree ≤ D.degE := le_max_right _ _
+  exact (h1.sub h3).weaken (by simp; omega)
+
+theorem InnerDegLe_DDerivAtA₁Poly (D : CoordRingElt E.q) :
+    InnerDegLe (E := E) (DDerivAtA₁Poly (E := E) D) D.degE := by
+  unfold DDerivAtA₁Poly
+  have h1 : InnerDegLe (E := E) (embedInnerPoly (E := E) (Polynomial.derivative D.a))
+                      (Polynomial.derivative D.a).natDegree :=
+    InnerDegLe_embedInnerPoly _
+  have h2 : InnerDegLe (E := E) (embedInnerPoly (E := E) (Polynomial.derivative D.b))
+                      (Polynomial.derivative D.b).natDegree :=
+    InnerDegLe_embedInnerPoly _
+  have h3 : InnerDegLe (E := E) (embedInnerPoly (E := E) (Polynomial.derivative D.b)
+                                  * outerA₁y (E := E))
+                      (Polynomial.derivative D.b).natDegree :=
+    (h2.mul InnerDegLe_outerA₁y).weaken (by simp)
+  have hdA : (Polynomial.derivative D.a).natDegree ≤ D.a.natDegree :=
+    (Polynomial.natDegree_derivative_le _).trans (Nat.sub_le _ _)
+  have hdB : (Polynomial.derivative D.b).natDegree ≤ D.b.natDegree :=
+    (Polynomial.natDegree_derivative_le _).trans (Nat.sub_le _ _)
+  have hDa : 2 * D.a.natDegree ≤ D.degE := le_max_left _ _
+  have hDb : 3 + 2 * D.b.natDegree ≤ D.degE := le_max_right _ _
+  exact (h1.sub h3).weaken (by simp; omega)
+
+theorem InnerDegLe_DAPartAtA₂Scaled (D : CoordRingElt E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (DAPartAtA₂Scaled (E := E) D A₀) (2 * D.degE) := by
+  unfold DAPartAtA₂Scaled
+  refine InnerDegLe.sum _ _ _ ?_
+  intro n hn
+  have hn' : n ≤ D.a.natDegree := Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+  have hDa : 2 * D.a.natDegree ≤ D.degE := le_max_left _ _
+  have h1 := InnerDegLe_embedScalar (E := E) (D.a.coeff n)
+  have h2 := (InnerDegLe_x₂Scaled (E := E) A₀).pow n
+  have h3 := (InnerDegLe_lamDenPoly (E := E) A₀).pow (D.degE - 2 * n)
+  exact ((h1.mul h2).mul h3).weaken (by omega)
+
+theorem InnerDegLe_DBPartAtA₂Scaled (D : CoordRingElt E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (DBPartAtA₂Scaled (E := E) D A₀) (2 * D.degE) := by
+  unfold DBPartAtA₂Scaled
+  refine InnerDegLe.sum _ _ _ ?_
+  intro n hn
+  have hn' : n ≤ D.b.natDegree := Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+  have hDb : 3 + 2 * D.b.natDegree ≤ D.degE := le_max_right _ _
+  have h1 := InnerDegLe_embedScalar (E := E) (D.b.coeff n)
+  have h2 := (InnerDegLe_x₂Scaled (E := E) A₀).pow n
+  have h3 := InnerDegLe_y₂Scaled (E := E) A₀
+  have h4 := (InnerDegLe_lamDenPoly (E := E) A₀).pow (D.degE - 2 * n - 3)
+  exact (((h1.mul h2).mul h3).mul h4).weaken (by omega)
+
+theorem InnerDegLe_DAtA₂Scaled (D : CoordRingElt E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (DAtA₂Scaled (E := E) D A₀) (2 * D.degE) := by
+  unfold DAtA₂Scaled
+  exact ((InnerDegLe_DAPartAtA₂Scaled D A₀).sub
+    (InnerDegLe_DBPartAtA₂Scaled D A₀)).weaken (by simp)
+
+theorem InnerDegLe_DDerivAPartAtA₂Scaled (D : CoordRingElt E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (DDerivAPartAtA₂Scaled (E := E) D A₀) (2 * D.degE) := by
+  unfold DDerivAPartAtA₂Scaled
+  refine InnerDegLe.sum _ _ _ ?_
+  intro n hn
+  have hn' : n ≤ (Polynomial.derivative D.a).natDegree :=
+    Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+  have hdA : (Polynomial.derivative D.a).natDegree ≤ D.a.natDegree :=
+    (Polynomial.natDegree_derivative_le _).trans (Nat.sub_le _ _)
+  have hDa : 2 * D.a.natDegree ≤ D.degE := le_max_left _ _
+  have h1 := InnerDegLe_embedScalar (E := E) ((Polynomial.derivative D.a).coeff n)
+  have h2 := (InnerDegLe_x₂Scaled (E := E) A₀).pow n
+  have h3 := (InnerDegLe_lamDenPoly (E := E) A₀).pow (D.degE - 2 * n)
+  exact ((h1.mul h2).mul h3).weaken (by omega)
+
+theorem InnerDegLe_DDerivBPartAtA₂Scaled (D : CoordRingElt E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (DDerivBPartAtA₂Scaled (E := E) D A₀) (2 * D.degE) := by
+  unfold DDerivBPartAtA₂Scaled
+  refine InnerDegLe.sum _ _ _ ?_
+  intro n hn
+  have hn' : n ≤ (Polynomial.derivative D.b).natDegree :=
+    Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+  have hdB : (Polynomial.derivative D.b).natDegree ≤ D.b.natDegree :=
+    (Polynomial.natDegree_derivative_le _).trans (Nat.sub_le _ _)
+  have hDb : 3 + 2 * D.b.natDegree ≤ D.degE := le_max_right _ _
+  have h1 := InnerDegLe_embedScalar (E := E) ((Polynomial.derivative D.b).coeff n)
+  have h2 := (InnerDegLe_x₂Scaled (E := E) A₀).pow n
+  have h3 := InnerDegLe_y₂Scaled (E := E) A₀
+  have h4 := (InnerDegLe_lamDenPoly (E := E) A₀).pow (D.degE - 2 * n - 3)
+  exact (((h1.mul h2).mul h3).mul h4).weaken (by omega)
+
+theorem InnerDegLe_DDerivAtA₂Scaled (D : CoordRingElt E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (DDerivAtA₂Scaled (E := E) D A₀) (2 * D.degE) := by
+  unfold DDerivAtA₂Scaled
+  exact ((InnerDegLe_DDerivAPartAtA₂Scaled D A₀).sub
+    (InnerDegLe_DDerivBPartAtA₂Scaled D A₀)).weaken (by simp)
+
+/-! ### Inner bounds for line products, dxdzAll, DAll. -/
+
+theorem InnerDegLe_linesProductScaled (P : ZMod E.q × ZMod E.q) (k : ℕ)
+    (B : Fin k → ZMod E.q × ZMod E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (linesProductScaled (E := E) P k B A₀) (k + 1) := by
+  unfold linesProductScaled
+  have h1 := InnerDegLe_lineEvalNumAt (E := E) A₀ (P.1, -P.2)
+  have hp := InnerDegLe.prod (Finset.univ : Finset (Fin k))
+    (fun j => lineEvalNumAt (E := E) A₀ (B j)) (fun _ => 1)
+    (fun j _ => InnerDegLe_lineEvalNumAt A₀ (B j))
+  have h2 : InnerDegLe (E := E) (∏ j : Fin k, lineEvalNumAt (E := E) A₀ (B j)) k :=
+    hp.weaken (by simp)
+  exact (h1.mul h2).weaken (by omega)
+
+theorem InnerDegLe_linesProductNoNegPScaled (k : ℕ)
+    (B : Fin k → ZMod E.q × ZMod E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (linesProductNoNegPScaled (E := E) k B A₀) k := by
+  unfold linesProductNoNegPScaled
+  have hp := InnerDegLe.prod (Finset.univ : Finset (Fin k))
+    (fun j => lineEvalNumAt (E := E) A₀ (B j)) (fun _ => 1)
+    (fun j _ => InnerDegLe_lineEvalNumAt A₀ (B j))
+  exact hp.weaken (by simp)
+
+theorem InnerDegLe_linesProductSkipBjScaled (P : ZMod E.q × ZMod E.q) (k : ℕ)
+    (B : Fin k → ZMod E.q × ZMod E.q) (A₀ : ZMod E.q × ZMod E.q) (j₀ : Fin k) :
+    InnerDegLe (E := E) (linesProductSkipBjScaled (E := E) P k B A₀ j₀) k := by
+  unfold linesProductSkipBjScaled
+  have h1 := InnerDegLe_lineEvalNumAt (E := E) A₀ (P.1, -P.2)
+  have hp := InnerDegLe.prod ((Finset.univ (α := Fin k)).erase j₀)
+    (fun j => lineEvalNumAt (E := E) A₀ (B j)) (fun _ => 1)
+    (fun j _ => InnerDegLe_lineEvalNumAt A₀ (B j))
+  have hsum : ∑ _j ∈ (Finset.univ (α := Fin k)).erase j₀, (1 : ℕ) = k - 1 := by
+    simp [Finset.card_erase_of_mem]
+  have h2 : InnerDegLe (E := E)
+      (∏ j ∈ (Finset.univ (α := Fin k)).erase j₀, lineEvalNumAt (E := E) A₀ (B j))
+      (k - 1) := by rw [← hsum]; exact hp
+  have hk_pos : 0 < k := by
+    rcases Nat.eq_zero_or_pos k with hk | hk
+    · subst hk; exact Fin.elim0 j₀
+    · exact hk
+  exact (h1.mul h2).weaken (by omega)
+
+theorem InnerDegLe_DAllScaled (D : CoordRingElt E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (DAllScaled (E := E) D A₀) (3 * D.degE) := by
+  unfold DAllScaled
+  have h1 := InnerDegLe_DAtA₀Poly D A₀
+  have h2 := InnerDegLe_DAtA₁Poly (E := E) D
+  have h3 := InnerDegLe_DAtA₂Scaled D A₀
+  exact ((h1.mul h2).mul h3).weaken (by omega)
+
+theorem InnerDegLe_dxdzAllScaled (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (dxdzAllScaled (E := E) A₀) 10 := by
+  unfold dxdzAllScaled
+  have h1 := InnerDegLe_dxdzDenA₀Scaled A₀
+  have h2 := InnerDegLe_dxdzDenA₁Scaled A₀
+  have h3 := InnerDegLe_dxdzDenA₂Scaled A₀
+  exact ((h1.mul h2).mul h3).weaken (by omega)
+
+/-! ### Inner bounds for clearedFiberPoly summands. -/
+
+theorem InnerDegLe_lhsTerm0Scaled (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (lhsTerm0Scaled (E := E) D P k B A₀) (3 * D.degE + k + 10) := by
+  unfold lhsTerm0Scaled
+  have h1 := InnerDegLe_DDerivAtA₀Poly D A₀
+  have h2 := InnerDegLe_embedScalar (E := E) (2 * A₀.2)
+  have h3 := InnerDegLe_DAtA₁Poly (E := E) D
+  have h4 := InnerDegLe_DAtA₂Scaled D A₀
+  have h5 := InnerDegLe_dxdzDenA₁Scaled A₀
+  have h6 := InnerDegLe_dxdzDenA₂Scaled A₀
+  have h7 := InnerDegLe_linesProductScaled P k B A₀
+  exact ((((((h1.mul h2).mul h3).mul h4).mul h5).mul h6).mul h7).weaken (by omega)
+
+theorem InnerDegLe_lhsTerm1Scaled (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (lhsTerm1Scaled (E := E) D P k B A₀) (3 * D.degE + k + 10) := by
+  unfold lhsTerm1Scaled
+  have h1 := InnerDegLe_DDerivAtA₁Poly (E := E) D
+  have h2 : InnerDegLe (E := E) (embedScalar (E := E) 2 * outerA₁y (E := E)) 0 :=
+    ((InnerDegLe_embedScalar _).mul InnerDegLe_outerA₁y).weaken (by simp)
+  have h3 := InnerDegLe_DAtA₀Poly D A₀
+  have h4 := InnerDegLe_DAtA₂Scaled D A₀
+  have h5 := InnerDegLe_dxdzDenA₀Scaled A₀
+  have h6 := InnerDegLe_dxdzDenA₂Scaled A₀
+  have h7 := InnerDegLe_linesProductScaled P k B A₀
+  exact ((((((h1.mul h2).mul h3).mul h4).mul h5).mul h6).mul h7).weaken (by omega)
+
+theorem InnerDegLe_lhsTerm2Scaled (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (lhsTerm2Scaled (E := E) D P k B A₀) (3 * D.degE + k + 10) := by
+  unfold lhsTerm2Scaled
+  have h1 := InnerDegLe_DDerivAtA₂Scaled D A₀
+  have h2 : InnerDegLe (E := E) (embedScalar (E := E) 2 * y₂Scaled (E := E) A₀) 3 :=
+    ((InnerDegLe_embedScalar _).mul (InnerDegLe_y₂Scaled A₀)).weaken (by simp)
+  have h3 := InnerDegLe_DAtA₀Poly D A₀
+  have h4 := InnerDegLe_DAtA₁Poly (E := E) D
+  have h5 := InnerDegLe_dxdzDenA₀Scaled A₀
+  have h6 := InnerDegLe_dxdzDenA₁Scaled A₀
+  have h7 := InnerDegLe_linesProductScaled P k B A₀
+  exact ((((((h1.mul h2).mul h3).mul h4).mul h5).mul h6).mul h7).weaken (by omega)
+
+theorem InnerDegLe_rhsTermNegPScaled (D : CoordRingElt E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (rhsTermNegPScaled (E := E) D k B A₀) (3 * D.degE + k + 10) := by
+  unfold rhsTermNegPScaled
+  have h1 := InnerDegLe_DAllScaled D A₀
+  have h2 := InnerDegLe_dxdzAllScaled (E := E) A₀
+  have h3 := InnerDegLe_linesProductNoNegPScaled k B A₀
+  exact ((h1.mul h2).mul h3).weaken (by omega)
+
+theorem InnerDegLe_rhsSumScaled (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (rhsSumScaled (E := E) D P k B m A₀) (3 * D.degE + k + 10) := by
+  unfold rhsSumScaled
+  refine InnerDegLe.sum _ _ _ ?_
+  intro j _
+  have h1 := InnerDegLe_embedScalar (E := E) (m j)
+  have h2 := InnerDegLe_DAllScaled D A₀
+  have h3 := InnerDegLe_dxdzAllScaled (E := E) A₀
+  have h4 := InnerDegLe_linesProductSkipBjScaled P k B A₀ j
+  exact (((h1.mul h2).mul h3).mul h4).weaken (by omega)
+
+/-! ### Inner bound for `clearedFiberPoly`. -/
+
+theorem InnerDegLe_clearedFiberPoly (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (clearedFiberPoly (E := E) D P k B m A₀)
+              (3 * D.degE + k + 10) := by
+  unfold clearedFiberPoly
+  have h0 := InnerDegLe_lhsTerm0Scaled (E := E) D P k B A₀
+  have h1 := InnerDegLe_lhsTerm1Scaled (E := E) D P k B A₀
+  have h2 := InnerDegLe_lhsTerm2Scaled (E := E) D P k B A₀
+  have h3 := InnerDegLe_rhsTermNegPScaled (E := E) D k B A₀
+  have h4 := InnerDegLe_rhsSumScaled (E := E) D P k B m A₀
+  exact ((((h0.add h1).add h2).add h3).add h4).weaken (by simp)
+
+end InnerDegBookkeeping
+
 section Phase2
 open Classical
 
