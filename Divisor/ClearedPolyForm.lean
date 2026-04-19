@@ -2906,6 +2906,510 @@ noncomputable def logDerivCheckFnDefined
     (A₀ A₁ : ZMod E.q × ZMod E.q) : Prop :=
   logDerivCheckFnDenom E D P B A₀ A₁ ≠ 0
 
+/-! ## Phase B4: outer natDegree bounds for `clearedFiberPoly`
+
+    The outer natDegree of `clearedFiberPoly E D P k B m A₀` (as a
+    polynomial in the outer variable `A₁.2`) is bounded by `D.degE + k + 8`.
+    This is one of two ingredients feeding T1's fiber-count bound;
+    the other is an inner-coefficient natDegree bound used together
+    with this one to bound `resultantX`. -/
+
+theorem x₂Scaled_natDegree_le (A₀ : ZMod E.q × ZMod E.q) :
+    (x₂Scaled (E := E) A₀).natDegree ≤ 2 := by
+  unfold x₂Scaled
+  refine (natDegree_sub_le _ _).trans (max_le ?_ ?_)
+  · rw [Polynomial.natDegree_pow]
+    have := lamNumPoly_natDegree_le E A₀
+    omega
+  · refine natDegree_mul_le.trans ?_
+    have h1 : (embedScalar (E := E) A₀.1 + innerA₁x (E := E)).natDegree ≤ 0 :=
+      (natDegree_add_le _ _).trans
+        (max_le (by rw [embedScalar_natDegree_le])
+                (by rw [innerA₁x_natDegree]))
+    have h2 : (lamDenPoly (E := E) A₀ ^ 2).natDegree = 0 := by
+      rw [Polynomial.natDegree_pow, lamDenPoly_natDegree_le]
+    omega
+
+theorem y₂Scaled_natDegree_le (A₀ : ZMod E.q × ZMod E.q) :
+    (y₂Scaled (E := E) A₀).natDegree ≤ 3 := by
+  unfold y₂Scaled
+  refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
+  · refine natDegree_mul_le.trans ?_
+    have h1 := lamNumPoly_natDegree_le E A₀
+    have h2 := x₂Scaled_natDegree_le E A₀
+    omega
+  · refine natDegree_mul_le.trans ?_
+    have h1 : (embedScalar (E := E) A₀.2 * lamDenPoly (E := E) A₀
+                 - embedScalar (E := E) A₀.1
+                   * lamNumPoly (E := E) A₀).natDegree ≤ 1 := by
+      refine (natDegree_sub_le _ _).trans (max_le ?_ ?_)
+      · refine natDegree_mul_le.trans ?_
+        rw [embedScalar_natDegree_le, lamDenPoly_natDegree_le]
+        omega
+      · refine natDegree_mul_le.trans ?_
+        rw [embedScalar_natDegree_le, Nat.zero_add]
+        exact lamNumPoly_natDegree_le E A₀
+    have h2 : (lamDenPoly (E := E) A₀ ^ 2).natDegree = 0 := by
+      rw [Polynomial.natDegree_pow, lamDenPoly_natDegree_le]
+    omega
+
+theorem dxdzDenA₁Scaled_natDegree_le (A₀ : ZMod E.q × ZMod E.q) :
+    (dxdzDenA₁Scaled (E := E) A₀).natDegree ≤ 2 := by
+  unfold dxdzDenA₁Scaled
+  refine (natDegree_sub_le _ _).trans (max_le ?_ ?_)
+  · refine natDegree_mul_le.trans ?_
+    have h1 : (embedScalar (E := E) 3 * innerA₁x (E := E) ^ 2
+                 + embedScalar (E := E) E.curveA).natDegree ≤ 0 := by
+      refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
+      · refine natDegree_mul_le.trans ?_
+        rw [embedScalar_natDegree_le, Polynomial.natDegree_pow,
+            innerA₁x_natDegree]
+      · rw [embedScalar_natDegree_le]
+    rw [lamDenPoly_natDegree_le]
+    omega
+  · refine natDegree_mul_le.trans ?_
+    refine Nat.add_le_add ?_ (lamNumPoly_natDegree_le E A₀)
+    refine natDegree_mul_le.trans ?_
+    rw [embedScalar_natDegree_le, outerA₁y_natDegree]
+
+theorem dxdzDenA₂Scaled_natDegree_le (A₀ : ZMod E.q × ZMod E.q) :
+    (dxdzDenA₂Scaled (E := E) A₀).natDegree ≤ 4 := by
+  unfold dxdzDenA₂Scaled
+  refine (natDegree_sub_le _ _).trans (max_le ?_ ?_)
+  · refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
+    · refine natDegree_mul_le.trans ?_
+      rw [embedScalar_natDegree_le, Nat.zero_add, Polynomial.natDegree_pow]
+      have := x₂Scaled_natDegree_le E A₀
+      omega
+    · refine natDegree_mul_le.trans ?_
+      rw [embedScalar_natDegree_le, Polynomial.natDegree_pow,
+          lamDenPoly_natDegree_le]
+      omega
+  · refine natDegree_mul_le.trans ?_
+    refine Nat.add_le_add ?_ (y₂Scaled_natDegree_le E A₀)
+    refine natDegree_mul_le.trans ?_
+    rw [embedScalar_natDegree_le, Nat.zero_add]
+    exact lamNumPoly_natDegree_le E A₀
+
+theorem DAtA₀Poly_natDegree_le (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (DAtA₀Poly (E := E) D A₀).natDegree = 0 := by
+  unfold DAtA₀Poly
+  exact embedScalar_natDegree_le E _
+
+theorem DDerivAtA₀Poly_natDegree_le (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (DDerivAtA₀Poly (E := E) D A₀).natDegree = 0 := by
+  unfold DDerivAtA₀Poly
+  exact embedScalar_natDegree_le E _
+
+theorem DDerivAtA₁Poly_natDegree_le (D : CoordRingElt E.q) :
+    (DDerivAtA₁Poly (E := E) D).natDegree ≤ 1 := by
+  unfold DDerivAtA₁Poly
+  refine (natDegree_sub_le _ _).trans (max_le ?_ ?_)
+  · rw [embedInnerPoly_natDegree_le]; exact Nat.zero_le _
+  · refine natDegree_mul_le.trans ?_
+    rw [embedInnerPoly_natDegree_le, outerA₁y_natDegree]
+
+/-- `DAPartAtA₂Scaled D A₀` has outer natDegree ≤ `2·D.a.natDegree`,
+    hence ≤ `D.degE`. -/
+theorem DAPartAtA₂Scaled_natDegree_le (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (DAPartAtA₂Scaled (E := E) D A₀).natDegree ≤ D.degE := by
+  unfold DAPartAtA₂Scaled
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ ?_
+  intro n hn
+  have hn' : n ≤ D.a.natDegree := Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+  have hx := x₂Scaled_natDegree_le E A₀
+  have h1 : (embedScalar (E := E) (D.a.coeff n)
+                * x₂Scaled (E := E) A₀ ^ n).natDegree ≤ 2 * n := by
+    refine natDegree_mul_le.trans ?_
+    rw [embedScalar_natDegree_le, Nat.zero_add, Polynomial.natDegree_pow]
+    calc n * (x₂Scaled (E := E) A₀).natDegree
+        ≤ n * 2 := Nat.mul_le_mul_left n hx
+      _ = 2 * n := by ring
+  have h2 : (lamDenPoly (E := E) A₀ ^ (D.degE - 2 * n)).natDegree = 0 := by
+    rw [Polynomial.natDegree_pow, lamDenPoly_natDegree_le, Nat.mul_zero]
+  have h3 : 2 * n ≤ D.degE :=
+    (Nat.mul_le_mul_left 2 hn').trans (le_max_left _ _)
+  refine natDegree_mul_le.trans ?_
+  omega
+
+theorem DBPartAtA₂Scaled_natDegree_le (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (DBPartAtA₂Scaled (E := E) D A₀).natDegree ≤ D.degE := by
+  unfold DBPartAtA₂Scaled
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ ?_
+  intro n hn
+  have hn' : n ≤ D.b.natDegree := Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+  have hx := x₂Scaled_natDegree_le E A₀
+  have h1 : (embedScalar (E := E) (D.b.coeff n)
+                * x₂Scaled (E := E) A₀ ^ n).natDegree ≤ 2 * n := by
+    refine natDegree_mul_le.trans ?_
+    rw [embedScalar_natDegree_le, Nat.zero_add, Polynomial.natDegree_pow]
+    calc n * (x₂Scaled (E := E) A₀).natDegree
+        ≤ n * 2 := Nat.mul_le_mul_left n hx
+      _ = 2 * n := by ring
+  have h2 : (y₂Scaled (E := E) A₀).natDegree ≤ 3 := y₂Scaled_natDegree_le E A₀
+  have h3 : (lamDenPoly (E := E) A₀ ^ (D.degE - 2 * n - 3)).natDegree = 0 := by
+    rw [Polynomial.natDegree_pow, lamDenPoly_natDegree_le, Nat.mul_zero]
+  have h4 : 2 * n + 3 ≤ D.degE := by
+    have hmax : 3 + 2 * D.b.natDegree ≤ D.degE := le_max_right _ _
+    have : 2 * n ≤ 2 * D.b.natDegree := Nat.mul_le_mul_left 2 hn'
+    omega
+  refine natDegree_mul_le.trans ?_
+  have hmul : (embedScalar (E := E) _ * x₂Scaled (E := E) A₀ ^ n
+               * y₂Scaled (E := E) A₀).natDegree ≤ 2 * n + 3 :=
+    natDegree_mul_le.trans (Nat.add_le_add h1 h2)
+  exact (Nat.add_le_add hmul h3.le).trans (by omega)
+
+theorem DAtA₂Scaled_natDegree_le (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (DAtA₂Scaled (E := E) D A₀).natDegree ≤ D.degE := by
+  unfold DAtA₂Scaled
+  refine (natDegree_sub_le _ _).trans (max_le ?_ ?_)
+  · exact DAPartAtA₂Scaled_natDegree_le E D A₀
+  · exact DBPartAtA₂Scaled_natDegree_le E D A₀
+
+theorem DDerivAPartAtA₂Scaled_natDegree_le (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (DDerivAPartAtA₂Scaled (E := E) D A₀).natDegree ≤ D.degE := by
+  unfold DDerivAPartAtA₂Scaled
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ ?_
+  intro n hn
+  have hn' : n ≤ (Polynomial.derivative D.a).natDegree :=
+    Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+  have hda : (Polynomial.derivative D.a).natDegree ≤ D.a.natDegree :=
+    (Polynomial.natDegree_derivative_le _).trans (Nat.sub_le _ _)
+  have hnDa : n ≤ D.a.natDegree := hn'.trans hda
+  have hx := x₂Scaled_natDegree_le E A₀
+  have h1 : (embedScalar (E := E) ((Polynomial.derivative D.a).coeff n)
+                * x₂Scaled (E := E) A₀ ^ n).natDegree ≤ 2 * n := by
+    refine natDegree_mul_le.trans ?_
+    rw [embedScalar_natDegree_le, Nat.zero_add, Polynomial.natDegree_pow]
+    calc n * (x₂Scaled (E := E) A₀).natDegree
+        ≤ n * 2 := Nat.mul_le_mul_left n hx
+      _ = 2 * n := by ring
+  have h2 : (lamDenPoly (E := E) A₀ ^ (D.degE - 2 * n)).natDegree = 0 := by
+    rw [Polynomial.natDegree_pow, lamDenPoly_natDegree_le, Nat.mul_zero]
+  have h3 : 2 * n ≤ D.degE :=
+    (Nat.mul_le_mul_left 2 hnDa).trans (le_max_left _ _)
+  refine natDegree_mul_le.trans ?_
+  omega
+
+theorem DDerivBPartAtA₂Scaled_natDegree_le (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (DDerivBPartAtA₂Scaled (E := E) D A₀).natDegree ≤ D.degE := by
+  unfold DDerivBPartAtA₂Scaled
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ ?_
+  intro n hn
+  have hn' : n ≤ (Polynomial.derivative D.b).natDegree :=
+    Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+  have hdb : (Polynomial.derivative D.b).natDegree ≤ D.b.natDegree :=
+    (Polynomial.natDegree_derivative_le _).trans (Nat.sub_le _ _)
+  have hnDb : n ≤ D.b.natDegree := hn'.trans hdb
+  have hx := x₂Scaled_natDegree_le E A₀
+  have h1 : (embedScalar (E := E) ((Polynomial.derivative D.b).coeff n)
+                * x₂Scaled (E := E) A₀ ^ n).natDegree ≤ 2 * n := by
+    refine natDegree_mul_le.trans ?_
+    rw [embedScalar_natDegree_le, Nat.zero_add, Polynomial.natDegree_pow]
+    calc n * (x₂Scaled (E := E) A₀).natDegree
+        ≤ n * 2 := Nat.mul_le_mul_left n hx
+      _ = 2 * n := by ring
+  have h2 : (y₂Scaled (E := E) A₀).natDegree ≤ 3 := y₂Scaled_natDegree_le E A₀
+  have h3 : (lamDenPoly (E := E) A₀ ^ (D.degE - 2 * n - 3)).natDegree = 0 := by
+    rw [Polynomial.natDegree_pow, lamDenPoly_natDegree_le, Nat.mul_zero]
+  have h4 : 2 * n + 3 ≤ D.degE := by
+    have hmax : 3 + 2 * D.b.natDegree ≤ D.degE := le_max_right _ _
+    have : 2 * n ≤ 2 * D.b.natDegree := Nat.mul_le_mul_left 2 hnDb
+    omega
+  refine natDegree_mul_le.trans ?_
+  have hmul : (embedScalar (E := E) _ * x₂Scaled (E := E) A₀ ^ n
+               * y₂Scaled (E := E) A₀).natDegree ≤ 2 * n + 3 :=
+    natDegree_mul_le.trans (Nat.add_le_add h1 h2)
+  exact (Nat.add_le_add hmul h3.le).trans (by omega)
+
+theorem DDerivAtA₂Scaled_natDegree_le (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (DDerivAtA₂Scaled (E := E) D A₀).natDegree ≤ D.degE := by
+  unfold DDerivAtA₂Scaled
+  refine (natDegree_sub_le _ _).trans (max_le ?_ ?_)
+  · exact DDerivAPartAtA₂Scaled_natDegree_le E D A₀
+  · exact DDerivBPartAtA₂Scaled_natDegree_le E D A₀
+
+theorem linesProductScaled_natDegree_le
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (linesProductScaled (E := E) P k B A₀).natDegree ≤ k + 1 := by
+  unfold linesProductScaled
+  refine natDegree_mul_le.trans ?_
+  have h1 := lineEvalNumAt_natDegree_le E A₀ (P.1, -P.2)
+  have h2 : (∏ j : Fin k, lineEvalNumAt (E := E) A₀ (B j)).natDegree ≤ k := by
+    refine (Polynomial.natDegree_prod_le _ _).trans ?_
+    calc ∑ j : Fin k, (lineEvalNumAt (E := E) A₀ (B j)).natDegree
+        ≤ ∑ _j : Fin k, 1 := Finset.sum_le_sum
+            (fun j _ => lineEvalNumAt_natDegree_le E A₀ (B j))
+      _ = k := by rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin,
+                      smul_eq_mul, Nat.mul_one]
+  omega
+
+theorem linesProductNoNegPScaled_natDegree_le
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (linesProductNoNegPScaled (E := E) k B A₀).natDegree ≤ k := by
+  unfold linesProductNoNegPScaled
+  refine (Polynomial.natDegree_prod_le _ _).trans ?_
+  calc ∑ j : Fin k, (lineEvalNumAt (E := E) A₀ (B j)).natDegree
+      ≤ ∑ _j : Fin k, 1 := Finset.sum_le_sum
+          (fun j _ => lineEvalNumAt_natDegree_le E A₀ (B j))
+    _ = k := by rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin,
+                    smul_eq_mul, Nat.mul_one]
+
+theorem linesProductSkipBjScaled_natDegree_le
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) (j₀ : Fin k) :
+    (linesProductSkipBjScaled (E := E) P k B A₀ j₀).natDegree ≤ k := by
+  classical
+  unfold linesProductSkipBjScaled
+  refine natDegree_mul_le.trans ?_
+  have hcard : ((Finset.univ (α := Fin k)).erase j₀).card = k - 1 := by
+    rw [Finset.card_erase_of_mem (Finset.mem_univ _),
+        Finset.card_univ, Fintype.card_fin]
+  have hk_pos : 1 ≤ k := Fin.pos_iff_nonempty.mpr ⟨j₀⟩
+  have hprod :
+      (∏ j ∈ (Finset.univ (α := Fin k)).erase j₀,
+         lineEvalNumAt (E := E) A₀ (B j)).natDegree ≤ k - 1 := by
+    refine (Polynomial.natDegree_prod_le _ _).trans ?_
+    calc ∑ j ∈ (Finset.univ (α := Fin k)).erase j₀,
+              (lineEvalNumAt (E := E) A₀ (B j)).natDegree
+        ≤ ∑ _j ∈ (Finset.univ (α := Fin k)).erase j₀, 1 :=
+              Finset.sum_le_sum
+                (fun j _ => lineEvalNumAt_natDegree_le E A₀ (B j))
+      _ = k - 1 := by rw [Finset.sum_const, hcard, smul_eq_mul, Nat.mul_one]
+  calc (lineEvalNumAt (E := E) A₀ (P.1, -P.2)).natDegree
+          + (∏ j ∈ (Finset.univ (α := Fin k)).erase j₀,
+               lineEvalNumAt (E := E) A₀ (B j)).natDegree
+      ≤ 1 + (k - 1) := Nat.add_le_add
+          (lineEvalNumAt_natDegree_le E A₀ _) hprod
+    _ = k := by omega
+
+theorem dxdzAllScaled_natDegree_le (A₀ : ZMod E.q × ZMod E.q) :
+    (dxdzAllScaled (E := E) A₀).natDegree ≤ 7 := by
+  unfold dxdzAllScaled
+  refine natDegree_mul_le.trans ?_
+  have h0 : (dxdzDenA₀Scaled (E := E) A₀).natDegree ≤ 1 :=
+    Nat.le_of_lt_succ (dxdzDenA₀Scaled_natDegree_lt_two E A₀)
+  have h1 := dxdzDenA₁Scaled_natDegree_le E A₀
+  have h2 := dxdzDenA₂Scaled_natDegree_le E A₀
+  have hmul : (dxdzDenA₀Scaled (E := E) A₀ * dxdzDenA₁Scaled (E := E) A₀).natDegree ≤ 3 :=
+    natDegree_mul_le.trans (Nat.add_le_add h0 h1)
+  exact (Nat.add_le_add hmul h2).trans (by omega)
+
+theorem DAllScaled_natDegree_le (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (DAllScaled (E := E) D A₀).natDegree ≤ D.degE + 1 := by
+  unfold DAllScaled
+  refine natDegree_mul_le.trans ?_
+  have h0 : (DAtA₀Poly (E := E) D A₀).natDegree = 0 :=
+    DAtA₀Poly_natDegree_le E D A₀
+  have h1 : (DAtA₁Poly (E := E) D).natDegree ≤ 1 :=
+    Nat.le_of_lt_succ (DAtA₁Poly_natDegree_lt_two E D)
+  have h2 := DAtA₂Scaled_natDegree_le E D A₀
+  have hmul : (DAtA₀Poly (E := E) D A₀ * DAtA₁Poly (E := E) D).natDegree ≤ 1 := by
+    refine natDegree_mul_le.trans ?_
+    rw [h0, Nat.zero_add]; exact h1
+  exact (Nat.add_le_add hmul h2).trans (by omega)
+
+theorem lhsTerm0Scaled_natDegree_le (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (lhsTerm0Scaled (E := E) D P k B A₀).natDegree ≤ D.degE + k + 8 := by
+  unfold lhsTerm0Scaled
+  have h1 : (DDerivAtA₀Poly (E := E) D A₀).natDegree ≤ 0 :=
+    (DDerivAtA₀Poly_natDegree_le E D A₀).le
+  have h2 : (embedScalar (E := E) (2 * A₀.2)).natDegree ≤ 0 :=
+    (embedScalar_natDegree_le E _).le
+  have h3 : (DAtA₁Poly (E := E) D).natDegree ≤ 1 :=
+    Nat.le_of_lt_succ (DAtA₁Poly_natDegree_lt_two E D)
+  have h4 := DAtA₂Scaled_natDegree_le E D A₀
+  have h5 := dxdzDenA₁Scaled_natDegree_le E A₀
+  have h6 := dxdzDenA₂Scaled_natDegree_le E A₀
+  have h7 := linesProductScaled_natDegree_le E P k B A₀
+  refine le_trans ?_ (by omega : 0 + 0 + 1 + D.degE + 2 + 4 + (k + 1) ≤ D.degE + k + 8)
+  exact natDegree_mul_le.trans (Nat.add_le_add
+    (natDegree_mul_le.trans (Nat.add_le_add
+      (natDegree_mul_le.trans (Nat.add_le_add
+        (natDegree_mul_le.trans (Nat.add_le_add
+          (natDegree_mul_le.trans (Nat.add_le_add
+            (natDegree_mul_le.trans (Nat.add_le_add h1 h2))
+            h3))
+          h4))
+        h5))
+      h6))
+    h7)
+
+theorem lhsTerm1Scaled_natDegree_le (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (lhsTerm1Scaled (E := E) D P k B A₀).natDegree ≤ D.degE + k + 8 := by
+  unfold lhsTerm1Scaled
+  have h1 := DDerivAtA₁Poly_natDegree_le E D
+  have h2 : (embedScalar (E := E) 2 * outerA₁y (E := E)).natDegree ≤ 1 := by
+    refine natDegree_mul_le.trans ?_
+    rw [embedScalar_natDegree_le, outerA₁y_natDegree]
+  have h3 : (DAtA₀Poly (E := E) D A₀).natDegree ≤ 0 :=
+    (DAtA₀Poly_natDegree_le E D A₀).le
+  have h4 := DAtA₂Scaled_natDegree_le E D A₀
+  have h5 : (dxdzDenA₀Scaled (E := E) A₀).natDegree ≤ 1 :=
+    Nat.le_of_lt_succ (dxdzDenA₀Scaled_natDegree_lt_two E A₀)
+  have h6 := dxdzDenA₂Scaled_natDegree_le E A₀
+  have h7 := linesProductScaled_natDegree_le E P k B A₀
+  refine le_trans ?_ (by omega : 1 + 1 + 0 + D.degE + 1 + 4 + (k + 1) ≤ D.degE + k + 8)
+  exact natDegree_mul_le.trans (Nat.add_le_add
+    (natDegree_mul_le.trans (Nat.add_le_add
+      (natDegree_mul_le.trans (Nat.add_le_add
+        (natDegree_mul_le.trans (Nat.add_le_add
+          (natDegree_mul_le.trans (Nat.add_le_add
+            (natDegree_mul_le.trans (Nat.add_le_add h1 h2))
+            h3))
+          h4))
+        h5))
+      h6))
+    h7)
+
+theorem lhsTerm2Scaled_natDegree_le (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (lhsTerm2Scaled (E := E) D P k B A₀).natDegree ≤ D.degE + k + 8 := by
+  unfold lhsTerm2Scaled
+  have h1 := DDerivAtA₂Scaled_natDegree_le E D A₀
+  have h2 : (embedScalar (E := E) 2 * y₂Scaled (E := E) A₀).natDegree ≤ 3 := by
+    refine natDegree_mul_le.trans ?_
+    rw [embedScalar_natDegree_le, Nat.zero_add]
+    exact y₂Scaled_natDegree_le E A₀
+  have h3 : (DAtA₀Poly (E := E) D A₀).natDegree ≤ 0 :=
+    (DAtA₀Poly_natDegree_le E D A₀).le
+  have h4 : (DAtA₁Poly (E := E) D).natDegree ≤ 1 :=
+    Nat.le_of_lt_succ (DAtA₁Poly_natDegree_lt_two E D)
+  have h5 : (dxdzDenA₀Scaled (E := E) A₀).natDegree ≤ 1 :=
+    Nat.le_of_lt_succ (dxdzDenA₀Scaled_natDegree_lt_two E A₀)
+  have h6 := dxdzDenA₁Scaled_natDegree_le E A₀
+  have h7 := linesProductScaled_natDegree_le E P k B A₀
+  refine le_trans ?_ (by omega : D.degE + 3 + 0 + 1 + 1 + 2 + (k + 1) ≤ D.degE + k + 8)
+  exact natDegree_mul_le.trans (Nat.add_le_add
+    (natDegree_mul_le.trans (Nat.add_le_add
+      (natDegree_mul_le.trans (Nat.add_le_add
+        (natDegree_mul_le.trans (Nat.add_le_add
+          (natDegree_mul_le.trans (Nat.add_le_add
+            (natDegree_mul_le.trans (Nat.add_le_add h1 h2))
+            h3))
+          h4))
+        h5))
+      h6))
+    h7)
+
+theorem rhsTermNegPScaled_natDegree_le (D : CoordRingElt E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (rhsTermNegPScaled (E := E) D k B A₀).natDegree ≤ D.degE + k + 8 := by
+  unfold rhsTermNegPScaled
+  refine natDegree_mul_le.trans ?_
+  have hD := DAllScaled_natDegree_le E D A₀
+  have hdx := dxdzAllScaled_natDegree_le E A₀
+  have hL := linesProductNoNegPScaled_natDegree_le E k B A₀
+  have hmul : (DAllScaled (E := E) D A₀ * dxdzAllScaled (E := E) A₀).natDegree
+              ≤ (D.degE + 1) + 7 :=
+    natDegree_mul_le.trans (Nat.add_le_add hD hdx)
+  exact (Nat.add_le_add hmul hL).trans (by omega)
+
+theorem rhsSumScaled_natDegree_le (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (m : Fin k → ZMod E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    (rhsSumScaled (E := E) D P k B m A₀).natDegree ≤ D.degE + k + 8 := by
+  unfold rhsSumScaled
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ ?_
+  intro j _
+  refine natDegree_mul_le.trans ?_
+  have hmS : (embedScalar (E := E) (m j)).natDegree = 0 :=
+    embedScalar_natDegree_le E _
+  have hD := DAllScaled_natDegree_le E D A₀
+  have hdx := dxdzAllScaled_natDegree_le E A₀
+  have hL := linesProductSkipBjScaled_natDegree_le E P k B A₀ j
+  have hmul2 : (embedScalar (E := E) (m j) * DAllScaled (E := E) D A₀).natDegree
+               ≤ 0 + (D.degE + 1) := by
+    refine natDegree_mul_le.trans ?_
+    exact Nat.add_le_add hmS.le hD
+  have hmul3 : (embedScalar (E := E) (m j) * DAllScaled (E := E) D A₀
+                 * dxdzAllScaled (E := E) A₀).natDegree
+               ≤ (0 + (D.degE + 1)) + 7 :=
+    natDegree_mul_le.trans (Nat.add_le_add hmul2 hdx)
+  exact (Nat.add_le_add hmul3 hL).trans (by omega)
+
+/-- **Phase B4 main**: `clearedFiberPoly` has outer natDegree ≤ `D.degE + k + 8`. -/
+theorem clearedFiberPoly_natDegree_le
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (clearedFiberPoly (E := E) D P k B m A₀).natDegree ≤ D.degE + k + 8 := by
+  unfold clearedFiberPoly
+  refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
+  refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
+  refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
+  refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
+  · exact lhsTerm0Scaled_natDegree_le E D P k B A₀
+  · exact lhsTerm1Scaled_natDegree_le E D P k B A₀
+  · exact lhsTerm2Scaled_natDegree_le E D P k B A₀
+  · exact rhsTermNegPScaled_natDegree_le E D k B A₀
+  · exact rhsSumScaled_natDegree_le E D P k B m A₀
+
+/-! ## Phase B5: non-vanishing of `clearedFiberPoly %ₘ curveEqPoly`
+
+    If there is at least one "good" `A₁` — non-vertical, with
+    `logDerivCheckFn` defined and nonzero — then
+    `clearedFiberPoly %ₘ curveEqPoly ≠ 0`. This is the hypothesis
+    needed to apply `card_zeros_on_E_le` in T1's fiber count.
+
+    Proof: if `clearedFiberPoly %ₘ curveEqPoly = 0` then
+    `bivEval clearedFiberPoly A₁ = 0` on `E.points`. By the B3 identity
+    `bivEval clearedFiberPoly A₁ = (A₁.1-A₀.1)^N · logDerivCheckFnCleared`,
+    the LHS factor is nonzero (non-vertical) and `logDerivCheckFnDenom`
+    is nonzero (defined), so `logDerivCheckFn = 0`, contradicting the
+    "good" witness. -/
+
+theorem clearedFiberPoly_modCurve_ne_zero
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q)
+    (hFiberNonzero : ∃ A₁ ∈ E.points, A₀.1 ≠ A₁.1 ∧
+       logDerivCheckFnDefined E D P B A₀ A₁ ∧
+       logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
+    clearedFiberPoly (E := E) D P k B m A₀ %ₘ curveEqPoly E ≠ 0 := by
+  obtain ⟨A₁, hA₁, hNV, hDef, hne⟩ := hFiberNonzero
+  intro h_vanish
+  have hBiv : bivEval (clearedFiberPoly (E := E) D P k B m A₀) A₁ = 0 := by
+    rw [bivEval_eq_modByMonic_on_E E _ hA₁, h_vanish]
+    unfold bivEval
+    simp
+  -- Apply B3 identity.
+  rw [clearedFiberPoly_identity E D P B m A₀ A₁ hNV hDef] at hBiv
+  -- Factor the product: (A₁.1-A₀.1)^N · logDerivCheckFn · denom = 0.
+  have hlamNZ : (A₁.1 - A₀.1) ^ (D.degE + k + 6) ≠ 0 :=
+    pow_ne_zero _ (sub_ne_zero.mpr (Ne.symm hNV))
+  -- Unfold logDerivCheckFnCleared to get logDerivCheckFn · denom.
+  unfold logDerivCheckFnCleared at hBiv
+  -- Three-way factorization: (lamPow · (f · denom)) = 0.
+  rw [show (A₁.1 - A₀.1) ^ (D.degE + k + 6)
+          * (logDerivCheckFn E D P k B m A₀ A₁
+             * logDerivCheckFnDenom E D P B A₀ A₁)
+        = (A₁.1 - A₀.1) ^ (D.degE + k + 6)
+            * (logDerivCheckFn E D P k B m A₀ A₁
+               * logDerivCheckFnDenom E D P B A₀ A₁) from rfl] at hBiv
+  rcases mul_eq_zero.mp hBiv with h | h
+  · exact hlamNZ h
+  · rcases mul_eq_zero.mp h with h' | h'
+    · exact hne h'
+    · exact hDef h'
+
 section Phase2
 open Classical
 
