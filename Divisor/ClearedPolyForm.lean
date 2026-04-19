@@ -1386,6 +1386,330 @@ theorem bivEval_rhsSumScaled_eq
         pow_add, pow_add]
   rw [hpow]; ring
 
+/-! ## Phase B3: main `clearedFiberPoly_identity`
+
+    Assembly of the five B2 per-term identities into the master identity
+    `bivEval (clearedFiberPoly …) A₁ = (A₁.1 - A₀.1)^N · logDerivCheckFnCleared`
+    under the hypothesis `logDerivCheckFnDenom ≠ 0` (i.e. all denominator
+    factors nonzero). -/
+
+/-- Extract the 8 individual non-zero facts from
+    `logDerivCheckFnDenom E D P B A₀ A₁ ≠ 0`. -/
+theorem logDerivCheckFnDenom_factors_ne_zero
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hDef : logDerivCheckFnDenom E D P B A₀ A₁ ≠ 0) :
+    D.eval A₀.1 A₀.2 ≠ 0 ∧
+    D.eval A₁.1 A₁.2 ≠ 0 ∧
+    D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) ≠ 0 ∧
+    (3 * A₀.1 ^ 2 + E.curveA
+      - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2) ≠ 0 ∧
+    (3 * A₁.1 ^ 2 + E.curveA
+      - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2) ≠ 0 ∧
+    (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+      - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁)) ≠ 0 ∧
+    (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2) ≠ 0 ∧
+    (∀ j : Fin k,
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 ≠ 0) := by
+  classical
+  have hEq : logDerivCheckFnDenom E D P B A₀ A₁ =
+      D.eval A₀.1 A₀.2 * D.eval A₁.1 A₁.2 *
+      D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) *
+      (3 * A₀.1 ^ 2 + E.curveA - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2) *
+      (3 * A₁.1 ^ 2 + E.curveA - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2) *
+      (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+        - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁)) *
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2) *
+      ∏ j : Fin k, (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 := by
+    unfold logDerivCheckFnDenom chordX₂ chordY₂
+    rfl
+  rw [hEq] at hDef
+  obtain ⟨h7, hLBjProd⟩ := mul_ne_zero_iff.mp hDef
+  obtain ⟨h6a, hLP⟩ := mul_ne_zero_iff.mp h7
+  obtain ⟨h5a, hDx2⟩ := mul_ne_zero_iff.mp h6a
+  obtain ⟨h4a, hDx1⟩ := mul_ne_zero_iff.mp h5a
+  obtain ⟨h3a, hDx0⟩ := mul_ne_zero_iff.mp h4a
+  obtain ⟨h2a, hD2⟩ := mul_ne_zero_iff.mp h3a
+  obtain ⟨hD0, hD1⟩ := mul_ne_zero_iff.mp h2a
+  refine ⟨hD0, hD1, hD2, hDx0, hDx1, hDx2, hLP, ?_⟩
+  intro j
+  exact (Finset.prod_ne_zero_iff.mp hLBjProd) j (Finset.mem_univ _)
+
+/-- Explicit product form of `logDerivCheckFnDenom` (no `let`-bindings).
+    Allows downstream reasoning without forcing `whnf` on the nested lets
+    inside `logDerivCheckFnDenom`'s definition. -/
+theorem logDerivCheckFnDenom_eq_explicit
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    logDerivCheckFnDenom E D P B A₀ A₁ =
+      D.eval A₀.1 A₀.2 * D.eval A₁.1 A₁.2 *
+      D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) *
+      (3 * A₀.1 ^ 2 + E.curveA - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2) *
+      (3 * A₁.1 ^ 2 + E.curveA - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2) *
+      (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+        - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁)) *
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2) *
+      ∏ j : Fin k, (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 := by
+  unfold logDerivCheckFnDenom chordX₂ chordY₂
+  rfl
+
+/-- `logDerivCheckFn` rewritten as a "positive" sum (no outer subtraction),
+    folding the `chordX₂, chordY₂` abbreviations into the A₂ term. -/
+theorem logDerivCheckFn_eq_positive_form
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    logDerivCheckFn E D P k B m A₀ A₁
+      = logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀
+        + logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₁
+        + logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2)
+            (chordX₂ A₀ A₁, chordY₂ A₀ A₁)
+        + ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2))⁻¹
+        + ∑ j : Fin k,
+            m j
+              * ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2)⁻¹ := by
+  classical
+  simp only [logDerivCheckFn, chordX₂, chordY₂]
+  rw [show (∑ j : Fin k, -(m j)
+              * ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2)⁻¹)
+          = -(∑ j : Fin k, m j
+                * ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2)⁻¹)
+       from by
+         rw [← Finset.sum_neg_distrib]
+         apply Finset.sum_congr rfl
+         intro j _; ring]
+  ring
+
+/-- Explicit form of `logDerivTerm`. -/
+theorem logDerivTerm_eq_explicit
+    (D : CoordRingElt E.q) (curveA lam : ZMod E.q)
+    (pt : ZMod E.q × ZMod E.q) :
+    logDerivTerm E D curveA lam pt =
+      (D.a.derivative.eval pt.1 - D.b.derivative.eval pt.1 * pt.2)
+        * (2 * pt.2)
+        * (D.eval pt.1 pt.2 * (3 * pt.1 ^ 2 + curveA - 2 * lam * pt.2))⁻¹ := by
+  unfold logDerivTerm
+  rfl
+
+/-- Per-term clearing (i=0): `polyForm0 = LT(A₀) · denom`, under the two
+    nonzero factors `D(A₀) ≠ 0` and `dxdzDen(A₀) ≠ 0`. -/
+private lemma clearedFiberPoly_lhs0_eq_LT_mul_denom
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hD0 : D.eval A₀.1 A₀.2 ≠ 0)
+    (hDx0 : 3 * A₀.1 ^ 2 + E.curveA
+      - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2 ≠ 0) :
+    ((Polynomial.derivative D.a).eval A₀.1
+        - (Polynomial.derivative D.b).eval A₀.1 * A₀.2)
+      * (2 * A₀.2)
+      * D.eval A₁.1 A₁.2
+      * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁)
+      * (3 * A₁.1 ^ 2 + E.curveA
+          - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+      * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+          - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁))
+      * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+      * ∏ j : Fin k,
+          (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2
+    = logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀
+      * logDerivCheckFnDenom E D P B A₀ A₁ := by
+  rw [logDerivTerm_eq_explicit, logDerivCheckFnDenom_eq_explicit]
+  have hDDx : D.eval A₀.1 A₀.2
+      * (3 * A₀.1 ^ 2 + E.curveA
+        - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2) ≠ 0 :=
+    mul_ne_zero hD0 hDx0
+  field_simp
+  ring
+
+/-- Per-term clearing (i=1): `polyForm1 = LT(A₁) · denom`. -/
+private lemma clearedFiberPoly_lhs1_eq_LT_mul_denom
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hD1 : D.eval A₁.1 A₁.2 ≠ 0)
+    (hDx1 : 3 * A₁.1 ^ 2 + E.curveA
+      - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2 ≠ 0) :
+    ((Polynomial.derivative D.a).eval A₁.1
+        - (Polynomial.derivative D.b).eval A₁.1 * A₁.2)
+      * (2 * A₁.2)
+      * D.eval A₀.1 A₀.2
+      * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁)
+      * (3 * A₀.1 ^ 2 + E.curveA
+          - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+      * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+          - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁))
+      * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+      * ∏ j : Fin k,
+          (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2
+    = logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₁
+      * logDerivCheckFnDenom E D P B A₀ A₁ := by
+  rw [logDerivTerm_eq_explicit, logDerivCheckFnDenom_eq_explicit]
+  have hDDx : D.eval A₁.1 A₁.2
+      * (3 * A₁.1 ^ 2 + E.curveA
+        - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2) ≠ 0 :=
+    mul_ne_zero hD1 hDx1
+  field_simp
+  ring
+
+/-- Per-term clearing (i=2): `polyForm2 = LT(A₂) · denom`, where `A₂` is
+    the chord point `(chordX₂, chordY₂)`. -/
+private lemma clearedFiberPoly_lhs2_eq_LT_mul_denom
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hD2 : D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) ≠ 0)
+    (hDx2 : 3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+      - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁) ≠ 0) :
+    ((Polynomial.derivative D.a).eval (chordX₂ A₀ A₁)
+        - (Polynomial.derivative D.b).eval (chordX₂ A₀ A₁) * (chordY₂ A₀ A₁))
+      * (2 * (chordY₂ A₀ A₁))
+      * D.eval A₀.1 A₀.2
+      * D.eval A₁.1 A₁.2
+      * (3 * A₀.1 ^ 2 + E.curveA
+          - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+      * (3 * A₁.1 ^ 2 + E.curveA
+          - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+      * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+      * ∏ j : Fin k,
+          (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2
+    = logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2)
+        (chordX₂ A₀ A₁, chordY₂ A₀ A₁)
+      * logDerivCheckFnDenom E D P B A₀ A₁ := by
+  rw [logDerivTerm_eq_explicit, logDerivCheckFnDenom_eq_explicit]
+  have hDDx : D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁)
+      * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+        - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁)) ≠ 0 :=
+    mul_ne_zero hD2 hDx2
+  field_simp
+  ring
+
+/-- Per-term clearing (negP): `polyFormNegP = L(-P)⁻¹ · denom`. -/
+private lemma clearedFiberPoly_negP_eq_Linv_mul_denom
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hLP : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2) ≠ 0) :
+    (D.eval A₀.1 A₀.2 * D.eval A₁.1 A₁.2
+        * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁))
+      * ((3 * A₀.1 ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+          * (3 * A₁.1 ^ 2 + E.curveA
+              - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+          * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+              - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁)))
+      * ∏ j : Fin k,
+          (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2
+    = ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2))⁻¹
+      * logDerivCheckFnDenom E D P B A₀ A₁ := by
+  rw [logDerivCheckFnDenom_eq_explicit]
+  field_simp
+  ring
+
+/-- Per-term clearing (sum-j): for each `j`, `polyFormSum_j = m j · L(Bⱼ)⁻¹ · denom`. -/
+private lemma clearedFiberPoly_sumj_eq_Linv_mul_denom
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (j : Fin k)
+    (hLBj : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 ≠ 0) :
+    m j
+      * (D.eval A₀.1 A₀.2 * D.eval A₁.1 A₁.2
+          * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁))
+      * ((3 * A₀.1 ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+          * (3 * A₁.1 ^ 2 + E.curveA
+              - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+          * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+              - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁)))
+      * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+      * ∏ j' ∈ (Finset.univ (α := Fin k)).erase j,
+          (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j').1 (B j').2
+    = m j
+      * ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2)⁻¹
+      * logDerivCheckFnDenom E D P B A₀ A₁ := by
+  rw [logDerivCheckFnDenom_eq_explicit]
+  classical
+  have hProdEq :
+      ∏ j' : Fin k, (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j').1 (B j').2
+      = ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2)
+        * ∏ j' ∈ (Finset.univ (α := Fin k)).erase j,
+            (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j').1 (B j').2 := by
+    exact (Finset.mul_prod_erase Finset.univ
+        (fun j' => (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j').1 (B j').2)
+        (Finset.mem_univ j)).symm
+  rw [hProdEq]
+  field_simp
+  ring
+
+/-- **Main Phase B3 theorem**: on the non-vertical cone with all denominator
+    factors nonzero, `bivEval (clearedFiberPoly …) A₁` equals
+    `(A₁.1 - A₀.1)^(D.degE + k + 6) · logDerivCheckFnCleared E D P k B m A₀ A₁`.
+
+    This identity is the core link between the polynomial form (for fiber/
+    zero-count bounds) and the scalar `logDerivCheckFn` used in the
+    soundness argument. -/
+theorem clearedFiberPoly_identity
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1)
+    (hDef : logDerivCheckFnDenom E D P B A₀ A₁ ≠ 0) :
+    bivEval (clearedFiberPoly (E := E) D P k B m A₀) A₁
+      = (A₁.1 - A₀.1) ^ (D.degE + k + 6) *
+          logDerivCheckFnCleared E D P k B m A₀ A₁ := by
+  classical
+  obtain ⟨hD0, hD1, hD2, hDx0, hDx1, hDx2, hLP, hLB⟩ :=
+    logDerivCheckFnDenom_factors_ne_zero E D P B A₀ A₁ hDef
+  -- Step 1: Apply the 5 B2 per-term bivEval identities.
+  unfold clearedFiberPoly
+  simp only [bivEval_add]
+  rw [bivEval_lhsTerm0Scaled_eq (E := E) D P B A₀ A₁ hNV,
+      bivEval_lhsTerm1Scaled_eq (E := E) D P B A₀ A₁ hNV,
+      bivEval_lhsTerm2Scaled_eq (E := E) D P B A₀ A₁ hNV,
+      bivEval_rhsTermNegPScaled_eq (E := E) D B A₀ A₁ hNV,
+      bivEval_rhsSumScaled_eq (E := E) D P B m A₀ A₁ hNV]
+  -- Step 2: Apply 4 per-term sub-lemmas (polyForm = cleared-contribution).
+  rw [clearedFiberPoly_lhs0_eq_LT_mul_denom (E := E) D P B A₀ A₁ hD0 hDx0,
+      clearedFiberPoly_lhs1_eq_LT_mul_denom (E := E) D P B A₀ A₁ hD1 hDx1,
+      clearedFiberPoly_lhs2_eq_LT_mul_denom (E := E) D P B A₀ A₁ hD2 hDx2,
+      clearedFiberPoly_negP_eq_Linv_mul_denom (E := E) D P B A₀ A₁ hLP]
+  -- Step 3: rewrite the Σⱼ termwise.
+  rw [show (∑ j : Fin k, m j
+             * (D.eval A₀.1 A₀.2 * D.eval A₁.1 A₁.2
+                 * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁))
+             * ((3 * A₀.1 ^ 2 + E.curveA
+                   - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+                 * (3 * A₁.1 ^ 2 + E.curveA
+                     - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+                 * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+                     - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁)))
+             * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+             * ∏ j' ∈ (Finset.univ (α := Fin k)).erase j,
+                 (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j').1 (B j').2)
+           = ∑ j : Fin k, m j
+                * ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2)⁻¹
+                * logDerivCheckFnDenom E D P B A₀ A₁
+         from Finset.sum_congr rfl (fun j _ =>
+                clearedFiberPoly_sumj_eq_Linv_mul_denom (E := E) D P B m
+                  A₀ A₁ j (hLB j))]
+  -- Step 4: rewrite `logDerivCheckFnCleared` using the positive-form
+  --   `logDerivCheckFn = LT(A₀) + LT(A₁) + LT(A₂) + L(-P)⁻¹ + Σⱼ m_j·L(Bⱼ)⁻¹`.
+  unfold logDerivCheckFnCleared
+  rw [logDerivCheckFn_eq_positive_form]
+  -- Step 5: `generalize` the `(A-B)^N` factor to a fresh variable so that
+  --   `ring` treats it as opaque (rather than expanding the literal `^6`).
+  generalize hN_eq : (A₁.1 - A₀.1) ^ (D.degE + k + 6) = N
+  -- Step 6: abstract the remaining atomic expressions so ring can reason.
+  set denom := logDerivCheckFnDenom E D P B A₀ A₁
+  set LBinv : Fin k → ZMod E.q := fun j =>
+    ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2)⁻¹
+  -- Step 7: distribute denom over the Σⱼ on LHS.
+  rw [show (∑ j : Fin k, m j * LBinv j * denom)
+         = (∑ j : Fin k, m j * LBinv j) * denom from (Finset.sum_mul ..).symm]
+  -- Step 8: close via ring (N opaque; Σⱼ opaque on both sides).
+  ring
+
 /-- F3: pairs `(A₀, A₁) ∈ E × E` with `D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) = 0`
     are at most `(2·D.degE + 2) · |E|`.
 
