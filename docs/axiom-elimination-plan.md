@@ -915,6 +915,24 @@ recommended order:
 4. T5 Phase A1-A5 (log-deriv nonvanishing): ~560 LOC.
 5. T4 D1-D5 (extractor general-case bridge): ~380 LOC.
 
+**B1 prototype (attempted, stashed)**: Wrote `bivEval_finset_sum`
+helper + `bivEval_DAPartAtA₂Scaled_eq`, `bivEval_DBPartAtA₂Scaled_eq`,
+`bivEval_DAtA₂Scaled_eq`, and DDeriv analogs. Placement after
+`thirdPoint_of_xne` (line 790) works for chord references. `ring`
+closes the B-part proof via `calc`-chain factor extraction, but
+fails on A-part because after `simp` the exponent appears as
+`(A₁.1-A₀.1)^(D.degE - n*2)` (n·2 form) and doesn't match the
+`hsq : (... ^ 2) ^ n = (...) ^ (2*n)` rewrite direction. Fix:
+either use `show` to normalize exponents after `simp` or avoid
+`Nat.mul_comm` in `hsq` and let the calc-chain handle the swap
+via `ring`. Work is saved in `git stash` for next session's first
+sub-task.
+
+The 1000+ LOC added in the stash suggests the sub-phase is ~80%
+tactical. Once the exponent-normalization is resolved, B1 should
+land cleanly. Then B2 (per-term identities) can use these helpers
+on `lhsTerm0Scaled`..`rhsSumScaled` for the main B3 identity.
+
 ### Session 5 (2026-04-19) — T3 F4, F5, F7, F8 factor bounds
 
 Commits (this session):
