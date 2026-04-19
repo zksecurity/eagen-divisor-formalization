@@ -1020,6 +1020,148 @@ theorem bivEval_DDerivAtA₂Scaled_eq (D : CoordRingElt E.q)
       bivEval_DDerivBPartAtA₂Scaled_eq E D A₀ A₁ hNV]
   ring
 
+/-- On the non-vertical cone, `bivEval (dxdzDenA₂Scaled A₀) A₁` equals
+    `(A₁.1 - A₀.1)^4 · (3·chordX₂² + curveA - 2·slopeOf·chordY₂)`. -/
+theorem bivEval_dxdzDenA₂Scaled_eq (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (dxdzDenA₂Scaled (E := E) A₀) A₁
+      = (A₁.1 - A₀.1) ^ 4 *
+          (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * chordY₂ A₀ A₁) := by
+  rw [bivEval_dxdzDenA₂Scaled]
+  have hden : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr hNV.symm
+  have hlam : slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (A₁.1 - A₀.1) = A₁.2 - A₀.2 := by
+    unfold slopeOf; field_simp
+  have hX₂ : chordX₂ A₀ A₁ * (A₁.1 - A₀.1) ^ 2
+      = (A₁.2 - A₀.2) ^ 2 - (A₁.1 - A₀.1) ^ 2 * (A₀.1 + A₁.1) := by
+    unfold chordX₂
+    linear_combination
+      (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (A₁.1 - A₀.1) + (A₁.2 - A₀.2)) * hlam
+  have hY₂ : chordY₂ A₀ A₁ * (A₁.1 - A₀.1) ^ 3
+      = (A₁.2 - A₀.2) *
+          ((A₁.2 - A₀.2) ^ 2 - (A₁.1 - A₀.1) ^ 2 * (2 * A₀.1 + A₁.1))
+        + A₀.2 * (A₁.1 - A₀.1) ^ 3 := by
+    unfold chordY₂ chordX₂
+    linear_combination
+      ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 * (A₁.1 - A₀.1) ^ 2
+        + slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (A₁.1 - A₀.1) * (A₁.2 - A₀.2)
+        + (A₁.2 - A₀.2) ^ 2
+        - (2 * A₀.1 + A₁.1) * (A₁.1 - A₀.1) ^ 2) * hlam
+  linear_combination
+    (-3 * ((A₁.2 - A₀.2) ^ 2 - (A₁.1 - A₀.1) ^ 2 * (A₀.1 + A₁.1)
+            + chordX₂ A₀ A₁ * (A₁.1 - A₀.1) ^ 2)) * hX₂
+    + (2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (A₁.1 - A₀.1)) * hY₂
+    + 2 * ((A₁.2 - A₀.2) *
+            ((A₁.2 - A₀.2) ^ 2 - (A₁.1 - A₀.1) ^ 2 * (2 * A₀.1 + A₁.1))
+           + A₀.2 * (A₁.1 - A₀.1) ^ 3) * hlam
+
+/-! ## Phase B2 helpers: line-product bivEval extractions
+
+    On the non-vertical cone, each `lineEvalNumAt A₀ pt` evaluates to
+    `(A₁.1 - A₀.1) · L.eval pt.1 pt.2` where `L := lineThrough A₀.1 A₀.2 A₁.1 A₁.2`.
+    Products over `k+1` factors (with various skip patterns) extract
+    `(A₁.1 - A₀.1)^(k+1)` times the corresponding product of `L.eval`s. -/
+
+/-- On non-vertical pairs, `bivEval (lineEvalNumAt A₀ pt) A₁ =
+    (A₁.1 - A₀.1) · L.eval pt.1 pt.2` where `L = lineThrough A₀ A₁`. -/
+theorem bivEval_lineEvalNumAt_eq_mul
+    (A₀ pt A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (lineEvalNumAt (E := E) A₀ pt) A₁
+      = (A₁.1 - A₀.1) *
+          (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval pt.1 pt.2 := by
+  rw [bivEval_lineEvalNumAt_eq_ellP, ellP_eq_lineEval_mul E pt A₀ A₁ hNV]
+  ring
+
+/-- Product over a Finset: `bivEval` distributes. -/
+theorem bivEval_finset_prod {α : Type*} (s : Finset α)
+    (f : α → (ZMod E.q)[X][X]) (p : ZMod E.q × ZMod E.q) :
+    bivEval (∏ i ∈ s, f i) p = ∏ i ∈ s, bivEval (f i) p := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simp [bivEval]
+  | insert h ih =>
+      rw [Finset.prod_insert h, bivEval_mul, Finset.prod_insert h, ih]
+
+/-- On non-vertical pairs, `bivEval (linesProductScaled P k B A₀) A₁ =
+    (A₁.1 - A₀.1)^(k+1) · L.eval P.1 (-P.2) · ∏ j, L.eval (B j).1 (B j).2`. -/
+theorem bivEval_linesProductScaled_eq
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (linesProductScaled (E := E) P k B A₀) A₁
+      = (A₁.1 - A₀.1) ^ (k + 1)
+        * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+        * ∏ j : Fin k, (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 := by
+  unfold linesProductScaled
+  rw [bivEval_mul, bivEval_finset_prod]
+  rw [bivEval_lineEvalNumAt_eq_mul _ _ _ _ hNV]
+  have hprod : ∀ j : Fin k,
+      bivEval (lineEvalNumAt (E := E) A₀ (B j)) A₁
+        = (A₁.1 - A₀.1)
+          * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 := by
+    intro j; exact bivEval_lineEvalNumAt_eq_mul E A₀ (B j) A₁ hNV
+  rw [Finset.prod_congr rfl (fun j _ => hprod j),
+      Finset.prod_mul_distrib, Finset.prod_const, Finset.card_univ,
+      Fintype.card_fin]
+  ring
+
+/-- On non-vertical pairs, `bivEval (linesProductNoNegPScaled k B A₀) A₁ =
+    (A₁.1 - A₀.1)^k · ∏ j, L.eval (B j).1 (B j).2`. -/
+theorem bivEval_linesProductNoNegPScaled_eq
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (linesProductNoNegPScaled (E := E) k B A₀) A₁
+      = (A₁.1 - A₀.1) ^ k
+        * ∏ j : Fin k, (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 := by
+  unfold linesProductNoNegPScaled
+  rw [bivEval_finset_prod]
+  have hprod : ∀ j : Fin k,
+      bivEval (lineEvalNumAt (E := E) A₀ (B j)) A₁
+        = (A₁.1 - A₀.1)
+          * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 := by
+    intro j; exact bivEval_lineEvalNumAt_eq_mul E A₀ (B j) A₁ hNV
+  rw [Finset.prod_congr rfl (fun j _ => hprod j),
+      Finset.prod_mul_distrib, Finset.prod_const, Finset.card_univ,
+      Fintype.card_fin]
+
+/-- On non-vertical pairs, `bivEval (linesProductSkipBjScaled P k B A₀ j₀) A₁ =
+    (A₁.1 - A₀.1)^k · L.eval P.1 (-P.2) · ∏_{j ≠ j₀} L.eval (B j).1 (B j).2`. -/
+theorem bivEval_linesProductSkipBjScaled_eq
+    (P : ZMod E.q × ZMod E.q) {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) (j₀ : Fin k) :
+    bivEval (linesProductSkipBjScaled (E := E) P k B A₀ j₀) A₁
+      = (A₁.1 - A₀.1) ^ k
+        * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+        * ∏ j ∈ (Finset.univ (α := Fin k)).erase j₀,
+            (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 := by
+  classical
+  unfold linesProductSkipBjScaled
+  rw [bivEval_mul, bivEval_finset_prod]
+  rw [bivEval_lineEvalNumAt_eq_mul _ _ _ _ hNV]
+  have hprod : ∀ j ∈ (Finset.univ (α := Fin k)).erase j₀,
+      bivEval (lineEvalNumAt (E := E) A₀ (B j)) A₁
+        = (A₁.1 - A₀.1)
+          * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 := by
+    intro j _; exact bivEval_lineEvalNumAt_eq_mul E A₀ (B j) A₁ hNV
+  rw [Finset.prod_congr rfl hprod,
+      Finset.prod_mul_distrib, Finset.prod_const]
+  have hcard : ((Finset.univ (α := Fin k)).erase j₀).card = k - 1 := by
+    rw [Finset.card_erase_of_mem (Finset.mem_univ _),
+        Finset.card_univ, Fintype.card_fin]
+  rw [hcard]
+  -- (A₁.1-A₀.1) · (A₁.1-A₀.1)^(k-1) = (A₁.1-A₀.1)^k
+  have hk_pos : k ≥ 1 := Fin.pos_iff_nonempty.mpr ⟨j₀⟩
+  have hk : (k - 1) + 1 = k := Nat.sub_add_cancel hk_pos
+  have hpow : (A₁.1 - A₀.1) * (A₁.1 - A₀.1) ^ (k - 1) = (A₁.1 - A₀.1) ^ k := by
+    rw [mul_comm, ← pow_succ, hk]
+  calc _ = ((A₁.1 - A₀.1) * (A₁.1 - A₀.1) ^ (k - 1))
+          * ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2))
+          * ∏ j ∈ (Finset.univ (α := Fin k)).erase j₀,
+              (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 := by ring
+    _ = (A₁.1 - A₀.1) ^ k
+        * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+        * ∏ j ∈ (Finset.univ (α := Fin k)).erase j₀,
+            (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 := by rw [hpow]
+
 /-- F3: pairs `(A₀, A₁) ∈ E × E` with `D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) = 0`
     are at most `(2·D.degE + 2) · |E|`.
 
