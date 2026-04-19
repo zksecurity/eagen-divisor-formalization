@@ -1162,6 +1162,230 @@ theorem bivEval_linesProductSkipBjScaled_eq
         * ∏ j ∈ (Finset.univ (α := Fin k)).erase j₀,
             (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 := by rw [hpow]
 
+/-! ## Phase B2: combined factor-group identities
+
+    `DAllScaled` combines the three `D(A_i)` factors into a single
+    polynomial scaled to `lamDen^D.degE`. `dxdzAllScaled` combines the
+    three `dxdz_den(A_i)` factors with scale `lamDen^6`. -/
+
+/-- On non-vertical, `bivEval DAllScaled = (A₁.1 - A₀.1)^D.degE · D(A₀)·D(A₁)·D(A₂)`. -/
+theorem bivEval_DAllScaled_eq (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (DAllScaled (E := E) D A₀) A₁
+      = (A₁.1 - A₀.1) ^ D.degE *
+          (D.eval A₀.1 A₀.2 * D.eval A₁.1 A₁.2
+            * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁)) := by
+  unfold DAllScaled
+  simp only [bivEval_mul]
+  rw [bivEval_DAtA₀Poly, bivEval_DAtA₁Poly,
+      bivEval_DAtA₂Scaled_eq _ _ _ _ hNV]
+  ring
+
+/-- On non-vertical, `bivEval dxdzAllScaled = (A₁.1 - A₀.1)^6 · dxdz(A₀)·dxdz(A₁)·dxdz(A₂)`. -/
+theorem bivEval_dxdzAllScaled_eq
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (dxdzAllScaled (E := E) A₀) A₁
+      = (A₁.1 - A₀.1) ^ 6 *
+          ((3 * A₀.1 ^ 2 + E.curveA - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+            * (3 * A₁.1 ^ 2 + E.curveA - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+            * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+                - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁))) := by
+  unfold dxdzAllScaled
+  simp only [bivEval_mul]
+  rw [bivEval_dxdzDenA₀Scaled_eq _ _ _ hNV,
+      bivEval_dxdzDenA₁Scaled_eq _ _ _ hNV,
+      bivEval_dxdzDenA₂Scaled_eq _ _ _ hNV]
+  have hpow : (A₁.1 - A₀.1) ^ 6
+              = (A₁.1 - A₀.1) * (A₁.1 - A₀.1) * (A₁.1 - A₀.1) ^ 4 := by
+    rw [show (6 : ℕ) = 1 + 1 + 4 from by omega, pow_add, pow_add, pow_one]
+  rw [hpow]
+  ring
+
+/-! ### Per-term bivEval identities (Phase B2 main content)
+
+    Each term of `clearedFiberPoly` evaluates on the non-vertical cone to
+    `(A₁.1 - A₀.1)^N · [concrete factor product]` where `N = D.degE + k + 6`.
+    The five identities below correspond to the five summands of
+    `clearedFiberPoly`. Each unfolds the term, distributes `bivEval` across
+    the product, applies the per-factor identities, then combines powers
+    of `(A₁.1 - A₀.1)` via explicit `pow_add` rewrites. -/
+
+/-- LHS `i=0` term: `num(A₀)·2·A₀.2·D(A₁)·D(A₂)·dxdz(A₁)·dxdz(A₂)·L(-P)·∏L(B_j)`. -/
+theorem bivEval_lhsTerm0Scaled_eq
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (lhsTerm0Scaled (E := E) D P k B A₀) A₁
+      = (A₁.1 - A₀.1) ^ (D.degE + k + 6) *
+          (((Polynomial.derivative D.a).eval A₀.1
+              - (Polynomial.derivative D.b).eval A₀.1 * A₀.2)
+            * (2 * A₀.2)
+            * D.eval A₁.1 A₁.2
+            * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁)
+            * (3 * A₁.1 ^ 2 + E.curveA
+                - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+            * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+                - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁))
+            * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+            * ∏ j : Fin k,
+                (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2) := by
+  unfold lhsTerm0Scaled
+  simp only [bivEval_mul]
+  rw [bivEval_DDerivAtA₀Poly, bivEval_embedScalar, bivEval_DAtA₁Poly,
+      bivEval_DAtA₂Scaled_eq _ _ _ _ hNV,
+      bivEval_dxdzDenA₁Scaled_eq _ _ _ hNV,
+      bivEval_dxdzDenA₂Scaled_eq _ _ _ hNV,
+      bivEval_linesProductScaled_eq _ _ _ _ _ _ hNV]
+  have hpow : (A₁.1 - A₀.1) ^ (D.degE + k + 6)
+              = (A₁.1 - A₀.1) ^ D.degE * (A₁.1 - A₀.1)
+                * (A₁.1 - A₀.1) ^ 4 * (A₁.1 - A₀.1) ^ (k + 1) := by
+    rw [show D.degE + k + 6 = D.degE + 1 + 4 + (k + 1) from by omega,
+        pow_add, pow_add, pow_add, pow_one]
+  rw [hpow]; ring
+
+/-- LHS `i=1` term: `D(A₀)·num(A₁)·2·A₁.2·D(A₂)·dxdz(A₀)·dxdz(A₂)·L(-P)·∏L(B_j)`. -/
+theorem bivEval_lhsTerm1Scaled_eq
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (lhsTerm1Scaled (E := E) D P k B A₀) A₁
+      = (A₁.1 - A₀.1) ^ (D.degE + k + 6) *
+          (((Polynomial.derivative D.a).eval A₁.1
+              - (Polynomial.derivative D.b).eval A₁.1 * A₁.2)
+            * (2 * A₁.2)
+            * D.eval A₀.1 A₀.2
+            * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁)
+            * (3 * A₀.1 ^ 2 + E.curveA
+                - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+            * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+                - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁))
+            * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+            * ∏ j : Fin k,
+                (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2) := by
+  unfold lhsTerm1Scaled
+  simp only [bivEval_mul, bivEval_add]
+  rw [bivEval_DDerivAtA₁Poly, bivEval_embedScalar, bivEval_outerA₁y,
+      bivEval_DAtA₀Poly,
+      bivEval_DAtA₂Scaled_eq _ _ _ _ hNV,
+      bivEval_dxdzDenA₀Scaled_eq _ _ _ hNV,
+      bivEval_dxdzDenA₂Scaled_eq _ _ _ hNV,
+      bivEval_linesProductScaled_eq _ _ _ _ _ _ hNV]
+  have hpow : (A₁.1 - A₀.1) ^ (D.degE + k + 6)
+              = (A₁.1 - A₀.1) ^ D.degE * (A₁.1 - A₀.1)
+                * (A₁.1 - A₀.1) ^ 4 * (A₁.1 - A₀.1) ^ (k + 1) := by
+    rw [show D.degE + k + 6 = D.degE + 1 + 4 + (k + 1) from by omega,
+        pow_add, pow_add, pow_add, pow_one]
+  rw [hpow]; ring
+
+/-- LHS `i=2` term: `D(A₀)·D(A₁)·num(A₂)·2·y₂·dxdz(A₀)·dxdz(A₁)·L(-P)·∏L(B_j)`. -/
+theorem bivEval_lhsTerm2Scaled_eq
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (lhsTerm2Scaled (E := E) D P k B A₀) A₁
+      = (A₁.1 - A₀.1) ^ (D.degE + k + 6) *
+          (((Polynomial.derivative D.a).eval (chordX₂ A₀ A₁)
+              - (Polynomial.derivative D.b).eval (chordX₂ A₀ A₁)
+                * (chordY₂ A₀ A₁))
+            * (2 * (chordY₂ A₀ A₁))
+            * D.eval A₀.1 A₀.2
+            * D.eval A₁.1 A₁.2
+            * (3 * A₀.1 ^ 2 + E.curveA
+                - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+            * (3 * A₁.1 ^ 2 + E.curveA
+                - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+            * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+            * ∏ j : Fin k,
+                (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2) := by
+  unfold lhsTerm2Scaled
+  simp only [bivEval_mul]
+  rw [bivEval_DDerivAtA₂Scaled_eq _ _ _ _ hNV,
+      bivEval_embedScalar, bivEval_y₂Scaled_eq _ _ _ hNV,
+      bivEval_DAtA₀Poly, bivEval_DAtA₁Poly,
+      bivEval_dxdzDenA₀Scaled_eq _ _ _ hNV,
+      bivEval_dxdzDenA₁Scaled_eq _ _ _ hNV,
+      bivEval_linesProductScaled_eq _ _ _ _ _ _ hNV]
+  -- bivEval_y₂Scaled_eq gives (A₁.1 - A₀.1)^3 · (lam · chordX₂ + (A₀.2 - lam·A₀.1))
+  -- which matches chordY₂ by definition. Factor out via let-unfolding.
+  have hY₂_eq :
+      (slopeOf A₀.1 A₀.2 A₁.1 A₁.2
+        * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1)
+          + (A₀.2 - slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.1))
+        = chordY₂ A₀ A₁ := by
+    unfold chordY₂ chordX₂; ring
+  simp only [hY₂_eq]
+  have hpow : (A₁.1 - A₀.1) ^ (D.degE + k + 6)
+              = (A₁.1 - A₀.1) ^ D.degE * (A₁.1 - A₀.1) ^ 3
+                * (A₁.1 - A₀.1) * (A₁.1 - A₀.1) * (A₁.1 - A₀.1) ^ (k + 1) := by
+    rw [show D.degE + k + 6 = D.degE + 3 + 1 + 1 + (k + 1) from by omega,
+        pow_add, pow_add, pow_add, pow_add, pow_one]
+  rw [hpow]; ring
+
+/-- RHS `-1/L(-P)` term (with cleared `-` sign): `D·dxdz·∏L(B_j)`. -/
+theorem bivEval_rhsTermNegPScaled_eq
+    (D : CoordRingElt E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (rhsTermNegPScaled (E := E) D k B A₀) A₁
+      = (A₁.1 - A₀.1) ^ (D.degE + k + 6) *
+          ((D.eval A₀.1 A₀.2 * D.eval A₁.1 A₁.2
+              * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁))
+            * ((3 * A₀.1 ^ 2 + E.curveA
+                  - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+                * (3 * A₁.1 ^ 2 + E.curveA
+                    - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+                * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+                    - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁)))
+            * ∏ j : Fin k,
+                (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2) := by
+  unfold rhsTermNegPScaled
+  simp only [bivEval_mul]
+  rw [bivEval_DAllScaled_eq _ _ _ _ hNV,
+      bivEval_dxdzAllScaled_eq _ _ _ hNV,
+      bivEval_linesProductNoNegPScaled_eq _ _ _ _ _ hNV]
+  have hpow : (A₁.1 - A₀.1) ^ (D.degE + k + 6)
+              = (A₁.1 - A₀.1) ^ D.degE * (A₁.1 - A₀.1) ^ 6
+                * (A₁.1 - A₀.1) ^ k := by
+    rw [show D.degE + k + 6 = D.degE + 6 + k from by omega,
+        pow_add, pow_add]
+  rw [hpow]; ring
+
+/-- RHS `Σ_j m_j/L(B_j)` term: `Σ_j m_j · D·dxdz·L(-P)·∏_{j'≠j} L(B_{j'})`. -/
+theorem bivEval_rhsSumScaled_eq
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (rhsSumScaled (E := E) D P k B m A₀) A₁
+      = (A₁.1 - A₀.1) ^ (D.degE + k + 6) *
+          ∑ j : Fin k, m j
+            * (D.eval A₀.1 A₀.2 * D.eval A₁.1 A₁.2
+                * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁))
+            * ((3 * A₀.1 ^ 2 + E.curveA
+                  - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+                * (3 * A₁.1 ^ 2 + E.curveA
+                    - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+                * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+                    - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁)))
+            * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+            * ∏ j' ∈ (Finset.univ (α := Fin k)).erase j,
+                (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j').1 (B j').2 := by
+  classical
+  unfold rhsSumScaled
+  rw [bivEval_finset_sum, Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro j _
+  simp only [bivEval_mul]
+  rw [bivEval_embedScalar,
+      bivEval_DAllScaled_eq _ _ _ _ hNV,
+      bivEval_dxdzAllScaled_eq _ _ _ hNV,
+      bivEval_linesProductSkipBjScaled_eq _ _ _ _ _ hNV j]
+  have hpow : (A₁.1 - A₀.1) ^ (D.degE + k + 6)
+              = (A₁.1 - A₀.1) ^ D.degE * (A₁.1 - A₀.1) ^ 6
+                * (A₁.1 - A₀.1) ^ k := by
+    rw [show D.degE + k + 6 = D.degE + 6 + k from by omega,
+        pow_add, pow_add]
+  rw [hpow]; ring
+
 /-- F3: pairs `(A₀, A₁) ∈ E × E` with `D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) = 0`
     are at most `(2·D.degE + 2) · |E|`.
 
