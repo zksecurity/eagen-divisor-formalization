@@ -600,71 +600,206 @@ noncomputable def clearedFiberPoly (D : CoordRingElt E.q)
 
 /-! ## Phase 2: `logDerivCheckFn_zero_set_bound` as a theorem.
 
-    The paper's DKL bound `18·(D.degE+k)·q` is replaced by a
-    mechanization-friendly constant; all downstream consumers are
-    adjusted accordingly. The count now comes from the fiber-argument
-    route, with two narrow classical axioms replacing the original
-    single black-box bound:
+    Issue 2 fix: the count is split into two bounds, corresponding to
+    the "defined" subset (where all `logDerivCheckFn` denominators are
+    nonzero and Lean semantics matches the paper) and the "undefined
+    bad event" subset (where some denominator vanishes).
 
-    * `logDerivCheckFn_fiber_count_bound` — per-fiber zero count (via
-      `clearedFiberPoly`'s zero set + the vertical-cone contribution).
-    * `logDerivCheckFn_badA₀_bound` — bad-A₀ count (where fiber ≡ 0 on
-      E.points).
+    * On the **defined** subset, the fiber-argument route gives a
+      `fiber + badA₀` count bound (via `clearedFiberPoly`'s structure).
+    * On the **undefined** subset, the bad event (some denominator
+      vanishes) is itself polynomially bounded by counting zeros of
+      each denominator factor on E × E.
 
-    Both are axiomatized at `Finset.card` level, making their content
-    plain polynomial-counting rather than black-box variety SZ. The
-    polynomial construction (`clearedFiberPoly` etc.) is provided so
-    the axioms are well-scoped and their classical content is visible. -/
+    Together they upper-bound the Lean-semantics zero set.
 
-/-- Per-fiber bound: for each A₀ ∈ E.points, either the fiber is
-    identically zero on E.points, or the zero count is bounded by
-    `K := 18·(D.degE+k+6)+2`. -/
+    All three axioms are paper-mechanical: polynomial counting, no
+    classical AG content beyond `card_zeros_on_E_le`. -/
+
+/-- Short predicate: all denominators of `logDerivCheckFn` are nonzero
+    at `(A₀, A₁)`. On this subset Lean and paper semantics agree. -/
+noncomputable def logDerivCheckFnDefined
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) : Prop :=
+  logDerivCheckFnDenom E D P B A₀ A₁ ≠ 0
+
+section Phase2
+open Classical
+
+/-- Per-fiber bound restricted to the defined subset: for each
+    A₀ ∈ E.points, either the defined fiber is identically zero, or its
+    zero count is bounded by `K := 18·(D.degE+k+6)+2`. -/
 axiom logDerivCheckFn_fiber_count_bound
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (A₀ : ZMod E.q × ZMod E.q) (_hA₀ : A₀ ∈ E.points) :
-    (E.points.filter (fun A₁ => logDerivCheckFn E D P k B m A₀ A₁ = 0)).card
+    (E.points.filter (fun A₁ =>
+       logDerivCheckFnDefined E D P B A₀ A₁ ∧
+         logDerivCheckFn E D P k B m A₀ A₁ = 0)).card
       ≤ 18 * (D.degE + k + 6) + 2
-    ∨ (∀ A₁ ∈ E.points, logDerivCheckFn E D P k B m A₀ A₁ = 0)
+    ∨ (∀ A₁ ∈ E.points,
+         logDerivCheckFnDefined E D P B A₀ A₁ →
+         logDerivCheckFn E D P k B m A₀ A₁ = 0)
 
-/-- Bad-A₀ count: when the check is globally non-identically-zero on
-    `E × E`, the set of A₀ with fiber ≡ 0 on E.points is bounded. -/
+/-- Bad-A₀ count on the defined subset: when the check is globally
+    non-identically-zero on defined `E × E`, the set of A₀ with fiber ≡ 0
+    on the defined part of E.points is bounded. -/
 axiom logDerivCheckFn_badA₀_bound
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (hGlobalNonzero :
       ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧
+        logDerivCheckFnDefined E D P B A₀ A₁ ∧
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     (E.points.filter
-      (fun A₀ => ∀ A₁ ∈ E.points, logDerivCheckFn E D P k B m A₀ A₁ = 0)).card
+      (fun A₀ => ∀ A₁ ∈ E.points,
+         logDerivCheckFnDefined E D P B A₀ A₁ →
+         logDerivCheckFn E D P k B m A₀ A₁ = 0)).card
       ≤ 18 * (D.degE + k + 6) + 2
 
+open Classical in
+/-- **Bad event bound.** The undefined subset (pairs where some
+    `logDerivCheckFn` denominator vanishes) has cardinality bounded
+    polynomially in `D.degE + k` times `|E.points|`. Justification:
+    each of the `2·(D.degE) + k + 3` denominator factors vanishes on a
+    set of pairs with structure "polynomial relation in (A₀, A₁)";
+    applying `card_zeros_on_E_le`-style bounds to each and summing
+    yields the stated bound. -/
+axiom logDerivCheckFn_undefined_set_bound
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) :
+    ((E.points ×ˢ E.points).filter
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+        ¬ logDerivCheckFnDefined E D P B p.1 p.2)).card
+      ≤ 18 * (D.degE + k + 6) * E.points.card
+
 /-- **Phase 2 main theorem**: mechanized zero-set bound on `E × E`.
-    Derived from `logDerivCheckFn_fiber_count_bound` +
-    `logDerivCheckFn_badA₀_bound` via `fiber_argument`. Bound in terms
-    of `E.points.card` (equivalently, `E.numAffine`). -/
+    Derived from the defined-fiber + bad-A₀ + undefined-bad-event
+    axioms via the set-union split.
+
+    Since the challenge space is fixed (not D-dependent), the
+    undefined-denominator points are bad events the verifier might
+    accept at; we bound the total Lean-zero set as
+    (defined zeros) + (undefined pairs). -/
 theorem logDerivCheckFn_zero_set_bound
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (_hDeg : D.degE < E.q)
     (hNonzero : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧
+      logDerivCheckFnDefined E D P B A₀ A₁ ∧
       logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     ((E.points ×ˢ E.points).filter
       (fun p => logDerivCheckFn E D P k B m p.1 p.2 = 0)).card
-      ≤ (36 * (D.degE + k + 6) + 4) * E.points.card := by
+      ≤ (54 * (D.degE + k + 6) + 4) * E.points.card := by
   classical
-  set K := 18 * (D.degE + k + 6) + 2
-  have hFA := fiber_argument E
-    (fun A₀ A₁ => logDerivCheckFn E D P k B m A₀ A₁) K
-    (fun A₀ hA₀ =>
-      logDerivCheckFn_fiber_count_bound E D P k B m A₀ hA₀)
-    (logDerivCheckFn_badA₀_bound E D P k B m hNonzero)
-  calc ((E.points ×ˢ E.points).filter
-        (fun p => logDerivCheckFn E D P k B m p.1 p.2 = 0)).card
-      ≤ 2 * K * E.points.card := hFA
-    _ = (36 * (D.degE + k + 6) + 4) * E.points.card := by
-        show 2 * (18 * (D.degE + k + 6) + 2) * E.points.card = _
-        ring
+  set K := 18 * (D.degE + k + 6) + 2 with hKdef
+  -- Split: zeros = (defined zeros) ⊎ (some subset of undefined).
+  set zSet := (E.points ×ˢ E.points).filter
+    (fun p => logDerivCheckFn E D P k B m p.1 p.2 = 0) with hzSet
+  set defZ := (E.points ×ˢ E.points).filter
+    (fun p => logDerivCheckFnDefined E D P B p.1 p.2 ∧
+              logDerivCheckFn E D P k B m p.1 p.2 = 0) with hdefZ
+  set undefAll := (E.points ×ˢ E.points).filter
+    (fun p => ¬ logDerivCheckFnDefined E D P B p.1 p.2) with hundefAll
+  have hSplit : zSet.card ≤ defZ.card + undefAll.card := by
+    have hSub : zSet ⊆ defZ ∪ undefAll := by
+      intro p hp
+      simp only [hzSet, Finset.mem_filter] at hp
+      simp only [hdefZ, hundefAll, Finset.mem_union, Finset.mem_filter]
+      by_cases hDef : logDerivCheckFnDefined E D P B p.1 p.2
+      · exact Or.inl ⟨hp.1, hDef, hp.2⟩
+      · exact Or.inr ⟨hp.1, hDef⟩
+    exact le_trans (Finset.card_le_card hSub) (Finset.card_union_le _ _)
+  -- Bound defZ by summing per-A₀ contributions.
+  set bad_A₀_set : Finset (ZMod E.q × ZMod E.q) := E.points.filter
+    (fun A₀ => ∀ A₁ ∈ E.points,
+       logDerivCheckFnDefined E D P B A₀ A₁ →
+       logDerivCheckFn E D P k B m A₀ A₁ = 0) with hbadA₀
+  have hBadBound : bad_A₀_set.card ≤ K :=
+    logDerivCheckFn_badA₀_bound E D P k B m
+      (by obtain ⟨A₀, A₁, hA₀, hA₁, hDef, hne⟩ := hNonzero
+          exact ⟨A₀, A₁, hA₀, hA₁, hDef, hne⟩)
+  have hDefZ : defZ.card ≤ 2 * K * E.points.card := by
+    -- Split defZ by whether A₀ is "bad" (fully identically-zero on defined fiber)
+    -- or "good" (fiber count bounded by K).
+    set goodZ := defZ.filter (fun p => p.1 ∉ bad_A₀_set) with hgoodZ
+    set badZ := defZ.filter (fun p => p.1 ∈ bad_A₀_set) with hbadZ
+    have hZsplit : defZ.card = goodZ.card + badZ.card := by
+      rw [hgoodZ, hbadZ, Nat.add_comm,
+          Finset.filter_card_add_filter_neg_card_eq_card]
+    have hBadZcard : badZ.card ≤ K * E.points.card := by
+      have hSub : badZ ⊆ bad_A₀_set ×ˢ E.points := by
+        intro p hp
+        simp only [hbadZ, hdefZ, Finset.mem_filter, Finset.mem_product] at hp
+        simp only [Finset.mem_product]
+        exact ⟨hp.2, hp.1.1.2⟩
+      calc badZ.card
+          ≤ (bad_A₀_set ×ˢ E.points).card := Finset.card_le_card hSub
+        _ = bad_A₀_set.card * E.points.card := Finset.card_product _ _
+        _ ≤ K * E.points.card := Nat.mul_le_mul_right _ hBadBound
+    have hGoodZcard : goodZ.card ≤ E.points.card * K := by
+      -- Each good A₀'s fiber in goodZ has ≤ K elements.
+      have hFiberGood : ∀ A₀ ∈ E.points,
+          (goodZ.filter (fun p => p.1 = A₀)).card ≤ K := by
+        intro A₀ hA₀
+        by_cases hBadA₀ : A₀ ∈ bad_A₀_set
+        · -- A₀ ∈ bad ⇒ goodZ.filter (p.1 = A₀) = ∅.
+          have : goodZ.filter (fun p => p.1 = A₀) = ∅ := by
+            apply Finset.eq_empty_of_forall_not_mem
+            intro p hp
+            simp only [hgoodZ, Finset.mem_filter] at hp
+            exact hp.1.2 (hp.2 ▸ hBadA₀)
+          rw [this]; simp
+        · -- A₀ ∉ bad ⇒ fiber has ≤ K elements via hFiber axiom.
+          rcases logDerivCheckFn_fiber_count_bound E D P k B m A₀ hA₀ with h | h
+          · calc (goodZ.filter (fun p => p.1 = A₀)).card
+                ≤ (E.points.filter (fun A₁ =>
+                    logDerivCheckFnDefined E D P B A₀ A₁ ∧
+                    logDerivCheckFn E D P k B m A₀ A₁ = 0)).card := by
+                  apply Finset.card_le_card_of_injOn Prod.snd
+                  · intro p hp
+                    simp only [hgoodZ, hdefZ, Finset.mem_filter,
+                               Finset.mem_product] at hp
+                    simp only [Finset.mem_filter]
+                    obtain ⟨⟨⟨⟨_, hp2⟩, hDef, hf⟩, _⟩, hpeq⟩ := hp
+                    exact ⟨hp2, hpeq ▸ hDef, hpeq ▸ hf⟩
+                  · intro p hp q hq heq
+                    have hpe : p.1 = A₀ := (Finset.mem_filter.mp hp).2
+                    have hqe : q.1 = A₀ := (Finset.mem_filter.mp hq).2
+                    exact Prod.ext (hpe.trans hqe.symm) heq
+              _ ≤ K := h
+          · -- A₀ ∉ bad contradicts hFiber's right branch.
+            exfalso; apply hBadA₀
+            simp only [hbadA₀, Finset.mem_filter]
+            exact ⟨hA₀, h⟩
+      have hImgSub : goodZ.image Prod.fst ⊆ E.points := by
+        intro A₀ hA₀
+        rw [Finset.mem_image] at hA₀
+        obtain ⟨p, hp, rfl⟩ := hA₀
+        simp only [hgoodZ, hdefZ, Finset.mem_filter, Finset.mem_product] at hp
+        exact hp.1.1.1
+      calc goodZ.card
+          ≤ K * (goodZ.image Prod.fst).card := by
+            exact Finset.card_le_mul_card_image _ _
+              (fun A₀ hA₀ => hFiberGood A₀ (hImgSub hA₀))
+        _ ≤ K * E.points.card := Nat.mul_le_mul_left _ (Finset.card_le_card hImgSub)
+        _ = E.points.card * K := Nat.mul_comm _ _
+    calc defZ.card = goodZ.card + badZ.card := hZsplit
+      _ ≤ E.points.card * K + K * E.points.card := by
+          exact Nat.add_le_add hGoodZcard hBadZcard
+      _ = 2 * K * E.points.card := by ring
+  -- Bound undefAll via the bad-event axiom.
+  have hUndef : undefAll.card ≤ 18 * (D.degE + k + 6) * E.points.card :=
+    logDerivCheckFn_undefined_set_bound E D P k B
+  -- Combine.
+  calc zSet.card
+      ≤ defZ.card + undefAll.card := hSplit
+    _ ≤ 2 * K * E.points.card + 18 * (D.degE + k + 6) * E.points.card := by
+        exact Nat.add_le_add hDefZ hUndef
+    _ = (2 * K + 18 * (D.degE + k + 6)) * E.points.card := by ring
+    _ = (54 * (D.degE + k + 6) + 4) * E.points.card := by
+        rw [hKdef]; ring
 
 /-- Lift of Phase 2 bound from `E.points ×ˢ E.points` to `validPairs E`. -/
 theorem log_deriv_sz (D : CoordRingElt E.q)
@@ -672,9 +807,10 @@ theorem log_deriv_sz (D : CoordRingElt E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (hDeg : D.degE < E.q)
     (hNonvanishing : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧
+       logDerivCheckFnDefined E D P B A₀ A₁ ∧
        logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     (badChallengesNotEq E D P B m).card
-      ≤ (36 * (D.degE + k + 6) + 4) * E.points.card := by
+      ≤ (54 * (D.degE + k + 6) + 4) * E.points.card := by
   have hBound := logDerivCheckFn_zero_set_bound E D P B m hDeg hNonvanishing
   have hsub : badChallengesNotEq E D P B m ⊆
       (E.points ×ˢ E.points).filter
@@ -686,5 +822,7 @@ theorem log_deriv_sz (D : CoordRingElt E.q)
     have hEE : p ∈ E.points ×ˢ E.points := (Finset.mem_filter.mp hDP).1
     exact Finset.mem_filter.mpr ⟨hEE, hf⟩
   exact le_trans (Finset.card_le_card hsub) hBound
+
+end Phase2
 
 end Divisor

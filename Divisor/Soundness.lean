@@ -178,8 +178,11 @@ noncomputable def eventBadRange (stmt : DlogStatement E.q)
     witness, matching paper `thm:ma`'s knowledge-soundness guarantee. -/
 /-- **Narrowed bridge axiom (general case).** Restriction of the original
     `extractorSucceeds_of_logDerivCheck_identically_zero` to the general
-    case `-P ∉ {B_j}`. The special case is handled separately by
-    `extractorSucceeds_special` + `extracted_scalars_valid_special`. -/
+    case `-P ∉ {B_j}`. Hypothesis strengthened to require zeros only on
+    the defined subset (where `logDerivCheckFn`'s denominators are all
+    nonzero), matching the paper's semantics. The special case is
+    handled separately by `extractorSucceeds_special` +
+    `extracted_scalars_valid_special`. -/
 axiom extractorSucceeds_of_logDerivCheck_identically_zero_general
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
@@ -187,6 +190,7 @@ axiom extractorSucceeds_of_logDerivCheck_identically_zero_general
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
+      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
         (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
     extractorSucceeds E stmt msg d hkm ∧
@@ -278,13 +282,16 @@ theorem extracted_scalars_valid_special
     * Special case (`-P ∈ {B_j}`): reduces to
       `extracted_scalars_valid_special` — unconditional, no axioms.
     * General case (`-P ∉ {B_j}`): reduces to the second conjunct of
-      the narrowed general-case bridge axiom. -/
+      the narrowed general-case bridge axiom.
+
+    Hypothesis is "zeros on the defined subset" (paper semantics). -/
 theorem extracted_scalars_valid
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
+      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
         (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
     ECPoint.affine stmt.target.1 stmt.target.2 =
@@ -327,13 +334,18 @@ theorem ma_extractable
         ∧ dlogHolds E stmt wit) ∨
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (36 * (d + stmt.k + 6) + 4) * E.points.card := by
+      ≤ (54 * (d + stmt.k + 6) + 4) * E.points.card := by
   classical
-  -- Case on whether `logDerivCheckFn` is identically zero on `E × E`.
+  -- Case on whether `logDerivCheckFn` is nonzero on some *defined* pair.
+  -- The defined subset is where Lean and paper semantics coincide;
+  -- undefined-denominator pairs are accepted as a "bad event" absorbed
+  -- into the total bound.
   by_cases hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧
+     logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ ∧
      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
        (fun i => msg.m (hkm ▸ i)) A₀ A₁ ≠ 0
-  · -- Nonvanishing: `log_deriv_sz` bounds the NotEq bad set (→ bound branch).
+  · -- Nonvanishing on defined subset: `log_deriv_sz` bounds the NotEq
+    -- bad set (→ bound branch).
     right
     set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
       (validPairs E).filter
@@ -351,14 +363,14 @@ theorem ma_extractable
     have hBound :=
       log_deriv_sz E msg.toD stmt.target stmt.bases
         (fun i => msg.m (hkm ▸ i)) hDegLt hNV
-    have hMono : (36 * (msg.toD.degE + stmt.k + 6) + 4) * E.points.card
-                 ≤ (36 * (d + stmt.k + 6) + 4) * E.points.card := by
+    have hMono : (54 * (msg.toD.degE + stmt.k + 6) + 4) * E.points.card
+                 ≤ (54 * (d + stmt.k + 6) + 4) * E.points.card := by
       apply Nat.mul_le_mul_right
       have : msg.toD.degE + stmt.k + 6 ≤ d + stmt.k + 6 := by
         exact Nat.add_le_add_right (Nat.add_le_add_right hDeg _) _
       omega
     exact le_trans hCardLe (le_trans hBound hMono)
-  · -- Identically zero on `E × E`. Sub-case on admSet membership.
+  · -- Identically zero on defined E × E. Sub-case on admSet membership.
     push_neg at hNV
     by_cases hAdm : stmt.admSet (msg.polyA, msg.polyB)
     · -- admSet holds: case-split on `-P ∈ {B_j}` to use either the
@@ -388,7 +400,8 @@ theorem ma_extractable
       · -- General case (-P ∉ {B_j}): narrowed bridge axiom.
         obtain ⟨hSucc, hRelation⟩ :=
           extractorSucceeds_of_logDerivCheck_identically_zero_general E stmt msg d
-            hDeg hd hkm hAdm hNegP (fun A₀ A₁ hA₀ hA₁ => hNV A₀ A₁ hA₀ hA₁)
+            hDeg hd hkm hAdm hNegP
+            (fun A₀ A₁ hA₀ hA₁ hDef => hNV A₀ A₁ hA₀ hA₁ hDef)
         let wit : DlogWitness E.q :=
           ⟨msg.k, extractedScalars E stmt msg hkm, d, hSucc⟩
         refine ⟨wit, ?_, ?_⟩
@@ -506,7 +519,7 @@ theorem ip_knowledge_sound
          ∧ dlogHolds E stmt wit) ∨
      ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
-      ≤ (36 * (d + stmt.k + 6) + 4) * E.points.card)
+      ≤ (54 * (d + stmt.k + 6) + 4) * E.points.card)
     -- (2) Uniqueness of third-round message.
     ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
         (msg3 msg3' : IPProverMsg3 E.q),
