@@ -847,6 +847,111 @@ theorem DAtA₂_zero_pairs_card_le (D : CoordRingElt E.q)
         Nat.add_le_add hSvert_bd hSnv_bd'
     _ = (2 * D.degE + 2) * E.points.card := by ring
 
+/-! ### Helper: vertical pairs bound -/
+
+/-- Pairs `(A₀, A₁) ∈ E × E` with `A₀.1 = A₁.1` are at most `2·|E|`. -/
+theorem card_vertical_pairs_le :
+    ((E.points ×ˢ E.points).filter
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+         p.1.1 = p.2.1)).card ≤ 2 * E.points.card := by
+  classical
+  have hfib := card_filter_product_fiber_eq E E.points E.points
+    (fun a b : ZMod E.q × ZMod E.q => a.1 = b.1)
+  rw [hfib]
+  have hper : ∀ A₀ ∈ E.points,
+      (E.points.filter (fun A₁ => A₀.1 = A₁.1)).card ≤ 2 := by
+    intro A₀ _
+    have heq : E.points.filter (fun A₁ => A₀.1 = A₁.1)
+             = E.points.filter (fun A₁ => A₁.1 = A₀.1) := by
+      apply Finset.filter_congr; intros; tauto
+    rw [heq]
+    exact card_points_with_fst_eq_le E A₀.1
+  calc ∑ A₀ ∈ E.points, (E.points.filter (fun A₁ => A₀.1 = A₁.1)).card
+      ≤ ∑ A₀ ∈ E.points, 2 := Finset.sum_le_sum hper
+    _ = 2 * E.points.card := by
+        rw [Finset.sum_const, smul_eq_mul, Nat.mul_comm]
+
+/-! ### Helper: per-A₀ polynomial zero-set bound
+
+    Given a family `Q : (ZMod q × ZMod q) → (ZMod q)[X][X]` of bivariate
+    polynomials with `Q A₀` having outer-natDegree `< 2` (so mod `curveEq`
+    is identity) and resultantX natDegree `≤ degBound` whenever `Q A₀ ≠ 0`,
+    the count of `(A₀, A₁) ∈ E × E` with `bivEval (Q A₀) A₁ = 0` is at most
+    `2·degBound·|E| + |{A₀ ∈ E : Q A₀ = 0}|·|E|`. -/
+theorem card_bivEval_Q_zero_pairs_le
+    (Q : (ZMod E.q × ZMod E.q) → (ZMod E.q)[X][X])
+    (hOuter : ∀ A₀, (Q A₀).natDegree < 2)
+    (degBound : ℕ)
+    (hDeg : ∀ A₀, Q A₀ ≠ 0 → (resultantX E (Q A₀)).natDegree ≤ degBound) :
+    ((E.points ×ˢ E.points).filter
+       (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          bivEval (Q p.1) p.2 = 0)).card
+    ≤ 2 * degBound * E.points.card
+      + (E.points.filter (fun A₀ => Q A₀ = 0)).card * E.points.card := by
+  classical
+  have hfib := card_filter_product_fiber_eq E E.points E.points
+    (fun a b : ZMod E.q × ZMod E.q => bivEval (Q a) b = 0)
+  rw [hfib]
+  -- Split E.points into exceptional (Q A₀ = 0) and non-exceptional.
+  set Exc := E.points.filter (fun A₀ => Q A₀ = 0) with hExcdef
+  set NonExc := E.points.filter (fun A₀ => Q A₀ ≠ 0) with hNonExcdef
+  have hSum : E.points = Exc ∪ NonExc := by
+    ext A₀
+    simp only [hExcdef, hNonExcdef, Finset.mem_union, Finset.mem_filter]
+    by_cases h : A₀ ∈ E.points
+    · by_cases hQ : Q A₀ = 0
+      · exact ⟨fun _ => Or.inl ⟨h, hQ⟩, fun _ => h⟩
+      · exact ⟨fun _ => Or.inr ⟨h, hQ⟩, fun _ => h⟩
+    · exact ⟨fun hh => absurd hh h, fun hh => (hh.elim (fun ⟨hh', _⟩ => absurd hh' h)
+                                              (fun ⟨hh', _⟩ => absurd hh' h))⟩
+  have hDisj : Disjoint Exc NonExc := by
+    rw [Finset.disjoint_filter]
+    intros; tauto
+  have hSplit : ∑ A₀ ∈ E.points,
+      (E.points.filter (fun A₁ => bivEval (Q A₀) A₁ = 0)).card
+      = ∑ A₀ ∈ Exc, (E.points.filter (fun A₁ => bivEval (Q A₀) A₁ = 0)).card
+      + ∑ A₀ ∈ NonExc, (E.points.filter (fun A₁ => bivEval (Q A₀) A₁ = 0)).card := by
+    rw [show E.points = Exc ∪ NonExc from hSum,
+        Finset.sum_union hDisj]
+  rw [hSplit]
+  -- Bound each piece.
+  have hExcBd : ∑ A₀ ∈ Exc,
+        (E.points.filter (fun A₁ => bivEval (Q A₀) A₁ = 0)).card
+        ≤ Exc.card * E.points.card := by
+    calc ∑ A₀ ∈ Exc, (E.points.filter (fun A₁ => bivEval (Q A₀) A₁ = 0)).card
+        ≤ ∑ A₀ ∈ Exc, E.points.card := by
+            apply Finset.sum_le_sum; intros; exact Finset.card_filter_le _ _
+      _ = Exc.card * E.points.card := by rw [Finset.sum_const, smul_eq_mul]
+  have hNonExcBd : ∑ A₀ ∈ NonExc,
+        (E.points.filter (fun A₁ => bivEval (Q A₀) A₁ = 0)).card
+        ≤ 2 * degBound * E.points.card := by
+    have hper : ∀ A₀ ∈ NonExc,
+        (E.points.filter (fun A₁ => bivEval (Q A₀) A₁ = 0)).card ≤ 2 * degBound := by
+      intro A₀ hA₀
+      simp only [hNonExcdef, Finset.mem_filter] at hA₀
+      obtain ⟨_, hQne⟩ := hA₀
+      have hMod : Q A₀ %ₘ curveEqPoly E ≠ 0 := by
+        have hSelf : Q A₀ %ₘ curveEqPoly E = Q A₀ := by
+          apply (Polynomial.modByMonic_eq_self_iff (curveEqPoly_monic E)).mpr
+          rw [Polynomial.degree_eq_natDegree hQne,
+              Polynomial.degree_eq_natDegree (curveEqPoly_monic E).ne_zero,
+              curveEqPoly_natDegree_eq]
+          exact_mod_cast hOuter A₀
+        rw [hSelf]; exact hQne
+      calc (E.points.filter (fun A₁ => bivEval (Q A₀) A₁ = 0)).card
+          ≤ 2 * (resultantX E (Q A₀)).natDegree := card_zeros_on_E_le E (Q A₀) hMod
+        _ ≤ 2 * degBound := Nat.mul_le_mul_left 2 (hDeg A₀ hQne)
+    calc ∑ A₀ ∈ NonExc, (E.points.filter (fun A₁ => bivEval (Q A₀) A₁ = 0)).card
+        ≤ ∑ A₀ ∈ NonExc, 2 * degBound := Finset.sum_le_sum hper
+      _ = NonExc.card * (2 * degBound) := by rw [Finset.sum_const, smul_eq_mul]
+      _ ≤ E.points.card * (2 * degBound) := by
+            exact Nat.mul_le_mul_right _ (Finset.card_le_card (by
+              intro _ h; exact (Finset.mem_filter.mp h).1))
+      _ = 2 * degBound * E.points.card := by ring
+  calc _ ≤ Exc.card * E.points.card + 2 * degBound * E.points.card :=
+          Nat.add_le_add hExcBd hNonExcBd
+    _ = 2 * degBound * E.points.card + Exc.card * E.points.card := by ring
+
 /-! ## Phase 2: `logDerivCheckFn_zero_set_bound` as a theorem.
 
     Issue 2 fix: the count is split into two bounds, corresponding to
