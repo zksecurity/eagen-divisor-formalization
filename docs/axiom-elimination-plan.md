@@ -1272,4 +1272,104 @@ outer bound with a direct modByMonic-of-curveEqPoly bookkeeping
 on xPart and yPart coefficients.
 
 **Axiom count after session 10**: 4 remaining (T1, T2, T4, T5).
+
+### Session 11 (2026-04-19) — Phase B4.5 inner natDegree infrastructure
+
+Commits (this session):
+- `1276c18` — Phase B4.5: inner natDegree bookkeeping for
+  clearedFiberPoly. ~481 LOC. Build clean.
+
+**What landed**: The full inner-natDegree bookkeeping infrastructure.
+
+`InnerDegLe` predicate and namespace:
+- `InnerDegLe f m := ∀ i, (f.coeff i).natDegree ≤ m`.
+- Compositional lemmas: `weaken`, `zero`, `one`, `add`, `sub`, `neg`,
+  `mul`, `pow`, `sum`, `prod`.
+
+Primitive embedding bounds:
+- `InnerDegLe_embedScalar` (0), `InnerDegLe_embedInnerPoly` (natDegree p),
+  `InnerDegLe_innerA₁x` (1), `InnerDegLe_outerA₁y` (0).
+
+Building block bounds (chord coordinates, dxdz factors):
+- `InnerDegLe_lamNumPoly` (0), `InnerDegLe_lamDenPoly` (1).
+- `InnerDegLe_lineEvalNumAt` (1).
+- `InnerDegLe_x₂Scaled` (3), `InnerDegLe_y₂Scaled` (3).
+- `InnerDegLe_dxdzDenA₀Scaled` (1), `InnerDegLe_dxdzDenA₁Scaled` (3),
+  `InnerDegLe_dxdzDenA₂Scaled` (6).
+
+D-poly bounds:
+- `InnerDegLe_DAtA₀Poly`, `InnerDegLe_DDerivAtA₀Poly` (both 0).
+- `InnerDegLe_DAtA₁Poly`, `InnerDegLe_DDerivAtA₁Poly` (both D.degE).
+- `InnerDegLe_DAPartAtA₂Scaled`, `InnerDegLe_DBPartAtA₂Scaled`,
+  `InnerDegLe_DAtA₂Scaled` (all 2·D.degE).
+- Same for DDeriv versions.
+
+Line products and aggregate factors:
+- `InnerDegLe_linesProductScaled` (k+1),
+  `InnerDegLe_linesProductNoNegPScaled` (k),
+  `InnerDegLe_linesProductSkipBjScaled` (k).
+- `InnerDegLe_DAllScaled` (3·D.degE),
+  `InnerDegLe_dxdzAllScaled` (10).
+
+Summand bounds (all `3·D.degE + k + 10`):
+- `InnerDegLe_lhsTerm{0,1,2}Scaled`, `InnerDegLe_rhsTermNegPScaled`,
+  `InnerDegLe_rhsSumScaled`.
+
+Top result:
+- `InnerDegLe_clearedFiberPoly`: inner ≤ `3·D.degE + k + 10`.
+
+**Key technique**: after initial metas-in-weaken issues with dot
+notation on explicit-E helpers, scoped the predicate and all
+compositional lemmas inside `section InnerDegBookkeeping` with
+`variable {E : ECSetup}` (implicit E), enabling clean dot notation
+chaining.
+
+**Continuation** (T1 session): need two more lemmas before T1 assembly:
+
+1. **Generic modByMonic inner bound**: For `f : R[X][X]` with inner ≤ M
+   and natDegree ≤ N, bound `(f %ₘ curveEqPoly).coeff j.natDegree ≤
+   M + 3·N` (loose) OR `M + 3·⌊N/2⌋` (tight).
+   - Loose bound via strong induction on N (add +3 per reduction step).
+     ~50 LOC.
+   - Tight bound via explicit formula `X^(2k) %ₘ curveEq = C(curveX^k)`
+     etc. ~200 LOC. Needed if T1 is to keep the current
+     `18·(D.degE+k+6)+2` constant.
+
+2. **`resultantX_natDegree_le` generic**: Combine xPart/yPart bounds
+   into `(resultantX f).natDegree ≤ 2·M + 3·N + 3` (or tighter).
+   ~30 LOC.
+
+3. **T1 assembly**: ~150-200 LOC. Combines `clearedFiberPoly_identity`
+   (B3), `clearedFiberPoly_modCurve_ne_zero` (B5), outer bound
+   (B4's `D.degE + k + 8`), inner bound (B4.5's `3·D.degE + k + 10`),
+   generic modByMonic + resultantX bounds, and `card_zeros_on_E_le`.
+
+**Bound budget check** (with LOOSE `M + 3N` bound):
+- M = 3·D.degE + k + 10, N = D.degE + k + 8.
+- Loose: `xPart.natDegree ≤ M + 3·N`.
+- `resultantX.natDegree ≤ 2·(M + 3·N) + 3 = 2M + 6N + 3`.
+- `card fiber nonvertical ≤ 2·(2M + 6N + 3) = 4M + 12N + 6`.
+- Plus ≤ 2 vertical: `4M + 12N + 8`.
+- With M, N: `4(3·D.degE + k + 10) + 12(D.degE + k + 8) + 8`
+             `= 12·D.degE + 4k + 40 + 12·D.degE + 12k + 96 + 8`
+             `= 24·D.degE + 16k + 144`.
+- Current T1 target `18·(D.degE+k+6)+2 = 18·D.degE + 18k + 110`. FAIL
+  (24 > 18 for D.degE coefficient).
+
+So the LOOSE bound route requires updating the T1/T2 constants from
+`18·(D.degE+k+6)+2` to e.g. `24·(D.degE+k+6)+4` (yielding
+`2K + K_T3 = (2·24+18)·(D.degE+k+6)+8 = 66·(D.degE+k+6) + 8`, vs current
+`54·(D.degE+k+6) + 4` in `logDerivCheckFn_zero_set_bound` and
+`log_deriv_sz`). Downstream `Soundness.lean` also uses `54·(...) + 4`.
+
+The TIGHT bound route keeps `18·(...)+2` unchanged; saves ~6 downstream
+updates but requires the explicit `X^i %ₘ curveEq` formula (~200 LOC).
+
+Either route fits the budget; preference between them depends on time
+vs. cleanliness trade-off. Loose route: faster (~250 LOC total for T1
+session), requires rippling constant change. Tight route: cleaner
+(~350 LOC), constant unchanged.
+
+**Axiom count after session 11**: 4 remaining (T1, T2, T4, T5) —
+unchanged. B4.5 is infrastructure.
 B4+B5 are infrastructure for T1.
