@@ -1,5 +1,6 @@
 import Divisor.Defs
 import Divisor.Axioms
+import Divisor.PartialFraction
 import Divisor.SlopeDist
 import Divisor.SupportDisjoint
 import Divisor.NormVanish
