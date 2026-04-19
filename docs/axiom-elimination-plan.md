@@ -680,3 +680,45 @@ Per the plan's dependency ordering:
 6. **Finally**: audit + plan close-out.
 
 Each step is a separate focused session.
+
+### Session 1 final state (2026-04-19)
+
+Commits:
+- `e626435` — plan doc (this file, initial).
+- `fe227de` — P0 extractor sign fix.
+- `7012158` — plan: P0 logged.
+- `50747e7` — plan: T3 approach + revised scoping.
+
+T3 attempted twice (via `numZeros_le_two_degE` helper). Each attempt
+ran aground on intricate natDegree-parity reasoning that duplicates
+(but does not cleanly factor through) `resultantX_aux_ne_zero` in
+`CubicIntersection.lean`. Both attempts reverted cleanly; no partial
+sorry-laden code was committed.
+
+**Key finding during T3 attempts**: the `DAtA₁Poly`-based route to
+`numZeros_le_two_degE` is the right shape but needs ~80 LOC of
+supporting natDegree bookkeeping for `DAtA₁Poly.natDegree < 2`
+(outer variable) and `resultantX (DAtA₁Poly).natDegree ≤ D.degE`.
+Both are provable by direct coefficient analysis of
+`C D.a - C D.b * X`.
+
+Each remaining session should use this finding as its starting point:
+inline the natDegree analysis rather than trying to reuse
+infrastructure built for different polynomial shapes (the generic
+`clearedFiberPoly` machinery is higher-degree and has different
+structural bounds).
+
+### Session boundary guidance
+
+Future sessions should:
+1. Budget 250-500 LOC of committed work per session.
+2. Prototype one sub-lemma before the full sub-phase; if it compiles
+   cleanly, continue; if it balloons, commit what works and stop.
+3. Commit plan updates at each session boundary, documenting what
+   landed and what remains.
+4. Avoid introducing `sorry` at any commit point.
+5. Re-read this plan at session start to remember the overall
+   strategy.
+
+Axiom count at end of session 1: **unchanged** (P0 was correctness,
+not elimination). Target still 5 eliminations remaining.
