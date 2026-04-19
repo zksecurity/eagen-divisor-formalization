@@ -952,6 +952,232 @@ theorem card_bivEval_Q_zero_pairs_le
           Nat.add_le_add hExcBd hNonExcBd
     _ = 2 * degBound * E.points.card + Exc.card * E.points.card := by ring
 
+/-! ### F4: `dxdz(A₀) = 0` factor bound
+
+    The factor `3·A₀.1² + curveA - 2·λ·A₀.2` vanishing corresponds (on
+    non-vertical pairs, using `lamDen = A₁.1 − A₀.1`) to
+    `bivEval (dxdzDenA₀Scaled A₀) A₁ = 0`. Split vertical (≤ 2·|E|) /
+    non-vertical (via `card_bivEval_Q_zero_pairs_le` with `degBound = 3`
+    and Exc ⊆ {A₀ : A₀.2 = 0 ∧ 3·A₀.1² + curveA = 0}, ≤ 2 points on E). -/
+
+theorem dxdzDenA₀Scaled_natDegree_lt_two (A₀ : ZMod E.q × ZMod E.q) :
+    (dxdzDenA₀Scaled (E := E) A₀).natDegree < 2 := by
+  refine lt_of_le_of_lt ?_ (Nat.lt_succ_self 1)
+  unfold dxdzDenA₀Scaled
+  refine (natDegree_sub_le _ _).trans (max_le ?_ ?_)
+  · refine natDegree_mul_le.trans ?_
+    rw [embedScalar_natDegree_le, lamDenPoly_natDegree_le]; omega
+  · refine natDegree_mul_le.trans ?_
+    rw [embedScalar_natDegree_le, Nat.zero_add]
+    exact lamNumPoly_natDegree_le E A₀
+
+theorem dxdzDenA₀Scaled_modByMonic_self (A₀ : ZMod E.q × ZMod E.q) :
+    dxdzDenA₀Scaled (E := E) A₀ %ₘ curveEqPoly E
+      = dxdzDenA₀Scaled (E := E) A₀ := by
+  by_cases hZ : dxdzDenA₀Scaled (E := E) A₀ = 0
+  · rw [hZ, Polynomial.zero_modByMonic]
+  · apply (Polynomial.modByMonic_eq_self_iff (curveEqPoly_monic E)).mpr
+    rw [Polynomial.degree_eq_natDegree hZ,
+        Polynomial.degree_eq_natDegree (curveEqPoly_monic E).ne_zero,
+        curveEqPoly_natDegree_eq]
+    exact_mod_cast dxdzDenA₀Scaled_natDegree_lt_two E A₀
+
+/-- Canonical form of `dxdzDenA₀Scaled A₀`: `C xp + C yp · X` with
+    `xp = C (3·A₀.1² + curveA) · (X - C A₀.1) + C (2·A₀.2²)` and
+    `yp = C (-(2·A₀.2))`. -/
+theorem dxdzDenA₀Scaled_eq (A₀ : ZMod E.q × ZMod E.q) :
+    dxdzDenA₀Scaled (E := E) A₀ =
+      C (C (3 * A₀.1 ^ 2 + E.curveA) * (Polynomial.X - C A₀.1)
+           + C (2 * A₀.2 ^ 2))
+        + C (C (-(2 * A₀.2))) * X := by
+  simp only [dxdzDenA₀Scaled, embedScalar, lamDenPoly, lamNumPoly,
+             innerA₁x, outerA₁y, map_mul, map_sub, map_add, map_neg,
+             map_pow]
+  ring
+
+theorem dxdzDenA₀Scaled_coeff_zero (A₀ : ZMod E.q × ZMod E.q) :
+    (dxdzDenA₀Scaled (E := E) A₀).coeff 0 =
+      C (3 * A₀.1 ^ 2 + E.curveA) * (Polynomial.X - C A₀.1)
+        + C (2 * A₀.2 ^ 2) := by
+  rw [dxdzDenA₀Scaled_eq, Polynomial.coeff_add, Polynomial.coeff_C_zero,
+      Polynomial.coeff_mul_X_zero, add_zero]
+
+theorem dxdzDenA₀Scaled_coeff_one (A₀ : ZMod E.q × ZMod E.q) :
+    (dxdzDenA₀Scaled (E := E) A₀).coeff 1 = C (-(2 * A₀.2)) := by
+  rw [dxdzDenA₀Scaled_eq, Polynomial.coeff_add,
+      Polynomial.coeff_C_ne_zero (by norm_num : (1 : ℕ) ≠ 0),
+      Polynomial.coeff_C_mul_X, if_pos rfl, zero_add]
+
+theorem dxdzDenA₀Scaled_xPart (A₀ : ZMod E.q × ZMod E.q) :
+    xPart E (dxdzDenA₀Scaled (E := E) A₀ %ₘ curveEqPoly E) =
+      C (3 * A₀.1 ^ 2 + E.curveA) * (Polynomial.X - C A₀.1)
+        + C (2 * A₀.2 ^ 2) := by
+  rw [dxdzDenA₀Scaled_modByMonic_self, xPart, dxdzDenA₀Scaled_coeff_zero]
+
+theorem dxdzDenA₀Scaled_yPart (A₀ : ZMod E.q × ZMod E.q) :
+    yPart E (dxdzDenA₀Scaled (E := E) A₀ %ₘ curveEqPoly E) =
+      C (-(2 * A₀.2)) := by
+  rw [dxdzDenA₀Scaled_modByMonic_self, yPart, dxdzDenA₀Scaled_coeff_one]
+
+/-- `(resultantX (dxdzDenA₀Scaled A₀)).natDegree ≤ 3`. Reason:
+    `xPart` is linear in inner X, so `xPart²` has natDegree ≤ 2;
+    `yPart` is constant, so `yPart² · curveX` has natDegree ≤ 3. -/
+theorem resultantX_dxdzDenA₀Scaled_natDegree_le (A₀ : ZMod E.q × ZMod E.q) :
+    (resultantX E (dxdzDenA₀Scaled (E := E) A₀)).natDegree ≤ 3 := by
+  unfold resultantX
+  rw [dxdzDenA₀Scaled_xPart, dxdzDenA₀Scaled_yPart]
+  refine (Polynomial.natDegree_sub_le _ _).trans (max_le ?_ ?_)
+  · -- xPart² natDegree ≤ 2 ≤ 3
+    rw [Polynomial.natDegree_pow]
+    have hXp : (C (3 * A₀.1 ^ 2 + E.curveA) * (Polynomial.X - C A₀.1)
+                  + C (2 * A₀.2 ^ 2)).natDegree ≤ 1 := by
+      refine (Polynomial.natDegree_add_le _ _).trans (max_le ?_ ?_)
+      · refine Polynomial.natDegree_C_mul_le _ _ |>.trans ?_
+        exact (Polynomial.natDegree_X_sub_C _).le
+      · exact (Polynomial.natDegree_C _).le.trans (Nat.zero_le _)
+    omega
+  · -- yPart² · curveX natDegree ≤ 0 + 3 = 3
+    refine Polynomial.natDegree_mul_le.trans ?_
+    rw [Polynomial.natDegree_pow, Polynomial.natDegree_C]
+    simpa using curveX_natDegree_le_three E
+
+/-- Generic: `|{A₀ ∈ E.points : p.eval A₀.1 = 0}| ≤ 2 · natDegree p` for
+    any nonzero polynomial `p`. Proof: inject `Prod.fst` into `p.roots`;
+    each root has ≤ 2 `y`-values on `E`. -/
+theorem card_points_on_E_polyRoot_le {p : (ZMod E.q)[X]} (hp : p ≠ 0) :
+    (E.points.filter (fun A₀ => p.eval A₀.1 = 0)).card ≤ 2 * p.natDegree := by
+  classical
+  set S := E.points.filter (fun A₀ => p.eval A₀.1 = 0) with hSdef
+  set xProj := S.image Prod.fst with hxProjdef
+  have hxProj_sub : xProj ⊆ p.roots.toFinset := by
+    intro x hx
+    rw [hxProjdef, Finset.mem_image] at hx
+    obtain ⟨A₀, hA₀, rfl⟩ := hx
+    rw [Multiset.mem_toFinset, Polynomial.mem_roots hp]
+    simp only [hSdef, Finset.mem_filter] at hA₀
+    exact hA₀.2
+  have hxProj_card : xProj.card ≤ p.natDegree :=
+    le_trans (Finset.card_le_card hxProj_sub)
+      (le_trans (Multiset.toFinset_card_le _) (Polynomial.card_roots' p))
+  have hFiber : ∀ x ∈ xProj, (S.filter (fun A₀ => A₀.1 = x)).card ≤ 2 := by
+    intro x _
+    refine le_trans (Finset.card_le_card ?_) (card_points_with_fst_eq_le E x)
+    intro A₀ hA₀
+    simp only [hSdef, Finset.mem_filter] at hA₀ ⊢
+    exact ⟨hA₀.1.1, hA₀.2⟩
+  calc S.card
+      ≤ 2 * xProj.card := Finset.card_le_mul_card_image _ _ hFiber
+    _ ≤ 2 * p.natDegree := Nat.mul_le_mul_left 2 hxProj_card
+
+/-- Exceptional A₀ set (where `dxdzDenA₀Scaled A₀ = 0`) on `E.points` has
+    size ≤ 6. Reason: `Q A₀ = 0` on `E.points` forces A₀.1 to be a root of
+    `-X³ + curveA·X + 2·curveB`, a polynomial of natDegree ≤ 3. -/
+theorem card_dxdzDenA₀Scaled_zero_A₀_le :
+    (E.points.filter (fun A₀ => dxdzDenA₀Scaled (E := E) A₀ = 0)).card ≤ 6 := by
+  classical
+  set p : (ZMod E.q)[X] :=
+    -Polynomial.X ^ 3 + C E.curveA * Polynomial.X + C (2 * E.curveB) with hpdef
+  have hp_deg : p.natDegree ≤ 3 := by
+    refine (Polynomial.natDegree_add_le _ _).trans (max_le ?_ ?_)
+    · refine (Polynomial.natDegree_add_le _ _).trans (max_le ?_ ?_)
+      · rw [Polynomial.natDegree_neg]; exact (Polynomial.natDegree_X_pow 3).le
+      · refine Polynomial.natDegree_C_mul_le _ _ |>.trans ?_
+        exact Polynomial.natDegree_X_le.trans (by omega)
+    · exact (Polynomial.natDegree_C _).le.trans (Nat.zero_le _)
+  have hp_ne : p ≠ 0 := by
+    intro hZ
+    have hcoeff3 : p.coeff 3 = -1 := by
+      simp [hpdef, Polynomial.coeff_add, Polynomial.coeff_neg,
+             Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
+             Polynomial.coeff_X, Polynomial.coeff_C]
+    rw [hZ, Polynomial.coeff_zero] at hcoeff3
+    have h1 : (1 : ZMod E.q) = 0 := by linear_combination hcoeff3
+    exact one_ne_zero h1
+  have hSub : E.points.filter (fun A₀ => dxdzDenA₀Scaled (E := E) A₀ = 0)
+            ⊆ E.points.filter (fun A₀ => p.eval A₀.1 = 0) := by
+    intro A₀ hA₀
+    simp only [Finset.mem_filter] at hA₀ ⊢
+    obtain ⟨hE, hQ⟩ := hA₀
+    refine ⟨hE, ?_⟩
+    -- From Q A₀ = 0: inner poly (coeff 0 of Q) = 0 as element of ZMod q[X];
+    -- evaluating at X = 0 gives -(3A₀.1²+A)·A₀.1 + 2A₀.2² = 0.
+    have hcoeff0 : (dxdzDenA₀Scaled (E := E) A₀).coeff 0 = 0 := by
+      rw [hQ]; simp
+    rw [dxdzDenA₀Scaled_coeff_zero] at hcoeff0
+    have hEval : (C (3 * A₀.1 ^ 2 + E.curveA) * (Polynomial.X - C A₀.1)
+                    + C (2 * A₀.2 ^ 2)).eval 0 = 0 := by
+      rw [hcoeff0]; simp
+    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+          Polynomial.eval_X, Polynomial.eval_C, Polynomial.eval_pow] at hEval
+    have hOC : A₀.2 ^ 2 = A₀.1 ^ 3 + E.curveA * A₀.1 + E.curveB := E.hOnCurve A₀ hE
+    rw [hpdef]
+    simp only [Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_neg,
+          Polynomial.eval_pow, Polynomial.eval_mul, Polynomial.eval_X,
+          Polynomial.eval_C]
+    linear_combination hEval - 2 * hOC
+  calc _ ≤ (E.points.filter (fun A₀ => p.eval A₀.1 = 0)).card :=
+          Finset.card_le_card hSub
+    _ ≤ 2 * p.natDegree := card_points_on_E_polyRoot_le E hp_ne
+    _ ≤ 6 := Nat.mul_le_mul_left 2 hp_deg
+
+/-- F4: pairs `(A₀, A₁) ∈ E × E` with `3·A₀.1² + curveA - 2·λ·A₀.2 = 0`
+    (where `λ = slopeOf A₀ A₁`) have cardinality ≤ `10 · |E|`.
+
+    Split: vertical (`A₀.1 = A₁.1`, ≤ 2·|E| via `card_vertical_pairs_le`);
+    non-vertical (via `card_bivEval_Q_zero_pairs_le` on `dxdzDenA₀Scaled`
+    with `degBound = 3` and Exc ≤ 6). -/
+theorem dxdzA₀_zero_pairs_card_le :
+    ((E.points ×ˢ E.points).filter
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+        3 * p.1.1 ^ 2 + E.curveA
+          - 2 * slopeOf p.1.1 p.1.2 p.2.1 p.2.2 * p.1.2 = 0)).card
+    ≤ 14 * E.points.card := by
+  classical
+  set S := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      3 * p.1.1 ^ 2 + E.curveA
+        - 2 * slopeOf p.1.1 p.1.2 p.2.1 p.2.2 * p.1.2 = 0) with hSdef
+  -- Split S ⊆ Svert ∪ Snv where Snv ⊆ {bivEval(Q) = 0}.
+  set Svert := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      p.1.1 = p.2.1) with hSvertdef
+  set Sbiv := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+       bivEval (dxdzDenA₀Scaled (E := E) p.1) p.2 = 0) with hSbivdef
+  have hSub : S ⊆ Svert ∪ Sbiv := by
+    intro p hp
+    simp only [hSdef, Finset.mem_filter] at hp
+    rw [Finset.mem_union]
+    by_cases hV : p.1.1 = p.2.1
+    · left
+      simp only [hSvertdef, Finset.mem_filter]
+      exact ⟨hp.1, hV⟩
+    · right
+      simp only [hSbivdef, Finset.mem_filter]
+      refine ⟨hp.1, ?_⟩
+      -- bivEval = (A₁.1 - A₀.1) · (factor). factor = 0 ⇒ bivEval = 0.
+      have hEval := bivEval_dxdzDenA₀Scaled_eq E p.1 p.2 hV
+      rw [hEval]
+      have hFactor : 3 * p.1.1 ^ 2 + E.curveA
+        - 2 * slopeOf p.1.1 p.1.2 p.2.1 p.2.2 * p.1.2 = 0 := hp.2
+      linear_combination (p.2.1 - p.1.1) * hFactor
+  have hSvert_bd : Svert.card ≤ 2 * E.points.card := card_vertical_pairs_le E
+  have hSbiv_bd : Sbiv.card ≤ 2 * 3 * E.points.card + 6 * E.points.card := by
+    have hbd :=
+      card_bivEval_Q_zero_pairs_le E
+        (fun A₀ => dxdzDenA₀Scaled (E := E) A₀)
+        (dxdzDenA₀Scaled_natDegree_lt_two E)
+        3
+        (fun A₀ _ => resultantX_dxdzDenA₀Scaled_natDegree_le E A₀)
+    refine le_trans hbd ?_
+    exact Nat.add_le_add_left (Nat.mul_le_mul_right _
+      (card_dxdzDenA₀Scaled_zero_A₀_le E)) _
+  calc S.card ≤ (Svert ∪ Sbiv).card := Finset.card_le_card hSub
+    _ ≤ Svert.card + Sbiv.card := Finset.card_union_le _ _
+    _ ≤ 2 * E.points.card + (2 * 3 * E.points.card + 6 * E.points.card) :=
+        Nat.add_le_add hSvert_bd hSbiv_bd
+    _ = 14 * E.points.card := by ring
+
 /-! ## Phase 2: `logDerivCheckFn_zero_set_bound` as a theorem.
 
     Issue 2 fix: the count is split into two bounds, corresponding to
