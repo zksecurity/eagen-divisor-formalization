@@ -872,3 +872,56 @@ extraction, which hit the same simp issues.
 
 Axiom count unchanged this session. F3 helper infrastructure is the
 main delivery.
+
+### Session 5 (2026-04-19) — T3 F4, F5, F7, F8 factor bounds
+
+Commits (this session):
+- `bf864a8` — T3 F4: `dxdz(A_0) = 0` factor bound via `dxdzDenA₀Scaled`
+  scaled polynomial identity. Non-vertical case uses
+  `card_bivEval_Q_zero_pairs_le` (outer natDegree < 2, resultantX ≤ 3,
+  Exc ≤ 6 via `card_points_on_E_polyRoot_le` on `-X³ + A·X + 2B`).
+  Vertical case `≤ 2·|E|`. Total bound: `≤ 14·|E|`.
+- `08392bb` — T3 F5: `dxdz(A_1) = 0` factor bound. Defined
+  `dxdzDenA₁Reduced` as the explicit curve-reduced form
+  `C (X³ - 3·A₀.1·X² - A·X - (A·A₀.1+2B)) + C (2·A₀.2)·Y`. xPart
+  has natDegree ≤ 3, yPart natDegree 0, so resultantX natDegree ≤ 6.
+  `dxdzDenA₁Reduced A₀ ≠ 0` always (leading coefficient 1 on X³), so
+  Exc = ∅. `bivEval` on `E.points` matches
+  `(A₁.1-A₀.1)·factor(A₁)` via curve equation substitution.
+  Total bound: `≤ 14·|E|`.
+- `fc244f5` — T3 F7 + F8: generic `lineEval_at_point_zero_pairs_card_le`
+  for line factors. `lineEvalNumAt` has outer natDegree ≤ 1; resultantX
+  natDegree ≤ 3; Exc ≤ 1 (forces `A₀ = pt`). `lineEval` bound `≤ 9·|E|`.
+  F7 applied at `(P.1, -P.2)`. F8 union-bounded over `B_j`, yielding
+  `≤ 9·k·|E|`.
+
+~650 LOC landed. All build-clean.
+
+**Remaining for T3**:
+- F6 (`dxdz(A₂) = 0`): requires curve-reduction of `dxdzDenA₂Scaled`
+  (outer natDegree ≤ 4), yielding xPart natDegree ≤ 6, yPart ≤ 3;
+  resultantX natDegree ≤ 12. Attempted the thirdPoint + F5 translation
+  approach (via `thirdPoint_inj_on_A₁`) but the "A₂ = A₀ tangent"
+  sub-case requires a group-law uniqueness argument (showing
+  `A₁ = -2·A₀` is forced), which needs ECPoint group manipulation.
+- T3 assembly: union-bound F1-F8 for `logDerivCheckFn_undefined_set_bound`.
+  Need to thread the hypothesis `¬(D.a = 0 ∧ D.b = 0)` from the
+  downstream caller (`logDerivCheckFn_zero_set_bound`) — needs case
+  analysis on whether `D` is the zero coord-ring element.
+
+**Current bound tally** (for T3 target `≤ 18·(D.degE + k + 6) · |E|`):
+- F1 + F2 + F3 = `6·D.degE + 2`
+- F4 + F5 = `28`
+- F6 = pending (targeting ≤ 18)
+- F7 + F8 = `9·(k + 1)` = `9k + 9`
+
+Sum (with F6 = 18): `6·D.degE + 9k + 57`. Target: `18·D.degE + 18k + 108`.
+Slack: `12·D.degE + 9k + 51`. Comfortably within.
+
+**Next session**: complete F6 via direct polynomial approach (define
+`dxdzDenA₂Reduced` explicitly, prove `dxdzDenA₂Scaled = Reduced +
+quotient · curveEqPoly` via `ring`, compute xPart/yPart). Then
+assemble T3.
+
+Axiom count unchanged this session. T3 not yet removed — F6 and
+assembly pending.
