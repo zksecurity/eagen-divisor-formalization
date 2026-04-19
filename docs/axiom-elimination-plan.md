@@ -785,3 +785,37 @@ Future sessions should:
 
 Axiom count at end of session 1: **unchanged** (P0 was correctness,
 not elimination). Target still 5 eliminations remaining.
+
+### Session 3 (2026-04-19) — T3 F1+F2 factor bounds
+
+Commits (this session):
+- T3 F1+F2: D-factor zero bounds as standalone lemmas
+  (`DAtA₀_zero_pairs_card_le`, `DAtA₁_zero_pairs_card_le`). ~55 LOC.
+
+**What landed**: two per-factor bounds covering the `D(A₀) = 0` and
+`D(A₁) = 0` contributions to the undefined set. Both thin wrappers
+around `numZeros_le_two_degE` + `Finset.card_product`. Both take the
+`hD : ¬ (D.a = 0 ∧ D.b = 0)` hypothesis that T3 will propagate.
+
+Bounds: `|F1 pairs| ≤ 2·D.degE · |E|` and same for F2. Summed these
+contribute `4·D.degE · |E|` ≤ `18·(D.degE + k + 6)·|E|` target.
+
+**Remaining factor bounds** (for next session, referencing the F3-F8
+map in session 2 log):
+- F3 (D@A₂): `thirdPoint`-based; blueprint in `support_disjointness`
+  proof (`SupportDisjoint.lean` `hS2_card + hS3_card`). ~60 LOC.
+- F4 (dxdz@A₀), F5 (dxdz@A₁): per-A₀ polynomial via
+  `dxdzDenA₀Scaled` / `dxdzDenA₁Scaled` + `card_zeros_on_E_le`.
+  Each ~40 LOC with natDegree bookkeeping.
+- F6 (dxdz@A₂): dxdzDenA₂Scaled outer natDegree analysis. ~60 LOC
+  (most intricate — product of x₂Scaled² + curveA·lamDen⁴ + ...).
+- F7 (L(-P)): per-A₀ polynomial `lineEvalNumAt A₀ (P.1, -P.2)` mod
+  curveEq; natDegree ≤ 1, resultantX ≤ 3. Need A₀ ≠ -P edge. ~50 LOC.
+- F8 (L(B_j)): union over j via F7 pattern. ~30 LOC.
+
+After F3-F8: assemble union bound + thread `hD` through
+`logDerivCheckFn_zero_set_bound` caller (extract from `hNonzero`: if
+`D.a = 0 ∧ D.b = 0` then `D.eval ≡ 0` and `logDerivCheckFnDenom ≡ 0`,
+contradicting the defined non-zero witness). Then replace T3 axiom
+with theorem. Bound constants sum to ≤ `4·D.degE + 2·D.degE + 2 + 3 +
+3 + C₆ + 3 + 3k` ≤ 18·(D.degE + k + 6) with some slack.
