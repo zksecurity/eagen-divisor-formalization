@@ -578,14 +578,21 @@ theorem polyFibK_natDegree_le {d M : ℕ} (lam : ZMod E.q)
     calc _ ≤ d + (M - 1) := Nat.add_le_add h_mkuniv h_erase
       _ ≤ d + M - 1 := by omega
 
-/-- If `polyG ≡ 0` on `E × E` and `lam` has enough good intercepts,
-    then `polyFibK lam ≡ 0` as a polynomial in `(ZMod E.q)[X]`. -/
+/-- If `polyG ≡ 0` on non-vertical pairs of `E.points × E.points` and
+    `lam` has enough good intercepts, then `polyFibK lam ≡ 0` as a
+    polynomial in `(ZMod E.q)[X]`.
+
+    Weaker hypothesis than "polyG ≡ 0 on all of F_q² × F_q²": the proof
+    only invokes `polyG = 0` at pairs on a chord with slope `lam`, which
+    are always on E by construction of `goodIntercepts`. -/
 theorem polyFibK_eq_zero_of_polyG_zero {d M : ℕ}
     (lam : ZMod E.q)
     (Q : Fin d → ZMod E.q × ZMod E.q) (β : Fin d → ZMod E.q)
     (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
     (hGood : d + M ≤ (goodIntercepts E lam).card)
-    (hfZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q, polyG E Q β R m A₀ A₁ = 0) :
+    (hfZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      polyG E Q β R m A₀ A₁ = 0) :
     polyFibK E lam Q β R m = 0 := by
   classical
   by_cases hdM : d + M = 0
@@ -620,7 +627,7 @@ theorem polyFibK_eq_zero_of_polyG_zero {d M : ℕ}
     have hmu_eq : zLambda E lam A₀ = mu := by
       simp only [zLambda]
       rw [hA₀.2]; ring
-    have hPolyGZero := hfZero A₀ A₁
+    have hPolyGZero := hfZero A₀ A₁ hA₀.1 hA₁.1 hNV
     rw [polyG_eq_polyFibK_eval E Q β R m A₀ A₁ hNV, hslope, hmu_eq] at hPolyGZero
     have hpow_ne : (-(A₁.1 - A₀.1))^(d + M - 1) ≠ 0 := by
       apply pow_ne_zero
@@ -821,10 +828,16 @@ private lemma polyFibK_factor_of_sigma {d M : ℕ} (lam : ZMod E.q)
 
 /-! ## Main theorem: `log_deriv_nonvanishing_criterion` -/
 
-/-- **Non-vanishing criterion (T5).** If `polyG ≡ 0` on `F_q × F_q` with
-    `Q`, `R` distinct, `β` nonzero, and `q` large enough (quantified by
-    `hQuant`), then there exists an injection `σ : Fin d ↪ Fin M` matching
-    `Q k = R (σ k)`, `β k + m (σ k) = 0`, and `m j = 0` for `j ∉ range σ`. -/
+/-- **Non-vanishing criterion (T5).** If `polyG ≡ 0` on non-vertical
+    pairs of `E.points × E.points` with `Q`, `R` distinct, `β` nonzero,
+    and `q` large enough (quantified by `hQuant`), then there exists
+    an injection `σ : Fin d ↪ Fin M` matching
+    `Q k = R (σ k)`, `β k + m (σ k) = 0`, and `m j = 0` for `j ∉ range σ`.
+
+    The hypothesis was weakened (compared to an earlier `∀ A₀ A₁ : F_q²,
+    polyG = 0` formulation): the proof only uses `polyG = 0` at pairs
+    of distinct non-vertical points on `E`, which is the form naturally
+    derivable from the log-derivative bridge. -/
 theorem log_deriv_nonvanishing_criterion {d M : ℕ}
     (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
     (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
@@ -834,6 +847,7 @@ theorem log_deriv_nonvanishing_criterion {d M : ℕ}
     (hDistinctR : Function.Injective R)
     (hBetaNz : ∀ k, beta k ≠ 0)
     (hfZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       polyG E Q beta R m A₀ A₁ = 0) :
     ∃ (σ : Fin d ↪ Fin M),
       (∀ k, Q k = R (σ k)) ∧
