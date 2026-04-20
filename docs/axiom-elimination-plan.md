@@ -2523,6 +2523,98 @@ the coefficient is `multAt k`; else zero. At non-canonical `i`, zero.
 **No new axioms**, no new `sorry`/`admit`. `lake build` green.
 Axiom count: 10 (unchanged from session 25).
 
+### Session 27 (2026-04-20) — S6 extractorDivisorCoeffs ↔ dCoeffs matching
+
+Commit (this session):
+- S6 — pointwise equality `extractorDivisorCoeffs = dCoeffs msg.toD β_fun`
+  under the σ-matching output of `distinctSigma_exists`. Adds
+  `extractorDivisorCoeffs_eq_dCoeffs` and the combined S4+S5+S6
+  assembly theorem `extractor_succeeds_and_isPrincipal` in
+  `Divisor/ExtractorBridge.lean`. Supporting helpers:
+  `fin_one_plus_cases` (every `Fin (1 + n)` is either `0` or
+  `⟨i+1, _⟩`), `extractorDivisorCoeffs_affine_not_in_baseImage`
+  (filter-empty shape for out-of-base-image points).
+  ~200 LOC added.
+
+**Theorem shapes**:
+```
+extractorDivisorCoeffs_eq_dCoeffs
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
+    (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (β_fun : ZMod² → ℕ)
+    (hβsup : ...) (hβcov : ...) (hβsum : ...)
+    (σ : Fin (zerosCard E msg.toD) ↪ Fin (1 + baseImageCount ...))
+    (hσ_eq : ...) (hσ_betam : ...) (hσ_off : ...)
+    (P : ECPoint E.q) :
+    extractorDivisorCoeffs E stmt msg hkm P = dCoeffs E msg.toD β_fun P
+```
+```
+extractor_succeeds_and_isPrincipal
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
+    (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hAllZero : ...) (hValidPairsLarge : ...) :
+    extractorSucceeds E stmt msg d hkm ∧
+    IsPrincipal E (extractorDivisorCoeffs E stmt msg hkm)
+```
+
+**Proof structure** (pointwise equality, case analysis on `P`):
+
+1. **`P = ∞`**: Both sides equal `-(msg.toD.degE : ℤ)` definitionally.
+2. **`P = affine (x, y)`**, sub-cases:
+   * `(x, y) = -P_aff`: LHS indicator = 1; filter empty (by `hNoNegP`);
+     so LHS = 1. RHS = `(β_fun (-P_aff) : ℤ)`. The σ-matching
+     `sigma_zero_preimage_exists` provides `k₀` with `σ k₀ = 0`,
+     whence `zerosAt k₀ = distinctR 0 = -P_aff` via `hσ_eq`. Then
+     `hσ_betam k₀` combined with `distinctM' 0 = -1` gives
+     `(multAt k₀ : ZMod q) = 1`. Since `multAt k₀ < E.q` (from
+     `∑ multAt = D.degE ≤ d < E.q`), lift via `ZMod.val_natCast_of_lt`
+     yields `multAt k₀ = 1` as ℕ. Finally
+     `β_fun (-P_aff) = β_fun (zerosAt k₀) = multAt k₀ = 1`. ✓
+   * `(x, y) ≠ -P_aff`, `(x, y) ∈ baseImage`: canonicalize to `i_c`
+     (min-index of the group at `(x, y)`), reduce LHS to
+     `extractedScalars i_c` via `sum_extractedScalars_over_group`.
+     Then S5's `hScalars_eq` reduces to
+     `(extractorCoeffFromSigma i_c : ℤ)`.
+     - **Hit**: `k := hHit.choose`, so `zerosAt k = (x, y)` (via
+       `hσ_eq + distinctR_baseImagePos + baseAt_baseIndexOf +
+       hi_c_base`). Hence `β_fun (x, y) = multAt k`. ✓
+     - **No hit**: Show `β_fun (x, y) = 0` by contradiction: if
+       nonzero then `(x, y)` is a D-zero, so some k has
+       `zerosAt k = (x, y)`, hence `distinctR (σ k) = (x, y)
+       = distinctR pos`, so by `distinctR_injective` (needs
+       `hNoNegP`), `σ k = pos`, contradicting no-hit.
+   * `(x, y) ∉ baseImage`: filter empty, LHS = 0. Show
+     `β_fun (x, y) = 0` by contradiction: if nonzero then some
+     `k` has `zerosAt k = (x, y)`, hence
+     `distinctR (σ k) = (x, y)`. Case on σ k via
+     `fin_one_plus_cases`:
+     - σ k = 0 ⇒ `(x, y) = -P_aff`, contradicts sub-case.
+     - σ k = `⟨i+1, _⟩` ⇒ `(x, y) = baseAt i ∈ baseImage`,
+       contradicts sub-case.
+
+**Assembly** (`extractor_succeeds_and_isPrincipal`):
+1. `distinctSigma_exists` (S4) → β_fun + σ + `IsPrincipal (dCoeffs)`.
+2. `extractorCoeffFromSigma_satisfies_D3` (S5) → D3 hypotheses.
+3. `extractorSucceeds_of_natural_witness` (D3) → `extractorSucceeds`.
+4. `extractorDivisorCoeffs_eq_dCoeffs` (S6) + `funext` →
+   `extractorDivisorCoeffs = dCoeffs ...` as functions.
+5. Transfer `IsPrincipal` via rewrite.
+
+**Exposed surface for S7**:
+- `extractor_succeeds_and_isPrincipal` — the main S6 theorem.
+- `extractorDivisorCoeffs_eq_dCoeffs` — pointwise matching (reusable).
+- `fin_one_plus_cases`,
+  `extractorDivisorCoeffs_affine_not_in_baseImage` — helpers.
+
+**No new axioms**, no new `sorry`/`admit`. `lake build` green.
+Axiom count: 10 (unchanged from session 26). S7's job is to drop
+`weil_reciprocity_soundness`: replace its use in
+`extractorSucceeds_of_logDerivCheck_identically_zero_general` with a
+call to `extractor_succeeds_and_isPrincipal`, and delete the axiom.
+
 ## Autonomous Driver Queue
 
 This section specifies the final 7-step queue that eliminates the

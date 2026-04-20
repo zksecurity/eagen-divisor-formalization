@@ -1946,6 +1946,311 @@ theorem extractorCoeffFromSigma_satisfies_D3
   · intro i hNotCanon
     exact extractorCoeffFromSigma_noncanon E stmt msg hkm β_fun σ i hNotCanon
 
+/-! ## S6: extractorDivisorCoeffs ↔ dCoeffs matching
+
+    Pointwise equality `extractorDivisorCoeffs = dCoeffs E msg.toD β_fun`
+    on `ECPoint E.q` under the σ-matching output of `distinctSigma_exists`.
+    Combined with `distinctSigma_exists`'s `IsPrincipal (dCoeffs ...)`
+    conclusion and `funext`, this yields
+    `IsPrincipal E (extractorDivisorCoeffs E stmt msg hkm)`.
+
+    The packaged theorem `extractor_succeeds_and_isPrincipal` combines
+    S4 + S5 + S6 into the full composite conclusion
+    `extractorSucceeds ∧ IsPrincipal (extractorDivisorCoeffs)`,
+    ready for S7's replacement of `weil_reciprocity_soundness`.
+-/
+
+/-- **Helper: σ k is either 0 or `baseImagePos i`**.
+    Every `j : Fin (1 + baseImageCount)` is either `⟨0, _⟩` or
+    `⟨i.val + 1, _⟩` for some `i : Fin baseImageCount`. -/
+theorem fin_one_plus_cases
+    (n : ℕ) (j : Fin (1 + n)) :
+    j = (⟨0, by omega⟩ : Fin (1 + n)) ∨
+    ∃ i : Fin n, j = (⟨i.val + 1, by omega⟩ : Fin (1 + n)) := by
+  rcases j with ⟨v, hv⟩
+  rcases v with _ | v
+  · left; rfl
+  · right
+    refine ⟨⟨v, by omega⟩, ?_⟩
+    rfl
+
+/-- **Helper**: at a non-canonical index `j`, filter selects the
+    canonical representative so its `extractedScalars`-sum is at the
+    canonical value (mirror of `sum_extractedScalars_over_group`). -/
+theorem extractorDivisorCoeffs_affine_not_in_baseImage
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (x y : ZMod E.q)
+    (hNot : (x, y) ∉ baseImage E stmt msg hkm) :
+    ((Finset.univ : Finset (Fin msg.k)).filter
+      (fun j => extractorBases E stmt msg hkm j = (x, y))) = ∅ := by
+  classical
+  rw [Finset.eq_empty_iff_forall_not_mem]
+  intro j hj
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hj
+  apply hNot
+  refine Finset.mem_image.mpr ⟨j, Finset.mem_univ _, hj⟩
+
+/-- **S6 — pointwise matching.** Under the σ-matching hypotheses
+    produced by `distinctSigma_exists`, the extractor's divisor
+    coefficient function equals `dCoeffs E msg.toD β_fun` at every
+    point of `ECPoint E.q`.
+
+    Combined with `IsPrincipal (dCoeffs ...)` from S4 and `funext`,
+    this gives `IsPrincipal (extractorDivisorCoeffs ...)`. -/
+theorem extractorDivisorCoeffs_eq_dCoeffs
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
+    (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (β_fun : ZMod E.q × ZMod E.q → ℕ)
+    (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0)
+    (hβcov : ∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0)
+    (hβsum : (∑ P ∈ E.points, β_fun P) = msg.toD.degE)
+    (σ : Fin (zerosCard E msg.toD) ↪
+          Fin (1 + baseImageCount E stmt msg hkm))
+    (hσ_eq : ∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ k))
+    (hσ_betam : ∀ k,
+      ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q)
+        + distinctM' E stmt msg hkm (σ k) = 0)
+    (hσ_off : ∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0)
+    (P : ECPoint E.q) :
+    extractorDivisorCoeffs E stmt msg hkm P = dCoeffs E msg.toD β_fun P := by
+  classical
+  -- D3 data for the σ-matching (S5).
+  obtain ⟨hBound, hCanon, hNonCanon⟩ :=
+    extractorCoeffFromSigma_satisfies_D3 E stmt msg d hDeg hkm hNoNegP β_fun
+      hβsup hβcov hβsum σ hσ_eq hσ_betam hσ_off
+  -- D3 consumption for extractedScalars.
+  obtain ⟨_, hScalars_eq⟩ :=
+    extractorSucceeds_of_natural_witness E stmt msg d hd hkm hNoNegP
+      (extractorCoeffFromSigma E stmt msg hkm β_fun σ)
+      hBound hCanon hNonCanon
+  -- D-zeros enumeration: σ k₀ = 0 for some k₀.
+  obtain ⟨k₀, hk₀⟩ := sigma_zero_preimage_exists E stmt msg hkm σ hσ_off
+  -- multAt k₀ = 1 in ℕ (via ZMod q identity + bound multAt k₀ < E.q).
+  have hBetaLt : ∀ k, multAt E β_fun msg.toD k < E.q := by
+    intro k
+    have hSingle : multAt E β_fun msg.toD k ≤
+        ∑ k' : Fin (zerosCard E msg.toD), multAt E β_fun msg.toD k' := by
+      refine Finset.single_le_sum
+        (f := fun k' => multAt E β_fun msg.toD k') ?_ (Finset.mem_univ k)
+      intro _ _; exact Nat.zero_le _
+    have hSum := sum_multAt_eq_degE E β_fun msg.toD hβsup hβsum
+    rw [hSum] at hSingle
+    exact lt_of_le_of_lt (hSingle.trans hDeg) hd
+  have hMult_k₀_one_nat : multAt E β_fun msg.toD k₀ = 1 := by
+    have hBM := hσ_betam k₀
+    rw [hk₀, distinctM'_zero] at hBM
+    -- hBM : (multAt k₀ : ZMod E.q) + (-1) = 0 ⇒ (multAt k₀ : ZMod E.q) = 1.
+    have hZMod : ((multAt E β_fun msg.toD k₀ : ℕ) : ZMod E.q) = 1 := by
+      have : ((multAt E β_fun msg.toD k₀ : ℕ) : ZMod E.q) = 0 - (-1) := by
+        linear_combination hBM
+      rw [this]; ring
+    -- Bound: multAt k₀ < E.q, and (multAt k₀ : ZMod q) = 1 with q ≥ 2.
+    have h1LtQ : (1 : ℕ) < E.q := E.hq_prime.one_lt
+    have h1ValEq : ((1 : ZMod E.q)).val = 1 := by
+      rw [ZMod.val_one_eq_one_mod]
+      exact Nat.mod_eq_of_lt h1LtQ
+    have hValLeft : ((multAt E β_fun msg.toD k₀ : ℕ) : ZMod E.q).val =
+        multAt E β_fun msg.toD k₀ :=
+      ZMod.val_natCast_of_lt (hBetaLt k₀)
+    rw [hZMod] at hValLeft
+    rw [h1ValEq] at hValLeft
+    exact hValLeft.symm
+  -- zerosAt k₀ = -P_aff.
+  have hk₀_aff : zerosAt E msg.toD k₀ = (stmt.target.1, -stmt.target.2) := by
+    rw [hσ_eq k₀, hk₀, distinctR_zero]
+  -- β_fun (-P_aff) = multAt k₀ = 1.
+  have hβ_negP : β_fun (stmt.target.1, -stmt.target.2) = 1 := by
+    have : β_fun (zerosAt E msg.toD k₀) = multAt E β_fun msg.toD k₀ := rfl
+    rw [← hk₀_aff, this, hMult_k₀_one_nat]
+  -- Case on P.
+  cases P with
+  | infinity =>
+      show -(msg.toD.degE : ℤ) = -(msg.toD.degE : ℤ); rfl
+  | affine x y =>
+      -- LHS = indicator + filter-sum extractedScalars.
+      -- RHS = (β_fun (x, y) : ℤ).
+      show (if (x, y) = (stmt.target.1, -stmt.target.2)
+            then (1 : ℤ) else 0) +
+           ∑ j ∈ (Finset.univ : Finset (Fin msg.k)).filter
+             (fun j => extractorBases E stmt msg hkm j = (x, y)),
+             extractedScalars E stmt msg hkm j = (β_fun (x, y) : ℤ)
+      by_cases hxy : (x, y) = (stmt.target.1, -stmt.target.2)
+      · -- Sub-case: (x, y) = -P_aff.
+        rw [if_pos hxy, hxy]
+        -- The filter is empty by hNoNegP.
+        have hEmpty : ((Finset.univ : Finset (Fin msg.k)).filter
+            (fun j => extractorBases E stmt msg hkm j =
+                       (stmt.target.1, -stmt.target.2))) = ∅ := by
+          rw [Finset.eq_empty_iff_forall_not_mem]
+          intro j hj
+          apply hNoNegP
+          exact ⟨j, hj⟩
+        rw [hEmpty, Finset.sum_empty, add_zero, hβ_negP]
+        rfl
+      · -- Sub-case: (x, y) ≠ -P_aff. Indicator = 0.
+        rw [if_neg hxy, zero_add]
+        by_cases hInImage : (x, y) ∈ baseImage E stmt msg hkm
+        · -- Sub-sub-case: (x, y) ∈ baseImage.
+          -- Let i_c = canonical index with extractorBases i_c = (x, y).
+          rw [baseImage, Finset.mem_image] at hInImage
+          obtain ⟨j₀, _, hj₀eq⟩ := hInImage
+          -- Canonicalize: i_c = (extractorGroup j₀).min'.
+          set i_c := (extractorGroup E stmt msg hkm j₀).min'
+            (extractorGroup_nonempty E stmt msg hkm j₀) with hi_c_def
+          have hi_c_canon : extractorIsCanonical E stmt msg hkm i_c := by
+            show (extractorGroup E stmt msg hkm i_c).min'
+              (extractorGroup_nonempty E stmt msg hkm i_c) = i_c
+            have hi_c_in : i_c ∈ extractorGroup E stmt msg hkm j₀ :=
+              Finset.min'_mem _ _
+            have hG_eq : extractorGroup E stmt msg hkm i_c =
+                         extractorGroup E stmt msg hkm j₀ :=
+              extractedScalars_group_canonical E stmt msg hkm j₀ i_c hi_c_in
+            apply le_antisymm
+            · apply Finset.min'_le
+              exact mem_extractorGroup_self E stmt msg hkm i_c
+            · apply Finset.le_min'
+              intro y' hy'
+              rw [hG_eq] at hy'
+              rw [hi_c_def]
+              exact Finset.min'_le _ _ hy'
+          -- extractorBases i_c = extractorBases j₀ = (x, y).
+          have hi_c_base : extractorBases E stmt msg hkm i_c = (x, y) := by
+            have hi_c_in : i_c ∈ extractorGroup E stmt msg hkm j₀ :=
+              Finset.min'_mem _ _
+            have := Finset.mem_filter.mp hi_c_in
+            rw [this.2, hj₀eq]
+          -- The filter sum equals extractedScalars i_c.
+          -- Go via sum_extractedScalars_over_group.
+          have hFilter_eq_group : ((Finset.univ : Finset (Fin msg.k)).filter
+              (fun j => extractorBases E stmt msg hkm j = (x, y)))
+              = extractorGroup E stmt msg hkm i_c := by
+            ext j
+            simp only [Finset.mem_filter, Finset.mem_univ, true_and,
+              extractorGroup]
+            rw [hi_c_base]
+          have hSum_group : ∑ j ∈ extractorGroup E stmt msg hkm i_c,
+              extractedScalars E stmt msg hkm j
+              = extractedScalars E stmt msg hkm
+                  ((extractorGroup E stmt msg hkm i_c).min'
+                    (extractorGroup_nonempty E stmt msg hkm i_c)) :=
+            sum_extractedScalars_over_group E stmt msg hkm hNoNegP i_c
+          rw [hFilter_eq_group, hSum_group, hi_c_canon]
+          -- extractedScalars i_c = (extractorCoeffFromSigma ... i_c : ℤ).
+          rw [hScalars_eq i_c]
+          -- Now case on whether σ hits baseImagePos (baseIndexOf i_c).
+          set pos := baseImagePos E stmt msg hkm
+            (baseIndexOf E stmt msg hkm i_c) with hpos_def
+          by_cases hHit : ∃ k : Fin (zerosCard E msg.toD), σ k = pos
+          · -- Hit: extractorCoeffFromSigma i_c = multAt (hHit.choose).
+            rw [hpos_def] at hHit
+            rw [extractorCoeffFromSigma_canonical_hit
+                  E stmt msg hkm β_fun σ i_c hi_c_canon hHit]
+            set k := hHit.choose
+            have hkspec : σ k = baseImagePos E stmt msg hkm
+                (baseIndexOf E stmt msg hkm i_c) := hHit.choose_spec
+            -- zerosAt k = distinctR (σ k) = baseAt (baseIndexOf i_c) = extractorBases i_c = (x, y).
+            have hzerosAt_k : zerosAt E msg.toD k = (x, y) := by
+              rw [hσ_eq k, hkspec, distinctR_baseImagePos,
+                  baseAt_baseIndexOf, hi_c_base]
+            -- β_fun (x, y) = β_fun (zerosAt k) = multAt k.
+            have hβ_xy : β_fun (x, y) = multAt E β_fun msg.toD k := by
+              unfold multAt
+              rw [hzerosAt_k]
+            rw [hβ_xy]
+          · -- No hit: extractorCoeffFromSigma i_c = 0. Need β_fun (x, y) = 0.
+            rw [hpos_def] at hHit
+            rw [extractorCoeffFromSigma_canonical_nohit
+                  E stmt msg hkm β_fun σ i_c hi_c_canon hHit]
+            -- Show β_fun (x, y) = 0 by contradiction with hβsup + zerosAt_covers_zeros.
+            have hβ_eq_zero : β_fun (x, y) = 0 := by
+              by_contra hβne
+              obtain ⟨hMem, hEval⟩ := hβsup (x, y) hβne
+              obtain ⟨k, hk⟩ := zerosAt_covers_zeros E msg.toD (x, y) hMem hEval
+              -- distinctR (σ k) = zerosAt k = (x, y) = baseAt (baseIndexOf i_c) = distinctR pos.
+              have hDRσ : distinctR E stmt msg hkm (σ k) = (x, y) := by
+                rw [← hσ_eq k, hk]
+              have hDRpos : distinctR E stmt msg hkm
+                  (baseImagePos E stmt msg hkm
+                    (baseIndexOf E stmt msg hkm i_c)) = (x, y) := by
+                rw [distinctR_baseImagePos, baseAt_baseIndexOf, hi_c_base]
+              have hEqDR : distinctR E stmt msg hkm (σ k) =
+                  distinctR E stmt msg hkm
+                    (baseImagePos E stmt msg hkm
+                      (baseIndexOf E stmt msg hkm i_c)) := by
+                rw [hDRσ, hDRpos]
+              have hσk_eq_pos : σ k =
+                  baseImagePos E stmt msg hkm
+                    (baseIndexOf E stmt msg hkm i_c) :=
+                distinctR_injective E stmt msg hkm hNoNegP hEqDR
+              exact hHit ⟨k, hσk_eq_pos⟩
+            rw [hβ_eq_zero]
+        · -- Sub-sub-case: (x, y) ∉ baseImage.
+          rw [extractorDivisorCoeffs_affine_not_in_baseImage E stmt msg hkm
+                x y hInImage, Finset.sum_empty]
+          -- β_fun (x, y) = 0 by contradiction.
+          have hβ_eq_zero : β_fun (x, y) = 0 := by
+            by_contra hβne
+            obtain ⟨hMem, hEval⟩ := hβsup (x, y) hβne
+            obtain ⟨k, hk⟩ := zerosAt_covers_zeros E msg.toD (x, y) hMem hEval
+            -- distinctR (σ k) = (x, y).
+            have hDRσ : distinctR E stmt msg hkm (σ k) = (x, y) := by
+              rw [← hσ_eq k, hk]
+            -- Case on σ k: either 0 or baseImagePos.
+            rcases fin_one_plus_cases (baseImageCount E stmt msg hkm) (σ k)
+              with hσ_zero | ⟨i, hσ_succ⟩
+            · -- σ k = 0 ⇒ (x, y) = distinctR 0 = -P_aff, contradicts hxy.
+              rw [hσ_zero, distinctR_zero] at hDRσ
+              exact hxy hDRσ.symm
+            · -- σ k = ⟨i+1, _⟩ ⇒ (x, y) = baseAt i ∈ baseImage.
+              rw [hσ_succ, distinctR_succ] at hDRσ
+              exact hInImage (hDRσ ▸ baseAt_mem_baseImage E stmt msg hkm i)
+          rw [hβ_eq_zero]
+          rfl
+
+/-- **S6 + S4 + S5 combined.** Under the full T4 hypothesis set,
+    the extractor succeeds and its divisor coefficient function
+    is principal. -/
+theorem extractor_succeeds_and_isPrincipal
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
+    (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
+      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
+    (hValidPairsLarge :
+      6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) + 1
+        ≤ (validPairs E).card) :
+    extractorSucceeds E stmt msg d hkm ∧
+    IsPrincipal E (extractorDivisorCoeffs E stmt msg hkm) := by
+  classical
+  -- Step 1: apply S4.
+  obtain ⟨β_fun, σ, hβsup, hβcov, hβsum, hdCoeffsPrincipal,
+          hσ_eq, hσ_betam, hσ_off⟩ :=
+    distinctSigma_exists E stmt msg d hDeg hd hkm hAdm hNoNegP
+      hAllZero hValidPairsLarge
+  -- Step 2: apply S5 to get extractorSucceeds + scalar identification.
+  obtain ⟨hBound, hCanon, hNonCanon⟩ :=
+    extractorCoeffFromSigma_satisfies_D3 E stmt msg d hDeg hkm hNoNegP
+      β_fun hβsup hβcov hβsum σ hσ_eq hσ_betam hσ_off
+  obtain ⟨hSucceeds, _hScalars_eq⟩ :=
+    extractorSucceeds_of_natural_witness E stmt msg d hd hkm hNoNegP
+      (extractorCoeffFromSigma E stmt msg hkm β_fun σ)
+      hBound hCanon hNonCanon
+  -- Step 3: pointwise matching ⇒ functional equality.
+  have hEq : extractorDivisorCoeffs E stmt msg hkm =
+             dCoeffs E msg.toD β_fun := by
+    funext P
+    exact extractorDivisorCoeffs_eq_dCoeffs E stmt msg d hDeg hd hkm
+      hNoNegP β_fun hβsup hβcov hβsum σ hσ_eq hσ_betam hσ_off P
+  -- Step 4: transfer IsPrincipal.
+  refine ⟨hSucceeds, ?_⟩
+  rw [hEq]
+  exact hdCoeffsPrincipal
+
 /-! ## Composite bridge axiom (TEMPORARY — being decomposed)
 
     The composite `weil_reciprocity_soundness` axiom produces the full
