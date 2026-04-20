@@ -2722,6 +2722,153 @@ now axiom-complete modulo the Silverman primitives named above.
 
 The axiom-elimination plan is formally complete.
 
+---
+
+## Queue 2 — Residual-Axiom Cleanup (B + A + C)
+
+After Queue 1's completion, `Divisor.ma_extractable`'s axiom surface is
+
+```
+propext, Classical.choice, Quot.sound                             (Lean)
+Divisor.ECPoint.add_assoc, add_comm, neg_add_cancel               (group law)
+Divisor.principal_divisor_iff                                     (Silverman III Cor 3.5)
+Divisor.CoordRingElt.has_principal_divisor                        (Silverman III Prop 3.4 + Cor 3.5) — transient
+Divisor.polyG_zero_of_logDerivCheck_identically_zero              (scalar residue content) — transient
+```
+
+The two transient axioms are the remaining elimination targets. Queue 2 attempts all of:
+
+- **Phase B** — Eliminate `CoordRingElt.has_principal_divisor` by constructing `β` explicitly from `D.a, D.b` via `DAtA₁Poly` factorization, plus a narrow `CoordRingElt.divisor_group_sum_zero` axiom (Silverman III Prop 3.4, the "Abel's theorem on E" content only).
+- **Phase A** — Eliminate `polyG_zero_of_logDerivCheck_identically_zero` by mechanizing the paper's polynomial-level residue identity between `polyGPoly` and `clearedFiberPoly` (mod `curveEqPoly E`), then applying the density argument on `E × E`.
+- **Phase C** — Close out: final axiom audit, plan summary, README note, warning cleanup.
+
+Honest expectation: Phase A is high-risk (~400 LOC of function-field algebraic identity). If it blocks, the queue halts gracefully after Phase B + Phase C still landed.
+
+### Q2 Harness contract
+
+Same shape as Queue 1 harness (see below): one `general-purpose` subagent per step, strictly sequential, `--no-gpg-sign` commits, no AI attribution, no `sorry`/`admit`, gatekeeping checks on axiom count + build + scope. Up to 3 attempts per step.
+
+Additional Queue-2-specific rules:
+- **Narrow-axiom additions are permitted** only when explicitly anticipated in the step's brief (specifically `CoordRingElt.divisor_group_sum_zero` in QB2). Any other net-new axiom → FAIL.
+- **Fall-through**: if QA1 (the polynomial residue identity) exceeds 3 attempts, the driver skips QA2, QA3 and proceeds to QC1 with Phase A documented as blocked. The `polyG_zero_of_logDerivCheck_identically_zero` axiom then remains; QC1 documents this in the plan + README honestly.
+
+### Q2 Queue
+
+#### QB1 — Constructive β from `D.a, D.b`
+
+**Estimated LOC**: ~300. **Risk**: medium.
+
+**Preconditions**: Queue 1 complete. `DAtA₁Poly`, `numZeros_le_two_degE`, `zeros` enumeration all landed.
+
+**Goal**: Define `betaConstructive D : ZMod E.q × ZMod E.q → ℕ` as the multiplicity function induced by `DAtA₁Poly D %ₘ curveEqPoly E`'s linear-factor decomposition over `E.points`. Prove:
+- `betaConstructive D P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0`.
+- `∀ P ∈ E.points, D.eval P.1 P.2 = 0 → betaConstructive D P ≠ 0`.
+- `(∑ P ∈ E.points, betaConstructive D P) = D.degE`.
+
+**Scope**: New module `Divisor/BetaConstructive.lean` (or extend `Divisor/DivisorPrincipal.lean`).
+
+**Completion signal**: `betaConstructive`, `betaConstructive_support`, `betaConstructive_covers`, `betaConstructive_sum_eq_degE`.
+
+#### QB2 — Narrow Abel axiom + group-sum zero
+
+**Estimated LOC**: ~100. **Risk**: low (we add one narrow axiom, the rest is mechanical).
+
+**Preconditions**: QB1 landed.
+
+**Goal**: Add narrow axiom `CoordRingElt.divisor_group_sum_zero` stating the "divisor of a rational function on E has group-sum zero" content of Silverman III Prop 3.4. Use it to derive `∀ D, β-weighted group sum on E.points = 0` for `β = betaConstructive D`.
+
+Intended axiom form:
+```
+axiom CoordRingElt.divisor_group_sum_zero
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    ECPoint.weightedSum E E.points
+      (fun P => ECPoint.nsmul E (betaConstructive E D P)
+                    (ECPoint.affine P.1 P.2)) = 0
+```
+
+(This is strictly narrower than `has_principal_divisor` — only asserts the group-sum-zero part; the support, existence, and degree-sum-zero parts are derivable from QB1.)
+
+**Completion signal**: axiom `CoordRingElt.divisor_group_sum_zero` added; theorem `betaConstructive_group_sum_zero` derived.
+
+#### QB3 — Replace `has_principal_divisor` with theorem
+
+**Estimated LOC**: ~80.
+
+**Preconditions**: QB1 + QB2 landed.
+
+**Goal**: Derive `CoordRingElt.has_principal_divisor` as a theorem from QB1 + QB2, deleting the axiom. All downstream consumers (particularly `distinctSigma_exists`) must still compile.
+
+**Completion signal**: `has_principal_divisor` no longer an axiom; `lake build` green.
+
+#### QA1 — Polynomial residue identity
+
+**Estimated LOC**: ~400. **Risk**: HIGH.
+
+**Preconditions**: QB3 landed.
+
+**Goal**: Prove the paper's Lemma-6 + log-derivative identity at the polynomial level:
+```
+polyGPoly E (zerosAt D) (betaConstructive ∘ zerosAt D)
+    (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) m) A₀
+  ≡ (explicit nonzero scalar in A₀) · clearedFiberPoly E D P k B m A₀
+    (mod curveEqPoly E)
+```
+
+This is the function-field content: `N(D) = ∏ (z − z(Q_k))^{β_k}`, its log-derivative `L(N(D)) = Σ β_k/(z − z(Q_k))`, and the `ellP = L_Q · (X₁ − X₀)` denominator clearing.
+
+Strategy: iterate on the polynomial identity via `ring` on each coefficient block, or use `linear_combination` with explicit witnesses. Existing `polyGPoly`, `clearedFiberPoly_identity`, `bivEval_*` infrastructure is the starting point.
+
+**Scope**: New module `Divisor/PolyGResidue.lean`.
+
+**Completion signal**: `polyGPoly_eq_clearedFiberPoly_mod_curve` (or similar name), no new axioms.
+
+**Fall-through**: If 3 attempts fail, driver halts Phase A and proceeds to QC1. Document blockers in the plan.
+
+#### QA2 — Density argument
+
+**Estimated LOC**: ~200. **Risk**: medium.
+
+**Preconditions**: QA1 landed.
+
+**Goal**: From `hAllZero` (`logDerivCheckFn ≡ 0` on defined non-vertical `E × E`), derive `polyG ≡ 0` on ALL non-vertical `E × E`. Key steps:
+1. `clearedFiberPoly_identity` gives `bivEval clearedFiberPoly = (A₁.1 − A₀.1)^N · logDerivCheckFnCleared` on non-vertical cone.
+2. `hAllZero` ⇒ `logDerivCheckFnCleared = 0` on defined pairs.
+3. `card_zeros_on_E_le` density ⇒ `clearedFiberPoly %ₘ curveEqPoly E = 0`.
+4. QA1's identity ⇒ `polyGPoly %ₘ curveEqPoly E = 0`.
+5. `bivEval_polyGPoly` ⇒ `polyG = 0` on all non-vertical pairs of `E × E`.
+
+**Completion signal**: `polyG_zero_on_nonvertical_of_hAllZero` as a standalone theorem.
+
+#### QA3 — Replace `polyG_zero_of_logDerivCheck_identically_zero` with theorem
+
+**Estimated LOC**: ~80.
+
+**Preconditions**: QA2 landed.
+
+**Goal**: Delete the axiom. Replace with theorem of identical signature, proved via QA2. All downstream consumers compile.
+
+**Completion signal**: `polyG_zero_of_logDerivCheck_identically_zero` no longer an axiom; `lake build` green; `#print axioms Divisor.ma_extractable` shows the narrowed surface.
+
+#### QC1 — Audit + plan close-out + README
+
+**Estimated LOC**: ~80 (mostly docs).
+
+**Preconditions**: All prior Q2 steps landed OR explicitly skipped per fall-through.
+
+**Goal**:
+1. Run `#print axioms Divisor.ma_extractable`, `ip_knowledge_sound`, `ma_completeness` and record final axiom surfaces.
+2. Update the plan's header "Target end-state" block with the actual final state.
+3. Add/update `README.md` with a high-level description of the axiom surface and pointers to Silverman citations.
+4. Clean up the `unused variable` warnings in `Divisor/Soundness.lean` and any modules heavily edited by Queue 2.
+
+**Completion signal**: final plan session log entry appended documenting the full Queue 2 outcome; README lists the axioms and their citations.
+
+### Q2 Queue-completion acceptance
+
+After QC1 lands successfully, driver appends one final "Queue 2 acceptance" session log entry summarizing the full run (commits per step, total LOC, final axiom list, any skipped/blocked steps) and exits.
+
+---
+
 ## Autonomous Driver Queue
 
 This section specifies the final 7-step queue that eliminates the
