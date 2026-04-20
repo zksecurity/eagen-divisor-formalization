@@ -1681,3 +1681,91 @@ Divisor.extractorSucceeds_of_logDerivCheck_identically_zero_general  [T4]
 
 Unchanged — A2+A4 are infrastructure for T5 A5. Visible axioms at
 `ma_extractable` still 1 (T4). T5 hidden inside T4.
+
+### Session 16 (2026-04-20) — T5 A3 landed (existence fallback path)
+
+Commits (this session):
+- `b7e9ff5` — T5 A3: `exists_good_lambda` existence lemma in
+  `Divisor/PolyFibK.lean` (~260 LOC). Build clean.
+
+**What landed**: the Phase A3 existence variant from the plan's
+"Alternative" fallback path (existence of ONE good slope, rather
+than density argument over most slopes).
+
+Definitions + lemmas:
+- `goodIntercepts E lam`: `{μ ∈ F_q : ≥ 2 points of E on y = λx + μ}`.
+- `interceptOf_fst_mem_goodIntercepts`: any non-vertical chord's
+  intercept lives in `goodIntercepts`.
+- `pairsWithSlope_card_le_six_mul_goodIntercepts`: per-slope bound
+  `|pairsWithSlope λ| ≤ 6 · |goodIntercepts λ|`, via mapping pairs
+  to first-coord intercept and bounding each fiber by
+  `distinctPairs(pointsOnLine) ≤ 3·2 = 6` (interval_cases on the
+  ≤ 3 line-points bound).
+- `validPairs_card_eq_sum_pairsWithSlope`: fiberwise decomposition
+  by slope (via `Finset.card_eq_sum_card_fiberwise`; the
+  "non-negation" side condition of validPairs is automatic for
+  non-vertical pairs).
+- `validPairs_le_six_sum_goodIntercepts`: aggregate bound
+  `|validPairs E| ≤ 6 · Σ_λ |goodIntercepts λ|`.
+- `exists_good_lambda`: under `6·E.q·(N + |S|(|S|-1)) + 1 ≤ |validPairs|`,
+  ∃ slope λ with InjOn (zLambda E λ) S ∧ N ≤ |goodIntercepts λ|.
+
+**Key techniques**:
+1. Pigeonhole via contradiction: if no good λ exists, ∀ lam ∉ bad,
+   `|goodIntercepts lam| + 1 ≤ N`. Then Σ_lam = Σ_bad + Σ_notbad
+   bounded separately: Σ_bad ≤ bad.card · q ≤ b · q, and
+   Σ_notbad + c ≤ N · c where c = |univ \ bad|.
+2. Omega handles the final contradiction after extracting linear
+   intermediate inequalities with explicit `ring` normalizations
+   for products (e.g., `E.q * (N + b) = E.q * N + E.q * b`,
+   `E.q * b = b * E.q`).
+3. Used `hsum_notbad_shifted : Tnb + c ≤ N · c` form (rather than
+   `(N-1)·c`) to avoid Nat subtraction issues.
+
+**Subtleties**:
+- The hypothesis `hN_pos : 1 ≤ N` was removed as redundant: the
+  omega contradiction works even for `N = 0`. When `N = 0`,
+  `Tnb + c ≤ 0` forces Tnb = c = 0, and `E.q*N + 1 ≤ Tnb` forces
+  `1 ≤ 0`, false.
+- No additional axiom was introduced. The quantitative hypothesis
+  on `|validPairs|` is a precondition (to be verified in A5/T5
+  usage from existing Hasse-Weil + validPairs lower bounds).
+- A3 is the "HIGH RISK" step per the plan. The existence path
+  resolves the risk; the "most slopes" density path is not needed.
+
+**Axiom state after session 16**:
+```
+propext, Classical.choice, Quot.sound
+Divisor.ECPoint.add_comm, add_assoc, neg_add_cancel
+Divisor.extractorSucceeds_of_logDerivCheck_identically_zero_general  [T4]
+```
+
+Unchanged — A3 is infrastructure for T5 A5. Visible axioms at
+`ma_extractable` still 1 (T4). T5 hidden inside T4.
+
+**Continuation** (T5 A5): σ assembly. Given the good λ from A3+A4:
+1. Show `polyFibK λ` has > natDegree zeros (from `polyG ≡ 0 on
+   E × E` hypothesis + A2 connection lemma + A3's good λ gives ≥
+   N = d+M distinct μ-values realizing the polyFibK zero).
+2. Hence `polyFibK λ = 0` as a polynomial.
+3. Regroup into simple-pole partial fraction form.
+4. Apply `simple_pole_fraction_zero` (A1) to extract zero residues.
+5. Match zero residues to σ: Fin d ↪ Fin M and derive
+   `β_k + m_{σ(k)} = 0`, `Q_k = R_{σ(k)}`, and `m_j = 0` for
+   j ∉ range(σ).
+
+Estimated ~80-150 LOC. Uses A1 (standalone) + A2 (connection) + A3
+(existence) + A4 (distinctness, baked into A3's output). After A5
+lands, `log_deriv_nonvanishing_criterion` becomes a theorem,
+eliminating the axiom (though it remains hidden behind T4 until
+T4 is mechanized as well).
+
+**Quantitative hypothesis threading**: A3's precondition is
+`6 * E.q * (N + S.card * (S.card - 1)) + 1 ≤ (validPairs E).card`.
+For T5 with N = d+M ≤ D.degE + k + 1 and S = range Q ∪ range R
+(card ≤ d + M), this becomes roughly
+`6·q·(d+M)² ≤ |validPairs| ≈ |E|² - 3|E|`. By Hasse-Weil,
+|E| ≈ q, so we need `q² ≳ 6q·(d+M)²`, i.e., `q ≳ 6·(d+M)²`. This
+is a stronger hypothesis than the current axiom's `D.degE < E.q`.
+When mechanizing T5 fully, this quantitative hypothesis will
+replace (or strengthen) the `hDeg : D.degE < E.q` side condition.
