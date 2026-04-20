@@ -2259,6 +2259,29 @@ new narrow axioms are present in the project:
 After the remaining work lands, `weil_reciprocity_soundness` is
 removed and the axiom count drops by 1.
 
+### Session 22 (2026-04-20) — S1 distinctR construction
+
+Commit (this session):
+- S1 — distinctR injective enumeration. Adds `distinctRCons`
+  (the `Fin.cons`-based `Fin (n + 1) → ZMod²` family of
+  `(P.1, -P.2)` prepended to `baseAt`), its `zero` / `succ` /
+  `injective` lemmas, then packages it as `distinctR` of type
+  `Fin (1 + baseImageCount) → ZMod²` via
+  `finCongr (Nat.add_comm 1 _)` composition. Exposes
+  `distinctR_zero`, `distinctR_succ`, and `distinctR_injective`
+  consumed by later queue steps. ~70 LOC added to
+  `Divisor/ExtractorBridge.lean`.
+
+**Rationale for the two-layer definition**: `Fin.cons` only
+types in the `Fin (n + 1)` form, while the T5 consumer
+(`log_deriv_nonvanishing_criterion`) takes an abstract `Fin M`
+and S2..S7 prefer the `1 + baseImageCount` shape (matches
+the paper's `1 + k_distinct` index convention). The
+`finCongr`-shim keeps the two forms aligned without touching
+T5's upstream signature.
+
+**No new axioms**, no new `sorry`/`admit`. `lake build` green.
+
 ## Autonomous Driver Queue
 
 This section specifies the final 7-step queue that eliminates the

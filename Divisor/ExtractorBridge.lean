@@ -756,6 +756,93 @@ theorem baseAt_ne_negP
   exact negP_notin_baseImage E stmt msg hkm hNoNegP
     (heq ▸ baseAt_mem_baseImage E stmt msg hkm k)
 
+/-! ## Distinct-R enumeration (S1)
+
+    `log_deriv_nonvanishing_criterion` (T5) demands an injective
+    `R : Fin M → (ZMod E.q)²` family. We form it as
+    `Fin.cons (P.1, -P.2) baseAt`: the head is `-P_aff`, the tail
+    enumerates the distinct base points. Under `hNoNegP`,
+    `-P_aff` is outside the base image (`baseAt_ne_negP`) and
+    `baseAt` is already injective, so the combined family is injective.
+
+    The length is packaged as `1 + baseImageCount` (matching T5's
+    expected shape `1 + M`); internally we reuse `Fin.cons` which
+    produces a `Fin (n + 1)`-indexed family and compose with
+    `finCongr (Nat.add_comm _ _)`. -/
+
+/-- Underlying `Fin.cons`-based family `Fin (n + 1) → ZMod² E.q`. -/
+noncomputable def distinctRCons
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) :
+    Fin (baseImageCount E stmt msg hkm + 1) → ZMod E.q × ZMod E.q :=
+  Fin.cons (α := fun _ => ZMod E.q × ZMod E.q)
+    (stmt.target.1, -stmt.target.2) (baseAt E stmt msg hkm)
+
+@[simp] theorem distinctRCons_zero
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) :
+    distinctRCons E stmt msg hkm 0 = (stmt.target.1, -stmt.target.2) := by
+  simp [distinctRCons]
+
+@[simp] theorem distinctRCons_succ
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) (i : Fin (baseImageCount E stmt msg hkm)) :
+    distinctRCons E stmt msg hkm i.succ = baseAt E stmt msg hkm i := by
+  simp [distinctRCons]
+
+theorem distinctRCons_injective
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty) :
+    Function.Injective (distinctRCons E stmt msg hkm) := by
+  refine Fin.cons_injective_of_injective ?_ (baseAt_injective E stmt msg hkm)
+  rintro ⟨i, hi⟩
+  exact baseAt_ne_negP E stmt msg hkm hNoNegP i hi
+
+/-- Distinct-R family: `-P_aff` prepended to the distinct base points.
+    Length `1 + baseImageCount`. Used as the `R` parameter for T5. -/
+noncomputable def distinctR
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) :
+    Fin (1 + baseImageCount E stmt msg hkm) → ZMod E.q × ZMod E.q :=
+  distinctRCons E stmt msg hkm ∘
+    finCongr (Nat.add_comm 1 (baseImageCount E stmt msg hkm))
+
+@[simp] theorem distinctR_zero
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) :
+    distinctR E stmt msg hkm ⟨0, by omega⟩ = (stmt.target.1, -stmt.target.2) := by
+  unfold distinctR
+  have : (finCongr (Nat.add_comm 1 (baseImageCount E stmt msg hkm))
+            ⟨0, by omega⟩ : Fin (baseImageCount E stmt msg hkm + 1))
+         = 0 := rfl
+  simp [Function.comp_apply, this, distinctRCons_zero]
+
+@[simp] theorem distinctR_succ
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) (i : Fin (baseImageCount E stmt msg hkm)) :
+    distinctR E stmt msg hkm ⟨i.val + 1, by omega⟩
+      = baseAt E stmt msg hkm i := by
+  unfold distinctR
+  have hEq : (finCongr (Nat.add_comm 1 (baseImageCount E stmt msg hkm))
+                ⟨i.val + 1, by omega⟩ : Fin (baseImageCount E stmt msg hkm + 1))
+             = i.succ := by
+    apply Fin.ext
+    rfl
+  simp [Function.comp_apply, hEq, distinctRCons_succ]
+
+/-- Under `hNoNegP`, `distinctR` is injective. Head is `-P_aff`,
+    which is outside `baseAt`'s range (`baseAt_ne_negP`); tail is
+    injective (`baseAt_injective`). -/
+theorem distinctR_injective
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty) :
+    Function.Injective (distinctR E stmt msg hkm) := by
+  unfold distinctR
+  exact (distinctRCons_injective E stmt msg hkm hNoNegP).comp
+    (finCongr _).injective
+
 /-! ## Narrow polyG-bridge axiom (scalar level)
 
     The remaining classical content of the old composite
