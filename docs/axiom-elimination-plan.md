@@ -2099,3 +2099,76 @@ matching `clearedFiberPoly` to `polyGPoly`.
    `IsPrincipal` hypothesis — either via a new AG axiom
    (CoordRingElt divisor is principal, Silverman Ch II) or via
    existing `principal_divisor_iff.mpr` applied to σ-matching data.
+
+### Session 20 (2026-04-20) — T4 axiom narrowed to `weil_reciprocity_soundness`
+
+Commits (this session):
+- Refactor: `extracted_scalars_valid`, `ma_extractable`, `ip_knowledge_sound`
+  moved from `Soundness.lean` to `ExtractorBridge.lean` (which already
+  imports `Soundness.lean` and provides the D3+D4+D5 infrastructure).
+- T4 axiom eliminated as a theorem. The old
+  `extractorSucceeds_of_logDerivCheck_identically_zero_general` axiom
+  is replaced by a theorem of the same name deriving its conclusion
+  from a narrower `weil_reciprocity_soundness` axiom + the landed
+  `target_eq_weightedSum_of_principal` (D4+D5).
+- New axiom `weil_reciprocity_soundness`: strictly narrower than T4.
+  Conclusion `extractorSucceeds ∧ IsPrincipal (extractorDivisorCoeffs)`,
+  with the target equality now derived via D4+D5 rather than
+  axiomatized directly.
+
+**Axiom state after session 20** (`#print axioms Divisor.ma_extractable`):
+```
+propext, Classical.choice, Quot.sound                             [Lean]
+Divisor.ECPoint.add_assoc, add_comm, neg_add_cancel               [group law]
+Divisor.principal_divisor_iff                                     [Silverman III.3.5]
+Divisor.weil_reciprocity_soundness                                [NEW — AG]
+```
+
+Axiom count: 3 Lean + 5 classical = 8 total (for `ma_extractable`).
+`ma_completeness` uses `weil_reciprocity_honest` instead of
+`weil_reciprocity_soundness`; `ip_knowledge_sound` is identical to
+`ma_extractable` axiom-wise (extractor-soundness path).
+
+Full project axiom set (across all named theorems):
+- 3 Lean: `propext`, `Classical.choice`, `Quot.sound`
+- 3 group law: `ECPoint.add_assoc`, `add_comm`, `neg_add_cancel`
+- 2 Hasse-Weil: `hasse_weil_upper`, `hasse_weil_lower`
+  (referenced indirectly via the validPairs/slope-distribution
+  infrastructure; not on the soundness path but present in the
+  module)
+- 2 Silverman: `principal_divisor_iff`, `weil_reciprocity_honest`
+- 1 new narrow: `weil_reciprocity_soundness`
+
+Total: 3 Lean + 8 classical = 11. Target was 3 Lean + 8 classical.
+Met target count; the new `weil_reciprocity_soundness` axiom replaces
+the old T4 axiom in the budget.
+
+**The `weil_reciprocity_soundness` axiom content** (for context of
+future reduction attempts): encapsulates two classical AG facts:
+* **D1 / polynomial residue identity**: `logDerivCheckFn ≡ 0 on
+  defined non-vertical E × E pairs` implies, at the polynomial level,
+  that `polyG` vanishes on E × E non-vertical pairs for D's divisor
+  data `(Q, β)`. This is the paper's Weil-reciprocity argument in the
+  soundness direction (`ec.tex`, `cor:log-derivative` proof). Mechanizing
+  this requires function-field infrastructure (Weierstrass preparation,
+  local-uniformizer calculus) that is not currently present in the
+  Divisor development.
+* **D4+D5 / AG principality**: D's divisor `(-P) + Σ extractedScalars ·
+  B_i - D.degE · ∞` is `IsPrincipal` by Silverman III.3.5 (applied to
+  `D/L^m` as a non-zero rational function on E).
+
+**Continuation** (future sessions):
+1. Attempt to mechanize the D1 polynomial residue identity
+   (~900-1200 LOC function-field infrastructure) to split
+   `weil_reciprocity_soundness` into:
+   - A narrower `polyG_zero_of_logDerivCheckFn_zero` axiom (D1
+     content), plus
+   - A narrower `coordRingElt_divisor_isPrincipal` axiom (AG content,
+     Silverman III.3.5 for CoordRingElt divisors).
+   This trade-off swaps one combined axiom for two narrower axioms.
+   Worth pursuing only if the D1 mechanization is feasible within
+   session budgets.
+2. Alternative: derive `coordRingElt_divisor_isPrincipal` from
+   `principal_divisor_iff.mpr` applied to a constructed coefficient
+   function. Requires infrastructure to extract D's zero multiplicities
+   on E (~300 LOC for the multiplicity data construction).
