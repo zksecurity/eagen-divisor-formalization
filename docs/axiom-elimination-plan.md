@@ -2167,6 +2167,93 @@ single classical result. It bundles:
 2. Once landed, final axiom state for `ma_extractable` is the plan's
    stated target: 3 Lean + 8 classical (Silverman + Hasse only).
 
+### Session 21 (2026-04-20) — narrow-axiom groundwork
+
+Commits (this session):
+- `d70e2b3` — Add `CoordRingElt.has_principal_divisor` axiom (Silverman
+  III.3.5 specialized). States the existence of a natural-number
+  multiplicity function `β : ZMod² → ℕ` for a nonzero `D`, summing to
+  `D.degE`, with zero `β`-weighted group sum on `E.points`. ~33 LOC.
+- `d3b990f` — T4 infra: `dCoeffs_isPrincipal`. Packages the
+  axiom's `β` output into the `ECPoint`-indexed coefficient form
+  `dCoeffs D β` (with `-D.degE` at `∞`) and derives
+  `IsPrincipal E (dCoeffs D β)` via `principal_divisor_iff.mpr`.
+  Also `CoordRingElt.exists_principal_dCoeffs` = packaged existence
+  with the `IsPrincipal` conclusion. Moves `ECPoint.nsmul_infinity`,
+  `zsmul_infinity`, `zsmul_natCast`, `weightedSum_subset_of_zero_outside`
+  from `ExtractorBridge.lean` to `Defs.lean` for broader use. ~270 LOC
+  net (new file `Divisor/DivisorPrincipal.lean`).
+- `6be8ddf` — Add narrow `polyG_zero_of_logDerivCheck_identically_zero`
+  axiom. Captures the paper's residue / denominator-clearing forward
+  implication at the scalar level: given `D`'s `(Q, β)` divisor data
+  and `hAllZero` on defined non-vertical `E × E` pairs, `polyG`
+  vanishes on all non-vertical `E × E` pairs. `weil_reciprocity_soundness`
+  temporarily kept alongside for downstream support. ~50 LOC.
+- `4501659` — Fin-enumeration of `D`'s affine zeros on `E`. `zerosAt`,
+  `zerosCard`, `zerosEnum`, `multAt` with the properties
+  (injectivity, coverage, `∑ multAt = D.degE`) needed to feed the
+  narrow polyG bridge axiom and `log_deriv_nonvanishing_criterion`
+  (T5). ~130 LOC.
+
+**What landed**: the core axiom `CoordRingElt.has_principal_divisor`
+and the infrastructure to consume it. Specifically:
+- The axiom's output multiplicity function `β : ZMod² → ℕ` is packaged
+  (`dCoeffs_isPrincipal`) into an `IsPrincipal` claim on the ECPoint
+  coefficient function `dCoeffs D β`.
+- `β` is enumerated as a Fin-indexed pair `(Q : Fin d → ZMod², mult :
+  Fin d → ℕ)` (`zerosAt`, `multAt`) with the properties needed by both
+  the narrow polyG bridge axiom and T5.
+- The narrow polyG bridge axiom is added; it captures the forward
+  direction of the paper's residue identity. Its hypotheses match
+  what the enumeration helpers provide.
+
+**What remains** (to eliminate the composite `weil_reciprocity_soundness`):
+
+1. **Distinct-R construction** (~150 LOC): build the distinct-bases
+   enumeration `baseSet := (Finset.univ.image extractorBases)` and
+   `R : Fin (1 + baseSet.card)` via `Fin.cons (-P_aff) (baseSet.enum)`.
+   Needed because `log_deriv_nonvanishing_criterion` requires `R`
+   injective.
+2. **Grouped-m' construction** (~80 LOC): `m' : Fin (1 + baseSet.card)`
+   with `m' 0 = -1` and `m' (i+1) = extractorGroupSum` at the canonical
+   index of the group whose base is `baseSet.enum i`.
+3. **polyG raw-R → distinct-R bridge** (~100 LOC): prove that
+   `polyG_raw A₀ A₁ = 0 ↔ polyG_distinct A₀ A₁ = 0` on non-vertical
+   `E × E` pairs. The two expressions differ by `ellP` factors
+   contributing the duplicate multiplicity per base; vanishing is
+   preserved since the scalar `logDerivCheckFn` is invariant under
+   the grouping.
+4. **T5 application** (~50 LOC): apply `log_deriv_nonvanishing_criterion`
+   with distinct-R, get σ : `Fin (zerosCard E D) ↪ Fin (1 + baseSet.card)`.
+   Also verify the `hQuant` precondition
+   (`6·q·((d+M) + (d+M)·(d+M-1)) + 1 ≤ |validPairs|`) via Hasse-Weil.
+5. **Coeff-from-σ construction** (~100 LOC): from σ matching, build
+   `coeff : Fin msg.k → ℕ` as `mult (σ⁻¹(i)).val` at canonical `i`'s
+   that σ hits, else `0`. Verify `extractorSucceeds_of_natural_witness`
+   (D3) hypotheses.
+6. **extractorDivisorCoeffs ↔ dCoeffs matching** (~150 LOC): prove
+   `∀ P : ECPoint E.q, extractorDivisorCoeffs E stmt msg hkm P =
+    dCoeffs E msg.toD β_fun P` via pointwise case analysis (∞,
+   `-P_aff`, `B_i` canonical, other affine). The case at an affine
+   base `B_i` uses σ matching to equate `β_fun(B_i)` with
+   `extractedScalars` at canonical `i`. Then
+   `IsPrincipal extractorDivisorCoeffs` follows by function equality
+   + `IsPrincipal (dCoeffs)`.
+7. **Replace `weil_reciprocity_soundness` with a theorem** (~50 LOC):
+   the T4 theorem derives from 4+5+6 plus the landed D4+D5.
+
+Total remaining: ~680 LOC across 4-6 focused sessions.
+
+**Axiom state after session 21**: unchanged from session 20 for
+`ma_extractable` (still has `weil_reciprocity_soundness`), but two
+new narrow axioms are present in the project:
+- `CoordRingElt.has_principal_divisor` (Silverman III.3.5).
+- `polyG_zero_of_logDerivCheck_identically_zero` (paper's residue
+  forward implication at scalar level).
+
+After the remaining work lands, `weil_reciprocity_soundness` is
+removed and the axiom count drops by 1.
+
 ## Citation policy
 
 **CRITICAL — ABSOLUTE RULE**: This project *verifies* the Eagen-Bassa
