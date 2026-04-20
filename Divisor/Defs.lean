@@ -260,6 +260,71 @@ theorem ECPoint.weightedSum_congr (E : ECSetup) {α : Type*}
     ECPoint.weightedSum E s f = ECPoint.weightedSum E s g :=
   Finset.fold_congr (fun a ha => h a ha)
 
+/-- Adding zero-valued entries to a `weightedSum` doesn't change its
+    value. Dual to `Finset.sum_subset` for additive sums. -/
+theorem ECPoint.weightedSum_subset_of_zero_outside (E : ECSetup) {α : Type*}
+    [DecidableEq α] {s t : Finset α} (h : s ⊆ t)
+    {f : α → ECPoint E.q} (h0 : ∀ a ∈ t, a ∉ s → f a = 0) :
+    ECPoint.weightedSum E t f = ECPoint.weightedSum E s f := by
+  revert s
+  induction t using Finset.induction_on with
+  | empty =>
+      intro s hs _
+      rw [Finset.subset_empty.mp hs]
+  | @insert a t' ha ih =>
+      intro s hs h0
+      rw [ECPoint.weightedSum_insert E ha]
+      by_cases hain : a ∈ s
+      · have hs_erase_sub : s.erase a ⊆ t' := by
+          intro x hx
+          have hxs : x ∈ s := Finset.mem_of_mem_erase hx
+          have hxt : x ∈ insert a t' := hs hxs
+          have hxne : x ≠ a := Finset.ne_of_mem_erase hx
+          exact (Finset.mem_insert.mp hxt).resolve_left hxne
+        have hs_insert : s = insert a (s.erase a) := (Finset.insert_erase hain).symm
+        have h0' : ∀ x ∈ t', x ∉ s.erase a → f x = 0 := by
+          intro x hxt hxne
+          by_cases hxs : x ∈ s
+          · have hxeq : x = a := by
+              by_contra hxa
+              exact hxne (Finset.mem_erase.mpr ⟨hxa, hxs⟩)
+            exact absurd (hxeq ▸ hxt) ha
+          · exact h0 x (Finset.mem_insert_of_mem hxt) hxs
+        have hrec : ECPoint.weightedSum E t' f = ECPoint.weightedSum E (s.erase a) f :=
+          ih hs_erase_sub h0'
+        rw [hs_insert, ECPoint.weightedSum_insert E (Finset.not_mem_erase _ _), hrec]
+      · rw [h0 a (Finset.mem_insert_self _ _) hain, ECPoint.zero_add_curve]
+        have hs_t' : s ⊆ t' := by
+          intro x hx
+          have hxt : x ∈ insert a t' := hs hx
+          have hxne : x ≠ a := fun heq => hain (heq ▸ hx)
+          exact (Finset.mem_insert.mp hxt).resolve_left hxne
+        have h0' : ∀ x ∈ t', x ∉ s → f x = 0 :=
+          fun x hxt hxs => h0 x (Finset.mem_insert_of_mem hxt) hxs
+        exact ih hs_t' h0'
+
+theorem ECPoint.nsmul_infinity (E : ECSetup) (n : ℕ) :
+    ECPoint.nsmul E n (ECPoint.infinity : ECPoint E.q) = 0 := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+      show ECPoint.add E ECPoint.infinity (ECPoint.nsmul E n ECPoint.infinity) = 0
+      rw [ih]
+      rfl
+
+theorem ECPoint.zsmul_infinity (E : ECSetup) (n : ℤ) :
+    ECPoint.zsmul E n (ECPoint.infinity : ECPoint E.q) = 0 := by
+  cases n with
+  | ofNat m => exact ECPoint.nsmul_infinity E m
+  | negSucc m =>
+      show -(ECPoint.nsmul E (m + 1) ECPoint.infinity) = 0
+      rw [ECPoint.nsmul_infinity]
+      rfl
+
+/-- `zsmul (n : ℕ)` equals `nsmul n`. -/
+theorem ECPoint.zsmul_natCast (E : ECSetup) (n : ℕ) (p : ECPoint E.q) :
+    ECPoint.zsmul E (n : ℤ) p = ECPoint.nsmul E n p := rfl
+
 theorem ECPoint.weightedSum_zero_of_forall_zero (E : ECSetup) {α : Type*}
     [DecidableEq α] {s : Finset α} {f : α → ECPoint E.q}
     (h : ∀ a ∈ s, f a = 0) :

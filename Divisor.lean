@@ -11,5 +11,6 @@ import Divisor.LogDeriv
 import Divisor.ClearedPolyForm
 import Divisor.PolyGBridge
 import Divisor.Protocol
+import Divisor.DivisorPrincipal
 import Divisor.Soundness
 import Divisor.ExtractorBridge
