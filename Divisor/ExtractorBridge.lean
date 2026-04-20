@@ -843,6 +843,154 @@ theorem distinctR_injective
   exact (distinctRCons_injective E stmt msg hkm hNoNegP).comp
     (finCongr _).injective
 
+/-! ## Grouped coefficient enumeration (S2)
+
+    Companion to `distinctR`: the grouped-coefficient family `distinctM'`
+    of type `Fin (1 + baseImageCount) → ZMod E.q`, with head `-1` and
+    tail `extractorGroupSum` at the canonical index whose base is
+    `baseAt i`.
+
+    T5 (`log_deriv_nonvanishing_criterion`) takes a raw `(R, m)` pair on
+    `Fin k`; for the extractor application we replace it with the
+    distinct-base pair `(distinctR, distinctM')` on
+    `Fin (1 + baseImageCount)`, where repeats in the raw `R` are folded
+    into `ZMod`-sums in `m` at their common base point.
+
+    The tail's `j`-choice is made via `Classical.choose` on the witness
+    of `baseAt i ∈ baseImage`; `distinctM'_tail_group_invariant` below
+    shows the resulting value depends only on the base point, not on
+    the chosen representative. That independence is essential for the
+    S3 raw-to-distinct polyG bridge.
+-/
+
+/-- For any `i : Fin (baseImageCount ...)`, `baseAt i` lies in
+    `baseImage`, i.e. is in the `extractorBases`-image of `Finset.univ`;
+    hence there exists `j : Fin msg.k` with `extractorBases j = baseAt i`. -/
+theorem exists_extractorBases_eq_baseAt
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) (i : Fin (baseImageCount E stmt msg hkm)) :
+    ∃ j : Fin msg.k, extractorBases E stmt msg hkm j
+      = baseAt E stmt msg hkm i := by
+  have hmem := baseAt_mem_baseImage E stmt msg hkm i
+  rw [baseImage, Finset.mem_image] at hmem
+  obtain ⟨j, _, hj⟩ := hmem
+  exact ⟨j, hj⟩
+
+/-- Canonical index choice for a distinct base point: some
+    `j : Fin msg.k` with `extractorBases j = baseAt i`. -/
+noncomputable def baseAtIndex
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) (i : Fin (baseImageCount E stmt msg hkm)) :
+    Fin msg.k :=
+  (exists_extractorBases_eq_baseAt E stmt msg hkm i).choose
+
+theorem baseAtIndex_spec
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) (i : Fin (baseImageCount E stmt msg hkm)) :
+    extractorBases E stmt msg hkm (baseAtIndex E stmt msg hkm i)
+      = baseAt E stmt msg hkm i :=
+  (exists_extractorBases_eq_baseAt E stmt msg hkm i).choose_spec
+
+/-- `extractorGroupSum` depends only on the base point, not on the
+    representative index. Concretely, if `extractorBases j₁ =
+    extractorBases j₂` then the two indices share a group (by
+    `extractedScalars_group_canonical`) and hence produce the same
+    `extractorGroupSum`. -/
+theorem extractorGroupSum_congr_of_extractorBases_eq
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) {j₁ j₂ : Fin msg.k}
+    (h : extractorBases E stmt msg hkm j₁
+      = extractorBases E stmt msg hkm j₂) :
+    extractorGroupSum E stmt msg hkm j₁
+      = extractorGroupSum E stmt msg hkm j₂ := by
+  have hj₁inG₂ : j₁ ∈ extractorGroup E stmt msg hkm j₂ :=
+    Finset.mem_filter.mpr ⟨Finset.mem_univ _, h⟩
+  have hGeq : extractorGroup E stmt msg hkm j₁
+      = extractorGroup E stmt msg hkm j₂ :=
+    extractedScalars_group_canonical E stmt msg hkm j₂ j₁ hj₁inG₂
+  simp [extractorGroupSum, hGeq]
+
+/-- Underlying `Fin.cons`-based family `Fin (n + 1) → ZMod E.q` for
+    the grouped coefficients. Head `-1`, tail
+    `extractorGroupSum` at the chosen `baseAtIndex`. -/
+noncomputable def distinctMCons
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) :
+    Fin (baseImageCount E stmt msg hkm + 1) → ZMod E.q :=
+  Fin.cons (α := fun _ => ZMod E.q) (-1 : ZMod E.q)
+    (fun i : Fin (baseImageCount E stmt msg hkm) =>
+      extractorGroupSum E stmt msg hkm (baseAtIndex E stmt msg hkm i))
+
+@[simp] theorem distinctMCons_zero
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) :
+    distinctMCons E stmt msg hkm 0 = (-1 : ZMod E.q) := by
+  simp [distinctMCons]
+
+@[simp] theorem distinctMCons_succ
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) (i : Fin (baseImageCount E stmt msg hkm)) :
+    distinctMCons E stmt msg hkm i.succ
+      = extractorGroupSum E stmt msg hkm
+          (baseAtIndex E stmt msg hkm i) := by
+  simp [distinctMCons]
+
+/-- Grouped coefficient family: `-1` at the `-P_aff` head, then
+    `extractorGroupSum` per distinct base. Length `1 + baseImageCount`,
+    matching `distinctR`'s shape so the pair feeds T5's `Fin M` form. -/
+noncomputable def distinctM'
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) :
+    Fin (1 + baseImageCount E stmt msg hkm) → ZMod E.q :=
+  distinctMCons E stmt msg hkm ∘
+    finCongr (Nat.add_comm 1 (baseImageCount E stmt msg hkm))
+
+@[simp] theorem distinctM'_zero
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) :
+    distinctM' E stmt msg hkm ⟨0, by omega⟩ = (-1 : ZMod E.q) := by
+  unfold distinctM'
+  have : (finCongr (Nat.add_comm 1 (baseImageCount E stmt msg hkm))
+            ⟨0, by omega⟩ : Fin (baseImageCount E stmt msg hkm + 1))
+         = 0 := rfl
+  simp [Function.comp_apply, this, distinctMCons_zero]
+
+@[simp] theorem distinctM'_succ
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) (i : Fin (baseImageCount E stmt msg hkm)) :
+    distinctM' E stmt msg hkm ⟨i.val + 1, by omega⟩
+      = extractorGroupSum E stmt msg hkm
+          (baseAtIndex E stmt msg hkm i) := by
+  unfold distinctM'
+  have hEq : (finCongr (Nat.add_comm 1 (baseImageCount E stmt msg hkm))
+                ⟨i.val + 1, by omega⟩ : Fin (baseImageCount E stmt msg hkm + 1))
+             = i.succ := by
+    apply Fin.ext
+    rfl
+  simp [Function.comp_apply, hEq, distinctMCons_succ]
+
+/-- **Representative independence**: `distinctM' ⟨i+1, _⟩` equals
+    `extractorGroupSum` at *any* `j` with `extractorBases j = baseAt i`,
+    not just the `Classical.choose` representative.
+
+    Proof: by `distinctM'_succ`, the LHS reduces to
+    `extractorGroupSum E stmt msg hkm (baseAtIndex ... i)`. The
+    `baseAtIndex` representative shares a base with `baseAt i`, i.e.
+    with `j`, so
+    `extractorGroupSum_congr_of_extractorBases_eq` collapses both to
+    the same value. Essential for S3's raw↔distinct polyG bridge. -/
+theorem distinctM'_tail_group_invariant
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) (i : Fin (baseImageCount E stmt msg hkm))
+    (j : Fin msg.k)
+    (hj : extractorBases E stmt msg hkm j = baseAt E stmt msg hkm i) :
+    distinctM' E stmt msg hkm ⟨i.val + 1, by omega⟩
+      = extractorGroupSum E stmt msg hkm j := by
+  rw [distinctM'_succ]
+  have hspec := baseAtIndex_spec E stmt msg hkm i
+  exact extractorGroupSum_congr_of_extractorBases_eq E stmt msg hkm
+    (hspec.trans hj.symm)
+
 /-! ## Narrow polyG-bridge axiom (scalar level)
 
     The remaining classical content of the old composite

@@ -2282,6 +2282,44 @@ T5's upstream signature.
 
 **No new axioms**, no new `sorry`/`admit`. `lake build` green.
 
+### Session 23 (2026-04-20) — S2 distinctM' grouped coefficients
+
+Commit (this session):
+- S2 — distinctM' grouped coefficient enumeration. Adds
+  `distinctMCons` (the `Fin.cons`-based `Fin (n + 1) → ZMod E.q`
+  family of `-1` prepended to per-distinct-base `extractorGroupSum`
+  values), its `zero` / `succ` simp lemmas, then packages it as
+  `distinctM'` of type `Fin (1 + baseImageCount) → ZMod E.q` via
+  `finCongr (Nat.add_comm 1 _)` composition. Exposes
+  `distinctM'_zero`, `distinctM'_succ`, and the representative-
+  independence lemma `distinctM'_tail_group_invariant`: for any
+  `j : Fin msg.k` with `extractorBases j = baseAt i`, the tail
+  value equals `extractorGroupSum ... j` — not just at the
+  `Classical.choose`-picked `baseAtIndex` representative. That
+  independence is what the S3 raw-to-distinct polyG bridge will
+  consume. Supporting helpers: `exists_extractorBases_eq_baseAt`
+  (unpacks `baseAt i ∈ baseImage` into a `Fin msg.k` witness),
+  `baseAtIndex` / `baseAtIndex_spec` (the chosen representative),
+  `extractorGroupSum_congr_of_extractorBases_eq`
+  (base-equality ⇒ group-sum equality, via
+  `extractedScalars_group_canonical`). ~140 LOC added to
+  `Divisor/ExtractorBridge.lean`.
+
+**Rationale for `Classical.choose` + invariance lemma pattern**:
+the `distinctM'` tail at a distinct base point must equal the
+combined residue coefficient for that base. Any index `j` mapping
+to that base works, because `extractorGroupSum` filters on the
+base-equality predicate. Rather than burying the choice in a
+subtype, the definition uses `Classical.choose` to pick *some*
+`j` (making `distinctM'` noncomputable but fully specified), and
+`distinctM'_tail_group_invariant` proves it equals the value at
+any `j` with matching base. S3 can then rewrite raw `msg.m`
+sums into `distinctM'` values by picking convenient `j`'s
+inside an enumeration of the `extractorBases` fibers.
+
+**No new axioms**, no new `sorry`/`admit`. `lake build` green.
+Axiom count: 10 (unchanged from session 22).
+
 ## Autonomous Driver Queue
 
 This section specifies the final 7-step queue that eliminates the
