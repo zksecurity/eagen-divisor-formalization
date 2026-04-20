@@ -269,4 +269,134 @@ theorem CoordRingElt.exists_principal_dCoeffs
   exact dCoeffs_isPrincipal E D β
     (fun P hP => (hβsup P hP).1) hβsum hβgroup
 
+/-! ## Fin-enumeration of `D`'s affine zeros on `E`
+
+    The narrow polyG-bridge axiom
+    (`polyG_zero_of_logDerivCheck_identically_zero` in
+    `ExtractorBridge.lean`) takes a Fin-indexed enumeration `Q : Fin d
+    → (ZMod E.q)²` of `D`'s distinct affine zeros on `E`, together with
+    a multiplicity vector `β : Fin d → ℕ` summing to `D.degE`.
+
+    This section builds that enumeration from the support of a
+    `has_principal_divisor`-style multiplicity function `β_fun`:
+    * `zerosFinset D := zeros D E.points` — the Finset of `D`'s zeros.
+    * `zerosCard D := (zerosFinset D).card` — the number `d`.
+    * `zerosEnum D : Fin (zerosCard D) ≃ zerosFinset D` — the canonical
+      enumeration via `Finset.equivFin`.
+    * `zerosAt D k : (ZMod E.q)²` — the `k`-th zero as an element.
+    * `multAt β_fun D k : ℕ` — the multiplicity at the `k`-th zero.
+
+    Properties: `zerosAt` is injective, its image is `zerosFinset D`,
+    and under the `has_principal_divisor`'s support conditions, each
+    `multAt k > 0` and `∑ multAt = D.degE`. -/
+
+/-- Finset of `D`'s affine zeros on `E`. -/
+noncomputable abbrev zerosFinset (D : CoordRingElt E.q) :
+    Finset (ZMod E.q × ZMod E.q) :=
+  zeros D E.points
+
+/-- Number of `D`'s affine zeros on `E`. -/
+noncomputable abbrev zerosCard (D : CoordRingElt E.q) : ℕ :=
+  (zerosFinset E D).card
+
+/-- Canonical enumeration of `D`'s affine zeros on `E`. -/
+noncomputable def zerosEnum (D : CoordRingElt E.q) :
+    Fin (zerosCard E D) ≃ (zerosFinset E D) :=
+  (zerosFinset E D).equivFin.symm
+
+/-- The `k`-th zero of `D` (as an ordered pair). -/
+noncomputable def zerosAt (D : CoordRingElt E.q)
+    (k : Fin (zerosCard E D)) : ZMod E.q × ZMod E.q :=
+  ((zerosEnum E D k) : ZMod E.q × ZMod E.q)
+
+theorem zerosAt_mem_E (D : CoordRingElt E.q) (k : Fin (zerosCard E D)) :
+    zerosAt E D k ∈ E.points := by
+  have hMem : (zerosEnum E D k : ZMod E.q × ZMod E.q) ∈ zerosFinset E D :=
+    (zerosEnum E D k).2
+  exact (Finset.mem_filter.mp hMem).1
+
+theorem zerosAt_eval_zero (D : CoordRingElt E.q) (k : Fin (zerosCard E D)) :
+    D.eval (zerosAt E D k).1 (zerosAt E D k).2 = 0 := by
+  have hMem : (zerosEnum E D k : ZMod E.q × ZMod E.q) ∈ zerosFinset E D :=
+    (zerosEnum E D k).2
+  exact (Finset.mem_filter.mp hMem).2
+
+theorem zerosAt_injective (D : CoordRingElt E.q) :
+    Function.Injective (zerosAt E D) := by
+  intro k₁ k₂ heq
+  apply (zerosEnum E D).injective
+  -- Subtype.ext on the underlying value.
+  exact Subtype.ext heq
+
+theorem zerosAt_surjective_on_zeros
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (hP : P ∈ zerosFinset E D) :
+    ∃ k, zerosAt E D k = P := by
+  refine ⟨(zerosEnum E D).symm ⟨P, hP⟩, ?_⟩
+  unfold zerosAt
+  rw [Equiv.apply_symm_apply]
+
+theorem zerosAt_covers_zeros
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (hPpts : P ∈ E.points) (hPzero : D.eval P.1 P.2 = 0) :
+    ∃ k, zerosAt E D k = P :=
+  zerosAt_surjective_on_zeros E D P
+    (Finset.mem_filter.mpr ⟨hPpts, hPzero⟩)
+
+/-- Multiplicity at the `k`-th zero, extracted from a `β_fun`. -/
+noncomputable def multAt (β_fun : ZMod E.q × ZMod E.q → ℕ)
+    (D : CoordRingElt E.q) (k : Fin (zerosCard E D)) : ℕ :=
+  β_fun (zerosAt E D k)
+
+/-- Under the `has_principal_divisor`'s coverage (every zero of `D`
+    has positive `β_fun`), each `multAt k > 0`. -/
+theorem multAt_pos (β_fun : ZMod E.q × ZMod E.q → ℕ) (D : CoordRingElt E.q)
+    (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
+    (k : Fin (zerosCard E D)) :
+    multAt E β_fun D k > 0 := by
+  unfold multAt
+  exact Nat.pos_of_ne_zero
+    (hβcov _ (zerosAt_mem_E E D k) (zerosAt_eval_zero E D k))
+
+/-- Under the `has_principal_divisor`'s support and coverage, the sum
+    `∑ k : Fin (zerosCard E D), multAt k` equals `∑ P ∈ E.points, β_fun P`. -/
+theorem sum_multAt_eq_sum_βfun
+    (β_fun : ZMod E.q × ZMod E.q → ℕ) (D : CoordRingElt E.q)
+    (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0) :
+    (∑ k : Fin (zerosCard E D), multAt E β_fun D k) =
+    ∑ P ∈ E.points, β_fun P := by
+  classical
+  unfold multAt
+  -- Step 1: sum over Fin = sum over zerosFinset via bijection.
+  have hBij : (∑ k : Fin (zerosCard E D), β_fun (zerosAt E D k))
+            = ∑ P ∈ zerosFinset E D, β_fun P := by
+    apply Finset.sum_bij (fun k _ => zerosAt E D k)
+    · intro k _
+      exact Finset.mem_filter.mpr
+        ⟨zerosAt_mem_E E D k, zerosAt_eval_zero E D k⟩
+    · intro k₁ _ k₂ _ heq
+      exact zerosAt_injective E D heq
+    · intro P hP
+      obtain ⟨k, hk⟩ := zerosAt_surjective_on_zeros E D P hP
+      exact ⟨k, Finset.mem_univ _, hk⟩
+    · intro k _; rfl
+  rw [hBij]
+  -- Step 2: extend to E.points via β_fun = 0 off zerosFinset.
+  apply Finset.sum_subset (Finset.filter_subset _ _)
+  intro P hPin hPnotZ
+  simp only [zerosFinset, zeros, Finset.mem_filter] at hPnotZ
+  push_neg at hPnotZ
+  have hEvalNZ : D.eval P.1 P.2 ≠ 0 := hPnotZ hPin
+  by_contra hβnz
+  exact hEvalNZ (hβsup P hβnz).2
+
+/-- Under the `has_principal_divisor`'s support condition and total-degree
+    condition, `∑ multAt = D.degE`. -/
+theorem sum_multAt_eq_degE
+    (β_fun : ZMod E.q × ZMod E.q → ℕ) (D : CoordRingElt E.q)
+    (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
+    (hβsum : (∑ P ∈ E.points, β_fun P) = D.degE) :
+    (∑ k : Fin (zerosCard E D), multAt E β_fun D k) = D.degE := by
+  rw [sum_multAt_eq_sum_βfun E β_fun D hβsup, hβsum]
+
 end Divisor
