@@ -533,4 +533,136 @@ theorem betaConstructive_sum_eq_degE
     (∑ P ∈ E.points, betaConstructive E D P) = D.degE :=
   CoordRingElt.divisor_degree_eq E D hD
 
+/-! ## Q3.1: split case — `betaConstructive` ↔ `rootMultiplicity` bridge
+
+    When `normPoly E D` splits over `F_q` in the sense that its root
+    multiset has cardinality equal to its `natDegree`, the per-`x₀`
+    bound `sum_betaConstructive_fst_eq_le` collapses to an equality.
+    The key observation is that:
+
+    * `∑_P β P = D.degE` (Silverman III 3.4, `betaConstructive_sum_eq_degE`).
+    * `∑_α rootMult α N(D) = Multiset.card N(D).roots` (counting identity).
+    * Under the split hypothesis, `Multiset.card roots = natDegree N(D)`.
+    * `natDegree N(D) ≤ D.degE` (`normPoly_natDegree_le`).
+
+    Chaining these with the per-`x₀` bound forces equality everywhere.
+    Q3.2 consumes the total-sum identity to instantiate the partial-fraction
+    expansion from Q3.0 at `p = normPoly E D`. -/
+
+/-- Split predicate: `N(D)` has as many roots as its degree (counted with
+multiplicity) over `F_q`. Equivalent to saying every root is `F_q`-rational. -/
+def normPoly_splits_over_Fq (D : CoordRingElt E.q) : Prop :=
+  Multiset.card (normPoly E D).roots = (normPoly E D).natDegree
+
+/-- Counting identity: the total sum of `rootMultiplicity α p` over `α : F_q`
+equals `Multiset.card p.roots`. Same argument as the first half of
+`sum_rootMultiplicity_le_natDegree`. -/
+theorem sum_rootMultiplicity_eq_card_roots (p : (ZMod E.q)[X]) :
+    (∑ α : ZMod E.q, rootMultiplicity α p) = Multiset.card p.roots := by
+  classical
+  calc (∑ α : ZMod E.q, rootMultiplicity α p)
+      = ∑ α : ZMod E.q, p.roots.count α := by
+        apply Finset.sum_congr rfl
+        intro a _
+        rw [count_roots]
+    _ = Multiset.card p.roots := by
+        rw [← Multiset.toFinset_sum_count_eq p.roots]
+        refine (Finset.sum_subset (Finset.subset_univ _) ?_).symm
+        intro a _ hNotIn
+        rw [Multiset.mem_toFinset] at hNotIn
+        exact Multiset.count_eq_zero_of_not_mem hNotIn
+
+/-- Under the split hypothesis, the total `rootMultiplicity` sum equals
+`natDegree`. -/
+theorem sum_rootMultiplicity_eq_natDegree_of_splits
+    (D : CoordRingElt E.q) (hSplit : normPoly_splits_over_Fq E D) :
+    (∑ α : ZMod E.q, rootMultiplicity α (normPoly E D))
+      = (normPoly E D).natDegree := by
+  rw [sum_rootMultiplicity_eq_card_roots]
+  exact hSplit
+
+/-- **Q3.1 main bridge (total sum).** When `normPoly E D` splits over `F_q`
+and `D` is nontrivial (`¬ (D.a = 0 ∧ D.b = 0)`), the total sum of
+`betaConstructive` over `E`-points equals the total sum of
+`rootMultiplicity` over `F_q`:
+
+  `(∑ P ∈ E.points, β P) = ∑ α, rootMult α N(D)`.
+
+This is the identity Q3.2 consumes. The proof uses the inequality chain
+
+    D.degE = ∑ β ≤ ∑ α, rootMult α ≤ natDegree N(D) ≤ D.degE
+
+and the split hypothesis to collapse the middle inequality to `natDegree`
+via `sum_rootMultiplicity_eq_natDegree_of_splits`. -/
+theorem sum_betaConstructive_eq_sum_rootMultiplicity_of_splits
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hSplit : normPoly_splits_over_Fq E D) :
+    (∑ P ∈ E.points, betaConstructive E D P)
+      = ∑ α : ZMod E.q, rootMultiplicity α (normPoly E D) := by
+  classical
+  -- Two chains meeting: ∑β = D.degE, and ∑rootMult = natDegree ≤ D.degE.
+  have hBeta : (∑ P ∈ E.points, betaConstructive E D P) = D.degE :=
+    betaConstructive_sum_eq_degE E D hD
+  have hRoots : (∑ α : ZMod E.q, rootMultiplicity α (normPoly E D))
+                  = (normPoly E D).natDegree :=
+    sum_rootMultiplicity_eq_natDegree_of_splits E D hSplit
+  have hDeg : (normPoly E D).natDegree ≤ D.degE := normPoly_natDegree_le E D
+  -- The per-x₀ surrogate chain ∑ β ≤ ∑ rootMult.
+  have hLe : (∑ P ∈ E.points, betaConstructive E D P)
+              ≤ ∑ α : ZMod E.q, rootMultiplicity α (normPoly E D) := by
+    rw [sum_E_points_eq_sum_fiberwise E]
+    exact Finset.sum_le_sum (fun x₀ _ => sum_betaConstructive_fst_eq_le E D x₀)
+  -- Combine: D.degE ≤ ∑ rootMult = natDegree ≤ D.degE ⇒ equalities.
+  have hGe : (∑ α : ZMod E.q, rootMultiplicity α (normPoly E D))
+              ≤ (∑ P ∈ E.points, betaConstructive E D P) := by
+    rw [hBeta, hRoots]; exact hDeg
+  exact le_antisymm hLe hGe
+
+/-- **Corollary (split case, natDegree identity).** Under the split
+hypothesis, `natDegree (normPoly E D) = D.degE`. This follows from
+`natDegree ≤ D.degE` and the equality chain above forcing equality. -/
+theorem normPoly_natDegree_eq_degE_of_splits
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hSplit : normPoly_splits_over_Fq E D) :
+    (normPoly E D).natDegree = D.degE := by
+  have hSum := sum_betaConstructive_eq_sum_rootMultiplicity_of_splits E D hD hSplit
+  have hBeta : (∑ P ∈ E.points, betaConstructive E D P) = D.degE :=
+    betaConstructive_sum_eq_degE E D hD
+  have hRoots : (∑ α : ZMod E.q, rootMultiplicity α (normPoly E D))
+                  = (normPoly E D).natDegree :=
+    sum_rootMultiplicity_eq_natDegree_of_splits E D hSplit
+  -- From hSum: D.degE = ∑ β = ∑ rootMult = natDegree.
+  rw [← hRoots, ← hSum, hBeta]
+
+/-- **Corollary (per-`x₀` equality).** In the split case, the per-`x₀`
+inequality `sum_betaConstructive_fst_eq_le` tightens to an equality:
+for every `x₀ : F_q`,
+
+  `∑ P ∈ E.points, P.1 = x₀, β P = rootMultiplicity x₀ (normPoly E D)`.
+
+This follows from the Mathlib equality-forcing lemma
+`Finset.sum_eq_sum_iff_of_le`: equal totals + pointwise `≤` ⇒ pointwise `=`. -/
+theorem sum_betaConstructive_fst_eq_of_splits
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hSplit : normPoly_splits_over_Fq E D)
+    (x₀ : ZMod E.q) :
+    (∑ P ∈ E.points.filter (fun P => P.1 = x₀), betaConstructive E D P)
+      = rootMultiplicity x₀ (normPoly E D) := by
+  classical
+  -- Sum over x₀ : F_q of LHS equals the total sum of β (fiberwise lemma).
+  -- Sum over x₀ : F_q of RHS is total rootMultiplicity sum.
+  -- The per-x₀ bound `sum_betaConstructive_fst_eq_le` is `≤` pointwise.
+  -- The `sum_eq_sum_iff_of_le` flip converts equal totals + pointwise `≤`
+  -- to pointwise equality.
+  have hTotal := sum_betaConstructive_eq_sum_rootMultiplicity_of_splits E D hD hSplit
+  -- Rewrite the LHS of hTotal via fiberwise.
+  rw [sum_E_points_eq_sum_fiberwise E] at hTotal
+  -- Now hTotal is: ∑ x₀, (∑ P ∈ filter, β P) = ∑ x₀, rootMult x₀ N(D).
+  -- Apply Finset.sum_eq_sum_iff_of_le with the per-x₀ bound.
+  have hPtwise : ∀ x₀ ∈ (Finset.univ : Finset (ZMod E.q)),
+                   (∑ P ∈ E.points.filter (fun P => P.1 = x₀), betaConstructive E D P)
+                     ≤ rootMultiplicity x₀ (normPoly E D) :=
+    fun x₀ _ => sum_betaConstructive_fst_eq_le E D x₀
+  exact (Finset.sum_eq_sum_iff_of_le hPtwise).mp hTotal x₀ (Finset.mem_univ x₀)
+
 end Divisor
