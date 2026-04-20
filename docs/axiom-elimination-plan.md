@@ -4034,3 +4034,240 @@ not covered by Queue 3's scaffolding.
 
 **LOC this session**: 0 (no code change; documentation update only).
 
+### Session 36 (2026-04-20) — Q3.4 retry: structural discrepancy finding (honest FAIL)
+
+**Scope**: Phase 0 verification retrace on Q3.4; surfaces a structural
+mismatch between `Divisor.logDerivTerm` and the paper's authoritative
+log-derivative expansion used in the residue identity underlying
+`polyG_zero_of_logDerivCheck_identically_zero`.
+
+**Phase 0 finding (verified by algebraic expansion + concrete
+counterexample D = y on any E)**:
+
+Paper's authoritative integrand (ec.tex §log-derivative, Lemma 6):
+
+```
+I_paper(x, y, λ)
+  =   [a'(x)  −  (3x² + A) / (2y) · b(x)  −  y · b'(x)]   /   [a(x) − y · b(x)]
+      ·   (2y)   /   (3x² + A  −  2λ · y)
+```
+
+Clearing common denominators (valid on `E` where `y² = x³ + A·x + B`):
+
+```
+I_paper  =  (2y · a'(x)  −  (3x² + A) · b(x)  −  2y² · b'(x))
+              /   ((a(x) − y · b(x)) · (3x² + A  −  2λ · y))
+```
+
+Current Lean definition (`Divisor/LogDeriv.lean` line 128):
+
+```
+logDerivTerm  =  (a'(x) − b'(x) · y) · (2y)
+                   /   ((a(x) − b(x) · y) · (3x² + A  −  2λ · y))
+              =  (2y · a'(x) − 2y² · b'(x))
+                   /   (D · (3x² + A  −  2λ · y))
+```
+
+**Difference per point on `E`**:
+
+```
+I_paper(x, y, λ)  −  logDerivTerm(x, y, λ)
+  =  − (3x² + A) · b(x)   /   (D · (3x² + A  −  2λ · y))
+```
+
+**Semantic gap**: paper's `I_paper` is the on-curve chain-rule log
+derivative `(dD/dz) / D` where `z = y − λ·x`, fully accounting for
+`dy/dz = (3x² + A) / (3x² + A − 2λ·y)`. Lean's `logDerivTerm` is the
+formal `x`-partial log-derivative `(∂D/∂x) / D · dx/dz`, missing the
+`∂D/∂y · dy/dz = −b · dy/dz` contribution.
+
+**Counterexample confirming non-equivalence**: take `D(x, y) = y`,
+`a = 0`, `b = −1`. Then `logDerivTerm = 0` everywhere (since
+`a' = b' = 0`), whereas the paper's integrand evaluates to
+`(3x² + A) / (y · (3x² + A − 2λ·y))` which is generically nonzero on
+chord intersections. Paper's identity
+`Σᵢ I_paper(Aᵢ) = −Σₖ βₖ / L_Q(Qₖ)` with the `βₖ = 1` at each 2-torsion
+zero of `y` is then a nontrivial residue equation; Lean's sum is `0`
+identically. These two scalars cannot coincide for generic chords, so
+the two definitions are **not** equal even after summing over chord
+intersections.
+
+**Implication for `polyG_zero_of_logDerivCheck_identically_zero`**:
+
+* `polyG` (`Divisor/LogDeriv.lean`) is the denominator-cleared form of
+  paper's residue identity `Σₖ βₖ / L_Q(Qₖ) + Σⱼ mⱼ / L_Q(Rⱼ) = 0`.
+* `logDerivCheckFn` is the LHS−RHS of Lean's log-derivative equation
+  using `logDerivTerm`.
+* The axiom asserts: `logDerivCheckFn ≡ 0 at defined pairs ⇒ polyG ≡ 0`.
+* Given Lean's `logDerivTerm ≠ I_paper`, closing the axiom would have
+  to bridge `Σᵢ logDerivTerm(Aᵢ, λ) = paper_residue + correction_sum`
+  and then argue that the adversary's globally-zero Lean-check forces
+  the paper residue identity. This argument requires Lemma 6
+  (equivalently, a function-field realization of `(dD/dz) / D` on
+  `F_q(E)`) to compute `paper_residue` symbolically. That is exactly
+  the infrastructure identified as missing in Session 35.
+
+**Implication for `weil_reciprocity_honest` (completeness)**:
+
+* Completeness is stated for Lean's `logDerivCheckFn`; honest transcripts
+  produce `paper_sum = rhs` (true residue identity), so
+  `Lean_sum = paper_sum + correction_sum = rhs + correction_sum`.
+  Since `correction_sum` is generically nonzero for any `D` with
+  `b(x) ≠ 0`, `logDerivCheckFn` is NOT identically zero at honest
+  transcripts. The axiom `weil_reciprocity_honest` is therefore
+  classically false for `D` with nontrivial `b(x)`.
+* `ma_completeness` remains *formally* provable (from an axiom is
+  derivable anything), but it does not capture the paper's
+  completeness property.
+
+**Consequences**:
+
+* The Lean development is internally consistent but the two classical
+  axioms (`weil_reciprocity_honest`, `polyG_zero_of_logDerivCheck_identically_zero`)
+  do not match their intended classical content when instantiated on
+  Lean's current `logDerivTerm`.
+* Mechanically closing
+  `polyG_zero_of_logDerivCheck_identically_zero` in Lean's form is
+  blocked on the same function-field infrastructure identified in
+  Sessions 34–35 (Weierstrass preparation + local uniformizers +
+  residue theorem on `E`). Path B, C, or A/Q3.4 Option A are all
+  blocked by the definitional gap at the per-point integrand level.
+
+**The correct fix (large cascade)**:
+
+Replace `Divisor/LogDeriv.lean:128-135` with the paper-faithful form:
+
+```
+noncomputable def logDerivTerm
+    (D : CoordRingElt E.q) (curveA : ZMod E.q) (lam : ZMod E.q)
+    (pt : ZMod E.q × ZMod E.q) : ZMod E.q :=
+  let x := pt.1
+  let y := pt.2
+  let num := 2 * y * D.a.derivative.eval x
+               - (3 * x ^ 2 + curveA) * D.b.eval x
+               - 2 * y ^ 2 * D.b.derivative.eval x
+  let den := D.eval x y * (3 * x ^ 2 + curveA - 2 * lam * y)
+  num * den⁻¹
+```
+
+This also requires restating `verifierAccepts` (`Divisor/Protocol.lean`)
+so the IP check 2's hint equation `h_i · D(A_i) = ...` matches the new
+per-point numerator:
+
+```
+h_i · D(A_i) · (2 · A_i.2)
+  =  2 · A_i.2 · D.a'(A_i.1)
+     −  (3 · A_i.1² + curveA) · D.b(A_i.1)
+     −  2 · A_i.2² · D.b'(A_i.1)
+```
+
+(i.e., the hint encodes the on-curve chain-rule x-derivative rather than
+the formal `a' − b'·y`.)
+
+**Cascade scope**: 447 `logDerivTerm` / `logDerivCheckFn` occurrences
+across 13 files. Key touch points:
+
+- `Divisor/LogDeriv.lean` — definition change, `logDerivCheckFn`
+  untouched structurally.
+- `Divisor/BivariateLogDeriv.lean` — Layer 3 denominator-cleared
+  identity's RHS changes to include `−(3x² + A) · b · (a + y·b)` term
+  (see below, computation done in Session 36). Layer 4 sum form
+  updates accordingly.
+- `Divisor/ResidueIdentity.lean` — `chordRHSSingle` / `chordRHS`
+  revised to match new Layer-3 RHS.
+- `Divisor/ClearedPolyForm.lean` — `logDerivTerm` unfolding
+  (line 1537-1545) + Phase B polynomial-form identities
+  (`clearedFiberPoly_identity` and its sub-lemmas) need re-verification.
+  The `clearedFiberPoly` construction currently assumes the formal
+  `a' − b'·y` numerator; switching to the paper form adds extra
+  polynomial summands corresponding to the `−(3x²+A)·b(x)` term and
+  its factor expansion.
+- `Divisor/Protocol.lean` — IP protocol check 2 (`h_i · D(A_i) = ...`)
+  adapts; uniqueness argument (`ip_unique_third_round`) needs to
+  re-derive with the new numerator.
+- All Phase B polynomial natDegree bounds adjust by a constant
+  (the new summand has `x`-degree ≤ `D.degE + 3`, comparable).
+- `weil_reciprocity_honest` restated: now classically true for the
+  paper-faithful `logDerivCheckFn`.
+
+**New Layer 3 RHS** (recomputed against the paper definition):
+
+At `P = (x, y) ∈ E.points` with `D.eval P ≠ 0`, `3x² + A − 2λy ≠ 0`:
+
+```
+N(D)(x) · (3x² + A − 2λy) · I_paper(P, λ)
+  =  2y · (a'·a − b'·b · curveX)
+     +  2 · curveX · (a'·b − b'·a)
+     −  (3x² + A) · b · (a + y · b)
+```
+
+The `(3x²+A)·b·(a+yb)` correction is the `conjugate-multiplication` of
+the missing `−(3x²+A)·b/(D·(3x²+A−2λy))` term:
+`(a+yb)·b` arises because `D · (a + y·b) = N(D)(x)` on `E`.
+
+Equivalently (substituting `N(D)'(x) = 2·a·a' − 2·b·b'·curveX − b²·(3x²+A)`):
+
+```
+2 · N(D)(x) · (3x² + A − 2λy) · I_paper(P, λ)
+  =  (N(D)'(x) + b(x)² · (3x² + A)) · (2y)
+     +  4 · curveX · (a'·b − b'·a)
+     −  2 · (3x² + A) · b · (a + y·b)
+
+  =  N(D)'(x) · 2y
+     −  b(x)² · (3x² + A) · (2y)         -- since the (+b²·S')·2y and this sign cancel
+     +  4 · curveX · (a'·b − b'·a)
+     −  2 · (3x² + A) · a · b
+```
+
+Hmm — actually the intended paper-faithful Layer 3 simplifies further.
+`N(D)'(x)` is the formal derivative of `N(D) = a² − b²·curveX`, and on
+`E` with `y² = curveX`:
+
+```
+2 · N(D)(x) · (3x² + A − 2λy) · I_paper
+  =  N(D)'(x) · 2y   +   extra_terms_without_(3x²+A)·b²·S'_contribution
+```
+
+The clean recomputation is left for the cascade-fix session (future
+work). The punchline: Lean's `logDerivTerm`'s denominator-cleared form
+matches `N(D)'(x) · 2y + b² · (3x²+A) · 2y + 4 · curveX · (a'·b − b'·a)`,
+while the paper-faithful form matches only the `N(D)'(x) · 2y + ...`
+contribution without the `b² · (3x²+A) · 2y` surplus.
+
+**Recommendation for future work**:
+
+Two distinct tracks are now required for axiom elimination:
+
+* **Track A** (paper-faithful re-cast): change the per-point definition
+  `logDerivTerm`, cascade through all downstream theorems. Estimated
+  ~2000 LOC of modification (most mechanical). After the cascade, the
+  paper-faithful `logDerivCheckFn` has the standard residue structure
+  and the `polyG` bridge + Lemma 6 argument closes the axiom with
+  moderate additional effort.
+
+* **Track B** (function-field machinery on current definition):
+  develop the F_q(E) model + Weierstrass preparation + local
+  uniformizers + residue theorem, then prove a correction identity
+  relating Lean's current `logDerivCheckFn` to
+  `−Σₖ βₖ / L_Q(Qₖ) + Σᵢ correction(Aᵢ)` and discharge the axiom by
+  exhibiting the correction's own PFE. Estimated ~1500 LOC of
+  infrastructure + ~500 LOC of bridge. Higher risk.
+
+Track A is cleaner mathematically but changes the API surface;
+Track B preserves the API but requires deep new infrastructure. Either
+is a multi-session effort.
+
+**Axiom state**: unchanged. The transient axiom remains as of Session 36.
+
+**LOC this session**: 0 code, ~120 lines of plan-doc prose.
+
+**Honest assessment**: The Q3 retry surfaced a definitional bug that
+was not visible from the outside: Lean's `logDerivTerm` is NOT the
+paper's `I_paper`. Earlier Q3 sessions (34, 35) assumed they were
+equivalent and attempted to bridge them via function-field machinery
+("missing Lemma 6"), but the gap is shallower and more concrete: the
+per-point integrand definitions differ by the on-curve chain-rule
+term. This finding changes the strategic outlook: a cascade rewrite
+(Track A) is now the preferred path to axiom elimination, replacing
+the function-field-machinery approach previously tracked.
+

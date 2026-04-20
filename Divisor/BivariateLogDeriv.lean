@@ -358,4 +358,68 @@ theorem logDerivTermSum_denom_cleared_sumform
         (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) hA₂ hDA₂ hXDen₂
       convert this using 0
 
+/-! ## Paper-faithful per-point integrand (reference)
+
+    `logDerivTerm` (Lean) uses the formal `x`-partial numerator
+    `a'(x) − b'(x) · y`, whereas the classical residue identity in the
+    log-derivative check is proven with the on-curve chain-rule
+    numerator `2y · a'(x) − (3x² + A) · b(x) − 2y² · b'(x)`. The two
+    forms differ on any `D` with `b(x) ≠ 0`.
+
+    `logDerivTermPaper` is the paper-faithful form, stated here for
+    reference (no downstream consumer); a cascade rewrite replacing
+    `logDerivTerm` with this form is the "Track A" option documented
+    in the axiom-elimination plan (Session 36 entry). -/
+
+/-- The paper-faithful log-derivative integrand. Differs from
+    `logDerivTerm` by the on-curve y-chain-rule term
+    `−(3x² + A) · b(x) / (D · (3x² + A − 2λy))`. -/
+noncomputable def logDerivTermPaper
+    (D : CoordRingElt E.q) (curveA : ZMod E.q) (lam : ZMod E.q)
+    (pt : ZMod E.q × ZMod E.q) : ZMod E.q :=
+  let x := pt.1
+  let y := pt.2
+  let num := 2 * y * D.a.derivative.eval x
+               - (3 * x ^ 2 + curveA) * D.b.eval x
+               - 2 * y ^ 2 * D.b.derivative.eval x
+  let den := D.eval x y * (3 * x ^ 2 + curveA - 2 * lam * y)
+  num * den⁻¹
+
+/-- **Explicit difference theorem.** The paper-faithful integrand and
+    Lean's `logDerivTerm` differ exactly by the on-curve y-chain-rule
+    correction term. -/
+theorem logDerivTermPaper_sub_logDerivTerm
+    (D : CoordRingElt E.q) (lam : ZMod E.q)
+    (P : ZMod E.q × ZMod E.q)
+    (hD : D.eval P.1 P.2 ≠ 0)
+    (hXDen : (3 * P.1 ^ 2 + E.curveA - 2 * lam * P.2) ≠ 0) :
+    logDerivTermPaper E D E.curveA lam P
+      - logDerivTerm E D E.curveA lam P
+      = -(3 * P.1 ^ 2 + E.curveA) * D.b.eval P.1
+           * (D.eval P.1 P.2 * (3 * P.1 ^ 2 + E.curveA - 2 * lam * P.2))⁻¹ := by
+  classical
+  unfold logDerivTermPaper logDerivTerm CoordRingElt.eval
+  -- Denominators are nonzero, ensuring the shared inverse is well-defined.
+  have _hMul : D.eval P.1 P.2 * (3 * P.1 ^ 2 + E.curveA - 2 * lam * P.2) ≠ 0 :=
+    mul_ne_zero hD hXDen
+  -- Combine all three rational expressions over common denominator
+  -- `(a - by) · (3x² + A − 2λy)`.
+  have hGoal :
+      (2 * P.2 * D.a.derivative.eval P.1
+          - (3 * P.1 ^ 2 + E.curveA) * D.b.eval P.1
+          - 2 * P.2 ^ 2 * D.b.derivative.eval P.1)
+        * ((D.a.eval P.1 - D.b.eval P.1 * P.2)
+              * (3 * P.1 ^ 2 + E.curveA - 2 * lam * P.2))⁻¹
+      - (D.a.derivative.eval P.1 - D.b.derivative.eval P.1 * P.2) * (2 * P.2)
+        * ((D.a.eval P.1 - D.b.eval P.1 * P.2)
+              * (3 * P.1 ^ 2 + E.curveA - 2 * lam * P.2))⁻¹
+      = -((3 * P.1 ^ 2 + E.curveA) * D.b.eval P.1)
+        * ((D.a.eval P.1 - D.b.eval P.1 * P.2)
+              * (3 * P.1 ^ 2 + E.curveA - 2 * lam * P.2))⁻¹ := by
+    rw [← sub_mul, ← neg_mul]
+    congr 1
+    ring
+  convert hGoal using 2
+  ring
+
 end Divisor
