@@ -1769,3 +1769,89 @@ For T5 with N = d+M ≤ D.degE + k + 1 and S = range Q ∪ range R
 is a stronger hypothesis than the current axiom's `D.degE < E.q`.
 When mechanizing T5 fully, this quantitative hypothesis will
 replace (or strengthen) the `hDeg : D.degE < E.q` side condition.
+
+### Session 17 (2026-04-20) — T5 A5 landed, T5 fully eliminated
+
+Commits (this session):
+- `55cff1e` — T5 A5: `log_deriv_nonvanishing_criterion` as theorem
+  (axiom eliminated). ~449 LOC added to `Divisor/PolyFibK.lean`,
+  ~47 LOC of axiom + doc removed from `Divisor/LogDeriv.lean`.
+
+**What landed**: the T5 axiom replaced by a theorem in
+`Divisor/PolyFibK.lean`, proved via A1 + A2 + A3 + A4 + a factorization
+lemma + `simple_pole_fraction_zero`.
+
+Helpers (private except the main theorem):
+- `polyFibK_natDegree_le` (≤ `d + M - 1`).
+- `polyFibK_eq_zero_of_polyG_zero`: given ≥ d+M good intercepts and
+  polyG ≡ 0, polyFibK = 0 as a polynomial (contradiction via
+  `Polynomial.card_roots'` + natDegree bound).
+- `polyFibK_eval_tauQ_eq` / `polyFibK_eval_tauR_eq`: at `τ(Q k)` /
+  `τ(R j)`, polyFibK evaluates to a single surviving term (other
+  terms vanish via shared `(X - τ(Q k))` or `(X - τ(R j))` factors
+  in their erased products).
+- `polyFibK_factor_of_sigma`: under σ + `m_j = 0` off `range σ`,
+  factors `polyFibK = B · S_d` with
+  `B = ∏_j (X - C (τ R j))` and
+  `S_d = ∑_k C (β_k + m (σ k)) · ∏_{k' ≠ k} (X - C (τ Q k'))`.
+
+Main theorem proof (5 steps):
+1. Set up `S = range Q ∪ range R`, extract good λ via
+   `exists_good_lambda` (Phase A3).
+2. polyFibK = 0 via `polyFibK_eq_zero_of_polyG_zero`.
+3. For each k, eval at τ(Q k) + hBetaNz + τ-injectivity on range Q
+   yields ∃ j, R j = Q k. Build σ via `Classical.choose`.
+4. For j ∉ range σ, eval at τ(R j) yields m j = 0.
+5. Apply `polyFibK_factor_of_sigma` + B ≠ 0 (monic product of nonzero
+   linear factors) + `simple_pole_fraction_zero` on Fin d to conclude
+   `β_k + m (σ k) = 0` for all k.
+
+**Hypothesis change**: the axiom's `hDeg : D.degE < E.q` replaced by
+`hQuant : 6·q·(d+M + (d+M)(d+M-1)) + 1 ≤ |validPairs|`. The parameter
+`D : CoordRingElt` was removed since it is unused in the conclusion.
+T4 mechanization (next phase) will thread this through via
+Hasse-Weil-based lower bounds on `|validPairs|`.
+
+**Key technical notes**:
+1. `Finset.sum_image` + `Finset.sum_subset` for σ-reindexing of the
+   second sum. The direction choice matters for type unification:
+   rewrite from outer `∑ j : Fin M` → `∑ j ∈ image σ` (via
+   `sum_subset`) → `∑ k ∈ Fin d, g (σ k)` (via `sum_image`).
+2. Inside the factor identity, pulling `(X - C τ Q k)` from the Q-side
+   product and re-attaching into the R-side product via the matching
+   identity `Q k = R (σ k)` reduces each term to the shared shape
+   `(∏_{k' ≠ k} (Q-side)) · (∏_j (R-side))`.
+3. `Finset.prod_ne_zero_iff` + `Polynomial.X_sub_C_ne_zero` for the
+   B ≠ 0 step (uses `ZMod E.q` being an integral domain via
+   `Fact (Nat.Prime E.q)`).
+
+**Axiom state after session 17**:
+```
+propext, Classical.choice, Quot.sound
+Divisor.ECPoint.add_comm, add_assoc, neg_add_cancel
+Divisor.extractorSucceeds_of_logDerivCheck_identically_zero_general  [T4]
+```
+
+Visible axioms at `ma_extractable`: 7 (unchanged — T5 was hidden
+behind T4 before; now neither is in the visible list because T4
+still holds the visible position). But the **declared T5 axiom is
+fully eliminated**: it was removed from `LogDeriv.lean` and is now
+a theorem in `PolyFibK.lean` (depending only on the 3 Lean
+foundation axioms).
+
+**Continuation** (T4 D1-D5): mechanize the extractor bridge via
+- D1 `logDerivCheckFn ≡ 0` ⇒ `polyG ≡ 0` (~120 LOC, medium risk).
+- D2 apply T5 (~30 LOC, low risk; now that T5 is a theorem).
+- D3 combinatorial extractor analysis (~100 LOC).
+- D4 group-law via `principal_divisor_iff` (~80 LOC).
+- D5 weightedSum assembly (~50 LOC).
+Total ~380 LOC. D4 uses `principal_divisor_iff` axiom (kept) and may
+introduce a new "CoordRingElt.divisor_principal" axiom for the
+"D is a rational function ⇒ div(D) principal" step.
+
+The T4 D2 (apply T5) step will thread the quantitative hypothesis
+through from Soundness.lean's `ma_extractable` via Hasse-Weil-based
+bounds on `|validPairs E|`. Concretely, from `card_validPairs_lb`
+(`|E|² - 3|E| ≤ |validPairs|`) + `hasse_weil_lower` (`|E| ≥ q + 1 -
+2√q`), derive `6·q·(d+M + (d+M)²) + 1 ≤ |validPairs|` as a
+consequence of a condition like `q ≥ C·(d+M)²` for some C.
