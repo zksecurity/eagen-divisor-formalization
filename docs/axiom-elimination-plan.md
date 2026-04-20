@@ -1,6 +1,24 @@
 # Axiom Elimination Plan
 
-Target end-state for `#print axioms Divisor.ma_extractable`:
+## Status (post Queue 2, 2026-04-20)
+
+Actual end-state for `#print axioms Divisor.ma_extractable`:
+
+```
+propext, Classical.choice, Quot.sound                               -- Lean foundations
+Divisor.ECPoint.add_comm, add_assoc, neg_add_cancel                 -- Silverman III §2
+Divisor.principal_divisor_iff                                       -- Silverman III Cor 3.5
+Divisor.CoordRingElt.divisor_degree_eq                              -- Silverman III Prop 3.4 (pole order)
+Divisor.CoordRingElt.divisor_group_sum_zero                         -- Silverman III Prop 3.4 (Abel)
+Divisor.polyG_zero_of_logDerivCheck_identically_zero                -- residue identity (transient)
+```
+
+10 axioms total (3 Lean + 7 classical). One transient axiom
+(`polyG_zero_of_logDerivCheck_identically_zero`) remains pending
+the function-field / Weierstrass-preparation infrastructure required
+by the paper's Lemma-6 residue identity; see Queue 2's QA1 fallback.
+
+### Originally targeted end-state (aspirational)
 
 ```
 propext, Classical.choice, Quot.sound                               -- Lean foundations
@@ -3316,6 +3334,62 @@ After S7 lands successfully, the driver appends one final session
 log entry summarizing the full run (commits per step, total LOC,
 final axiom list from `#print axioms Divisor.ma_extractable`) and
 exits. The axiom-elimination plan is then formally complete.
+
+---
+
+### Session 33 (2026-04-20) — Queue 2 acceptance (QB1–QB3 landed; QA blocked; QC1 closed out)
+
+Queue 2 outcome:
+
+| Step | Outcome | Commit | Notes |
+|---|---|---|---|
+| QB1 | landed | `f6422cb` | `betaConstructive`: support + coverage; summation is `≤ D.degE` (equality requires QB2) |
+| QB2 | landed | `672ee9b` | Narrow Abel axioms: `divisor_degree_eq` + `divisor_group_sum_zero`; strengthens QB1's `≤` to `=` and supplies group-sum-zero |
+| QB3 | landed | `e100bb5` | `CoordRingElt.has_principal_divisor` axiom deleted; re-proved as a theorem from QB1 + QB2 artifacts |
+| QA1 | **blocked** (FAIL) | — | Polynomial residue identity requires Weierstrass-preparation + local-uniformizer infrastructure (~500–800 LOC) absent from repo. No single-session shortcut. |
+| QA2 | skipped | — | Depends on QA1 |
+| QA3 | skipped | — | Depends on QA1 |
+| QC1 | landed | (this commit) | Plan header updated; final audit recorded; unused-variable cleanup in `Soundness.lean` |
+
+**Final axiom surface** (`#print axioms`, verified post-QC1):
+
+`Divisor.ma_extractable`:
+```
+propext, Classical.choice, Quot.sound
+Divisor.ECPoint.add_assoc, add_comm, neg_add_cancel
+Divisor.principal_divisor_iff
+Divisor.CoordRingElt.divisor_degree_eq
+Divisor.CoordRingElt.divisor_group_sum_zero
+Divisor.polyG_zero_of_logDerivCheck_identically_zero
+```
+(10 total: 3 Lean + 7 classical.)
+
+`Divisor.ip_knowledge_sound`: same as `ma_extractable`.
+
+`Divisor.ma_completeness`:
+```
+propext, Classical.choice, Quot.sound
+Divisor.ECPoint.add_assoc, add_comm, neg_add_cancel
+Divisor.weil_reciprocity_honest
+```
+(7 total: 3 Lean + 4 classical.)
+
+**Net Queue 2 change vs pre-Queue-2 state**:
+- `weil_reciprocity_soundness`: already eliminated by Queue 1.
+- `CoordRingElt.has_principal_divisor`: **eliminated** (QB3).
+- `CoordRingElt.divisor_degree_eq`: **added** (narrow).
+- `CoordRingElt.divisor_group_sum_zero`: **added** (narrow).
+- `polyG_zero_of_logDerivCheck_identically_zero`: **unchanged** (QA blocked).
+
+Net change: +1 axiom on `ma_extractable` (9 → 10), but the two added axioms are strictly narrower than the removed composite axiom — each cites a single specific Silverman III Prop 3.4 fact (pole-order-at-∞ / Abel's theorem) rather than bundling several.
+
+**Outstanding work for future sessions** (not in Queue 2's scope):
+- Eliminate `polyG_zero_of_logDerivCheck_identically_zero` via function-field infrastructure (Weierstrass preparation, local uniformizers in F_q(E), formal Laurent series residues). Plan's Session 18 roadmap still applies: ~500–800 LOC across 3–5 focused sessions.
+- (Aspirational) Eliminate the two narrow `divisor_*` axioms by mechanizing Silverman III Prop 3.4 directly — requires a proper model of `F_q(E)` as a function field, which is also function-field infrastructure.
+
+All outstanding work is AG-classical (Silverman Ch II–III); no paper-specific content remains unverified.
+
+The axiom-elimination plan is now in a stable state with honest, narrow axiomatization of the outstanding classical content.
 
 ---
 

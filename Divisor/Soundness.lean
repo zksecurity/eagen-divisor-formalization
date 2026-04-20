@@ -127,7 +127,7 @@ noncomputable def extractorSucceeds (stmt : DlogStatement E.q)
     Returns `some` iff `extractorSucceeds` (range condition on every
     extracted scalar). -/
 noncomputable def maExtractor (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (d : ℕ) (hd : d < E.q)
+    (msg : MAProverMsg E.q) (d : ℕ) (_hd : d < E.q)
     (hk : stmt.k = msg.k) :
     Option (DlogWitness E.q) :=
   if h : extractorSucceeds E stmt msg d hk then
