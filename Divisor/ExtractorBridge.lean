@@ -679,6 +679,83 @@ theorem target_eq_weightedSum_of_principal
   exact target_eq_weightedSum_of_zero_sum E stmt msg hkm
     (extractor_zeroSum_of_principal E stmt msg hkm hNoNegP hPrincipal)
 
+/-! ## Distinct-base-point enumeration
+
+    `log_deriv_nonvanishing_criterion` (T5) requires the `R` family
+    passed to `polyG` to be injective. The raw `R = Fin.cons (-P_aff) B`
+    may have duplicates among `B`'s positions (the extractor handles
+    this via `extractorGroup` + canonical-index selection). This
+    section enumerates the distinct bases as a Finset, and lifts to
+    a `Fin`-indexing.
+
+    Combined with `-P_aff` (which is outside the base image under
+    `hNoNegP`), we get a distinct `R : Fin (1 + baseImageCount) →
+    (ZMod E.q)²` via `Fin.cons`.
+-/
+
+/-- Finset of distinct base points. -/
+noncomputable def baseImage
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) : Finset (ZMod E.q × ZMod E.q) :=
+  (Finset.univ : Finset (Fin msg.k)).image (extractorBases E stmt msg hkm)
+
+/-- Number of distinct base points. -/
+noncomputable def baseImageCount
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) : ℕ :=
+  (baseImage E stmt msg hkm).card
+
+/-- Enumeration of distinct base points. -/
+noncomputable def baseImageEnum
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) :
+    Fin (baseImageCount E stmt msg hkm) ≃ (baseImage E stmt msg hkm) :=
+  (baseImage E stmt msg hkm).equivFin.symm
+
+/-- The `k`-th distinct base point (as an ordered pair). -/
+noncomputable def baseAt
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) (k : Fin (baseImageCount E stmt msg hkm)) :
+    ZMod E.q × ZMod E.q :=
+  ((baseImageEnum E stmt msg hkm k) : ZMod E.q × ZMod E.q)
+
+theorem baseAt_mem_baseImage
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) (k : Fin (baseImageCount E stmt msg hkm)) :
+    baseAt E stmt msg hkm k ∈ baseImage E stmt msg hkm :=
+  (baseImageEnum E stmt msg hkm k).2
+
+theorem baseAt_injective
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) :
+    Function.Injective (baseAt E stmt msg hkm) := by
+  intro k₁ k₂ heq
+  apply (baseImageEnum E stmt msg hkm).injective
+  exact Subtype.ext heq
+
+/-- Under `hNoNegP`, `-P_aff` is not in the base image. -/
+theorem negP_notin_baseImage
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty) :
+    (stmt.target.1, -stmt.target.2) ∉ baseImage E stmt msg hkm := by
+  intro hContra
+  rw [baseImage, Finset.mem_image] at hContra
+  obtain ⟨i, _, heq⟩ := hContra
+  apply hNoNegP
+  exact ⟨i, Finset.mem_filter.mpr ⟨Finset.mem_univ _, heq⟩⟩
+
+/-- Under `hNoNegP`, `baseAt k ≠ -P_aff` for any `k`. -/
+theorem baseAt_ne_negP
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (k : Fin (baseImageCount E stmt msg hkm)) :
+    baseAt E stmt msg hkm k ≠ (stmt.target.1, -stmt.target.2) := by
+  intro heq
+  exact negP_notin_baseImage E stmt msg hkm hNoNegP
+    (heq ▸ baseAt_mem_baseImage E stmt msg hkm k)
+
 /-! ## Narrow polyG-bridge axiom (scalar level)
 
     The remaining classical content of the old composite
