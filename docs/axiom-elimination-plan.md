@@ -2435,6 +2435,94 @@ Axiom count: 10 (unchanged from session 24; the
 is now consumed here through S3, but remains in `ExtractorBridge.lean`
 as the scalar-level input).
 
+### Session 26 (2026-04-20) — S5 coeff-from-σ construction
+
+Commit (this session):
+- S5 — extractor coefficient function from `σ`. Adds
+  `extractorCoeffFromSigma` and the main theorem
+  `extractorCoeffFromSigma_satisfies_D3` in
+  `Divisor/ExtractorBridge.lean`, turning the σ-matching output of
+  `distinctSigma_exists` (S4) into a natural-number coefficient
+  function satisfying the three hypotheses of
+  `extractorSucceeds_of_natural_witness` (D3). Supporting helpers:
+  `baseImagePos` / `baseImagePos_val` / `baseImagePos_ne_zero`
+  (distinct-R position corresponding to a canonical base index),
+  `distinctR_baseImagePos` / `distinctM'_baseImagePos` (simp lemmas
+  in terms of `baseAt` and `extractorGroupSum`),
+  `sigma_zero_preimage_exists` (σ must hit position `0` via the
+  `-1 ≠ 0 in ZMod E.q` argument), `multAt_at_sigma_zero_pos` and
+  `multAt_le_degE_sub_one_of_ne` (bound machinery).
+  ~230 LOC added.
+
+**Theorem shape**:
+```
+extractorCoeffFromSigma_satisfies_D3
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
+    (hDeg : msg.toD.degE ≤ d) (hkm : stmt.k = msg.k)
+    (_hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (β_fun : ZMod² → ℕ)
+    (hβsup : ...) (hβcov : ...) (hβsum : ...)
+    (σ : Fin (zerosCard E msg.toD) ↪ Fin (1 + baseImageCount ...))
+    (_hσ_eq : ∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ k))
+    (hσ_betam : ∀ k, ((multAt k : ℕ) : ZMod E.q) + distinctM' (σ k) = 0)
+    (hσ_off : ∀ j, j ∉ Set.range σ → distinctM' j = 0) :
+    (∀ i, extractorCoeffFromSigma ... i < d) ∧
+    (∀ i, extractorIsCanonical ... i →
+      (extractorCoeffFromSigma ... i : ZMod E.q)
+        = -(extractorGroupSum E stmt msg hkm i)) ∧
+    (∀ i, ¬ extractorIsCanonical ... i →
+      extractorCoeffFromSigma ... i = 0)
+```
+
+**Definition of `extractorCoeffFromSigma`**:
+```
+fun i =>
+  if extractorIsCanonical i then
+    let pos := baseImagePos (baseIndexOf i)     -- ⟨(baseIndexOf i).val + 1, _⟩
+    if hHit : ∃ k, σ k = pos then
+      multAt β_fun D hHit.choose
+    else 0
+  else 0
+```
+At canonical `i`, `pos` is the distinct-R position whose value equals
+`baseAt (baseIndexOf i) = extractorBases i`. If σ hits it at some `k`,
+the coefficient is `multAt k`; else zero. At non-canonical `i`, zero.
+
+**Key arguments**:
+- **`sigma_zero_preimage_exists`** (σ hits position 0): If `0 ∉ range σ`,
+  then `distinctM' 0 = 0` by `hσ_off`; but `distinctM' 0 = -1`, and
+  `-1 ≠ 0` in `ZMod E.q` via `neg_eq_zero` + `one_ne_zero` (valid for
+  `E.q` prime, `E.q ≥ 5`).
+- **Bound** (canonical-with-hit): `k := hHit.choose` satisfies `σ k = pos`,
+  and `pos ≠ 0` (via `baseImagePos_ne_zero`), so `k ≠ k₀`. Then
+  `multAt k + multAt k₀ ≤ ∑ multAt = D.degE ≤ d` with `multAt k₀ ≥ 1`
+  gives `multAt k ≤ d - 1 < d`. Packaged as
+  `multAt_le_degE_sub_one_of_ne`.
+- **Bound** (canonical-unmatched / non-canonical, coeff = 0 < d):
+  `multAt k₀ ≥ 1` and `∑ multAt = D.degE ≤ d` give `d ≥ 1 > 0`.
+- **ZMod identity at canonical-with-hit**: `hσ_betam k` gives
+  `multAt k + distinctM' (σ k) = 0`. Rewrite `σ k = pos` and
+  `distinctM' pos = extractorGroupSum (baseAtIndex (baseIndexOf i))`.
+  Via `extractorGroupSum_congr_of_extractorBases_eq`, translate to
+  `extractorGroupSum i`. Conclude by `linear_combination`.
+- **ZMod identity at canonical-unmatched**: `pos ∉ range σ` gives
+  `distinctM' pos = 0` by `hσ_off`. Same S2 invariance collapses the
+  base-point group to `extractorGroupSum i = 0`, so both sides of the
+  target identity are zero.
+- **Non-canonical branch**: immediate from the `if-then-else` structure.
+
+**Exposed surface for S6/S7**:
+- `extractorCoeffFromSigma` — the coefficient function.
+- `extractorCoeffFromSigma_satisfies_D3` — the main S5 theorem.
+- `baseImagePos` / `baseImagePos_val` / `baseImagePos_ne_zero` — helpers.
+- `distinctR_baseImagePos` / `distinctM'_baseImagePos` — simp lemmas.
+- `sigma_zero_preimage_exists`, `multAt_at_sigma_zero_pos`,
+  `multAt_le_degE_sub_one_of_ne` — bound machinery (may be reused in S6
+  to align `extractorDivisorCoeffs` with `dCoeffs`).
+
+**No new axioms**, no new `sorry`/`admit`. `lake build` green.
+Axiom count: 10 (unchanged from session 25).
+
 ## Autonomous Driver Queue
 
 This section specifies the final 7-step queue that eliminates the

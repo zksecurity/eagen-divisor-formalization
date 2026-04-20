@@ -1629,6 +1629,323 @@ theorem distinctSigma_exists
   exact ⟨β_fun, σ, hβsup, hβcov, hβsum, hβprincipal,
          hσ_eq, hσ_betam, hσ_off⟩
 
+/-! ## S5: extractor coefficient function from σ
+
+    Given the `σ`-matching output of `distinctSigma_exists`, build a
+    natural-number coefficient `Fin msg.k → ℕ` whose ZMod residues match
+    `-extractorGroupSum` at canonical indices (and zero elsewhere), with
+    the D3 bound `coeff i < d`. Feeds into
+    `extractorSucceeds_of_natural_witness` (D3) to produce the full
+    `extractorSucceeds ∧ extractedScalars i = coeff i` package.
+
+    Structure:
+    * `baseImagePos` — position in `distinctR` corresponding to a
+      `baseIndexOf i` canonical index.
+    * `extractorCoeffFromSigma` — the coefficient function.
+    * `sigma_zero_preimage_exists` — σ must hit position `0` (else
+      `distinctM' 0 = -1 = 0`, contradiction).
+    * `extractorCoeffFromSigma_satisfies_D3` — main S5 theorem: the
+      three hypotheses of `extractorSucceeds_of_natural_witness` hold.
+-/
+
+/-- Position in `distinctR` corresponding to a distinct-base index.
+    Shape `⟨i.val + 1, _⟩` to match `distinctR_succ`. -/
+noncomputable def baseImagePos
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (i : Fin (baseImageCount E stmt msg hkm)) :
+    Fin (1 + baseImageCount E stmt msg hkm) :=
+  ⟨i.val + 1, by omega⟩
+
+theorem baseImagePos_val
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (i : Fin (baseImageCount E stmt msg hkm)) :
+    (baseImagePos E stmt msg hkm i).val = i.val + 1 := rfl
+
+theorem baseImagePos_ne_zero
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (i : Fin (baseImageCount E stmt msg hkm)) :
+    baseImagePos E stmt msg hkm i
+      ≠ (⟨0, by omega⟩ : Fin (1 + baseImageCount E stmt msg hkm)) := by
+  intro h
+  have : (baseImagePos E stmt msg hkm i).val = 0 := by rw [h]
+  rw [baseImagePos_val] at this
+  omega
+
+@[simp] theorem distinctR_baseImagePos
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (i : Fin (baseImageCount E stmt msg hkm)) :
+    distinctR E stmt msg hkm (baseImagePos E stmt msg hkm i)
+      = baseAt E stmt msg hkm i :=
+  distinctR_succ E stmt msg hkm i
+
+@[simp] theorem distinctM'_baseImagePos
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (i : Fin (baseImageCount E stmt msg hkm)) :
+    distinctM' E stmt msg hkm (baseImagePos E stmt msg hkm i)
+      = extractorGroupSum E stmt msg hkm
+          (baseAtIndex E stmt msg hkm i) :=
+  distinctM'_succ E stmt msg hkm i
+
+/-- **Extractor coefficient function from σ.** At canonical `i`, if the
+    distinct-R position corresponding to `extractorBases i` is hit by σ
+    at some `k`, return `multAt k`; else `0`. At non-canonical `i`,
+    return `0`. -/
+noncomputable def extractorCoeffFromSigma
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (β_fun : ZMod E.q × ZMod E.q → ℕ)
+    (σ : Fin (zerosCard E msg.toD) ↪
+          Fin (1 + baseImageCount E stmt msg hkm)) :
+    Fin msg.k → ℕ := fun i =>
+  if extractorIsCanonical E stmt msg hkm i then
+    if hHit : ∃ k : Fin (zerosCard E msg.toD),
+        σ k = baseImagePos E stmt msg hkm (baseIndexOf E stmt msg hkm i) then
+      multAt E β_fun msg.toD hHit.choose
+    else 0
+  else 0
+
+theorem extractorCoeffFromSigma_noncanon
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (β_fun : ZMod E.q × ZMod E.q → ℕ)
+    (σ : Fin (zerosCard E msg.toD) ↪
+          Fin (1 + baseImageCount E stmt msg hkm))
+    (i : Fin msg.k) (hNotCanon : ¬ extractorIsCanonical E stmt msg hkm i) :
+    extractorCoeffFromSigma E stmt msg hkm β_fun σ i = 0 := by
+  unfold extractorCoeffFromSigma
+  rw [if_neg hNotCanon]
+
+theorem extractorCoeffFromSigma_canonical_hit
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (β_fun : ZMod E.q × ZMod E.q → ℕ)
+    (σ : Fin (zerosCard E msg.toD) ↪
+          Fin (1 + baseImageCount E stmt msg hkm))
+    (i : Fin msg.k) (hCanon : extractorIsCanonical E stmt msg hkm i)
+    (hHit : ∃ k : Fin (zerosCard E msg.toD),
+        σ k = baseImagePos E stmt msg hkm (baseIndexOf E stmt msg hkm i)) :
+    extractorCoeffFromSigma E stmt msg hkm β_fun σ i
+      = multAt E β_fun msg.toD hHit.choose := by
+  unfold extractorCoeffFromSigma
+  rw [if_pos hCanon, dif_pos hHit]
+
+theorem extractorCoeffFromSigma_canonical_nohit
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (β_fun : ZMod E.q × ZMod E.q → ℕ)
+    (σ : Fin (zerosCard E msg.toD) ↪
+          Fin (1 + baseImageCount E stmt msg hkm))
+    (i : Fin msg.k) (hCanon : extractorIsCanonical E stmt msg hkm i)
+    (hNoHit : ¬ ∃ k : Fin (zerosCard E msg.toD),
+        σ k = baseImagePos E stmt msg hkm (baseIndexOf E stmt msg hkm i)) :
+    extractorCoeffFromSigma E stmt msg hkm β_fun σ i = 0 := by
+  unfold extractorCoeffFromSigma
+  rw [if_pos hCanon, dif_neg hNoHit]
+
+/-- **σ must hit position 0.** From the σ-output's off-range condition:
+    `j ∉ range σ → distinctM' j = 0`. Applied at `j = 0`, we would get
+    `distinctM' 0 = 0`, but `distinctM' 0 = -1 ≠ 0` in `ZMod E.q` (since
+    `E.q ≥ 5 ≥ 2` is prime). Hence `0 ∈ range σ`. -/
+theorem sigma_zero_preimage_exists
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (σ : Fin (zerosCard E msg.toD) ↪
+          Fin (1 + baseImageCount E stmt msg hkm))
+    (hσ_off : ∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) :
+    ∃ k₀ : Fin (zerosCard E msg.toD),
+      σ k₀ = (⟨0, by omega⟩ : Fin (1 + baseImageCount E stmt msg hkm)) := by
+  classical
+  by_contra hne
+  push_neg at hne
+  have h0notRange :
+      (⟨0, by omega⟩ : Fin (1 + baseImageCount E stmt msg hkm))
+        ∉ Set.range σ := by
+    intro hRange
+    obtain ⟨k, hk⟩ := hRange
+    exact hne k hk
+  have h0m : distinctM' E stmt msg hkm
+      (⟨0, by omega⟩ : Fin (1 + baseImageCount E stmt msg hkm)) = 0 :=
+    hσ_off _ h0notRange
+  rw [distinctM'_zero] at h0m
+  -- Now h0m : (-1 : ZMod E.q) = 0, contradicts one_ne_zero (via neg_eq_zero).
+  have h1 : (1 : ZMod E.q) = 0 := neg_eq_zero.mp h0m
+  exact one_ne_zero h1
+
+/-- **Bound for the multiplicity at σ's zero-preimage.** `multAt k₀ ≥ 1`
+    where `k₀` is the (any) index with `σ k₀ = 0`. Follows from
+    `multAt_pos` (every `multAt k` is positive under the `β`-coverage
+    condition). -/
+theorem multAt_at_sigma_zero_pos
+    (β_fun : ZMod E.q × ZMod E.q → ℕ) (D : CoordRingElt E.q)
+    (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
+    (k₀ : Fin (zerosCard E D)) :
+    1 ≤ multAt E β_fun D k₀ :=
+  multAt_pos E β_fun D hβcov k₀
+
+/-- **Bound lemma.** For `k ≠ k₀` in `Fin (zerosCard E D)`,
+    `multAt k ≤ D.degE - 1`. Uses `multAt k + multAt k₀ ≤ ∑ multAt = D.degE`
+    with `multAt k₀ ≥ 1`. -/
+theorem multAt_le_degE_sub_one_of_ne
+    (β_fun : ZMod E.q × ZMod E.q → ℕ) (D : CoordRingElt E.q)
+    (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
+    (hβsum : (∑ P ∈ E.points, β_fun P) = D.degE)
+    (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
+    {k k₀ : Fin (zerosCard E D)} (hne : k ≠ k₀) :
+    multAt E β_fun D k + 1 ≤ D.degE := by
+  classical
+  have hSum := sum_multAt_eq_degE E β_fun D hβsup hβsum
+  -- Insert: sum over {k, k₀} ≤ sum over univ.
+  have hPair : multAt E β_fun D k + multAt E β_fun D k₀ ≤
+               ∑ k' : Fin (zerosCard E D), multAt E β_fun D k' := by
+    have hSubset : ({k, k₀} : Finset (Fin (zerosCard E D))) ⊆ Finset.univ := by
+      intro x _; exact Finset.mem_univ _
+    have hSumPair :
+        ∑ k' ∈ ({k, k₀} : Finset (Fin (zerosCard E D))),
+            multAt E β_fun D k'
+          = multAt E β_fun D k + multAt E β_fun D k₀ := by
+      rw [Finset.sum_insert (by
+        simp only [Finset.mem_singleton]
+        exact hne), Finset.sum_singleton]
+    rw [← hSumPair]
+    exact Finset.sum_le_sum_of_subset_of_nonneg hSubset
+      (fun _ _ _ => Nat.zero_le _)
+  have hk₀ : 1 ≤ multAt E β_fun D k₀ := multAt_at_sigma_zero_pos E β_fun D hβcov k₀
+  omega
+
+/-- **Main S5 theorem.** `extractorCoeffFromSigma` satisfies the three
+    hypotheses of `extractorSucceeds_of_natural_witness` (D3). Combined
+    with `distinctSigma_exists` (S4) and `extractorSucceeds_of_natural_witness`
+    (D3), this produces the `extractorSucceeds` + `extractedScalars =
+    coeff` package that S7 needs. -/
+theorem extractorCoeffFromSigma_satisfies_D3
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
+    (hDeg : msg.toD.degE ≤ d) (hkm : stmt.k = msg.k)
+    (_hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (β_fun : ZMod E.q × ZMod E.q → ℕ)
+    (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0)
+    (hβcov : ∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0)
+    (hβsum : (∑ P ∈ E.points, β_fun P) = msg.toD.degE)
+    (σ : Fin (zerosCard E msg.toD) ↪
+          Fin (1 + baseImageCount E stmt msg hkm))
+    (_hσ_eq : ∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ k))
+    (hσ_betam : ∀ k,
+      ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q)
+        + distinctM' E stmt msg hkm (σ k) = 0)
+    (hσ_off : ∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) :
+    (∀ i, extractorCoeffFromSigma E stmt msg hkm β_fun σ i < d) ∧
+    (∀ i, extractorIsCanonical E stmt msg hkm i →
+      (extractorCoeffFromSigma E stmt msg hkm β_fun σ i : ZMod E.q)
+        = -(extractorGroupSum E stmt msg hkm i)) ∧
+    (∀ i, ¬ extractorIsCanonical E stmt msg hkm i →
+      extractorCoeffFromSigma E stmt msg hkm β_fun σ i = 0) := by
+  classical
+  -- k₀ is the preimage of 0 under σ.
+  obtain ⟨k₀, hk₀⟩ := sigma_zero_preimage_exists E stmt msg hkm σ hσ_off
+  refine ⟨?_, ?_, ?_⟩
+  -- (1) Bound: extractorCoeffFromSigma i < d.
+  · intro i
+    by_cases hC : extractorIsCanonical E stmt msg hkm i
+    · by_cases hHit : ∃ k : Fin (zerosCard E msg.toD),
+          σ k = baseImagePos E stmt msg hkm (baseIndexOf E stmt msg hkm i)
+      · rw [extractorCoeffFromSigma_canonical_hit E stmt msg hkm β_fun σ i hC hHit]
+        -- Use hHit.choose: σ (hHit.choose) = pos_i ≠ 0 = σ k₀, so
+        -- hHit.choose ≠ k₀. Hence multAt (hHit.choose) ≤ D.degE - 1 ≤ d - 1 < d.
+        set k := hHit.choose
+        have hkspec : σ k = baseImagePos E stmt msg hkm
+            (baseIndexOf E stmt msg hkm i) := hHit.choose_spec
+        have hkne_k₀ : k ≠ k₀ := by
+          intro hEq
+          rw [hEq] at hkspec
+          rw [hk₀] at hkspec
+          exact baseImagePos_ne_zero E stmt msg hkm (baseIndexOf E stmt msg hkm i)
+            hkspec.symm
+        have hBound : multAt E β_fun msg.toD k + 1 ≤ msg.toD.degE :=
+          multAt_le_degE_sub_one_of_ne E β_fun msg.toD
+            hβsup hβsum hβcov hkne_k₀
+        have : multAt E β_fun msg.toD k + 1 ≤ d :=
+          hBound.trans hDeg
+        omega
+      · rw [extractorCoeffFromSigma_canonical_nohit
+              E stmt msg hkm β_fun σ i hC hHit]
+        -- Need: 0 < d. Use multAt_at_sigma_zero_pos + hβsum + hDeg.
+        have hk₀_pos : 1 ≤ multAt E β_fun msg.toD k₀ :=
+          multAt_at_sigma_zero_pos E β_fun msg.toD hβcov k₀
+        -- 1 ≤ multAt k₀ ≤ ∑ multAt = D.degE ≤ d.
+        have hSum := sum_multAt_eq_degE E β_fun msg.toD hβsup hβsum
+        have hSingle : multAt E β_fun msg.toD k₀ ≤
+            ∑ k' : Fin (zerosCard E msg.toD), multAt E β_fun msg.toD k' := by
+          refine Finset.single_le_sum
+            (f := fun k' => multAt E β_fun msg.toD k') ?_ (Finset.mem_univ k₀)
+          intro _ _; exact Nat.zero_le _
+        rw [hSum] at hSingle
+        omega
+    · rw [extractorCoeffFromSigma_noncanon E stmt msg hkm β_fun σ i hC]
+      -- Same 0 < d argument.
+      have hk₀_pos : 1 ≤ multAt E β_fun msg.toD k₀ :=
+        multAt_at_sigma_zero_pos E β_fun msg.toD hβcov k₀
+      have hSum := sum_multAt_eq_degE E β_fun msg.toD hβsup hβsum
+      have hSingle : multAt E β_fun msg.toD k₀ ≤
+          ∑ k' : Fin (zerosCard E msg.toD), multAt E β_fun msg.toD k' := by
+        refine Finset.single_le_sum
+          (f := fun k' => multAt E β_fun msg.toD k') ?_ (Finset.mem_univ k₀)
+        intro _ _; exact Nat.zero_le _
+      rw [hSum] at hSingle
+      omega
+  -- (2) ZMod identity at canonical i.
+  · intro i hC
+    by_cases hHit : ∃ k : Fin (zerosCard E msg.toD),
+        σ k = baseImagePos E stmt msg hkm (baseIndexOf E stmt msg hkm i)
+    · rw [extractorCoeffFromSigma_canonical_hit
+            E stmt msg hkm β_fun σ i hC hHit]
+      set k := hHit.choose
+      have hkspec : σ k = baseImagePos E stmt msg hkm
+          (baseIndexOf E stmt msg hkm i) := hHit.choose_spec
+      -- multAt k + distinctM' (σ k) = 0 ⇒ multAt k = -distinctM' (σ k).
+      have hBetaM := hσ_betam k
+      -- distinctM' (σ k) = distinctM' baseImagePos = extractorGroupSum (baseAtIndex (baseIndexOf i))
+      --                   = extractorGroupSum i (since extractorBases (baseAtIndex (baseIndexOf i)) = baseAt (baseIndexOf i) = extractorBases i).
+      rw [hkspec, distinctM'_baseImagePos] at hBetaM
+      -- Translate extractorGroupSum (baseAtIndex (baseIndexOf i)) = extractorGroupSum i.
+      have hBases_eq : extractorBases E stmt msg hkm
+          (baseAtIndex E stmt msg hkm (baseIndexOf E stmt msg hkm i))
+            = extractorBases E stmt msg hkm i := by
+        rw [baseAtIndex_spec E stmt msg hkm (baseIndexOf E stmt msg hkm i),
+            baseAt_baseIndexOf]
+      have hGroupSum_eq :
+          extractorGroupSum E stmt msg hkm
+            (baseAtIndex E stmt msg hkm (baseIndexOf E stmt msg hkm i))
+            = extractorGroupSum E stmt msg hkm i :=
+        extractorGroupSum_congr_of_extractorBases_eq E stmt msg hkm hBases_eq
+      rw [hGroupSum_eq] at hBetaM
+      -- hBetaM : (multAt k : ZMod q) + extractorGroupSum i = 0
+      linear_combination hBetaM
+    · rw [extractorCoeffFromSigma_canonical_nohit
+            E stmt msg hkm β_fun σ i hC hHit]
+      -- pos_i ∉ range σ ⇒ distinctM' pos_i = 0 ⇒ extractorGroupSum i = 0.
+      push_neg at hHit
+      have hPosNotRange :
+          baseImagePos E stmt msg hkm (baseIndexOf E stmt msg hkm i)
+            ∉ Set.range σ := by
+        intro hInRange
+        obtain ⟨k, hk⟩ := hInRange
+        exact hHit k hk
+      have hM : distinctM' E stmt msg hkm
+          (baseImagePos E stmt msg hkm (baseIndexOf E stmt msg hkm i)) = 0 :=
+        hσ_off _ hPosNotRange
+      rw [distinctM'_baseImagePos] at hM
+      -- hM : extractorGroupSum (baseAtIndex (baseIndexOf i)) = 0
+      -- translate to extractorGroupSum i.
+      have hBases_eq : extractorBases E stmt msg hkm
+          (baseAtIndex E stmt msg hkm (baseIndexOf E stmt msg hkm i))
+            = extractorBases E stmt msg hkm i := by
+        rw [baseAtIndex_spec E stmt msg hkm (baseIndexOf E stmt msg hkm i),
+            baseAt_baseIndexOf]
+      have hGroupSum_eq :
+          extractorGroupSum E stmt msg hkm
+            (baseAtIndex E stmt msg hkm (baseIndexOf E stmt msg hkm i))
+            = extractorGroupSum E stmt msg hkm i :=
+        extractorGroupSum_congr_of_extractorBases_eq E stmt msg hkm hBases_eq
+      rw [hGroupSum_eq] at hM
+      simp [hM]
+  -- (3) Non-canonical indices: trivial.
+  · intro i hNotCanon
+    exact extractorCoeffFromSigma_noncanon E stmt msg hkm β_fun σ i hNotCanon
+
 /-! ## Composite bridge axiom (TEMPORARY — being decomposed)
 
     The composite `weil_reciprocity_soundness` axiom produces the full
