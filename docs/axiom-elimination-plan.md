@@ -2194,6 +2194,11 @@ Commits (this session):
   (injectivity, coverage, `∑ multAt = D.degE`) needed to feed the
   narrow polyG bridge axiom and `log_deriv_nonvanishing_criterion`
   (T5). ~130 LOC.
+- `3f7344c` — Distinct-base-point enumeration: `baseImage`,
+  `baseImageCount`, `baseImageEnum`, `baseAt` for the extractor's
+  distinct base points. Injectivity of `baseAt` + `negP_notin_baseImage`
+  (under `hNoNegP`) give the facts needed to show
+  `R = Fin.cons (-P_aff) baseAt` is injective — the T5 precondition. ~77 LOC.
 
 **What landed**: the core axiom `CoordRingElt.has_principal_divisor`
 and the infrastructure to consume it. Specifically:
