@@ -12,3 +12,4 @@ import Divisor.ClearedPolyForm
 import Divisor.PolyGBridge
 import Divisor.Protocol
 import Divisor.Soundness
+import Divisor.ExtractorBridge
