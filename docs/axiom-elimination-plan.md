@@ -4271,3 +4271,69 @@ term. This finding changes the strategic outlook: a cascade rewrite
 (Track A) is now the preferred path to axiom elimination, replacing
 the function-field-machinery approach previously tracked.
 
+
+---
+
+### Session 37 (2026-04-21) — Counterexample: the transient axiom is FALSE
+
+**Scope**: Lean-verified counterexample in `docs/counterexamples/axiom_false_witness.lean`
+(206 LOC). `lake env lean` returns only unused-variable warnings.
+
+**Witness**:
+
+- `E : y² = x³ + 1` over `F_7` (11 affine points).
+- `D = y`, i.e. `a(x) = 0`, `b(x) = -1`. Nonzero, `D.degE = 3`.
+- `P = (0, 1)`, `k = 1`, `B₀ = (0, 6) = -P`, `m₀ = -1`.
+- `Q = {(3,0), (5,0), (6,0)}` enumerates all `D`-zeros on `E`.
+- `β = (1, 1, 1)`, `Σβ = 3 = D.degE`.
+- `A₀ = (2, 3)`, `A₁ = (4, 3)` — non-vertical affine pair on `E`.
+
+**Verified (Lean)**:
+
+- `logDerivCheckFn ≡ 0` at every defined non-vertical pair for this
+  `(D, P, B, m)` (because `a' = b' = 0` for `D = y`, so Lean's
+  per-chord-point `logDerivTerm` is identically 0, and `B₀ = -P` with
+  `m₀ = -1` makes the `rhs` identically 0).
+- All axiom hypotheses `hQinj, hQzeros, hQcov, hβPos, hβSum, hA₀, hA₁,
+  hNV` hold.
+- **But** `polyG E Q β (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) m) (2,3)
+  (4,3) = 5 ≠ 0` (verified by `decide` on `F_7`).
+
+Hence the universal statement of the transient axiom is classically
+refutable.
+
+**Root cause** (confirms Session 36 diagnosis): Lean's `logDerivTerm`
+(`Divisor/LogDeriv.lean:128-135`) computes only the formal
+`(∂D/∂x)/D · dx/dz`, omitting the on-curve chain-rule contribution
+`(∂D/∂y)·(dy/dz)/D = -b(x)·(3x²+A)/((3x²+A-2λy)·D)`. Paper's
+`lem:log-deriv-norm` (ec.tex:557-579) integrand includes both terms.
+For `D = y` (i.e. `b = -1 ≠ 0`), the missing term has value
+`-1/3 = 5` per chord point on the counterexample pair; summed over
+the three chord x-coordinates, the discrepancy does not vanish.
+
+**Why `ma_extractable` is accidentally safe against this specific
+witness**: the counterexample has `B₀ = -P`, i.e. `negPIndexSet ≠ ∅`,
+so `ma_extractable` routes through the SPECIAL branch
+(`extractorSucceeds_special`) which does not invoke the axiom. This is
+incidental — the axiom's universal statement remains false independent
+of how `ma_extractable` happens to use it.
+
+**Implications**:
+
+1. `polyG_zero_of_logDerivCheck_identically_zero` cannot be eliminated
+   by proving it — it is provably false as stated.
+2. `weil_reciprocity_honest` (completeness axiom) likely has the same
+   structural defect; the completeness proof may also be routing
+   through the defective definition.
+3. Two paths remain:
+   (a) **Cascade fix**: rewrite `logDerivTerm` to paper-faithful form
+       (add the missing y-chain-rule term), re-prove downstream, then
+       the axiom becomes eliminable via Lemma 6 mechanization.
+   (b) **Narrow**: add hypothesis to the axiom to exclude the
+       counterexample class (e.g. `D.b.natDegree > 0` + other
+       non-degeneracy), and prove only the narrow case.
+
+**Status**: axiom retained as transient, but flagged as unsound.
+README updated with the Soundness flag entry. Counterexample checked
+in for permanent reference.
+
