@@ -147,67 +147,15 @@ noncomputable def eventBadRange (stmt : DlogStatement E.q)
     (msg : MAProverMsg E.q) (d : ℕ) (hk : stmt.k = msg.k) : Prop :=
   ¬ extractorSucceeds E stmt msg d hk
 
-/-! ## Bridge axiom: identically-zero log-derivative ⇒ extractor succeeds
+/-! ## Bridge from log-derivative vanishing to extractor success
 
-    **Why this is narrow:** `log_deriv_nonvanishing_criterion`
-    (LogDeriv.lean) gives partial-fraction uniqueness at the `polyG` level
-    (the denominator-cleared polynomial). To apply it here we must:
-      (i) translate "`logDerivCheckFn ≡ 0` on `E × E`" into "`polyG ≡ 0`
-          for the grouped distinct-bases vector", and
-      (ii) feed the resulting `σ`, `beta + m ∘ σ = 0`, `m_j = 0 off σ`
-          into the combinatorial grouping step to read off
-          `extractedScalars i < d` and the no-underflow bound at `-P`.
-    Step (i) is denominator-clearing — partly proved in LogDeriv.lean via
-    `logDerivCheckFn_iff_polyG` (the remaining gap is upstream); step
-    (ii) is the grouping/lifting arithmetic (≈100 lines, per the
-    paper's GAP fix). Both are mechanical but orthogonal to the
-    statement-level content of "if f ≡ 0 then extractor succeeds";
-    axiomatizing the conclusion keeps content visible at the theorem
-    statement rather than hiding it in a prover-supplied
-    `hExtHonest` hypothesis.
-
-    Hypotheses are exactly the structural assumptions on the message:
-    `degE(D) ≤ d` (part of the verifier's first check);
-    `(polyA, polyB) ∈ admSet` (part of the verifier's second check,
-    ensuring `D ≠ 0` via `stmt.admSet_excludes_zero`);
-    `d < q` (needed for the degE-to-integer lift to be injective).
-
-    **The axiom is now sound.** Steps 1+2 of the remediation added the
-    paper's `-P ∈ {B_j}` special-case branch to `extractedScalars` and
-    changed `DlogWitness.scalars` to `ℤ`. As a result, when the
-    hypotheses hold (including `hAllZero`), the `-P ∈ {B_j}` case is
-    handled by the special-case branch (unconditionally returning
-    `-1` at `j*`), and `extractorSucceeds` holds. The previous
-    counterexample `Counterexample.lean` no longer type-checks.
-
-    **The conjunction with dlogHolds** (second conjunct of conclusion)
-    was added by Step 4 — it strengthens the axiom to directly assert
-    the dlog relation `target = Σ [n_i]·B_i` satisfied by the extracted
-    witness, matching paper `thm:ma`'s knowledge-soundness guarantee. -/
-/-- **Narrowed bridge axiom (general case).** Restriction of the original
-    `extractorSucceeds_of_logDerivCheck_identically_zero` to the general
-    case `-P ∉ {B_j}`. Hypothesis strengthened to require zeros only on
-    the defined subset (where `logDerivCheckFn`'s denominators are all
-    nonzero), matching the paper's semantics. The special case is
-    handled separately by `extractorSucceeds_special` +
-    `extracted_scalars_valid_special`. -/
-axiom extractorSucceeds_of_logDerivCheck_identically_zero_general
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
-    (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
-    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
-      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
-      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
-      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
-    extractorSucceeds E stmt msg d hkm ∧
-    ECPoint.affine stmt.target.1 stmt.target.2 =
-      ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
-        (fun i => ECPoint.zsmul E
-                   (extractedScalars E stmt msg hkm i)
-                   (ECPoint.affine (extractorBases E stmt msg hkm i).1
-                                   (extractorBases E stmt msg hkm i).2))
+    The general-case bridge `logDerivCheckFn ≡ 0 on defined non-vertical
+    E × E pairs ⇒ extractor succeeds ∧ target = Σ [extractedScalars] · B_i`
+    is derived in `ExtractorBridge.lean` from the narrow
+    `weil_reciprocity_soundness` axiom (classical AG content: Weil
+    reciprocity soundness + Silverman III.3.5 for CoordRingElt divisors)
+    combined with the D3 + D4 + D5 infrastructure. The special case
+    `-P ∈ {B_j}` is handled here unconditionally below. -/
 
 /-- **Special-case extractor-range** (`-P ∈ {B_j}`, `d ≥ 2`).
 
@@ -284,159 +232,16 @@ theorem extracted_scalars_valid_special
       exact fun h => hi_ne (h.trans hJStar_def.symm)
     simp only [hExtracted, ECPoint.zsmul_zero]
 
-/-- **Step 4: extractor validity (both cases).** Whenever the bridge
-    hypotheses hold, the extracted witness satisfies `dlogHolds`.
+/-! ## Extractor validity and MA extractability
 
-    * Special case (`-P ∈ {B_j}`): reduces to
-      `extracted_scalars_valid_special` — unconditional, no axioms.
-    * General case (`-P ∉ {B_j}`): reduces to the second conjunct of
-      the narrowed general-case bridge axiom.
-
-    Hypothesis is "zeros on the defined subset" (paper semantics). -/
-theorem extracted_scalars_valid
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
-    (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
-      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
-      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
-      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
-    ECPoint.affine stmt.target.1 stmt.target.2 =
-      ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
-        (fun i => ECPoint.zsmul E
-                   (extractedScalars E stmt msg hkm i)
-                   (ECPoint.affine (extractorBases E stmt msg hkm i).1
-                                   (extractorBases E stmt msg hkm i).2)) := by
-  classical
-  by_cases hNegP : (negPIndexSet E stmt msg hkm).Nonempty
-  · exact extracted_scalars_valid_special E stmt msg hkm hNegP
-  · exact (extractorSucceeds_of_logDerivCheck_identically_zero_general
-            E stmt msg d hDeg hd hkm hAdm hNegP hAllZero).2
-
-/-! ## Theorem 6: Extractable MA protocol -/
-
-/-- **Theorem 6 (MA extractability) — upgraded form with valid witness.**
-
-    Knowledge soundness of the MA protocol. For every first-round message,
-    one of the two branches holds:
-
-    * **Witness branch**: there exists a witness `wit` satisfying the
-      dlog relation `dlogHolds E stmt wit hkm` such that the extractor
-      returns `some wit`; or
-
-    * **Bound branch**: the set of accepting challenges in `validPairs`
-      has cardinality at most `18 · (d + stmt.k) · E.q`, i.e.
-      ≈ `18(d+k)/q` relative to the ≈ `q²` valid challenges.
-
-    Upgrade over the previous `isSome`-only formulation: the witness is
-    now explicitly provided and certified to satisfy the dlog relation
-    (via `extracted_scalars_valid`), matching paper `thm:ma`'s
-    knowledge-soundness guarantee. -/
-theorem ma_extractable
-    (stmt : DlogStatement E.q) (d : ℕ) (hd : d < E.q) (hd2 : 2 ≤ d)
-    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ d)
-    (hkm : stmt.k = msg.k) :
-    (∃ wit : DlogWitness E.q,
-        maExtractor E stmt msg d hd hkm = some wit
-        ∧ dlogHolds E stmt wit) ∨
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (72 * (d + stmt.k + 6) + 4) * E.points.card := by
-  classical
-  -- Case on whether `logDerivCheckFn` is nonzero on some *defined* pair.
-  -- The defined subset is where Lean and paper semantics coincide;
-  -- undefined-denominator pairs are accepted as a "bad event" absorbed
-  -- into the total bound.
-  by_cases hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
-     logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ ∧
-     logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-       (fun i => msg.m (hkm ▸ i)) A₀ A₁ ≠ 0
-  · -- Nonvanishing on defined subset: `log_deriv_sz` bounds the NotEq
-    -- bad set (→ bound branch).
-    right
-    set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
-      (validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hAS
-    set badSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
-      badChallengesNotEq E msg.toD stmt.target stmt.bases
-        (fun i => msg.m (hkm ▸ i)) with hBS
-    have hSub : acceptSet ⊆ badSet := by
-      intro p hp
-      simp only [hAS, Finset.mem_filter] at hp
-      simp only [hBS, badChallengesNotEq, Finset.mem_filter]
-      exact ⟨hp.1, hp.2.2.2⟩
-    have hCardLe : acceptSet.card ≤ badSet.card := Finset.card_le_card hSub
-    have hDegLt : msg.toD.degE < E.q := lt_of_le_of_lt hDeg hd
-    have hBound :=
-      log_deriv_sz E msg.toD stmt.target stmt.bases
-        (fun i => msg.m (hkm ▸ i)) hDegLt hNV
-    have hMono : (72 * (msg.toD.degE + stmt.k + 6) + 4) * E.points.card
-                 ≤ (72 * (d + stmt.k + 6) + 4) * E.points.card := by
-      apply Nat.mul_le_mul_right
-      have : msg.toD.degE + stmt.k + 6 ≤ d + stmt.k + 6 := by
-        exact Nat.add_le_add_right (Nat.add_le_add_right hDeg _) _
-      omega
-    exact le_trans hCardLe (le_trans hBound hMono)
-  · -- Identically zero on defined E × E. Sub-case on admSet membership.
-    push_neg at hNV
-    by_cases hAdm : stmt.admSet (msg.polyA, msg.polyB)
-    · -- admSet holds: case-split on `-P ∈ {B_j}` to use either the
-      -- special-case direct proof or the narrowed general-case axiom.
-      left
-      classical
-      by_cases hNegP : (negPIndexSet E stmt msg hkm).Nonempty
-      · -- Special case (-P ∈ {B_j}): direct proof.
-        have hSucc : extractorSucceeds E stmt msg d hkm :=
-          extractorSucceeds_special E stmt msg d hkm hNegP hd2
-        have hRelation := extracted_scalars_valid_special E stmt msg hkm hNegP
-        let wit : DlogWitness E.q :=
-          ⟨msg.k, extractedScalars E stmt msg hkm, d, hSucc⟩
-        refine ⟨wit, ?_, ?_⟩
-        · show (if h : extractorSucceeds E stmt msg d hkm
-                then some (⟨msg.k, extractedScalars E stmt msg hkm, d, h⟩ : DlogWitness E.q)
-                else none) = _
-          rw [dif_pos hSucc]
-        · refine ⟨hkm, ?_⟩
-          show (ECPoint.affine stmt.target.1 stmt.target.2 : ECPoint E.q) =
-            ECPoint.weightedSum E (Finset.univ : Finset (Fin wit.k))
-              (fun i => ECPoint.zsmul E (wit.scalars i)
-                (ECPoint.affine
-                  (stmt.bases (Fin.cast hkm.symm i)).1
-                  (stmt.bases (Fin.cast hkm.symm i)).2))
-          convert hRelation using 1
-      · -- General case (-P ∉ {B_j}): narrowed bridge axiom.
-        obtain ⟨hSucc, hRelation⟩ :=
-          extractorSucceeds_of_logDerivCheck_identically_zero_general E stmt msg d
-            hDeg hd hkm hAdm hNegP
-            (fun A₀ A₁ hA₀ hA₁ hDef => hNV A₀ A₁ hA₀ hA₁ hDef)
-        let wit : DlogWitness E.q :=
-          ⟨msg.k, extractedScalars E stmt msg hkm, d, hSucc⟩
-        refine ⟨wit, ?_, ?_⟩
-        · show (if h : extractorSucceeds E stmt msg d hkm
-                then some (⟨msg.k, extractedScalars E stmt msg hkm, d, h⟩ : DlogWitness E.q)
-                else none) = _
-          rw [dif_pos hSucc]
-        · refine ⟨hkm, ?_⟩
-          show (ECPoint.affine stmt.target.1 stmt.target.2 : ECPoint E.q) =
-            ECPoint.weightedSum E (Finset.univ : Finset (Fin wit.k))
-              (fun i => ECPoint.zsmul E (wit.scalars i)
-                (ECPoint.affine
-                  (stmt.bases (Fin.cast hkm.symm i)).1
-                  (stmt.bases (Fin.cast hkm.symm i)).2))
-          convert hRelation using 1
-    · -- admSet fails: no challenge accepts; bound is 0 ≤ 18(d+k)·q.
-      right
-      set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
-        (validPairs E).filter
-          (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hAS
-      have hEmpty : acceptSet = ∅ := by
-        apply Finset.eq_empty_of_forall_not_mem
-        intro p hp
-        simp only [hAS, Finset.mem_filter] at hp
-        exact hAdm hp.2.2.1
-      rw [hEmpty]
-      simp
+    The general-case bridge `extracted_scalars_valid` (combining the
+    special case with the narrowed general case), the full
+    knowledge-soundness theorem `ma_extractable`, and its IP-side
+    consequence `ip_knowledge_sound` have been moved to
+    `ExtractorBridge.lean`, which is the bottom-layer file in the
+    import graph that can access both the extractor definitions
+    (Soundness.lean) and the D4/D5 infrastructure + narrow
+    `weil_reciprocity_soundness` axiom (ExtractorBridge.lean). -/
 
 /-! ## Completeness -/
 
@@ -506,43 +311,5 @@ theorem ma_completeness
       p.1 p.2 hNotBad
   exact le_trans (Finset.card_le_card hSub)
     (support_disjointness E msg.toD (numZeros E msg.toD) (le_refl _))
-
-/-! ## Theorem 7: Knowledge-Sound IP -/
-
-/-- **Theorem 7 (IP knowledge soundness).**
-
-    The IP has the same knowledge guarantee as the MA (extractor-or-
-    small-accept-set disjunction), plus uniqueness of the third-round
-    response (which makes the IP-to-MA reduction tight).
-
-    Conjunct 1: extractor-or-bound — directly from `ma_extractable`.
-    Conjunct 2: third-round uniqueness — directly from `ip_unique_third_round`. -/
-theorem ip_knowledge_sound
-    (stmt : DlogStatement E.q) (d : ℕ) (hd : d < E.q) (hd2 : 2 ≤ d)
-    (msg1 : MAProverMsg E.q) (hDeg : msg1.toD.degE ≤ d)
-    (hkm : stmt.k = msg1.k) :
-    -- (1) Same knowledge guarantee as MA (valid witness or small accept set).
-    ((∃ wit : DlogWitness E.q,
-         maExtractor E stmt msg1 d hd hkm = some wit
-         ∧ dlogHolds E stmt wit) ∨
-     ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
-      ≤ (72 * (d + stmt.k + 6) + 4) * E.points.card)
-    -- (2) Uniqueness of third-round message.
-    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
-        (msg3 msg3' : IPProverMsg3 E.q),
-        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
-        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
-        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
-        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
-            stmt.target.1 (-stmt.target.2) ≠ 0 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
-        msg3 = msg3' := by
-  refine ⟨?_, ?_⟩
-  · exact ma_extractable E stmt d hd hd2 msg1 hDeg hkm
-  · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
-    exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
-            hD₀ hD₁ hD₂ hLP hAcc hAcc'
 
 end Divisor
