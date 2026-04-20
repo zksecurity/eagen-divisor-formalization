@@ -1,0 +1,248 @@
+/-
+  Divisor/PartialFractionExpansion.lean
+
+  Denominator-cleared partial-fraction expansion for a polynomial that
+  splits over a commutative ring. For a polynomial of the form
+
+      p = C c * ∏ α ∈ s, (X - C α) ^ m α
+
+  (a typical "product-of-linears" decomposition obtained by
+  `C_leadingCoeff_mul_prod_multiset_X_sub_C` + `prod_multiset_root_eq_finset_root`
+  when the root count equals the degree), the derivative admits the
+  explicit sum
+
+      p.derivative = C c * ∑ α ∈ s,
+        C (m α : R) * (X - C α) ^ (m α - 1) * ∏ β ∈ s.erase α, (X - C β) ^ m β.
+
+  Multiplying both sides by the "missing" factor `(X - C α) ^ m α` at a
+  chosen α₀ ∈ s shows up as the polynomial numerator of the partial-fraction
+  term `m α₀ / (X - C α₀)` — this is the "denominator-cleared" partial-
+  fraction identity that downstream Q3 steps consume when applied to
+  `p = normPoly E D`.
+
+  The module is deliberately generic: it knows nothing of the elliptic
+  curve, `normPoly`, `betaConstructive`, or `polyG`. It only manipulates
+  univariate polynomials.
+-/
+import Mathlib.Algebra.Polynomial.Derivative
+import Mathlib.Algebra.Polynomial.Roots
+import Mathlib.Algebra.Polynomial.BigOperators
+import Mathlib.Algebra.BigOperators.Group.Finset
+
+open Polynomial Finset
+
+namespace Divisor
+
+/-! ### Derivative of a product of powers over a `Finset`
+
+This is the core combinatorial identity, stated over an arbitrary
+commutative (semi)ring. It is the Finset version of Mathlib's
+`Polynomial.derivative_prod` (multiset form), specialized to products
+of powers of a family of polynomials. We only need the `f i = X - C (α i)`
+case later, but the general statement is just as easy. -/
+
+variable {R : Type*} [CommRing R]
+
+section DerivativeProdPow
+
+/-- Product rule for the Finset-indexed product `∏ i ∈ s, f i ^ m i`:
+the derivative equals the sum over `i ∈ s` of
+`m i · f i ^ (m i - 1) · (derivative (f i)) · ∏_{j ≠ i} f j ^ m j`. -/
+theorem derivative_prod_pow [DecidableEq R]
+    (s : Finset R) (f : R → R[X]) (m : R → ℕ) :
+    derivative (∏ α ∈ s, (f α) ^ (m α)) =
+      ∑ α ∈ s, (C ((m α : R)) * (f α) ^ (m α - 1) * derivative (f α) *
+        ∏ β ∈ s.erase α, (f β) ^ (m β)) := by
+  induction s using Finset.induction_on with
+  | empty => simp
+  | @insert a s ha ih =>
+    rw [Finset.prod_insert ha, derivative_mul, ih, derivative_pow,
+        Finset.sum_insert ha]
+    have h_erase_a : (insert a s).erase a = s := Finset.erase_insert ha
+    rw [h_erase_a]
+    congr 1
+    rw [Finset.mul_sum]
+    refine Finset.sum_congr rfl (fun α hα => ?_)
+    have ha_neq : a ≠ α := fun h => ha (h ▸ hα)
+    have h_erase_α : (insert a s).erase α = insert a (s.erase α) := by
+      ext x
+      simp only [Finset.mem_erase, Finset.mem_insert]
+      constructor
+      · rintro ⟨hxα, hxa | hxs⟩
+        · exact Or.inl hxa
+        · exact Or.inr ⟨hxα, hxs⟩
+      · rintro (rfl | ⟨hxα, hxs⟩)
+        · exact ⟨ha_neq, Or.inl rfl⟩
+        · exact ⟨hxα, Or.inr hxs⟩
+    have hnot : a ∉ s.erase α := fun h => ha (Finset.mem_of_mem_erase h)
+    rw [h_erase_α, Finset.prod_insert hnot]
+    ring
+
+end DerivativeProdPow
+
+/-! ### Specialization to `f α = X - C α`
+
+For the rest of the file, we specialize to the linear factor case, which
+is what downstream consumers need for `normPoly D`. -/
+
+section LinearFactors
+
+variable {K : Type*} [CommRing K]
+
+/-- Core combinatorial identity: the derivative of the "split" product
+`∏ α ∈ s, (X - C α) ^ m α` equals
+`∑ α ∈ s, C (m α) * (X - C α) ^ (m α - 1) * ∏ β ∈ s.erase α, (X - C β) ^ m β`. -/
+theorem derivative_prod_X_sub_C_pow [DecidableEq K]
+    (s : Finset K) (m : K → ℕ) :
+    derivative (∏ α ∈ s, (X - C α) ^ (m α)) =
+      ∑ α ∈ s, (C ((m α : K)) * (X - C α) ^ (m α - 1) *
+        ∏ β ∈ s.erase α, (X - C β) ^ (m β)) := by
+  rw [derivative_prod_pow (R := K) s (fun α => X - C α) m]
+  refine Finset.sum_congr rfl (fun α _ => ?_)
+  rw [derivative_X_sub_C, mul_one]
+
+/-- Variant where the leading coefficient `c : K` is factored out in
+front: the derivative of `C c * ∏ α ∈ s, (X - C α) ^ m α` is
+`C c * ∑ α ∈ s, C (m α) · (X - C α)^(m α - 1) · ∏_{β ≠ α} (X - C β)^(m β)`.
+
+This is the denominator-cleared partial-fraction expansion: each summand
+is the polynomial numerator of the `m α / (X - C α)` term in the rational
+partial fraction `p' / p`. -/
+theorem derivative_C_mul_prod_X_sub_C_pow [DecidableEq K]
+    (c : K) (s : Finset K) (m : K → ℕ) :
+    derivative (C c * ∏ α ∈ s, (X - C α) ^ (m α)) =
+      C c * ∑ α ∈ s, (C ((m α : K)) * (X - C α) ^ (m α - 1) *
+        ∏ β ∈ s.erase α, (X - C β) ^ (m β)) := by
+  rw [derivative_mul, derivative_C, zero_mul, zero_add,
+      derivative_prod_X_sub_C_pow]
+
+/-! ### Partial-fraction identity for a split polynomial
+
+When `p` is known to split over `K` in the explicit form
+`p = C p.leadingCoeff * ∏ α ∈ p.roots.toFinset, (X - C α) ^ (rootMultiplicity α p)`
+(an equality of polynomials — this is what Mathlib's
+`C_leadingCoeff_mul_prod_multiset_X_sub_C` combined with
+`prod_multiset_root_eq_finset_root` gives when the root multiset has the
+same cardinality as `natDegree p`), the derivative admits the sum
+expansion below. -/
+
+/-- **Denominator-cleared partial-fraction identity for a split polynomial.**
+
+If a polynomial `p : K[X]` is equal to
+`C p.leadingCoeff · ∏ α ∈ S, (X - C α) ^ (m α)` for some Finset `S` of
+"roots" (normally `p.roots.toFinset`) and multiplicities `m`, then
+
+  p.derivative = C p.leadingCoeff · ∑ α ∈ S,
+    C (m α) · (X - C α) ^ (m α - 1) · ∏ β ∈ S.erase α, (X - C β) ^ (m β).
+
+The RHS is a sum of polynomial terms; no denominators appear. Dividing
+each summand by `∏ β ∈ S, (X - C β) ^ (m β)` recovers the rational
+partial-fraction expression `p'/p = ∑ α m α / (X - C α)`. -/
+theorem derivative_eq_sum_of_split_factorization [DecidableEq K]
+    (p : K[X]) (S : Finset K) (m : K → ℕ)
+    (hSplit : p = C p.leadingCoeff * ∏ α ∈ S, (X - C α) ^ (m α)) :
+    derivative p = C p.leadingCoeff *
+      ∑ α ∈ S, (C ((m α : K)) * (X - C α) ^ (m α - 1) *
+        ∏ β ∈ S.erase α, (X - C β) ^ (m β)) := by
+  -- Set the leading coefficient aside to avoid `rw` rewriting it on the RHS.
+  set c := p.leadingCoeff
+  -- hSplit now reads: p = C c * ∏ α ∈ S, (X - C α)^(m α)
+  rw [hSplit]
+  exact derivative_C_mul_prod_X_sub_C_pow c S m
+
+/-! ### Denominator-cleared identity using `roots.toFinset`
+
+The most common instance of the above, specialized to the root set of
+`p` with `rootMultiplicity` as the multiplicity map. This is the exact
+shape that Q3.1 will consume when instantiating on `p = normPoly E D`. -/
+
+/-- **PFE over `p.roots.toFinset`.** When `p` admits the "split" form
+with roots from `p.roots.toFinset` and multiplicities `rootMultiplicity _ p`,
+the derivative expands as a single sum over `p.roots.toFinset`. -/
+theorem derivative_eq_sum_rootMultiplicity [DecidableEq K] [IsDomain K]
+    (p : K[X])
+    (hSplit : p = C p.leadingCoeff *
+      ∏ α ∈ p.roots.toFinset, (X - C α) ^ (rootMultiplicity α p)) :
+    derivative p = C p.leadingCoeff *
+      ∑ α ∈ p.roots.toFinset,
+        (C ((rootMultiplicity α p : K)) *
+          (X - C α) ^ ((rootMultiplicity α p) - 1) *
+          ∏ β ∈ p.roots.toFinset.erase α,
+            (X - C β) ^ (rootMultiplicity β p)) :=
+  derivative_eq_sum_of_split_factorization p p.roots.toFinset
+    (fun α => rootMultiplicity α p) hSplit
+
+/-! ### Construction of the "split" hypothesis from root count
+
+The hypothesis `p = C p.leadingCoeff * ∏ α ∈ p.roots.toFinset, ...` is
+not an axiom — it follows from Mathlib's
+`C_leadingCoeff_mul_prod_multiset_X_sub_C` (which needs
+`Multiset.card p.roots = p.natDegree`, i.e. "p has as many roots as
+its degree") combined with `prod_multiset_root_eq_finset_root`
+(which rewrites the multiset product as a Finset product of powers).
+
+We package the needed step here for convenience. -/
+
+/-- A polynomial whose roots (counted with multiplicity) account for its
+entire degree admits the explicit split factorization. -/
+theorem splits_factorization_of_roots_card_eq [DecidableEq K] [IsDomain K]
+    (p : K[X])
+    (hroots : Multiset.card p.roots = p.natDegree) :
+    p = C p.leadingCoeff *
+      ∏ α ∈ p.roots.toFinset, (X - C α) ^ (rootMultiplicity α p) := by
+  have h1 : C p.leadingCoeff * (p.roots.map fun a => X - C a).prod = p :=
+    C_leadingCoeff_mul_prod_multiset_X_sub_C hroots
+  have h2 : (p.roots.map fun a => X - C a).prod =
+      p.roots.toFinset.prod fun a => (X - C a) ^ rootMultiplicity a p :=
+    prod_multiset_root_eq_finset_root
+  rw [h2] at h1
+  exact h1.symm
+
+/-- End-to-end PFE when `Multiset.card p.roots = p.natDegree`: no explicit
+split hypothesis needed. -/
+theorem derivative_eq_sum_rootMultiplicity_of_roots_card_eq
+    [DecidableEq K] [IsDomain K] (p : K[X])
+    (hroots : Multiset.card p.roots = p.natDegree) :
+    derivative p = C p.leadingCoeff *
+      ∑ α ∈ p.roots.toFinset,
+        (C ((rootMultiplicity α p : K)) *
+          (X - C α) ^ ((rootMultiplicity α p) - 1) *
+          ∏ β ∈ p.roots.toFinset.erase α,
+            (X - C β) ^ (rootMultiplicity β p)) :=
+  derivative_eq_sum_rootMultiplicity p
+    (splits_factorization_of_roots_card_eq p hroots)
+
+/-! ### Denominator-cleared identity: multiplying by the full product
+
+For Q3.2/Q3.3, the useful shape is:
+
+  p.derivative · (X - C α₀)
+    = something involving (rootMult α₀ p) on the "singular" summand,
+      plus smooth contributions from β ≠ α₀.
+
+Concretely, at a distinguished root `α₀ ∈ S`, the RHS of the PFE
+equals `(rootMult α₀) / (X - C α₀)` times the full product plus regular
+terms. Multiplying through by `(X - C α₀)` isolates the `rootMult α₀`
+coefficient plus terms that vanish to higher order at `X = α₀`.
+
+We package the "partial fraction at α₀" form below. -/
+
+/-- Pull out the `α = α₀` summand of the PFE, identifying it as the
+singular term `C (m α₀) · (X - C α₀)^(m α₀ - 1) · ∏_{β ≠ α₀} (X - C β)^(m β)`
+and leaving the remaining sum over `S.erase α₀`. -/
+theorem derivative_C_mul_prod_X_sub_C_pow_isolate
+    [DecidableEq K] (c : K) (S : Finset K) (m : K → ℕ)
+    {α₀ : K} (hα₀ : α₀ ∈ S) :
+    derivative (C c * ∏ α ∈ S, (X - C α) ^ (m α)) =
+      C c * (C ((m α₀ : K)) * (X - C α₀) ^ (m α₀ - 1) *
+        ∏ β ∈ S.erase α₀, (X - C β) ^ (m β))
+      + C c * ∑ α ∈ S.erase α₀,
+          (C ((m α : K)) * (X - C α) ^ (m α - 1) *
+            ∏ β ∈ S.erase α, (X - C β) ^ (m β)) := by
+  rw [derivative_C_mul_prod_X_sub_C_pow c S m, ← mul_add]
+  congr 1
+  exact (Finset.add_sum_erase S _ hα₀).symm
+
+end LinearFactors
+
+end Divisor
