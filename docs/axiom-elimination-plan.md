@@ -2722,6 +2722,80 @@ now axiom-complete modulo the Silverman primitives named above.
 
 The axiom-elimination plan is formally complete.
 
+### Session 30 (2026-04-20) — QB1 constructive β from `D.a, D.b`
+
+**Scope**: new module `Divisor/BetaConstructive.lean` (~460 LOC,
+`lake build` green, no `sorry`/`admit`, no new axioms).
+
+**What landed**:
+- `normPoly E D := D.a^2 - D.b^2 · curveX E` (the "norm polynomial").
+  Identified with `resultantX (DAtA₁Poly D)` and established
+  `normPoly_eq`, `normPoly_ne_zero` (for `D ≠ 0`),
+  `normPoly_natDegree_le : (normPoly E D).natDegree ≤ D.degE`, and
+  `normPoly_eval_eq_D_mul_D_neg : on `E`, `(normPoly).eval P.1 =
+  D(P.1, P.2) · D(P.1, -P.2)`.
+- `betaConstructive D P : ℕ`: if `P ∈ E.points ∧ D.eval P = 0`, it is
+  either `rootMultiplicity P.1 (normPoly E D)` (on 2-torsion or "lone"
+  sheets) or `rootMultiplicity P.1 (normPoly E D) / 2` (on "twin"
+  sheets — both `(x, y)` and `(x, -y)` zeros of `D`). Zero elsewhere.
+- `betaConstructive_support` (property 1): `β P ≠ 0 → P ∈ E.points
+  ∧ D.eval P = 0`.
+- `betaConstructive_covers` (property 2): `hD ∧ P ∈ E.points ∧
+  D.eval P = 0 → β P ≠ 0`. In the twin case this relies on a
+  key sub-lemma: when both sheets are `D`-zeros with `y ≠ 0`,
+  `D.a x = D.b x = 0`, hence `(X - C x)^2 ∣ normPoly E D`, hence
+  `rootMultiplicity x (normPoly E D) ≥ 2`, so `m/2 ≥ 1`.
+- `sum_betaConstructive_fst_eq_le`: per-`x₀` sum bound
+  `∑_{(x,y)∈E.points, x=x₀} β(x, y) ≤ rootMultiplicity x₀ (normPoly E D)`.
+  Case split on `|E.points.filter (·.1 = x₀)| ∈ {0, 1, 2}` using
+  `card_points_with_fst_eq_le`. `|S|=1` forces 2-torsion (`y=0`) by
+  the `y↔-y` symmetry of E. `|S|=2` gives both distinct-sheet
+  sub-cases.
+- `sum_rootMultiplicity_le_natDegree`: for any `p : (ZMod E.q)[X]`,
+  `∑_{a ∈ F_q} rootMultiplicity a p ≤ p.natDegree` via
+  `Multiset.toFinset_sum_count_eq` + `Polynomial.card_roots'`.
+- **`betaConstructive_sum_le_degE`** (property 3, surrogate):
+  `∑_{P ∈ E.points} β(P) ≤ D.degE`. The proof fiberwises the sum
+  over `x`-coords, bounds each fiber by `rootMultiplicity`, and
+  chains `≤ natDegree (normPoly) ≤ D.degE`.
+
+**Property-3 surrogate vs. equality**. The task brief hoped for the
+**equality** `∑ β = D.degE`, but this is not provable from
+`rootMultiplicity`-based data over `F_q`. Two obstructions:
+  (a) `N(D) = D.a² - D.b² · curveX` need not split over `F_q`;
+      irreducible degree-`≥2` factors contribute to `natDegree`
+      without contributing to `∑_{a ∈ F_q} rootMultiplicity a N(D)`.
+  (b) `D.degE` as defined is `max(2·deg a, 3 + 2·deg b)`, which
+      over-estimates the pole order of `D` at `∞` when `D.b = 0
+      ∧ D.a.natDegree < 2` (e.g., `D = c ∈ F_q*` constant gives
+      `D.degE = 3` but the pole order at `∞` is `0`).
+
+  Both gaps mean the classical `∑ ord_P(D) = D.degE` identity is
+  strictly finer than anything extractable from a `rootMultiplicity`
+  construction on the norm polynomial. Achieving equality would
+  require function-field / Weierstrass-preparation machinery
+  (Silverman III §1-2), an infrastructure investment of ~500-1000 LOC
+  acknowledged in Session 18's "Path forward" block.
+
+  Per the QB1 brief's fallback clause, we land the `≤` surrogate
+  plus the sharper per-`x₀` bound `sum_betaConstructive_fst_eq_le`.
+  QB2 (`divisor_group_sum_zero` narrow axiom + group-sum-zero
+  theorem) consumes `β` only as a multiplicity *function*, not as
+  an equality, so the surrogate is sufficient. QB3 — which must
+  derive the full `has_principal_divisor` axiom as a theorem — will
+  either need to close the equality (hard) OR re-formulate
+  `dCoeffs_isPrincipal` with the `≤` bound and a different
+  infinity-coefficient convention. If QB3 cannot bridge the gap,
+  the axiom remains as-is and QC1 documents this honestly.
+
+**Axiom state after Session 30**: unchanged (9 axioms; QB1 is
+infrastructure only).
+
+**Next**: QB2 — add the narrow `CoordRingElt.divisor_group_sum_zero`
+axiom (Silverman III Prop 3.4, group-sum-zero part only) and derive
+`betaConstructive_group_sum_zero` via it. QB3's feasibility will be
+evaluated after QB2 lands.
+
 ---
 
 ## Queue 2 — Residual-Axiom Cleanup (B + A + C)

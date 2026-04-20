@@ -9,6 +9,7 @@ import Divisor.BassaMonic
 import Divisor.CubicIntersection
 import Divisor.LogDeriv
 import Divisor.ClearedPolyForm
+import Divisor.BetaConstructive
 import Divisor.PolyGBridge
 import Divisor.Protocol
 import Divisor.DivisorPrincipal
