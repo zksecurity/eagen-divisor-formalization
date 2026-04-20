@@ -2017,25 +2017,23 @@ zero-sum bridge):
   canonical (`.min'`) position of the group. (All other group members
   have `extractedScalars = 0`.)
 
-**Remaining D4 work** (deferred to next session):
-1. `extractorDivisorCoeffs` evaluation at `affine (basesAffine j)`:
-   equals `extractedScalars` at the canonical (`.min'`) of `j`'s group
-   (general case). Combines `filter_bases_eq_extractorGroup` with
-   `sum_extractedScalars_over_group`. ~30 LOC.
-2. Image-reindexing: `(univ.image basesAffine).fold op 0 f =
-   univ.fold op 0 (fun j => zsmul (extractedScalars j) (basesAffine j))`
-   via `Finset.fold_image` (injectivity of `basesAffine` on canonical
-   Finset) + `weightedSum_subset_of_zero_outside` (zero-padding the
-   non-canonical contributions). ~60 LOC.
-3. Support containment: `Function.support extractorDivisorCoeffs ⊆
-   extractorDivisorCandidate`. ~40 LOC.
-4. Final expansion of `weightedSum E extractorDivisorCandidate
-   (zsmul coeffs ·)`: three-way split `∞ | -P | imageBases` using
-   `weightedSum_insert`, `zsmul_infinity`, `zsmul_one`. ~40 LOC.
-5. Main D4 theorem assembly: apply `principal_divisor_iff` + reindex +
-   expand to derive `hZeroSum`, then feed into D5. ~30 LOC.
-
-Total ~200 LOC remaining for D4 completion.
+**D4 landed in the same session** (commit after the infrastructure). ~220
+additional LOC:
+1. `extractorDivisorCoeffs_affine_bases` / `_basesAffineEC_of_canonical`:
+   evaluation lemmas relating `extractorDivisorCoeffs` at affine base
+   points to `extractedScalars` at canonical positions.
+2. `weightedSum_imageBases_eq_univ_zsmul_extractedScalars`: image-reindex
+   via `Finset.fold_image` (injectivity of `basesAffineEC` on canonical
+   Finset via `canonicalFinset_image_eq_univ_image`) + zero-padding
+   non-canonical via `weightedSum_subset_of_zero_outside`.
+3. `extractorDivisorCoeffs_support_subset_candidate`: support contained
+   in `{∞, -P_aff} ∪ image(basesAffineEC)`.
+4. Disjointness lemmas (`infinity_notin_insert_negP_image` et al.) for
+   clean insert-based weightedSum expansion.
+5. `extractor_zeroSum_of_principal`: the main D4 theorem deriving
+   `hZeroSum` from `IsPrincipal` via the above.
+6. `target_eq_weightedSum_of_principal`: D4 + D5 combined — direct
+   target-as-weightedSum from `IsPrincipal`.
 
 **Tactical notes** (for next session):
 1. `Finset.min'_le` + `Finset.min'_mem` + `le_antisymm` close canonical
@@ -2058,13 +2056,46 @@ Divisor.ECPoint.add_comm, add_assoc, neg_add_cancel
 Divisor.extractorSucceeds_of_logDerivCheck_identically_zero_general  [T4]
 ```
 
-Unchanged — D3+D5 are infrastructure, T4 axiom not yet replaced.
+Unchanged — D3+D4+D5 are infrastructure theorems, T4 axiom not yet
+replaced. The full T4 assembly (D1 through D5 combined into a
+replacement for the axiom) still requires D1 — the polynomial-level
+residue bridge from `logDerivCheckFn ≡ 0` to `polyG ≡ 0` — which
+depends on constructing D's affine zero-multiplicity data (Q, β) and
+matching `clearedFiberPoly` to `polyGPoly`.
+
+**Tactical notes** (from this session):
+1. `Finset.fold_image` requires `DecidableEq` on the image type, and
+   injectivity of the mapping function on the source Finset. For our
+   `basesAffineEC`, injectivity holds only on canonical indices
+   (min-of-group). Extending back to `univ` via
+   `weightedSum_subset_of_zero_outside` requires the non-canonical
+   summand to be zero — which follows from
+   `extractedScalars = 0 on non-canonical` under the general case.
+2. `ECPoint.weightedSum_insert E ha f` expects the `a ∉ s` proof as the
+   positional argument after `E`, with `f` being the summand function.
+   `rw [weightedSum_insert E ha]` works cleanly inside `show`-tagged
+   goals; direct `rw` on set-abstracted names sometimes fails on
+   motive issues and needs a `show` rewrite first to unfold the
+   Finset structure.
+3. The `extractorDivisorCoeffs_support_subset_candidate` lemma uses a
+   case-split on `P = ∞ | P = affine` and a sub-case-split on
+   `(x, y) = -P_aff | otherwise`. The "otherwise" branch uses the
+   nonzero filter-sum to conclude `∃ j, bases j = (x, y)` via
+   non-emptiness of the filter Finset.
 
 **Continuation** (next session):
-1. Complete D4 main theorem (~200 LOC per the breakdown above).
-2. Begin D1 (logDerivCheckFn ≡ 0 ⇒ polyG ≡ 0 on non-vertical E×E
-   bridge), resolving the polyGPoly ↔ clearedFiberPoly polynomial
-   identity step. ~300-400 LOC.
-3. Once D1, D3, D4, D5 are in place: assemble the T4 axiom
-   replacement in `Divisor/Soundness.lean`, replacing
-   `extractorSucceeds_of_logDerivCheck_identically_zero_general`.
+1. Begin D1 (logDerivCheckFn ≡ 0 ⇒ polyG ≡ 0 on non-vertical E×E
+   bridge). The open problem: establish a polynomial identity
+   `polyGPoly Q β R m' A₀ ≡ scalar · clearedFiberPoly A₀ (mod curveEqPoly E)`
+   for `Q, β` = D's distinct affine zero multiplicities extracted from
+   `D.a`, `D.b` on E. This requires a multiplicity data construction
+   (~200-300 LOC) plus the polynomial identity proof (~300-400 LOC).
+   Alternative shortcut: add a narrow polynomial-bridge axiom tied to
+   D's coefficient data, keeping the final axiom list one over target.
+2. Once D1 lands: assemble T4 theorem in `Soundness.lean`, replacing
+   `extractorSucceeds_of_logDerivCheck_identically_zero_general` with
+   a chain: D1 + T5 (log_deriv_nonvanishing_criterion) + D3 +
+   `target_eq_weightedSum_of_principal`. Requires threading the
+   `IsPrincipal` hypothesis — either via a new AG axiom
+   (CoordRingElt divisor is principal, Silverman Ch II) or via
+   existing `principal_divisor_iff.mpr` applied to σ-matching data.
