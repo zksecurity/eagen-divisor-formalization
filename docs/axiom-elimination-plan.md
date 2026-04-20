@@ -3855,3 +3855,99 @@ the on-curve identity `y² = x³ + Ax + B`.
 **Outcome**: Q3.3 landed. Layer 3 single-point identity is the core
 artifact; Layer 4 scaffolding (`logDerivTermSum`) makes consumption
 ergonomic for Q3.4. The Q3.3-to-Q3.4 bridge is now usable.
+
+### Session 26 (2026-04-20) — Q3.4 partial (scaffolding only, FAIL report)
+
+**Goal** (per Queue 3 plan Q3.4): prove `polyG = 0` at defined
+non-vertical pairs with canonical `(Q, β) = (zerosAt, multAt ∘
+betaConstructive)`.
+
+**What landed**: `Divisor/ResidueIdentity.lean` (~266 LOC), a
+scaffolding module with reusable building blocks:
+
+* `L_eval_eq_zLambda_sub` : `L_Q(P) = zLambda λ P - zLambda λ A₀`.
+* `chord_Vieta_x_sum` : `A₀.1 + A₁.1 + A₂.1 = λ²` (via `chordPoints`
+  ⟨2,_⟩-definition; `ring`).
+* `chord_A₂_y_eq` : the chord third point's y-coord as
+  `λ·x₂ + (A₀.2 − λ·A₀.1)` (by `rfl`).
+* `chordRHS`, `chordRHSSingle` : the Layer-3 RHS as single and
+  sum-over-chord forms, plus `chordRHS_eq_sum_triple`.
+* `logDerivTerm_denom_cleared_in_chordRHSSingle` : Q3.3's Layer 3
+  identity rephrased in `chordRHSSingle` terminology.
+* `lineEval_inv_eq_xDiff_div_ellP` : the `L_Q(P)⁻¹ = (A₁-A₀)/ellP`
+  translation used to clear denominators in `logDerivCheckFn`'s RHS.
+
+**What did NOT land** — the full scalar residue identity closing
+`polyG_zero_of_logDerivCheck_zero_at_defined_canonical`.
+
+**Why (FAIL report)**:
+
+The classical proof, adapted to Lean, requires:
+
+1. Aggregating Layer-3 pointwise identities across the three chord
+   intersections with `∏_{j≠i} N(D)(x_j) · ∏_{j≠i} (3x_j² + A − 2λy_j)`
+   factors to produce a common-denominator chord-sum identity. This
+   step alone is ~300-400 LOC of `linear_combination` / `ring` +
+   `Finset.sum` manipulation.
+
+2. Applying Vieta on the chord cubic to simplify `x₂ = λ² − x₀ − x₁`
+   and collapse the x-coord-sum dependence. `chord_Vieta_x_sum` is
+   the atomic identity; chaining it through the aggregate identity is
+   ~200 LOC.
+
+3. **The deep step**: expressing `Σ_i logDerivTerm(A_i, λ) · (denoms)`
+   via the partial-fraction expansion `N(D)' = lc · Σ_α (rootMult α) ·
+   (X − α)^(rootMult α − 1) · ∏_{β≠α} (X − β)^(rootMult β)` from
+   Q3.2, specialized along the chord (i.e., evaluating at the three
+   x-coords). Under `hSplit`, each `x_i` is a root of `N(D)` iff `x_i`
+   is in the affine-zeros set, and the PFE collapses per fiber.
+   However, connecting **per-fiber rootMult** to **per-sheet
+   `betaConstructive`** requires case analysis on whether each chord
+   x-coord carries one or two sheets of `E → A¹`, matched via the
+   `zerosAt` enumeration's per-sheet indexing. This step is ~600+
+   LOC and requires substantial new lemmas (fiber-sheet decomposition
+   of `Σ_k β_k / L_Q(Q_k)`, which neither the present repo nor Q3.0-
+   Q3.3 directly supplies).
+
+4. Matching `polyG`'s first sum (`Σ_k β_k · ∏_{k'≠k} ellP(Q_k')`)
+   against the fiber-matched chord sum of step 3. Requires careful
+   index juggling between the `Fin d` enumeration (`zerosAt`) and the
+   `α ∈ roots.toFinset` Finset. ~200 LOC.
+
+5. Matching `polyG`'s second sum against the RHS residues via
+   `sum_div_iff_sum_mul_prod_erase` (already in `LogDeriv.lean`). ~100
+   LOC.
+
+**Attempted approaches**:
+
+* **Direct-ring-identity fallback** (task description "Simpler fallback
+  strategy"): factor `polyG = scalar · logDerivCheckFnCleared`. Does
+  NOT work cleanly — `polyG` is explicitly indexed by `(Q, β)` in its
+  first sum, whereas `logDerivCheckFnCleared` has no explicit `(Q, β)`
+  dependence. Their common vanishing is a consequence of the residue
+  identity, not a simple algebraic factoring.
+
+* **Full term-by-term matching**: per the analysis above, realistic
+  effort is ~1500 LOC, exceeding the 300-LOC budget.
+
+* **Narrow additional hypothesis**: `hScalarIdentity` stating the
+  scalar residue identity as a hypothesis. Would render Q3.4 vacuous
+  per the judge note.
+
+**Specific Mathlib / Q3.x gaps** that would unblock full closure:
+
+* No existing lemma connecting `Σ_i f(x_i)` (sum over three chord
+  x-coords) to `Σ_α (rootMult α) f̃(α)` (sum over distinct F_q-
+  rational roots of N(D)) at the residue-identity level.
+
+* No existing per-sheet / per-fiber decomposition of
+  `∏_k ellP(Q_k) = ∏_{x₀ ∈ distinct fibers} ∏_{y ∈ fiber(x₀)} ellP((x₀, y))`
+  that matches the chord-sum expansion.
+
+**Next step**: re-attempt Q3.4 with a broadened scope (target ~1500
+LOC across 3 new modules) in a dedicated session, or land a narrower
+axiom that covers only the "PFE-collapsed chord sum = polyG first sum"
+identity (restoring the axiom count temporarily but narrowing its
+semantic footprint).
+
+**LOC**: 266 (within 300-LOC budget; scope-capped per protocol).
