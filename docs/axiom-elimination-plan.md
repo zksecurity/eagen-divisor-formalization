@@ -3337,6 +3337,312 @@ exits. The axiom-elimination plan is then formally complete.
 
 ---
 
+## Queue 3 — Full residue-identity mechanization (single extensive session)
+
+### Motivation
+
+After Queue 2, one transient axiom remains on the `ma_extractable` path:
+`polyG_zero_of_logDerivCheck_identically_zero` (the scalar residue identity,
+plan's "D1 problem"). The project target is ZERO transient axioms. Queue 3
+is the commitment to mechanize the residue identity end-to-end in a single
+extended session — **no new axioms, no `sorry`, no `admit`**. Only Mathlib
+primitives + the permitted Silverman / Hasse / group-law / principal-divisor
+/ Abel / Weil axioms may remain.
+
+### Mathematical outline
+
+The axiom asserts: if `logDerivCheckFn ≡ 0` on defined non-vertical pairs
+of `E × E`, then `polyG = 0` on ALL non-vertical pairs of `E × E`.
+
+The classical proof has three stages:
+
+1. **Partial-fraction identity in `F_q(x)`**. For `N(D) = D · D^σ = a² − b²·curveX`
+   as a polynomial in x, the log-derivative satisfies
+   ```
+   N(D)'(x) / N(D)(x) = Σ_α (rootMultiplicity α N(D)) / (x − α) + E(x)/N(D)(x)
+   ```
+   where the sum ranges over roots of `N(D)` in F_q and `E(x)` captures
+   the non-split part (or 0 if N(D) splits fully over F_q).
+
+2. **Log-derivative formula on E**. The bivariate `logDerivTerm(A_i)` at
+   each intersection `A_i` of the chord with E can be expressed in terms
+   of `N(D)'/N(D)` evaluated at `x(A_i)`, plus corrections depending on
+   the chord slope `λ` and the specific `y(A_i)`. Summed over the three
+   intersection points (A₀, A₁, A₂) of the chord with E, combined with
+   the RHS `1/L(−P) + Σ_j m_j/L(B_j)`, this yields the identity
+   `logDerivCheckFn = 0 ⇔ polyG = 0` (at defined pairs).
+
+3. **Density extension**. `polyG(A₀, A₁)` is the `bivEval` of a polynomial
+   `polyGPoly` of known outer and inner natDegree. Vanishing on all
+   defined non-vertical pairs (a co-bounded subset of non-vertical `E × E`)
+   extends to vanishing on all non-vertical pairs by polynomial
+   degree-counting.
+
+### Q3 harness contract
+
+Same as previous queues: one `general-purpose` subagent per step, fresh
+context, `--no-gpg-sign` commits, no AI attribution. Strictly sequential
+ordering. Up to 3 attempts per step.
+
+**Q3-specific retry policy**: on failure of a high-risk step (Q3.3
+specifically), driver may re-spawn with progressively narrower scope
+(e.g., assume `N(D)` splits over `F_q` as a hypothesis, leaving the
+fully-general case as a follow-on). Narrower scope requires a user-visible
+note in the plan log describing the restriction.
+
+**Absolute rule**: NO new axioms under any circumstances. If a step cannot
+complete without a new axiom, it FAILs, the driver halts the queue, and
+reports the blocker honestly. The transient axiom stays.
+
+### Q3 Queue
+
+#### Q3.0 — Partial-fraction infrastructure over `F_q[x]`
+
+**Estimated LOC**: ~300. **Risk**: medium.
+
+**Preconditions**: Queue 2 complete. `normPoly`, `betaConstructive`,
+`betaConstructive_sum_eq_degE` landed.
+
+**Goal**: Prove the univariate partial-fraction identity
+```
+p.derivative = (Σ_α (rootMultiplicity α p) · (∏_{β ≠ α} (X − C β)^{rootMultiplicity β p}) · 1)
+             + p.nonSplitFactor.derivative · (X − C α)^{something}
+```
+More precisely, for `p : (ZMod E.q)[X]` with `p.splits` over F_q (or
+more generally, after extracting the split part), derive the
+partial-fraction decomposition of `p'/p` as a rational function.
+
+Target lemma:
+```
+lemma derivative_div_eq_sum_rootMult (p : (ZMod E.q)[X]) (hp : p ≠ 0) :
+    p.derivative · (extraPoly p) = (∑ α ∈ p.rootsFinset,
+      (rootMultiplicity α p : (ZMod E.q)[X]) ·
+        (∏ β ∈ p.rootsFinset, (X − C β)^(rootMultiplicity β p) /
+          (X − C α)^(something)) · (extraPoly p))
+      + p · ((extraPoly p).derivative + ...)
+```
+
+This is the **clean algebraic content**; the precise statement depends on
+what Mathlib already provides. If Mathlib has `Polynomial.sum_rootMultiplicity`
+or similar, use it. Otherwise, prove the base identity directly via
+induction on the root set.
+
+**Fallback**: if the fully general p's partial-fraction is too intricate,
+restrict to `p` that splits fully over F_q (i.e., `p = c · ∏ (X − α_i)^{m_i}`
+as a polynomial identity — a Mathlib-known characterization). The
+identity then simplifies significantly.
+
+**Scope**: new module `Divisor/PartialFractionExpansion.lean` (keep
+separate from existing `Divisor/PartialFraction.lean` which is the
+simple-pole uniqueness lemma).
+
+**Completion signal**: the partial-fraction identity as a named theorem.
+Bonus: instantiation at `p = normPoly D`.
+
+#### Q3.1 — Norm decomposition via `betaConstructive`
+
+**Estimated LOC**: ~300. **Risk**: medium.
+
+**Preconditions**: Q3.0 landed.
+
+**Goal**: Reconcile `betaConstructive D` with `rootMultiplicity` of
+`normPoly D`. Specifically:
+
+```
+(normPoly E D).rootMultiplicity α =
+  (∑ P ∈ E.points with P.1 = α, betaConstructive E D P)
+    + (correction for non-lifting α)
+```
+
+Under the hypothesis that `N(D)` splits over F_q (i.e., every root of
+`normPoly` corresponds to an F_q-rational E-point), the correction term
+is 0 and we get a clean connection.
+
+Also prove:
+```
+normPoly D = (leading coeff) ·
+  ∏_α (X − C α) ^ (rootMultiplicity α normPoly)
+```
+which is Mathlib's `Polynomial.prod_multiset_X_sub_C_of_splits` or
+similar, specialized to `normPoly`.
+
+**Fallback**: `N(D)` splits over F_q whenever D has D.degE affine zeros
+on E in F_q. This holds in the common case; add a side hypothesis
+`hSplit : Nat.Prime E.q ∧ ...` if needed. If even the fallback is
+intractable, FAIL with a clear description of the obstacle.
+
+**Scope**: extend `Divisor/BetaConstructive.lean` or new module
+`Divisor/NormDecomposition.lean`.
+
+**Completion signal**: a theorem relating `normPoly D` to a product
+involving `betaConstructive D` and root multiplicities.
+
+#### Q3.2 — Log-derivative of `N(D)` as partial fraction
+
+**Estimated LOC**: ~200. **Risk**: low-medium.
+
+**Preconditions**: Q3.0 + Q3.1 landed.
+
+**Goal**: Instantiate Q3.0's partial-fraction identity on `p = normPoly D`.
+Derive:
+```
+(normPoly D).derivative.eval x₀ · (∏_{α ≠ x₀} (x₀ − α)^{rootMult α normPoly}) =
+  (rootMult x₀ normPoly) · (normPoly D).eval x₀ / (x₀ − x₀) + ...
+```
+or in cleaner denominator-cleared form:
+```
+(normPoly D).derivative · (X − C α_1) · (X − C α_2) · ... =
+  (normPoly D) · Σ β_k / (X − C (x_Q_k))  × (cleared)
+```
+
+Key output: a denominator-cleared identity that the bivariate chain
+(Q3.3) can consume.
+
+**Completion signal**: a theorem expressing `N(D)'/N(D)` in terms of
+`Σ β_k/(x − x_Q_k)` up to a denominator-cleared form.
+
+#### Q3.3 — Bivariate logDerivTerm identity (HIGH RISK — ~400 LOC)
+
+**Estimated LOC**: ~400. **Risk**: HIGH.
+
+**Preconditions**: Q3.0–Q3.2 landed.
+
+**Goal**: Prove the bivariate identity connecting `logDerivTerm(A_i, λ)`
+(rational function on E) to `N(D)'(x)/N(D)(x)` (rational function in x).
+Specifically, at each A_i on E:
+
+```
+logDerivTerm(A_i, λ) =
+  (N(D)'(x(A_i))/N(D)(x(A_i)))/2
+    + (correction depending on y(A_i), λ, ...)
+```
+
+The correction captures the difference between the "abstract" derivation
+`D'/D` on E and the explicit `logDerivTerm` formula.
+
+Strategy:
+1. Start from `logDerivTerm(A_i, λ) = num · dxdz_num / (den · dxdz_den)`.
+2. Expand `num = a'(x) − b'(x)·y`, `den = a(x) − b(x)·y`.
+3. Multiply num/den by conjugate `a(x) + b(x)·y` to get:
+   `logDerivTerm(A_i, λ) = (num · (a + b·y)) · dxdz_num / (N(D)(x) · dxdz_den)`.
+4. Expand `num · (a + b·y)` as a polynomial in `y` and simplify using `y² = curveX(x)`.
+5. Show the result equals `½ · N(D)'(x)/N(D)(x) · (corrections)`.
+
+This is the crux. The algebra is intricate; expect multiple `ring` /
+`linear_combination` invocations with explicit polynomial witnesses.
+
+**Fallback**: if the fully-general identity is intractable in 400 LOC,
+prove a SIMPLER version sufficient for Q3.4's purposes. E.g., prove
+only the denominator-cleared form `(den · dxdz_den · ...) · logDerivTerm
+= (specific polynomial)`, avoiding the split into `N(D)'/N(D)` +
+corrections. This is still useful downstream.
+
+**Completion signal**: a theorem usable by Q3.4 connecting `logDerivTerm`
+(or `Σ_i logDerivTerm(A_i)`) to a polynomial in `(A₀.1, A₀.2, A₁.1, A₁.2)`.
+
+#### Q3.4 — polyG scalar identity at defined pairs
+
+**Estimated LOC**: ~300. **Risk**: medium.
+
+**Preconditions**: Q3.3 landed.
+
+**Goal**: Combine Q3.3 with the explicit polyG definition to prove:
+```
+polyG(A₀, A₁) = (product of denominators) · logDerivCheckFn(A₀, A₁)
+```
+as scalar identity at each defined non-vertical pair.
+
+Since `logDerivCheckFn(A₀, A₁) = 0` at defined pairs (hypothesis), conclude
+`polyG(A₀, A₁) = 0` at defined non-vertical pairs.
+
+Strategy: multiply `logDerivCheckFn` by `∏_r L(R_r) · ∏_k ellP(Q_k)` (all
+nonzero at defined pairs). Use Q3.3 to translate the `Σ LT(A_i)` part to
+a polynomial matching polyG's first sum. Use partial-fraction clearing to
+match the RHS `Σ m_r · L(R_r)⁻¹` to polyG's second sum.
+
+**Completion signal**: theorem `polyG_zero_on_defined_of_logDerivCheck_zero`
+or similar.
+
+#### Q3.5 — Density extension to all non-vertical pairs
+
+**Estimated LOC**: ~200. **Risk**: low.
+
+**Preconditions**: Q3.4 landed.
+
+**Goal**: From `polyG = 0` on all defined non-vertical pairs of `E × E`,
+extend to vanishing on ALL non-vertical pairs.
+
+Strategy:
+1. Use `polyGPoly E Q β R m A₀` (from `Divisor/PolyGBridge.lean`). Its
+   `%ₘ curveEqPoly E` reduction has bounded outer + inner natDegree.
+2. For fixed A₀, `bivEval (polyGPoly A₀) A₁ = polyG(A₀, A₁)`.
+3. Show `polyGPoly A₀ %ₘ curveEqPoly E` vanishes on many A₁'s (all defined
+   non-vertical + most of E.points).
+4. Apply `card_zeros_on_E_le` bound: if a polynomial %ₘ curveEqPoly vanishes
+   on more points than its resultant-degree allows, it must be 0.
+5. Conclude `polyGPoly A₀ %ₘ curveEqPoly E = 0`, hence `polyG(A₀, A₁) = 0`
+   for ALL A₁ ∈ E.points.
+6. Iterate over A₀: use symmetry of `polyG` under `(A₀, A₁) ↔ (A₁, A₀)`
+   (or re-argue via the polynomial structure in A₀).
+
+**Undefined set bound**: already in the repo as
+`logDerivCheckFn_undefined_set_bound`. Use it to count the defined vs
+undefined pair split.
+
+**Completion signal**: theorem `polyG_zero_on_all_nonvertical_of_defined_zero`.
+
+#### Q3.6 — Axiom replacement + close-out
+
+**Estimated LOC**: ~100.
+
+**Preconditions**: Q3.5 landed.
+
+**Goal**:
+1. Delete `polyG_zero_of_logDerivCheck_identically_zero` axiom from
+   `Divisor/ExtractorBridge.lean`.
+2. Re-prove as a theorem of the same signature using Q3.4 + Q3.5.
+3. Verify `#print axioms Divisor.ma_extractable` no longer includes
+   the transient axiom.
+4. Update plan header "Target end-state" block to reflect the new reality.
+5. Update `README.md` accordingly.
+6. Append "Queue 3 acceptance" session log entry.
+
+**Expected final axiom list** (`ma_extractable`):
+```
+propext, Classical.choice, Quot.sound                             (Lean)
+Divisor.ECPoint.add_assoc, add_comm, neg_add_cancel               (Silverman III §2)
+Divisor.principal_divisor_iff                                     (Silverman III Cor 3.5)
+Divisor.CoordRingElt.divisor_degree_eq                            (Silverman III Prop 3.4)
+Divisor.CoordRingElt.divisor_group_sum_zero                       (Silverman III Prop 3.4)
+```
+
+9 total — the strictest end-state currently achievable without
+mechanizing Silverman III Prop 3.4 itself (which would require function-
+field infrastructure beyond this queue's scope).
+
+**Completion signal**: axiom gone, build green, plan + README updated.
+
+### Q3 queue-completion acceptance
+
+After Q3.6 lands, driver appends one final "Queue 3 acceptance" session
+log entry summarizing the full run and exits. The axiom-elimination
+programme is then at its minimal viable state: only classical
+Silverman / Hasse / Lean primitives remain.
+
+### Honest assessment
+
+Scope: ~1500 LOC across 7 steps. Realistic budget: 4–8 hours in one
+session (subagent time). The high-risk step is Q3.3 (the bivariate
+log-derivative identity). If Q3.3 fails cleanly, Q3.4–Q3.6 also fail
+and the transient axiom stays. The driver halts and surfaces the
+blocker.
+
+If Q3.3 succeeds but Q3.4 hits unexpected difficulty, partial progress
+(Q3.0–Q3.3 infrastructure) still enables future attempts. No
+partial-sorries are ever committed.
+
+---
+
 ### Session 33 (2026-04-20) — Queue 2 acceptance (QB1–QB3 landed; QA blocked; QC1 closed out)
 
 Queue 2 outcome:
