@@ -1605,3 +1605,79 @@ z_λ-projected point set `{Q_k} ∪ {R_j}`: only ≤ binom(d+M, 2) slopes
 force a projection collision. A2 lands in a new module
 `Divisor/PolyFibK.lean`; A4 can go in the same module or in
 `SlopeDist.lean` near the slope counting lemmas.
+
+### Session 15 (2026-04-20) — T5 A2+A4 landed
+
+Commits (this session):
+- `86d0e6b` — T5 A2+A4: polyFibK connection lemma + generic-λ
+  distinctness. New module `Divisor/PolyFibK.lean` (~250 LOC). Build
+  clean.
+
+**What landed** (A2):
+- `zLambda λ pt := pt.2 - λ · pt.1` (slope-μ projection).
+- `ellP_eq_neg_scaled_eval`: on the non-vertical cone,
+  `ellP E P A₀ A₁ = -(A₁.1 - A₀.1) · (X - C(zLambda λ P)).eval μ`
+  where `λ = slopeOf A₀ A₁`, `μ = zLambda λ A₀`.
+- `polyFibK λ Q β R m`: univariate slope-μ projection polynomial,
+  `Σ_k C(β_k)·Π_{k'≠k}(X - C(z_λ Q_{k'}))·Π_j(X - C(z_λ R_j))
+   + Σ_j C(m_j)·Π_k(X - C(z_λ Q_k))·Π_{j'≠j}(X - C(z_λ R_{j'}))`.
+- `polyG_firstSum_term_eq` and `polyG_secondSum_term_eq` (private):
+  per-term `polyG` ↔ `polyFibK` correspondences. Both proved by
+  `simp_rw ellP_eq_neg_scaled_eval` + `Finset.prod_mul_distrib` +
+  `Finset.prod_const` + Nat exponent rewrite + `ring`.
+- `polyG_eq_polyFibK_eval`: master connection lemma on the
+  non-vertical cone:
+  `polyG E Q β R m A₀ A₁ = (-(A₁.1-A₀.1))^(d+M-1) · polyFibK.eval μ`.
+
+**What landed** (A4):
+- `pairBadLambda P₁ P₂ := (P₁.2 - P₂.2) · (P₁.1 - P₂.1)⁻¹`: the
+  unique slope solving `zLambda λ P₁ = zLambda λ P₂` for non-vertical
+  pairs.
+- `badLambdaSet_card_le`: for any Finset `S` of points, the set of
+  slopes that fail to separate two distinct points of `S` has card
+  ≤ `S.card · (S.card - 1)`. Proved by mapping each bad λ to its
+  witness pair via `pairBadLambda`, then bounding the image by
+  `(distinctPairs S).card`. The vertical-pair branch is ruled out
+  via `Prod.ext + zLambda` simp, giving `P₁.1 = P₂.1 ⇒ P₁.2 = P₂.2`,
+  contradicting `P₁ ≠ P₂`.
+
+**Tactical notes**:
+1. `Finset.prod_mul_distrib` + `Finset.prod_const` was the key trick
+   for pulling `(-(A₁.1-A₀.1))^N` out of products of
+   `-(A₁.1-A₀.1)·(scalar)` factors. After distribution, only the Nat
+   exponent equality `d - 1 + M = d + M - 1` (when `d ≥ 1`, derived
+   from `k.isLt`) needed manual rewrite to align with `ring`'s
+   normal form.
+2. `Polynomial.eval_prod` + `eval_C` + `eval_sub` + `eval_X` reduce
+   `(Π(X - C α)).eval μ` to `Π(μ - α)` cleanly.
+3. The `pairBadLambda` map's vertical-pair "garbage" value doesn't
+   affect the bound: `badLambdaSet ⊆ image` only includes valid
+   non-vertical pairs by the `Prod.ext` extraction; the vertical
+   pairs' image entries are spurious but only inflate the upper
+   bound (which is already loose).
+
+**Continuation** (T5 A3): per-slope μ-count. The plan's
+high-risk step. For each slope `λ` (excluding ≤ O((d+M)²) bad slopes
+from A4 + chord-redundancy), need `|V_λ| ≥ d + M` distinct intercept
+values μ realized by chords on E with slope λ. Strategy:
+- Total chord count via `card_validPairs_lb` (≈ `|E|² - |E|`).
+- Per-slope average via Hasse-Weil: `Σ_μ binom(line-pts(λ,μ), 2) ≈ q`.
+- Pigeonhole / averaging: most slopes have ≥ q/6 distinct intercepts.
+- Compare to `d + M ≤ D.degE + k + 1 < q` (hypothesis).
+
+Estimated ~150 LOC, **HIGH risk** per the plan. If A3 doesn't
+converge, fallback options:
+- Weaker bound (existence of one good λ instead of most).
+- Stronger hypothesis on `q ≫ d + M`.
+- Keep `log_deriv_nonvanishing_criterion` as a paper-cited axiom
+  (+1 to final axiom count).
+
+**Axiom state after session 15**:
+```
+propext, Classical.choice, Quot.sound
+Divisor.ECPoint.add_comm, add_assoc, neg_add_cancel
+Divisor.extractorSucceeds_of_logDerivCheck_identically_zero_general  [T4]
+```
+
+Unchanged — A2+A4 are infrastructure for T5 A5. Visible axioms at
+`ma_extractable` still 1 (T4). T5 hidden inside T4.
