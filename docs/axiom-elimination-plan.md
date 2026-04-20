@@ -1855,3 +1855,115 @@ bounds on `|validPairs E|`. Concretely, from `card_validPairs_lb`
 (`|E|² - 3|E| ≤ |validPairs|`) + `hasse_weil_lower` (`|E| ≥ q + 1 -
 2√q`), derive `6·q·(d+M + (d+M)²) + 1 ≤ |validPairs|` as a
 consequence of a condition like `q ≥ C·(d+M)²` for some C.
+
+### Session 18 (2026-04-20) — T5 weakening + polyGPoly infrastructure
+
+Commits (this session):
+- T5 hypothesis weakening: `log_deriv_nonvanishing_criterion` and
+  `polyFibK_eq_zero_of_polyG_zero` now take the weaker hypothesis
+  "polyG = 0 on non-vertical pairs of E.points × E.points" (instead
+  of "polyG = 0 on all of F_q² × F_q²"). The existing proof already
+  only invoked polyG at pairs on chords with slope λ, which by
+  construction of `goodIntercepts` lie on E. ~15 LOC.
+- polyGPoly infrastructure: new module `Divisor/PolyGBridge.lean`
+  (~200 LOC, build clean). Defines the polynomial form
+  `polyGPoly Q β R m A₀ : (ZMod E.q)[X][X]` of `polyG` via
+  `lineEvalNumAt` in place of `ellP`, and proves:
+  - `bivEval_polyGPoly`: `bivEval (polyGPoly Q β R m A₀) A₁ =
+    polyG E Q β R m A₀ A₁`.
+  - `polyGPoly_natDegree_le`: outer natDegree ≤ `d + M`.
+  - `InnerDegLe_polyGPoly`: inner natDegree ≤ `d + M`.
+
+**What's enabled**: Future T4 D1 sessions now have (i) a weaker
+T5 hypothesis matching what's derivable from clearedFiberPoly
+vanishing on E × E (rather than the strictly stronger everywhere
+form), and (ii) the polynomial form `polyGPoly` with natDegree
+bookkeeping needed to apply `card_zeros_on_E_le` and cousins.
+
+**What remains for T4 D1** (the core residue identity bridge):
+
+The open problem is establishing a polynomial identity
+`polyGPoly A₀ ≡ (scalar) · clearedFiberPoly A₀ + curveEqPoly · (...)
+(mod curveEqPoly)` for `Q, β` taken as D's distinct affine zeros
+on E with multiplicities. This is the paper's Weil-reciprocity /
+residue-sum identity in polynomial form. Its mechanization requires
+function-field infrastructure (Weierstrass preparation,
+local-uniformizer calculus) that is not currently present in the
+Divisor development.
+
+**Path forward: full mechanization** (~1000+ LOC over multiple
+sessions). The narrow-axiom shortcut (adding a `weil_reciprocity`-
+flavored bridge axiom) would leave one more axiom in the final
+list; full mechanization instead builds the function-field
+infrastructure to prove the residue identity internally, matching
+the programme's target of only the five classical axioms.
+
+**Infrastructure roadmap**:
+
+1. **Polynomial-level residue identity** (~300-400 LOC): prove the
+   bridge as a *polynomial* identity mod `curveEqPoly`:
+   `polyGPoly Q β R m' A₀ ≡ scalingFactor · clearedFiberPoly A₀
+    (mod curveEqPoly E)`
+   for `Q, β` = D's affine zero multiplicities extracted from D.a,
+   D.b on E. The proof proceeds by expressing both sides as
+   polynomials in (ZMod E.q)[X][X] and comparing coefficient-wise
+   via `ring` and explicit curve-reduction. Q, β are extracted via
+   a `Polynomial.roots` / multiplicity construction on
+   `DAtA₁Poly D %ₘ curveEqPoly` (which captures D's affine
+   behavior on E).
+
+2. **Multiplicity data construction** (~200-300 LOC):
+   - Define `divisorData D : Finset (ZMod E.q × ZMod E.q) × (point → ℕ)`
+     returning D's distinct affine zeros on E with multiplicities.
+   - Prove `Σ (multiplicity · 1) ≤ D.degE` (degree bound).
+   - Prove D = (unit) · Π (point factors)^multiplicity in F_q[E]
+     (a Weierstrass preparation / unique factorization result on E,
+     via explicit construction using `DAtA₁Poly`'s roots).
+
+3. **D1 assembly** (~150 LOC): combine 1 and 2 to go from
+   `clearedFiberPoly A₀ ≡ 0 (mod curveEqPoly)` (derived from
+   hypothesis via `clearedFiberPoly_identity` + density) to
+   `polyGPoly A₀ ≡ 0 (mod curveEqPoly)`, then to
+   `polyG A₀ A₁ = 0` for all (A₀, A₁) ∈ E × E non-vertical (via
+   `bivEval_polyGPoly` + `card_zeros_on_E_le`).
+
+4. **D2 apply T5** (~30 LOC): with polyG = 0 on non-vertical
+   E × E (the weakened T5 hypothesis, already landed in session 18),
+   apply the theorem to obtain σ matching.
+
+5. **D3 combinatorics** (~100 LOC): σ matching + multiplicity
+   data ⇒ `extractorSucceeds`.
+
+6. **D4+D5 group-law + weightedSum** (~150 LOC): the σ matching
+   gives a matching between D's divisor-zeros and `{-P, B_j}`.
+   Apply `principal_divisor_iff` converse on the concrete coefficient
+   function built from Q, β, σ data. The `div(f)` is principal by
+   construction. Derive `weightedSum = P`.
+
+Total: ~900-1200 LOC across 4-6 focused sessions.
+
+**Risk mitigation**: each of parts 1, 2, 5, 6 can be prototyped
+independently. Part 2 (Weierstrass preparation on E) is the riskiest;
+fallback there is to use a weaker hypothesis (simple zeros only) if
+D has repeated zeros prove too intricate.
+
+**Axiom state after session 18**:
+```
+propext, Classical.choice, Quot.sound
+Divisor.ECPoint.add_comm, add_assoc, neg_add_cancel
+Divisor.extractorSucceeds_of_logDerivCheck_identically_zero_general  [T4]
+```
+
+Unchanged — infrastructure only, no axiom elimination yet.
+
+**Continuation** (next session):
+1. Implement T4 D3 (combinatorial extractor analysis) as a
+   standalone theorem taking σ-matching as hypothesis: `∀ σ ∈ ...,
+   extractorSucceeds`. Independent of D1, landable in a single
+   session (~100-150 LOC).
+2. Implement T4 D4+D5 (principal_divisor_iff application +
+   weightedSum assembly) as standalone theorems taking the same
+   σ-matching hypothesis (~150 LOC).
+3. Finally (session after): choose D1 resolution (narrow axiom vs.
+   full mechanization) and assemble T4 theorem from D1 + D3 + D4 +
+   D5.
