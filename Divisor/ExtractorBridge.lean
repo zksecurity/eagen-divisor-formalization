@@ -229,6 +229,396 @@ theorem sum_extractedScalars_over_group
   · intro hnotin
     exact absurd (Finset.min'_mem _ _) hnotin
 
+/-- Canonical-index Finset: all `i : Fin msg.k` that are the minimum
+    (= canonical) index in their base-point group. -/
+noncomputable def canonicalFinset
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
+    Finset (Fin msg.k) :=
+  (Finset.univ : Finset (Fin msg.k)).filter (extractorIsCanonical E stmt msg hkm)
+
+/-- `ECPoint.affine (extractorBases j)` as a function `Fin msg.k → ECPoint E.q`. -/
+noncomputable def basesAffineEC
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (j : Fin msg.k) : ECPoint E.q :=
+  ECPoint.affine (extractorBases E stmt msg hkm j).1
+                 (extractorBases E stmt msg hkm j).2
+
+/-- Injectivity of `basesAffineEC` on the canonical Finset: two canonical
+    indices with the same affine base point are equal (they're both the
+    min of the same group). -/
+theorem basesAffineEC_injOn_canonical
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
+    ∀ j₁ ∈ canonicalFinset E stmt msg hkm,
+    ∀ j₂ ∈ canonicalFinset E stmt msg hkm,
+    basesAffineEC E stmt msg hkm j₁ = basesAffineEC E stmt msg hkm j₂ →
+    j₁ = j₂ := by
+  classical
+  intro j₁ hj₁ j₂ hj₂ heq
+  simp only [canonicalFinset, Finset.mem_filter, Finset.mem_univ, true_and] at hj₁ hj₂
+  -- From heq: extractorBases j₁ = extractorBases j₂ (after pair destructuring).
+  have hb : extractorBases E stmt msg hkm j₁ = extractorBases E stmt msg hkm j₂ := by
+    simp only [basesAffineEC] at heq
+    have h12 := ECPoint.affine.injEq .. |>.mp heq
+    exact Prod.ext h12.1 h12.2
+  -- hb means j₁ ∈ extractorGroup j₂ and vice versa.
+  have hj₁inG : j₁ ∈ extractorGroup E stmt msg hkm j₂ := by
+    simp only [extractorGroup, Finset.mem_filter, Finset.mem_univ, true_and]
+    exact hb
+  have hG_eq : extractorGroup E stmt msg hkm j₁ = extractorGroup E stmt msg hkm j₂ :=
+    extractedScalars_group_canonical E stmt msg hkm j₂ j₁ hj₁inG
+  -- Both j₁, j₂ are canonicals of this common group.
+  -- From hj₁: (extractorGroup j₁).min' _ = j₁.
+  -- From hj₂: (extractorGroup j₂).min' _ = j₂.
+  -- Using hG_eq: (extractorGroup j₂).min' _ = j₁ (from hj₁ after rewriting).
+  -- And = j₂ (from hj₂). So j₁ = j₂.
+  have h_min_eq_j₁ : (extractorGroup E stmt msg hkm j₂).min'
+      (extractorGroup_nonempty E stmt msg hkm j₂) = j₁ := by
+    have hmin : (extractorGroup E stmt msg hkm j₁).min'
+        (extractorGroup_nonempty E stmt msg hkm j₁) = j₁ := hj₁
+    -- Show j₁ is the min of extractorGroup j₂ by antisymmetry of le.
+    apply le_antisymm
+    · -- min of j₂'s group ≤ j₁
+      apply Finset.min'_le _ _ hj₁inG
+    · -- j₁ ≤ min of j₂'s group
+      rw [← hmin]
+      apply Finset.min'_le _ _
+      -- Need min of j₂'s group ∈ extractorGroup j₁.
+      rw [hG_eq]
+      exact Finset.min'_mem _ _
+  -- Now combine with hj₂.
+  rw [← h_min_eq_j₁, hj₂]
+
+/-- `canonicalFinset.image basesAffineEC = univ.image basesAffineEC`.
+    (Every affine base point is reached by a canonical index.) -/
+theorem canonicalFinset_image_eq_univ_image
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
+    (canonicalFinset E stmt msg hkm).image (basesAffineEC E stmt msg hkm) =
+    (Finset.univ : Finset (Fin msg.k)).image (basesAffineEC E stmt msg hkm) := by
+  classical
+  apply Finset.Subset.antisymm
+  · exact Finset.image_subset_image (by
+      intro x _; exact Finset.mem_univ x)
+  · intro P hP
+    simp only [Finset.mem_image, Finset.mem_univ, true_and] at hP
+    obtain ⟨j, rfl⟩ := hP
+    -- Take the canonical of j's group.
+    set j_canon := (extractorGroup E stmt msg hkm j).min'
+      (extractorGroup_nonempty E stmt msg hkm j) with hjc
+    have hj_canon_in : j_canon ∈ extractorGroup E stmt msg hkm j :=
+      Finset.min'_mem _ _
+    have hj_canon_is : extractorBases E stmt msg hkm j_canon =
+                       extractorBases E stmt msg hkm j := by
+      have := Finset.mem_filter.mp hj_canon_in
+      exact this.2
+    -- j_canon is canonical by def (= min' of its own group, which equals j's group).
+    have hj_canon_canon : extractorIsCanonical E stmt msg hkm j_canon := by
+      show (extractorGroup E stmt msg hkm j_canon).min'
+        (extractorGroup_nonempty E stmt msg hkm j_canon) = j_canon
+      have hG_eq : extractorGroup E stmt msg hkm j_canon =
+                   extractorGroup E stmt msg hkm j :=
+        extractedScalars_group_canonical E stmt msg hkm j j_canon hj_canon_in
+      apply le_antisymm
+      · apply Finset.min'_le
+        exact mem_extractorGroup_self E stmt msg hkm j_canon
+      · apply Finset.le_min'
+        intro y hy
+        rw [hG_eq] at hy
+        rw [hjc]
+        exact Finset.min'_le _ _ hy
+    refine Finset.mem_image.mpr ⟨j_canon, ?_, ?_⟩
+    · simp only [canonicalFinset, Finset.mem_filter, Finset.mem_univ, true_and]
+      exact hj_canon_canon
+    · simp only [basesAffineEC, hj_canon_is]
+
+/-- Zero contribution at non-canonical indices:
+    `zsmul (extractedScalars j) (basesAffineEC j) = 0`. -/
+theorem zsmul_extractedScalars_basesAffineEC_zero_of_notCanonical
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (j : Fin msg.k) (hNotCanon : ¬ extractorIsCanonical E stmt msg hkm j) :
+    ECPoint.zsmul E (extractedScalars E stmt msg hkm j)
+      (basesAffineEC E stmt msg hkm j) = 0 := by
+  rw [extractedScalars_zero_of_notCanonical E stmt msg hkm hNoNegP j hNotCanon]
+  rfl
+
+/-- `extractorDivisorCoeffs` at an affine base point equals
+    `extractedScalars` at the canonical representative of that group. -/
+theorem extractorDivisorCoeffs_affine_bases
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (i : Fin msg.k) :
+    extractorDivisorCoeffs E stmt msg hkm
+        (ECPoint.affine (extractorBases E stmt msg hkm i).1
+                        (extractorBases E stmt msg hkm i).2) =
+      extractedScalars E stmt msg hkm
+        ((extractorGroup E stmt msg hkm i).min'
+          (extractorGroup_nonempty E stmt msg hkm i)) := by
+  classical
+  show (if ((extractorBases E stmt msg hkm i).1,
+           (extractorBases E stmt msg hkm i).2) =
+          (stmt.target.1, -stmt.target.2)
+        then (1 : ℤ) else 0) +
+       ∑ j ∈ (Finset.univ : Finset (Fin msg.k)).filter
+         (fun j => extractorBases E stmt msg hkm j =
+                    ((extractorBases E stmt msg hkm i).1,
+                     (extractorBases E stmt msg hkm i).2)),
+         extractedScalars E stmt msg hkm j = _
+  have hNot : ((extractorBases E stmt msg hkm i).1,
+               (extractorBases E stmt msg hkm i).2) ≠
+              (stmt.target.1, -stmt.target.2) := by
+    intro heq
+    apply hNoNegP
+    refine ⟨i, ?_⟩
+    simp only [negPIndexSet, Finset.mem_filter, Finset.mem_univ, true_and]
+    have : extractorBases E stmt msg hkm i =
+           ((extractorBases E stmt msg hkm i).1,
+            (extractorBases E stmt msg hkm i).2) := by
+      rcases extractorBases E stmt msg hkm i with ⟨a, b⟩
+      rfl
+    rw [this, heq]
+  rw [if_neg hNot, zero_add]
+  have hPair_eq_full :
+      ((extractorBases E stmt msg hkm i).1,
+       (extractorBases E stmt msg hkm i).2) =
+      extractorBases E stmt msg hkm i := by
+    rcases extractorBases E stmt msg hkm i with ⟨a, b⟩; rfl
+  rw [hPair_eq_full]
+  rw [filter_bases_eq_extractorGroup]
+  exact sum_extractedScalars_over_group E stmt msg hkm hNoNegP i
+
+/-- For canonical `j`, `extractorDivisorCoeffs (basesAffineEC j) = extractedScalars j`. -/
+theorem extractorDivisorCoeffs_basesAffineEC_of_canonical
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (j : Fin msg.k) (hCanon : extractorIsCanonical E stmt msg hkm j) :
+    extractorDivisorCoeffs E stmt msg hkm (basesAffineEC E stmt msg hkm j) =
+      extractedScalars E stmt msg hkm j := by
+  unfold basesAffineEC
+  have h1 := extractorDivisorCoeffs_affine_bases E stmt msg hkm hNoNegP j
+  have hmin_j : (extractorGroup E stmt msg hkm j).min'
+                  (extractorGroup_nonempty E stmt msg hkm j) = j := hCanon
+  rw [h1, hmin_j]
+
+/-- Image-reindexing: weightedSum over `univ.image basesAffineEC` of
+    `zsmul coeffs ·` equals weightedSum over `univ` of
+    `zsmul extractedScalars (basesAffineEC ·)`.
+
+    Goes via: (a) rewrite `univ.image = canonical.image`, (b) apply
+    `fold_image` with injectivity on canonical, (c) rewrite the summand
+    using `extractorDivisorCoeffs_basesAffineEC_of_canonical`, (d)
+    zero-pad from canonical to univ. -/
+theorem weightedSum_imageBases_eq_univ_zsmul_extractedScalars
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty) :
+    ECPoint.weightedSum E
+      ((Finset.univ : Finset (Fin msg.k)).image (basesAffineEC E stmt msg hkm))
+      (fun P => ECPoint.zsmul E (extractorDivisorCoeffs E stmt msg hkm P) P)
+    = ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
+      (fun j => ECPoint.zsmul E (extractedScalars E stmt msg hkm j)
+        (basesAffineEC E stmt msg hkm j)) := by
+  classical
+  set bEC := basesAffineEC E stmt msg hkm with hbEC_def
+  set c := extractorDivisorCoeffs E stmt msg hkm with hc_def
+  set canFs := canonicalFinset E stmt msg hkm with hcanFs_def
+  -- Step A: rewrite `univ.image = canonical.image`.
+  rw [show (Finset.univ : Finset (Fin msg.k)).image bEC = canFs.image bEC from
+        (canonicalFinset_image_eq_univ_image E stmt msg hkm).symm]
+  -- Step B: fold_image with injectivity on canonical.
+  have hInj : ∀ x ∈ canFs, ∀ y ∈ canFs, bEC x = bEC y → x = y :=
+    basesAffineEC_injOn_canonical E stmt msg hkm
+  show (canFs.image bEC).fold (ECPoint.add E) 0
+        (fun P => ECPoint.zsmul E (c P) P) = _
+  rw [Finset.fold_image hInj]
+  -- After fold_image: canFs.fold (ECPoint.add E) 0 ((fun P => zsmul (c P) P) ∘ bEC).
+  -- Step C: rewrite summand at canonical positions.
+  have hFoldCongr :
+      canFs.fold (ECPoint.add E) 0
+        ((fun P => ECPoint.zsmul E (c P) P) ∘ bEC)
+      = canFs.fold (ECPoint.add E) 0
+        (fun j => ECPoint.zsmul E (extractedScalars E stmt msg hkm j) (bEC j)) := by
+    apply Finset.fold_congr
+    intro j hj
+    simp only [hcanFs_def, canonicalFinset, Finset.mem_filter,
+      Finset.mem_univ, true_and] at hj
+    show ECPoint.zsmul E (c (bEC j)) (bEC j) = _
+    rw [hc_def, hbEC_def,
+        extractorDivisorCoeffs_basesAffineEC_of_canonical E stmt msg hkm hNoNegP j hj]
+  rw [hFoldCongr]
+  -- Step D: extend canonical sum to univ via zero-padding.
+  show canFs.fold (ECPoint.add E) 0 _ = ECPoint.weightedSum E _ _
+  apply (ECPoint.weightedSum_subset_of_zero_outside E (Finset.subset_univ canFs) ?_).symm
+  intro j _ hjnotcanon
+  simp only [hcanFs_def, canonicalFinset, Finset.mem_filter,
+    Finset.mem_univ, true_and] at hjnotcanon
+  exact zsmul_extractedScalars_basesAffineEC_zero_of_notCanonical
+    E stmt msg hkm hNoNegP j hjnotcanon
+
+/-- Support of `extractorDivisorCoeffs` is contained in the candidate Finset
+    `{∞, -P_aff} ∪ image(basesAffineEC)`. -/
+theorem extractorDivisorCoeffs_support_subset_candidate
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
+    Function.support (extractorDivisorCoeffs E stmt msg hkm) ⊆
+    ↑(extractorDivisorCandidate E stmt msg hkm) := by
+  classical
+  intro P hP
+  simp only [Function.mem_support] at hP
+  rw [Finset.mem_coe]
+  unfold extractorDivisorCandidate
+  cases P with
+  | infinity =>
+      exact Finset.mem_insert_self _ _
+  | affine x y =>
+      refine Finset.mem_insert_of_mem ?_
+      by_cases hxy : (x, y) = (stmt.target.1, -stmt.target.2)
+      · rw [Prod.mk.injEq] at hxy
+        rcases hxy with ⟨hx, hy⟩
+        rw [hx, hy]
+        exact Finset.mem_insert_self _ _
+      · refine Finset.mem_insert_of_mem ?_
+        -- Indicator = 0, so filter-sum ≠ 0, so filter is nonempty.
+        have hEval : extractorDivisorCoeffs E stmt msg hkm
+                        (ECPoint.affine x y) =
+                      0 + ∑ j ∈ (Finset.univ : Finset (Fin msg.k)).filter
+                        (fun j => extractorBases E stmt msg hkm j = (x, y)),
+                        extractedScalars E stmt msg hkm j := by
+          show (if (x, y) = (stmt.target.1, -stmt.target.2)
+                then (1 : ℤ) else 0) +
+               ∑ j ∈ (Finset.univ : Finset (Fin msg.k)).filter
+                 (fun j => extractorBases E stmt msg hkm j = (x, y)),
+                 extractedScalars E stmt msg hkm j = _
+          rw [if_neg hxy]
+        rw [hEval, zero_add] at hP
+        by_contra hNotInImage
+        apply hP
+        have hEmpty : ((Finset.univ : Finset (Fin msg.k)).filter
+            (fun j => extractorBases E stmt msg hkm j = (x, y))) = ∅ := by
+          rw [Finset.eq_empty_iff_forall_not_mem]
+          intro j hj
+          simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hj
+          apply hNotInImage
+          refine Finset.mem_image.mpr ⟨j, Finset.mem_univ _, ?_⟩
+          simp only [hj]
+        rw [hEmpty, Finset.sum_empty]
+
+/-- `∞` is not an affine point, so not in the `basesAffineEC` image. -/
+theorem infinity_notin_image_basesAffineEC
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
+    ECPoint.infinity ∉
+    ((Finset.univ : Finset (Fin msg.k)).image (basesAffineEC E stmt msg hkm)) := by
+  intro hContra
+  rw [Finset.mem_image] at hContra
+  obtain ⟨j, _, heq⟩ := hContra
+  unfold basesAffineEC at heq
+  exact ECPoint.noConfusion heq
+
+/-- Under general case, `-P_aff` is not in the image of base points. -/
+theorem negP_notin_image_basesAffineEC
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty) :
+    (ECPoint.affine stmt.target.1 (-stmt.target.2) : ECPoint E.q) ∉
+    ((Finset.univ : Finset (Fin msg.k)).image (basesAffineEC E stmt msg hkm)) := by
+  intro hContra
+  rw [Finset.mem_image] at hContra
+  obtain ⟨j, _, heq⟩ := hContra
+  apply hNoNegP
+  refine ⟨j, ?_⟩
+  simp only [negPIndexSet, Finset.mem_filter, Finset.mem_univ, true_and]
+  unfold basesAffineEC at heq
+  have hprod : (extractorBases E stmt msg hkm j).1 = stmt.target.1 ∧
+               (extractorBases E stmt msg hkm j).2 = -stmt.target.2 := by
+    have := ECPoint.affine.injEq .. |>.mp heq
+    exact this
+  exact Prod.ext hprod.1 hprod.2
+
+/-- `∞ ≠ -P_aff`. -/
+theorem infinity_ne_negP_aff
+    (stmt : DlogStatement E.q) :
+    (ECPoint.infinity : ECPoint E.q) ≠
+    ECPoint.affine stmt.target.1 (-stmt.target.2) := fun h => ECPoint.noConfusion h
+
+/-- `∞` is not in `insert (-P_aff) (image basesAffineEC)`. -/
+theorem infinity_notin_insert_negP_image
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
+    (ECPoint.infinity : ECPoint E.q) ∉
+    insert (ECPoint.affine stmt.target.1 (-stmt.target.2))
+      ((Finset.univ : Finset (Fin msg.k)).image (basesAffineEC E stmt msg hkm)) := by
+  intro hContra
+  rw [Finset.mem_insert] at hContra
+  rcases hContra with h | h
+  · exact infinity_ne_negP_aff E stmt h
+  · exact infinity_notin_image_basesAffineEC E stmt msg hkm h
+
+/-- **D4 main theorem.** If `extractorDivisorCoeffs` is the divisor of a
+    rational function on `E` (i.e., `IsPrincipal`), then the group-law
+    equation `(-P) + Σ [extractedScalars i] · B_i = 0` holds.
+
+    Combined with D5 (`target_eq_weightedSum_of_zero_sum`), this gives
+    the full group-law conclusion `target = Σ [extractedScalars i] · B_i`. -/
+theorem extractor_zeroSum_of_principal
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hPrincipal : IsPrincipal E (extractorDivisorCoeffs E stmt msg hkm)) :
+    ECPoint.add E
+      (ECPoint.affine stmt.target.1 (-stmt.target.2))
+      (ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
+        (fun i => ECPoint.zsmul E (extractedScalars E stmt msg hkm i)
+          (basesAffineEC E stmt msg hkm i)))
+    = 0 := by
+  classical
+  set c := extractorDivisorCoeffs E stmt msg hkm with hc_def
+  set candFs := extractorDivisorCandidate E stmt msg hkm
+  -- Step 1-2: finite support.
+  have hSupSub : Function.support c ⊆ ↑candFs :=
+    extractorDivisorCoeffs_support_subset_candidate E stmt msg hkm
+  have hFinSupp : Set.Finite (Function.support c) :=
+    (Finset.finite_toSet candFs).subset hSupSub
+  -- Step 3: principal_divisor_iff.
+  have ⟨_, hGroup⟩ := (principal_divisor_iff E c hFinSupp).mp hPrincipal
+  -- Step 4: extend group-sum from support to candidate Finset.
+  have hFinSupp_sub_candFs : hFinSupp.toFinset ⊆ candFs := by
+    intro P hP
+    rw [Set.Finite.mem_toFinset] at hP
+    exact hSupSub hP
+  have hCandSum :
+      ECPoint.weightedSum E candFs (fun P => ECPoint.zsmul E (c P) P) = 0 := by
+    rw [ECPoint.weightedSum_subset_of_zero_outside E hFinSupp_sub_candFs ?_]
+    · exact hGroup
+    · intro P _ hPnotSup
+      rw [Set.Finite.mem_toFinset, Function.mem_support, not_not] at hPnotSup
+      rw [hPnotSup]
+      exact ECPoint.zsmul_zero E P
+  -- Step 5: expand weightedSum over candidate Finset.
+  have hCandExpand :
+      ECPoint.weightedSum E candFs (fun P => ECPoint.zsmul E (c P) P) =
+      ECPoint.add E
+        (ECPoint.affine stmt.target.1 (-stmt.target.2))
+        (ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
+          (fun i => ECPoint.zsmul E (extractedScalars E stmt msg hkm i)
+            (basesAffineEC E stmt msg hkm i))) := by
+    show ECPoint.weightedSum E
+      (insert (ECPoint.infinity : ECPoint E.q)
+        (insert (ECPoint.affine stmt.target.1 (-stmt.target.2))
+          ((Finset.univ : Finset (Fin msg.k)).image (basesAffineEC E stmt msg hkm))))
+      (fun P => ECPoint.zsmul E (c P) P) = _
+    rw [ECPoint.weightedSum_insert E (infinity_notin_insert_negP_image E stmt msg hkm)]
+    have h_f_inf : ECPoint.zsmul E (c ECPoint.infinity) ECPoint.infinity = 0 := by
+      rw [hc_def]
+      rw [extractorDivisorCoeffs_infinity]
+      exact ECPoint.zsmul_infinity E _
+    rw [h_f_inf, ECPoint.zero_add_curve]
+    rw [ECPoint.weightedSum_insert E (negP_notin_image_basesAffineEC E stmt msg hkm hNoNegP)]
+    have h_f_negP :
+        ECPoint.zsmul E (c (ECPoint.affine stmt.target.1 (-stmt.target.2)))
+          (ECPoint.affine stmt.target.1 (-stmt.target.2))
+        = ECPoint.affine stmt.target.1 (-stmt.target.2) := by
+      rw [hc_def, extractorDivisorCoeffs_negP E stmt msg hkm hNoNegP]
+      exact ECPoint.zsmul_one E _
+    rw [h_f_negP]
+    congr 1
+    exact weightedSum_imageBases_eq_univ_zsmul_extractedScalars E stmt msg hkm hNoNegP
+  rw [← hCandExpand]
+  exact hCandSum
+
 /-! ## D3: extractor bound from a natural-number witness
 
 The "σ-matching" output of `log_deriv_nonvanishing_criterion` identifies
@@ -338,5 +728,20 @@ theorem target_eq_weightedSum_of_zero_sum
   have hEq : ECPoint.add E (-P_aff) X = ECPoint.add E (-P_aff) P_aff := by
     rw [hZeroSum, hNegCancel]
   exact (ECPoint.add_left_cancel E hEq).symm
+
+/-- **D4+D5 combined.** Given principality of the extractor's divisor
+    coefficient function (`extractorDivisorCoeffs`), conclude
+    `target = Σ [extractedScalars i] · B_i`. -/
+theorem target_eq_weightedSum_of_principal
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hPrincipal : IsPrincipal E (extractorDivisorCoeffs E stmt msg hkm)) :
+    ECPoint.affine stmt.target.1 stmt.target.2 =
+      ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
+        (fun i => ECPoint.zsmul E (extractedScalars E stmt msg hkm i)
+          (ECPoint.affine (extractorBases E stmt msg hkm i).1
+                          (extractorBases E stmt msg hkm i).2)) := by
+  exact target_eq_weightedSum_of_zero_sum E stmt msg hkm
+    (extractor_zeroSum_of_principal E stmt msg hkm hNoNegP hPrincipal)
 
 end Divisor
