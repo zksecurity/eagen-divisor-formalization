@@ -12,6 +12,7 @@ import Divisor.LogDeriv
 import Divisor.ClearedPolyForm
 import Divisor.BetaConstructive
 import Divisor.NormLogDeriv
+import Divisor.BivariateLogDeriv
 import Divisor.HasPrincipalDivisor
 import Divisor.PolyGBridge
 import Divisor.Protocol

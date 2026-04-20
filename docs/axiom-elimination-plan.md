@@ -3767,3 +3767,91 @@ verification MUST be corrected as discovered. This includes
 historical references like "formerly Bassa Lem X" or "paper's
 Corollary 1" — rephrase to describe the content without the
 attribution.
+
+---
+
+### Session 34 (2026-04-20) — Q3.3 bivariate logDerivTerm denominator-cleared identity
+
+**Scope**: new module `Divisor/BivariateLogDeriv.lean` (~361 LOC,
+`lake build` green, no `sorry`/`admit`, no new axioms).
+
+**Landed content** (all in namespace `Divisor`):
+
+* `normPoly_derivative_eval` — evaluation of `derivative (normPoly E D)`
+  as an explicit polynomial expression in `D.a, D.b, D.a', D.b', x,
+  curveA, curveB`. Pure univariate polynomial algebra.
+
+* `D_eval_mul_conj_eq_normPoly_eval` — on `E.points`, the conjugate
+  identity `D(x, y) · (a(x) + b(x)·y) = N(D)(x)`. The key
+  "rationalisation" step via `y² = x³ + Ax + B`.
+
+* `logDerivTerm_denom_cleared_pointwise` — **Layer 3 main theorem**.
+  At each `P ∈ E.points` with `D.eval P ≠ 0` and `3·P.1² + A − 2λ·P.2
+  ≠ 0`:
+  ```
+  N(D)(P.1) · (3·P.1² + A − 2λ·P.2) · logDerivTerm(P, λ) =
+      2·P.2·(a'(P.1)·a(P.1) − b'(P.1)·b(P.1)·(P.1³ + A·P.1 + B))
+       + 2·(P.1³ + A·P.1 + B)·(a'(P.1)·b(P.1) − b'(P.1)·a(P.1))
+  ```
+  (Denominator-cleared polynomial identity, linear in `P.2`, independent
+  of `λ` on the RHS.) Proof: algebraic expansion after
+  field-simplifying the inverse, closing with `linear_combination`
+  invocations using `y² = x³ + Ax + B`.
+
+* `logDerivTerm_denom_cleared_with_normPoly_derivative` — corollary
+  expressing the Layer 3 identity in terms of `eval x (N(D)')` instead
+  of the raw quadratic combination.
+
+* `chordPoints`, `logDerivTermSum` — Layer 4 scaffolding: three-point
+  sum over `A₀, A₁, A₂` with `A₂ := (λ² − A₀.1 − A₁.1, λ·x₂ +
+  (A₀.2 − λ·A₀.1))`.
+
+* `logDerivTermSum_eq` — unfolding lemma.
+
+* `logDerivTermSum_denom_cleared_sumform` — pointwise application of
+  Layer 3 to each of the three chord points (each summand gets the
+  denominator-cleared form).
+
+**Strategy per Q3.3 plan spec** (line 3524):
+
+Decomposed the rational expression `logDerivTerm(P, λ) =
+(a' − b'·y)·2y / ((a − b·y) · (3x² + A − 2λy))` by:
+1. Multiplying numerator and denominator by the conjugate `(a + b·y)`,
+   using `(a − b·y)(a + b·y) = a² − b²·y²` and `y² = x³ + Ax + B` on
+   `E` to recognise the norm polynomial evaluation `a² − b²·curveX = N(D)`.
+2. Expanding the remaining `(a + b·y)(a' − b'·y)·(2y)` and reducing
+   `y²` via the curve equation to get a form linear in `y`.
+3. Matching the result against `N(D)'(x) + b²·(3x² + A)` on the `y`
+   coefficient (via `normPoly_derivative_eval`).
+
+**What Q3.4 can consume**:
+
+The Layer 3 / Layer 4 theorems give Q3.4 a pointwise denominator-cleared
+identity to substitute into the `logDerivCheckFn` first sum. Specifically,
+multiplying out the denominator `D.eval x y · dxdz_den` on each chord
+intersection, Q3.4 can match the resulting polynomial expression against
+`polyG`'s first sum term-by-term via the beta/rootMultiplicity bridge
+(`normPoly_derivative_eval_simple_root_betaFiberSum_of_splits` from Q3.2).
+
+**What was NOT attempted here** (deferred to Q3.4 per plan's Layer-4
+closeout guidance):
+
+* Sum-over-three-chord simplification via Vieta's relations on the cubic
+  in `x` of chord intersections. (The three `A_i.1` are roots of
+  `x³ − λ²·x² + ...` with known sums.) Q3.4 will perform this Vieta
+  collapse explicitly as it connects to `polyG`'s first-sum structure.
+
+* Matching the scalar `logDerivCheckFn` RHS against `polyG`'s second
+  sum. This is pure denominator-clearing partial-fraction algebra that
+  Q3.4 also handles.
+
+**Axiom check**: `#print axioms logDerivTerm_denom_cleared_pointwise`
+yields only `propext, Classical.choice, Quot.sound` — no elliptic-
+curve or algebraic-geometry content, only `P ∈ E.points` to extract
+the on-curve identity `y² = x³ + Ax + B`.
+
+**LOC**: 361 (under the 400-LOC budget).
+
+**Outcome**: Q3.3 landed. Layer 3 single-point identity is the core
+artifact; Layer 4 scaffolding (`logDerivTermSum`) makes consumption
+ergonomic for Q3.4. The Q3.3-to-Q3.4 bridge is now usable.
