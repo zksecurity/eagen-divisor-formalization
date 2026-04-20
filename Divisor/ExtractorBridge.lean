@@ -1053,6 +1053,416 @@ axiom polyG_zero_of_logDerivCheck_identically_zero
               (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) m)
               A₀ A₁ = 0
 
+/-! ## S3: raw → distinct polyG bridge
+
+    Combine the narrow scalar axiom `polyG_zero_of_logDerivCheck_identically_zero`
+    with the distinct-base enumeration (`distinctR` / `distinctM'` from S1+S2)
+    to obtain vanishing of `polyG` in distinct form.
+
+    Strategy: two layers.
+
+    * **Layer A (scalar invariance)**: `logDerivCheckFn` with raw
+      `(stmt.bases, fun i => msg.m (hkm ▸ i))` equals
+      `logDerivCheckFn` with distinct
+      `(baseAt, distinctM'_tail)`. Follows from fiberwise decomposition
+      of `Fin msg.k` by `extractorBases`: each fiber has constant base
+      `baseAt i`, so the raw sum `Σ -msg.m_j · L(stmt.bases j)⁻¹`
+      collapses to `Σ -extractorGroupSum_i · L(baseAt i)⁻¹`.
+    * **Layer B (apply narrow axiom)**: feed the narrow axiom with
+      `k := baseImageCount`, `B := baseAt`, `m := distinctM'_tail`.
+      Its `hAllZero` precondition becomes the distinct form, which we
+      derive from the raw form via Layer A. Its conclusion is
+      `polyG ... (Fin.cons (P.1,-P.2) baseAt) (Fin.cons (-1) distinctM'_tail) = 0`
+      at index `Fin (baseImageCount + 1)`; reindexing by
+      `finCongr (Nat.add_comm 1 _)` produces the `distinctR` /
+      `distinctM'` form at index `Fin (1 + baseImageCount)`.
+-/
+
+/-- The tail of `distinctMCons`, exposed as a separate definition.
+    Value is `extractorGroupSum` at the `Classical.choose` representative. -/
+noncomputable def distinctM'_tail
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) (i : Fin (baseImageCount E stmt msg hkm)) :
+    ZMod E.q :=
+  extractorGroupSum E stmt msg hkm (baseAtIndex E stmt msg hkm i)
+
+/-- `distinctMCons` factors as the `-1` head `Fin.cons` tail
+    `distinctM'_tail`. -/
+theorem distinctMCons_eq_cons
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
+    distinctMCons E stmt msg hkm =
+      Fin.cons (α := fun _ => ZMod E.q) (-1 : ZMod E.q)
+        (distinctM'_tail E stmt msg hkm) := rfl
+
+/-- `distinctRCons` factors as the `-P_aff` head `Fin.cons` tail `baseAt`. -/
+theorem distinctRCons_eq_cons
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
+    distinctRCons E stmt msg hkm =
+      Fin.cons (α := fun _ => ZMod E.q × ZMod E.q)
+        (stmt.target.1, -stmt.target.2) (baseAt E stmt msg hkm) := rfl
+
+/-- Canonical fiber index: for `j : Fin msg.k`,
+    `baseIndexOf j` is the unique `i : Fin (baseImageCount ...)` with
+    `baseAt i = extractorBases j`. -/
+noncomputable def baseIndexOf
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) (j : Fin msg.k) :
+    Fin (baseImageCount E stmt msg hkm) :=
+  (baseImageEnum E stmt msg hkm).symm
+    ⟨extractorBases E stmt msg hkm j,
+      Finset.mem_image.mpr ⟨j, Finset.mem_univ _, rfl⟩⟩
+
+theorem baseAt_baseIndexOf
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) (j : Fin msg.k) :
+    baseAt E stmt msg hkm (baseIndexOf E stmt msg hkm j)
+      = extractorBases E stmt msg hkm j := by
+  unfold baseAt baseIndexOf
+  rw [Equiv.apply_symm_apply]
+
+/-- The filter set `{j : Fin msg.k | extractorBases j = baseAt i}` equals
+    `extractorGroup ... (baseAtIndex i)`. -/
+theorem filter_extractorBases_eq_baseAt_eq_extractorGroup
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) (i : Fin (baseImageCount E stmt msg hkm)) :
+    ((Finset.univ : Finset (Fin msg.k)).filter
+        (fun j => extractorBases E stmt msg hkm j
+                    = baseAt E stmt msg hkm i))
+      = extractorGroup E stmt msg hkm (baseAtIndex E stmt msg hkm i) := by
+  ext j
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and,
+    extractorGroup]
+  rw [baseAtIndex_spec]
+
+/-- `distinctM'_tail i` equals the sum of `msg.m` over the fiber of
+    base point `baseAt i`. -/
+theorem distinctM'_tail_eq_filter_sum
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) (i : Fin (baseImageCount E stmt msg hkm)) :
+    distinctM'_tail E stmt msg hkm i
+      = ∑ j ∈ (Finset.univ : Finset (Fin msg.k)).filter
+              (fun j => extractorBases E stmt msg hkm j
+                          = baseAt E stmt msg hkm i), msg.m j := by
+  unfold distinctM'_tail extractorGroupSum
+  rw [filter_extractorBases_eq_baseAt_eq_extractorGroup]
+
+/-- **Layer A (scalar invariance)**: raw `logDerivCheckFn` with
+    `(stmt.bases, fun i => msg.m (hkm ▸ i))` equals the distinct form
+    with `(baseAt, distinctM'_tail)` at length `baseImageCount`. -/
+theorem logDerivCheckFn_eq_grouped
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    logDerivCheckFn E D P stmt.k stmt.bases (fun i => msg.m (hkm ▸ i))
+        A₀ A₁
+      = logDerivCheckFn E D P (baseImageCount E stmt msg hkm)
+          (baseAt E stmt msg hkm) (distinctM'_tail E stmt msg hkm)
+          A₀ A₁ := by
+  classical
+  -- Only the last sum differs. Unfold both forms and reduce to equality
+  -- of the scalar sums.
+  unfold logDerivCheckFn
+  -- Both sides share `lhs - (-L(-P)⁻¹ + sum)`; reduce to `sum`-equality.
+  simp only [sub_right_inj, add_right_inj]
+  -- Step 1: reindex raw sum from Fin stmt.k to Fin msg.k.
+  have hRaw :
+      (Finset.univ : Finset (Fin stmt.k)).sum
+          (fun j => -(msg.m (hkm ▸ j)) *
+            ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
+              (stmt.bases j).1 (stmt.bases j).2)⁻¹)
+      = (Finset.univ : Finset (Fin msg.k)).sum
+          (fun j => -(msg.m j) *
+            ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
+              (extractorBases E stmt msg hkm j).1
+              (extractorBases E stmt msg hkm j).2)⁻¹) := by
+    -- Both sides have the same underlying family parametrized by
+    -- `.val`, so we prove equality by generalizing `stmt.k`.
+    -- Use `Fintype.sum_equiv` with `finCongr hkm` and resolve the
+    -- pointwise equality by `cases`-ing `hkm` (after generalizing
+    -- `stmt.k`, `msg.m`, `stmt.bases` in sync).
+    -- Simpler: prove via `Finset.sum_bij` with the bijection.
+    refine Finset.sum_bij (fun j _ => finCongr hkm j)
+      (fun _ _ => Finset.mem_univ _)
+      ?_ -- injOn
+      ?_ -- surjOn
+      ?_ -- f equality
+    · intro j _ j' _ h
+      exact (finCongr hkm).injective h
+    · intro j _
+      refine ⟨(finCongr hkm).symm j, Finset.mem_univ _, ?_⟩
+      simp
+    · intro j _
+      -- Show: -(msg.m (hkm ▸ j)) * L(stmt.bases j)⁻¹
+      --     = -(msg.m (finCongr hkm j)) * L(extractorBases (finCongr hkm j))⁻¹.
+      -- Both msg.m (hkm ▸ j) and msg.m (finCongr hkm j) equal via cast.
+      -- Both L(stmt.bases j) and L(extractorBases (finCongr hkm j)) equal
+      -- since extractorBases (finCongr hkm j) = stmt.bases (Fin.cast hkm.symm (finCongr hkm j))
+      -- and Fin.cast hkm.symm (finCongr hkm j) = j (since ⟨j.val, _⟩ casts back).
+      unfold extractorBases
+      have hb : stmt.bases (Fin.cast hkm.symm (finCongr hkm j)) = stmt.bases j := by
+        congr 1
+      have hm : msg.m (hkm ▸ j) = msg.m (finCongr hkm j) := by
+        congr 1
+        -- Reduce to `(hkm ▸ j : Fin msg.k) = finCongr hkm j`. Both have
+        -- `.val = j.val`; resolve by cases on `hkm`.
+        generalize hn : msg.k = n at hkm
+        subst hkm
+        rfl
+      rw [hb, hm]
+  -- Step 2: fiberwise on RHS of step 1.
+  rw [hRaw]
+  -- Partition Fin msg.k by baseIndexOf.
+  rw [← Finset.sum_fiberwise_of_maps_to
+        (g := baseIndexOf E stmt msg hkm)
+        (t := (Finset.univ : Finset (Fin (baseImageCount E stmt msg hkm))))
+        (f := fun j => -(msg.m j) *
+          ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
+            (extractorBases E stmt msg hkm j).1
+            (extractorBases E stmt msg hkm j).2)⁻¹)
+        (fun _ _ => Finset.mem_univ _)]
+  -- Replace each inner sum's filter by the baseAt-based filter.
+  apply Finset.sum_congr rfl
+  intro i _
+  -- The inner filter `fun j => baseIndexOf j = i` equals
+  -- `fun j => extractorBases j = baseAt i`.
+  have hFilterEq :
+      (Finset.univ : Finset (Fin msg.k)).filter
+          (fun j => baseIndexOf E stmt msg hkm j = i)
+        = (Finset.univ : Finset (Fin msg.k)).filter
+            (fun j => extractorBases E stmt msg hkm j
+                        = baseAt E stmt msg hkm i) := by
+    ext j
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+    constructor
+    · intro h
+      rw [← h, baseAt_baseIndexOf]
+    · intro h
+      -- Goal: baseIndexOf j = i, given h : extractorBases j = baseAt i.
+      -- Apply baseImageEnum (bijective), then reduce to the .val equality.
+      unfold baseIndexOf
+      apply (baseImageEnum E stmt msg hkm).symm_apply_eq.mpr
+      apply Subtype.ext
+      exact h
+  rw [hFilterEq]
+  -- Now the inner sum is over the filter `extractorBases j = baseAt i`.
+  -- On this filter, `extractorBases j = baseAt i`, so the L(extractorBases j)⁻¹
+  -- factor becomes L(baseAt i)⁻¹ (constant); pull it out:
+  --   Σ j ∈ filter_i, -(msg.m j) · L(baseAt i)⁻¹
+  --   = -L(baseAt i)⁻¹ · Σ j ∈ filter_i, msg.m j
+  --   = -L(baseAt i)⁻¹ · distinctM'_tail i
+  --   = -(distinctM'_tail i) · L(baseAt i)⁻¹
+  have hInner :
+      ∀ j ∈ (Finset.univ : Finset (Fin msg.k)).filter
+          (fun j => extractorBases E stmt msg hkm j
+                      = baseAt E stmt msg hkm i),
+        -(msg.m j) *
+          ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
+            (extractorBases E stmt msg hkm j).1
+            (extractorBases E stmt msg hkm j).2)⁻¹
+        = -(msg.m j) *
+          ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
+            (baseAt E stmt msg hkm i).1
+            (baseAt E stmt msg hkm i).2)⁻¹ := by
+    intro j hj
+    have hjEq : extractorBases E stmt msg hkm j = baseAt E stmt msg hkm i :=
+      (Finset.mem_filter.mp hj).2
+    rw [hjEq]
+  rw [Finset.sum_congr rfl hInner]
+  -- Factor out the constant L(baseAt i)⁻¹.
+  rw [← Finset.sum_mul]
+  -- Σ j ∈ filter, -(msg.m j) = -(Σ j ∈ filter, msg.m j).
+  rw [Finset.sum_neg_distrib]
+  -- Σ j ∈ filter_i, msg.m j = distinctM'_tail i.
+  rw [← distinctM'_tail_eq_filter_sum]
+
+/-- **Main theorem (S3 — `Fin.cons` form)**: apply the narrow scalar
+    axiom with `B := baseAt`, `m := distinctM'_tail`; its conclusion is
+    in `Fin.cons`/`Fin (baseImageCount + 1)` form, matching `distinctRCons`
+    and `distinctMCons`. -/
+theorem polyG_distinct_zero_cons
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hD : ¬ msg.toD.isZero)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
+      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
+    {d : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q)
+    (beta : Fin d → ℕ)
+    (hQinj : Function.Injective Q)
+    (hQzeros : ∀ k' : Fin d,
+       Q k' ∈ E.points ∧ msg.toD.eval (Q k').1 (Q k').2 = 0)
+    (hQcov : ∀ Q' ∈ E.points, msg.toD.eval Q'.1 Q'.2 = 0 →
+       ∃ k' : Fin d, Q k' = Q')
+    (hβPos : ∀ k', beta k' > 0)
+    (hβSum : (∑ k' : Fin d, beta k') = msg.toD.degE)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1) :
+    polyG E Q (fun k' => ((beta k' : ℕ) : ZMod E.q))
+              (distinctRCons E stmt msg hkm) (distinctMCons E stmt msg hkm)
+              A₀ A₁ = 0 := by
+  -- Distinct-form `hAllZero` from raw `hAllZero` via Layer A scalar
+  -- invariance (`logDerivCheckFn_eq_grouped`). The `Defined` predicate
+  -- takes `stmt.bases`; we need a version with `baseAt`. But the narrow
+  -- axiom takes `logDerivCheckFnDefined E D P B A₀ A₁` with its own `B`,
+  -- so we instantiate at `B := baseAt`.
+  have hAllZero' :
+      ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+        A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+        logDerivCheckFnDefined E msg.toD stmt.target
+          (baseAt E stmt msg hkm) A₀ A₁ →
+        logDerivCheckFn E msg.toD stmt.target
+          (baseImageCount E stmt msg hkm)
+          (baseAt E stmt msg hkm)
+          (distinctM'_tail E stmt msg hkm) A₀ A₁ = 0 := by
+    intro A₀ A₁ hA₀ hA₁ hNV hDefDistinct
+    -- Translate `defined`-distinct to `defined`-raw at `stmt.bases`.
+    have hDefRaw : logDerivCheckFnDefined E msg.toD stmt.target
+        stmt.bases A₀ A₁ := by
+      unfold logDerivCheckFnDefined logDerivCheckFnDenom at hDefDistinct ⊢
+      -- Both denoms share the "common" prefix up to and including
+      -- `L.eval stmt.target.1 (-stmt.target.2)`. They differ only in
+      -- the final product: raw is `∏_{j : Fin stmt.k} L(stmt.bases j)`,
+      -- distinct is `∏_{i : Fin baseImageCount} L(baseAt i)`.
+      -- These products share zero/nonzero status because
+      -- `{stmt.bases j | j : Fin stmt.k} = {baseAt i | i : Fin baseImageCount}`
+      -- (set-equality of images, with multiplicity collapsed on the
+      -- distinct side but the value set is the same).
+      intro hRawEqZero
+      apply hDefDistinct
+      -- Strategy: show that raw_denom = 0 implies distinct_denom = 0.
+      -- Split raw_denom = common * ∏_{Fin stmt.k} L(stmt.bases j) = 0
+      -- into: common = 0 (then distinct_denom shares `common = 0`) or
+      -- one `L(stmt.bases j) = 0` (then `L(baseAt (baseIndexOf (finCongr hkm j))) = 0`,
+      -- so the distinct product is 0).
+      set common := msg.toD.eval A₀.1 A₀.2 * msg.toD.eval A₁.1 A₁.2 *
+        msg.toD.eval (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1)
+          (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 *
+            (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1) +
+              (A₀.2 - slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.1)) *
+        (3 * A₀.1 ^ 2 + E.curveA - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2) *
+        (3 * A₁.1 ^ 2 + E.curveA -
+          2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2) *
+        (3 * (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1) ^ 2 + E.curveA -
+          2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 *
+            (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 *
+              (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1) +
+              (A₀.2 - slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.1))) *
+        (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval stmt.target.1 (-stmt.target.2)
+      change common * ∏ j : Fin stmt.k,
+        (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
+          (stmt.bases j).1 (stmt.bases j).2 = 0 at hRawEqZero
+      change common * ∏ i : Fin (baseImageCount E stmt msg hkm),
+        (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
+          (baseAt E stmt msg hkm i).1 (baseAt E stmt msg hkm i).2 = 0
+      rcases mul_eq_zero.mp hRawEqZero with hCommon | hProd
+      · exact mul_eq_zero.mpr (Or.inl hCommon)
+      · rw [Finset.prod_eq_zero_iff] at hProd
+        obtain ⟨j, _, hj⟩ := hProd
+        apply mul_eq_zero.mpr; right
+        rw [Finset.prod_eq_zero_iff]
+        refine ⟨baseIndexOf E stmt msg hkm (finCongr hkm j),
+                Finset.mem_univ _, ?_⟩
+        rw [baseAt_baseIndexOf]
+        -- `extractorBases (finCongr hkm j) = stmt.bases j`.
+        have hEq : extractorBases E stmt msg hkm (finCongr hkm j) = stmt.bases j := by
+          unfold extractorBases
+          congr 1
+        rw [hEq]
+        exact hj
+    have hRaw := hAllZero A₀ A₁ hA₀ hA₁ hNV hDefRaw
+    rw [logDerivCheckFn_eq_grouped] at hRaw
+    exact hRaw
+  -- Apply narrow axiom.
+  have := polyG_zero_of_logDerivCheck_identically_zero E
+    msg.toD hD stmt.target (baseImageCount E stmt msg hkm)
+    (baseAt E stmt msg hkm) (distinctM'_tail E stmt msg hkm) hAllZero'
+    Q beta hQinj hQzeros hQcov hβPos hβSum A₀ A₁ hA₀ hA₁ hNV
+  -- The conclusion uses `Fin.cons (P.1,-P.2) baseAt` and
+  -- `Fin.cons (-1) distinctM'_tail`, which definitionally equal
+  -- `distinctRCons` and `distinctMCons`.
+  exact this
+
+/-- Reindexing lemma: `polyG` is invariant under reindexing the `(R, m)`
+    family by a bijection. Used to convert between the `Fin.cons` form
+    (length `baseImageCount + 1`) and the `finCongr`-composed form
+    (length `1 + baseImageCount`) used in T5. -/
+theorem polyG_reindex
+    {d M M' : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (β : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (e : Fin M' ≃ Fin M)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    polyG E Q β (R ∘ e) (m ∘ e) A₀ A₁ = polyG E Q β R m A₀ A₁ := by
+  classical
+  unfold polyG
+  congr 1
+  · -- First sum: β_k part. `R`-dependence is `∏_j ellP (R j)`, invariant
+    -- under outer reindex.
+    apply Finset.sum_congr rfl
+    intro k _
+    congr 1
+    exact Equiv.prod_comp e (fun j => ellP E (R j) A₀ A₁)
+  · -- Second sum: reindex outer sum; inner `erase` product shifts by `e`.
+    rw [← Equiv.sum_comp e
+      (fun j => m j *
+        (Finset.univ.prod (fun k => ellP E (Q k) A₀ A₁)) *
+        ((Finset.univ.erase j).prod (fun j' => ellP E (R j') A₀ A₁)))]
+    apply Finset.sum_congr rfl
+    intro j _
+    show (m ∘ e) j * _ * _ = m (e j) * _ * _
+    congr 1
+    -- Inner erase-prod over `(R ∘ e)` at `univ.erase j` equals
+    -- erase-prod over `R` at `univ.erase (e j)`.
+    rw [show ((Finset.univ : Finset (Fin M')).erase j).prod
+              (fun j' => ellP E ((R ∘ e) j') A₀ A₁)
+           = ((Finset.univ : Finset (Fin M')).erase j).prod
+              (fun j' => ellP E (R (e j')) A₀ A₁) from rfl]
+    rw [← Finset.prod_image (g := (e : Fin M' → Fin M))
+          (f := fun j' => ellP E (R j') A₀ A₁)
+          (fun _ _ _ _ h => e.injective h)]
+    congr 1
+    rw [Finset.image_erase e.injective Finset.univ j,
+        Finset.image_univ_equiv]
+
+/-- **Main theorem (S3 — `distinctR` / `distinctM'` form)**: `polyG`
+    vanishes on non-vertical `E × E` pairs with the distinct-base
+    enumeration. Derived from `polyG_distinct_zero_cons` via
+    `polyG_reindex`. -/
+theorem polyG_distinct_zero_of_logDerivCheck_identically_zero
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hD : ¬ msg.toD.isZero)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
+      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
+    {d : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q)
+    (beta : Fin d → ℕ)
+    (hQinj : Function.Injective Q)
+    (hQzeros : ∀ k' : Fin d,
+       Q k' ∈ E.points ∧ msg.toD.eval (Q k').1 (Q k').2 = 0)
+    (hQcov : ∀ Q' ∈ E.points, msg.toD.eval Q'.1 Q'.2 = 0 →
+       ∃ k' : Fin d, Q k' = Q')
+    (hβPos : ∀ k', beta k' > 0)
+    (hβSum : (∑ k' : Fin d, beta k') = msg.toD.degE)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1) :
+    polyG E Q (fun k' => ((beta k' : ℕ) : ZMod E.q))
+              (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
+              A₀ A₁ = 0 := by
+  have hCons := polyG_distinct_zero_cons E stmt msg hkm hD hAllZero
+    Q beta hQinj hQzeros hQcov hβPos hβSum A₀ A₁ hA₀ hA₁ hNV
+  -- distinctR := distinctRCons ∘ finCongr (Nat.add_comm 1 _)
+  -- distinctM' := distinctMCons ∘ finCongr (Nat.add_comm 1 _)
+  unfold distinctR distinctM'
+  rw [polyG_reindex]
+  exact hCons
+
 /-! ## Composite bridge axiom (TEMPORARY — being decomposed)
 
     The composite `weil_reciprocity_soundness` axiom produces the full

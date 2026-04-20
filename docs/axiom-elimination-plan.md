@@ -2320,6 +2320,49 @@ inside an enumeration of the `extractorBases` fibers.
 **No new axioms**, no new `sorry`/`admit`. `lake build` green.
 Axiom count: 10 (unchanged from session 22).
 
+### Session 24 (2026-04-20) — S3 raw→distinct polyG bridge
+
+Commit (this session):
+- S3 — raw → distinct polyG bridge. Adds
+  `polyG_distinct_zero_of_logDerivCheck_identically_zero`,
+  the theorem that, given the raw `hAllZero` hypothesis (every
+  `A₀, A₁`-defined non-vertical challenge gives zero
+  `logDerivCheckFn` at `stmt.bases, msg.m`), `polyG` built with the
+  distinct-base pair `(distinctR, distinctM')` vanishes on all
+  non-vertical `E × E` pairs. The proof proceeds in two layers:
+  - **Layer A** (`logDerivCheckFn_eq_grouped`): scalar invariance —
+    `logDerivCheckFn` at raw `(stmt.bases, fun i => msg.m (hkm ▸ i))`
+    equals the distinct form at `(baseAt, distinctM'_tail)`, via
+    `Finset.sum_fiberwise_of_maps_to` partitioning `Fin msg.k` by the
+    canonical fiber index `baseIndexOf j`.
+  - **Layer B** (`polyG_distinct_zero_cons`): feeds the narrow
+    `polyG_zero_of_logDerivCheck_identically_zero` axiom with
+    `B := baseAt`, `m := distinctM'_tail`. A supporting
+    `logDerivCheckFnDefined` transfer between raw and distinct forms
+    exploits the fact that their denominator products share zero/nonzero
+    status: each raw factor `L(stmt.bases j)` matches a distinct factor
+    `L(baseAt (baseIndexOf (finCongr hkm j)))` by set-equality of
+    images. The narrow axiom's `Fin.cons`-shaped conclusion at length
+    `baseImageCount + 1` is then reindexed to the `1 + baseImageCount`
+    form expected by T5 via a new `polyG_reindex` lemma
+    (polyG invariant under any `Fin M' ≃ Fin M` reindex of the `(R, m)`
+    family, proved by `Equiv.prod_comp` + `Finset.prod_image` on the
+    `univ.erase` terms).
+
+**Exposed surface for S4**:
+- `polyG_distinct_zero_of_logDerivCheck_identically_zero` — the main
+  theorem at `Fin (1 + baseImageCount)` form.
+- `polyG_distinct_zero_cons` — the `Fin.cons` variant at
+  `Fin (baseImageCount + 1)` form, for downstream consumers preferring
+  the unreindexed form.
+- `distinctM'_tail`, `baseIndexOf`, `baseAt_baseIndexOf`,
+  `filter_extractorBases_eq_baseAt_eq_extractorGroup`,
+  `distinctM'_tail_eq_filter_sum` — supporting helpers.
+- `polyG_reindex` — polyG invariance under `(R, m)` reindexing.
+
+**No new axioms**, no new `sorry`/`admit`. `lake build` green.
+Axiom count: 10 (unchanged from session 23).
+
 ## Autonomous Driver Queue
 
 This section specifies the final 7-step queue that eliminates the
