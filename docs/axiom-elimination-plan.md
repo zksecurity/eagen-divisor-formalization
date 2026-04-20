@@ -3951,3 +3951,86 @@ identity (restoring the axiom count temporarily but narrowing its
 semantic footprint).
 
 **LOC**: 266 (within 300-LOC budget; scope-capped per protocol).
+
+### Session 35 (2026-04-20) — Q3 close-out (Path B honest FAIL)
+
+**Goal**: final attempt at Q3.4 + Q3.5 merged, eliminating
+`polyG_zero_of_logDerivCheck_identically_zero` via either (1) a direct
+polynomial identity in `(ZMod E.q)[X][X]` or (A) a T5-analog bypass.
+
+**Outcome**: **Path B (honest close-out)**. Both Paths 1 and A reduce to
+the same deep algebraic obstacle; neither is completable without
+function-field infrastructure that would require ≈1500 LOC of new material
+(multi-sheet per-fiber decomposition of `Σ_k β_k / L_Q(Q_k)` against the
+classical residue theorem on `E`). The axiom remains transient, with its
+scaffolding (Q3.0-Q3.4 partial) preserved for future work.
+
+**Why Path 1 fails** — direct polynomial identity
+
+```
+polyGPoly E Q β R m' A₀ · F
+  = clearedFiberPoly E D P k B m A₀ · G + curveEqPoly E · H
+```
+
+`polyGPoly` depends explicitly on `(Q, β)` enumerating `D`'s affine zeros
+on `E` with multiplicities. `clearedFiberPoly` depends on `D` directly via
+its Weierstrass coefficients `D.a, D.b` and the normalized polynomial
+`N(D) = D.a² - (X³ + AX + B)·D.b²`. Connecting them requires Lemma 6
+(norm decomposition): `N(D)(X) = unit · ∏_k (X - x(Q_k))^{β_k}` up to
+per-sheet corrections. Q3.1's `betaConstructive` gives one side of this
+(via `rootMultiplicity` of the univariate `N(D)`), but NOT the per-sheet
+β-to-fiber matching that closes the identity in `(ZMod E.q)[X][X]`.
+`ring` alone cannot establish the identity.
+
+**Why Path A fails** — T5-analog
+
+T5's proof trajectory is `polyG = 0 globally ⇒ polyFibK = 0 (as
+polynomial) ⇒ σ matching`. Replacing the first step with
+`logDerivCheckFn = 0 at defined pairs` requires a bridge from
+`logDerivCheckFn` at a chord-pair `(A₀, A₁)` to `polyG` at the same
+pair, i.e. the residue identity at that pair. This is the SAME
+algebraic content as the axiom itself — Path A does not bypass the
+problem, it relocates it.
+
+**What is preserved** (scaffolding kept in tree for future function-field
+work):
+
+* `Divisor/ResidueIdentity.lean` (266 LOC): Vieta sum, L-Line-zLambda
+  equivalence, Layer-3 in `chordRHSSingle` form, `ellP`-inverse form.
+* `Divisor/PolyGBridge.lean` (204 LOC): `polyGPoly` definition and
+  `bivEval_polyGPoly` + degree bounds. Ready to consume a polynomial
+  residue identity when the function-field layer is built.
+* `Divisor/BivariateLogDeriv.lean` (361 LOC): Q3.3's Layer-3
+  denominator-cleared identity (pointwise).
+* `Divisor/PartialFraction.lean`, `Divisor/PartialFractionExpansion.lean`,
+  `Divisor/BetaConstructive.lean`, `Divisor/NormLogDeriv.lean`,
+  `Divisor/NormVanish.lean`: Q3.0-Q3.2 groundwork for norm
+  decomposition.
+
+**Axiom state**: unchanged. `Divisor.ma_extractable` still depends on
+```
+propext, Classical.choice, Quot.sound          -- Lean foundations
+ECPoint.add_assoc, add_comm, neg_add_cancel    -- Silverman III §2
+principal_divisor_iff                          -- Silverman III Cor 3.5
+CoordRingElt.divisor_degree_eq                 -- Silverman III Prop 3.4
+CoordRingElt.divisor_group_sum_zero            -- Silverman III Prop 3.4 (Abel)
+polyG_zero_of_logDerivCheck_identically_zero   -- transient residue identity
+```
+
+(10 axioms total; 3 Lean + 6 Silverman + 1 transient).
+
+**What would unblock elimination** (for future sessions):
+
+1. A function-field model `F_q(E) = Frac(F_q[X,Y]/(Y² - (X³+AX+B)))`
+   with local uniformizers at points of `E` (~400-600 LOC).
+2. Weierstrass preparation lemma on `F_q[[t]]` for local
+   analytic factoring of `D`-valued functions (~200 LOC).
+3. Residue theorem on `E` for rational functions (~300 LOC).
+4. The norm decomposition Lemma 6 as a theorem instead of using
+   `betaConstructive` + per-fiber case analysis (~200-300 LOC).
+
+**Total future effort**: ~1100-1400 LOC of function-field machinery,
+not covered by Queue 3's scaffolding.
+
+**LOC this session**: 0 (no code change; documentation update only).
+
