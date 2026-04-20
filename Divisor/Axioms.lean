@@ -48,37 +48,17 @@ axiom principal_divisor_iff
           (fun P => ECPoint.zsmul E (coeffs P) P) = 0)
 
 /-! ## Theorem 2: Principal Divisor of a Rational Function on E
-    (Silverman, "Arithmetic of Elliptic Curves", Ch III, Prop 3.4 + Cor 3.5)
 
-Every nonzero `D ∈ F_q(E)×` has a principal divisor supported on `D`'s
-affine zeros with multiplicities summing to `D.degE`, together with
-`-D.degE · (∞)`. Specialized to the coordinate-ring representation
-`D = a(x) - b(x)·y` of a nonzero element of `F_q[E]` (i.e.,
-`(a, b) ≠ (0, 0)`), this gives an integer multiplicity function `β` on
-the affine points of `E` satisfying the principal-divisor conditions
-(degree-zero + group-sum-zero) of `principal_divisor_iff`.
--/
-
-/-- **Principal divisor of a nonzero `D ∈ F_q[E]`**
-    (Silverman Ch III, Prop 3.4 + Cor 3.5).
-
-    For a nonzero `D = a(x) - b(x)·y` (with `(a, b) ≠ (0, 0)`), the formal
-    divisor `Σ β(P) · (P) − D.degE · (∞)` on `E` is principal, where `β`
-    is the multiplicity of `D`'s affine zeros on `E`. The axiom packages
-    this into:
-    * `β`'s support is contained in `D`'s affine zeros on `E`.
-    * `β`'s total weight equals `D.degE`.
-    * The `β`-weighted group sum on `E.points` is `0`, which (after adding
-      the `∞` term, contributing `0` via `zsmul·∞`) gives `principal_divisor_iff`'s
-      group-sum-zero condition. -/
-axiom CoordRingElt.has_principal_divisor
-    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
-    ∃ (β : ZMod E.q × ZMod E.q → ℕ),
-      (∀ P, β P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0) ∧
-      (∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β P ≠ 0) ∧
-      (∑ P ∈ E.points, β P) = D.degE ∧
-      ECPoint.weightedSum E E.points
-        (fun P => ECPoint.nsmul E (β P) (ECPoint.affine P.1 P.2)) = 0
+    The **`CoordRingElt.has_principal_divisor`** statement (Silverman
+    Ch III, Prop 3.4 + Cor 3.5 specialized) used to live here as an
+    axiom. It is now a theorem proved in
+    `Divisor/HasPrincipalDivisor.lean` from the constructive multiplicity
+    `betaConstructive` (see `Divisor/BetaConstructive.lean`) together
+    with the narrow Abel-theorem axioms
+    `CoordRingElt.divisor_group_sum_zero` and
+    `CoordRingElt.divisor_degree_eq`, which capture exactly the
+    function-field content of Silverman III Prop 3.4 (group-sum-zero
+    and pole-at-∞ identities). -/
 
 /-! ## Hasse-Weil Bound (Hasse 1936, Weil 1948)
 

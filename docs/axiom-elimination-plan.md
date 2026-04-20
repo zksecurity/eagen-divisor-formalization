@@ -2865,6 +2865,65 @@ theorem from `betaConstructive_support`, `betaConstructive_covers`,
 and delete the axiom. Net project change after QB3 drops to `+1`
 (+2 narrow axioms, −1 composite axiom).
 
+### Session 32 (2026-04-20) — QB3 has_principal_divisor theorem
+
+**Scope**: remove the `CoordRingElt.has_principal_divisor` axiom from
+`Divisor/Axioms.lean` and re-prove it as a theorem with the identical
+signature. Net axiom change `−1`; `lake build` green, no
+`sorry`/`admit`, no new axioms.
+
+**What landed**:
+- New module `Divisor/HasPrincipalDivisor.lean` containing the theorem
+  `CoordRingElt.has_principal_divisor` with the old axiom's signature.
+  Proof: witness `β := betaConstructive E D`; the four conjuncts
+  dispatch to
+  * `betaConstructive_support` (QB1) — support ⊆ `D`-zeros on `E`,
+  * `betaConstructive_covers` (QB1) — every `D`-zero on `E` covered,
+  * `betaConstructive_sum_eq_degE` (QB2) — affine-sum `= D.degE`,
+  * `betaConstructive_group_sum_zero` (QB2) — Abel's theorem content.
+- `Divisor/Axioms.lean`: the axiom block is replaced with a short
+  docstring-only paragraph pointing to the new module.
+- `Divisor/DivisorPrincipal.lean`: adds `import Divisor.HasPrincipalDivisor`
+  so the downstream consumer `CoordRingElt.exists_principal_dCoeffs`
+  continues to resolve the name transparently (signature unchanged).
+- `Divisor.lean`: registers the new module in the aggregator.
+
+**Placement rationale**. The suggested placement in `Divisor/Axioms.lean`
+would create a cyclic import: the theorem's proof requires
+`BetaConstructive`, which itself transitively imports `Axioms` (via
+`LogDeriv`). Instead the theorem lives in a fresh module
+`Divisor/HasPrincipalDivisor.lean` imported after `BetaConstructive`
+and before `DivisorPrincipal`.
+
+**Axiom state after Session 32**: 10 axioms (was 11). The
+previously-composite `CoordRingElt.has_principal_divisor` is gone;
+its content is now threaded through two narrow axioms
+(`divisor_group_sum_zero` + `divisor_degree_eq`) plus the
+constructive `betaConstructive` machinery.
+
+**Axiom list (10)**:
+```
+Divisor.ECPoint.add_assoc, add_comm, neg_add_cancel               (group law)
+Divisor.principal_divisor_iff                                     (Silverman III Cor 3.5)
+Divisor.hasse_weil_upper, hasse_weil_lower                        (Hasse 1936 / Weil 1948)
+Divisor.weil_reciprocity_honest                                   (Weil reciprocity)
+Divisor.polyG_zero_of_logDerivCheck_identically_zero              (polyG bridge — transient, QA3 to remove)
+Divisor.CoordRingElt.divisor_group_sum_zero                       (Silverman III Prop 3.4, group-sum part)
+Divisor.CoordRingElt.divisor_degree_eq                            (Silverman III Prop 3.4, degree part)
+```
+
+**Phase B closed**. Queue 2 Phase B's exit condition — the composite
+`has_principal_divisor` axiom eliminated in favor of narrower
+Silverman-III-Prop-3.4-only axioms — is now met. Net Phase B change
+is `+1` (two narrow axioms added, one composite axiom removed), but
+each new axiom corresponds to a single Silverman statement with
+much tighter surface area and no support/coverage bundling.
+
+**Next**: Queue 2 Phase A (QA1 → QA2 → QA3) — tackle the
+`polyG_zero_of_logDerivCheck_identically_zero` bridge via the
+polynomial residue identity + density argument, or declare Phase A
+blocked and proceed to QC1 close-out.
+
 ---
 
 ## Queue 2 — Residual-Axiom Cleanup (B + A + C)

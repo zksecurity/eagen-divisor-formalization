@@ -23,6 +23,7 @@
 -/
 import Divisor.Defs
 import Divisor.Axioms
+import Divisor.HasPrincipalDivisor
 import Divisor.Protocol
 
 namespace Divisor
