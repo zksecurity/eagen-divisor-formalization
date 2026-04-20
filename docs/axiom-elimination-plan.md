@@ -2143,32 +2143,54 @@ Total: 3 Lean + 8 classical = 11. Target was 3 Lean + 8 classical.
 Met target count; the new `weil_reciprocity_soundness` axiom replaces
 the old T4 axiom in the budget.
 
-**The `weil_reciprocity_soundness` axiom content** (for context of
-future reduction attempts): encapsulates two classical AG facts:
-* **D1 / polynomial residue identity**: `logDerivCheckFn ≡ 0 on
-  defined non-vertical E × E pairs` implies, at the polynomial level,
-  that `polyG` vanishes on E × E non-vertical pairs for D's divisor
-  data `(Q, β)`. This is the paper's Weil-reciprocity argument in the
-  soundness direction (`ec.tex`, `cor:log-derivative` proof). Mechanizing
-  this requires function-field infrastructure (Weierstrass preparation,
-  local-uniformizer calculus) that is not currently present in the
-  Divisor development.
-* **D4+D5 / AG principality**: D's divisor `(-P) + Σ extractedScalars ·
-  B_i - D.degE · ∞` is `IsPrincipal` by Silverman III.3.5 (applied to
-  `D/L^m` as a non-zero rational function on E).
+**The `weil_reciprocity_soundness` axiom content** — composite, not a
+single classical result. It bundles:
+* **Derivable piece** (not an axiom in its own right): `logDerivCheckFn
+  ≡ 0 on defined non-vertical E × E pairs` implies `polyG ≡ 0` on
+  non-vertical E × E pairs for D's divisor data `(Q, β)`. This follows
+  from Silverman III.3.5 (D's principal divisor) + denominator clearing
+  (mechanized at scalar level) + Bezout on E × E (mechanized via
+  T1/T2/T3) + partial-fraction uniqueness (mechanized in
+  `simple_pole_fraction_zero`). The derivation is ~500-800 LOC and
+  future work.
+* **Missing axiomatic content** (Silverman III.3.5): every non-zero
+  CoordRingElt D has a principal divisor `Σ β_k · Q_k - D.degE · ∞`
+  on E, where (Q, β) are its distinct affine zeros on E with
+  multiplicities satisfying Σ β_k = D.degE.
 
 **Continuation** (future sessions):
-1. Attempt to mechanize the D1 polynomial residue identity
-   (~900-1200 LOC function-field infrastructure) to split
-   `weil_reciprocity_soundness` into:
-   - A narrower `polyG_zero_of_logDerivCheckFn_zero` axiom (D1
-     content), plus
-   - A narrower `coordRingElt_divisor_isPrincipal` axiom (AG content,
-     Silverman III.3.5 for CoordRingElt divisors).
-   This trade-off swaps one combined axiom for two narrower axioms.
-   Worth pursuing only if the D1 mechanization is feasible within
-   session budgets.
-2. Alternative: derive `coordRingElt_divisor_isPrincipal` from
-   `principal_divisor_iff.mpr` applied to a constructed coefficient
-   function. Requires infrastructure to extract D's zero multiplicities
-   on E (~300 LOC for the multiplicity data construction).
+1. Mechanize the full derivation chain (~500-800 LOC function-field
+   infrastructure) to replace `weil_reciprocity_soundness` with the
+   single narrow axiom `CoordRingElt.has_principal_divisor` (Silverman
+   III.3.5 specialized to `D ∈ F_q(E)`). The current composite axiom
+   is then removed.
+2. Once landed, final axiom state for `ma_extractable` is the plan's
+   stated target: 3 Lean + 8 classical (Silverman + Hasse only).
+
+## Citation policy
+
+**CRITICAL — ABSOLUTE RULE**: This project *verifies* the Eagen-Bassa
+paper. NEVER cite Eagen or Bassa ANYWHERE — not in axiom docstrings,
+not in theorem docstrings, not in section headers, not in commit
+messages, not in plan documents. Citing them would be circular (we
+are performing the independent verification).
+
+Axioms and classical results may cite ONLY:
+* **Silverman** — "The Arithmetic of Elliptic Curves", for group law
+  (III §2), principal divisor characterization (III Cor 3.5), Weil
+  reciprocity (III §X), and basic function field theory on E.
+* **Hasse** / **Hasse-Weil** — for the point-count bound on
+  `|E(F_q)|`.
+
+Where the paper under verification states a result that chains
+Silverman/Hasse facts, the chain must be mechanized; do not
+axiomatize the paper's statement directly. When describing results
+originally appearing in the paper under verification, rephrase them
+without attribution — describe the result's content, cite Silverman
+or Hasse for its building blocks, and mechanize the combination.
+
+Any existing docstring/header/comment that cites the paper under
+verification MUST be corrected as discovered. This includes
+historical references like "formerly Bassa Lem X" or "paper's
+Corollary 1" — rephrase to describe the content without the
+attribution.

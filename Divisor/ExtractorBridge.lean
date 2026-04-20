@@ -744,30 +744,34 @@ theorem target_eq_weightedSum_of_principal
   exact target_eq_weightedSum_of_zero_sum E stmt msg hkm
     (extractor_zeroSum_of_principal E stmt msg hkm hNoNegP hPrincipal)
 
-/-! ## Narrow bridge axiom: Weil reciprocity (soundness direction)
+/-! ## Narrow bridge axiom (TEMPORARY — composite)
 
-    The general-case bridge
-    `logDerivCheckFn ≡ 0 on defined non-vertical pairs ⇒ ...`
-    is decomposed into two halves:
+    This axiom is a *composite* that bundles two separate pieces of
+    classical AG content together. It is NOT a single textbook
+    result; it is a stopgap pending full mechanization.
 
-    * **Extractor success** (`extractorSucceeds`): from polynomial
-      residue analysis via the `polyG` bridge (plan phase D1) and
-      the non-vanishing criterion `log_deriv_nonvanishing_criterion`
-      (plan phase T5, proved in `Divisor/PolyFibK.lean`).
-    * **Divisor principality** (`IsPrincipal extractorDivisorCoeffs`):
-      Silverman III.3.5 applied to `D` as a non-zero rational
-      function on `E` (the divisor `(-P) + Σ extractedScalars · B_i
-      - D.degE · ∞` is `div(D/L^m)` for `L` the chord line).
+    * **Derivable piece (not actually axiomatic):** that
+      `logDerivCheckFn ≡ 0 on defined non-vertical pairs` implies the
+      extractor's combinatorial matching. This follows from
+      Silverman III.3.5 (D's principal divisor) combined with
+      denominator-clearing (mechanized at scalar level), Bezout on
+      E × E (mechanized via T1/T2/T3), and partial-fraction uniqueness
+      (mechanized in `simple_pole_fraction_zero`). Estimated ~500-800
+      LOC of function-field infrastructure to mechanize.
+    * **Missing axiomatic content (Silverman III.3.5):** every
+      non-zero CoordRingElt `D` has a principal divisor
+      `Σ β_k · Q_k − D.degE · ∞` on E, where `(Q, β)` are its
+      distinct affine zeros with multiplicities summing to `D.degE`.
 
-    Both halves are classical AG content. This axiom packages them
-    as the narrow soundness-direction Weil-reciprocity axiom —
-    strictly narrower than the original `extractorSucceeds_of_logDerivCheck_identically_zero_general`
-    (which directly concluded `target = weightedSum`), with the
-    target equality now derived via `target_eq_weightedSum_of_principal`
-    (plan phases D4+D5, proved above). -/
+    The target end-state is to replace this composite axiom with a
+    single narrow Silverman III.3.5 axiom
+    (`CoordRingElt.has_principal_divisor`) plus full mechanization of
+    the bridge. See `docs/axiom-elimination-plan.md` for the citation
+    policy (axioms cite Silverman/Hasse only) and the remaining path. -/
 
-/-- **Weil reciprocity soundness axiom.** Classical AG dual to
-    `weil_reciprocity_honest`. See docstring above. -/
+/-- **Bridge axiom (composite, temporary).** See docstring above for
+    the split into Silverman III.3.5 + derivation; that split is
+    planned future work. -/
 axiom weil_reciprocity_soundness
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
