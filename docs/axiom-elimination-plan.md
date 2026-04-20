@@ -616,7 +616,7 @@ Compared to earlier rough estimate (3–5 sessions, 1150 LOC), this extensive pl
 
 ## Next action
 
-Implement P0 (extractor sign fix) as first commit. It's independent, ~40 LOC, and removes a real soundness gap before any axiom elimination begins.
+Finish eliminating `weil_reciprocity_soundness` via the 7-step queue in the "Autonomous Driver Queue" section at the end of this document. All prior phases (P0, T3, Phase B, T1, T2, T5) have landed. Execute queue steps S1..S7 in order; each lands one commit on `master` in `~/src/divisors`.
 
 ---
 
@@ -2259,6 +2259,254 @@ new narrow axioms are present in the project:
 After the remaining work lands, `weil_reciprocity_soundness` is
 removed and the axiom count drops by 1.
 
+## Autonomous Driver Queue
+
+This section specifies the final 7-step queue that eliminates the
+`weil_reciprocity_soundness` axiom, to be driven by an automated harness
+that spawns one fresh-context subagent per step.
+
+### Harness contract
+
+The driver (a parent Claude Code session) spawns one `general-purpose`
+subagent per queue step with `model: opus` and `subagent_type:
+general-purpose`. Each subagent starts with fresh context; the brief
+given to it is the queue step's entry below plus a pointer to this
+plan document.
+
+- **Working directory**: `~/src/divisors` (all subagents inherit this).
+- **Branch**: `master`. All commits land directly on master.
+- **Ordering**: S1 → S2 → S3 → S4 → S5 → S6 → S7, strictly sequential.
+  Do not parallelize.
+- **Retry policy**: on subagent timeout, reported proof failure, or
+  `lake build` failure, driver runs
+  `git -C ~/src/divisors reset --hard HEAD && git -C ~/src/divisors clean -fd`
+  and respawns the same step with the same brief (fresh context). Up
+  to **3 attempts per step**. On the 3rd consecutive failure the
+  driver halts the queue and surfaces the last subagent's summary to
+  the user.
+- **Success criterion**: driver advances to next step only after a
+  subagent returns `OK <commit-sha> <step-id>` AND `git log -1`
+  confirms the commit landed on master AND the gatekeeping checks
+  below pass.
+
+### Gatekeeping (driver-enforced, post-commit)
+
+Before accepting a subagent's commit as success, the driver MUST
+verify all of the following against the staged commit diff and the
+working tree. Any failure → treat as `FAIL`, run the retry reset
+(`git reset --hard HEAD~1 && git clean -fd`), and respawn with an
+added note in the brief pointing at the specific violation.
+
+1. **No unauthorized new axioms.** Enumerate axioms in the repository
+   with `grep -rn "^axiom \| axiom " ~/src/divisors/Divisor` (and any
+   Lean files newly added). Compare against the baseline captured at
+   the start of the queue run. Any net new axiom is allowed ONLY if:
+   - It is a specialization of Silverman / Hasse already cited in
+     this plan's header "Axioms to remove / kept" table, AND
+   - The step's brief above explicitly anticipates it.
+   No other new axioms are permitted. In particular, the subagent
+   MUST NOT introduce axioms citing the paper under verification
+   (see §"Citation policy"), nor "convenience" axioms of the shape
+   "my polynomial identity just holds" / "group-law fact I didn't
+   finish".
+2. **No `sorry`, no `admit`, no `#check_failure`-guarded placeholders.**
+   Run `grep -rn "\bsorry\b\|\badmit\b" ~/src/divisors/Divisor`. Any
+   hit in added/modified lines → FAIL.
+3. **No tactic `exact?`-style leftovers or `decide`-timeouts** in
+   committed code that were not present at baseline.
+4. **`lake build` green on the post-commit tree**, with zero warnings
+   added relative to baseline where feasible. A small warning-count
+   regression is acceptable if the subagent documents why in the
+   session log; a new *error* is always FAIL.
+5. **Axiom-print monotonicity**: `#print axioms Divisor.ma_extractable`
+   must show a subset-or-equal of the baseline's axioms PLUS only
+   those transient narrow axioms the plan anticipates for intermediate
+   steps (e.g. the Session 21 `polyG_zero_of_logDerivCheck_identically_zero`
+   is expected to remain until S4 consumes it, then disappear).
+   A step that grows the `ma_extractable` axiom set is FAIL unless
+   its brief explicitly authorizes a transient addition.
+6. **Scope discipline**: the commit's changed files should be within
+   the step's declared scope (or an obvious adjacent helper). Large
+   cross-cutting refactors outside the brief's scope → FAIL (retry
+   with narrower brief).
+7. **Theorem-statement stability**: the headline theorems
+   `Divisor.ma_extractable`, `Divisor.ip_knowledge_sound`, and
+   `Divisor.ma_completeness` must still express MA soundness —
+   the same universally-quantified extractor guarantee, the same
+   witness predicate (`dlogHolds` / certified-witness form), the
+   same hypotheses in shape.
+
+   What is free to change:
+   - Quantitative bound constants (e.g. the `18·(d+k)·q` factor
+     or analogous) — these need not match the paper exactly, nor
+     even asymptotically. Any concrete polynomial-in-`(q, d, k)`
+     bound yielding a non-trivial soundness statement is
+     acceptable. Expect loosening during the queue.
+   - Proof tactics, lemma decomposition, intermediate names.
+   - Internal helpers' signatures.
+
+   What is NOT free to change:
+   - The logical shape of the statement: hypotheses, conclusion,
+     quantifier structure.
+   - The extractor's witness predicate (it must still certify
+     the same relation).
+   - Replacing the conclusion with a strictly weaker or vacuous
+     one.
+
+   In short: tighten or loosen the *numbers* as the proof demands,
+   but do not alter the *theorem*.
+
+The driver runs these checks itself (not the subagent). If the
+subagent self-reports `OK` but a gatekeeping check fails, the
+subagent's OK is overridden to FAIL and retry proceeds as normal.
+
+### Per-step subagent contract
+
+Every queue step, when briefed to a subagent, must include:
+
+1. **Read first**: `~/src/divisors/docs/axiom-elimination-plan.md`,
+   focusing on Session 21 "What remains" for the matching step and
+   this queue's entry.
+2. **Implement**: touch only the files named in the step's scope
+   (or close analogs). No `sorry`. No new axioms. Re-use existing
+   infrastructure (see Session 18-21 logs for landed helpers).
+3. **Build**: `cd ~/src/divisors && lake build`. Must be green.
+4. **Commit**: one atomic commit on master. Message style matches
+   prior sessions (undercover — no AI attribution, no Co-Authored-By).
+   Follow commit hygiene from §"Ordering and commits".
+5. **Log**: append a new `### Session N (YYYY-MM-DD) — <step-id>
+   <name>` block to this plan's Execution Log with commit SHA and
+   landed lemma names. N = next available session number.
+6. **Return**: final message MUST be exactly one of:
+   - `OK <commit-sha> <step-id>` on full success.
+   - `FAIL <one-line reason>` on any blocker.
+
+### Queue
+
+#### S1 — Distinct-R construction
+
+**Estimated LOC**: ~150.
+**Preconditions**: Session 21 commits landed (`3f7344c` provides
+`baseImage`, `baseImageCount`, `baseImageEnum`, `baseAt`,
+`negP_notin_baseImage`).
+**Goal**: build the distinct-R enumeration required by
+`log_deriv_nonvanishing_criterion`. Concretely, construct
+`R : Fin (1 + baseImageCount stmt msg) → ZMod E.q × ZMod E.q` as
+`Fin.cons (-P_aff) baseAt` and prove injectivity under `hNoNegP`.
+**Scope**: extend `Divisor/DivisorPrincipal.lean` (or a new
+`Divisor/DistinctR.lean` if cleaner). Name the enumeration
+`distinctR` and injectivity `distinctR_injective`.
+**Completion signal**: `distinctR`, `distinctR_injective`,
+plus any supporting `Fin.cons`-style lemmas (e.g. `distinctR_zero`,
+`distinctR_succ`), all consumed by later steps.
+
+#### S2 — Grouped-m' construction
+
+**Estimated LOC**: ~80.
+**Preconditions**: S1 landed.
+**Goal**: construct `m' : Fin (1 + baseImageCount stmt msg) → ZMod E.q`
+with `m' 0 = -1` and `m' (i+1) = extractorGroupSum` evaluated at the
+canonical group whose base is `baseImageEnum i`. The "canonical index"
+is the unique `Fin msg.k` that maps into that group under `extractorBases`.
+**Scope**: same file as S1. Name the map `distinctM'` with elaborator
+`distinctM'_zero`, `distinctM'_succ` for the two branches.
+**Completion signal**: `distinctM'` + branch lemmas available for S3.
+
+#### S3 — polyG raw-R → distinct-R bridge
+
+**Estimated LOC**: ~100.
+**Preconditions**: S1, S2 landed. `polyGPoly` infrastructure from
+Session 18 must be in place.
+**Goal**: prove `polyG_raw A₀ A₁ = 0 ↔ polyG_distinct A₀ A₁ = 0` on
+non-vertical `E × E` pairs, where the distinct form uses the `(distinctR,
+distinctM')` pair. The two forms differ by `ellP` factors contributing
+the duplicate multiplicity per base; vanishing is preserved because
+the scalar `logDerivCheckFn` is invariant under the grouping.
+**Scope**: `Divisor/ExtractorBridge.lean` (or adjacent). Name the
+equivalence `polyG_raw_iff_distinct`.
+**Completion signal**: bi-implication theorem on non-vertical pairs,
+plus any helper about `ellP`-factor vanishing.
+
+#### S4 — T5 application
+
+**Estimated LOC**: ~50.
+**Preconditions**: S3 landed. `log_deriv_nonvanishing_criterion`
+available as theorem (landed in Session 17).
+`polyG_zero_of_logDerivCheck_identically_zero` axiom (Session 21
+commit `6be8ddf`) is consumed here.
+**Goal**: apply `log_deriv_nonvanishing_criterion` with the distinct-R,
+distinctM' pair to obtain `σ : Fin (zerosCard E D) ↪ Fin (1 + baseImageCount ..)`
+matching multiplicities. Also discharge the quantitative precondition
+`6·q·((d+M) + (d+M)·(d+M-1)) + 1 ≤ |validPairs|` via Hasse-Weil
+(`hasse_weil_lower`).
+**Scope**: `Divisor/ExtractorBridge.lean`. Expose `distinctSigma` and
+`distinctSigma_spec` (the matching property).
+**Completion signal**: σ exists and is packaged with its matching
+property.
+
+#### S5 — Coeff-from-σ construction
+
+**Estimated LOC**: ~100.
+**Preconditions**: S4 landed.
+**Goal**: build `coeff : Fin msg.k → ℕ` as `multAt (σ⁻¹ i).val` at
+canonical indices hit by σ, else `0`. Verify hypotheses of
+`extractorSucceeds_of_natural_witness` (from Session 19 D3 work).
+**Scope**: `Divisor/ExtractorBridge.lean`. Expose `extractorCoeffFromSigma`
+and a spec lemma showing it satisfies `extractorSucceeds_of_natural_witness`
+preconditions.
+**Completion signal**: coefficient function with its witness-validity lemma.
+
+#### S6 — extractorDivisorCoeffs ↔ dCoeffs matching
+
+**Estimated LOC**: ~150.
+**Preconditions**: S5 landed. `dCoeffs` / `dCoeffs_isPrincipal` from
+Session 21 (`d3b990f`).
+**Goal**: prove pointwise equality
+`∀ P : ECPoint E.q, extractorDivisorCoeffs E stmt msg hkm P =
+ dCoeffs E msg.toD β_fun P`
+by case analysis on `P`:
+- `P = ∞`: both are `-D.degE`.
+- `P = -P_aff`: degree 1 on both sides.
+- `P = B_i` for a canonical `i`: σ matching equates `β_fun (B_i)`
+  with `extractedScalars i`.
+- other affine: both 0.
+Deduce `IsPrincipal extractorDivisorCoeffs` by function equality from
+`IsPrincipal (dCoeffs ...)`.
+**Scope**: `Divisor/ExtractorBridge.lean`. Expose
+`extractorDivisorCoeffs_eq_dCoeffs` and
+`extractorDivisorCoeffs_isPrincipal`.
+**Completion signal**: principal-divisor conclusion for the extractor's
+coefficient function.
+
+#### S7 — Replace `weil_reciprocity_soundness` with a theorem
+
+**Estimated LOC**: ~50.
+**Preconditions**: S4, S5, S6 landed, plus Session 19 D4+D5 work
+(`principal_divisor_iff.mp` consumer).
+**Goal**: derive the T4 conclusion (now named
+`extractorSucceeds_of_logDerivCheck_identically_zero_general` as a
+theorem) from S4+S5+S6 + D4 + D5. Delete the
+`weil_reciprocity_soundness` axiom. Verify axiom state with
+`#print axioms Divisor.ma_extractable` — should show only
+the intended classical + Lean-foundation axioms (see this plan's
+header list).
+**Scope**: `Divisor/ExtractorBridge.lean` or `Divisor/Soundness.lean`.
+Update any downstream consumers if needed.
+**Completion signal**:
+- No `weil_reciprocity_soundness` in any `.lean` file.
+- `lake build` green.
+- `#print axioms Divisor.ma_extractable` produces the target axiom set.
+- Plan's "Axiom state" updated in the new session log entry.
+
+### Queue-completion acceptance
+
+After S7 lands successfully, the driver appends one final session
+log entry summarizing the full run (commits per step, total LOC,
+final axiom list from `#print axioms Divisor.ma_extractable`) and
+exits. The axiom-elimination plan is then formally complete.
+
+---
+
 ## Citation policy
 
 **CRITICAL — ABSOLUTE RULE**: This project *verifies* the Eagen-Bassa
@@ -2289,6 +2537,31 @@ Silverman is available locally for reference lookups:
 
 When formulating or reviewing an axiom's citation, consult this copy
 to verify chapter/theorem numbers and exact statements.
+
+The paper under verification lives at:
+
+```
+/Users/rot256/paper/divisor           (TeX sources; sections/ec.tex, sections/ip.tex, ...)
+```
+
+Subagents MAY consult this source **read-only** to cross-check
+algebraic identities, recover bounds, and verify mechanized
+statements match the paper's mathematical content. Subagents MUST
+NOT:
+
+- Edit or create any files under `~/paper/divisor`.
+- Cite the paper in any commit message, docstring, or code comment
+  (per §"Citation policy" — we are the independent verifier).
+- Copy a paper axiom / lemma statement *verbatim* as a new Lean
+  axiom; always mechanize the chain through Silverman/Hasse
+  primitives instead.
+
+Cross-referencing relevant TeX sections (by subject):
+
+- `sections/ip.tex` — MA-protocol, extractor, `thm:ma` and its
+  sub-lemmas.
+- `sections/ec.tex` — log-derivative, `cor:log-derivative`, variety
+  bound, Hasse citation, principal-divisor characterization.
 
 Where the paper under verification states a result that chains
 Silverman/Hasse facts, the chain must be mechanized; do not
