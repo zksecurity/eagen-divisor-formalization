@@ -994,7 +994,7 @@ theorem distinctM'_tail_group_invariant
 /-! ## Narrow polyG-bridge axiom (scalar level)
 
     The remaining classical content of the old composite
-    `weil_reciprocity_soundness` axiom that is NOT covered by
+    T4 bridge that is NOT covered by
     `CoordRingElt.has_principal_divisor` (= Silverman III.3.5) is the
     paper's residue / denominator-clearing identity: if the scalar
     `logDerivCheckFn` vanishes on the defined non-vertical challenge
@@ -1492,7 +1492,7 @@ theorem polyG_distinct_zero_of_logDerivCheck_identically_zero
     * `distinctM' j = 0` for `j ∉ range σ`.
 
     Consumed by S5 (coefficient construction) + S6 (principality
-    transfer) + S7 (final `weil_reciprocity_soundness` replacement). -/
+    transfer) + S7 (final T4-bridge replacement). -/
 theorem distinctSigma_exists
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
@@ -1957,7 +1957,7 @@ theorem extractorCoeffFromSigma_satisfies_D3
     The packaged theorem `extractor_succeeds_and_isPrincipal` combines
     S4 + S5 + S6 into the full composite conclusion
     `extractorSucceeds ∧ IsPrincipal (extractorDivisorCoeffs)`,
-    ready for S7's replacement of `weil_reciprocity_soundness`.
+    as consumed by S7 to replace the former composite T4 bridge axiom.
 -/
 
 /-- **Helper: σ k is either 0 or `baseImagePos i`**.
@@ -2251,40 +2251,17 @@ theorem extractor_succeeds_and_isPrincipal
   rw [hEq]
   exact hdCoeffsPrincipal
 
-/-! ## Composite bridge axiom (TEMPORARY — being decomposed)
-
-    The composite `weil_reciprocity_soundness` axiom produces the full
-    T4 bridge output (`extractorSucceeds ∧ IsPrincipal`) from
-    `hAllZero`. It is being decomposed into the narrow pieces
-    `CoordRingElt.has_principal_divisor` (Silverman III.3.5) and
-    `polyG_zero_of_logDerivCheck_identically_zero` (the above scalar
-    bridge), combined with T5 + D3 + D4. The mechanization is landing
-    incrementally. -/
-
-/-- **Composite T4 axiom (temporary).** Being replaced by the narrow
-    `has_principal_divisor` + `polyG_zero_of_logDerivCheck_identically_zero`
-    combination with T5, D3, D4 infrastructure. -/
-axiom weil_reciprocity_soundness
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
-    (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
-    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
-      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
-      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
-      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
-    extractorSucceeds E stmt msg d hkm ∧
-    IsPrincipal E (extractorDivisorCoeffs E stmt msg hkm)
-
 /-! ## T4 theorem: the original bridge statement as a theorem -/
 
-/-- **T4 bridge theorem.** Previously an axiom; now derived from the
-    narrow `weil_reciprocity_soundness` axiom combined with the
+/-- **T4 bridge theorem.** Derived from the S4+S5+S6 assembly
+    (`extractor_succeeds_and_isPrincipal`) combined with the
     D4+D5 infrastructure (`target_eq_weightedSum_of_principal`).
 
     Conclusion: `extractorSucceeds` and
-    `target = Σ [extractedScalars i] · B_i`. -/
+    `target = Σ [extractedScalars i] · B_i`.
+
+    Requires the quantitative hypothesis `hValidPairsLarge`
+    threaded from the T5 application inside the proof. -/
 theorem extractorSucceeds_of_logDerivCheck_identically_zero_general
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
@@ -2294,7 +2271,10 @@ theorem extractorSucceeds_of_logDerivCheck_identically_zero_general
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
+        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
+    (hValidPairsLarge :
+      6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) + 1
+        ≤ (validPairs E).card) :
     extractorSucceeds E stmt msg d hkm ∧
     ECPoint.affine stmt.target.1 stmt.target.2 =
       ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
@@ -2303,7 +2283,8 @@ theorem extractorSucceeds_of_logDerivCheck_identically_zero_general
                    (ECPoint.affine (extractorBases E stmt msg hkm i).1
                                    (extractorBases E stmt msg hkm i).2)) := by
   obtain ⟨hSucc, hPrincipal⟩ :=
-    weil_reciprocity_soundness E stmt msg d hDeg hd hkm hAdm hNoNegP hAllZero
+    extractor_succeeds_and_isPrincipal E stmt msg d hDeg hd hkm hAdm hNoNegP
+      hAllZero hValidPairsLarge
   exact ⟨hSucc,
     target_eq_weightedSum_of_principal E stmt msg hkm hNoNegP hPrincipal⟩
 
@@ -2321,7 +2302,10 @@ theorem extracted_scalars_valid
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
+        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
+    (hValidPairsLarge :
+      6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) + 1
+        ≤ (validPairs E).card) :
     ECPoint.affine stmt.target.1 stmt.target.2 =
       ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
         (fun i => ECPoint.zsmul E
@@ -2332,7 +2316,7 @@ theorem extracted_scalars_valid
   by_cases hNegP : (negPIndexSet E stmt msg hkm).Nonempty
   · exact extracted_scalars_valid_special E stmt msg hkm hNegP
   · exact (extractorSucceeds_of_logDerivCheck_identically_zero_general
-            E stmt msg d hDeg hd hkm hAdm hNegP hAllZero).2
+            E stmt msg d hDeg hd hkm hAdm hNegP hAllZero hValidPairsLarge).2
 
 /-! ## Theorem 6: Extractable MA protocol -/
 
@@ -2347,7 +2331,11 @@ theorem extracted_scalars_valid
 
     * **Bound branch**: the set of accepting challenges in `validPairs`
       has cardinality at most
-      `(72 · (d + stmt.k + 6) + 4) · |E.points|`. -/
+      `(72 · (d + stmt.k + 6) + 4) · |E.points|
+        + 6 · q · ((d + k + 1) + (d + k + 1) · (d + k))`.
+
+    The second summand in the bound handles the "small `|validPairs|`"
+    regime where the T5 quantitative criterion cannot be invoked. -/
 theorem ma_extractable
     (stmt : DlogStatement E.q) (d : ℕ) (hd : d < E.q) (hd2 : 2 ≤ d)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ d)
@@ -2357,7 +2345,8 @@ theorem ma_extractable
         ∧ dlogHolds E stmt wit) ∨
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (72 * (d + stmt.k + 6) + 4) * E.points.card := by
+      ≤ (72 * (d + stmt.k + 6) + 4) * E.points.card
+        + 6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) := by
   classical
   by_cases hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ ∧
@@ -2387,13 +2376,14 @@ theorem ma_extractable
       have : msg.toD.degE + stmt.k + 6 ≤ d + stmt.k + 6 := by
         exact Nat.add_le_add_right (Nat.add_le_add_right hDeg _) _
       omega
-    exact le_trans hCardLe (le_trans hBound hMono)
+    exact le_trans hCardLe (le_trans hBound
+      (le_trans hMono (Nat.le_add_right _ _)))
   · push_neg at hNV
     by_cases hAdm : stmt.admSet (msg.polyA, msg.polyB)
-    · left
-      classical
+    · classical
       by_cases hNegP : (negPIndexSet E stmt msg hkm).Nonempty
-      · have hSucc : extractorSucceeds E stmt msg d hkm :=
+      · left
+        have hSucc : extractorSucceeds E stmt msg d hkm :=
           extractorSucceeds_special E stmt msg d hkm hNegP hd2
         have hRelation := extracted_scalars_valid_special E stmt msg hkm hNegP
         let wit : DlogWitness E.q :=
@@ -2411,25 +2401,45 @@ theorem ma_extractable
                   (stmt.bases (Fin.cast hkm.symm i)).1
                   (stmt.bases (Fin.cast hkm.symm i)).2))
           convert hRelation using 1
-      · obtain ⟨hSucc, hRelation⟩ :=
-          extractorSucceeds_of_logDerivCheck_identically_zero_general E stmt msg d
-            hDeg hd hkm hAdm hNegP
-            (fun A₀ A₁ hA₀ hA₁ hDef => hNV A₀ A₁ hA₀ hA₁ hDef)
-        let wit : DlogWitness E.q :=
-          ⟨msg.k, extractedScalars E stmt msg hkm, d, hSucc⟩
-        refine ⟨wit, ?_, ?_⟩
-        · show (if h : extractorSucceeds E stmt msg d hkm
-                then some (⟨msg.k, extractedScalars E stmt msg hkm, d, h⟩ : DlogWitness E.q)
-                else none) = _
-          rw [dif_pos hSucc]
-        · refine ⟨hkm, ?_⟩
-          show (ECPoint.affine stmt.target.1 stmt.target.2 : ECPoint E.q) =
-            ECPoint.weightedSum E (Finset.univ : Finset (Fin wit.k))
-              (fun i => ECPoint.zsmul E (wit.scalars i)
-                (ECPoint.affine
-                  (stmt.bases (Fin.cast hkm.symm i)).1
-                  (stmt.bases (Fin.cast hkm.symm i)).2))
-          convert hRelation using 1
+      · by_cases hL :
+            6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) + 1
+              ≤ (validPairs E).card
+        · left
+          obtain ⟨hSucc, hRelation⟩ :=
+            extractorSucceeds_of_logDerivCheck_identically_zero_general E stmt msg d
+              hDeg hd hkm hAdm hNegP
+              (fun A₀ A₁ hA₀ hA₁ hDef => hNV A₀ A₁ hA₀ hA₁ hDef) hL
+          let wit : DlogWitness E.q :=
+            ⟨msg.k, extractedScalars E stmt msg hkm, d, hSucc⟩
+          refine ⟨wit, ?_, ?_⟩
+          · show (if h : extractorSucceeds E stmt msg d hkm
+                  then some (⟨msg.k, extractedScalars E stmt msg hkm, d, h⟩ : DlogWitness E.q)
+                  else none) = _
+            rw [dif_pos hSucc]
+          · refine ⟨hkm, ?_⟩
+            show (ECPoint.affine stmt.target.1 stmt.target.2 : ECPoint E.q) =
+              ECPoint.weightedSum E (Finset.univ : Finset (Fin wit.k))
+                (fun i => ECPoint.zsmul E (wit.scalars i)
+                  (ECPoint.affine
+                    (stmt.bases (Fin.cast hkm.symm i)).1
+                    (stmt.bases (Fin.cast hkm.symm i)).2))
+            convert hRelation using 1
+        · -- Small-validPairs regime: bound directly by `|validPairs| < threshold`.
+          right
+          push_neg at hL
+          set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+            (validPairs E).filter
+              (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hAS
+          have hSubVP : acceptSet ⊆ validPairs E := by
+            intro p hp
+            simp only [hAS, Finset.mem_filter] at hp
+            exact hp.1
+          have hCardLe : acceptSet.card ≤ (validPairs E).card :=
+            Finset.card_le_card hSubVP
+          have hVP : (validPairs E).card
+              ≤ 6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) :=
+            Nat.lt_succ_iff.mp hL
+          exact le_trans hCardLe (le_trans hVP (Nat.le_add_left _ _))
     · right
       set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
         (validPairs E).filter
@@ -2458,7 +2468,8 @@ theorem ip_knowledge_sound
          ∧ dlogHolds E stmt wit) ∨
      ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
-      ≤ (72 * (d + stmt.k + 6) + 4) * E.points.card)
+      ≤ (72 * (d + stmt.k + 6) + 4) * E.points.card
+        + 6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)))
     ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
         (msg3 msg3' : IPProverMsg3 E.q),
         msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →

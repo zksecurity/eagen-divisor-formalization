@@ -152,9 +152,9 @@ noncomputable def eventBadRange (stmt : DlogStatement E.q)
     The general-case bridge `logDerivCheckFn ≡ 0 on defined non-vertical
     E × E pairs ⇒ extractor succeeds ∧ target = Σ [extractedScalars] · B_i`
     is derived in `ExtractorBridge.lean` from the narrow
-    `weil_reciprocity_soundness` axiom (classical AG content: Weil
-    reciprocity soundness + Silverman III.3.5 for CoordRingElt divisors)
-    combined with the D3 + D4 + D5 infrastructure. The special case
+    `polyG_zero_of_logDerivCheck_identically_zero` axiom (scalar residue
+    content) together with `CoordRingElt.has_principal_divisor` (Silverman
+    III.3.5) and the D3 + D4 + D5 infrastructure. The special case
     `-P ∈ {B_j}` is handled here unconditionally below. -/
 
 /-- **Special-case extractor-range** (`-P ∈ {B_j}`, `d ≥ 2`).
@@ -240,8 +240,10 @@ theorem extracted_scalars_valid_special
     consequence `ip_knowledge_sound` have been moved to
     `ExtractorBridge.lean`, which is the bottom-layer file in the
     import graph that can access both the extractor definitions
-    (Soundness.lean) and the D4/D5 infrastructure + narrow
-    `weil_reciprocity_soundness` axiom (ExtractorBridge.lean). -/
+    (Soundness.lean) and the D4/D5 infrastructure + narrow T4 bridge
+    axioms (`CoordRingElt.has_principal_divisor`,
+    `polyG_zero_of_logDerivCheck_identically_zero`) in
+    `ExtractorBridge.lean`. -/
 
 /-! ## Completeness -/
 
