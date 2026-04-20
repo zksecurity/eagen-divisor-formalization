@@ -11,6 +11,7 @@ import Divisor.CubicIntersection
 import Divisor.LogDeriv
 import Divisor.ClearedPolyForm
 import Divisor.BetaConstructive
+import Divisor.NormLogDeriv
 import Divisor.HasPrincipalDivisor
 import Divisor.PolyGBridge
 import Divisor.Protocol
