@@ -224,53 +224,13 @@ noncomputable def badChallengesNotEq
     plus the `fiber_argument` infrastructure. `log_deriv_sz` below
     lifts the resulting bound from `E.points ×ˢ E.points` to `validPairs E`. -/
 
-/-! ## Non-vanishing criterion (Remark in the paper)
+/-! ## Non-vanishing criterion
 
-If f ≡ 0 on E x E and degE(D) < q, then by the partial fraction
-argument: for each slope lambda, the rational function
-  sum_k beta_k/(z - z_lambda(Q_k)) + sum_j m_j/(z - z_lambda(R_j))
-vanishes at ≥ q/3 points, hence is identically zero in F_q(z).
-
-By uniqueness of partial fractions (for all but ≤ binom(d+M,2) slopes
-where projections collide):
-- The residues match: there is a bijection sigma with Q_k = R_{sigma(k)}
-  and beta_k = -m_{sigma(k)} mod q.
-- Unmatched R_j have m_j = 0.
+The non-vanishing criterion `log_deriv_nonvanishing_criterion` — if
+`polyG ≡ 0` on `F_q × F_q` with sufficient `q`, then `β_k + m_{σ(k)} = 0`
+and unmatched `m_j = 0` — is mechanized as a theorem in
+`Divisor/PolyFibK.lean` via the partial-fraction + slope-distribution
+infrastructure there (Phase A of the axiom elimination plan).
 -/
-
-/-- **Non-vanishing criterion.**
-    If G ≡ 0 on E x E and degE(D) < q, then the zeros of D
-    with their multiplicities determine the target points and
-    coefficients: there is an injection sigma : Fin d ↪ Fin M
-    matching Q_k = R_{sigma(k)} with beta_k + m_{sigma(k)} = 0,
-    and m_j = 0 for unmatched R_j.
-
-    Proof sketch (partial fraction uniqueness):
-    For each slope lambda, valid challenges realize >= q/3 distinct
-    evaluation points mu. The rational function
-      sum_k beta_k/(z - z_lambda(Q_k)) + sum_j m_j/(z - z_lambda(R_j))
-    has numerator degree d+M-1 < q and vanishes at >= q/3 points,
-    so it is identically zero in F_q(z).
-    For generic lambda (all but <= binom(d+M,2) exceptions),
-    the z_lambda-projections of {Q_k} ∪ {R_j} are distinct.
-    By uniqueness of partial fractions: each residue is zero.
-    Since beta_k != 0 in F_q (as 0 < beta_k < q = char),
-    each Q_k must be matched by some R_j with z(Q_k) = z(R_j),
-    hence Q_k = R_j (by genericity). This gives the injection. -/
-axiom log_deriv_nonvanishing_criterion
-    (D : CoordRingElt E.q)
-    {d M : ℕ}
-    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
-    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
-    (hDeg : D.degE < E.q)
-    (hDistinctQ : Function.Injective Q)
-    (hDistinctR : Function.Injective R)
-    (hBetaNz : ∀ k, beta k ≠ 0)
-    (hfZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
-      polyG E Q beta R m A₀ A₁ = 0) :
-    ∃ (σ : Fin d ↪ Fin M),
-      (∀ k, Q k = R (σ k)) ∧
-      (∀ k, beta k + m (σ k) = 0) ∧
-      (∀ j, j ∉ Set.range σ → m j = 0)
 
 end Divisor
