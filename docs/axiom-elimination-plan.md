@@ -1967,3 +1967,104 @@ Unchanged — infrastructure only, no axiom elimination yet.
 3. Finally (session after): choose D1 resolution (narrow axiom vs.
    full mechanization) and assemble T4 theorem from D1 + D3 + D4 +
    D5.
+
+### Session 19 (2026-04-20) — T4 D3, D5, D4 infrastructure
+
+Commits (this session):
+- `b41298e` — T4 D3: extractor bound from natural witness.
+  `extractorSucceeds_of_natural_witness` in new module
+  `Divisor/ExtractorBridge.lean`. ~93 LOC.
+- `61065f6` — T4 D5 + D4 infrastructure. ~250 LOC.
+
+**What landed** (D3):
+- `extractorSucceeds_of_natural_witness`: given a natural-number
+  witness `coeff : Fin msg.k → ℕ` whose ZMod image matches
+  `-(groupSum i)` at canonical `i` (and is 0 at non-canonical `i`)
+  with `coeff i < d`, the extractor succeeds at bound `d` AND
+  `extractedScalars i = (coeff i : ℤ)`.
+
+**What landed** (D5):
+- `target_eq_weightedSum_of_zero_sum`: from the principality-derived
+  equation `(-P) + Σ [extractedScalars i] · B_i = 0`, conclude
+  `target = Σ [extractedScalars i] · B_i` via left-cancellation by
+  `(-P) = -P_aff`. Uses `ECPoint.add_left_cancel` + `neg_add_cancel`.
+
+**D4 infrastructure** (partial progress toward the principality →
+zero-sum bridge):
+- `ECPoint.weightedSum_subset_of_zero_outside`: generic zero-padding
+  lemma. If `s ⊆ t` and `f` vanishes on `t \ s`, the weightedSum over
+  `t` equals the weightedSum over `s`. Proved by generalized induction
+  on `t`.
+- `ECPoint.nsmul_infinity`, `ECPoint.zsmul_infinity`: any integer scalar
+  multiple of `∞` is `∞` (the group zero). Needed for handling the
+  `(-D.degE) · ∞` contribution in the divisor sum.
+- `extractorDivisorCoeffs`: mirror of `honestDivisorCoeffs` with
+  `extractedScalars` in place of `wit.scalars`. Encodes D's formal
+  divisor `(-P) + Σ extractedScalars · B_i - D.degE · ∞`.
+- `extractorDivisorCandidate`: candidate finite superset `{∞, -P_aff}
+  ∪ image(basesAffine)` containing the support of `extractorDivisorCoeffs`.
+- `extractorDivisorCoeffs_infinity` / `_negP`: values at `∞` and at
+  `-P_aff` (the latter under `hNoNegP`, yielding just `1`).
+- `filter_bases_eq_extractorGroup`: the filter used in the definition,
+  at the base point of index `i`, equals `extractorGroup i`.
+- `extractedScalars_zero_of_notCanonical`: under general case,
+  non-canonical indices have `extractedScalars = 0`.
+- `extractedScalars_group_canonical`: if `j ∈ extractorGroup i`, then
+  `extractorGroup j = extractorGroup i` (symmetry of the
+  equal-base-point relation).
+- `sum_extractedScalars_over_group`: under general case, the sum of
+  `extractedScalars` over `extractorGroup i` equals the value at the
+  canonical (`.min'`) position of the group. (All other group members
+  have `extractedScalars = 0`.)
+
+**Remaining D4 work** (deferred to next session):
+1. `extractorDivisorCoeffs` evaluation at `affine (basesAffine j)`:
+   equals `extractedScalars` at the canonical (`.min'`) of `j`'s group
+   (general case). Combines `filter_bases_eq_extractorGroup` with
+   `sum_extractedScalars_over_group`. ~30 LOC.
+2. Image-reindexing: `(univ.image basesAffine).fold op 0 f =
+   univ.fold op 0 (fun j => zsmul (extractedScalars j) (basesAffine j))`
+   via `Finset.fold_image` (injectivity of `basesAffine` on canonical
+   Finset) + `weightedSum_subset_of_zero_outside` (zero-padding the
+   non-canonical contributions). ~60 LOC.
+3. Support containment: `Function.support extractorDivisorCoeffs ⊆
+   extractorDivisorCandidate`. ~40 LOC.
+4. Final expansion of `weightedSum E extractorDivisorCandidate
+   (zsmul coeffs ·)`: three-way split `∞ | -P | imageBases` using
+   `weightedSum_insert`, `zsmul_infinity`, `zsmul_one`. ~40 LOC.
+5. Main D4 theorem assembly: apply `principal_divisor_iff` + reindex +
+   expand to derive `hZeroSum`, then feed into D5. ~30 LOC.
+
+Total ~200 LOC remaining for D4 completion.
+
+**Tactical notes** (for next session):
+1. `Finset.min'_le` + `Finset.min'_mem` + `le_antisymm` close canonical
+   uniqueness arguments cleanly, avoiding the dependent-type issues with
+   `rw` through the `Nonempty` proof argument of `min'`.
+2. `rw [← hGj] at hy` (where `hGj : extractorGroup j = extractorGroup i`
+   and `hy : y ∈ extractorGroup i`) works since `y ∈ _` is
+   non-dependent in `_`.
+3. For image-reindexing: the canonical-only Finset
+   `univ.filter extractorIsCanonical` is where `basesAffine` is
+   injective. The bijection canonical ↔ `univ.image basesAffine` is
+   via `j ↦ basesAffine j` (and inverse via `(x, y) ↦ min {j :
+   basesAffine j = (x, y)}`). Prove via `Finset.ext` + canonical
+   characterization.
+
+**Axiom state after session 19**:
+```
+propext, Classical.choice, Quot.sound
+Divisor.ECPoint.add_comm, add_assoc, neg_add_cancel
+Divisor.extractorSucceeds_of_logDerivCheck_identically_zero_general  [T4]
+```
+
+Unchanged — D3+D5 are infrastructure, T4 axiom not yet replaced.
+
+**Continuation** (next session):
+1. Complete D4 main theorem (~200 LOC per the breakdown above).
+2. Begin D1 (logDerivCheckFn ≡ 0 ⇒ polyG ≡ 0 on non-vertical E×E
+   bridge), resolving the polyGPoly ↔ clearedFiberPoly polynomial
+   identity step. ~300-400 LOC.
+3. Once D1, D3, D4, D5 are in place: assemble the T4 axiom
+   replacement in `Divisor/Soundness.lean`, replacing
+   `extractorSucceeds_of_logDerivCheck_identically_zero_general`.
