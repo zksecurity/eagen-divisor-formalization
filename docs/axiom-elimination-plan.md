@@ -2178,9 +2178,25 @@ are performing the independent verification).
 Axioms and classical results may cite ONLY:
 * **Silverman** — "The Arithmetic of Elliptic Curves", for group law
   (III §2), principal divisor characterization (III Cor 3.5), Weil
-  reciprocity (III §X), and basic function field theory on E.
-* **Hasse** / **Hasse-Weil** — for the point-count bound on
-  `|E(F_q)|`.
+  reciprocity (III §X), Hasse's Theorem (V Thm 1.1), and basic
+  function field theory on E. This is the canonical reference for
+  everything axiomatic here, including the point-count bound.
+* **Hasse** — original 1936 papers
+  ("Zur Theorie der abstrakten elliptischen Funktionenkörper I, II, III",
+  *J. Reine Angew. Math.* 175) are acceptable for primary attribution
+  of the elliptic-curve point-count bound, but Silverman Ch V is the
+  preferred reference.
+
+### Reference library
+
+Silverman is available locally for reference lookups:
+
+```
+/Users/rot256/paper/crypto-books/Silverman-Arithmetic_of_EC.pdf
+```
+
+When formulating or reviewing an axiom's citation, consult this copy
+to verify chapter/theorem numbers and exact statements.
 
 Where the paper under verification states a result that chains
 Silverman/Hasse facts, the chain must be mechanized; do not
