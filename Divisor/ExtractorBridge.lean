@@ -22,6 +22,8 @@
     conclude `target = Σ [extractedScalars i] · B_i`.
 -/
 import Divisor.Soundness
+import Divisor.DivisorPrincipal
+import Divisor.PolyFibK
 
 namespace Divisor
 
@@ -677,34 +679,81 @@ theorem target_eq_weightedSum_of_principal
   exact target_eq_weightedSum_of_zero_sum E stmt msg hkm
     (extractor_zeroSum_of_principal E stmt msg hkm hNoNegP hPrincipal)
 
-/-! ## Narrow bridge axiom (TEMPORARY — composite)
+/-! ## Narrow polyG-bridge axiom (scalar level)
 
-    This axiom is a *composite* that bundles two separate pieces of
-    classical AG content together. It is NOT a single textbook
-    result; it is a stopgap pending full mechanization.
+    The remaining classical content of the old composite
+    `weil_reciprocity_soundness` axiom that is NOT covered by
+    `CoordRingElt.has_principal_divisor` (= Silverman III.3.5) is the
+    paper's residue / denominator-clearing identity: if the scalar
+    `logDerivCheckFn` vanishes on the defined non-vertical challenge
+    subspace of `E × E`, then the denominator-cleared polynomial
+    `polyG` (formed with `D`'s divisor data `(Q, β)`) vanishes on the
+    non-vertical subspace of `E × E`.
 
-    * **Derivable piece (not actually axiomatic):** that
-      `logDerivCheckFn ≡ 0 on defined non-vertical pairs` implies the
-      extractor's combinatorial matching. This follows from
-      Silverman III.3.5 (D's principal divisor) combined with
-      denominator-clearing (mechanized at scalar level), Bezout on
-      E × E (mechanized via T1/T2/T3), and partial-fraction uniqueness
-      (mechanized in `simple_pole_fraction_zero`). Estimated ~500-800
-      LOC of function-field infrastructure to mechanize.
-    * **Missing axiomatic content (Silverman III.3.5):** every
-      non-zero CoordRingElt `D` has a principal divisor
-      `Σ β_k · Q_k − D.degE · ∞` on E, where `(Q, β)` are its
-      distinct affine zeros with multiplicities summing to `D.degE`.
+    This axiom captures that forward implication. In paper terms it
+    bundles: (i) Lemma 6 (norm decomposition `N(D) = ∏ (z − z(Q_k))^{β_k}`),
+    (ii) the log-derivative formula `L(N(D)) = Σ β_k / (z − z(Q_k))`,
+    (iii) the `ellP = L_Q · (X₁ − X₀)` denominator-clearing step, (iv)
+    the density argument transferring vanishing from `defined` pairs to
+    all non-vertical pairs on `E × E`. Its mechanization is the open
+    `D1` problem in `docs/axiom-elimination-plan.md`; here we keep it
+    as a narrow bridge axiom until that mechanization lands.
 
-    The target end-state is to replace this composite axiom with a
-    single narrow Silverman III.3.5 axiom
-    (`CoordRingElt.has_principal_divisor`) plus full mechanization of
-    the bridge. See `docs/axiom-elimination-plan.md` for the citation
-    policy (axioms cite Silverman/Hasse only) and the remaining path. -/
+    Citation: Silverman Ch II §2 (local uniformizers, order of vanishing)
+    + Ch III §3 (principal divisors). The specific polynomial identity
+    is derivable from these classical facts in the function field
+    `F_q(E)`. -/
 
-/-- **Bridge axiom (composite, temporary).** See docstring above for
-    the split into Silverman III.3.5 + derivation; that split is
-    planned future work. -/
+/-- **Narrow scalar polyG-bridge axiom** (Silverman Ch II-III, function
+    field residue identity).
+
+    Hypotheses encode `D`'s divisor data `(Q, β)` (obtainable via
+    `CoordRingElt.has_principal_divisor`):
+    * `Q : Fin d → (ZMod E.q)²` enumerates `D`'s distinct affine
+      zeros on `E`,
+    * `β : Fin d → ℕ` their natural-number multiplicities summing to
+      `D.degE`,
+    * `R = Fin.cons (P.1, -P.2) B` and `m' = Fin.cons (-1) m` package
+      the RHS residue points and coefficients.
+
+    Conclusion: `polyG` vanishes on all non-vertical pairs of `E × E`. -/
+axiom polyG_zero_of_logDerivCheck_identically_zero
+    (D : CoordRingElt E.q) (hD : ¬ D.isZero)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ)
+    (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E D P B A₀ A₁ →
+      logDerivCheckFn E D P k B m A₀ A₁ = 0)
+    {d : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q)
+    (beta : Fin d → ℕ)
+    (hQinj : Function.Injective Q)
+    (hQzeros : ∀ k' : Fin d,
+       Q k' ∈ E.points ∧ D.eval (Q k').1 (Q k').2 = 0)
+    (hQcov : ∀ Q' ∈ E.points, D.eval Q'.1 Q'.2 = 0 →
+       ∃ k' : Fin d, Q k' = Q')
+    (hβPos : ∀ k', beta k' > 0)
+    (hβSum : (∑ k' : Fin d, beta k') = D.degE)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1) :
+    polyG E Q (fun k' => ((beta k' : ℕ) : ZMod E.q))
+              (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) m)
+              A₀ A₁ = 0
+
+/-! ## Composite bridge axiom (TEMPORARY — being decomposed)
+
+    The composite `weil_reciprocity_soundness` axiom produces the full
+    T4 bridge output (`extractorSucceeds ∧ IsPrincipal`) from
+    `hAllZero`. It is being decomposed into the narrow pieces
+    `CoordRingElt.has_principal_divisor` (Silverman III.3.5) and
+    `polyG_zero_of_logDerivCheck_identically_zero` (the above scalar
+    bridge), combined with T5 + D3 + D4. The mechanization is landing
+    incrementally. -/
+
+/-- **Composite T4 axiom (temporary).** Being replaced by the narrow
+    `has_principal_divisor` + `polyG_zero_of_logDerivCheck_identically_zero`
+    combination with T5, D3, D4 infrastructure. -/
 axiom weil_reciprocity_soundness
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
