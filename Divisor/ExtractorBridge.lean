@@ -1463,6 +1463,172 @@ theorem polyG_distinct_zero_of_logDerivCheck_identically_zero
   rw [polyG_reindex]
   exact hCons
 
+/-! ## S4: T5 application — `σ`-matching existence
+
+    Combine `CoordRingElt.has_principal_divisor` (Silverman III.3.5,
+    providing the nonnegative multiplicity function `β_fun` for `D`'s
+    affine zeros), the S3 raw→distinct polyG bridge
+    (`polyG_distinct_zero_of_logDerivCheck_identically_zero`), and T5
+    (`log_deriv_nonvanishing_criterion`) to produce the embedding
+    `σ : Fin (zerosCard E D) ↪ Fin (1 + baseImageCount E stmt msg hkm)`
+    matching each `D`-zero to a distinct-base index with the
+    β-plus-m-sum-zero property, plus the complementary `m = 0` outside
+    range(σ). The quantitative hypothesis of T5 is discharged directly
+    from the hypothesis `hValidPairsLarge` (S7 will derive this from a
+    cleaner `E.q`-vs-`(d + stmt.k + 1)` inequality via Hasse-Weil and
+    `card_validPairs_lb`).
+-/
+
+/-- **S4 — distinct-σ existence.** The combined T5 + S3 + Silverman
+    application: given `hAllZero` (raw `logDerivCheckFn ≡ 0`), the
+    no-`-P`-in-bases assumption `hNoNegP`, nonzero-`D` hypothesis, and
+    a quantitative bound `hValidPairsLarge`, produce:
+    * `β_fun : ZMod² → ℕ` — principal-divisor multiplicities for `D`.
+    * Its principal-divisor package (support, coverage, degree-sum,
+      `dCoeffs`-principality).
+    * An embedding `σ : Fin (zerosCard E D) ↪ Fin (1 + baseImageCount)`
+      matching `zerosAt` to `distinctR`.
+    * `(multAt k : ZMod E.q) + distinctM' (σ k) = 0` (β_k + m at σ k).
+    * `distinctM' j = 0` for `j ∉ range σ`.
+
+    Consumed by S5 (coefficient construction) + S6 (principality
+    transfer) + S7 (final `weil_reciprocity_soundness` replacement). -/
+theorem distinctSigma_exists
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
+    (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
+      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
+    (hValidPairsLarge :
+      6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) + 1
+        ≤ (validPairs E).card) :
+    ∃ (β_fun : ZMod E.q × ZMod E.q → ℕ)
+      (σ : Fin (zerosCard E msg.toD) ↪
+            Fin (1 + baseImageCount E stmt msg hkm)),
+      (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) ∧
+      (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) ∧
+      ((∑ P ∈ E.points, β_fun P) = msg.toD.degE) ∧
+      IsPrincipal E (dCoeffs E msg.toD β_fun) ∧
+      (∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ k)) ∧
+      (∀ k, ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q)
+            + distinctM' E stmt msg hkm (σ k) = 0) ∧
+      (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) := by
+  classical
+  -- Step 1: nonzero-D hypothesis for `has_principal_divisor`.
+  have hD : ¬ msg.toD.isZero := admSet_implies_toD_nonzero stmt msg hAdm
+  -- Step 2: extract `β_fun` via Silverman III.3.5.
+  obtain ⟨β_fun, hβsup, hβcov, hβsum, hβprincipal⟩ :=
+    CoordRingElt.exists_principal_dCoeffs E msg.toD hD
+  -- Step 3: build the `Q` / `beta_nat` pair for the distinct-polyG bridge.
+  have hQinj : Function.Injective (zerosAt E msg.toD) :=
+    zerosAt_injective E msg.toD
+  have hQzeros : ∀ k : Fin (zerosCard E msg.toD),
+      zerosAt E msg.toD k ∈ E.points ∧
+      msg.toD.eval (zerosAt E msg.toD k).1 (zerosAt E msg.toD k).2 = 0 :=
+    fun k => ⟨zerosAt_mem_E E msg.toD k, zerosAt_eval_zero E msg.toD k⟩
+  have hQcov : ∀ Q' ∈ E.points, msg.toD.eval Q'.1 Q'.2 = 0 →
+      ∃ k, zerosAt E msg.toD k = Q' := fun Q' hQ'pts hQ'zero =>
+    zerosAt_covers_zeros E msg.toD Q' hQ'pts hQ'zero
+  have hβPos : ∀ k : Fin (zerosCard E msg.toD),
+                 multAt E β_fun msg.toD k > 0 :=
+    multAt_pos E β_fun msg.toD hβcov
+  have hβSum : (∑ k : Fin (zerosCard E msg.toD),
+                   multAt E β_fun msg.toD k) = msg.toD.degE :=
+    sum_multAt_eq_degE E β_fun msg.toD hβsup hβsum
+  -- Step 4: each `multAt k` is strictly less than E.q (upper bound comes
+  -- from `multAt k ≤ Σ multAt = D.degE ≤ d < E.q`).
+  have hBetaLt : ∀ k, multAt E β_fun msg.toD k < E.q := by
+    intro k
+    have hSingle : multAt E β_fun msg.toD k ≤
+        ∑ k' : Fin (zerosCard E msg.toD), multAt E β_fun msg.toD k' := by
+      refine Finset.single_le_sum
+        (f := fun k' => multAt E β_fun msg.toD k') ?_ (Finset.mem_univ k)
+      intro k' _
+      exact Nat.zero_le _
+    rw [hβSum] at hSingle
+    exact lt_of_le_of_lt (hSingle.trans hDeg) hd
+  -- Step 5: `polyG` vanishes on non-vertical `E × E` in distinct form.
+  have hPolyGZero :
+      ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+        A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+        polyG E (zerosAt E msg.toD)
+          (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
+          (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
+          A₀ A₁ = 0 := by
+    intro A₀ A₁ hA₀ hA₁ hNV
+    exact polyG_distinct_zero_of_logDerivCheck_identically_zero E
+      stmt msg hkm hD hAllZero (zerosAt E msg.toD)
+      (multAt E β_fun msg.toD) hQinj hQzeros hQcov hβPos hβSum
+      A₀ A₁ hA₀ hA₁ hNV
+  -- Step 6: set up T5's quantitative hypothesis.
+  -- `zerosCard E msg.toD ≤ d`: each multiplicity ≥ 1, sum = D.degE ≤ d.
+  have hd_zero_le_d : zerosCard E msg.toD ≤ d := by
+    have hCardLe : zerosCard E msg.toD ≤
+        ∑ k : Fin (zerosCard E msg.toD), multAt E β_fun msg.toD k := by
+      calc zerosCard E msg.toD
+          = ∑ _k : Fin (zerosCard E msg.toD), 1 := by
+              simp [Finset.sum_const, Finset.card_univ, Fintype.card_fin]
+        _ ≤ ∑ k : Fin (zerosCard E msg.toD), multAt E β_fun msg.toD k :=
+              Finset.sum_le_sum (fun k _ => hβPos k)
+    exact hCardLe.trans (hβSum.le.trans hDeg)
+  -- `baseImageCount ≤ msg.k = stmt.k`.
+  have hBICount_le : baseImageCount E stmt msg hkm ≤ stmt.k := by
+    have hleK : baseImageCount E stmt msg hkm ≤ msg.k := by
+      unfold baseImageCount baseImage
+      refine (Finset.card_image_le (f := extractorBases E stmt msg hkm)
+                 (s := Finset.univ)).trans ?_
+      rw [Finset.card_univ, Fintype.card_fin]
+    rw [hkm]; exact hleK
+  have hSum_le :
+      zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)
+        ≤ d + stmt.k + 1 := by
+    have : zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)
+            ≤ d + (1 + stmt.k) :=
+      Nat.add_le_add hd_zero_le_d (Nat.add_le_add_left hBICount_le _)
+    omega
+  have hQuant : 6 * E.q * ((zerosCard E msg.toD
+                              + (1 + baseImageCount E stmt msg hkm))
+                  + (zerosCard E msg.toD
+                      + (1 + baseImageCount E stmt msg hkm))
+                     * (zerosCard E msg.toD
+                          + (1 + baseImageCount E stmt msg hkm) - 1)) + 1
+                ≤ (validPairs E).card := by
+    refine le_trans ?_ hValidPairsLarge
+    apply Nat.add_le_add_right
+    apply Nat.mul_le_mul_left
+    apply Nat.add_le_add hSum_le
+    have hSub_le :
+        zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm) - 1
+          ≤ d + stmt.k := by
+      have := Nat.sub_le_sub_right hSum_le 1
+      have hEq : d + stmt.k + 1 - 1 = d + stmt.k := by omega
+      rw [hEq] at this; exact this
+    exact Nat.mul_le_mul hSum_le hSub_le
+  -- Step 7: `hBetaNz` — each `multAt k` cast to `ZMod E.q` is nonzero.
+  have hBetaNz : ∀ k,
+      ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q) ≠ 0 := by
+    intro k
+    rw [Ne, ZMod.natCast_zmod_eq_zero_iff_dvd]
+    intro hdvd
+    have hPos : 0 < multAt E β_fun msg.toD k := hβPos k
+    have hLt : multAt E β_fun msg.toD k < E.q := hBetaLt k
+    exact Nat.not_lt.mpr (Nat.le_of_dvd hPos hdvd) hLt
+  -- Step 8: apply T5.
+  have hDistinctR_inj : Function.Injective (distinctR E stmt msg hkm) :=
+    distinctR_injective E stmt msg hkm hNoNegP
+  obtain ⟨σ, hσ_eq, hσ_betam, hσ_off⟩ :=
+    log_deriv_nonvanishing_criterion E (zerosAt E msg.toD)
+      (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
+      (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
+      hQuant hQinj hDistinctR_inj hBetaNz hPolyGZero
+  -- Step 9: package the output.
+  exact ⟨β_fun, σ, hβsup, hβcov, hβsum, hβprincipal,
+         hσ_eq, hσ_betam, hσ_off⟩
+
 /-! ## Composite bridge axiom (TEMPORARY — being decomposed)
 
     The composite `weil_reciprocity_soundness` axiom produces the full

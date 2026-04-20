@@ -2363,6 +2363,78 @@ Commit (this session):
 **No new axioms**, no new `sorry`/`admit`. `lake build` green.
 Axiom count: 10 (unchanged from session 23).
 
+### Session 25 (2026-04-20) — S4 T5 application
+
+Commit (this session):
+- S4 — T5 application. Adds `distinctSigma_exists` in
+  `Divisor/ExtractorBridge.lean`, which combines
+  `CoordRingElt.exists_principal_dCoeffs` (Silverman III.3.5
+  wrapper), the S3 raw→distinct bridge
+  `polyG_distinct_zero_of_logDerivCheck_identically_zero`, and T5
+  (`log_deriv_nonvanishing_criterion`) into a single theorem
+  producing the `σ`-matching with the full principal-divisor package.
+  ~130 LOC added.
+
+**Theorem shape**:
+```
+distinctSigma_exists
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
+    (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hAllZero : ∀ A₀ A₁ ..., logDerivCheckFn ... = 0)
+    (hValidPairsLarge :
+      6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) + 1
+        ≤ (validPairs E).card) :
+    ∃ (β_fun : ZMod² → ℕ)
+      (σ : Fin (zerosCard E msg.toD) ↪
+            Fin (1 + baseImageCount E stmt msg hkm)),
+      (support / coverage / degree-sum conditions on β_fun) ∧
+      IsPrincipal E (dCoeffs E msg.toD β_fun) ∧
+      (∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ k)) ∧
+      (∀ k, ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q)
+            + distinctM' E stmt msg hkm (σ k) = 0) ∧
+      (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0)
+```
+
+**Proof layout**:
+1. `hD` from `admSet_implies_toD_nonzero`.
+2. Extract `(β_fun, hβsup, hβcov, hβsum, hβprincipal)` via
+   `CoordRingElt.exists_principal_dCoeffs`.
+3. Build `Q := zerosAt E msg.toD` and `beta_nat := multAt E β_fun msg.toD`
+   together with `hQinj`, `hQzeros`, `hQcov`, `hβPos`, `hβSum` from
+   `DivisorPrincipal.lean` helpers.
+4. Prove `polyG ... = 0` via
+   `polyG_distinct_zero_of_logDerivCheck_identically_zero` (S3 output).
+5. Discharge T5's `hQuant` from `hValidPairsLarge`:
+   - `zerosCard E msg.toD ≤ d`: `multAt k ≥ 1` for all k (from
+     `multAt_pos`), so `zerosCard ≤ ∑ multAt = D.degE ≤ d`.
+   - `baseImageCount ≤ msg.k = stmt.k`: `Finset.card_image_le`.
+   - Sum and subtraction inequalities packaged via `omega` +
+     `Nat.mul_le_mul`.
+6. `hBetaNz`: `((multAt k : ℕ) : ZMod E.q) ≠ 0` using
+   `ZMod.natCast_zmod_eq_zero_iff_dvd` + `multAt k > 0` and
+   `multAt k ≤ ∑ multAt ≤ d < E.q`.
+7. Apply `log_deriv_nonvanishing_criterion` with
+   `R := distinctR E stmt msg hkm`, `m := distinctM' E stmt msg hkm`,
+   `hDistinctR_inj` from `distinctR_injective`.
+8. Package the `σ, hσ_eq, hσ_betam, hσ_off` output with the principal-
+   divisor data.
+
+**Design choice on `hValidPairsLarge`**: keep the precondition in the
+raw `validPairs`-card form. S7 will derive this from a clean
+`E.q` vs `d + stmt.k + 1` inequality via Hasse-Weil and
+`BassaMonic.card_validPairs_lb`, or handle it in a case-split.
+
+**Exposed surface for S5**:
+- `distinctSigma_exists` — the main S4 theorem.
+
+**No new axioms**, no new `sorry`/`admit`. `lake build` green.
+Axiom count: 10 (unchanged from session 24; the
+`polyG_zero_of_logDerivCheck_identically_zero` narrow bridge axiom
+is now consumed here through S3, but remains in `ExtractorBridge.lean`
+as the scalar-level input).
+
 ## Autonomous Driver Queue
 
 This section specifies the final 7-step queue that eliminates the
