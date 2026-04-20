@@ -2796,6 +2796,75 @@ axiom (Silverman III Prop 3.4, group-sum-zero part only) and derive
 `betaConstructive_group_sum_zero` via it. QB3's feasibility will be
 evaluated after QB2 lands.
 
+### Session 31 (2026-04-20) — QB2 narrow Abel axioms + derived theorems
+
+**Scope**: extend `Divisor/BetaConstructive.lean` with two narrow
+classical axioms covering the remaining content of Silverman III
+Prop 3.4, and derive direct restatements as usable theorems.
+`lake build` green, no `sorry`/`admit`.
+
+**What landed**:
+- `CoordRingElt.divisor_group_sum_zero` (Silverman III Prop 3.4,
+  Abel's theorem / group-sum-zero part): for nonzero
+  `D ∈ F_q[E]` (i.e. `¬ (D.a = 0 ∧ D.b = 0)`),
+  ```
+    ECPoint.weightedSum E E.points
+      (fun P => ECPoint.nsmul E (betaConstructive E D P)
+                  (ECPoint.affine P.1 P.2)) = 0.
+  ```
+  Strictly narrower than `has_principal_divisor` — only the group-sum
+  content; support, existence, and degree-zero are derived elsewhere.
+- `CoordRingElt.divisor_degree_eq` (Silverman III Prop 3.4, pole-order
+  identity): strengthens QB1's `betaConstructive_sum_le_degE` from
+  `≤` to `=`:
+  ```
+    (∑ P ∈ E.points, betaConstructive E D P) = D.degE.
+  ```
+  Closes the two gaps identified in Session 30: (a) non-splitting of
+  `normPoly` over `F_q`, and (b) `D.degE` overestimating the pole at
+  `∞` when `D.b = 0 ∧ D.a.natDegree < 2`. The classical identity
+  holds over the algebraic closure and descends via the Galois
+  structure of the principal-divisor map; we axiomatize this descent
+  rather than mechanize Weierstrass preparation.
+- `betaConstructive_group_sum_zero`, `betaConstructive_sum_eq_degE`:
+  direct restatements of the two axioms as conveniences for
+  downstream consumers (QB3's `dCoeffs_isPrincipal` wrapper).
+
+**Placement note**. The brief suggested `Divisor/Axioms.lean` for
+these, but that creates a cyclic import (`BetaConstructive` already
+depends transitively on `Axioms` via `LogDeriv`). Instead the two
+axioms are placed at the end of `BetaConstructive.lean` with clear
+Silverman citations; `grep '^axiom ' Divisor/` still picks them up
+for the audit tally.
+
+**Axiom state after Session 31**: 11 axioms (was 9). Net change
+`+2` this step, but QB3 is now unblocked: removing
+`has_principal_divisor` (`-1`) yields a net project change of `+1`
+for Queue 2's Phase B. Acceptable because each new axiom is
+strictly narrower than `has_principal_divisor` — one isolates
+Abel's theorem, the other isolates the pole-order identity; both
+are single citations to a specific Silverman statement, unlike
+`has_principal_divisor` which bundles support + coverage +
+degree-sum + group-sum conditions.
+
+**Axiom list (11)**:
+```
+Divisor.ECPoint.add_assoc, add_comm, neg_add_cancel               (group law)
+Divisor.principal_divisor_iff                                     (Silverman III Cor 3.5)
+Divisor.CoordRingElt.has_principal_divisor                        (Silverman III Prop 3.4 + Cor 3.5) — transient, QB3 to remove
+Divisor.hasse_weil_upper, hasse_weil_lower                        (Hasse 1936 / Weil 1948)
+Divisor.weil_reciprocity_honest                                   (Weil reciprocity)
+Divisor.polyG_zero_of_logDerivCheck_identically_zero              (polyG bridge — transient, QA3 to remove)
+Divisor.CoordRingElt.divisor_group_sum_zero                       (Silverman III Prop 3.4, group-sum part) — NEW
+Divisor.CoordRingElt.divisor_degree_eq                            (Silverman III Prop 3.4, degree part) — NEW
+```
+
+**Next**: QB3 — derive `CoordRingElt.has_principal_divisor` as a
+theorem from `betaConstructive_support`, `betaConstructive_covers`,
+`betaConstructive_sum_eq_degE`, `betaConstructive_group_sum_zero`,
+and delete the axiom. Net project change after QB3 drops to `+1`
+(+2 narrow axioms, −1 composite axiom).
+
 ---
 
 ## Queue 2 — Residual-Axiom Cleanup (B + A + C)

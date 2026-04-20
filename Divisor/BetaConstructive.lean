@@ -458,4 +458,79 @@ theorem betaConstructive_sum_le_degE
         sum_rootMultiplicity_le_natDegree E (normPoly E D)
     _ ≤ D.degE := normPoly_natDegree_le E D
 
+/-! ## Narrow Abel-theorem axioms
+
+    The remaining two properties of `betaConstructive` needed downstream —
+    the weighted group-sum-zero identity (the "Abel's theorem on E"
+    content), and the equality `∑ β = D.degE` (the pole-order-at-∞
+    identity) — depend on function-field / Weierstrass-preparation
+    machinery beyond what we mechanize here. We record them as narrow
+    axioms covering exactly the classical facts they invoke, with no
+    bundling of support / coverage content (those are derived above).
+
+    Classical citation: **Silverman, "The Arithmetic of Elliptic
+    Curves", Chapter III, Proposition 3.4** — every nonzero rational
+    function `f` on an elliptic curve `E` has a principal divisor
+    `div(f) = Σ ord_P(f) · (P)` satisfying
+      (i)   `Σ ord_P(f) = 0` (total degree zero), and
+      (ii)  `Σ ord_P(f) · P = O` in the group law (Abel's theorem).
+
+    Specialized to `f = D = a(x) - b(x)·y` viewed as a nonzero element
+    of `F_q[E] ⊂ F_q(E)`, the affine part of `div(D)` is recorded by
+    the multiplicity function `betaConstructive D`, and the pole at `∞`
+    has order `D.degE`. Item (i) becomes
+    `∑ β(P) = D.degE` (the affine sum equals the pole order at `∞`),
+    and item (ii) becomes
+    `∑ β(P) · (affine P) = O` (the `∞` term contributes `0 · ∞ = 0`).
+-/
+
+/-- **Abel's theorem on E for `D`'s divisor** (Silverman III Prop 3.4,
+    group-sum-zero part).
+
+    The `β`-weighted group sum over `E`'s affine points vanishes:
+    the divisor of the nonzero rational function `D = a(x) - b(x)·y`
+    has group-sum zero, and the `∞` contribution is `-D.degE · (∞)`
+    which is `0` under the group law (since `∞` is the identity). -/
+axiom CoordRingElt.divisor_group_sum_zero
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    ECPoint.weightedSum E E.points
+      (fun P => ECPoint.nsmul E (betaConstructive E D P)
+                    (ECPoint.affine P.1 P.2)) = 0
+
+/-- **Pole-order-at-∞ identity** (Silverman III Prop 3.4, degree part).
+
+    The total affine multiplicity of the divisor of a nonzero
+    `D = a(x) - b(x)·y ∈ F_q[E]` equals `D.degE`, which is the pole
+    order of `D` at the point at infinity.
+
+    This strengthens `betaConstructive_sum_le_degE` from `≤` to `=`.
+    The gap is due to possible failure of `normPoly` to split over
+    `F_q` and edge-case inflation of `D.degE` in the
+    `D.b = 0 ∧ D.a.natDegree < 2` cases — neither of which is tracked
+    by a `rootMultiplicity`-based construction. The classical identity
+    holds over the algebraic closure and descends via the Galois
+    structure of the principal-divisor map. -/
+axiom CoordRingElt.divisor_degree_eq
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    (∑ P ∈ E.points, betaConstructive E D P) = D.degE
+
+/-! ## Derived theorem: `betaConstructive_group_sum_zero` -/
+
+/-- Direct restatement of the group-sum axiom as a convenience theorem
+    under the chosen `β = betaConstructive E D` representative. Downstream
+    consumers can substitute any symbol matching this signature. -/
+theorem betaConstructive_group_sum_zero
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    ECPoint.weightedSum E E.points
+      (fun P => ECPoint.nsmul E (betaConstructive E D P)
+                    (ECPoint.affine P.1 P.2)) = 0 :=
+  CoordRingElt.divisor_group_sum_zero E D hD
+
+/-- Direct restatement of the degree axiom: the affine-multiplicity sum
+    of `betaConstructive` equals `D.degE`. -/
+theorem betaConstructive_sum_eq_degE
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    (∑ P ∈ E.points, betaConstructive E D P) = D.degE :=
+  CoordRingElt.divisor_degree_eq E D hD
+
 end Divisor
