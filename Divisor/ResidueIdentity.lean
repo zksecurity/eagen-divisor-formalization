@@ -485,9 +485,60 @@ theorem polyG_eq_zero_iff_paperResidue
   · intro h
     rw [h, mul_zero]
 
-/-! ## Summary note (Q3.4 status)
+/-! ## High-level chord-residue bridge (analysis)
 
-The full target theorem
+    Combining Steps 1, 4, and 5 with a hypothesised "Lemma 6" chord-sum
+    residue identity
+
+    ```
+    Σᵢ logDerivTerm(Aᵢ, λ) = - Σ_k β_k / L_Q(Q_k)                  (Lemma 6)
+    ```
+
+    and the axiom's global hypothesis `logDerivCheckFn = 0`, a sign
+    analysis reveals a STRUCTURAL MISMATCH between the axiom's polyG
+    conclusion and the classical residue identity:
+
+    * `logDerivCheckFn`'s RHS coefficient of `1/L(B_j)` is `-m_j`.
+    * `polyG`'s `m` input for the `R = cons(-P)B` family is `cons(-1) m`,
+      giving coefficient `+m_j` in the `Σ_j` summand of paperResidueDivided.
+
+    Unrolling: if `logDerivCheckFn = 0` and Lemma 6 hold,
+
+    ```
+    Σ_k β_k/L_Q(Q_k) = L_Q(-P)⁻¹ + Σ_j m_j/L_Q(B_j)                (derived)
+    ```
+
+    whereas paperResidueDivided equals
+
+    ```
+    Σ_k β_k/L_Q(Q_k) - L_Q(-P)⁻¹ + Σ_j m_j/L_Q(B_j).
+    ```
+
+    These differ by `2 · Σ_j m_j/L_Q(B_j)`, which is generically nonzero.
+    So `hLogCheckZero + hLemma6` does NOT imply `paperResidueDivided = 0`
+    under the axiom's sign convention for `m`.
+
+    This surfaces a second-order consistency issue in the axiom: the
+    polyG's second-sum coefficient `m'_j = +m_j` is the WRONG sign to
+    match `logDerivCheckFn`'s `-m_j`.  Closing the axiom as stated
+    requires either:
+
+    (a) Reformulating the axiom's `polyG` argument to use `cons(+1) (-m)`
+        instead of `cons(-1) m`.
+    (b) Adding `Σ_j m_j/L_Q(B_j) = 0` (a separate residue identity) as
+        an additional hypothesis.
+
+    This is a genuine structural finding that complements the Session 37
+    counterexample.  No bridge theorem lands here; the sign analysis
+    itself is the contribution.
+
+    NOTE: This finding does not invalidate Steps 1, 4, and 5 (which are
+    proven in-module) nor the earlier infrastructure. It merely clarifies
+    that the axiom's statement cannot be discharged by combining those
+    steps with Lemma 6 alone — an additional sign-rearrangement or
+    reformulation is required. -/
+
+/-! ## Summary note (Q3.4 status)
 
 ```
 theorem polyG_zero_of_logDerivCheck_zero_at_defined_canonical
