@@ -494,49 +494,35 @@ theorem polyG_eq_zero_iff_paperResidue
     Σᵢ logDerivTerm(Aᵢ, λ) = - Σ_k β_k / L_Q(Q_k)                  (Lemma 6)
     ```
 
-    and the axiom's global hypothesis `logDerivCheckFn = 0`, a sign
-    analysis reveals a STRUCTURAL MISMATCH between the axiom's polyG
-    conclusion and the classical residue identity:
+    and the axiom's global hypothesis `logDerivCheckFn = 0`, Session 40's
+    sign analysis identified a sign mismatch between `logDerivCheckFn`'s
+    RHS and `polyG`'s additive convention.
 
-    * `logDerivCheckFn`'s RHS coefficient of `1/L(B_j)` is `-m_j`.
-    * `polyG`'s `m` input for the `R = cons(-P)B` family is `cons(-1) m`,
-      giving coefficient `+m_j` in the `Σ_j` summand of paperResidueDivided.
+    **Session 41 resolution**: the axiom
+    `polyG_zero_of_logDerivCheck_identically_zero` (in
+    `Divisor/ExtractorBridge.lean`) has been reformulated to use
+    `Fin.cons (-1) (fun j => -m j)` instead of `Fin.cons (-1) m`
+    for the polyG `m'` argument.
 
-    Unrolling: if `logDerivCheckFn = 0` and Lemma 6 hold,
-
-    ```
-    Σ_k β_k/L_Q(Q_k) = L_Q(-P)⁻¹ + Σ_j m_j/L_Q(B_j)                (derived)
-    ```
-
-    whereas paperResidueDivided equals
+    Under the new axiom form, combining `logDerivCheckFn = 0` with
+    Lemma 6 (the full residue identity), the paperResidueDivided form
+    evaluates to
 
     ```
-    Σ_k β_k/L_Q(Q_k) - L_Q(-P)⁻¹ + Σ_j m_j/L_Q(B_j).
+    Σ_k β_k/L_Q(Q_k) - L_Q(-P)⁻¹ - Σ_j m_j/L_Q(B_j) = 0,
     ```
 
-    These differ by `2 · Σ_j m_j/L_Q(B_j)`, which is generically nonzero.
-    So `hLogCheckZero + hLemma6` does NOT imply `paperResidueDivided = 0`
-    under the axiom's sign convention for `m`.
+    matching the derivation exactly:
+    `Σ_k β_k/L_Q(Q_k) = L_Q(-P)⁻¹ + Σ_j m_j/L_Q(B_j)`.
 
-    This surfaces a second-order consistency issue in the axiom: the
-    polyG's second-sum coefficient `m'_j = +m_j` is the WRONG sign to
-    match `logDerivCheckFn`'s `-m_j`.  Closing the axiom as stated
-    requires either:
+    This still requires mechanizing Lemma 6 itself (paper's
+    `lem:log-deriv-norm`) to close the axiom as a theorem, which
+    remains deferred (requires function-field infrastructure per the
+    axiom-elimination plan).
 
-    (a) Reformulating the axiom's `polyG` argument to use `cons(+1) (-m)`
-        instead of `cons(-1) m`.
-    (b) Adding `Σ_j m_j/L_Q(B_j) = 0` (a separate residue identity) as
-        an additional hypothesis.
-
-    This is a genuine structural finding that complements the Session 37
-    counterexample.  No bridge theorem lands here; the sign analysis
-    itself is the contribution.
-
-    NOTE: This finding does not invalidate Steps 1, 4, and 5 (which are
-    proven in-module) nor the earlier infrastructure. It merely clarifies
-    that the axiom's statement cannot be discharged by combining those
-    steps with Lemma 6 alone — an additional sign-rearrangement or
-    reformulation is required. -/
+    The downstream cascade (`distinctMCons`, `extractedScalars`, D3
+    witness interface) was propagated consistently in the same
+    session; see `ExtractorBridge.lean`'s commentary. -/
 
 /-! ## Summary note (Q3.4 status)
 
@@ -556,12 +542,15 @@ theorem polyG_zero_of_logDerivCheck_zero_at_defined_canonical
     (hDefined : logDerivCheckFnDefined E D P B A₀ A₁) :
     polyG E (zerosAt E D)
               (fun k' => ((multAt E (betaConstructive E D) D k' : ℕ) : ZMod E.q))
-              (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) m)
+              (Fin.cons (P.1, -P.2) B)
+              (Fin.cons (-1) (fun j => -m j))
               A₀ A₁ = 0
 ```
 
 requires closing a deep residue-identity argument that exceeds this
-module's 300-LOC budget. The classical proof proceeds by:
+module's 300-LOC budget. (The Session 41 sign resolution negated the
+tail in the axiom's `m'` argument to `fun j => -m j`; the signs now
+align with `logDerivCheckFn`'s RHS convention as derived above.) The classical proof proceeds by:
 
 1. Aggregating the three pointwise Layer-3 identities (Q3.3,
    `logDerivTerm_denom_cleared_pointwise` / `_in_chordRHSSingle`) over
@@ -592,9 +581,9 @@ module's 300-LOC budget. The classical proof proceeds by:
    from `zerosAt` / `multAt` matching `betaConstructive`'s fiber sums.
 
 5. Matching against `polyG`'s second sum: clearing denominators on the
-   `-1/L(-P) + Σ m_j/L(B_j) = Σ m'_j / L(R_j)` pocket (R = cons (-P) B,
-   m' = cons (-1) m), which is the `sum_div_iff_sum_mul_prod_erase`
-   identity from `LogDeriv.lean`.
+   `-1/L(-P) - Σ m_j/L(B_j) = Σ m'_j / L(R_j)` pocket (R = cons (-P) B,
+   m' = cons (-1) (fun j => -m j) post Session 41 sign fix), which is
+   the `sum_div_iff_sum_mul_prod_erase` identity from `LogDeriv.lean`.
 
 Steps 1-2 are tractable but lengthy (~400 LOC). Step 3 is deep
 (~600+ LOC) and requires pushing `rootMultiplicity`-level PFE through

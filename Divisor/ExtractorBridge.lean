@@ -110,7 +110,7 @@ theorem extractedScalars_zero_of_notCanonical
         then (if i = (negPIndexSet E stmt msg hkm).min' hne
               then (-1 : ℤ) else 0)
         else if extractorIsCanonical E stmt msg hkm i
-             then ((-(extractorGroupSum E stmt msg hkm i)).val : ℤ)
+             then ((extractorGroupSum E stmt msg hkm i).val : ℤ)
              else 0) = 0
   rw [dif_neg hNoNegP, if_neg hNotCanon]
 
@@ -584,7 +584,7 @@ theorem extractorSucceeds_of_natural_witness
     (coeff : Fin msg.k → ℕ)
     (hCoeff_bound : ∀ i, coeff i < d)
     (hCoeff_zmod : ∀ i, extractorIsCanonical E stmt msg hkm i →
-      (coeff i : ZMod E.q) = -(extractorGroupSum E stmt msg hkm i))
+      (coeff i : ZMod E.q) = extractorGroupSum E stmt msg hkm i)
     (hCoeff_noncanon : ∀ i, ¬ extractorIsCanonical E stmt msg hkm i →
       coeff i = 0) :
     extractorSucceeds E stmt msg d hkm ∧
@@ -597,15 +597,15 @@ theorem extractorSucceeds_of_natural_witness
           then (if i = (negPIndexSet E stmt msg hkm).min' hNegP
                 then (-1 : ℤ) else 0)
           else if extractorIsCanonical E stmt msg hkm i
-               then ((-(extractorGroupSum E stmt msg hkm i)).val : ℤ)
+               then ((extractorGroupSum E stmt msg hkm i).val : ℤ)
                else 0) = _
     rw [dif_neg hNoNegP]
     by_cases hC : extractorIsCanonical E stmt msg hkm i
     · rw [if_pos hC]
-      have h1 : (coeff i : ZMod E.q) = -(extractorGroupSum E stmt msg hkm i) :=
+      have h1 : (coeff i : ZMod E.q) = extractorGroupSum E stmt msg hkm i :=
         hCoeff_zmod i hC
       have hBound : coeff i < E.q := lt_of_lt_of_le (hCoeff_bound i) (le_of_lt hd)
-      have h2 : ((-(extractorGroupSum E stmt msg hkm i) : ZMod E.q)).val = coeff i := by
+      have h2 : ((extractorGroupSum E stmt msg hkm i : ZMod E.q)).val = coeff i := by
         rw [← h1]
         exact ZMod.val_natCast_of_lt hBound
       rw [h2]
@@ -912,14 +912,22 @@ theorem extractorGroupSum_congr_of_extractorBases_eq
 
 /-- Underlying `Fin.cons`-based family `Fin (n + 1) → ZMod E.q` for
     the grouped coefficients. Head `-1`, tail
-    `extractorGroupSum` at the chosen `baseAtIndex`. -/
+    `-extractorGroupSum` at the chosen `baseAtIndex`.
+
+    The tail is NEGATED (vs. the raw `extractorGroupSum`) to align
+    with the narrow scalar polyG-bridge axiom's sign convention
+    (`Fin.cons (-1) (fun j => -m j)`). The negation reconciles the
+    additive sign of `polyG`'s second sum (`Σ m'·prods`) with
+    `logDerivCheckFn`'s RHS sum coefficient (`-m_j / L(B_j)`) and
+    the Lemma 6 residue identity `Σ β_k/L(Q_k) = 1/L(-P) + Σ m_j/L(B_j)`.
+    See Session 41's sign-resolution note and ResidueIdentity.lean. -/
 noncomputable def distinctMCons
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k) :
     Fin (baseImageCount E stmt msg hkm + 1) → ZMod E.q :=
   Fin.cons (α := fun _ => ZMod E.q) (-1 : ZMod E.q)
     (fun i : Fin (baseImageCount E stmt msg hkm) =>
-      extractorGroupSum E stmt msg hkm (baseAtIndex E stmt msg hkm i))
+      -extractorGroupSum E stmt msg hkm (baseAtIndex E stmt msg hkm i))
 
 @[simp] theorem distinctMCons_zero
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -931,13 +939,17 @@ noncomputable def distinctMCons
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k) (i : Fin (baseImageCount E stmt msg hkm)) :
     distinctMCons E stmt msg hkm i.succ
-      = extractorGroupSum E stmt msg hkm
+      = -extractorGroupSum E stmt msg hkm
           (baseAtIndex E stmt msg hkm i) := by
   simp [distinctMCons]
 
 /-- Grouped coefficient family: `-1` at the `-P_aff` head, then
-    `extractorGroupSum` per distinct base. Length `1 + baseImageCount`,
-    matching `distinctR`'s shape so the pair feeds T5's `Fin M` form. -/
+    `-extractorGroupSum` per distinct base. Length `1 + baseImageCount`,
+    matching `distinctR`'s shape so the pair feeds T5's `Fin M` form.
+
+    Note: the tail is NEGATED (Session 41 sign resolution) to align
+    `polyG`'s additive convention with `logDerivCheckFn`'s RHS sign on
+    the `m_j` coefficients. -/
 noncomputable def distinctM'
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k) :
@@ -959,7 +971,7 @@ noncomputable def distinctM'
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k) (i : Fin (baseImageCount E stmt msg hkm)) :
     distinctM' E stmt msg hkm ⟨i.val + 1, by omega⟩
-      = extractorGroupSum E stmt msg hkm
+      = -extractorGroupSum E stmt msg hkm
           (baseAtIndex E stmt msg hkm i) := by
   unfold distinctM'
   have hEq : (finCongr (Nat.add_comm 1 (baseImageCount E stmt msg hkm))
@@ -970,11 +982,11 @@ noncomputable def distinctM'
   simp [Function.comp_apply, hEq, distinctMCons_succ]
 
 /-- **Representative independence**: `distinctM' ⟨i+1, _⟩` equals
-    `extractorGroupSum` at *any* `j` with `extractorBases j = baseAt i`,
+    `-extractorGroupSum` at *any* `j` with `extractorBases j = baseAt i`,
     not just the `Classical.choose` representative.
 
     Proof: by `distinctM'_succ`, the LHS reduces to
-    `extractorGroupSum E stmt msg hkm (baseAtIndex ... i)`. The
+    `-extractorGroupSum E stmt msg hkm (baseAtIndex ... i)`. The
     `baseAtIndex` representative shares a base with `baseAt i`, i.e.
     with `j`, so
     `extractorGroupSum_congr_of_extractorBases_eq` collapses both to
@@ -985,9 +997,10 @@ theorem distinctM'_tail_group_invariant
     (j : Fin msg.k)
     (hj : extractorBases E stmt msg hkm j = baseAt E stmt msg hkm i) :
     distinctM' E stmt msg hkm ⟨i.val + 1, by omega⟩
-      = extractorGroupSum E stmt msg hkm j := by
+      = -extractorGroupSum E stmt msg hkm j := by
   rw [distinctM'_succ]
   have hspec := baseAtIndex_spec E stmt msg hkm i
+  congr 1
   exact extractorGroupSum_congr_of_extractorBases_eq E stmt msg hkm
     (hspec.trans hj.symm)
 
@@ -1025,8 +1038,12 @@ theorem distinctM'_tail_group_invariant
       zeros on `E`,
     * `β : Fin d → ℕ` their natural-number multiplicities summing to
       `D.degE`,
-    * `R = Fin.cons (P.1, -P.2) B` and `m' = Fin.cons (-1) m` package
-      the RHS residue points and coefficients.
+    * `R = Fin.cons (P.1, -P.2) B` packages the RHS residue points,
+    * `m' = Fin.cons (-1) (fun j => -m j)` packages the RHS residue
+      coefficients with the sign convention needed to align with
+      Lean's `logDerivCheckFn` (whose `rhs` has coefficient `-m_j` on
+      `L(B_j)⁻¹`) against `polyG`'s additive sign convention
+      `Σβ·prods + Σm'·prods`. See Session 41's sign-resolution note.
 
     Conclusion: `polyG` vanishes on all non-vertical pairs of `E × E`. -/
 axiom polyG_zero_of_logDerivCheck_identically_zero
@@ -1050,7 +1067,8 @@ axiom polyG_zero_of_logDerivCheck_identically_zero
     (A₀ A₁ : ZMod E.q × ZMod E.q)
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1) :
     polyG E Q (fun k' => ((beta k' : ℕ) : ZMod E.q))
-              (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) m)
+              (Fin.cons (P.1, -P.2) B)
+              (Fin.cons (-1) (fun j => -m j))
               A₀ A₁ = 0
 
 /-! ## S3: raw → distinct polyG bridge
@@ -1072,10 +1090,13 @@ axiom polyG_zero_of_logDerivCheck_identically_zero
       `k := baseImageCount`, `B := baseAt`, `m := distinctM'_tail`.
       Its `hAllZero` precondition becomes the distinct form, which we
       derive from the raw form via Layer A. Its conclusion is
-      `polyG ... (Fin.cons (P.1,-P.2) baseAt) (Fin.cons (-1) distinctM'_tail) = 0`
-      at index `Fin (baseImageCount + 1)`; reindexing by
-      `finCongr (Nat.add_comm 1 _)` produces the `distinctR` /
-      `distinctM'` form at index `Fin (1 + baseImageCount)`.
+      `polyG ... (Fin.cons (P.1,-P.2) baseAt)
+               (Fin.cons (-1) (fun j => -distinctM'_tail j)) = 0`
+      at index `Fin (baseImageCount + 1)`. The latter argument equals
+      `distinctMCons` definitionally (post Session 41 sign fix).
+      Reindexing by `finCongr (Nat.add_comm 1 _)` produces the
+      `distinctR` / `distinctM'` form at index
+      `Fin (1 + baseImageCount)`.
 -/
 
 /-- The tail of `distinctMCons`, exposed as a separate definition.
@@ -1086,13 +1107,13 @@ noncomputable def distinctM'_tail
     ZMod E.q :=
   extractorGroupSum E stmt msg hkm (baseAtIndex E stmt msg hkm i)
 
-/-- `distinctMCons` factors as the `-1` head `Fin.cons` tail
-    `distinctM'_tail`. -/
+/-- `distinctMCons` factors as the `-1` head `Fin.cons` (negated) tail
+    `-distinctM'_tail`. -/
 theorem distinctMCons_eq_cons
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
     distinctMCons E stmt msg hkm =
       Fin.cons (α := fun _ => ZMod E.q) (-1 : ZMod E.q)
-        (distinctM'_tail E stmt msg hkm) := rfl
+        (fun i => -distinctM'_tail E stmt msg hkm i) := rfl
 
 /-- `distinctRCons` factors as the `-P_aff` head `Fin.cons` tail `baseAt`. -/
 theorem distinctRCons_eq_cons
@@ -1381,8 +1402,9 @@ theorem polyG_distinct_zero_cons
     (baseAt E stmt msg hkm) (distinctM'_tail E stmt msg hkm) hAllZero'
     Q beta hQinj hQzeros hQcov hβPos hβSum A₀ A₁ hA₀ hA₁ hNV
   -- The conclusion uses `Fin.cons (P.1,-P.2) baseAt` and
-  -- `Fin.cons (-1) distinctM'_tail`, which definitionally equal
-  -- `distinctRCons` and `distinctMCons`.
+  -- `Fin.cons (-1) (fun j => -distinctM'_tail j)`, which definitionally
+  -- equal `distinctRCons` and `distinctMCons` (the latter has a
+  -- negated tail per Session 41 sign resolution).
   exact this
 
 /-- Reindexing lemma: `polyG` is invariant under reindexing the `(R, m)`
@@ -1682,7 +1704,7 @@ theorem baseImagePos_ne_zero
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (i : Fin (baseImageCount E stmt msg hkm)) :
     distinctM' E stmt msg hkm (baseImagePos E stmt msg hkm i)
-      = extractorGroupSum E stmt msg hkm
+      = -extractorGroupSum E stmt msg hkm
           (baseAtIndex E stmt msg hkm i) :=
   distinctM'_succ E stmt msg hkm i
 
@@ -1830,7 +1852,7 @@ theorem extractorCoeffFromSigma_satisfies_D3
     (∀ i, extractorCoeffFromSigma E stmt msg hkm β_fun σ i < d) ∧
     (∀ i, extractorIsCanonical E stmt msg hkm i →
       (extractorCoeffFromSigma E stmt msg hkm β_fun σ i : ZMod E.q)
-        = -(extractorGroupSum E stmt msg hkm i)) ∧
+        = extractorGroupSum E stmt msg hkm i) ∧
     (∀ i, ¬ extractorIsCanonical E stmt msg hkm i →
       extractorCoeffFromSigma E stmt msg hkm β_fun σ i = 0) := by
   classical
@@ -1912,7 +1934,9 @@ theorem extractorCoeffFromSigma_satisfies_D3
             = extractorGroupSum E stmt msg hkm i :=
         extractorGroupSum_congr_of_extractorBases_eq E stmt msg hkm hBases_eq
       rw [hGroupSum_eq] at hBetaM
-      -- hBetaM : (multAt k : ZMod q) + extractorGroupSum i = 0
+      -- hBetaM : (multAt k : ZMod q) + (-extractorGroupSum i) = 0
+      -- (post Session 41 sign: distinctM'_baseImagePos is NEGATED).
+      -- Goal: (multAt k : ZMod q) = extractorGroupSum i.
       linear_combination hBetaM
     · rw [extractorCoeffFromSigma_canonical_nohit
             E stmt msg hkm β_fun σ i hC hHit]
@@ -1941,7 +1965,11 @@ theorem extractorCoeffFromSigma_satisfies_D3
             = extractorGroupSum E stmt msg hkm i :=
         extractorGroupSum_congr_of_extractorBases_eq E stmt msg hkm hBases_eq
       rw [hGroupSum_eq] at hM
-      simp [hM]
+      -- hM : -extractorGroupSum i = 0 (post Session 41 sign).
+      -- Goal: 0 = extractorGroupSum i.
+      have hZero : extractorGroupSum E stmt msg hkm i = 0 := by
+        linear_combination -hM
+      simp [hZero]
   -- (3) Non-canonical indices: trivial.
   · intro i hNotCanon
     exact extractorCoeffFromSigma_noncanon E stmt msg hkm β_fun σ i hNotCanon

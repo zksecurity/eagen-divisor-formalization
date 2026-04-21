@@ -88,16 +88,17 @@ noncomputable def negPIndexSet (stmt : DlogStatement E.q)
       positions get `0`; canonical positions get the paper's integer
       multiplicity `n_i = β_{σ⁻¹(i)}` of D's zero at `B_i`.
 
-      Paper's partial-fraction argument yields `Σ_{j : B_j = B_i} m_j
-      ≡ -β_{σ⁻¹(i)} (mod q)` at matched B_i's. So the integer
-      multiplicity is recovered as `(-groupSum).val`, giving a value
-      in `[0, q) ∩ [0, degE(D)]`. Using `.val` of the raw groupSum
-      would give `q - β_{σ⁻¹(i)}` (large positive), yielding a group
-      element differing from `P` by an integer multiple of `[q]·B_i`
-      — a real soundness gap for curves with group order not dividing q.
+      Paper's partial-fraction argument (paper eq:residue-identity,
+      ip.tex:596-601) yields `Σ_{j : B_j = B_i} m_j ≡ β_{σ⁻¹(i)}
+      (mod q)` at matched B_i's — POSITIVE match between the residue
+      sum and the multiplicity. So the integer multiplicity is
+      recovered as `groupSum.val`, giving a value in `[0, q) ∩
+      [0, degE(D)]`.
 
-      Taking `(-groupSum).val` corrects the sign at the ZMod level
-      before integer lifting. -/
+      (Historical note: Session 41's polyG-bridge sign resolution
+      aligned `polyG`'s additive convention with `logDerivCheckFn`'s
+      RHS sign by negating `distinctMCons`'s tail — propagating
+      cleanly here so `groupSum.val` (no extra negation) is correct.) -/
 noncomputable def extractedScalars (stmt : DlogStatement E.q)
     (msg : MAProverMsg E.q) (hk : stmt.k = msg.k) : Fin msg.k → ℤ :=
   fun i =>
@@ -105,9 +106,9 @@ noncomputable def extractedScalars (stmt : DlogStatement E.q)
       -- Special case: -P ∈ {B_j}. Trivial witness at j* = min.
       if i = (negPIndexSet E stmt msg hk).min' hNegP then (-1 : ℤ) else 0
     else
-      -- General case: -P ∉ {B_j}. Residue matching with sign correction.
+      -- General case: -P ∉ {B_j}. Residue matching (paper's positive form).
       if extractorIsCanonical E stmt msg hk i then
-        ((-(extractorGroupSum E stmt msg hk i)).val : ℤ)
+        ((extractorGroupSum E stmt msg hk i).val : ℤ)
       else 0
 
 /-- Predicate: the extractor succeeds at bound `d`.
