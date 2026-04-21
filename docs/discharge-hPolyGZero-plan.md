@@ -1,7 +1,23 @@
 # Continuation Plan — Discharge `hPolyGZero` (fully close the residue identity)
 
-**Last updated**: 2026-04-21 (after Phase 5 close-out commit `758287c`)
+**Last updated**: 2026-04-21 (Route A exhausted, pivoting to Route B)
 **Baseline**: `758287c` on `master`. Axiom surface is 9. `ma_extractable` carries `hPolyGZero` hypothesis threaded through from `polyG_zero_of_logDerivCheck_identically_zero` (ExtractorBridge.lean:1074-1105).
+
+## Route A status: BLOCKED (3/3 attempts failed)
+
+Three independent subagents concluded Phase 6's ring identity
+`clearedFiberPoly A₀ = polyGPoly A₀ · F + curveEqPoly · H` is
+mathematically equivalent to Lemma 6's function-field norm content.
+Specific obstruction: the polynomial
+`Δ(A₀, A₁) := Σᵢ logDerivTerm(Aᵢ,λ) + Σ_k β_k · L_Q(Q_k)⁻¹`
+vanishes on E iff `chordLogDerivMatchesNormZ` holds. No variant
+`clearedFiberPoly` nor weaker partial identity absorbs this scalar
+content. Threading `chordLogDerivMatchesNormZ` as a hypothesis just
+renames `hPolyGZero` without progress, and still needs the Phase 6
+ring identity for density extension.
+
+**Conclusion**: Route A's premise ("avoid Lemma 6") is infeasible —
+the ring identity IS a polynomial-form Lemma 6. Pivoting to Route B.
 
 ## Goal
 
