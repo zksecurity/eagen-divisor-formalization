@@ -395,6 +395,96 @@ theorem polyG_eq_zero_iff_divided_fraction
   · intro h
     exact Or.inr h
 
+/-! ## Step 4 : `polyGDivided` in `L_Q`-form
+
+    The paper's residue identity is naturally stated in terms of
+    `1 / L_Q(P)` (where `L_Q` is the chord line through `A₀`, `A₁`),
+    whereas `polyGDivided` uses `1 / ellP(P) = 1 / (L_Q(P) · (A₁.1 - A₀.1))`.
+    The identity `ellP = L_Q · (A₁.1 - A₀.1)` transfers between the two.
+
+    Concretely, on non-vertical pairs (`A₀.1 ≠ A₁.1`) where every
+    `L_Q(Q_k)`, `L_Q(R_j)` is nonzero:
+
+    ```
+    polyGDivided E Q β R m A₀ A₁
+      = (A₁.1 - A₀.1)⁻¹ · (Σ_k β_k / L_Q(Q_k) + Σ_j m_j / L_Q(R_j)).
+    ```
+
+    The RHS is the paper's residue sum (times a nonzero scalar factor).
+    This connects Step 5's divided form to the paper's PFE sum. -/
+
+/-- **Paper-form divided-fraction sum in the line-evaluation basis.** -/
+noncomputable def paperResidueDivided
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) : ZMod E.q :=
+  let L := lineThrough A₀.1 A₀.2 A₁.1 A₁.2
+  (∑ k : Fin d, beta k * (L.eval (Q k).1 (Q k).2)⁻¹) +
+  (∑ j : Fin M, m j * (L.eval (R j).1 (R j).2)⁻¹)
+
+/-- **Step 4 identity.** On a non-vertical pair with every line
+    evaluation nonzero, `polyGDivided = (A₁.1 - A₀.1)⁻¹ · paperResidueDivided`. -/
+theorem polyGDivided_eq_xDiffInv_mul_paperResidue
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hNV : A₀.1 ≠ A₁.1)
+    (hQline : ∀ k, (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (Q k).1 (Q k).2 ≠ 0)
+    (hRline : ∀ j, (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R j).1 (R j).2 ≠ 0) :
+    polyGDivided E Q beta R m A₀ A₁ =
+      (A₁.1 - A₀.1)⁻¹ * paperResidueDivided E Q beta R m A₀ A₁ := by
+  classical
+  have hxne : (A₁.1 - A₀.1) ≠ 0 := sub_ne_zero.mpr hNV.symm
+  unfold polyGDivided paperResidueDivided
+  rw [mul_add, Finset.mul_sum, Finset.mul_sum]
+  congr 1
+  · apply Finset.sum_congr rfl
+    intro k _
+    have hLk := hQline k
+    have hL_inv := lineEval_inv_eq_xDiff_div_ellP E A₀ A₁ (Q k) hNV hLk
+    rw [hL_inv]
+    field_simp
+  · apply Finset.sum_congr rfl
+    intro j _
+    have hLj := hRline j
+    have hL_inv := lineEval_inv_eq_xDiff_div_ellP E A₀ A₁ (R j) hNV hLj
+    rw [hL_inv]
+    field_simp
+
+/-- **Corollary.** Under the nonvanishing hypotheses, `polyG = 0` iff
+    `paperResidueDivided = 0`. -/
+theorem polyG_eq_zero_iff_paperResidue
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hNV : A₀.1 ≠ A₁.1)
+    (hQline : ∀ k, (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (Q k).1 (Q k).2 ≠ 0)
+    (hRline : ∀ j, (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R j).1 (R j).2 ≠ 0) :
+    polyG E Q beta R m A₀ A₁ = 0 ↔
+      paperResidueDivided E Q beta R m A₀ A₁ = 0 := by
+  classical
+  -- Upgrade hQline/hRline to hQnz/hRnz (ellP nonzero).
+  have hQnz : ∀ k, ellP E (Q k) A₀ A₁ ≠ 0 := fun k => by
+    rw [ellP_eq_lineEval_mul E _ A₀ A₁ hNV]
+    exact mul_ne_zero (hQline k) (sub_ne_zero.mpr hNV.symm)
+  have hRnz : ∀ j, ellP E (R j) A₀ A₁ ≠ 0 := fun j => by
+    rw [ellP_eq_lineEval_mul E _ A₀ A₁ hNV]
+    exact mul_ne_zero (hRline j) (sub_ne_zero.mpr hNV.symm)
+  rw [polyG_eq_zero_iff_divided_fraction E Q beta R m A₀ A₁ hQnz hRnz]
+  rw [polyGDivided_eq_xDiffInv_mul_paperResidue E Q beta R m A₀ A₁
+        hNV hQline hRline]
+  have hxne : (A₁.1 - A₀.1)⁻¹ ≠ 0 := inv_ne_zero (sub_ne_zero.mpr hNV.symm)
+  constructor
+  · intro h
+    rcases mul_eq_zero.mp h with h | h
+    · exact absurd h hxne
+    · exact h
+  · intro h
+    rw [h, mul_zero]
+
 /-! ## Summary note (Q3.4 status)
 
 The full target theorem
