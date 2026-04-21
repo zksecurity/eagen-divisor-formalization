@@ -9,9 +9,37 @@ Remove the `hPolyGZero` hypothesis from `polyG_zero_of_logDerivCheck_identically
 
 **Non-goals**: reducing the axiom count below 9. The Silverman-III + Lean-core axioms are fixed.
 
-## Execution model
+## EXECUTION INSTRUCTIONS (read first)
 
-Same as the previous plan (`docs/continuation-plan.md`). Driver agent launches subagents per phase, verifies the gate after each, retries on failure. Each phase commits once clean. No AI attribution, no new axioms, no `sorry`/`admit`, `lake build` green, `--no-gpg-sign`.
+**You are the driver agent.** Your job is to execute all phases of this plan **via subagents**, sequentially, without stopping until `hPolyGZero` is discharged or you have exhausted both routes.
+
+**Execution protocol**:
+
+1. For each phase below (6, 7, 8, 9, 10 on Route A), **launch a subagent** with the `Agent` tool, `subagent_type: general-purpose`. Pass the subagent's prompt **verbatim** from the phase's "Subagent prompt" block.
+
+2. **After each subagent returns**, verify the gate:
+   - `git log --oneline -3` — confirm a new commit landed.
+   - `lake build` — confirm green.
+   - `echo 'import Divisor
+#print axioms Divisor.ma_extractable' > /tmp/check_ax.lean && lake env lean /tmp/check_ax.lean` — confirm the output is **exactly** the 9-axiom Tier-1 whitelist (not 10, not 8).
+   - If gate fails: re-launch the subagent with a fixup prompt citing the specific failure. **Max 3 retries per phase.**
+
+3. **Do not stop** between phases unless a halt condition is met. Each phase's subagent commits; the driver verifies and moves on.
+
+4. **Pivot to Route B** only if Phase 6 (Route A's ring identity) fails all 3 retries. Document the Phase 6 blocker in the plan doc, then launch Phase 6' (Route B) using the analogous prompt from the Route B section below. Phases 7–10 are shared.
+
+5. **Halt conditions (only these)**:
+   - 3 retries fail on the same phase AND the fallback route is also exhausted.
+   - A phase genuinely requires a new axiom or a multi-week Mathlib addition (e.g., a Sylvester-matrix library from scratch) — document and halt honestly.
+   - The Tier-1 axiom surface mutates (grows or shrinks) and cannot be restored.
+
+6. **Commit discipline**: each subagent commits its own phase. Do not batch phases. Each commit is human-style (no AI attribution) and uses `git commit --no-gpg-sign`.
+
+7. **After Phase 10**, run the final verification:
+   - `lake build` clean.
+   - `#print axioms Divisor.ma_extractable` = exactly the 9 Tier-1 names.
+   - `grep -r '^axiom ' Divisor/` lists exactly the pre-existing axioms (no new ones).
+   - Report the commit chain, final surface, and any Route B fallback that was used.
 
 ## Strategy overview
 
