@@ -4645,3 +4645,85 @@ infrastructure estimate from Sessions 33-35 remains accurate, and
 the newly-surfaced sign issue adds another design question that
 must be resolved before closure can proceed.
 
+### Session 41 (2026-04-20) — Phase 6 sign resolution (Option C)
+
+**Scope**: Resolve the sign-convention mismatch surfaced by Session 40
+between `logDerivCheckFn`'s RHS and `polyG`'s additive form (which
+blocked closure via plain Lemma 6).
+
+**Result**: Sign resolved (1 commit, `efdd1ec`); downstream cascade
+propagated consistently. Build clean, completeness unaffected, axiom
+still present (closure now conditional on Lemma 6 mechanization
+only).
+
+**Commit**:
+
+* `efdd1ec` — Option C sign fix.
+  * `polyG_zero_of_logDerivCheck_identically_zero`: reformulated
+    `m'` argument from `Fin.cons (-1) m` to
+    `Fin.cons (-1) (fun j => -m j)`. Derivation:
+
+    ```
+    logDerivCheckFn = ΣLT + L(-P)⁻¹ + Σⱼ mⱼ·L(Bⱼ)⁻¹   (Lean expansion)
+    Lemma 6         ⇒   ΣLT = -Σₖ βₖ·L(Qₖ)⁻¹
+    Combining (=0)  ⇒   Σₖ βₖ·L(Qₖ)⁻¹ = L(-P)⁻¹ + Σⱼ mⱼ·L(Bⱼ)⁻¹
+    ```
+
+    Want `polyGDivided(cons(-1)(-m)) = 0`:
+    ```
+      polyG=0 ⟺ Σβ/L(Q) + Σm'/L(R) = 0
+              ⟺ Σβ/L(Q) - L(-P)⁻¹ - Σⱼ mⱼ·L(Bⱼ)⁻¹ = 0
+              ⟺ Σβ/L(Q) = L(-P)⁻¹ + Σⱼ mⱼ·L(Bⱼ)⁻¹  ← matches derivation ✓
+    ```
+
+  * `distinctMCons` tail negated: `-extractorGroupSum (baseAtIndex i)`
+    (instead of `+extractorGroupSum`). Propagates through
+    `distinctMCons_succ`, `distinctM'_succ`,
+    `distinctM'_baseImagePos`, `distinctM'_tail_group_invariant`.
+
+  * `polyG_distinct_zero_cons` unchanged (the axiom's new conclusion
+    `polyG ... (cons(-1) (fun j => -distinctM'_tail j))` is
+    definitionally equal to `polyG ... distinctMCons` under the new
+    `distinctMCons` definition).
+
+  * `extractorSucceeds_of_natural_witness`: `hCoeff_zmod` hypothesis
+    changed from `(coeff : ZMod) = -(extractorGroupSum)` to
+    `(coeff : ZMod) = extractorGroupSum` (positive match).
+
+  * `extractedScalars` (general-case canonical branch) uses
+    `(extractorGroupSum).val` instead of `(-extractorGroupSum).val`,
+    matching paper's positive residue identity
+    `n_R ≡ Σⱼ mⱼ (mod q)` directly (paper eq:residue-identity,
+    ip.tex:596-601). Soundness.lean docstring updated accordingly.
+
+  * `extractorCoeffFromSigma_satisfies_D3` second conjunct flipped
+    from `-(extractorGroupSum)` to `+extractorGroupSum`.
+
+**Completeness** (`ma_completeness`): untouched. Completeness only
+uses `weil_reciprocity_honest` and does not consume the polyG
+bridge or `extractedScalars` sign conventions.
+
+**Axiom state**: unchanged (same surface as before Session 40).
+
+```
+propext, Classical.choice, Quot.sound                             (Lean)
+Divisor.ECPoint.add_assoc, add_comm, neg_add_cancel               (Silverman III §2)
+Divisor.principal_divisor_iff                                     (Silverman III Cor 3.5)
+Divisor.CoordRingElt.divisor_degree_eq                            (Silverman III Prop 3.4)
+Divisor.CoordRingElt.divisor_group_sum_zero                       (Silverman III Prop 3.4)
+Divisor.polyG_zero_of_logDerivCheck_identically_zero              (transient, sign-corrected)
+```
+
+**What's now unblocked**: with the sign fix, Session 40's Steps 1,
+4, 5 infrastructure + a mechanized Lemma 6 would yield
+`paperResidueDivided = 0`, hence `polyG = 0`, hence closure. The
+remaining deliverable is Lemma 6 (paper `lem:log-deriv-norm`,
+ec.tex:557-579) as a theorem — a function-field partial-fraction
+identity whose mechanization still requires ~1500 LOC per the
+earlier plan estimate.
+
+**Honest assessment**: Sign resolution is a prerequisite for any
+closure attempt; with it now in place, the remaining blocker is
+a single well-defined function-field lemma (Lemma 6) rather than
+a composite unresolved question. Fine-grained progress.
+
