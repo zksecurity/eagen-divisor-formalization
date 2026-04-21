@@ -605,4 +605,146 @@ across multiple new modules (`ChordSum.lean`, `VietaCollapse.lean`,
 include the scalar residue identity as an assumption (deferring to a
 still-later session). -/
 
+/-! ## Chord-residue bridge from Lemma 6 hypothesis
+
+    **Bridge theorem**: assuming the scalar Lemma 6 identity
+    `Σᵢ logDerivTerm(Aᵢ, λ) = -Σ_k β_k · L_Q(Q_k)⁻¹` at a defined
+    non-vertical pair (`A₀, A₁`) with all line-evaluations nonzero at
+    every Q_k and B_j, if furthermore `logDerivCheckFn = 0` at the pair,
+    then `polyG = 0` at the pair.
+
+    This theorem isolates the Lemma 6 content as a single scalar
+    hypothesis. Its proof is pure scalar algebra (field arithmetic
+    plus the Step-5 polyG ⇔ paperResidue equivalence) and requires
+    no function-field infrastructure.
+
+    Consuming this lemma: any mechanization of Lemma 6 (as a theorem)
+    closes `polyG_zero_of_logDerivCheck_identically_zero` at defined
+    pairs. The full axiom also needs a density extension from defined
+    to all non-vertical pairs (via `polyGPoly`'s polynomial form).
+
+    The bridge theorem uses the sign convention of the current axiom:
+    `m' = Fin.cons (-1) (fun j => -m j)` for `polyG`'s R/m' arguments. -/
+
+/-- **Chord-residue bridge (Lemma 6 hypothesis form)**. Under Lemma 6
+    at a defined non-vertical pair and `logDerivCheckFn = 0`, `polyG`
+    vanishes at that pair.
+
+    Hypotheses:
+    * `hNV : A₀.1 ≠ A₁.1` — non-vertical pair.
+    * `hQline : L_Q(Q_k) ≠ 0` for every k — Q's off the chord.
+    * `hNegPline : L_Q(-P) ≠ 0` — -P off the chord (part of the
+      `logDerivCheckFnDefined` hypothesis).
+    * `hBline : L_Q(B_j) ≠ 0` for every j — B's off the chord.
+    * `hLemma6 : Σᵢ logDerivTerm(Aᵢ, λ) = -Σ_k β_k · L_Q(Q_k)⁻¹`.
+    * `hCheck : logDerivCheckFn E D P k B m A₀ A₁ = 0`.
+
+    Conclusion: `polyG E Q β R m' A₀ A₁ = 0` where
+    `R = Fin.cons (P.1, -P.2) B`, `m' = Fin.cons (-1) (fun j => -m j)`. -/
+theorem polyG_zero_of_Lemma6_and_logDerivCheck_zero
+    (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    {d : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hNV : A₀.1 ≠ A₁.1)
+    (hQline : ∀ k', (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (Q k').1 (Q k').2 ≠ 0)
+    (hNegPline : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2) ≠ 0)
+    (hBline : ∀ j, (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 ≠ 0)
+    (hLemma6 :
+      logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀
+        + logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₁
+        + logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2)
+            (((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1,
+              (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) *
+                ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1)
+                  + (A₀.2 - (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) * A₀.1)))
+      = -∑ k' : Fin d, beta k' *
+          ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (Q k').1 (Q k').2)⁻¹)
+    (hCheck : logDerivCheckFn E D P k B m A₀ A₁ = 0) :
+    polyG E Q beta
+              (Fin.cons (P.1, -P.2) B)
+              (Fin.cons (-1) (fun j => -m j))
+              A₀ A₁ = 0 := by
+  classical
+  -- Step 1: derive paperResidueDivided = 0 from Lemma 6 + hCheck.
+  -- Step 2: apply polyG_eq_zero_iff_paperResidue to conclude polyG = 0.
+  set L := lineThrough A₀.1 A₀.2 A₁.1 A₁.2 with hL_def
+  set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLam_def
+  -- All R's line-evaluations: R = Fin.cons (P.1, -P.2) B, so L(R j) ≠ 0 for all j.
+  have hRline : ∀ j : Fin (k + 1),
+      L.eval
+        ((Fin.cons (α := fun _ => ZMod E.q × ZMod E.q) (P.1, -P.2) B) j).1
+        ((Fin.cons (α := fun _ => ZMod E.q × ZMod E.q) (P.1, -P.2) B) j).2 ≠ 0 := by
+    intro j
+    refine Fin.cases ?_ ?_ j
+    · show L.eval P.1 (-P.2) ≠ 0
+      exact hNegPline
+    · intro i
+      show L.eval (B i).1 (B i).2 ≠ 0
+      exact hBline i
+  -- Unpack logDerivCheckFn = 0: Σᵢ logDerivTerm = -L(-P)⁻¹ + Σⱼ -m_j · L(B_j)⁻¹.
+  have hSumLT :
+      logDerivTerm E D E.curveA lam A₀
+        + logDerivTerm E D E.curveA lam A₁
+        + logDerivTerm E D E.curveA lam
+            (lam ^ 2 - A₀.1 - A₁.1,
+             lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
+      = -((L.eval P.1 (-P.2))⁻¹)
+        + ∑ j : Fin k, -(m j) * (L.eval (B j).1 (B j).2)⁻¹ := by
+    have hUnfold : logDerivCheckFn E D P k B m A₀ A₁ =
+      (logDerivTerm E D E.curveA lam A₀
+        + logDerivTerm E D E.curveA lam A₁
+        + logDerivTerm E D E.curveA lam
+            (lam ^ 2 - A₀.1 - A₁.1,
+             lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1)))
+      - (-((L.eval P.1 (-P.2))⁻¹)
+         + ∑ j : Fin k, -(m j) * (L.eval (B j).1 (B j).2)⁻¹) := by
+      unfold logDerivCheckFn
+      rfl
+    rw [hUnfold, sub_eq_zero] at hCheck
+    exact hCheck
+  -- Combine with Lemma 6: -Σ β · L(Q)⁻¹ = -L(-P)⁻¹ + Σ -m · L(B)⁻¹.
+  have hCombined :
+      -(∑ k' : Fin d, beta k' * (L.eval (Q k').1 (Q k').2)⁻¹) =
+        -((L.eval P.1 (-P.2))⁻¹)
+        + ∑ j : Fin k, -(m j) * (L.eval (B j).1 (B j).2)⁻¹ := by
+    rw [← hLemma6]; exact hSumLT
+  -- Rearrange: Σ β · L(Q)⁻¹ + (-1)·L(-P)⁻¹ + Σ (-m_j) · L(B_j)⁻¹ = 0.
+  have hRearr :
+      (∑ k' : Fin d, beta k' * (L.eval (Q k').1 (Q k').2)⁻¹)
+      + ((-1) * (L.eval P.1 (-P.2))⁻¹
+         + ∑ j : Fin k, (-(m j)) * (L.eval (B j).1 (B j).2)⁻¹) = 0 := by
+    have h1 : (∑ j : Fin k, -(m j) * (L.eval (B j).1 (B j).2)⁻¹)
+            = ∑ j : Fin k, (-(m j)) * (L.eval (B j).1 (B j).2)⁻¹ := by
+      apply Finset.sum_congr rfl; intros; ring
+    linear_combination -hCombined - h1
+  -- Express paperResidueDivided on R = Fin.cons (-P) B, m' = Fin.cons (-1) (-m).
+  -- paperResidueDivided = Σ β · L(Q)⁻¹ + Σⱼ m'_j · L(R_j)⁻¹.
+  -- With R = cons, m' = cons, the second sum = (-1)·L(-P)⁻¹ + Σⱼ (-m_j)·L(B_j)⁻¹.
+  have hPaper :
+      paperResidueDivided E Q beta
+          (Fin.cons (α := fun _ => ZMod E.q × ZMod E.q) (P.1, -P.2) B)
+          (Fin.cons (α := fun _ => ZMod E.q) (-1) (fun j => -m j))
+          A₀ A₁ = 0 := by
+    show (∑ k' : Fin d, beta k' * (L.eval (Q k').1 (Q k').2)⁻¹)
+         + (∑ j : Fin (k + 1),
+             (Fin.cons (α := fun _ => ZMod E.q) (-1) (fun j => -m j)) j *
+               ((L.eval
+                   ((Fin.cons (α := fun _ => ZMod E.q × ZMod E.q) (P.1, -P.2) B) j).1
+                   ((Fin.cons (α := fun _ => ZMod E.q × ZMod E.q) (P.1, -P.2) B) j).2))⁻¹)
+         = 0
+    -- Split the sum over Fin (k+1) via Fin.sum_univ_succ.
+    rw [Fin.sum_univ_succ]
+    -- The (0) term is (-1) * L(-P)⁻¹; the succ term is Σⱼ (-m_j) * L(B_j)⁻¹.
+    -- These match hRearr.
+    show (∑ k' : Fin d, beta k' * (L.eval (Q k').1 (Q k').2)⁻¹)
+         + ((-1) * (L.eval P.1 (-P.2))⁻¹
+            + ∑ i : Fin k, (-m i) * (L.eval (B i).1 (B i).2)⁻¹) = 0
+    exact hRearr
+  -- Apply Step-4 equivalence: polyG = 0 iff paperResidueDivided = 0.
+  rw [polyG_eq_zero_iff_paperResidue E Q beta _ _ A₀ A₁ hNV hQline hRline]
+  exact hPaper
+
 end Divisor

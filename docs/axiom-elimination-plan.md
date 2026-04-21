@@ -4806,3 +4806,97 @@ primitives. The latter has been attempted repeatedly (Sessions 34-38)
 and blocked on the cross-ring structural mismatch between
 `F_q[x]`-side `normPoly` and `F_q[z]`-side paper N(D).
 
+### Session 43 (2026-04-20) — Lemma 6 hypothesis bridge theorem
+
+**Scope**: Respond to prompt claim that Lemma 6 can be mechanized at
+x-coordinate level via Step 1 (`chord_aggregate_identity`) + Vieta
+reduction + Q3.2's PFE for `normPoly E D` + Q3.1 bridge. Attempt
+closure of `polyG_zero_of_logDerivCheck_identically_zero`.
+
+**Analysis**: The claimed strategy requires proving, as a scalar
+identity over `ZMod E.q`, that
+
+```
+Σᵢ logDerivTerm(Aᵢ, λ) = -Σ_k β_k · L_Q(Q_k)⁻¹                 (Lemma 6)
+```
+
+at each defined non-vertical pair. Multiplying through by the common
+denominator `(∏ᵢ N(D)(xᵢ)·f'(xᵢ)) · ∏_k L_Q(Q_k)` yields a polynomial
+identity in `(λ, μ, A, B, a_coefs, b_coefs, x_i, y_i, x_k^Q, y_k^Q, β_k)`
+subject to algebraic constraints:
+
+- `y_i = λ x_i + μ` (on-chord).
+- `x_0 + x_1 + x_2 = λ²`, `x_0 x_1 + x_0 x_2 + x_1 x_2 = A - 2λμ`,
+  `x_0 x_1 x_2 = μ² - B` (Vieta for chord cubic).
+- `(y_k^Q)² = (x_k^Q)³ + A·x_k^Q + B` (Q_k on E).
+- `a(x_k^Q) = b(x_k^Q)·y_k^Q` (Q_k zero of D).
+- `Σ β_k = deg_E(D)` (Silverman III 3.4, global relation).
+
+The identity is **structurally a statement about residues of log
+derivatives on E** (the divisor-theoretic content): the β_k's appear
+as multiplicities of Q_k in div(D), and L_Q(Q_k) as values of the chord
+line at Q_k. Without a function-field model of `(dD/dz)/D` as a
+meromorphic 1-form on `E` and a residue theorem (`trace_of_log_deriv =
+Σ multiplicities_at_zeros_and_poles`), there is no mechanical path
+that reduces to `ring`/`linear_combination` unless one manually
+enumerates all the polynomial cases keyed by `d = deg_E(D)`, the sheet
+structure of each Q_k (2-torsion vs lone vs twin), and the per-sheet
+rootMult(x_k^Q, N(D))-to-β_k correspondence (Q3.1's bridge).
+
+The expansion has exponential size in `d`: for each summand on the
+LHS and RHS, all `d` + 3 Q_k's and x_i's contribute multiplicative
+factors. Even at `d = 1` (a single simple D-zero), the identity is
+non-trivial (requires Vieta + on-curve + on-chord substitution) and
+no prior session has produced a proof witness.
+
+**Concrete contribution**: Added a **"Lemma 6 hypothesis bridge"**
+theorem `polyG_zero_of_Lemma6_and_logDerivCheck_zero` in
+`Divisor/ResidueIdentity.lean`. Given:
+- `hLemma6 : Σᵢ logDerivTerm(Aᵢ, λ) = -Σ_k β_k · L_Q(Q_k)⁻¹`
+  (the scalar identity at the current pair).
+- `hCheck : logDerivCheckFn = 0` at the pair.
+- Nonvanishing of `L_Q(Q_k)`, `L_Q(-P)`, `L_Q(B_j)`, and non-verticality.
+
+The theorem concludes `polyG E Q β (Fin.cons (P.1,-P.2) B)
+(Fin.cons (-1) (fun j => -m j)) A₀ A₁ = 0`. Proof is pure scalar
+algebra using `polyG_eq_zero_iff_paperResidue` (Step 4 equivalence).
+
+**Use case**: If a subsequent session mechanizes the Lemma 6 scalar
+identity (e.g., from a function-field layer or a restricted-class
+direct proof), the bridge lemma mechanically completes the closure
+of `polyG_zero_of_logDerivCheck_identically_zero` at the defined
+pair. A density extension to all non-vertical pairs is still required
+(via `polyGPoly`'s polynomial form — `bivEval_polyGPoly` and
+`polyGPoly_natDegree_le` / `InnerDegLe_polyGPoly`).
+
+**Halt justification**: the direct Lemma 6 proof still requires
+function-field infrastructure we do not have. The prompt's claim that
+"ring / linear_combination + PFE from Q3.2" chain closes the identity
+"mechanically" is not supported by the concrete size or the structure
+of the identity (it conflates a residue theorem with a polynomial
+identity over distinct rings: `F_q(x)` for N(D)'s PFE vs
+`F_q(z) = F_q(y - λx)` for Lemma 6's identity). These rings share a
+subring `F_q` only; bridging them requires either an explicit F_q(z)
+model (function field) or per-case enumeration by `d` and sheet
+structure.
+
+The bridge lemma, however, reduces the axiom to exactly Lemma 6 as a
+standalone scalar identity, which is the cleanest residual target for
+any future session attempting closure.
+
+**Axiom state**: unchanged. `polyG_zero_of_logDerivCheck_identically_zero`
+remains as the sole transient axiom.
+
+```
+propext, Classical.choice, Quot.sound                             (Lean)
+Divisor.ECPoint.add_assoc, add_comm, neg_add_cancel               (Silverman III §2)
+Divisor.principal_divisor_iff                                     (Silverman III Cor 3.5)
+Divisor.CoordRingElt.divisor_degree_eq                            (Silverman III Prop 3.4)
+Divisor.CoordRingElt.divisor_group_sum_zero                       (Silverman III Prop 3.4)
+Divisor.polyG_zero_of_logDerivCheck_identically_zero              (transient, sign-corrected)
+```
+
+**LOC this session**: +~100 code (bridge lemma + summary), ~70 plan
+lines. No new axioms, no sorries. Build green. `ma_extractable`'s
+axiom surface unchanged.
+
