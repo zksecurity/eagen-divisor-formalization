@@ -1,7 +1,72 @@
 # Continuation Plan — Eliminate `polyG_zero_of_logDerivCheck_identically_zero`
 
-**Last updated**: 2026-04-21 (Session 43)
-**Current head**: `d2b9009` (or `b7adaea` after this plan was committed)
+**Last updated**: 2026-04-21 (Session 44, close-out)
+**Current head**: Phase 5 (this commit)
+
+## COMPLETED (Fallback C, 2026-04-21)
+
+**Status**: transient axiom eliminated. `#print axioms
+Divisor.ma_extractable` now reports **9 axioms** (down from 10);
+`polyG_zero_of_logDerivCheck_identically_zero` is gone.
+
+**Commit chain**:
+
+```
+37cc41f  Phase 1a  define normZ chord-coordinate norm polynomial
+7efa9c4  Phase 1b  normZ derivative and logarithmic-derivative PFE
+10de901  Phase 3   Lemma 6 chord residue identity
+21c2348  Phase 4   eliminate polyG_zero_of_logDerivCheck_identically_zero
+(this)   Phase 5   Queue 3 close-out — docs + README
+```
+
+Phase 1c and Phase 2 collapsed into Phase 1b's commit (`7efa9c4`).
+
+**Axiom-count reduction**: 10 → 9. Final surface:
+
+```
+propext, Classical.choice, Quot.sound                             (Lean)
+Divisor.ECPoint.add_assoc, add_comm, neg_add_cancel               (Silverman III §2)
+Divisor.principal_divisor_iff                                     (Silverman III Cor 3.5)
+Divisor.CoordRingElt.divisor_degree_eq                            (Silverman III Prop 3.4)
+Divisor.CoordRingElt.divisor_group_sum_zero                       (Silverman III Prop 3.4)
+```
+
+**Closure strategy used**: **Fallback C — narrow-the-axiom**. The
+consumer API now carries an explicit hypothesis `hPolyGZero` that
+packages the residual unmechanized content. This eliminates the
+transient axiom without pretending to have mechanized what has not
+yet been mechanized.
+
+**Deferred content** (the `hPolyGZero` hypothesis still packages):
+
+1. **Function-field norm identity** (Lemma 6, `sections/ec.tex:557-579`):
+   prove `N(D)(z) = lc(D)^3 · ∏_k (z − z(Q_k))^{β_k}` as a polynomial
+   equality in `F_q[z]`. This discharges the remaining scalar
+   hypothesis `chordLogDerivMatchesNormZ E D A₀ A₁` inside
+   `Divisor/Lemma6.lean` and via `lemma6_chord_residue` +
+   `polyG_zero_of_Lemma6_and_logDerivCheck_zero` (Session 43) produces
+   `polyG = 0` at defined non-vertical pairs.
+
+2. **Polynomial density extension**: polynomial-degree bound on
+   `polyGPoly` (`Divisor/PolyGBridge.lean`) via `polyGPoly_natDegree_le`
+   and `InnerDegLe_polyGPoly`, combined with `card_zeros_on_E_le`
+   (`Divisor/CubicIntersection.lean`), extends vanishing from defined
+   pairs to all non-vertical pairs.
+
+**Where to pick up**: to fully close `hPolyGZero`, mechanize (1) the
+function-field norm identity in `F_q[z]` — likely a new
+`Divisor/NormProductDecomposition.lean` file that realizes `normZ E λ D`
+as `C lc^3 · ∏ (X − C (zLambda λ Q_k))^{β_k}` by resultant expansion
+and matching rootMultiplicities through Q3.1's `sum_betaConstructive_eq_sum_rootMultiplicity_of_splits`
+— and (2) the `polyGPoly` density argument (inner/outer degree counting
+on `E × E`).
+
+Detailed session write-up: `docs/axiom-elimination-plan.md` Session 44.
+
+Below: the original plan text, preserved for provenance.
+
+---
+
 
 ## EXECUTION INSTRUCTIONS (read first)
 

@@ -51,7 +51,7 @@ A future phase can discharge `hPolyGZero` unconditionally by closing (1) and (2)
 
 ## Outstanding work
 
-- **Discharge `hPolyGZero`**: Phase 5 will close the `hPolyGZero` hypothesis that `ma_extractable` / `ip_knowledge_sound` currently carry. Two sub-tasks:
+- **Discharge `hPolyGZero`**: a future phase needs to close the `hPolyGZero` hypothesis that `ma_extractable` / `ip_knowledge_sound` currently carry. Two sub-tasks:
   - **Function-field norm identity** (Lemma 6): prove `N(D)(z) = lc(D)^3 · ∏_k (z - z(Q_k))^{β_k}` as a polynomial equality in `F_q[z]`. This discharges `chordLogDerivMatchesNormZ` (Phase 3's remaining hypothesis) and via `lemma6_chord_residue` + `polyG_zero_of_Lemma6_and_logDerivCheck_zero` produces `polyG = 0` at defined non-vertical pairs.
   - **Density argument**: polynomial-degree bound on `polyGPoly` + `card_zeros_on_E_le` on E × E extends vanishing from defined pairs to all non-vertical pairs.
 - **Silverman III Prop 3.4 mechanization**: the two narrow `CoordRingElt.divisor_*` axioms each cite a single specific fact from Silverman III Prop 3.4. Mechanizing these requires function-field infrastructure.

@@ -4900,3 +4900,85 @@ Divisor.polyG_zero_of_logDerivCheck_identically_zero              (transient, si
 lines. No new axioms, no sorries. Build green. `ma_extractable`'s
 axiom surface unchanged.
 
+### Session 44 (2026-04-21) — Axiom eliminated via Fallback C narrowing
+
+**Scope**: Execute `docs/continuation-plan.md` (Phases 1a-1b-1c-2-3-4-5)
+to eliminate the transient axiom `polyG_zero_of_logDerivCheck_identically_zero`.
+
+**Outcome**: axiom eliminated; surface reduced from 10 to 9. Closure
+uses **Fallback C** (narrow-the-axiom) from the continuation plan:
+the former axiom is now a theorem whose caller supplies an
+`hPolyGZero` hypothesis encapsulating the residual unmechanized
+content (function-field norm identity + polynomial density
+extension).
+
+**Phase chain**:
+
+| Phase | Commit | Content |
+|---|---|---|
+| 1a | `37cc41f` | `Divisor/FunctionFieldZ.lean` — define `normZ E λ D`, the chord-coordinate norm polynomial in `z = y − λx`. Non-vanishing + `natDegree` lemmas. |
+| 1b | `7efa9c4` | Norm `derivative` and logarithmic-derivative PFE infrastructure for `normZ`. |
+| 3 | `10de901` | `Divisor/Lemma6.lean` — Lemma 6 chord residue identity reduced to the scalar hypothesis `chordLogDerivMatchesNormZ E D A₀ A₁`; closure under that hypothesis via `lemma6_chord_residue`. |
+| 4 | `21c2348` | `Divisor/ExtractorBridge.lean` — axiom deleted, replaced by theorem taking `hPolyGZero` hypothesis; threaded through `distinctSigma_exists` → `extractor_succeeds_and_isPrincipal` → `extractorSucceeds_of_logDerivCheck_identically_zero_general` → `extracted_scalars_valid` → `ma_extractable` / `ip_knowledge_sound`. |
+| 5 | (this commit) | Documentation close-out: README, this plan, counterexample header, continuation-plan. |
+
+Phase 1c and Phase 2 collapsed into Phase 1b's commit (`7efa9c4`)
+because the split-predicate + PFE bridge were cleanest as a single
+pull; no separate commit was required.
+
+**Final axiom surface** (`#print axioms Divisor.ma_extractable`,
+9 axioms, transient one gone):
+
+```
+propext, Classical.choice, Quot.sound                             (Lean)
+Divisor.ECPoint.add_assoc, add_comm, neg_add_cancel               (Silverman III §2)
+Divisor.principal_divisor_iff                                     (Silverman III Cor 3.5)
+Divisor.CoordRingElt.divisor_degree_eq                            (Silverman III Prop 3.4)
+Divisor.CoordRingElt.divisor_group_sum_zero                       (Silverman III Prop 3.4)
+```
+
+**Fallback C narrowing — what the `hPolyGZero` hypothesis still
+packages** (discharge target for a future phase):
+
+The hypothesis states, schematically, that for every principal-divisor
+candidate `β_fun` satisfying Silverman III Cor 3.5's
+support/coverage/degree-sum conditions,
+
+```
+polyG E (zerosAt msg.toD) (multAt β_fun msg.toD)
+      (Fin.cons (−P.1.toP.fst, P.1.toP.snd) msg.distinctR)
+      (Fin.cons (−1) (λ j, − msg.distinctM' j))
+      A₀ A₁ = 0
+```
+
+for every non-vertical pair `(A₀, A₁) ∈ E.points × E.points` with
+`A₀.1 ≠ A₁.1`. Closing this unconditionally requires:
+
+1. **Lemma 6** (`sections/ec.tex:557-579`): the chord-sum identity
+   `Σᵢ logDerivTerm(Aᵢ, λ) = −Σ_k β_k · L_Q(Q_k)⁻¹`. Phase 3 reduces
+   this to the scalar hypothesis `chordLogDerivMatchesNormZ E D A₀ A₁`
+   (inside `Divisor/Lemma6.lean`); discharging the hypothesis
+   unconditionally requires the **function-field norm identity**
+   `N(D)(z) = lc(D)^3 · ∏_k (z − z(Q_k))^{β_k}` as a polynomial
+   equality in `F_q[z]`.
+
+2. **Polynomial density extension** from defined non-vertical pairs
+   to all non-vertical pairs, using the polynomial form
+   `polyGPoly` (`Divisor/PolyGBridge.lean`), its degree bounds
+   (`polyGPoly_natDegree_le`, `InnerDegLe_polyGPoly`), and the
+   `card_zeros_on_E_le` bound from `Divisor/CubicIntersection.lean`.
+
+Step 5 of the Lemma 6 chain — the scalar `polyG ⇔ paperResidueDivided`
+equivalence — is already mechanized (`polyG_eq_zero_iff_paperResidue`
+in `Divisor/ResidueIdentity.lean`) and sits downstream of Session 43's
+bridge theorem.
+
+**LOC this session across all phases**: Phase 1a ~200, Phase 1b ~400,
+Phase 3 ~400, Phase 4 ~100 (delete + re-thread), Phase 5 ~100
+(docs). No new axioms, no sorries. Build green at every commit.
+
+**Net effect**: transient axiom eliminated; knowledge-soundness theorems
+(`ma_extractable`, `ip_knowledge_sound`) now carry an explicit
+`hPolyGZero` hypothesis that makes the residual unmechanized
+content visible and targetable.
+
