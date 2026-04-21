@@ -19,6 +19,74 @@ ring identity for density extension.
 **Conclusion**: Route A's premise ("avoid Lemma 6") is infeasible —
 the ring identity IS a polynomial-form Lemma 6. Pivoting to Route B.
 
+## Route B status: BLOCKED (Phase 6' scope assessment, 2026-04-21)
+
+Phase 6' (Route B) was scoped against baseline `4ee0616`. Discharging
+`chordLogDerivMatchesNormZ` reduces (via the existing Phase 2 PFE
+`normZ_logDeriv_at_chord_intercept`) to the scalar identity
+
+  Σᵢ logDerivTerm(Aᵢ, λ) = -Σ_Q β(Q) · L_Q(Q)⁻¹
+
+which is exactly the paper's Lemma 6 (`~/paper/divisor/sections/ec.tex:587-609`).
+This is a function-field trace identity: the LHS is the chord-local
+log-derivative of D summed over the three z-fiber preimages at z=μ, and
+the RHS is the logarithmic derivative of the (3-sheet) function-field
+norm `N_{F_q(E)/F_q(z)}(D)` at z=μ. Connecting them requires the
+standard function-field trace formula `L(N(g))|_z = Σᵢ L(g)|_{Aᵢ(z)}`.
+
+Mechanizing this in Lean from existing infrastructure requires:
+
+1. A 3×3 Sylvester matrix construction for `D(x, y) = a(x) - y·b(x)`
+   versus `y² - (x³ + A·x + B)` against the variable `z = y - λ·x`
+   (not the existing 2×2 `resultantX`, which is the y-Galois norm
+   over x — a different resultant).
+
+2. A polynomial identity proof that this 3×3 resultant, as a
+   polynomial in z over F_q[x...], equals `lc(D)³ · ∏_k (z - z(Q_k))^β_k`
+   (the paper's function-field norm decomposition).
+
+3. A chord-parametrization bridge: expressing `D(A_i(z))` for the
+   three preimages `A_i(z)` as rational functions of z, and proving
+   that their product equals the Sylvester resultant (up to the
+   leading coefficient).
+
+4. Taking logarithmic derivatives on (3) at z=μ to recover Lemma 6
+   at the chord intercept.
+
+The existing `normPoly E D = a² - b² · curveX` (BetaConstructive.lean:57)
+is the 2-sheet Galois norm w.r.t. y ↔ −y, which is orthogonal to the
+z-projection used in Lemma 6. It cannot be reused for (1)-(3); a new
+3-sheet construction must be written from scratch.
+
+Realistic scope estimate for Phases 6'/7' to discharge
+`chordLogDerivMatchesNormZ` without new axioms:
+
+- Phase 6' (Sylvester setup in z): 600-1000 LOC of Mathlib-level
+  multivariate polynomial resultant work.
+- Phase 7' (product identity `Sylvester = lc³ · ∏(z-z(Q))^β`): 800-1500
+  LOC combining the resultant formula with the existing
+  `betaConstructive` rootMultiplicity bridge and a chord-fiber
+  discriminant argument.
+- Phase 8' (Lemma 6 scalar form at chord intercept, plus
+  application through `polyG_zero_of_Lemma6_and_logDerivCheck_zero`):
+  400-700 LOC.
+
+**Total**: 1800-3200 LOC of new function-field infrastructure. This
+is a multi-week effort and exceeds the subagent budget. It is not
+mechanically derivable from the existing Lean codebase without
+substantial Mathlib-level additions.
+
+**Subagent halt reason** (Phase 6' Route B): the scope assessment
+matches the plan's original HALT condition on Sylvester library size.
+Returning FAIL honestly: no axiom was added, no partial/half-done
+work was committed, working tree remains clean at `4ee0616`.
+
+The 9-axiom Tier-1 surface remains intact. `ma_extractable`
+continues to carry the `hPolyGZero` hypothesis as a clearly-scoped
+statement-level precondition (the paper's Lemma 6 in chord-sum form
+plus density extension), documented in
+`README.md` and `Divisor/ExtractorBridge.lean:1046-1105`.
+
 ## Goal
 
 Remove the `hPolyGZero` hypothesis from `polyG_zero_of_logDerivCheck_identically_zero` so the theorem takes the original (axiom-style) inputs only. Cascade the removal up through `ma_extractable` and `ip_knowledge_sound`. Final state: 9 axioms, no extra hypotheses, `ma_extractable` has the clean pre-Session-44 signature.
