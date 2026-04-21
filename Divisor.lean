@@ -14,6 +14,7 @@ import Divisor.BetaConstructive
 import Divisor.NormLogDeriv
 import Divisor.BivariateLogDeriv
 import Divisor.FunctionFieldZ
+import Divisor.NormZDecomp
 import Divisor.HasPrincipalDivisor
 import Divisor.PolyGBridge
 import Divisor.Protocol

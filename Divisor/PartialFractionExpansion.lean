@@ -245,4 +245,59 @@ theorem derivative_C_mul_prod_X_sub_C_pow_isolate
 
 end LinearFactors
 
+/-! ### Indexed version (product over an arbitrary Finset ι)
+
+The downstream `normZ` uses indexing over `Finset (ZMod E.q × ZMod E.q)`
+(a Finset of elliptic-curve points), not over the scalar field. The
+derivative identity transfers with no essential changes. -/
+
+section LinearFactorsIndexed
+
+variable {K : Type*} [CommRing K] {ι : Type*}
+
+/-- Indexed product rule: derivative of `∏ i ∈ s, (X - C (f i)) ^ (m i)`. -/
+theorem derivative_prod_X_sub_C_pow_indexed [DecidableEq ι]
+    (s : Finset ι) (f : ι → K) (m : ι → ℕ) :
+    derivative (∏ i ∈ s, (X - C (f i)) ^ (m i)) =
+      ∑ i ∈ s, (C ((m i : K)) * (X - C (f i)) ^ (m i - 1) *
+        ∏ j ∈ s.erase i, (X - C (f j)) ^ (m j)) := by
+  induction s using Finset.induction_on with
+  | empty => simp
+  | @insert a s ha ih =>
+    rw [Finset.prod_insert ha, derivative_mul, ih, derivative_pow,
+        Finset.sum_insert ha]
+    have h_erase_a : (insert a s).erase a = s := Finset.erase_insert ha
+    rw [h_erase_a]
+    rw [Polynomial.derivative_sub, Polynomial.derivative_X, Polynomial.derivative_C,
+        sub_zero, mul_one]
+    congr 1
+    rw [Finset.mul_sum]
+    refine Finset.sum_congr rfl (fun i hi => ?_)
+    have ha_neq : a ≠ i := fun h => ha (h ▸ hi)
+    have h_erase_i : (insert a s).erase i = insert a (s.erase i) := by
+      ext x
+      simp only [Finset.mem_erase, Finset.mem_insert]
+      constructor
+      · rintro ⟨hxi, hxa | hxs⟩
+        · exact Or.inl hxa
+        · exact Or.inr ⟨hxi, hxs⟩
+      · rintro (rfl | ⟨hxi, hxs⟩)
+        · exact ⟨ha_neq, Or.inl rfl⟩
+        · exact ⟨hxi, Or.inr hxs⟩
+    have hnot : a ∉ s.erase i := fun h => ha (Finset.mem_of_mem_erase h)
+    rw [h_erase_i, Finset.prod_insert hnot]
+    ring
+
+/-- Indexed variant of `derivative_C_mul_prod_X_sub_C_pow`: the leading
+    coefficient `c` is factored out in front. -/
+theorem derivative_C_mul_prod_X_sub_C_pow_indexed [DecidableEq ι]
+    (c : K) (s : Finset ι) (f : ι → K) (m : ι → ℕ) :
+    derivative (C c * ∏ i ∈ s, (X - C (f i)) ^ (m i)) =
+      C c * ∑ i ∈ s, (C ((m i : K)) * (X - C (f i)) ^ (m i - 1) *
+        ∏ j ∈ s.erase i, (X - C (f j)) ^ (m j)) := by
+  rw [derivative_mul, derivative_C, zero_mul, zero_add,
+      derivative_prod_X_sub_C_pow_indexed]
+
+end LinearFactorsIndexed
+
 end Divisor
