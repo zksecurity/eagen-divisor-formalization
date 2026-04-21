@@ -4727,3 +4727,82 @@ closure attempt; with it now in place, the remaining blocker is
 a single well-defined function-field lemma (Lemma 6) rather than
 a composite unresolved question. Fine-grained progress.
 
+### Session 42 (2026-04-20) — Closure attempt, halt per protocol
+
+**Scope**: Attempt to close `polyG_zero_of_logDerivCheck_identically_zero`
+by routing the Session 40/41 infrastructure (chord_aggregate_identity,
+polyG_eq_zero_iff_paperResidue, sign-corrected `m'`) through a
+mechanization of paper Lemma 6 (`lem:log-deriv-norm`, ec.tex:557-579).
+
+**Result**: Halted per the protocol's explicit halt condition (plan's
+Session 35/36/38/40 findings: mechanizing Lemma 6 requires ~1500 LOC
+of function-field infrastructure not available in Mathlib or this
+codebase). No code change this session; plan-doc Session 42 log added.
+
+**Analysis**:
+
+1. Inspected `Divisor/PolyFibK.lean` fully. `polyFibK` is the
+   z-coordinate projection polynomial
+   `Σ_k β_k ∏_{k'≠k}(X - z_k') ∏_j(X - z'_j) + Σ_j m_j ∏_k(X - z_k)
+    ∏_{j'≠j}(X - z'_{j'})` where `z_k = zLambda λ Q_k`, `z'_j = zLambda λ R_j`.
+   It IS the "numerator" of the divided-fraction sum
+   `Σ β_k/(X - z_k) + Σ m_j/(X - z'_j)` (cleared over common denominator).
+
+2. Key identity: `polyG(A₀, A₁) = (-(A₁.1 - A₀.1))^(d+M-1)
+   · polyFibK(λ).eval(μ)` with `λ = slope(A₀,A₁)`, `μ = zLambda λ A₀`
+   (landed as `polyG_eq_polyFibK_eval`).
+
+3. Used alongside `polyFibK_eq_zero_of_polyG_zero` (Phase A2/A3), this
+   gives the forward direction: `polyG ≡ 0 on E × E non-vertical` ⇒
+   `polyFibK ≡ 0 as a polynomial` ⇒ σ-matching (T5).
+   **Reverse direction** (needed for axiom closure): from
+   `logDerivCheckFn = 0 at defined pairs` to `polyG = 0 everywhere`.
+   This requires Lemma 6 — the scalar identity
+   `Σᵢ logDerivTerm(Aᵢ, λ) = -Σ_k β_k / L_Q(Q_k)` at each chord.
+
+4. Verified that existing Session 40 infrastructure
+   (`chord_aggregate_identity`, `polyG_eq_zero_iff_paperResidue`) + a
+   mechanization of Lemma 6 in Lean would together close the axiom,
+   **but mechanizing Lemma 6 itself requires**:
+   - Function-field model `F_q(E)/F_q(z)` (not in Mathlib).
+   - Weierstrass preparation / local uniformizers at each Q_k.
+   - Residue theorem on `F_q(E)` (not in Mathlib).
+   - Per-sheet fiber matching between `rootMultiplicity x₀ N(D)` (over
+     `F_q(x)`, the existing `normPoly`) and the z-coordinate
+     multiplicities (over `F_q(z)`), which are different polynomials
+     of different shapes.
+
+5. Inspected `Divisor/NormLogDeriv.lean`, `Divisor/BetaConstructive.lean`,
+   `Divisor/ResidueIdentity.lean`: no shortcut via existing PFE tooling
+   — those are PFE of the *x-coordinate* norm `N(D) = a² - b²·curveX`,
+   not the z-coordinate norm paper's Lemma 6 uses.
+
+**Halt justification**: the task's explicit halt condition applied:
+"If PolyFibK doesn't give what's needed, and mechanizing N(D) from
+scratch requires function-field theory we don't have: commit any
+partial progress and HALT honestly." `PolyFibK` gives the forward
+bridge only; the reverse requires Lemma 6, which is blocked on
+function-field infrastructure.
+
+**Axiom state**: unchanged. `polyG_zero_of_logDerivCheck_identically_zero`
+remains as the sole transient axiom.
+
+```
+propext, Classical.choice, Quot.sound                             (Lean)
+Divisor.ECPoint.add_assoc, add_comm, neg_add_cancel               (Silverman III §2)
+Divisor.principal_divisor_iff                                     (Silverman III Cor 3.5)
+Divisor.CoordRingElt.divisor_degree_eq                            (Silverman III Prop 3.4)
+Divisor.CoordRingElt.divisor_group_sum_zero                       (Silverman III Prop 3.4)
+Divisor.polyG_zero_of_logDerivCheck_identically_zero              (transient, sign-corrected)
+```
+
+**LOC this session**: 0 code, ~70 lines of plan-doc prose. No build
+change, no new axioms, no sorries.
+
+**Remaining path** (same as Sessions 35/41): build function-field
+infrastructure (~1500 LOC) or find a concrete polynomial witness for
+Lemma 6 that `ring`/`linear_combination` can close against existing
+primitives. The latter has been attempted repeatedly (Sessions 34-38)
+and blocked on the cross-ring structural mismatch between
+`F_q[x]`-side `normPoly` and `F_q[z]`-side paper N(D).
+
