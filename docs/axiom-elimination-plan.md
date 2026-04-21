@@ -4560,3 +4560,88 @@ The cascade has made the axiom no longer provably false and matches
 the paper's mathematical setup, which is a significant step toward
 eventual closure.
 
+### Session 40 (2026-04-20) — Track A Phase 6: partial infrastructure + sign analysis
+
+**Scope**: Attempt to fully eliminate
+`polyG_zero_of_logDerivCheck_identically_zero` following
+Strategies S1/S2/S3 (residue identity + density extension + hypothesis
+narrowing).
+
+**Result**: Partial progress landed (4 commits, ~300 LOC of infrastructure
+in `Divisor/ResidueIdentity.lean`). Full closure not achieved. A new
+structural finding surfaced: the axiom's polyG argument has a sign
+mismatch with `logDerivCheckFn`'s `m` coefficient, blocking closure
+via a plain Lemma 6 bridge.
+
+**Commits**:
+
+* `81c5998` — Step 1 aggregate chord identity. `normPolyDenom`,
+  `chordDenomProd`, and `chord_aggregate_identity`:
+  `chordDenomProd · Σᵢ logDerivTerm(Aᵢ, λ) = Σᵢ [∏_{j≠i} denom_j] · chordRHSSingle(Aᵢ)`.
+  This consolidates the three Layer-3 identities into one
+  denominator-cleared polynomial identity. Proof via `linear_combination`.
+
+* `9c022be` — Step 5 `polyG` ⇔ divided-fraction. `polyGDivided`,
+  `polyG_ellP_product`, `polyG_eq_product_mul_divided`, and
+  `polyG_eq_zero_iff_divided_fraction`:
+  `polyG = product · polyGDivided` on the open set where all poles
+  are nonzero. Consumes `sum_div_iff_sum_mul_prod_erase` indirectly
+  via direct `field_simp` + `Finset.mul_prod_erase`.
+
+* `4ab7833` — Step 4 paper-residue reformulation.
+  `paperResidueDivided`, `polyGDivided_eq_xDiffInv_mul_paperResidue`,
+  `polyG_eq_zero_iff_paperResidue`: converts `polyGDivided`'s
+  `ellP`-based form to paper's `L_Q`-based form via the factor
+  `(A₁.1 - A₀.1)`.
+
+* `a1f96c1` — sign analysis documentation. Documents in prose a
+  structural mismatch between `logDerivCheckFn`'s `m` sign convention
+  and `polyG`'s `cons(-1) m` convention. Unrolling:
+
+    ```
+    logDerivCheckFn = 0   ⇒   ΣLT = -L(-P)⁻¹ - Σⱼ mⱼ·L(Bⱼ)⁻¹      (Lean)
+    Paper Lemma 6          ⇒   ΣLT = -Σₖ βₖ·L(Qₖ)⁻¹
+    Combining              ⇒   Σₖ βₖ·L(Qₖ)⁻¹ = L(-P)⁻¹ + Σⱼ mⱼ·L(Bⱼ)⁻¹
+    paperResidueDivided    =   Σₖ βₖ·L(Qₖ)⁻¹ - L(-P)⁻¹ + Σⱼ mⱼ·L(Bⱼ)⁻¹
+                           =   2 · Σⱼ mⱼ·L(Bⱼ)⁻¹                 (generically ≠ 0)
+    ```
+
+  Thus combining `logDerivCheckFn = 0` + Lemma 6 does NOT yield
+  `paperResidueDivided = 0`. This is a second-order consistency issue
+  in the axiom's statement, complementing Session 37's
+  (since-invalidated) counterexample.
+
+**Implication**:
+
+The axiom's statement may be unsound even under paper-faithful
+`logDerivTerm`. To close the axiom in the form it's written, one of
+the following is needed:
+
+(a) Reformulate `polyG`'s `m` argument to `cons(+1) (-m)` (or
+    equivalently negate `m` before feeding `polyG`).
+(b) Add `Σⱼ mⱼ/L(Bⱼ) = 0` as a hypothesis (a separate residue
+    identity, likely false in general).
+(c) Investigate whether Lean's `logDerivCheckFn` has the `-(m j)` sign
+    (it does) that's CORRECT per paper's `f = ΣLT - Σⱼ m_j/L(R_j)`
+    expansion — maybe the inconsistency is my reading of paper's
+    residue identity (not Lemma 6 itself, but how it specializes).
+
+Option (c) merits re-verification by a separate investigator with a
+fresh look at the signs in both Lean and paper. This session's
+finding sets up the starting point: Steps 1+4+5 in-module + clearly
+stated sign arithmetic.
+
+**LOC this session**: ~300 lines across 4 commits in
+`Divisor/ResidueIdentity.lean`. No new axioms, no `sorry`/`admit`,
+build green.
+
+**Axiom state**: unchanged. The transient axiom remains; Steps 1-5
+infrastructure is now reusable by any future session attempting
+closure via a corrected bridge formula.
+
+**Honest assessment**: Full closure of the axiom was not feasible in
+this session's context window. The ~1500 LOC function-field
+infrastructure estimate from Sessions 33-35 remains accurate, and
+the newly-surfaced sign issue adds another design question that
+must be resolved before closure can proceed.
+
