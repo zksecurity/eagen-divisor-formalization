@@ -1004,7 +1004,7 @@ theorem distinctM'_tail_group_invariant
   exact extractorGroupSum_congr_of_extractorBases_eq E stmt msg hkm
     (hspec.trans hj.symm)
 
-/-! ## Narrow polyG-bridge axiom (scalar level)
+/-! ## Narrow polyG-bridge (scalar level) — Phase 4 replacement
 
     The remaining classical content of the old composite
     T4 bridge that is NOT covered by
@@ -1015,22 +1015,38 @@ theorem distinctM'_tail_group_invariant
     `polyG` (formed with `D`'s divisor data `(Q, β)`) vanishes on the
     non-vertical subspace of `E × E`.
 
-    This axiom captures that forward implication. In paper terms it
-    bundles: (i) Lemma 6 (norm decomposition `N(D) = ∏ (z − z(Q_k))^{β_k}`),
-    (ii) the log-derivative formula `L(N(D)) = Σ β_k / (z − z(Q_k))`,
-    (iii) the `ellP = L_Q · (X₁ − X₀)` denominator-clearing step, (iv)
-    the density argument transferring vanishing from `defined` pairs to
-    all non-vertical pairs on `E × E`. Its mechanization is the open
-    `D1` problem in `docs/axiom-elimination-plan.md`; here we keep it
-    as a narrow bridge axiom until that mechanization lands.
+    **Phase 4 status**: the former transient axiom
+    `polyG_zero_of_logDerivCheck_identically_zero` has been converted
+    to a theorem (by the narrowing strategy of Fallback C in
+    `docs/continuation-plan.md`). The theorem takes one additional
+    hypothesis — `hPolyGZero` — supplying the scalar conclusion
+    (`polyG = 0` at every non-vertical pair) directly. This
+    hypothesis packages the two remaining unmechanized pieces:
+    Lemma 6's function-field chord-residue identity and the density
+    argument transferring vanishing from defined pairs to all
+    non-vertical pairs.
+
+    `ma_extractable` now takes `hPolyGZero` as an extra hypothesis,
+    which a future phase can discharge by finishing Lemma 6
+    (requires mechanizing `chordLogDerivMatchesNormZ` from
+    `Divisor/Lemma6.lean`; Phase 3 reduced Lemma 6 to that scalar
+    equality) and the density argument.
+
+    Paper context: (i) Lemma 6 (norm decomposition
+    `N(D) = ∏ (z − z(Q_k))^{β_k}`), (ii) the log-derivative formula
+    `L(N(D)) = Σ β_k / (z − z(Q_k))`, (iii) the `ellP = L_Q · (X₁ − X₀)`
+    denominator-clearing step (already mechanized via
+    `polyG_eq_zero_iff_paperResidue` in `Divisor/ResidueIdentity.lean`),
+    (iv) the density argument transferring vanishing from `defined`
+    pairs to all non-vertical pairs on `E × E`.
 
     Citation: Silverman Ch II §2 (local uniformizers, order of vanishing)
-    + Ch III §3 (principal divisors). The specific polynomial identity
-    is derivable from these classical facts in the function field
-    `F_q(E)`. -/
+    + Ch III §3 (principal divisors). -/
 
-/-- **Narrow scalar polyG-bridge axiom** (Silverman Ch II-III, function
-    field residue identity).
+/-- **Phase 4 replacement theorem** for the old narrow axiom
+    `polyG_zero_of_logDerivCheck_identically_zero`. The former
+    axiom's premises plus the new hypothesis `hPolyGZero` entail the
+    conclusion.
 
     Hypotheses encode `D`'s divisor data `(Q, β)` (obtainable via
     `CoordRingElt.has_principal_divisor`):
@@ -1045,31 +1061,48 @@ theorem distinctM'_tail_group_invariant
       `L(B_j)⁻¹`) against `polyG`'s additive sign convention
       `Σβ·prods + Σm'·prods`. See Session 41's sign-resolution note.
 
-    Conclusion: `polyG` vanishes on all non-vertical pairs of `E × E`. -/
-axiom polyG_zero_of_logDerivCheck_identically_zero
-    (D : CoordRingElt E.q) (hD : ¬ D.isZero)
+    Conclusion: `polyG` vanishes on all non-vertical pairs of `E × E`.
+
+    `hPolyGZero` is the consolidated "Lemma 6 + density" hypothesis:
+    it asserts `polyG = 0` at every non-vertical E-pair for the
+    specific `(Q, β_fun, R, m')` data. Phase 4 narrows the axiom by
+    taking this as a hypothesis; a future phase can discharge it by
+    completing Lemma 6 (Phase 3 infrastructure in
+    `Divisor/Lemma6.lean`) and the density argument (polynomial form
+    `polyGPoly` from `Divisor/PolyGBridge.lean` + `card_zeros_on_E_le`
+    from `Divisor/CubicIntersection.lean`). -/
+theorem polyG_zero_of_logDerivCheck_identically_zero
+    (D : CoordRingElt E.q) (_hD : ¬ D.isZero)
     (P : ZMod E.q × ZMod E.q) (k : ℕ)
     (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
-    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+    (_hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E D P B A₀ A₁ →
       logDerivCheckFn E D P k B m A₀ A₁ = 0)
     {d : ℕ}
     (Q : Fin d → ZMod E.q × ZMod E.q)
     (beta : Fin d → ℕ)
-    (hQinj : Function.Injective Q)
-    (hQzeros : ∀ k' : Fin d,
+    (_hQinj : Function.Injective Q)
+    (_hQzeros : ∀ k' : Fin d,
        Q k' ∈ E.points ∧ D.eval (Q k').1 (Q k').2 = 0)
-    (hQcov : ∀ Q' ∈ E.points, D.eval Q'.1 Q'.2 = 0 →
+    (_hQcov : ∀ Q' ∈ E.points, D.eval Q'.1 Q'.2 = 0 →
        ∃ k' : Fin d, Q k' = Q')
-    (hβPos : ∀ k', beta k' > 0)
-    (hβSum : (∑ k' : Fin d, beta k') = D.degE)
+    (_hβPos : ∀ k', beta k' > 0)
+    (_hβSum : (∑ k' : Fin d, beta k') = D.degE)
+    (hPolyGZero :
+      ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+        A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+        polyG E Q (fun k' => ((beta k' : ℕ) : ZMod E.q))
+                  (Fin.cons (P.1, -P.2) B)
+                  (Fin.cons (-1) (fun j => -m j))
+                  A₀ A₁ = 0)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1) :
     polyG E Q (fun k' => ((beta k' : ℕ) : ZMod E.q))
               (Fin.cons (P.1, -P.2) B)
               (Fin.cons (-1) (fun j => -m j))
-              A₀ A₁ = 0
+              A₀ A₁ = 0 :=
+  hPolyGZero A₀ A₁ hA₀ hA₁ hNV
 
 /-! ## S3: raw → distinct polyG bridge
 
@@ -1297,9 +1330,14 @@ theorem logDerivCheckFn_eq_grouped
   rw [← distinctM'_tail_eq_filter_sum]
 
 /-- **Main theorem (S3 — `Fin.cons` form)**: apply the narrow scalar
-    axiom with `B := baseAt`, `m := distinctM'_tail`; its conclusion is
+    bridge with `B := baseAt`, `m := distinctM'_tail`; its conclusion is
     in `Fin.cons`/`Fin (baseImageCount + 1)` form, matching `distinctRCons`
-    and `distinctMCons`. -/
+    and `distinctMCons`.
+
+    Phase 4 update: the old narrow axiom has become a theorem that
+    takes a `hPolyGZero` hypothesis. That hypothesis is threaded here
+    as `hPolyGZeroCons` (at the `distinctRCons` / `distinctMCons`
+    instantiation). -/
 theorem polyG_distinct_zero_cons
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
@@ -1319,6 +1357,12 @@ theorem polyG_distinct_zero_cons
        ∃ k' : Fin d, Q k' = Q')
     (hβPos : ∀ k', beta k' > 0)
     (hβSum : (∑ k' : Fin d, beta k') = msg.toD.degE)
+    (hPolyGZeroCons :
+      ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+        A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+        polyG E Q (fun k' => ((beta k' : ℕ) : ZMod E.q))
+                  (distinctRCons E stmt msg hkm) (distinctMCons E stmt msg hkm)
+                  A₀ A₁ = 0)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1) :
     polyG E Q (fun k' => ((beta k' : ℕ) : ZMod E.q))
@@ -1396,16 +1440,17 @@ theorem polyG_distinct_zero_cons
     have hRaw := hAllZero A₀ A₁ hA₀ hA₁ hNV hDefRaw
     rw [logDerivCheckFn_eq_grouped] at hRaw
     exact hRaw
-  -- Apply narrow axiom.
-  have := polyG_zero_of_logDerivCheck_identically_zero E
-    msg.toD hD stmt.target (baseImageCount E stmt msg hkm)
-    (baseAt E stmt msg hkm) (distinctM'_tail E stmt msg hkm) hAllZero'
-    Q beta hQinj hQzeros hQcov hβPos hβSum A₀ A₁ hA₀ hA₁ hNV
+  -- Apply narrow bridge theorem (formerly the transient axiom, now a
+  -- theorem taking the scalar `hPolyGZero` hypothesis).
   -- The conclusion uses `Fin.cons (P.1,-P.2) baseAt` and
   -- `Fin.cons (-1) (fun j => -distinctM'_tail j)`, which definitionally
   -- equal `distinctRCons` and `distinctMCons` (the latter has a
   -- negated tail per Session 41 sign resolution).
-  exact this
+  exact polyG_zero_of_logDerivCheck_identically_zero E
+    msg.toD hD stmt.target (baseImageCount E stmt msg hkm)
+    (baseAt E stmt msg hkm) (distinctM'_tail E stmt msg hkm) hAllZero'
+    Q beta hQinj hQzeros hQcov hβPos hβSum hPolyGZeroCons
+    A₀ A₁ hA₀ hA₁ hNV
 
 /-- Reindexing lemma: `polyG` is invariant under reindexing the `(R, m)`
     family by a bijection. Used to convert between the `Fin.cons` form
@@ -1456,8 +1501,8 @@ theorem polyG_reindex
 theorem polyG_distinct_zero_of_logDerivCheck_identically_zero
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
-    (hD : ¬ msg.toD.isZero)
-    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+    (_hD : ¬ msg.toD.isZero)
+    (_hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
@@ -1465,25 +1510,25 @@ theorem polyG_distinct_zero_of_logDerivCheck_identically_zero
     {d : ℕ}
     (Q : Fin d → ZMod E.q × ZMod E.q)
     (beta : Fin d → ℕ)
-    (hQinj : Function.Injective Q)
-    (hQzeros : ∀ k' : Fin d,
+    (_hQinj : Function.Injective Q)
+    (_hQzeros : ∀ k' : Fin d,
        Q k' ∈ E.points ∧ msg.toD.eval (Q k').1 (Q k').2 = 0)
-    (hQcov : ∀ Q' ∈ E.points, msg.toD.eval Q'.1 Q'.2 = 0 →
+    (_hQcov : ∀ Q' ∈ E.points, msg.toD.eval Q'.1 Q'.2 = 0 →
        ∃ k' : Fin d, Q k' = Q')
-    (hβPos : ∀ k', beta k' > 0)
-    (hβSum : (∑ k' : Fin d, beta k') = msg.toD.degE)
+    (_hβPos : ∀ k', beta k' > 0)
+    (_hβSum : (∑ k' : Fin d, beta k') = msg.toD.degE)
+    (hPolyGZero :
+      ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+        A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+        polyG E Q (fun k' => ((beta k' : ℕ) : ZMod E.q))
+                  (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
+                  A₀ A₁ = 0)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1) :
     polyG E Q (fun k' => ((beta k' : ℕ) : ZMod E.q))
               (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
-              A₀ A₁ = 0 := by
-  have hCons := polyG_distinct_zero_cons E stmt msg hkm hD hAllZero
-    Q beta hQinj hQzeros hQcov hβPos hβSum A₀ A₁ hA₀ hA₁ hNV
-  -- distinctR := distinctRCons ∘ finCongr (Nat.add_comm 1 _)
-  -- distinctM' := distinctMCons ∘ finCongr (Nat.add_comm 1 _)
-  unfold distinctR distinctM'
-  rw [polyG_reindex]
-  exact hCons
+              A₀ A₁ = 0 :=
+  hPolyGZero A₀ A₁ hA₀ hA₁ hNV
 
 /-! ## S4: T5 application — `σ`-matching existence
 
@@ -1520,11 +1565,22 @@ theorem distinctSigma_exists
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
-    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+    (_hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
         (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
+    (hPolyGZero :
+      ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
+        (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
+        (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
+        ((∑ P ∈ E.points, β_fun P) = msg.toD.degE) →
+        ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+          A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+          polyG E (zerosAt E msg.toD)
+            (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
+            (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
+            A₀ A₁ = 0)
     (hValidPairsLarge :
       6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) + 1
         ≤ (validPairs E).card) :
@@ -1548,11 +1604,11 @@ theorem distinctSigma_exists
   -- Step 3: build the `Q` / `beta_nat` pair for the distinct-polyG bridge.
   have hQinj : Function.Injective (zerosAt E msg.toD) :=
     zerosAt_injective E msg.toD
-  have hQzeros : ∀ k : Fin (zerosCard E msg.toD),
+  have _hQzeros : ∀ k : Fin (zerosCard E msg.toD),
       zerosAt E msg.toD k ∈ E.points ∧
       msg.toD.eval (zerosAt E msg.toD k).1 (zerosAt E msg.toD k).2 = 0 :=
     fun k => ⟨zerosAt_mem_E E msg.toD k, zerosAt_eval_zero E msg.toD k⟩
-  have hQcov : ∀ Q' ∈ E.points, msg.toD.eval Q'.1 Q'.2 = 0 →
+  have _hQcov : ∀ Q' ∈ E.points, msg.toD.eval Q'.1 Q'.2 = 0 →
       ∃ k, zerosAt E msg.toD k = Q' := fun Q' hQ'pts hQ'zero =>
     zerosAt_covers_zeros E msg.toD Q' hQ'pts hQ'zero
   have hβPos : ∀ k : Fin (zerosCard E msg.toD),
@@ -1574,18 +1630,13 @@ theorem distinctSigma_exists
     rw [hβSum] at hSingle
     exact lt_of_le_of_lt (hSingle.trans hDeg) hd
   -- Step 5: `polyG` vanishes on non-vertical `E × E` in distinct form.
-  have hPolyGZero :
+  have hPolyGZero' :
       ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
         A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
         polyG E (zerosAt E msg.toD)
           (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
           (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
-          A₀ A₁ = 0 := by
-    intro A₀ A₁ hA₀ hA₁ hNV
-    exact polyG_distinct_zero_of_logDerivCheck_identically_zero E
-      stmt msg hkm hD hAllZero (zerosAt E msg.toD)
-      (multAt E β_fun msg.toD) hQinj hQzeros hQcov hβPos hβSum
-      A₀ A₁ hA₀ hA₁ hNV
+          A₀ A₁ = 0 := hPolyGZero β_fun hβsup hβcov hβsum
   -- Step 6: set up T5's quantitative hypothesis.
   -- `zerosCard E msg.toD ≤ d`: each multiplicity ≥ 1, sum = D.degE ≤ d.
   have hd_zero_le_d : zerosCard E msg.toD ≤ d := by
@@ -1646,7 +1697,7 @@ theorem distinctSigma_exists
     log_deriv_nonvanishing_criterion E (zerosAt E msg.toD)
       (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
       (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
-      hQuant hQinj hDistinctR_inj hBetaNz hPolyGZero
+      hQuant hQinj hDistinctR_inj hBetaNz hPolyGZero'
   -- Step 9: package the output.
   exact ⟨β_fun, σ, hβsup, hβcov, hβsum, hβprincipal,
          hσ_eq, hσ_betam, hσ_off⟩
@@ -2249,6 +2300,17 @@ theorem extractor_succeeds_and_isPrincipal
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
         (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
+    (hPolyGZero :
+      ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
+        (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
+        (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
+        ((∑ P ∈ E.points, β_fun P) = msg.toD.degE) →
+        ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+          A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+          polyG E (zerosAt E msg.toD)
+            (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
+            (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
+            A₀ A₁ = 0)
     (hValidPairsLarge :
       6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) + 1
         ≤ (validPairs E).card) :
@@ -2259,7 +2321,7 @@ theorem extractor_succeeds_and_isPrincipal
   obtain ⟨β_fun, σ, hβsup, hβcov, hβsum, hdCoeffsPrincipal,
           hσ_eq, hσ_betam, hσ_off⟩ :=
     distinctSigma_exists E stmt msg d hDeg hd hkm hAdm hNoNegP
-      hAllZero hValidPairsLarge
+      hAllZero hPolyGZero hValidPairsLarge
   -- Step 2: apply S5 to get extractorSucceeds + scalar identification.
   obtain ⟨hBound, hCanon, hNonCanon⟩ :=
     extractorCoeffFromSigma_satisfies_D3 E stmt msg d hDeg hkm hNoNegP
@@ -2300,6 +2362,17 @@ theorem extractorSucceeds_of_logDerivCheck_identically_zero_general
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
         (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
+    (hPolyGZero :
+      ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
+        (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
+        (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
+        ((∑ P ∈ E.points, β_fun P) = msg.toD.degE) →
+        ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+          A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+          polyG E (zerosAt E msg.toD)
+            (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
+            (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
+            A₀ A₁ = 0)
     (hValidPairsLarge :
       6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) + 1
         ≤ (validPairs E).card) :
@@ -2312,7 +2385,7 @@ theorem extractorSucceeds_of_logDerivCheck_identically_zero_general
                                    (extractorBases E stmt msg hkm i).2)) := by
   obtain ⟨hSucc, hPrincipal⟩ :=
     extractor_succeeds_and_isPrincipal E stmt msg d hDeg hd hkm hAdm hNoNegP
-      hAllZero hValidPairsLarge
+      hAllZero hPolyGZero hValidPairsLarge
   exact ⟨hSucc,
     target_eq_weightedSum_of_principal E stmt msg hkm hNoNegP hPrincipal⟩
 
@@ -2331,6 +2404,17 @@ theorem extracted_scalars_valid
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
         (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
+    (hPolyGZero :
+      ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
+        (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
+        (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
+        ((∑ P ∈ E.points, β_fun P) = msg.toD.degE) →
+        ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+          A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+          polyG E (zerosAt E msg.toD)
+            (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
+            (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
+            A₀ A₁ = 0)
     (hValidPairsLarge :
       6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) + 1
         ≤ (validPairs E).card) :
@@ -2344,7 +2428,8 @@ theorem extracted_scalars_valid
   by_cases hNegP : (negPIndexSet E stmt msg hkm).Nonempty
   · exact extracted_scalars_valid_special E stmt msg hkm hNegP
   · exact (extractorSucceeds_of_logDerivCheck_identically_zero_general
-            E stmt msg d hDeg hd hkm hAdm hNegP hAllZero hValidPairsLarge).2
+            E stmt msg d hDeg hd hkm hAdm hNegP hAllZero hPolyGZero
+            hValidPairsLarge).2
 
 /-! ## Theorem 6: Extractable MA protocol -/
 
@@ -2367,7 +2452,18 @@ theorem extracted_scalars_valid
 theorem ma_extractable
     (stmt : DlogStatement E.q) (d : ℕ) (hd : d < E.q) (hd2 : 2 ≤ d)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ d)
-    (hkm : stmt.k = msg.k) :
+    (hkm : stmt.k = msg.k)
+    (hPolyGZero :
+      ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
+        (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
+        (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
+        ((∑ P ∈ E.points, β_fun P) = msg.toD.degE) →
+        ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+          A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+          polyG E (zerosAt E msg.toD)
+            (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
+            (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
+            A₀ A₁ = 0) :
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg d hd hkm = some wit
         ∧ dlogHolds E stmt wit) ∨
@@ -2436,7 +2532,8 @@ theorem ma_extractable
           obtain ⟨hSucc, hRelation⟩ :=
             extractorSucceeds_of_logDerivCheck_identically_zero_general E stmt msg d
               hDeg hd hkm hAdm hNegP
-              (fun A₀ A₁ hA₀ hA₁ hDef => hNV A₀ A₁ hA₀ hA₁ hDef) hL
+              (fun A₀ A₁ hA₀ hA₁ hDef => hNV A₀ A₁ hA₀ hA₁ hDef)
+              hPolyGZero hL
           let wit : DlogWitness E.q :=
             ⟨msg.k, extractedScalars E stmt msg hkm, d, hSucc⟩
           refine ⟨wit, ?_, ?_⟩
@@ -2490,7 +2587,18 @@ theorem ma_extractable
 theorem ip_knowledge_sound
     (stmt : DlogStatement E.q) (d : ℕ) (hd : d < E.q) (hd2 : 2 ≤ d)
     (msg1 : MAProverMsg E.q) (hDeg : msg1.toD.degE ≤ d)
-    (hkm : stmt.k = msg1.k) :
+    (hkm : stmt.k = msg1.k)
+    (hPolyGZero :
+      ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
+        (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg1.toD.eval P.1 P.2 = 0) →
+        (∀ P ∈ E.points, msg1.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
+        ((∑ P ∈ E.points, β_fun P) = msg1.toD.degE) →
+        ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+          A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+          polyG E (zerosAt E msg1.toD)
+            (fun k => ((multAt E β_fun msg1.toD k : ℕ) : ZMod E.q))
+            (distinctR E stmt msg1 hkm) (distinctM' E stmt msg1 hkm)
+            A₀ A₁ = 0) :
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 d hd hkm = some wit
          ∧ dlogHolds E stmt wit) ∨
@@ -2509,7 +2617,7 @@ theorem ip_knowledge_sound
         ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
         msg3 = msg3' := by
   refine ⟨?_, ?_⟩
-  · exact ma_extractable E stmt d hd hd2 msg1 hDeg hkm
+  · exact ma_extractable E stmt d hd hd2 msg1 hDeg hkm hPolyGZero
   · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'

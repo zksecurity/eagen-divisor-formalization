@@ -20,7 +20,7 @@ The headline theorems live in `Divisor/ExtractorBridge.lean` and `Divisor/Soundn
 
 ## Axiom surface
 
-`Divisor.ma_extractable` and `Divisor.ip_knowledge_sound` depend on:
+`Divisor.ma_extractable` and `Divisor.ip_knowledge_sound` depend on 9 axioms:
 
 | Axiom | Source |
 |---|---|
@@ -29,29 +29,32 @@ The headline theorems live in `Divisor/ExtractorBridge.lean` and `Divisor/Soundn
 | `principal_divisor_iff` | Silverman III Cor 3.5 |
 | `CoordRingElt.divisor_degree_eq` | Silverman III Prop 3.4 (pole order at infinity) |
 | `CoordRingElt.divisor_group_sum_zero` | Silverman III Prop 3.4 (Abel's theorem on E) |
-| `polyG_zero_of_logDerivCheck_identically_zero` | Residue identity — **UNSOUND** (see below) |
+
+The former transient axiom `polyG_zero_of_logDerivCheck_identically_zero` has been eliminated in Phase 4; see "Phase 4 narrowing" below.
 
 `Divisor.ma_completeness` depends on the Lean core + group-law axioms + `weil_reciprocity_honest` (Silverman III §X).
 
 Hasse-Weil bounds (`hasse_weil_upper`, `hasse_weil_lower`) are project-wide axioms but are not on the current soundness dependency path.
 
-### Soundness flag (Session 37 finding)
+### Phase 4 narrowing — residue-identity hypothesis
 
-The transient axiom `polyG_zero_of_logDerivCheck_identically_zero` is **provably false** under Lean's current `logDerivTerm` definition (`Divisor/LogDeriv.lean:128`). A concrete Lean-verified counterexample lives at `docs/counterexamples/axiom_false_witness.lean`:
+The former transient axiom `polyG_zero_of_logDerivCheck_identically_zero` has been converted to a theorem that takes a new hypothesis `hPolyGZero`. This hypothesis is threaded through the consumer chain (`distinctSigma_exists` → `extractor_succeeds_and_isPrincipal` → `extractorSucceeds_of_logDerivCheck_identically_zero_general` → `extracted_scalars_valid` → `ma_extractable` / `ip_knowledge_sound`). The hypothesis states, schematically:
 
-- `E : y² = x³ + 1 over F_7`, `D = y` (i.e. `a=0, b=-1`), `P = (0, 1)`, `B₀ = -P`, `m₀ = -1`.
-- All axiom hypotheses satisfied at `A₀ = (2, 3)`, `A₁ = (4, 3)`.
-- But `polyG ... = 5 ≠ 0`.
+> For every principal-divisor candidate `β_fun` satisfying the Silverman III.3.5 support/coverage/degree-sum conditions, `polyG E (zerosAt msg.toD) (multAt β_fun msg.toD) (distinctR) (distinctM')` vanishes on every non-vertical pair on `E × E`.
 
-Root cause: Lean's `logDerivTerm` implements only the formal `x`-partial `(∂D/∂x)/D · dx/dz`, omitting the `(∂D/∂y)·(dy/dz)/D = -b(x)·(3x²+A)/((3x²+A-2λy)·D)` on-curve chain-rule contribution present in the paper's Lemma 6 integrand (§ec.tex:557-579). The downstream `ma_extractable` theorem avoids this specific witness only because it routes through the `-P ∈ {B_j}` special branch, but the axiom as stated is classically inconsistent.
+This hypothesis packages the two remaining unmechanized pieces of classical content:
 
-**Reference**: Silverman, J.H. *The Arithmetic of Elliptic Curves*, 2nd ed., GTM 106.
+1. **Lemma 6** (paper's `lem:log-deriv-norm`, `sections/ec.tex:557-579`): the chord-sum identity `Σᵢ logDerivTerm(Aᵢ, λ) = -Σ_k β_k · L_Q(Q_k)⁻¹`. Phase 3 (`Divisor/Lemma6.lean`) reduces Lemma 6 to a scalar log-derivative-match hypothesis `chordLogDerivMatchesNormZ E D A₀ A₁`; discharging it unconditionally requires the function-field norm identity `N(D)(z) = lc(D)^3 · ∏_k (z - z(Q_k))^{β_k}` as a polynomial equality in `F_q[z]`.
+2. **Density extension** from defined non-vertical pairs to all non-vertical pairs, using the polynomial form `polyGPoly` (`Divisor/PolyGBridge.lean`) + degree bounds + `card_zeros_on_E_le` (`Divisor/CubicIntersection.lean`).
+
+A future phase can discharge `hPolyGZero` unconditionally by closing (1) and (2). The remaining scalar bridge at a defined non-vertical pair (Step-5 `polyG ⇔ paperResidueDivided` equivalence) is already mechanized in `Divisor/ResidueIdentity.lean` (`polyG_eq_zero_iff_paperResidue`).
 
 ## Outstanding work
 
-- **Fix `logDerivTerm` to paper-faithful form**: Session 37 identified that Lean's `logDerivTerm` is mathematically incorrect. Fixing requires cascade-rewriting `logDerivTerm` + `logDerivCheckFn` to include the missing y-chain-rule term, then re-proving all downstream consumers (~400-2000 LOC cascade, mostly mechanical). After the cascade, the classical residue identity applies and the axiom is eliminable via Lemma 6 mechanization (~1500 LOC additional).
-- **Residue identity mechanization**: `polyG_zero_of_logDerivCheck_identically_zero` encodes the classical log-derivative + norm-decomposition identity for rational functions on E. Fully mechanizing Lemma 6 requires a function-field model of `F_q(E)` with local uniformizers and Weierstrass preparation. Queue 3 (sessions Q3.0-Q3.4, see `docs/axiom-elimination-plan.md`) landed partial scaffolding: partial-fraction infrastructure, norm-decomposition helper (`betaConstructive`), bivariate denominator-cleared log-derivative identity, `polyGPoly` definition + degree bounds, and Vieta/chord-sum reductions.
-- **Silverman III Prop 3.4 mechanization**: the two narrow `CoordRingElt.divisor_*` axioms each cite a single specific fact from Silverman III Prop 3.4. Mechanizing these (like the residue identity) requires function-field infrastructure.
+- **Discharge `hPolyGZero`**: Phase 5 will close the `hPolyGZero` hypothesis that `ma_extractable` / `ip_knowledge_sound` currently carry. Two sub-tasks:
+  - **Function-field norm identity** (Lemma 6): prove `N(D)(z) = lc(D)^3 · ∏_k (z - z(Q_k))^{β_k}` as a polynomial equality in `F_q[z]`. This discharges `chordLogDerivMatchesNormZ` (Phase 3's remaining hypothesis) and via `lemma6_chord_residue` + `polyG_zero_of_Lemma6_and_logDerivCheck_zero` produces `polyG = 0` at defined non-vertical pairs.
+  - **Density argument**: polynomial-degree bound on `polyGPoly` + `card_zeros_on_E_le` on E × E extends vanishing from defined pairs to all non-vertical pairs.
+- **Silverman III Prop 3.4 mechanization**: the two narrow `CoordRingElt.divisor_*` axioms each cite a single specific fact from Silverman III Prop 3.4. Mechanizing these requires function-field infrastructure.
 
 ## Plan
 

@@ -1,5 +1,5 @@
 /-!
-# Historical counterexample — now invalidated (Session 39)
+# Historical counterexample — invalidated (Session 39) and superseded (Phase 4)
 
 **This file applied to the OLD `logDerivTerm` definition** that used
 the formal `x`-partial numerator `a'(x) − b'(x)·y` only. Under the new
@@ -12,9 +12,14 @@ is thus no longer provable — the counterexample no longer applies, and
 the axiom `polyG_zero_of_logDerivCheck_identically_zero` is no longer
 provably false under the new definition.
 
+**Phase 4 update (Session 44)**: the axiom itself has been eliminated
+entirely. It is now a theorem taking a `hPolyGZero` hypothesis that
+`ma_extractable` carries. This file remains relevant only as a
+historical record of the Session 37 unsoundness-flag finding.
+
 **The file is preserved as a historical artifact.** It will no longer
-typecheck against the current codebase (`LT_Dy_zero` is false), but is
-kept for provenance. Do not import or run. -/
+typecheck against the current codebase (`LT_Dy_zero` is false and the
+axiom is deleted), but is kept for provenance. Do not import or run. -/
 -- This file is NOT part of the Lake build (it lives under `docs/counterexamples/`).
 -- Leaving it as historical reference; the lemmas below are false under the new
 -- paper-faithful `logDerivTerm` definition.
