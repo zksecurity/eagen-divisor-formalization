@@ -33,19 +33,39 @@ Both routes share the density extension (Phase 9 below). They diverge on how the
 
 ## Constraints (never violate)
 
-- NO new axioms.
 - NO `sorry` / `admit`.
+- NO new `axiom` declarations anywhere in `Divisor/`.
 - NO AI attribution in commits.
 - NO signed commits (`git commit --no-gpg-sign`).
 - `lake build` must be green before every commit.
-- Axiom surface of `Divisor.ma_extractable` must stay at exactly 9 (the permitted Silverman-III + Lean-core set).
+- `#print axioms Divisor.ma_extractable` must remain exactly the 9 axioms listed below — no additions, no removals. This is the single authoritative gate. Run it after every commit and reject any change that grows the surface.
 
-## Allowed axioms (unchanged from the last plan)
+## Axiom policy
 
-- Lean core: `propext`, `Classical.choice`, `Quot.sound`.
-- Group law: `ECPoint.add_assoc`, `add_comm`, `neg_add_cancel`.
-- `principal_divisor_iff` (Silverman III Cor 3.5).
-- `CoordRingElt.divisor_degree_eq`, `divisor_group_sum_zero` (Silverman III Prop 3.4).
+There are three tiers:
+
+### Tier 1 — Permitted in `ma_extractable`'s surface (the 9-axiom whitelist)
+
+These are the axioms currently closed over by `Divisor.ma_extractable`. They may be freely invoked in any proof on the path to that theorem, and they must remain exactly this set (no more, no fewer) after Phase 10:
+
+- Lean core (3): `propext`, `Classical.choice`, `Quot.sound`.
+- Group law on `E` (3) — Silverman III §2: `Divisor.ECPoint.add_assoc`, `Divisor.ECPoint.add_comm`, `Divisor.ECPoint.neg_add_cancel`.
+- Divisor theory on `E` (3) — Silverman III: `Divisor.principal_divisor_iff` (Cor 3.5), `Divisor.CoordRingElt.divisor_degree_eq` (Prop 3.4), `Divisor.CoordRingElt.divisor_group_sum_zero` (Prop 3.4).
+
+### Tier 2 — Exist in the codebase but must NOT leak into `ma_extractable`'s surface
+
+These are axiomatized elsewhere but are **not** currently reachable from `ma_extractable` and must stay that way. Using any of them in a proof transitive to `ma_extractable` would expand the axiom surface and violates the invariant:
+
+- `Divisor.hasse_weil_upper`, `Divisor.hasse_weil_lower` (`Divisor/Axioms.lean:70, 73`) — used by probability-bound theorems but not by the soundness extractor.
+- `Divisor.weil_reciprocity_honest` (`Divisor/Soundness.lean:267`) — completeness path only.
+
+If Phase 7's density count needs a lower bound on `E.q` or `#E(F_q)`, **thread it as an explicit scalar hypothesis** on the theorem (or a downstream helper), not as a call to Hasse-Weil. Hypotheses do not appear in `#print axioms`; axiom calls do.
+
+### Tier 3 — New axioms: strictly forbidden
+
+No new `axiom` declaration may be added anywhere in `Divisor/` during this plan. If a phase appears to need an external fact (e.g., irreducibility of `curveEqPoly`, a Mathlib-level determinant identity, a Schwartz–Zippel bound), prove it as a theorem from Tier-1 axioms + Mathlib, or thread it as a scalar hypothesis. Do not introduce it as an axiom "temporarily" — the plan has no provision for removing such an axiom later.
+
+The absolute gate: after every phase, `#print axioms Divisor.ma_extractable` is exactly the nine Tier-1 names, and `grep -r '^axiom ' Divisor/` lists exactly the pre-existing axioms in `Divisor/Axioms.lean`, `Divisor/BetaConstructive.lean`, `Divisor/Defs.lean`, and `Divisor/Soundness.lean` (no additions).
 
 ## Execution plan — ready-to-use subagent prompts
 
