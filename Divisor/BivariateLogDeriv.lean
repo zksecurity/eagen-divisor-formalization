@@ -116,19 +116,23 @@ theorem D_eval_mul_conj_eq_normPoly_eval
 
 /-! ## Layer 3 : single-point denominator-cleared identity -/
 
-/-- **Layer 3 main theorem.** For any point `P = (x, y)` on `E.points`, and
-    any scalars `λ`, assuming the product of denominators
-    `(D.eval x y) · (3x² + A − 2λy) ≠ 0`, the `logDerivTerm` identity
+/-- **Layer 3 main theorem** (paper-faithful `logDerivTerm`).
+
+    For any point `P = (x, y)` on `E.points` and any scalar `λ`, assuming
+    the product of denominators `(D.eval x y) · (3x² + A − 2λy) ≠ 0`, the
+    `logDerivTerm` identity
 
     ```
     N(D)(x) · (3x² + A − 2λy) · logDerivTerm(P, λ) =
         2·y·(a'(x)·a(x) − b'(x)·b(x)·curveX(x))
          + 2·curveX(x)·(a'(x)·b(x) − b'(x)·a(x))
+         − (a(x) + b(x)·y) · b(x) · (3x² + A)
     ```
 
-    holds as a scalar identity in `ZMod E.q`. The RHS is polynomial in
-    `(x, y, λ)` with coefficients from `(a, a', b, b', curveX)` — it is
-    linear in `y` and *independent of `λ`*. -/
+    holds as a scalar identity in `ZMod E.q`. The final correction term
+    `−(a + b·y) · b · (3x² + A)` is the paper-faithful chain-rule piece
+    `(∂D/∂y) · (dy/dz)` cleared over the common denominator `N(D)(x)`
+    using `N(D)(x) / D(x, y) = a(x) + b(x)·y` (on `E`). -/
 theorem logDerivTerm_denom_cleared_pointwise
     (D : CoordRingElt E.q) (lam : ZMod E.q)
     {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points)
@@ -141,7 +145,9 @@ theorem logDerivTerm_denom_cleared_pointwise
                         * (P.1 ^ 3 + E.curveA * P.1 + E.curveB))
         + 2 * (P.1 ^ 3 + E.curveA * P.1 + E.curveB) *
           (D.a.derivative.eval P.1 * D.b.eval P.1
-             - D.b.derivative.eval P.1 * D.a.eval P.1) := by
+             - D.b.derivative.eval P.1 * D.a.eval P.1)
+        - (D.a.eval P.1 + D.b.eval P.1 * P.2) * D.b.eval P.1
+            * (3 * P.1 ^ 2 + E.curveA) := by
   classical
   -- Abbreviations.
   set a := D.a.eval P.1 with ha_def
@@ -157,66 +163,65 @@ theorem logDerivTerm_denom_cleared_pointwise
   have hDenNZ : (a - b * y) ≠ 0 := by rw [← hDen]; exact hD
   have hN : (normPoly E D).eval x = a ^ 2 - b ^ 2 *
               (x ^ 3 + E.curveA * x + E.curveB) := normPoly_eval E D x
-  -- Unfold `logDerivTerm`.
-  -- LT = (a' - b'·y) · (2·y) · ((a - b·y) * (3x² + A − 2λy))⁻¹
+  -- Unfold `logDerivTerm` (paper form).
+  -- LT = ((a' - b'·y) · (2·y) + (-b) · (3x² + A)) · ((a - b·y) * (3x² + A − 2λy))⁻¹
   have hLT : logDerivTerm E D E.curveA lam P
-      = (a' - b' * y) * (2 * y) *
+      = ((a' - b' * y) * (2 * y) + (-b) * (3 * x ^ 2 + E.curveA)) *
           ((a - b * y) * (3 * x ^ 2 + E.curveA - 2 * lam * y))⁻¹ := by
-    unfold logDerivTerm; rfl
-  -- Auxiliary: on E, (a + b·y)·(a' - b'·y)·(2·y)
-  --   = 2·y·(a'·a − b'·b·(x³+Ax+B)) + 2·(x³+Ax+B)·(a'·b − b'·a).
+    unfold logDerivTerm
+    rfl
+  -- Auxiliary: on E, (a + b·y)·[(a' - b'·y)·(2·y) + (-b)·(3x²+A)]
+  --   = 2·y·(a'·a − b'·b·(x³+Ax+B)) + 2·(x³+Ax+B)·(a'·b − b'·a)
+  --     − (a + b·y)·b·(3x² + A).
   have hAux :
-      (a + b * y) * (a' - b' * y) * (2 * y)
+      (a + b * y) * ((a' - b' * y) * (2 * y) + (-b) * (3 * x ^ 2 + E.curveA))
         = 2 * y * (a' * a - b' * b * (x ^ 3 + E.curveA * x + E.curveB))
-          + 2 * (x ^ 3 + E.curveA * x + E.curveB) * (a' * b - b' * a) := by
+          + 2 * (x ^ 3 + E.curveA * x + E.curveB) * (a' * b - b' * a)
+          - (a + b * y) * b * (3 * x ^ 2 + E.curveA) := by
     linear_combination (-2 * b * b' * y + 2 * a' * b - 2 * a * b') * hSq
   -- Auxiliary: on E, a² − b²·(x³+Ax+B) = (a - b·y)·(a + b·y).
-  -- Expand: (a - b·y)(a + b·y) = a² - b²·y². Using y² = x³+Ax+B:
-  -- Goal: a² - b²·(x³+Ax+B) - (a - b·y)(a + b·y) = 0
-  --     = a² - b²·(x³+Ax+B) - a² + b²·y²
-  --     = b²·(y² - (x³+Ax+B)) = b²·(hSq LHS - RHS)
   have hProd : a ^ 2 - b ^ 2 * (x ^ 3 + E.curveA * x + E.curveB)
               = (a - b * y) * (a + b * y) := by
     linear_combination b ^ 2 * hSq
   -- Rewrite LHS using hLT and hN.
   rw [hLT, hN, hProd]
   -- Goal: (a - b·y) * (a + b·y) * (3x² + A − 2λy) *
-  --        ((a' - b'·y) · 2y · ((a - b·y) * (3x² + A − 2λy))⁻¹)
-  --     = 2y·(a'·a − b'·b·(x³+Ax+B)) + 2·(x³+Ax+B)·(a'·b − b'·a)
-  -- Rearrange and use mul_inv_cancel₀ on each factor.
+  --        [((a'-b'y)(2y) + (-b)(3x²+A)) * ((a-by)(3x²+A-2λy))⁻¹]
+  --     = old RHS − (a+b·y)·b·(3x²+A)
   have hMul : (a - b * y) * (3 * x ^ 2 + E.curveA - 2 * lam * y) ≠ 0 :=
     mul_ne_zero hDenNZ hXDen
   have hInvCancel :
       (a - b * y) * (3 * x ^ 2 + E.curveA - 2 * lam * y)
         * ((a - b * y) * (3 * x ^ 2 + E.curveA - 2 * lam * y))⁻¹ = 1 :=
     mul_inv_cancel₀ hMul
-  -- LHS = (a+by) · (a'−b'y) · 2y · [((a-by)(3x²+A-2λy)) · (same)⁻¹]
-  --     = (a+by) · (a'−b'y) · 2y · 1
-  --     = (a+by) · (a'−b'y) · 2y
-  -- Which by hAux equals the goal RHS.
   calc (a - b * y) * (a + b * y) * (3 * x ^ 2 + E.curveA - 2 * lam * y) *
-          ((a' - b' * y) * (2 * y) *
+          (((a' - b' * y) * (2 * y) + (-b) * (3 * x ^ 2 + E.curveA)) *
             ((a - b * y) * (3 * x ^ 2 + E.curveA - 2 * lam * y))⁻¹)
       = ((a - b * y) * (3 * x ^ 2 + E.curveA - 2 * lam * y)
             * ((a - b * y) * (3 * x ^ 2 + E.curveA - 2 * lam * y))⁻¹) *
-          ((a + b * y) * (a' - b' * y) * (2 * y)) := by ring
-    _ = 1 * ((a + b * y) * (a' - b' * y) * (2 * y)) := by rw [hInvCancel]
-    _ = (a + b * y) * (a' - b' * y) * (2 * y) := by ring
+          ((a + b * y) *
+            ((a' - b' * y) * (2 * y) + (-b) * (3 * x ^ 2 + E.curveA))) := by ring
+    _ = 1 * ((a + b * y) *
+            ((a' - b' * y) * (2 * y) + (-b) * (3 * x ^ 2 + E.curveA))) := by
+          rw [hInvCancel]
+    _ = (a + b * y) *
+            ((a' - b' * y) * (2 * y) + (-b) * (3 * x ^ 2 + E.curveA)) := by ring
     _ = 2 * y * (a' * a - b' * b * (x ^ 3 + E.curveA * x + E.curveB))
-          + 2 * (x ^ 3 + E.curveA * x + E.curveB) * (a' * b - b' * a) := hAux
+          + 2 * (x ^ 3 + E.curveA * x + E.curveB) * (a' * b - b' * a)
+          - (a + b * y) * b * (3 * x ^ 2 + E.curveA) := hAux
 
 /-- **Corollary of Layer 3** (form in terms of `eval (derivative (normPoly))`):
 
     At `(P, λ)` with denominators nonzero, the denominator-cleared
     `logDerivTerm` is equivalently expressed via `eval x (N(D)')`.
-    Specifically:
+
     ```
     2 · N(D)(x) · (3x² + A − 2λy) · logDerivTerm(P, λ)
-        = (N(D)'(x) + b(x)²·(3x² + A)) · (2y)
+        = (N(D)'(x) + b(x)²·(3x²+A)) · (2y)
            + 4·curveX(x)·(a'·b − b'·a)
+           − 2·(a+b·y)·b·(3x²+A).
     ```
-    Follows by substitution via `normPoly_derivative_eval`.
--/
+    Follows by substitution via `normPoly_derivative_eval`. -/
 theorem logDerivTerm_denom_cleared_with_normPoly_derivative
     (D : CoordRingElt E.q) (lam : ZMod E.q)
     {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points)
@@ -228,7 +233,9 @@ theorem logDerivTerm_denom_cleared_with_normPoly_derivative
           + D.b.eval P.1 ^ 2 * (3 * P.1 ^ 2 + E.curveA)) * (2 * P.2)
         + 4 * (P.1 ^ 3 + E.curveA * P.1 + E.curveB) *
             (D.a.derivative.eval P.1 * D.b.eval P.1
-              - D.b.derivative.eval P.1 * D.a.eval P.1) := by
+              - D.b.derivative.eval P.1 * D.a.eval P.1)
+        - 2 * (D.a.eval P.1 + D.b.eval P.1 * P.2) * D.b.eval P.1
+            * (3 * P.1 ^ 2 + E.curveA) := by
   -- Multiply Layer 3 by 2, then substitute 2·(a'·a − b'·b·curveX) = N(D)' + b²·(3x²+A).
   have hCore := logDerivTerm_denom_cleared_pointwise E D lam hP hD hXDen
   have hNpDer := normPoly_derivative_eval E D P.1
@@ -241,16 +248,9 @@ theorem logDerivTerm_denom_cleared_with_normPoly_derivative
   set b' := D.b.derivative.eval x
   set cx := x ^ 3 + E.curveA * x + E.curveB
   set gx := 3 * x ^ 2 + E.curveA
-  -- hCore:
-  --   N(D)(x) · (gx - 2λy) · logDerivTerm
-  --     = 2y·(a'·a − b'·b·cx) + 2·cx·(a'·b − b'·a)
-  -- Want:
-  --   2·N(D)(x) · (gx - 2λy) · logDerivTerm
-  --     = (N(D)'(x) + b²·gx)·2y + 4·cx·(a'·b − b'·a)
-  -- Multiply hCore by 2 and substitute via hNpDer.
+  -- hNpDer: eval x (N(D)') = 2·a·a' - 2·b·b'·cx - b²·gx
   have hNpDer' : eval x (derivative (normPoly E D)) + b ^ 2 * gx
                    = 2 * a * a' - 2 * b * b' * cx := by
-    -- hNpDer: eval x (N(D)') = 2·a·a' - 2·b·b'·cx - b²·gx
     linear_combination hNpDer
   -- Rearrange the goal.
   linear_combination 2 * hCore - 2 * y * hNpDer'
@@ -338,7 +338,9 @@ theorem logDerivTermSum_denom_cleared_sumform
                           * (P.1 ^ 3 + E.curveA * P.1 + E.curveB))
           + 2 * (P.1 ^ 3 + E.curveA * P.1 + E.curveB) *
             (D.a.derivative.eval P.1 * D.b.eval P.1
-               - D.b.derivative.eval P.1 * D.a.eval P.1)) := by
+               - D.b.derivative.eval P.1 * D.a.eval P.1)
+          - (D.a.eval P.1 + D.b.eval P.1 * P.2) * D.b.eval P.1
+              * (3 * P.1 ^ 2 + E.curveA)) := by
   intro i
   -- Dispatch to Layer 3 depending on i ∈ {0, 1, 2}.
   match i with
@@ -358,68 +360,12 @@ theorem logDerivTermSum_denom_cleared_sumform
         (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) hA₂ hDA₂ hXDen₂
       convert this using 0
 
-/-! ## Paper-faithful per-point integrand (reference)
+/-! ## Historical note on paper-faithful integrand
 
-    `logDerivTerm` (Lean) uses the formal `x`-partial numerator
-    `a'(x) − b'(x) · y`, whereas the classical residue identity in the
-    log-derivative check is proven with the on-curve chain-rule
-    numerator `2y · a'(x) − (3x² + A) · b(x) − 2y² · b'(x)`. The two
-    forms differ on any `D` with `b(x) ≠ 0`.
-
-    `logDerivTermPaper` is the paper-faithful form, stated here for
-    reference (no downstream consumer); a cascade rewrite replacing
-    `logDerivTerm` with this form is the "Track A" option documented
-    in the axiom-elimination plan (Session 36 entry). -/
-
-/-- The paper-faithful log-derivative integrand. Differs from
-    `logDerivTerm` by the on-curve y-chain-rule term
-    `−(3x² + A) · b(x) / (D · (3x² + A − 2λy))`. -/
-noncomputable def logDerivTermPaper
-    (D : CoordRingElt E.q) (curveA : ZMod E.q) (lam : ZMod E.q)
-    (pt : ZMod E.q × ZMod E.q) : ZMod E.q :=
-  let x := pt.1
-  let y := pt.2
-  let num := 2 * y * D.a.derivative.eval x
-               - (3 * x ^ 2 + curveA) * D.b.eval x
-               - 2 * y ^ 2 * D.b.derivative.eval x
-  let den := D.eval x y * (3 * x ^ 2 + curveA - 2 * lam * y)
-  num * den⁻¹
-
-/-- **Explicit difference theorem.** The paper-faithful integrand and
-    Lean's `logDerivTerm` differ exactly by the on-curve y-chain-rule
-    correction term. -/
-theorem logDerivTermPaper_sub_logDerivTerm
-    (D : CoordRingElt E.q) (lam : ZMod E.q)
-    (P : ZMod E.q × ZMod E.q)
-    (hD : D.eval P.1 P.2 ≠ 0)
-    (hXDen : (3 * P.1 ^ 2 + E.curveA - 2 * lam * P.2) ≠ 0) :
-    logDerivTermPaper E D E.curveA lam P
-      - logDerivTerm E D E.curveA lam P
-      = -(3 * P.1 ^ 2 + E.curveA) * D.b.eval P.1
-           * (D.eval P.1 P.2 * (3 * P.1 ^ 2 + E.curveA - 2 * lam * P.2))⁻¹ := by
-  classical
-  unfold logDerivTermPaper logDerivTerm CoordRingElt.eval
-  -- Denominators are nonzero, ensuring the shared inverse is well-defined.
-  have _hMul : D.eval P.1 P.2 * (3 * P.1 ^ 2 + E.curveA - 2 * lam * P.2) ≠ 0 :=
-    mul_ne_zero hD hXDen
-  -- Combine all three rational expressions over common denominator
-  -- `(a - by) · (3x² + A − 2λy)`.
-  have hGoal :
-      (2 * P.2 * D.a.derivative.eval P.1
-          - (3 * P.1 ^ 2 + E.curveA) * D.b.eval P.1
-          - 2 * P.2 ^ 2 * D.b.derivative.eval P.1)
-        * ((D.a.eval P.1 - D.b.eval P.1 * P.2)
-              * (3 * P.1 ^ 2 + E.curveA - 2 * lam * P.2))⁻¹
-      - (D.a.derivative.eval P.1 - D.b.derivative.eval P.1 * P.2) * (2 * P.2)
-        * ((D.a.eval P.1 - D.b.eval P.1 * P.2)
-              * (3 * P.1 ^ 2 + E.curveA - 2 * lam * P.2))⁻¹
-      = -((3 * P.1 ^ 2 + E.curveA) * D.b.eval P.1)
-        * ((D.a.eval P.1 - D.b.eval P.1 * P.2)
-              * (3 * P.1 ^ 2 + E.curveA - 2 * lam * P.2))⁻¹ := by
-    rw [← sub_mul, ← neg_mul]
-    congr 1
-    ring
-  convert hGoal using 2
-  ring
+    `logDerivTerm` is now the paper-faithful form (Session 39 cascade).
+    The previous `logDerivTermPaper` / `logDerivTermPaper_sub_logDerivTerm`
+    reference lemmas are obsolete and have been removed. The correction
+    term `−(a + b·y) · b · (3x² + A)` now appears directly in the
+    RHS of `logDerivTerm_denom_cleared_pointwise`. -/
 
 end Divisor

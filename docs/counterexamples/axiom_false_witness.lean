@@ -1,3 +1,24 @@
+/-!
+# Historical counterexample — now invalidated (Session 39)
+
+**This file applied to the OLD `logDerivTerm` definition** that used
+the formal `x`-partial numerator `a'(x) − b'(x)·y` only. Under the new
+paper-faithful `logDerivTerm` (Session 39 cascade), the numerator is
+`(a'(x) − b'(x)·y) · 2y + (−b(x)) · (3x² + A)`.
+
+For `D = y` (a = 0, b = -1), the new numerator evaluates to
+`0 · 2y + 1 · (3x² + A) = 3x² + A`, NOT zero. The old `LT_Dy_zero` lemma
+is thus no longer provable — the counterexample no longer applies, and
+the axiom `polyG_zero_of_logDerivCheck_identically_zero` is no longer
+provably false under the new definition.
+
+**The file is preserved as a historical artifact.** It will no longer
+typecheck against the current codebase (`LT_Dy_zero` is false), but is
+kept for provenance. Do not import or run. -/
+-- This file is NOT part of the Lake build (it lives under `docs/counterexamples/`).
+-- Leaving it as historical reference; the lemmas below are false under the new
+-- paper-faithful `logDerivTerm` definition.
+
 import Divisor
 open Divisor Polynomial
 

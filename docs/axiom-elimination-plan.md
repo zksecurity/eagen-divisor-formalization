@@ -4467,3 +4467,96 @@ To complete Track A, the next session should:
 9. Delete or invalidate the Session 37 counterexample file.
 10. Discharge the transient axiom via the updated infrastructure.
 
+### Session 39 (2026-04-20) — Track A cascade LANDED
+
+**Scope**: Complete the Track A cascade begun in Session 38. Apply the
+paper-faithful `logDerivTerm` definition across all downstream
+consumers.
+
+**Result**: Full cascade complete, build green, axioms unchanged.
+
+**Changes**:
+
+* `Divisor/LogDeriv.lean:128-146`: replaced `logDerivTerm` definition
+  with the paper-faithful form `(num_x·dx/dz + num_y·dy/dz) / (D·dxdz_den)`
+  where `num_x = a'(x) − b'(x)·y`, `num_y = −b(x)`, `dx/dz_num = 2y`,
+  `dy/dz_num = 3x² + A`.
+
+* `Divisor/BivariateLogDeriv.lean`:
+  - `logDerivTerm_denom_cleared_pointwise` RHS now adds
+    `− (a + b·y) · b · (3x² + A)` correction, proved via
+    `linear_combination` over the on-curve identity `y² = x³+Ax+B`.
+  - `logDerivTerm_denom_cleared_with_normPoly_derivative` corollary
+    updated analogously.
+  - `logDerivTermSum_denom_cleared_sumform` updated.
+  - Removed now-obsolete `logDerivTermPaper` and
+    `logDerivTermPaper_sub_logDerivTerm` (was reference only).
+
+* `Divisor/ClearedPolyForm.lean` (+~650 LOC):
+  - New polynomial defs (`DBdydzAtA₀Poly`, `DBdydzAtA₁Poly`,
+    `DbAtA₂TightScaled`, `dydzNumA₂Scaled`, `correctionA₂ScaledCore`,
+    `correctionTerm{0,1,2}Scaled`) for the paper-faithful `num_y·dydz_num`
+    correction.
+  - New bivEval identities (`bivEval_correctionTerm{0,1,2}Scaled_eq`
+    etc.).
+  - `clearedFiberPoly` now includes 3 additional summands for the
+    corrections. Total 8 summands.
+  - `clearedFiberPoly_identity` proof: factor `(A₁−A₀)^N`, group
+    `(lhs_i + corr_i)` pairs, apply updated per-term clearing lemmas.
+  - `logDerivTerm_eq_explicit` reflects new numerator.
+  - Per-term clearing lemmas `clearedFiberPoly_lhs{0,1,2}_eq_LT_mul_denom`
+    now take the `old_scalar + correction_scalar` sum on LHS.
+  - natDegree bounds for correction polynomials. `clearedFiberPoly`
+    natDegree bound unchanged at `D.degE + k + 8`.
+  - InnerDegLe bounds for correction polynomials. Inner natDegree bound
+    for `clearedFiberPoly` unchanged at `3·D.degE + k + 10`.
+
+* `Divisor/ResidueIdentity.lean`:
+  - `chordRHSSingle` and `chordRHS` now include the paper-faithful
+    correction term `− (a + b·y) · b · (3x² + A)`.
+
+* `docs/counterexamples/axiom_false_witness.lean`:
+  - Annotated with header explaining the counterexample no longer
+    applies. The `LT_Dy_zero` lemma is now false (under new definition,
+    `D = y` gives `logDerivTerm = (3x²+A)/denom`, not zero). File kept
+    as historical artifact; not in build.
+
+**Key algebraic observation** (validating the design):
+
+The paper-faithful and Lean-old definitions differ by exactly
+`-b(x)·(3x²+A) / (D·(3x²+A−2λy))`. Multiplying by `D`, this correction
+becomes `-b(x)·(3x²+A)/(3x²+A−2λy)`; further multiplying by
+`(3x²+A−2λy)` gives `-b(x)·(3x²+A)`. Applied in the 3-chord-points
+`Σᵢ` setting, this contributes the polynomial corrections listed above,
+each scaled to `(A₁.1−A₀.1)^(D.degE+k+6)` to combine with the other
+summands of `clearedFiberPoly`.
+
+**Axiom status**:
+
+The axiom `polyG_zero_of_logDerivCheck_identically_zero` is STILL
+present (no attempt made to close it in this session — closure
+requires genuine function-field residue theory, likely ~1500 LOC
+beyond the cascade's scope). However, the axiom is no longer
+provably FALSE as it was in Session 37: the counterexample relied on
+`logDerivTerm(D=y) = 0` which no longer holds under the paper-faithful
+definition.
+
+`#print axioms ma_extractable` confirms dependencies are unchanged:
+`propext, Classical.choice, Quot.sound,
+ polyG_zero_of_logDerivCheck_identically_zero, principal_divisor_iff,
+ CoordRingElt.divisor_degree_eq, CoordRingElt.divisor_group_sum_zero,
+ ECPoint.add_assoc, ECPoint.add_comm, ECPoint.neg_add_cancel`.
+
+All permitted. No new axioms, no `sorry`/`admit`.
+
+**Remaining work**:
+
+Closing the axiom `polyG_zero_of_logDerivCheck_identically_zero` as a
+theorem requires mechanizing the function-field residue theorem at the
+chord (Lemma 6 of paper `sections/ec.tex`). This is estimated at
+~1500 LOC of new function-field infrastructure and was deferred.
+
+The cascade has made the axiom no longer provably false and matches
+the paper's mathematical setup, which is a significant step toward
+eventual closure.
+

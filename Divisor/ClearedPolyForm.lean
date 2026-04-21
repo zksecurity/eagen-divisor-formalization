@@ -535,8 +535,69 @@ noncomputable def DAllScaled (D : CoordRingElt E.q)
   DAtA₀Poly (E := E) D A₀ * DAtA₁Poly (E := E) D
     * DAtA₂Scaled (E := E) D A₀
 
-/-- LHS i=0 term: `num(A₀)·2·A₀.2·D(A₁)·D(A₂)·dxdz_den(A₁)·dxdz_den(A₂) · L(-P) · ∏L(B_j)`,
-    scaled polynomial (scales to `lamDen^(D.degE+k+6)`). -/
+/-! ## Paper-faithful numerator polynomials (Session 39)
+
+    The paper-faithful `logDerivTerm(A, λ)` has numerator
+    `num_x(A) · (2·A.2) + num_y(A) · (3·A.1² + A_curve)` where
+    `num_x = a'(x) − b'(x)·y` and `num_y = −b(x)`. We split the
+    per-point numerator into an `x`-chain-rule piece (handled by the
+    existing `DDeriv` polynomials) and a `y`-chain-rule correction
+    piece (new below). -/
+
+/-- `−b(A₀.1) · (3·A₀.1² + curveA)` as a scalar, embedded polynomially. -/
+noncomputable def DBdydzAtA₀Poly (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  embedScalar (E := E) ((- D.b.eval A₀.1) * (3 * A₀.1 ^ 2 + E.curveA))
+
+/-- `−b(A₁.1) · (3·A₁.1² + curveA)` as a polynomial in `(innerX, outerY)`. -/
+noncomputable def DBdydzAtA₁Poly (D : CoordRingElt E.q) : (ZMod E.q)[X][X] :=
+  (- embedInnerPoly (E := E) D.b)
+    * (embedScalar (E := E) 3 * innerA₁x (E := E) ^ 2
+         + embedScalar (E := E) E.curveA)
+
+/-! ### `D.b` at `A₂` scaled by `lamDen^(2·b.natDegree)` (tight).
+
+    Needed for the `num_y(A₂) = −b(chordX₂)` correction term scaled
+    polynomially.  Tight scaling `2·b.natDegree ≤ D.degE − 3` keeps
+    the combined `lhsTerm2Scaled` factor (including dydz_num at A₂
+    scaled by `lamDen^4` and the other factors totalling `lamDen^(k+3)`)
+    within the uniform `lamDen^(D.degE+k+6)` budget. -/
+
+/-- `b(chordX₂)` times `lamDen^(2·b.natDegree)`, as a polynomial. -/
+noncomputable def DbAtA₂TightScaled (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  ∑ n ∈ Finset.range (D.b.natDegree + 1),
+    embedScalar (E := E) (D.b.coeff n)
+      * x₂Scaled (E := E) A₀ ^ n
+      * lamDenPoly (E := E) A₀ ^ (2 * D.b.natDegree - 2 * n)
+
+/-- `(3·chordX₂² + curveA) · lamDen^4`, as a polynomial. -/
+noncomputable def dydzNumA₂Scaled (A₀ : ZMod E.q × ZMod E.q) :
+    (ZMod E.q)[X][X] :=
+  embedScalar (E := E) 3 * x₂Scaled (E := E) A₀ ^ 2
+    + embedScalar (E := E) E.curveA * lamDenPoly (E := E) A₀ ^ 4
+
+/- The `correctionA₂ScaledCore` below pads the intrinsic
+    `lamDen^(2·b.natDegree + 4)` scaling of `-b(chordX₂)·(3·chordX₂²+A)`
+    up to `lamDen^(D.degE + 1)` using the guaranteed margin
+    `D.degE ≥ 2·b.natDegree + 3`. The lhsTerm2Scaled overall scaling is
+    `(A-B)^(D.degE + k + 6)` — the correction contributes
+    `(A-B)^(D.degE + 1)` and combines with the `dxdz(A₀)·dxdz(A₁)·lines`
+    scaling `(A-B)^(k+3)` plus a factor `(A-B)^2` from factorisation,
+    totalling `(A-B)^(D.degE + k + 6)`. See `bivEval_lhsTerm2Scaled_eq`. -/
+
+/-- Combined scaled form: `−b(chordX₂) · (3·chordX₂² + curveA) · lamDen^(2·b.natDegree+4)`
+    multiplied by `lamDen^(D.degE − 2·b.natDegree − 3)` to reach
+    `lamDen^(D.degE + 1)` uniform scaling. Uses `Nat.sub` which pins to
+    zero when `D.degE < 2·b.natDegree + 3`, but such `D` are excluded by
+    the `D.degE ≥ 2·b.natDegree + 3` invariant. -/
+noncomputable def correctionA₂ScaledCore (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  (- DbAtA₂TightScaled (E := E) D A₀)
+    * dydzNumA₂Scaled (E := E) A₀
+    * lamDenPoly (E := E) A₀ ^ (D.degE - 2 * D.b.natDegree - 3)
+
+/-- LHS i=0 term: the OLD `num_x·2y` factor only (pre-correction). -/
 noncomputable def lhsTerm0Scaled (D : CoordRingElt E.q)
     (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
     (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
@@ -548,8 +609,7 @@ noncomputable def lhsTerm0Scaled (D : CoordRingElt E.q)
     * dxdzDenA₂Scaled (E := E) A₀
     * linesProductScaled (E := E) P k B A₀
 
-/-- LHS i=1 term (symmetric to `lhsTerm0Scaled` with roles of A₀, A₁ swapped
-    for the `num`, `2·y` factors). -/
+/-- LHS i=1 term (old `num_x·2y` factor only). -/
 noncomputable def lhsTerm1Scaled (D : CoordRingElt E.q)
     (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
     (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
@@ -561,8 +621,7 @@ noncomputable def lhsTerm1Scaled (D : CoordRingElt E.q)
     * dxdzDenA₂Scaled (E := E) A₀
     * linesProductScaled (E := E) P k B A₀
 
-/-- LHS i=2 term. `num(A₂)·2·y_2` uses `DDerivAtA₂Scaled` (`lamDen^D.degE`)
-    and `2·y₂Scaled` (`lamDen^3`). -/
+/-- LHS i=2 term (old `num_x·2y` factor only). -/
 noncomputable def lhsTerm2Scaled (D : CoordRingElt E.q)
     (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
     (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
@@ -573,6 +632,56 @@ noncomputable def lhsTerm2Scaled (D : CoordRingElt E.q)
     * dxdzDenA₀Scaled (E := E) A₀
     * dxdzDenA₁Scaled (E := E) A₀
     * linesProductScaled (E := E) P k B A₀
+
+/-! ### Correction terms (Session 39 cascade)
+
+    The paper-faithful `logDerivTerm` adds a `num_y · dydz_num =
+    -b(x)·(3x² + A)` numerator to the old `num_x · 2y`. In polynomial
+    form, this contributes three correction summands (one per point),
+    each at scaling `(A-B)^(D.degE+k+6)`. -/
+
+/-- Correction for i=0: `-b(A₀.1)·(3·A₀.1²+A) · D(A₁)·D(A₂)·dxdz_den(A₁)·dxdz_den(A₂)·lines`.
+
+    Padded by `lamDen^2` (absorbing the `lamDen^2` mismatch between the
+    correction's natural `lamDen^(k+3)` scaling and target `lamDen^(k+5)`
+    needed to match total `lamDen^(D.degE+k+6)` when combined with
+    `DAtA₂Scaled`'s `lamDen^D.degE`). -/
+noncomputable def correctionTerm0Scaled (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  DBdydzAtA₀Poly (E := E) D A₀
+    * DAtA₁Poly (E := E) D
+    * DAtA₂Scaled (E := E) D A₀
+    * dxdzDenA₁Scaled (E := E) A₀
+    * dxdzDenA₂Scaled (E := E) A₀
+    * linesProductScaled (E := E) P k B A₀
+
+/-- Correction for i=1. -/
+noncomputable def correctionTerm1Scaled (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  DBdydzAtA₁Poly (E := E) D
+    * DAtA₀Poly (E := E) D A₀
+    * DAtA₂Scaled (E := E) D A₀
+    * dxdzDenA₀Scaled (E := E) A₀
+    * dxdzDenA₂Scaled (E := E) A₀
+    * linesProductScaled (E := E) P k B A₀
+
+/-- Correction for i=2. Uses `correctionA₂ScaledCore` (which has scaling
+    `lamDen^(D.degE+1)` for `-b(chordX₂)·(3·chordX₂²+A)`) multiplied by
+    `lamDen^2` via `dxdzDen(A₀)·dxdzDen(A₁)` scaling. Combined with
+    `D(A₀)·D(A₁)·lines`, total scaling `lamDen^(D.degE+k+4)`.
+    We pad by multiplying with `lamDenPoly^2` to reach `lamDen^(D.degE+k+6)`. -/
+noncomputable def correctionTerm2Scaled (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
+  correctionA₂ScaledCore (E := E) D A₀
+    * DAtA₀Poly (E := E) D A₀
+    * DAtA₁Poly (E := E) D
+    * dxdzDenA₀Scaled (E := E) A₀
+    * dxdzDenA₁Scaled (E := E) A₀
+    * linesProductScaled (E := E) P k B A₀
+    * lamDenPoly (E := E) A₀ ^ 2
 
 /-- RHS `-1/L(-P)` term (signed): `+D_{all} · dxdz_all · ∏L(B_j)`.
     The `+` sign is because `logDerivCheckFn = lhs - rhs` and the RHS
@@ -614,6 +723,9 @@ noncomputable def clearedFiberPoly (D : CoordRingElt E.q)
   lhsTerm0Scaled (E := E) D P k B A₀
     + lhsTerm1Scaled (E := E) D P k B A₀
     + lhsTerm2Scaled (E := E) D P k B A₀
+    + correctionTerm0Scaled (E := E) D P k B A₀
+    + correctionTerm1Scaled (E := E) D P k B A₀
+    + correctionTerm2Scaled (E := E) D P k B A₀
     + rhsTermNegPScaled (E := E) D k B A₀
     + rhsSumScaled (E := E) D P k B m A₀
 
@@ -1107,6 +1219,113 @@ theorem bivEval_dxdzDenA₂Scaled_eq (A₀ A₁ : ZMod E.q × ZMod E.q)
             ((A₁.2 - A₀.2) ^ 2 - (A₁.1 - A₀.1) ^ 2 * (2 * A₀.1 + A₁.1))
            + A₀.2 * (A₁.1 - A₀.1) ^ 3) * hlam
 
+/-! ## BivEval of paper-faithful correction polynomials (Session 39) -/
+
+@[simp] theorem bivEval_DBdydzAtA₀Poly (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval (DBdydzAtA₀Poly (E := E) D A₀) A₁
+      = (- D.b.eval A₀.1) * (3 * A₀.1 ^ 2 + E.curveA) := by
+  simp [DBdydzAtA₀Poly]
+
+@[simp] theorem bivEval_DBdydzAtA₁Poly (D : CoordRingElt E.q)
+    (A₁ : ZMod E.q × ZMod E.q) :
+    bivEval (DBdydzAtA₁Poly (E := E) D) A₁
+      = (- D.b.eval A₁.1) * (3 * A₁.1 ^ 2 + E.curveA) := by
+  simp [DBdydzAtA₁Poly, bivEval_mul, bivEval_add, bivEval_neg, bivEval_pow]
+
+/-- On non-vertical pairs, `bivEval DbAtA₂TightScaled A₁
+      = (A₁.1 - A₀.1)^(2·b.natDegree) · b(chordX₂)`. -/
+theorem bivEval_DbAtA₂TightScaled_eq (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (DbAtA₂TightScaled (E := E) D A₀) A₁
+      = (A₁.1 - A₀.1) ^ (2 * D.b.natDegree) * D.b.eval (chordX₂ A₀ A₁) := by
+  unfold DbAtA₂TightScaled
+  rw [bivEval_finset_sum, Polynomial.eval_eq_sum_range, Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro n hn
+  have h2nle : 2 * n ≤ 2 * D.b.natDegree := by
+    have hn' : n ≤ D.b.natDegree := Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+    omega
+  simp only [bivEval_mul, bivEval_pow, bivEval_embedScalar, bivEval_lamDenPoly,
+             bivEval_x₂Scaled_eq _ _ _ hNV]
+  unfold chordX₂
+  have hpow : (A₁.1 - A₀.1) ^ (2 * n)
+              * (A₁.1 - A₀.1) ^ (2 * D.b.natDegree - 2 * n)
+            = (A₁.1 - A₀.1) ^ (2 * D.b.natDegree) := by
+    rw [← pow_add]; congr 1; omega
+  have hsq : ((A₁.1 - A₀.1) ^ 2) ^ n = (A₁.1 - A₀.1) ^ (2 * n) := by
+    rw [← pow_mul, Nat.mul_comm]
+  calc D.b.coeff n * ((A₁.1 - A₀.1) ^ 2 *
+          ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1)) ^ n
+         * (A₁.1 - A₀.1) ^ (2 * D.b.natDegree - 2 * n)
+      = D.b.coeff n
+         * (((A₁.1 - A₀.1) ^ 2) ^ n
+             * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1) ^ n)
+         * (A₁.1 - A₀.1) ^ (2 * D.b.natDegree - 2 * n) := by rw [mul_pow]
+    _ = D.b.coeff n
+         * ((A₁.1 - A₀.1) ^ (2 * n)
+             * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1) ^ n)
+         * (A₁.1 - A₀.1) ^ (2 * D.b.natDegree - 2 * n) := by rw [hsq]
+    _ = D.b.coeff n
+         * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1) ^ n
+         * ((A₁.1 - A₀.1) ^ (2 * n)
+             * (A₁.1 - A₀.1) ^ (2 * D.b.natDegree - 2 * n)) := by ring
+    _ = D.b.coeff n
+         * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1) ^ n
+         * (A₁.1 - A₀.1) ^ (2 * D.b.natDegree) := by rw [hpow]
+    _ = (A₁.1 - A₀.1) ^ (2 * D.b.natDegree)
+         * (D.b.coeff n
+             * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1) ^ n) := by ring
+
+/-- On non-vertical pairs, `bivEval dydzNumA₂Scaled A₁
+      = (A₁.1 - A₀.1)^4 · (3·chordX₂² + E.curveA)`. -/
+theorem bivEval_dydzNumA₂Scaled_eq (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (dydzNumA₂Scaled (E := E) A₀) A₁
+      = (A₁.1 - A₀.1) ^ 4 * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA) := by
+  unfold dydzNumA₂Scaled
+  simp only [bivEval_add, bivEval_mul, bivEval_embedScalar, bivEval_pow,
+             bivEval_x₂Scaled_eq _ _ _ hNV, bivEval_lamDenPoly]
+  -- After substitution: 3·((A₁.1-A₀.1)^2 · ((λ²-A₀.1-A₁.1)))² + curveA·(A₁.1-A₀.1)^4
+  --   = (A₁.1-A₀.1)^4 · (3·chordX₂² + curveA)
+  -- `chordX₂` on RHS matches by definition after unfolding.
+  show 3 * ((A₁.1 - A₀.1) ^ 2
+          * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1)) ^ 2
+        + E.curveA * (A₁.1 - A₀.1) ^ 4
+      = (A₁.1 - A₀.1) ^ 4 * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA)
+  unfold chordX₂
+  ring
+
+/-- On non-vertical pairs, `bivEval correctionA₂ScaledCore A₁
+      = (A₁.1-A₀.1)^(D.degE+1) · (-b(chordX₂))·(3·chordX₂²+E.curveA)`. -/
+theorem bivEval_correctionA₂ScaledCore_eq (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (correctionA₂ScaledCore (E := E) D A₀) A₁
+      = (A₁.1 - A₀.1) ^ (D.degE + 1) *
+          ((- D.b.eval (chordX₂ A₀ A₁)) * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA)) := by
+  unfold correctionA₂ScaledCore
+  simp only [bivEval_mul, bivEval_neg, bivEval_pow, bivEval_lamDenPoly,
+             bivEval_DbAtA₂TightScaled_eq _ _ _ _ hNV,
+             bivEval_dydzNumA₂Scaled_eq _ _ _ hNV]
+  have hb_le : 2 * D.b.natDegree + 3 ≤ D.degE := by
+    unfold CoordRingElt.degE
+    omega
+  have hpow : (A₁.1 - A₀.1) ^ (2 * D.b.natDegree) * (A₁.1 - A₀.1) ^ 4
+              * (A₁.1 - A₀.1) ^ (D.degE - 2 * D.b.natDegree - 3)
+            = (A₁.1 - A₀.1) ^ (D.degE + 1) := by
+    rw [← pow_add, ← pow_add]; congr 1; omega
+  calc _
+      = (- ((A₁.1 - A₀.1) ^ (2 * D.b.natDegree) * D.b.eval (chordX₂ A₀ A₁)))
+          * ((A₁.1 - A₀.1) ^ 4 * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA))
+          * (A₁.1 - A₀.1) ^ (D.degE - 2 * D.b.natDegree - 3) := rfl
+    _ = ((A₁.1 - A₀.1) ^ (2 * D.b.natDegree) * (A₁.1 - A₀.1) ^ 4
+           * (A₁.1 - A₀.1) ^ (D.degE - 2 * D.b.natDegree - 3)) *
+        ((- D.b.eval (chordX₂ A₀ A₁)) * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA)) := by
+        ring
+    _ = (A₁.1 - A₀.1) ^ (D.degE + 1) *
+        ((- D.b.eval (chordX₂ A₀ A₁)) * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA)) := by
+        rw [hpow]
+
 /-! ## Phase B2 helpers: line-product bivEval extractions
 
     On the non-vertical cone, each `lineEvalNumAt A₀ pt` evaluates to
@@ -1262,7 +1481,7 @@ theorem bivEval_dxdzAllScaled_eq
     the product, applies the per-factor identities, then combines powers
     of `(A₁.1 - A₀.1)` via explicit `pow_add` rewrites. -/
 
-/-- LHS `i=0` term: `num(A₀)·2·A₀.2·D(A₁)·D(A₂)·dxdz(A₁)·dxdz(A₂)·L(-P)·∏L(B_j)`. -/
+/-- LHS `i=0` term: old `num·2·A₀.2 · [other factors]` bivEval.  -/
 theorem bivEval_lhsTerm0Scaled_eq
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
@@ -1295,7 +1514,7 @@ theorem bivEval_lhsTerm0Scaled_eq
         pow_add, pow_add, pow_add, pow_one]
   rw [hpow]; ring
 
-/-- LHS `i=1` term: `D(A₀)·num(A₁)·2·A₁.2·D(A₂)·dxdz(A₀)·dxdz(A₂)·L(-P)·∏L(B_j)`. -/
+/-- LHS `i=1` term: old factor only. -/
 theorem bivEval_lhsTerm1Scaled_eq
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
@@ -1329,7 +1548,7 @@ theorem bivEval_lhsTerm1Scaled_eq
         pow_add, pow_add, pow_add, pow_one]
   rw [hpow]; ring
 
-/-- LHS `i=2` term: `D(A₀)·D(A₁)·num(A₂)·2·y₂·dxdz(A₀)·dxdz(A₁)·L(-P)·∏L(B_j)`. -/
+/-- LHS `i=2` term: old `num·2y` factor only bivEval. -/
 theorem bivEval_lhsTerm2Scaled_eq
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
@@ -1357,8 +1576,6 @@ theorem bivEval_lhsTerm2Scaled_eq
       bivEval_dxdzDenA₀Scaled_eq _ _ _ hNV,
       bivEval_dxdzDenA₁Scaled_eq _ _ _ hNV,
       bivEval_linesProductScaled_eq _ _ _ _ _ _ hNV]
-  -- bivEval_y₂Scaled_eq gives (A₁.1 - A₀.1)^3 · (lam · chordX₂ + (A₀.2 - lam·A₀.1))
-  -- which matches chordY₂ by definition. Factor out via let-unfolding.
   have hY₂_eq :
       (slopeOf A₀.1 A₀.2 A₁.1 A₁.2
         * ((slopeOf A₀.1 A₀.2 A₁.1 A₁.2) ^ 2 - A₀.1 - A₁.1)
@@ -1370,6 +1587,101 @@ theorem bivEval_lhsTerm2Scaled_eq
               = (A₁.1 - A₀.1) ^ D.degE * (A₁.1 - A₀.1) ^ 3
                 * (A₁.1 - A₀.1) * (A₁.1 - A₀.1) * (A₁.1 - A₀.1) ^ (k + 1) := by
     rw [show D.degE + k + 6 = D.degE + 3 + 1 + 1 + (k + 1) from by omega,
+        pow_add, pow_add, pow_add, pow_add, pow_one]
+  rw [hpow]; ring
+
+/-! ### bivEval of correction terms -/
+
+theorem bivEval_correctionTerm0Scaled_eq
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (correctionTerm0Scaled (E := E) D P k B A₀) A₁
+      = (A₁.1 - A₀.1) ^ (D.degE + k + 6) *
+          ((- D.b.eval A₀.1) * (3 * A₀.1 ^ 2 + E.curveA)
+            * D.eval A₁.1 A₁.2
+            * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁)
+            * (3 * A₁.1 ^ 2 + E.curveA
+                - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+            * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+                - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁))
+            * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+            * ∏ j : Fin k,
+                (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2) := by
+  unfold correctionTerm0Scaled
+  simp only [bivEval_mul]
+  rw [bivEval_DBdydzAtA₀Poly, bivEval_DAtA₁Poly,
+      bivEval_DAtA₂Scaled_eq _ _ _ _ hNV,
+      bivEval_dxdzDenA₁Scaled_eq _ _ _ hNV,
+      bivEval_dxdzDenA₂Scaled_eq _ _ _ hNV,
+      bivEval_linesProductScaled_eq _ _ _ _ _ _ hNV]
+  have hpow : (A₁.1 - A₀.1) ^ (D.degE + k + 6)
+              = (A₁.1 - A₀.1) ^ D.degE * (A₁.1 - A₀.1)
+                * (A₁.1 - A₀.1) ^ 4 * (A₁.1 - A₀.1) ^ (k + 1) := by
+    rw [show D.degE + k + 6 = D.degE + 1 + 4 + (k + 1) from by omega,
+        pow_add, pow_add, pow_add, pow_one]
+  rw [hpow]; ring
+
+theorem bivEval_correctionTerm1Scaled_eq
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (correctionTerm1Scaled (E := E) D P k B A₀) A₁
+      = (A₁.1 - A₀.1) ^ (D.degE + k + 6) *
+          ((- D.b.eval A₁.1) * (3 * A₁.1 ^ 2 + E.curveA)
+            * D.eval A₀.1 A₀.2
+            * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁)
+            * (3 * A₀.1 ^ 2 + E.curveA
+                - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+            * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+                - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁))
+            * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+            * ∏ j : Fin k,
+                (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2) := by
+  unfold correctionTerm1Scaled
+  simp only [bivEval_mul]
+  rw [bivEval_DBdydzAtA₁Poly, bivEval_DAtA₀Poly,
+      bivEval_DAtA₂Scaled_eq _ _ _ _ hNV,
+      bivEval_dxdzDenA₀Scaled_eq _ _ _ hNV,
+      bivEval_dxdzDenA₂Scaled_eq _ _ _ hNV,
+      bivEval_linesProductScaled_eq _ _ _ _ _ _ hNV]
+  have hpow : (A₁.1 - A₀.1) ^ (D.degE + k + 6)
+              = (A₁.1 - A₀.1) ^ D.degE * (A₁.1 - A₀.1)
+                * (A₁.1 - A₀.1) ^ 4 * (A₁.1 - A₀.1) ^ (k + 1) := by
+    rw [show D.degE + k + 6 = D.degE + 1 + 4 + (k + 1) from by omega,
+        pow_add, pow_add, pow_add, pow_one]
+  rw [hpow]; ring
+
+theorem bivEval_correctionTerm2Scaled_eq
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    bivEval (correctionTerm2Scaled (E := E) D P k B A₀) A₁
+      = (A₁.1 - A₀.1) ^ (D.degE + k + 6) *
+          ((- D.b.eval (chordX₂ A₀ A₁))
+              * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA)
+            * D.eval A₀.1 A₀.2
+            * D.eval A₁.1 A₁.2
+            * (3 * A₀.1 ^ 2 + E.curveA
+                - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+            * (3 * A₁.1 ^ 2 + E.curveA
+                - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+            * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+            * ∏ j : Fin k,
+                (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2) := by
+  unfold correctionTerm2Scaled
+  simp only [bivEval_mul, bivEval_pow]
+  rw [bivEval_correctionA₂ScaledCore_eq _ _ _ _ hNV,
+      bivEval_DAtA₀Poly, bivEval_DAtA₁Poly,
+      bivEval_dxdzDenA₀Scaled_eq _ _ _ hNV,
+      bivEval_dxdzDenA₁Scaled_eq _ _ _ hNV,
+      bivEval_linesProductScaled_eq _ _ _ _ _ _ hNV,
+      bivEval_lamDenPoly]
+  have hpow : (A₁.1 - A₀.1) ^ (D.degE + k + 6)
+              = (A₁.1 - A₀.1) ^ (D.degE + 1)
+                * (A₁.1 - A₀.1) * (A₁.1 - A₀.1) * (A₁.1 - A₀.1) ^ (k + 1)
+                * (A₁.1 - A₀.1) ^ 2 := by
+    rw [show D.degE + k + 6 = (D.degE + 1) + 1 + 1 + (k + 1) + 2 from by omega,
         pow_add, pow_add, pow_add, pow_add, pow_one]
   rw [hpow]; ring
 
@@ -1534,13 +1846,18 @@ theorem logDerivCheckFn_eq_positive_form
          intro j _; ring]
   ring
 
-/-- Explicit form of `logDerivTerm`. -/
+/-- Explicit form of `logDerivTerm` (paper-faithful).
+    The numerator is `num_x·dx/dz + num_y·dy/dz` with
+    `num_x = a'(x) − b'(x)·y`, `num_y = −b(x)`,
+    `dx/dz (num) = 2y`, `dy/dz (num) = 3x² + A`, and
+    common denominator factor `(3x² + A − 2λy)`. -/
 theorem logDerivTerm_eq_explicit
     (D : CoordRingElt E.q) (curveA lam : ZMod E.q)
     (pt : ZMod E.q × ZMod E.q) :
     logDerivTerm E D curveA lam pt =
-      (D.a.derivative.eval pt.1 - D.b.derivative.eval pt.1 * pt.2)
-        * (2 * pt.2)
+      ((D.a.derivative.eval pt.1 - D.b.derivative.eval pt.1 * pt.2)
+            * (2 * pt.2)
+          + (-D.b.eval pt.1) * (3 * pt.1 ^ 2 + curveA))
         * (D.eval pt.1 pt.2 * (3 * pt.1 ^ 2 + curveA - 2 * lam * pt.2))⁻¹ := by
   unfold logDerivTerm
   rfl
@@ -1573,8 +1890,8 @@ theorem logDerivCheckFn_symm
       lineThrough_symm E A₁.1 A₁.2 A₀.1 A₀.2 (Ne.symm hNV)]
   ring
 
-/-- Per-term clearing (i=0): `polyForm0 = LT(A₀) · denom`, under the two
-    nonzero factors `D(A₀) ≠ 0` and `dxdzDen(A₀) ≠ 0`. -/
+/-- Per-term clearing (i=0): `(old_num_scalar + correction_scalar) · (other) = LT(A₀) · denom`.
+    The sum LHS matches the paper-faithful `logDerivTerm` numerator. -/
 private lemma clearedFiberPoly_lhs0_eq_LT_mul_denom
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
@@ -1594,6 +1911,16 @@ private lemma clearedFiberPoly_lhs0_eq_LT_mul_denom
       * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
       * ∏ j : Fin k,
           (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2
+    + ((- D.b.eval A₀.1) * (3 * A₀.1 ^ 2 + E.curveA)
+        * D.eval A₁.1 A₁.2
+        * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁)
+        * (3 * A₁.1 ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+        * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁))
+        * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+        * ∏ j : Fin k,
+            (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2)
     = logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀
       * logDerivCheckFnDenom E D P B A₀ A₁ := by
   rw [logDerivTerm_eq_explicit, logDerivCheckFnDenom_eq_explicit]
@@ -1604,7 +1931,7 @@ private lemma clearedFiberPoly_lhs0_eq_LT_mul_denom
   field_simp
   ring
 
-/-- Per-term clearing (i=1): `polyForm1 = LT(A₁) · denom`. -/
+/-- Per-term clearing (i=1). -/
 private lemma clearedFiberPoly_lhs1_eq_LT_mul_denom
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
@@ -1624,6 +1951,16 @@ private lemma clearedFiberPoly_lhs1_eq_LT_mul_denom
       * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
       * ∏ j : Fin k,
           (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2
+    + ((- D.b.eval A₁.1) * (3 * A₁.1 ^ 2 + E.curveA)
+        * D.eval A₀.1 A₀.2
+        * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁)
+        * (3 * A₀.1 ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+        * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁))
+        * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+        * ∏ j : Fin k,
+            (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2)
     = logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₁
       * logDerivCheckFnDenom E D P B A₀ A₁ := by
   rw [logDerivTerm_eq_explicit, logDerivCheckFnDenom_eq_explicit]
@@ -1634,8 +1971,7 @@ private lemma clearedFiberPoly_lhs1_eq_LT_mul_denom
   field_simp
   ring
 
-/-- Per-term clearing (i=2): `polyForm2 = LT(A₂) · denom`, where `A₂` is
-    the chord point `(chordX₂, chordY₂)`. -/
+/-- Per-term clearing (i=2). -/
 private lemma clearedFiberPoly_lhs2_eq_LT_mul_denom
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
@@ -1655,6 +1991,16 @@ private lemma clearedFiberPoly_lhs2_eq_LT_mul_denom
       * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
       * ∏ j : Fin k,
           (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2
+    + ((- D.b.eval (chordX₂ A₀ A₁)) * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA)
+        * D.eval A₀.1 A₀.2
+        * D.eval A₁.1 A₁.2
+        * (3 * A₀.1 ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+        * (3 * A₁.1 ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+        * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+        * ∏ j : Fin k,
+            (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2)
     = logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2)
         (chordX₂ A₀ A₁, chordY₂ A₀ A₁)
       * logDerivCheckFnDenom E D P B A₀ A₁ := by
@@ -1738,23 +2084,44 @@ theorem clearedFiberPoly_identity
     bivEval (clearedFiberPoly (E := E) D P k B m A₀) A₁
       = (A₁.1 - A₀.1) ^ (D.degE + k + 6) *
           logDerivCheckFnCleared E D P k B m A₀ A₁ := by
+  set_option maxHeartbeats 1000000 in
   classical
   obtain ⟨hD0, hD1, hD2, hDx0, hDx1, hDx2, hLP, hLB⟩ :=
     logDerivCheckFnDenom_factors_ne_zero E D P B A₀ A₁ hDef
-  -- Step 1: Apply the 5 B2 per-term bivEval identities.
+  -- Step 1: Apply the 8 B2 per-term bivEval identities.
   unfold clearedFiberPoly
   simp only [bivEval_add]
   rw [bivEval_lhsTerm0Scaled_eq (E := E) D P B A₀ A₁ hNV,
       bivEval_lhsTerm1Scaled_eq (E := E) D P B A₀ A₁ hNV,
       bivEval_lhsTerm2Scaled_eq (E := E) D P B A₀ A₁ hNV,
+      bivEval_correctionTerm0Scaled_eq (E := E) D P B A₀ A₁ hNV,
+      bivEval_correctionTerm1Scaled_eq (E := E) D P B A₀ A₁ hNV,
+      bivEval_correctionTerm2Scaled_eq (E := E) D P B A₀ A₁ hNV,
       bivEval_rhsTermNegPScaled_eq (E := E) D B A₀ A₁ hNV,
       bivEval_rhsSumScaled_eq (E := E) D P B m A₀ A₁ hNV]
-  -- Step 2: Apply 4 per-term sub-lemmas (polyForm = cleared-contribution).
+  -- Step 2: Factor out (A-B)^N and group lhs_i + correction_i pairs.
+  -- After step 1, LHS is Σ_{i∈{lhs0,lhs1,lhs2,corr0,corr1,corr2,rhsNegP,rhsSum}} (A-B)^N · term_i.
+  -- Group as (A-B)^N · (lhs0+corr0 + lhs1+corr1 + lhs2+corr2 + rhsNegP + rhsSum).
+  -- Each (lhs_i + corr_i) matches `clearedFiberPoly_lhs_i_eq_LT_mul_denom` (up to (A-B)^N factor).
+  -- Factor out (A-B)^N from RHS via logDerivCheckFnCleared definition.
+  unfold logDerivCheckFnCleared
+  rw [logDerivCheckFn_eq_positive_form]
+  -- Now: Goal has (A-B)^N · [LT(A₀) + LT(A₁) + LT(A₂) + L(-P)⁻¹ + Σ m·L(B)⁻¹] · denom.
+  -- We apply per-term lemmas after aligning to that structure.
+  -- Factor out (A-B)^N from LHS via explicit rewriting.
+  set N := (A₁.1 - A₀.1) ^ (D.degE + k + 6) with hN_def
+  -- LHS = N·old0 + N·old1 + N·old2 + N·corr0 + N·corr1 + N·corr2 + N·rhsNegP + N·rhsSum
+  --     = N·((old0 + corr0) + (old1 + corr1) + (old2 + corr2) + rhsNegP + rhsSum)
+  rw [show ∀ (a b c d e f g h : ZMod E.q),
+        N * a + N * b + N * c + N * d + N * e + N * f + N * g + N * h
+          = N * ((a + d) + (b + e) + (c + f) + g + h) from
+        fun a b c d e f g h => by ring]
+  -- Apply per-term sum lemmas to rewrite each (old_i + corr_i) = LT · denom.
   rw [clearedFiberPoly_lhs0_eq_LT_mul_denom (E := E) D P B A₀ A₁ hD0 hDx0,
       clearedFiberPoly_lhs1_eq_LT_mul_denom (E := E) D P B A₀ A₁ hD1 hDx1,
       clearedFiberPoly_lhs2_eq_LT_mul_denom (E := E) D P B A₀ A₁ hD2 hDx2,
       clearedFiberPoly_negP_eq_Linv_mul_denom (E := E) D P B A₀ A₁ hLP]
-  -- Step 3: rewrite the Σⱼ termwise.
+  -- Now the Σ_j term — rewrite it via per-j sum lemma.
   rw [show (∑ j : Fin k, m j
              * (D.eval A₀.1 A₀.2 * D.eval A₁.1 A₁.2
                  * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁))
@@ -1773,21 +2140,12 @@ theorem clearedFiberPoly_identity
          from Finset.sum_congr rfl (fun j _ =>
                 clearedFiberPoly_sumj_eq_Linv_mul_denom (E := E) D P B m
                   A₀ A₁ j (hLB j))]
-  -- Step 4: rewrite `logDerivCheckFnCleared` using the positive-form
-  --   `logDerivCheckFn = LT(A₀) + LT(A₁) + LT(A₂) + L(-P)⁻¹ + Σⱼ m_j·L(Bⱼ)⁻¹`.
-  unfold logDerivCheckFnCleared
-  rw [logDerivCheckFn_eq_positive_form]
-  -- Step 5: `generalize` the `(A-B)^N` factor to a fresh variable so that
-  --   `ring` treats it as opaque (rather than expanding the literal `^6`).
-  generalize hN_eq : (A₁.1 - A₀.1) ^ (D.degE + k + 6) = N
-  -- Step 6: abstract the remaining atomic expressions so ring can reason.
+  -- Close via ring.
   set denom := logDerivCheckFnDenom E D P B A₀ A₁
   set LBinv : Fin k → ZMod E.q := fun j =>
     ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2)⁻¹
-  -- Step 7: distribute denom over the Σⱼ on LHS.
   rw [show (∑ j : Fin k, m j * LBinv j * denom)
          = (∑ j : Fin k, m j * LBinv j) * denom from (Finset.sum_mul ..).symm]
-  -- Step 8: close via ring (N opaque; Σⱼ opaque on both sides).
   ring
 
 /-- F3: pairs `(A₀, A₁) ∈ E × E` with `D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) = 0`
@@ -3300,6 +3658,88 @@ theorem DAllScaled_natDegree_le (D : CoordRingElt E.q)
     rw [h0, Nat.zero_add]; exact h1
   exact (Nat.add_le_add hmul h2).trans (by omega)
 
+/-- natDegree bound for `DBdydzAtA₀Poly`: it's a scalar embedding, degree 0. -/
+theorem DBdydzAtA₀Poly_natDegree_le (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (DBdydzAtA₀Poly (E := E) D A₀).natDegree = 0 := by
+  unfold DBdydzAtA₀Poly
+  exact embedScalar_natDegree_le E _
+
+/-- natDegree bound for `DBdydzAtA₁Poly`. Linear in outerY? No — outer-degree 0
+    since neither factor involves outerY (inner polys only). -/
+theorem DBdydzAtA₁Poly_natDegree_le (D : CoordRingElt E.q) :
+    (DBdydzAtA₁Poly (E := E) D).natDegree ≤ 0 := by
+  unfold DBdydzAtA₁Poly
+  refine natDegree_mul_le.trans ?_
+  rw [Polynomial.natDegree_neg, embedInnerPoly_natDegree_le, Nat.zero_add]
+  refine (natDegree_add_le _ _).trans ?_
+  refine max_le ?_ ?_
+  · refine natDegree_mul_le.trans ?_
+    rw [embedScalar_natDegree_le, Nat.zero_add, Polynomial.natDegree_pow,
+        innerA₁x_natDegree, Nat.mul_zero]
+  · exact (embedScalar_natDegree_le E _).le
+
+/-- natDegree bound for `DbAtA₂TightScaled`: `2·b.natDegree`. -/
+theorem DbAtA₂TightScaled_natDegree_le (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (DbAtA₂TightScaled (E := E) D A₀).natDegree ≤ 2 * D.b.natDegree := by
+  unfold DbAtA₂TightScaled
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ ?_
+  intro n hn
+  have hn' : n ≤ D.b.natDegree := Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+  refine natDegree_mul_le.trans ?_
+  have h1 : (embedScalar (E := E) (D.b.coeff n) *
+            x₂Scaled (E := E) A₀ ^ n).natDegree ≤ 0 + 2 * n :=
+    natDegree_mul_le.trans (Nat.add_le_add
+      (embedScalar_natDegree_le E _).le
+      (Polynomial.natDegree_pow_le.trans (by
+        have : (x₂Scaled (E := E) A₀).natDegree ≤ 2 := x₂Scaled_natDegree_le E A₀
+        calc n * (x₂Scaled (E := E) A₀).natDegree ≤ n * 2 :=
+              Nat.mul_le_mul_left _ this
+          _ = 2 * n := by ring)))
+  have h2 : (lamDenPoly (E := E) A₀ ^ (2 * D.b.natDegree - 2 * n)).natDegree ≤ 0 := by
+    rw [Polynomial.natDegree_pow, lamDenPoly_natDegree_le]
+    omega
+  refine (Nat.add_le_add h1 h2).trans ?_
+  omega
+
+/-- natDegree bound for `dydzNumA₂Scaled`: ≤ 4 (from `x₂Scaled^2` contribution). -/
+theorem dydzNumA₂Scaled_natDegree_le (A₀ : ZMod E.q × ZMod E.q) :
+    (dydzNumA₂Scaled (E := E) A₀).natDegree ≤ 4 := by
+  unfold dydzNumA₂Scaled
+  refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
+  · refine natDegree_mul_le.trans ?_
+    rw [embedScalar_natDegree_le, Nat.zero_add]
+    refine Polynomial.natDegree_pow_le.trans ?_
+    have : (x₂Scaled (E := E) A₀).natDegree ≤ 2 := x₂Scaled_natDegree_le E A₀
+    calc 2 * (x₂Scaled (E := E) A₀).natDegree ≤ 2 * 2 :=
+          Nat.mul_le_mul_left _ this
+      _ = 4 := rfl
+  · refine natDegree_mul_le.trans ?_
+    rw [embedScalar_natDegree_le, Nat.zero_add, Polynomial.natDegree_pow,
+        lamDenPoly_natDegree_le, Nat.mul_zero]
+    omega
+
+/-- natDegree bound for `correctionA₂ScaledCore`. -/
+theorem correctionA₂ScaledCore_natDegree_le (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (correctionA₂ScaledCore (E := E) D A₀).natDegree ≤ 2 * D.b.natDegree + 4 := by
+  unfold correctionA₂ScaledCore
+  refine natDegree_mul_le.trans ?_
+  have h1 : (- DbAtA₂TightScaled (E := E) D A₀ *
+            dydzNumA₂Scaled (E := E) A₀).natDegree
+          ≤ 2 * D.b.natDegree + 4 := by
+    refine natDegree_mul_le.trans ?_
+    rw [Polynomial.natDegree_neg]
+    exact Nat.add_le_add (DbAtA₂TightScaled_natDegree_le E D A₀)
+      (dydzNumA₂Scaled_natDegree_le E A₀)
+  have h2 : (lamDenPoly (E := E) A₀ ^
+            (D.degE - 2 * D.b.natDegree - 3)).natDegree ≤ 0 := by
+    rw [Polynomial.natDegree_pow, lamDenPoly_natDegree_le]
+    omega
+  refine (Nat.add_le_add h1 h2).trans ?_
+  omega
+
 theorem lhsTerm0Scaled_natDegree_le (D : CoordRingElt E.q)
     (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
     (A₀ : ZMod E.q × ZMod E.q) :
@@ -3388,6 +3828,90 @@ theorem lhsTerm2Scaled_natDegree_le (D : CoordRingElt E.q)
       h6))
     h7)
 
+/-- natDegree bound for correctionTerm0Scaled. -/
+theorem correctionTerm0Scaled_natDegree_le (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (correctionTerm0Scaled (E := E) D P k B A₀).natDegree ≤ D.degE + k + 8 := by
+  unfold correctionTerm0Scaled
+  have h1 := DBdydzAtA₀Poly_natDegree_le E D A₀
+  have h2 : (DAtA₁Poly (E := E) D).natDegree ≤ 1 :=
+    Nat.le_of_lt_succ (DAtA₁Poly_natDegree_lt_two E D)
+  have h3 := DAtA₂Scaled_natDegree_le E D A₀
+  have h4 := dxdzDenA₁Scaled_natDegree_le E A₀
+  have h5 := dxdzDenA₂Scaled_natDegree_le E A₀
+  have h6 := linesProductScaled_natDegree_le E P k B A₀
+  refine le_trans ?_ (by omega : 0 + 1 + D.degE + 2 + 4 + (k + 1) ≤ D.degE + k + 8)
+  exact natDegree_mul_le.trans (Nat.add_le_add
+    (natDegree_mul_le.trans (Nat.add_le_add
+      (natDegree_mul_le.trans (Nat.add_le_add
+        (natDegree_mul_le.trans (Nat.add_le_add
+          (natDegree_mul_le.trans (Nat.add_le_add h1.le h2))
+          h3))
+        h4))
+      h5))
+    h6)
+
+/-- natDegree bound for correctionTerm1Scaled. -/
+theorem correctionTerm1Scaled_natDegree_le (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (correctionTerm1Scaled (E := E) D P k B A₀).natDegree ≤ D.degE + k + 8 := by
+  unfold correctionTerm1Scaled
+  have h1 := DBdydzAtA₁Poly_natDegree_le E D
+  have h2 : (DAtA₀Poly (E := E) D A₀).natDegree ≤ 0 :=
+    (DAtA₀Poly_natDegree_le E D A₀).le
+  have h3 := DAtA₂Scaled_natDegree_le E D A₀
+  have h4 : (dxdzDenA₀Scaled (E := E) A₀).natDegree ≤ 1 :=
+    Nat.le_of_lt_succ (dxdzDenA₀Scaled_natDegree_lt_two E A₀)
+  have h5 := dxdzDenA₂Scaled_natDegree_le E A₀
+  have h6 := linesProductScaled_natDegree_le E P k B A₀
+  refine le_trans ?_ (by omega : 0 + 0 + D.degE + 1 + 4 + (k + 1) ≤ D.degE + k + 8)
+  exact natDegree_mul_le.trans (Nat.add_le_add
+    (natDegree_mul_le.trans (Nat.add_le_add
+      (natDegree_mul_le.trans (Nat.add_le_add
+        (natDegree_mul_le.trans (Nat.add_le_add
+          (natDegree_mul_le.trans (Nat.add_le_add h1 h2))
+          h3))
+        h4))
+      h5))
+    h6)
+
+/-- natDegree bound for correctionTerm2Scaled. -/
+theorem correctionTerm2Scaled_natDegree_le (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    (correctionTerm2Scaled (E := E) D P k B A₀).natDegree ≤ D.degE + k + 8 := by
+  unfold correctionTerm2Scaled
+  have h1 := correctionA₂ScaledCore_natDegree_le E D A₀
+  have h2 : (DAtA₀Poly (E := E) D A₀).natDegree ≤ 0 :=
+    (DAtA₀Poly_natDegree_le E D A₀).le
+  have h3 : (DAtA₁Poly (E := E) D).natDegree ≤ 1 :=
+    Nat.le_of_lt_succ (DAtA₁Poly_natDegree_lt_two E D)
+  have h4 : (dxdzDenA₀Scaled (E := E) A₀).natDegree ≤ 1 :=
+    Nat.le_of_lt_succ (dxdzDenA₀Scaled_natDegree_lt_two E A₀)
+  have h5 := dxdzDenA₁Scaled_natDegree_le E A₀
+  have h6 := linesProductScaled_natDegree_le E P k B A₀
+  have h7 : (lamDenPoly (E := E) A₀ ^ 2).natDegree = 0 := by
+    rw [Polynomial.natDegree_pow, lamDenPoly_natDegree_le, Nat.mul_zero]
+  have hbMain : 2 * D.b.natDegree + 4 ≤ D.degE + 3 := by
+    have : 2 * D.b.natDegree + 3 ≤ D.degE := by
+      unfold CoordRingElt.degE; omega
+    omega
+  refine le_trans ?_ (by omega : (D.degE + 3) + 0 + 1 + 1 + 2 + (k + 1) + 0
+                                  ≤ D.degE + k + 8)
+  exact natDegree_mul_le.trans (Nat.add_le_add
+    (natDegree_mul_le.trans (Nat.add_le_add
+      (natDegree_mul_le.trans (Nat.add_le_add
+        (natDegree_mul_le.trans (Nat.add_le_add
+          (natDegree_mul_le.trans (Nat.add_le_add
+            (natDegree_mul_le.trans (Nat.add_le_add (h1.trans hbMain) h2))
+            h3))
+          h4))
+        h5))
+      h6))
+    h7.le)
+
 theorem rhsTermNegPScaled_natDegree_le (D : CoordRingElt E.q)
     (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
     (A₀ : ZMod E.q × ZMod E.q) :
@@ -3436,9 +3960,15 @@ theorem clearedFiberPoly_natDegree_le
   refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
   refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
   refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
+  refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
+  refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
+  refine (natDegree_add_le _ _).trans (max_le ?_ ?_)
   · exact lhsTerm0Scaled_natDegree_le E D P k B A₀
   · exact lhsTerm1Scaled_natDegree_le E D P k B A₀
   · exact lhsTerm2Scaled_natDegree_le E D P k B A₀
+  · exact correctionTerm0Scaled_natDegree_le E D P k B A₀
+  · exact correctionTerm1Scaled_natDegree_le E D P k B A₀
+  · exact correctionTerm2Scaled_natDegree_le E D P k B A₀
   · exact rhsTermNegPScaled_natDegree_le E D k B A₀
   · exact rhsSumScaled_natDegree_le E D P k B m A₀
 
@@ -3889,6 +4419,69 @@ theorem InnerDegLe_dxdzAllScaled (A₀ : ZMod E.q × ZMod E.q) :
   have h3 := InnerDegLe_dxdzDenA₂Scaled A₀
   exact ((h1.mul h2).mul h3).weaken (by omega)
 
+/-! ### Inner bounds for Session-39 correction polynomials. -/
+
+theorem InnerDegLe_DBdydzAtA₀Poly (D : CoordRingElt E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (DBdydzAtA₀Poly (E := E) D A₀) 0 := by
+  unfold DBdydzAtA₀Poly
+  exact InnerDegLe_embedScalar _
+
+theorem InnerDegLe_DBdydzAtA₁Poly (D : CoordRingElt E.q) :
+    InnerDegLe (E := E) (DBdydzAtA₁Poly (E := E) D) (D.b.natDegree + 2) := by
+  unfold DBdydzAtA₁Poly
+  have h1 : InnerDegLe (E := E) (- embedInnerPoly (E := E) D.b) D.b.natDegree :=
+    (InnerDegLe_embedInnerPoly D.b).neg
+  have h2A : InnerDegLe (E := E) (embedScalar (E := E) 3 * innerA₁x (E := E) ^ 2) 2 := by
+    have := ((InnerDegLe_embedScalar (E := E) 3).mul
+              (InnerDegLe.pow (InnerDegLe_innerA₁x (E := E)) 2))
+    exact this.weaken (by simp)
+  have h2B : InnerDegLe (E := E) (embedScalar (E := E) E.curveA) 2 :=
+    (InnerDegLe_embedScalar _).weaken (Nat.zero_le _)
+  have h2 : InnerDegLe (E := E)
+      (embedScalar (E := E) 3 * innerA₁x (E := E) ^ 2
+        + embedScalar (E := E) E.curveA) 2 :=
+    (h2A.add h2B).weaken (by simp)
+  exact h1.mul h2
+
+theorem InnerDegLe_DbAtA₂TightScaled (D : CoordRingElt E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (DbAtA₂TightScaled (E := E) D A₀) (3 * D.b.natDegree) := by
+  unfold DbAtA₂TightScaled
+  refine InnerDegLe.sum _ _ _ ?_
+  intro n hn
+  have hn' : n ≤ D.b.natDegree := Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+  have h1 := InnerDegLe_embedScalar (E := E) (D.b.coeff n)
+  have h2 : InnerDegLe (E := E) (x₂Scaled (E := E) A₀ ^ n) (n * 3) :=
+    InnerDegLe.pow (InnerDegLe_x₂Scaled A₀) n
+  have h3 : InnerDegLe (E := E) (lamDenPoly (E := E) A₀ ^ (2 * D.b.natDegree - 2 * n))
+                      ((2 * D.b.natDegree - 2 * n) * 1) :=
+    InnerDegLe.pow (InnerDegLe_lamDenPoly A₀) _
+  refine (((h1.mul h2).mul h3)).weaken ?_
+  omega
+
+theorem InnerDegLe_dydzNumA₂Scaled (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (dydzNumA₂Scaled (E := E) A₀) 6 := by
+  unfold dydzNumA₂Scaled
+  have hA : InnerDegLe (E := E) (embedScalar (E := E) 3 * x₂Scaled (E := E) A₀ ^ 2) 6 := by
+    have h1 := InnerDegLe_embedScalar (E := E) 3
+    have h2 := InnerDegLe.pow (InnerDegLe_x₂Scaled A₀) 2
+    exact (h1.mul h2).weaken (by omega)
+  have hB : InnerDegLe (E := E)
+      (embedScalar (E := E) E.curveA * lamDenPoly (E := E) A₀ ^ 4) 6 := by
+    have h1 := InnerDegLe_embedScalar (E := E) E.curveA
+    have h2 := InnerDegLe.pow (InnerDegLe_lamDenPoly A₀) 4
+    exact (h1.mul h2).weaken (by omega)
+  exact (hA.add hB).weaken (by simp)
+
+theorem InnerDegLe_correctionA₂ScaledCore (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (correctionA₂ScaledCore (E := E) D A₀)
+                        (3 * D.b.natDegree + 6 + (D.degE - 2 * D.b.natDegree - 3)) := by
+  unfold correctionA₂ScaledCore
+  have h1 := (InnerDegLe_DbAtA₂TightScaled D A₀).neg
+  have h2 := InnerDegLe_dydzNumA₂Scaled (E := E) A₀
+  have h3 := InnerDegLe.pow (InnerDegLe_lamDenPoly A₀) (D.degE - 2 * D.b.natDegree - 3)
+  exact ((h1.mul h2).mul h3).weaken (by omega)
+
 /-! ### Inner bounds for clearedFiberPoly summands. -/
 
 theorem InnerDegLe_lhsTerm0Scaled (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
@@ -3954,6 +4547,48 @@ theorem InnerDegLe_rhsSumScaled (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q
   have h4 := InnerDegLe_linesProductSkipBjScaled P k B A₀ j
   exact (((h1.mul h2).mul h3).mul h4).weaken (by omega)
 
+theorem InnerDegLe_correctionTerm0Scaled (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (correctionTerm0Scaled (E := E) D P k B A₀)
+        (3 * D.degE + k + 10) := by
+  unfold correctionTerm0Scaled
+  have h1 := InnerDegLe_DBdydzAtA₀Poly D A₀
+  have h2 := InnerDegLe_DAtA₁Poly (E := E) D
+  have h3 := InnerDegLe_DAtA₂Scaled D A₀
+  have h4 := InnerDegLe_dxdzDenA₁Scaled A₀
+  have h5 := InnerDegLe_dxdzDenA₂Scaled A₀
+  have h6 := InnerDegLe_linesProductScaled P k B A₀
+  exact (((((h1.mul h2).mul h3).mul h4).mul h5).mul h6).weaken (by omega)
+
+theorem InnerDegLe_correctionTerm1Scaled (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (correctionTerm1Scaled (E := E) D P k B A₀)
+        (3 * D.degE + k + 10) := by
+  unfold correctionTerm1Scaled
+  have h1 := InnerDegLe_DBdydzAtA₁Poly (E := E) D
+  have h2 := InnerDegLe_DAtA₀Poly D A₀
+  have h3 := InnerDegLe_DAtA₂Scaled D A₀
+  have h4 := InnerDegLe_dxdzDenA₀Scaled A₀
+  have h5 := InnerDegLe_dxdzDenA₂Scaled A₀
+  have h6 := InnerDegLe_linesProductScaled P k B A₀
+  have hDb : 3 + 2 * D.b.natDegree ≤ D.degE := le_max_right _ _
+  exact (((((h1.mul h2).mul h3).mul h4).mul h5).mul h6).weaken (by omega)
+
+theorem InnerDegLe_correctionTerm2Scaled (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (A₀ : ZMod E.q × ZMod E.q) :
+    InnerDegLe (E := E) (correctionTerm2Scaled (E := E) D P k B A₀)
+        (3 * D.degE + k + 10) := by
+  unfold correctionTerm2Scaled
+  have h1 := InnerDegLe_correctionA₂ScaledCore D A₀
+  have h2 := InnerDegLe_DAtA₀Poly D A₀
+  have h3 := InnerDegLe_DAtA₁Poly (E := E) D
+  have h4 := InnerDegLe_dxdzDenA₀Scaled A₀
+  have h5 := InnerDegLe_dxdzDenA₁Scaled A₀
+  have h6 := InnerDegLe_linesProductScaled P k B A₀
+  have h7 := InnerDegLe.pow (InnerDegLe_lamDenPoly A₀) 2
+  have hDb : 3 + 2 * D.b.natDegree ≤ D.degE := le_max_right _ _
+  exact ((((((h1.mul h2).mul h3).mul h4).mul h5).mul h6).mul h7).weaken (by omega)
+
 /-! ### Inner bound for `clearedFiberPoly`. -/
 
 theorem InnerDegLe_clearedFiberPoly (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
@@ -3965,9 +4600,12 @@ theorem InnerDegLe_clearedFiberPoly (D : CoordRingElt E.q) (P : ZMod E.q × ZMod
   have h0 := InnerDegLe_lhsTerm0Scaled (E := E) D P k B A₀
   have h1 := InnerDegLe_lhsTerm1Scaled (E := E) D P k B A₀
   have h2 := InnerDegLe_lhsTerm2Scaled (E := E) D P k B A₀
+  have hC0 := InnerDegLe_correctionTerm0Scaled (E := E) D P k B A₀
+  have hC1 := InnerDegLe_correctionTerm1Scaled (E := E) D P k B A₀
+  have hC2 := InnerDegLe_correctionTerm2Scaled (E := E) D P k B A₀
   have h3 := InnerDegLe_rhsTermNegPScaled (E := E) D k B A₀
   have h4 := InnerDegLe_rhsSumScaled (E := E) D P k B m A₀
-  exact ((((h0.add h1).add h2).add h3).add h4).weaken (by simp)
+  exact ((((((((h0.add h1).add h2).add hC0).add hC1).add hC2).add h3).add h4)).weaken (by simp)
 
 /-! ### Inner bound on mod-by-curveEqPoly.
 

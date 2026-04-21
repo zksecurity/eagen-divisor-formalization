@@ -124,15 +124,24 @@ theorem sum_div_iff_sum_mul_prod_erase {α : Type*} [DecidableEq α]
 
 /-! ## Concrete evaluation functions -/
 
-/-- Evaluate D'/D at a point, scaled by dx/dz -/
+/-- Paper-faithful log-derivative `(dD/dz)/D` on `E` w.r.t. `z = y − λx`.
+
+    Chain rule: `dD/dz = (∂D/∂x)·(dx/dz) + (∂D/∂y)·(dy/dz)` with
+    `∂D/∂x = a'(x) − b'(x)·y`, `∂D/∂y = −b(x)`,
+    `dx/dz = 2y/(3x²+A − 2λy)`, `dy/dz = (3x²+A)/(3x²+A − 2λy)`
+    (from the chord parametrisation and `2y·dy = (3x²+A)·dx`).
+
+    Corresponds to Lemma `lem:log-deriv-norm` of `sections/ec.tex:557-579`. -/
 noncomputable def logDerivTerm
     (D : CoordRingElt E.q) (curveA : ZMod E.q) (lam : ZMod E.q)
     (pt : ZMod E.q × ZMod E.q) : ZMod E.q :=
-  let num := D.a.derivative.eval pt.1 - D.b.derivative.eval pt.1 * pt.2
+  let num_x := D.a.derivative.eval pt.1 - D.b.derivative.eval pt.1 * pt.2
+  let num_y := -D.b.eval pt.1
   let den := D.eval pt.1 pt.2
   let dxdz_num := 2 * pt.2
+  let dydz_num := 3 * pt.1 ^ 2 + curveA
   let dxdz_den := 3 * pt.1 ^ 2 + curveA - 2 * lam * pt.2
-  num * dxdz_num * (den * dxdz_den)⁻¹
+  (num_x * dxdz_num + num_y * dydz_num) * (den * dxdz_den)⁻¹
 
 /-- The log-derivative check function f(A₀,A₁) -/
 noncomputable def logDerivCheckFn

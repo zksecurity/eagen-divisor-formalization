@@ -96,10 +96,11 @@ theorem chord_A₂_y_eq (A₀ A₁ : ZMod E.q × ZMod E.q) :
     PFE matching against `polyG`'s β-sum) to the next iteration of Q3.4.
 -/
 
-/-- **Layer 4 sum-form (RHS only)**. The sum of Layer 3 RHS terms, one
-    per chord intersection, yields a polynomial expression in the three
-    x-coords and `λ`, `a(x), b(x), a'(x), b'(x)`. No denominators are
-    involved in the RHS. -/
+/-- **Layer 4 sum-form (RHS only, paper-faithful)**. The sum of Layer 3
+    RHS terms, one per chord intersection, yields a polynomial expression
+    in the three x-coords and `λ`, `a(x), b(x), a'(x), b'(x)`. Includes
+    the paper-faithful `-(a+by)·b·(3x²+A)` correction per point. No
+    denominators are involved. -/
 noncomputable def chordRHS
     (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q) : ZMod E.q :=
@@ -110,10 +111,14 @@ noncomputable def chordRHS
                       * (P.1 ^ 3 + E.curveA * P.1 + E.curveB))
       + 2 * (P.1 ^ 3 + E.curveA * P.1 + E.curveB) *
         (D.a.derivative.eval P.1 * D.b.eval P.1
-           - D.b.derivative.eval P.1 * D.a.eval P.1))
+           - D.b.derivative.eval P.1 * D.a.eval P.1)
+      - (D.a.eval P.1 + D.b.eval P.1 * P.2) * D.b.eval P.1
+          * (3 * P.1 ^ 2 + E.curveA))
 
-/-- Single-point RHS of the Layer-3 identity, extracted as a reusable
-    helper. -/
+/-- Single-point RHS of the Layer-3 identity (paper-faithful form).
+
+    The final correction term `−(a+b·y)·b·(3x²+A)` is the paper-faithful
+    chain-rule piece. -/
 noncomputable def chordRHSSingle
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q) : ZMod E.q :=
   2 * P.2 * (D.a.derivative.eval P.1 * D.a.eval P.1
@@ -122,6 +127,8 @@ noncomputable def chordRHSSingle
     + 2 * (P.1 ^ 3 + E.curveA * P.1 + E.curveB) *
       (D.a.derivative.eval P.1 * D.b.eval P.1
          - D.b.derivative.eval P.1 * D.a.eval P.1)
+    - (D.a.eval P.1 + D.b.eval P.1 * P.2) * D.b.eval P.1
+        * (3 * P.1 ^ 2 + E.curveA)
 
 /-- `chordRHS` equals the sum of `chordRHSSingle` over the three chord
     points. -/
