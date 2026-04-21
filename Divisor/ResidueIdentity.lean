@@ -288,6 +288,113 @@ theorem chord_aggregate_identity
   linear_combination
     (N1 * D1 * N2 * D2) * h0 + (N0 * D0 * N2 * D2) * h1 + (N0 * D0 * N1 * D1) * h2
 
+/-! ## Step 5 : `polyG` ⇔ divided-fraction sum
+
+    `polyG` is the denominator-cleared form of the rational identity
+
+    ```
+      Σ_k β_k / ellP(Q_k) + Σ_j m_j / ellP(R_j) = 0.
+    ```
+
+    Formally, when every `ellP(Q_k)` and `ellP(R_j)` is nonzero, we
+    have the product-sum identity
+
+    ```
+      polyG = (∏_k ellP(Q_k)) · (∏_j ellP(R_j)) ·
+              (Σ_k β_k/ellP(Q_k) + Σ_j m_j/ellP(R_j))
+    ```
+
+    whence `polyG = 0` iff the divided sum equals zero (for nonzero
+    product of poles).  This is "Step 5" of the chord-residue identity
+    argument. -/
+
+/-- The divided-fraction form: `Σ_k β_k / ellP(Q_k) +
+    Σ_j m_j / ellP(R_j)`. -/
+noncomputable def polyGDivided
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) : ZMod E.q :=
+  (∑ k : Fin d, beta k / ellP E (Q k) A₀ A₁) +
+  (∑ j : Fin M, m j / ellP E (R j) A₀ A₁)
+
+/-- The full product of all `ellP` factors at `(A₀, A₁)`. -/
+noncomputable def polyG_ellP_product
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) : ZMod E.q :=
+  (∏ k : Fin d, ellP E (Q k) A₀ A₁) *
+  (∏ j : Fin M, ellP E (R j) A₀ A₁)
+
+/-- **`polyG` is the cleared form of `polyGDivided`.** On the open set
+    where every `ellP` is nonzero,
+    `polyG = (∏_k ellP(Q_k)) · (∏_j ellP(R_j)) · polyGDivided`. -/
+theorem polyG_eq_product_mul_divided
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hQnz : ∀ k, ellP E (Q k) A₀ A₁ ≠ 0)
+    (hRnz : ∀ j, ellP E (R j) A₀ A₁ ≠ 0) :
+    polyG E Q beta R m A₀ A₁ =
+      polyG_ellP_product E Q R A₀ A₁ *
+        polyGDivided E Q beta R m A₀ A₁ := by
+  classical
+  unfold polyG polyGDivided polyG_ellP_product
+  -- LHS = Σ_k β_k · (∏_{k'≠k} ellP(Q_k')) · (∏_j ellP(R_j))
+  --     + Σ_j m_j · (∏_k ellP(Q_k)) · (∏_{j'≠j} ellP(R_{j'}))
+  -- RHS = (∏_k ellP(Q_k)) · (∏_j ellP(R_j)) · (Σ_k β_k/ellP(Q_k) + Σ_j m_j/ellP(R_j))
+  rw [mul_add, Finset.mul_sum, Finset.mul_sum]
+  congr 1
+  · -- First sum: β_k · ∏_{k'≠k} ellP(Q_k') · ∏_j ellP(R_j) =
+    --             (∏_k ellP(Q_k)) · (∏_j ellP(R_j)) · β_k / ellP(Q_k)
+    apply Finset.sum_congr rfl
+    intro k _
+    have hQk := hQnz k
+    have hQall : (∏ k' : Fin d, ellP E (Q k') A₀ A₁) =
+        ellP E (Q k) A₀ A₁ * ∏ k' ∈ Finset.univ.erase k, ellP E (Q k') A₀ A₁ :=
+      (Finset.mul_prod_erase _ _ (Finset.mem_univ k)).symm
+    rw [hQall]
+    field_simp
+    ring
+  · -- Second sum: similar for `R`.
+    apply Finset.sum_congr rfl
+    intro j _
+    have hRj := hRnz j
+    have hRall : (∏ j' : Fin M, ellP E (R j') A₀ A₁) =
+        ellP E (R j) A₀ A₁ * ∏ j' ∈ Finset.univ.erase j, ellP E (R j') A₀ A₁ :=
+      (Finset.mul_prod_erase _ _ (Finset.mem_univ j)).symm
+    rw [hRall]
+    field_simp
+    ring
+
+/-- **Step 5 equivalence.** Under the nonvanishing hypothesis on every
+    `ellP`, `polyG = 0` iff `polyGDivided = 0`. -/
+theorem polyG_eq_zero_iff_divided_fraction
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hQnz : ∀ k, ellP E (Q k) A₀ A₁ ≠ 0)
+    (hRnz : ∀ j, ellP E (R j) A₀ A₁ ≠ 0) :
+    polyG E Q beta R m A₀ A₁ = 0 ↔
+      polyGDivided E Q beta R m A₀ A₁ = 0 := by
+  classical
+  have hProd : polyG_ellP_product E Q R A₀ A₁ ≠ 0 := by
+    unfold polyG_ellP_product
+    exact mul_ne_zero
+      (Finset.prod_ne_zero_iff.mpr (fun k _ => hQnz k))
+      (Finset.prod_ne_zero_iff.mpr (fun j _ => hRnz j))
+  rw [polyG_eq_product_mul_divided E Q beta R m A₀ A₁ hQnz hRnz,
+      mul_eq_zero]
+  constructor
+  · rintro (h | h)
+    · exact absurd h hProd
+    · exact h
+  · intro h
+    exact Or.inr h
+
 /-! ## Summary note (Q3.4 status)
 
 The full target theorem
