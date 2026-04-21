@@ -4337,3 +4337,133 @@ of how `ma_extractable` happens to use it.
 README updated with the Soundness flag entry. Counterexample checked
 in for permanent reference.
 
+
+---
+
+### Session 38 (2026-04-20) — Track A cascade attempt: blocked on scope
+
+**Scope**: Attempt the "Track A" paper-faithful `logDerivTerm` cascade
+rewrite as outlined in Session 36/37.
+
+**Proposed change** (confirmed algebraically in this session):
+
+Replace `Divisor/LogDeriv.lean:128-135` with:
+
+```
+noncomputable def logDerivTerm
+    (D : CoordRingElt E.q) (curveA : ZMod E.q) (lam : ZMod E.q)
+    (pt : ZMod E.q × ZMod E.q) : ZMod E.q :=
+  let num := 2 * pt.2 * D.a.derivative.eval pt.1
+              - (3 * pt.1 ^ 2 + curveA) * D.b.eval pt.1
+              - 2 * pt.2 ^ 2 * D.b.derivative.eval pt.1
+  let den := D.eval pt.1 pt.2 * (3 * pt.1 ^ 2 + curveA - 2 * lam * pt.2)
+  num * den⁻¹
+```
+
+Difference from old `logDerivTerm`: the paper-faithful numerator includes
+the `-(3x²+A)·b(x)` term accounting for `∂D/∂y · dy/dz`. Equivalently,
+`new_logDerivTerm = old_logDerivTerm - (3x²+A)·b(x)/((3x²+A-2λy)·D)`.
+
+**Cascade analysis** (confirmed in this session):
+
+The scale analysis: three correction polynomials
+`correctionTerm{0,1,2}Scaled` (one per chord point) can be added to
+`clearedFiberPoly` with subtraction to account for the extra `-(3x²+A)·b`
+term. Scales:
+
+* `correctionTerm0Scaled`: `embedScalar((3·A₀.1²+curveA)·b(A₀.1)) * DAtA₁Poly
+  * DAtA₂Scaled * dxdzDenA₁Scaled * dxdzDenA₂Scaled * linesProductScaled`.
+  Total scale in `lamDen`: `D.degE + k + 6` (matches `lhsTerm0Scaled`).
+* `correctionTerm1Scaled`: same structure with `embedInnerPoly` of
+  `(3·X²+curveA)·D.b` (inner polynomial, no outer). Scale matches.
+* `correctionTerm2Scaled`: needs `curveDxSqBPartAtA₂Scaled` giving
+  `(3·chordX₂²+curveA)·b(chordX₂)·lamDen^(D.degE+1)`. Total scale without
+  `lamDen^2` multiplier: `D.degE + k + 4`. Must multiply by `lamDenPoly^2`
+  to match `D.degE + k + 6`.
+
+No global "scale bump by 1" is needed — scales stay at `D.degE + k + 6`
+and `D.degE + k + 8` for outer natDegree. The handoff's "bump by 1"
+recommendation was a misdiagnosis; the correction polynomials themselves
+match scales on a per-chord-point basis.
+
+**Cascade scope re-estimate**:
+
+Much larger than initial estimate. Per session: **~800 LOC of careful
+code + proof-work**, spread across:
+
+* `Divisor/LogDeriv.lean`: 10 LOC (definition swap).
+* `Divisor/ClearedPolyForm.lean`: ~500 LOC
+  - Define 3 correction polynomials + `curveDxSqBPartAtA₂Scaled`: ~60 LOC.
+  - `bivEval_correctionTerm{0,1,2}Scaled_eq`: ~180 LOC (including the
+    inductive proof of `curveDxSqBPartAtA₂Scaled`'s bivEval via
+    `Polynomial.eval_eq_sum_range` unfolding).
+  - Update `clearedFiberPoly` definition to subtract 3 corrections.
+  - Rewrite `clearedFiberPoly_identity` to handle the 8-term sum
+    (5 existing + 3 corrections): ~150 LOC, requires careful algebraic
+    closure.
+  - Update per-term clearing lemmas to combine `(lhs_i − correction_i) =
+    logDerivTerm(A_i) · denom`: 3 lemmas × ~40 LOC each.
+  - natDegree bound updates for corrections.
+* `Divisor/BivariateLogDeriv.lean`: ~200 LOC
+  - Layer 3 `logDerivTerm_denom_cleared_pointwise` RHS gains a
+    `-(3x²+A)·b·(a+yb)` correction term (see Session 36 analysis).
+  - Layer 4 sum form updates.
+* `Divisor/ResidueIdentity.lean`: ~100 LOC
+  - `logDerivTerm_denom_cleared_in_chordRHSSingle` updates.
+* Counterexample invalidation or deletion: ~10 LOC.
+
+**This session's attempts**:
+
+Partial cascade was attempted:
+
+1. Definition swap (Phase A): trivial, done.
+2. Correction polynomial definitions and bivEval lemmas: ~250 LOC added,
+   all but one closing. `bivEval_curveDxSqBPartAtA₂Scaled_eq` reached a
+   working state after fighting calc-chain normalization.
+3. `clearedFiberPoly_identity` proof: attempted with brute `field_simp;
+   ring` after 8 bivEval rewrites + subtraction unfolding. Blocked by
+   (a) the `rw [lhs_i_sub_correction_i]` rewrite pattern failing due to
+   non-adjacency in the distributed-sum form; (b) `field_simp; ring`
+   exceeding heartbeat budget on the full unfolded scalar identity.
+
+**Root structural difficulty**: Proving
+`bivEval (clearedFiberPoly - correction_sum) A₁ = (A₁.1-A₀.1)^N · cleared`
+requires tying together 8 separate `(A₁.1-A₀.1)^N · expr_i` terms under
+a common `(A₁.1-A₀.1)^N` factor, then dividing through the `denom`
+factors to match `logDerivTerm` with the paper numerator. This is a
+single large ring-field identity that `field_simp; ring` does not close
+within reasonable heartbeats. A proof requires careful manual
+intermediate lemmas or generous heartbeat settings + structured
+algebraic work.
+
+**Decision**: halt the cascade attempt at current session budget. Revert
+to clean `dc18733` state. The cascade requires multi-session dedicated
+work to close properly; attempting it in a single session risks
+introducing `sorry`/axiom breakage.
+
+**Status**: axiom remains transient (and still known-false via Session
+37's counterexample). Track A cascade work remains the long-term correct
+path; this session recorded the algebraic design and scope. LOC this
+session: 0 production (revert); plan-doc prose ~85 lines.
+
+**Handoff for next session**:
+
+To complete Track A, the next session should:
+
+1. Apply the definition swap in `Divisor/LogDeriv.lean`.
+2. Add the 3 correction polynomial defs + `curveDxSqBPartAtA₂Scaled`.
+3. Add the 3 `bivEval_correctionTerm*_eq` theorems (these compile).
+4. Update `clearedFiberPoly` to include subtractions.
+5. Redesign `clearedFiberPoly_identity`'s proof: likely needs a
+   dedicated helper `paperNumerator_factored_identity` that directly
+   proves the aggregate field identity by generalizing the 8 atoms
+   `(D(A_i), dxdz_den(A_i), L(-P), L(B_j))` and applying `field_simp;
+   ring` with `set_option maxHeartbeats 4000000` (the proof is valid
+   but computationally large).
+6. Update per-term clearing lemmas to `(lhs_i − correction_i) = LT ·
+   denom`-form.
+7. Cascade `Divisor/BivariateLogDeriv.lean` Layer 3/4.
+8. Cascade `Divisor/ResidueIdentity.lean`.
+9. Delete or invalidate the Session 37 counterexample file.
+10. Discharge the transient axiom via the updated infrastructure.
+
