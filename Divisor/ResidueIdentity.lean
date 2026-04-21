@@ -190,6 +190,104 @@ theorem lineEval_inv_eq_xDiff_div_ellP
   have hxne : (A₁.1 - A₀.1) ≠ 0 := sub_ne_zero.mpr hNV.symm
   field_simp
 
+/-! ## Step 1 : Aggregate Layer-3 identity
+
+    Multiplying each of the three pointwise Layer-3 identities by the
+    "missing" factors from the other two chord points yields an
+    aggregate polynomial identity
+
+    ```
+    (∏_i N(D)(x_i) · (3x_i² + A − 2λy_i)) · Σ_i logDerivTerm(A_i, λ)
+       = Σ_i [∏_{j≠i} N(D)(x_j) · (3x_j² + A − 2λy_j)] · chordRHSSingle(A_i).
+    ```
+
+    No denominators appear on either side.  This is "Step 1" of the
+    chord-residue identity argument described in the ResidueIdentity
+    summary.  The proof just applies each of the three pointwise
+    Layer-3 identities and balances by `ring`. -/
+
+/-- Pointwise denominator factor at a chord point. -/
+private noncomputable def normPolyDenom
+    (D : CoordRingElt E.q) (lam : ZMod E.q)
+    (P : ZMod E.q × ZMod E.q) : ZMod E.q :=
+  (normPoly E D).eval P.1 * (3 * P.1 ^ 2 + E.curveA - 2 * lam * P.2)
+
+/-- The product of all three chord denominator factors. -/
+private noncomputable def chordDenomProd
+    (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) : ZMod E.q :=
+  let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
+  normPolyDenom E D lam A₀ *
+  normPolyDenom E D lam A₁ *
+  normPolyDenom E D lam (chordPoints E A₀ A₁ ⟨2, by omega⟩)
+
+/-- **Step 1 aggregate identity.** Sum-form identity across the three
+    chord points, with denominators cleared globally (no inverses on
+    either side). -/
+theorem chord_aggregate_identity
+    (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points)
+    (hA₁ : A₁ ∈ E.points)
+    (hA₂ : chordPoints E A₀ A₁ ⟨2, by omega⟩ ∈ E.points)
+    (hDA₀ : D.eval A₀.1 A₀.2 ≠ 0)
+    (hDA₁ : D.eval A₁.1 A₁.2 ≠ 0)
+    (hDA₂ : D.eval (chordPoints E A₀ A₁ ⟨2, by omega⟩).1
+                   (chordPoints E A₀ A₁ ⟨2, by omega⟩).2 ≠ 0)
+    (hXDen₀ : (3 * A₀.1 ^ 2 + E.curveA -
+                  2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2) ≠ 0)
+    (hXDen₁ : (3 * A₁.1 ^ 2 + E.curveA -
+                  2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2) ≠ 0)
+    (hXDen₂ : (3 * (chordPoints E A₀ A₁ ⟨2, by omega⟩).1 ^ 2 + E.curveA -
+                  2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2
+                        * (chordPoints E A₀ A₁ ⟨2, by omega⟩).2) ≠ 0) :
+    chordDenomProd E D A₀ A₁ * logDerivTermSum E D A₀ A₁ =
+      normPolyDenom E D (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₁ *
+        normPolyDenom E D (slopeOf A₀.1 A₀.2 A₁.1 A₁.2)
+          (chordPoints E A₀ A₁ ⟨2, by omega⟩) *
+        chordRHSSingle E D A₀ +
+      normPolyDenom E D (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀ *
+        normPolyDenom E D (slopeOf A₀.1 A₀.2 A₁.1 A₁.2)
+          (chordPoints E A₀ A₁ ⟨2, by omega⟩) *
+        chordRHSSingle E D A₁ +
+      normPolyDenom E D (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀ *
+        normPolyDenom E D (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₁ *
+        chordRHSSingle E D (chordPoints E A₀ A₁ ⟨2, by omega⟩) := by
+  classical
+  set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLam
+  -- Three pointwise Layer-3 identities in `chordRHSSingle` form.
+  have h0 := logDerivTerm_denom_cleared_in_chordRHSSingle E D lam hA₀ hDA₀ hXDen₀
+  have h1 := logDerivTerm_denom_cleared_in_chordRHSSingle E D lam hA₁ hDA₁ hXDen₁
+  have h2 := logDerivTerm_denom_cleared_in_chordRHSSingle E D lam hA₂ hDA₂ hXDen₂
+  -- Expand `logDerivTermSum` on LHS, and `normPolyDenom`, `chordDenomProd`.
+  rw [logDerivTermSum_eq]
+  set A₂ := chordPoints E A₀ A₁ ⟨2, by omega⟩ with hA₂_def
+  show normPolyDenom E D lam A₀ * normPolyDenom E D lam A₁ *
+        normPolyDenom E D lam A₂ *
+        (logDerivTerm E D E.curveA lam A₀ +
+          logDerivTerm E D E.curveA lam A₁ +
+          logDerivTerm E D E.curveA lam A₂) = _
+  unfold normPolyDenom
+  set N0 := (normPoly E D).eval A₀.1
+  set N1 := (normPoly E D).eval A₁.1
+  set N2 := (normPoly E D).eval A₂.1
+  set D0 := 3 * A₀.1 ^ 2 + E.curveA - 2 * lam * A₀.2
+  set D1 := 3 * A₁.1 ^ 2 + E.curveA - 2 * lam * A₁.2
+  set D2 := 3 * A₂.1 ^ 2 + E.curveA - 2 * lam * A₂.2
+  set LT0 := logDerivTerm E D E.curveA lam A₀
+  set LT1 := logDerivTerm E D E.curveA lam A₁
+  set LT2 := logDerivTerm E D E.curveA lam A₂
+  set S0 := chordRHSSingle E D A₀
+  set S1 := chordRHSSingle E D A₁
+  set S2 := chordRHSSingle E D A₂
+  -- h0 : N0 · D0 · LT0 = S0, etc. (in `set`-abbreviated form)
+  change N0 * D0 * LT0 = S0 at h0
+  change N1 * D1 * LT1 = S1 at h1
+  change N2 * D2 * LT2 = S2 at h2
+  -- linear_combination with the three pointwise identities.
+  linear_combination
+    (N1 * D1 * N2 * D2) * h0 + (N0 * D0 * N2 * D2) * h1 + (N0 * D0 * N1 * D1) * h2
+
 /-! ## Summary note (Q3.4 status)
 
 The full target theorem
