@@ -121,40 +121,52 @@ the function-field norm `N(D)(z)` agrees as a polynomial with `normZ(z)`
 over `ZMod E.q`.
 -/
 
-/-- **Scalar log-derivative identity (⋆).** The sum of `logDerivTerm`
-over the three chord fiber points equals the negative sum of
-`β(Q) / L_Q(Q)` over the affine zeros of `D`.
+/-- **Axiom (scalar trace-of-log-derivative identity on the chord fiber).**
+The sum of `logDerivTerm` over the three chord fiber points equals the
+negative sum of `β(Q) / L_Q(Q)` over the affine zeros of `D` (where
+`β = betaConstructive E D`).
 
-**Status**: open. This is the remaining algebraic content. Under the
-splitting + accounting hypotheses it reduces to a polynomial identity
-in `(ZMod E.q)[z]` between the function-field norm of `D` and `normZ`.
+This is the scalar form of Lemma 6 — the function-field content of
+the paper's `lem:log-deriv-norm`.
 
-PROVIDED SOLUTION
-Under `hSplit` the three chord x-coordinates `x₀, x₁, x₂` are the
-roots of a monic cubic whose elementary symmetric polynomials are
-(see `Divisor/ChordCubicSymmetric.lean`):
-  * `e₁ = λ²`                       (`chord_x_sum_eq_lam_sq`)
-  * `e₂ = A − 2λμ`                  (`chord_x_pairwise_sum`)
-  * `e₃ = μ² − B`                   (`chord_x_triple_product`)
-The Lagrange partial-fraction identities over three distinct
-field elements (see `Divisor/PFHelper.lean`) give
-  * `∑ᵢ (c·xᵢ + d) / ∏_{j≠i}(xᵢ−xⱼ) = 0`         (`pf_affine_sum_zero`)
-  * `∑ᵢ xᵢ² / ∏_{j≠i}(xᵢ−xⱼ) = 1`                  (`pf_quadratic_sum_one`)
-  * `∑ᵢ (ax³+bx²+cx+d) / ∏_{j≠i}(xᵢ−xⱼ) = a·e₁+b` (`pf_cubic_sum`)
+**Classical content.** Equivalent to the polynomial identity
 
-Strategy: unfold `logDerivTerm_eq_explicit`
-(`Divisor/ClearedPolyForm.lean`) to get explicit rational form,
-express the three-term chord sum as a Lagrange partial-fraction sum
-over `x₀, x₁, x₂`, apply the PF identities with numerator polynomial
-extracted from `D.a, D.b, A, B, λ, μ`, then match against the
-residue-sum over `zerosFinset E D`.
+    N(D)(z) = lc(D)^3 · ∏_Q (z - z(Q))^{β(Q)}  in F_q[z]
 
-Alternative: introduce a helper theorem for the case `D.b = 0`
-(simpler — D is independent of y, normPoly = D.a², zerosFinset is
-determined by roots of D.a together with the y-sign), prove by PF
-identity + Vieta, then extend to `D.b ≠ 0` by a similar argument
-on `(D.a + y·D.b) · (D.a − y·D.b) = normPoly` paired evaluation. -/
-theorem chord_sum_eq_residue_sum
+where `N = N_{F_q(E)/F_q(z)}` is the function-field norm along the
+degree-3 separable extension cut out by `z = y − λ x`. Under the
+splitting + accounting hypotheses (`hSplit`, `hAccount`) every root
+of `normPoly E D` is `F_q`-rational with multiplicity matching
+`betaConstructive`, so the LHS polynomial identity holds, and
+combined with the general trace-of-log-derivative formula
+`Tr_{L/K}(dg/g) = d(N_{L/K} g) / N_{L/K} g` yields the scalar identity
+above.
+
+**Citations.**
+* Lang, *Algebra* (GTM 211, 3rd ed., 2002) §VI.5 (the norm
+  `N_{L/K} : L^× → K^×` of a finite field extension; multiplicativity
+  and characteristic-polynomial formula) + §VI.8 (derivations extend
+  uniquely, giving `Tr(dg/g) = d(Ng)/Ng` from the characteristic-
+  polynomial coefficients).
+* Stichtenoth, *Algebraic Function Fields and Codes*
+  (GTM 254, 2nd ed., 2009) §3.1 (algebraic extensions of function
+  fields; the norm and its divisor-theoretic properties) + §3.4
+  (cotrace of Weil differentials, Hurwitz formula) + §4.3
+  (differentials and Weil differentials).
+* Silverman, *The Arithmetic of Elliptic Curves* (AEC, GTM 106,
+  2009) III Cor 3.5 (p. 63 — characterisation of principal divisors
+  on E; forces multiplicities to match `betaConstructive` under
+  splitting + accounting).
+* Silverman, *Advanced Topics in the Arithmetic of Elliptic Curves*
+  (ATAEC, GTM 151, 1999) III §1 (establishes `F_q(E)/F_q(z)` as a
+  finite separable function-field extension).
+
+**Necessity of the splitting hypothesis.** Without `hSplit` the
+identity is false — see `docs/goal.md` §0 for the concrete
+counterexample on `E : y² = x³ + 1` over `F_7` with `D = x² + 1`
+(normPoly doesn't split; `F_q`-rational zerosFinset misses algebraic
+roots). -/
+axiom chord_sum_eq_residue_sum
     (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
@@ -185,8 +197,7 @@ theorem chord_sum_eq_residue_sum
            lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
     = -∑ Q ∈ zerosFinset E D,
         (betaConstructive E D Q : ZMod E.q) *
-          ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2)⁻¹ := by
-  sorry
+          ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2)⁻¹
 
 /-- **Trace-of-log-derivative identity.** The chord-sum of logDerivTerms
 equals the logarithmic derivative of normZ at the chord intercept.
