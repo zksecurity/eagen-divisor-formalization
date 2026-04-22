@@ -2547,14 +2547,21 @@ theorem extracted_scalars_valid
         formula). -/
 
 /-- **Axiom (function-field trace-of-log-derivative identity +
-    density extension).** For any `MAProverMsg` and any
-    Silverman AEC III Cor 3.5-compliant principal-divisor
-    decomposition `β_fun` of `msg.toD`, the denominator-cleared
-    polynomial `polyG` vanishes on every non-vertical pair in
-    `E × E`.
+    density extension, conditioned on `hAllZero`).** Under the
+    hypothesis `hAllZero` that `logDerivCheckFn` vanishes on every
+    defined non-vertical pair, and for any Silverman AEC III
+    Cor 3.5-compliant principal-divisor decomposition `β_fun` of
+    `msg.toD`, the denominator-cleared polynomial `polyG` vanishes on
+    every non-vertical pair in `E × E`.
 
-    Classical content (see docstring comment above for full
-    citations): Lang AEC VI.5 (norm/trace in a finite separable
+    The `hAllZero` precondition is essential: `polyG` combines the
+    divisor-side series (`Q, β`) with the protocol-response series
+    (`R, m'` from `msg.m`). Without the logDerivCheck constraint the
+    two series need not cancel. Mathematically, `polyG = 0` at a
+    defined non-vertical pair ⇔ `logDerivCheckFn = 0` there (via the
+    `polyG ⇔ paperResidue` Step-5 equivalence).
+
+    Classical content: Lang AEC VI.5 (norm/trace in a finite separable
     extension) + Silverman ATAEC III §1 (function-field extension
     `F_q(E)/F_q(z)`) + Stichtenoth §III.1-5 (function-field norm
     and differentials) + Silverman AEC III Cor 3.5 (principal-
@@ -2566,6 +2573,11 @@ theorem extracted_scalars_valid
 axiom polyG_zero_trace_formula
     {E : ECSetup} (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
+      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
     (β_fun : ZMod E.q × ZMod E.q → ℕ)
     (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0)
     (hβcov : ∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0)
@@ -2610,21 +2622,6 @@ theorem ma_extractable
       ≤ (72 * (d + stmt.k + 6) + 4) * E.points.card
         + 6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) := by
   classical
-  have hPolyGZero :
-      ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
-        (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
-        (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
-        ((∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE) →
-        (ECPoint.weightedSum E E.points
-          (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) →
-        ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
-          A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
-          polyG E (zerosAt E msg.toD)
-            (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
-            (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
-            A₀ A₁ = 0 :=
-    fun β_fun hβsup hβcov hβsum hβgroup =>
-      polyG_zero_trace_formula stmt msg hkm β_fun hβsup hβcov hβsum hβgroup
   by_cases hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ ∧
      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
@@ -2656,6 +2653,26 @@ theorem ma_extractable
     exact le_trans hCardLe (le_trans hBound
       (le_trans hMono (Nat.le_add_right _ _)))
   · push_neg at hNV
+    -- After push_neg, `hNV` is exactly the `hAllZero` hypothesis needed
+    -- by `polyG_zero_trace_formula`: logDerivCheckFn vanishes on every
+    -- defined non-vertical pair.
+    have hPolyGZero :
+        ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
+          (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
+          (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
+          ((∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE) →
+          (ECPoint.weightedSum E E.points
+            (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) →
+          ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+            A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+            polyG E (zerosAt E msg.toD)
+              (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
+              (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
+              A₀ A₁ = 0 :=
+      fun β_fun hβsup hβcov hβsum hβgroup =>
+        polyG_zero_trace_formula stmt msg hkm
+          (fun A₀ A₁ hA₀ hA₁ hNVxy hDef => hNV A₀ A₁ hA₀ hA₁ hNVxy hDef)
+          β_fun hβsup hβcov hβsum hβgroup
     by_cases hAdm : stmt.admSet (msg.polyA, msg.polyB)
     · classical
       by_cases hNegP : (negPIndexSet E stmt msg hkm).Nonempty
