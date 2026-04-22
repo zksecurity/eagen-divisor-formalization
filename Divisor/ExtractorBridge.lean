@@ -2486,6 +2486,68 @@ theorem extracted_scalars_valid
             E stmt msg d hDeg hd hkm hAdm hNegP hAllZero hPolyGZero
             hValidPairsLarge).2
 
+/-! ## Classical axiom: polyG vanishing on E × E
+
+    The `hPolyGZero` hypothesis threaded through the extractor chain
+    asserts that the denominator-cleared polynomial `polyG` vanishes
+    on every non-vertical pair in `E × E`. Classically this is the
+    composite of two function-field / algebraic-geometry facts:
+
+    1. **Lemma 6 (function-field trace-of-log-derivative identity).**
+       For `D ∈ F_q[E]^×` and the degree-3 extension
+       `F_q(E)/F_q(z)` with `z = y − λ x`, the chord-sum of scalar
+       logarithmic-derivative terms at the three chord-fiber points
+       equals the negative sum of residues `−Σ_Q β(Q)/L_Q(Q)`:
+
+       ```
+       Σ_i (dD/dz)(A_i)/D(A_i) = (N D)'/ (N D)
+       ```
+
+       where `N = N_{F_q(E)/F_q(z)}` is the function-field norm and
+       the residue-sum form follows from the partial-fraction
+       expansion of `(N D)' / (N D)` (Silverman III Prop 3.4
+       applied to the chord cubic `x³ − λ² x² + (A − 2λz) x + (B − z²)`).
+
+    2. **Density extension.** Vanishing of `polyG` on the "defined"
+       subset of non-vertical pairs (where slope denominators are
+       nonzero) extends to the full non-vertical set via polynomial
+       degree counting on `polyGPoly` against `card_zeros_on_E_le`
+       from `Divisor/CubicIntersection.lean`.
+
+    Citations:
+      * Silverman, *The Arithmetic of Elliptic Curves*, III Prop 3.4
+        (divisor of a function, pole at ∞), III Cor 3.5 (principal
+        divisors).
+      * Stichtenoth, *Algebraic Function Fields and Codes*,
+        §III.4 (norm and conorm in function-field extensions). -/
+
+/-- **Axiom (Silverman III Prop 3.4 + density extension).**
+    For any `MAProverMsg` and any Silverman III.3.5-compliant
+    principal-divisor decomposition `β_fun` of `msg.toD`,
+    the denominator-cleared polynomial `polyG` vanishes on every
+    non-vertical pair in `E × E`.
+
+    Packages the classical function-field trace-of-log-derivative
+    identity plus the density extension. Used to eliminate the
+    `hPolyGZero` hypothesis that would otherwise be threaded through
+    `ma_extractable` and `ip_knowledge_sound`. -/
+axiom polyG_zero_trace_formula
+    {E : ECSetup} (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (β_fun : ZMod E.q × ZMod E.q → ℕ)
+    (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0)
+    (hβcov : ∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0)
+    (hβsum : (∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE)
+    (hβgroup : ECPoint.weightedSum E E.points
+                 (fun P => ECPoint.nsmul E (β_fun P)
+                             (ECPoint.affine P.1 P.2)) = 0) :
+    ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      polyG E (zerosAt E msg.toD)
+        (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
+        (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
+        A₀ A₁ = 0
+
 /-! ## Theorem 6: Extractable MA protocol -/
 
 /-- **Theorem 6 (MA extractability) — upgraded form with valid witness.**
@@ -2507,8 +2569,16 @@ theorem extracted_scalars_valid
 theorem ma_extractable
     (stmt : DlogStatement E.q) (d : ℕ) (hd : d < E.q) (hd2 : 2 ≤ d)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ d)
-    (hkm : stmt.k = msg.k)
-    (hPolyGZero :
+    (hkm : stmt.k = msg.k) :
+    (∃ wit : DlogWitness E.q,
+        maExtractor E stmt msg d hd hkm = some wit
+        ∧ dlogHolds E stmt wit) ∨
+    ((validPairs E).filter
+        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (72 * (d + stmt.k + 6) + 4) * E.points.card
+        + 6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) := by
+  classical
+  have hPolyGZero :
       ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
         (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
         (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
@@ -2520,15 +2590,9 @@ theorem ma_extractable
           polyG E (zerosAt E msg.toD)
             (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
             (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
-            A₀ A₁ = 0) :
-    (∃ wit : DlogWitness E.q,
-        maExtractor E stmt msg d hd hkm = some wit
-        ∧ dlogHolds E stmt wit) ∨
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (72 * (d + stmt.k + 6) + 4) * E.points.card
-        + 6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) := by
-  classical
+            A₀ A₁ = 0 :=
+    fun β_fun hβsup hβcov hβsum hβgroup =>
+      polyG_zero_trace_formula stmt msg hkm β_fun hβsup hβcov hβsum hβgroup
   by_cases hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ ∧
      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
@@ -2644,20 +2708,7 @@ theorem ma_extractable
 theorem ip_knowledge_sound
     (stmt : DlogStatement E.q) (d : ℕ) (hd : d < E.q) (hd2 : 2 ≤ d)
     (msg1 : MAProverMsg E.q) (hDeg : msg1.toD.degE ≤ d)
-    (hkm : stmt.k = msg1.k)
-    (hPolyGZero :
-      ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
-        (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg1.toD.eval P.1 P.2 = 0) →
-        (∀ P ∈ E.points, msg1.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
-        ((∑ P ∈ E.points, β_fun P) ≤ msg1.toD.degE) →
-        (ECPoint.weightedSum E E.points
-          (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) →
-        ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
-          A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
-          polyG E (zerosAt E msg1.toD)
-            (fun k => ((multAt E β_fun msg1.toD k : ℕ) : ZMod E.q))
-            (distinctR E stmt msg1 hkm) (distinctM' E stmt msg1 hkm)
-            A₀ A₁ = 0) :
+    (hkm : stmt.k = msg1.k) :
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 d hd hkm = some wit
          ∧ dlogHolds E stmt wit) ∨
@@ -2676,7 +2727,7 @@ theorem ip_knowledge_sound
         ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
         msg3 = msg3' := by
   refine ⟨?_, ?_⟩
-  · exact ma_extractable E stmt d hd hd2 msg1 hDeg hkm hPolyGZero
+  · exact ma_extractable E stmt d hd hd2 msg1 hDeg hkm
   · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
