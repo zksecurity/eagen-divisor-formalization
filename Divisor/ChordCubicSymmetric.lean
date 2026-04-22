@@ -90,7 +90,12 @@ theorem chord_x_pairwise_sum
     let mu  := A₀.2 - lam * A₀.1
     let x₂  := lam ^ 2 - A₀.1 - A₁.1
     A₀.1 * A₁.1 + A₀.1 * x₂ + A₁.1 * x₂ = E.curveA - 2 * lam * mu := by
-  sorry
+  simp only [slopeOf]
+  have hne : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm hNV)
+  have h₀ := E.hOnCurve A₀ hA₀
+  have h₁ := E.hOnCurve A₁ hA₁
+  field_simp
+  linear_combination (A₁.1 - A₀.1) * h₁ - (A₁.1 - A₀.1) * h₀
 
 /-- **Elementary symmetric sum `e₃`:** product of the three chord
 x-coordinates equals `μ² − B`, where `μ = y₀ − λ x₀` and
@@ -114,7 +119,12 @@ theorem chord_x_triple_product
     let mu  := A₀.2 - lam * A₀.1
     let x₂  := lam ^ 2 - A₀.1 - A₁.1
     A₀.1 * A₁.1 * x₂ = mu ^ 2 - E.curveB := by
-  sorry
+  simp only [slopeOf]
+  have hne : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm hNV)
+  have h₀ := E.hOnCurve A₀ hA₀
+  have h₁ := E.hOnCurve A₁ hA₁
+  field_simp
+  linear_combination -(A₁.1 - A₀.1) * A₁.1 * h₀ + A₀.1 * (A₁.1 - A₀.1) * h₁
 
 /-- **Chord third point lies on E.** Given `A₀, A₁ ∈ E.points` with
 `A₀.1 ≠ A₁.1`, the constructed `A₂ = (λ² − x₀ − x₁, λ·x₂ + μ)` lies
@@ -135,6 +145,10 @@ theorem chord_third_point_on_E
     let x₂  := lam ^ 2 - A₀.1 - A₁.1
     let y₂  := lam * x₂ + (A₀.2 - lam * A₀.1)
     y₂ ^ 2 = x₂ ^ 3 + E.curveA * x₂ + E.curveB := by
-  sorry
+  intro lam x₂ y₂
+  have he₂ := chord_x_pairwise_sum E A₀ A₁ hA₀ hA₁ hNV
+  have he₃ := chord_x_triple_product E A₀ A₁ hA₀ hA₁ hNV
+  simp only [] at he₂ he₃
+  linear_combination x₂ * he₂ - he₃
 
 end Divisor
