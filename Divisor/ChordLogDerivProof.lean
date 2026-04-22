@@ -105,11 +105,67 @@ hypothesis (total betaConstructive sum equals normPoly degree),
 the two polynomials have identical roots with identical
 multiplicities, hence are proportional. -/
 
+/-! ### Scalar identity (⋆)
+
+The core algebraic content boiled down to a scalar equality in `F_q`:
+
+  Σᵢ logDerivTerm(Aᵢ, λ) = -Σ_{Q ∈ zerosFinset} β(Q) / L_Q(Q)
+
+This is the statement after applying `normZ_logDeriv_at_chord_intercept`
+to the RHS of `chordLogDerivMatchesNormZ` and cancelling `normZ(μ) ≠ 0`.
+Under the splitting + accounting hypotheses the identity holds because
+the function-field norm `N(D)(z)` agrees as a polynomial with `normZ(z)`
+(up to a constant), but the statement itself is a plain scalar equality
+over `ZMod E.q`.
+-/
+
+/-- **Scalar log-derivative identity (⋆).** The sum of `logDerivTerm`
+over the three chord fiber points equals the negative sum of
+`β(Q) / L_Q(Q)` over the affine zeros of `D`.
+
+**Status**: open. This is the remaining algebraic content. Under the
+splitting + accounting hypotheses it reduces to a polynomial identity
+in `(ZMod E.q)[z]` between the function-field norm of `D` and `normZ`. -/
+theorem chord_sum_eq_residue_sum
+    (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
+    (hNV : A₀.1 ≠ A₁.1)
+    (hD  : ¬ (D.a = 0 ∧ D.b = 0))
+    (hSplit : normPoly_splits_over_Fq E D)
+    (hAccount : (∑ P ∈ E.points, betaConstructive E D P) =
+                  (normPoly E D).natDegree)
+    (hA₀def : D.eval A₀.1 A₀.2 ≠ 0)
+    (hA₁def : D.eval A₁.1 A₁.2 ≠ 0)
+    (hA₂def : let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
+              let x₂  := lam ^ 2 - A₀.1 - A₁.1
+              let y₂  := lam * x₂ + (A₀.2 - lam * A₀.1)
+              D.eval x₂ y₂ ≠ 0)
+    (hQline : ∀ Q ∈ zerosFinset E D,
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 ≠ 0)
+    (hDen : let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
+            ∀ pt : ZMod E.q × ZMod E.q,
+              pt = A₀ ∨ pt = A₁ ∨
+              pt = (lam ^ 2 - A₀.1 - A₁.1,
+                    lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
+              → 3 * pt.1 ^ 2 + E.curveA - 2 * lam * pt.2 ≠ 0) :
+    let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
+    logDerivTerm E D E.curveA lam A₀
+      + logDerivTerm E D E.curveA lam A₁
+      + logDerivTerm E D E.curveA lam
+          (lam ^ 2 - A₀.1 - A₁.1,
+           lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
+    = -∑ Q ∈ zerosFinset E D,
+        (betaConstructive E D Q : ZMod E.q) *
+          ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2)⁻¹ := by
+  sorry
+
 /-- **Trace-of-log-derivative identity.** The chord-sum of logDerivTerms
 equals the logarithmic derivative of normZ at the chord intercept.
 
-This is the core function-field content of Lemma 6 (Silverman III
-Prop 3.4 + trace formula). -/
+**Proof**: combines `chord_sum_eq_residue_sum` (scalar identity `(⋆)`)
+with `normZ_logDeriv_at_chord_intercept` (partial-fraction expansion of
+normZ's log-derivative into residue sum form) and cancels `normZ(μ) ≠ 0`. -/
 theorem trace_logDeriv_eq_normZ_logDeriv
     (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
@@ -144,7 +200,36 @@ theorem trace_logDeriv_eq_normZ_logDeriv
     = eval (zLambda E lam A₀)
         (derivative (normZ E lam D))
       / (normZ E lam D).eval (zLambda E lam A₀) := by
-  sorry
+  classical
+  set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLam
+  set μ := zLambda E lam A₀ with hMu
+  -- Scalar identity (⋆): Σ LT = -Σ β/L
+  have hScalar := chord_sum_eq_residue_sum E D A₀ A₁
+    hA₀ hA₁ hNV hD hSplit hAccount hA₀def hA₁def hA₂def hQline hDen
+  -- PFE: eval μ (deriv normZ) = -(normZ(μ) · Σ β/L)
+  have hPFE := normZ_logDeriv_at_chord_intercept E D A₀ A₁ hQline
+  -- Abbreviations
+  set LT : ZMod E.q :=
+    logDerivTerm E D E.curveA lam A₀
+      + logDerivTerm E D E.curveA lam A₁
+      + logDerivTerm E D E.curveA lam
+          (lam ^ 2 - A₀.1 - A₁.1,
+           lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
+    with hLT
+  set N : ZMod E.q := (normZ E lam D).eval μ with hN
+  set Nd : ZMod E.q := eval μ (derivative (normZ E lam D)) with hNd
+  set S : ZMod E.q :=
+    ∑ Q ∈ zerosFinset E D,
+      (betaConstructive E D Q : ZMod E.q) *
+        ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2)⁻¹ with hS
+  -- hScalar: LT = -S
+  change LT = -S at hScalar
+  -- hPFE: Nd = -(N * S)
+  change Nd = -(N * S) at hPFE
+  -- Goal: LT = Nd / N
+  show LT = Nd / N
+  rw [hPFE, hScalar]
+  field_simp
 
 /-! ## Step 2 + Assembly: Main theorem -/
 
