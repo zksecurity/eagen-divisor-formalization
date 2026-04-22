@@ -25,20 +25,13 @@
     *simple* root (rootMult = 1), expressing
     `eval α₀ (derivative (normPoly E D))` as
     `leadingCoeff · ∏_{β ≠ α₀} (α₀ - β)^{rootMult β}`.
-  * `betaConstructive_fiber_sum_eq_rootMult_of_splits` : alias for
-    Q3.1's `sum_betaConstructive_fst_eq_of_splits`, re-exported in this
-    module for Q3.3/Q3.4's convenience — the "fiber-sum β = rootMult"
-    bridge at each `x₀ : F_q`.
-  * `normPoly_derivative_eval_eq_betaFiberSum_mul_prod_of_splits`
-    (Bridge, full form) : evaluation at an affine `E`-zero of `D`,
-    expressed with `∑_{P ∈ E.points, P.1 = x₀} betaConstructive E D P`
-    in place of `rootMultiplicity x₀ (normPoly E D)`.
-  * `normPoly_derivative_eval_simple_root_betaFiberSum_of_splits`
-    (Bridge, simple-root form) : the form Q3.3/Q3.4 consume.
+  The former `betaConstructive`-fiber-sum bridges (Q3.1 → Q3.2/Q3.3
+  consumer aliases) were removed together with `betaConstructive_sum_eq_degE`
+  after Aristotle's counterexample invalidated the `divisor_degree_eq`
+  axiom; see `Divisor/BetaConstructive.lean` for the note.
 
   No new axioms, no `sorry` / `admit`. Purely univariate polynomial
-  algebra plus the narrow-axiom `betaConstructive_fst_eq_of_splits`
-  bridge from Q3.1.
+  algebra plus the `rootMultiplicity`-form Identity C.
 -/
 import Divisor.BetaConstructive
 import Divisor.PartialFractionExpansion
@@ -293,63 +286,14 @@ theorem normPoly_derivative_eval_simple_root_of_splits
   -- rootMult α₀ = 1 ⇒ 0^(1-1) = 0^0 = 1, and ((1:ℕ):ZMod E.q) = 1.
   simp
 
-/-! ## Bridge : `betaConstructive`-sum form (Q3.1 consumer form) -/
-
-/-- **Re-export: fiber-sum `β` = `rootMult`.** At each `x₀ : F_q`, the
-sum of `betaConstructive E D P` over sheets `P` with `P.1 = x₀` equals
-`rootMultiplicity x₀ (normPoly E D)`. Lifted from Q3.1's
-`sum_betaConstructive_fst_eq_of_splits` for convenience. -/
-theorem betaConstructive_fiber_sum_eq_rootMult_of_splits
-    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplit : normPoly_splits_over_Fq E D)
-    (x₀ : ZMod E.q) :
-    (∑ P ∈ E.points.filter (fun P => P.1 = x₀), betaConstructive E D P)
-      = rootMultiplicity x₀ (normPoly E D) :=
-  sum_betaConstructive_fst_eq_of_splits E D hD hSplit x₀
-
-/-- **Bridge (Identity C with `β`-fiber sum, full form).**
-
-  `eval x₀ (N(D)') = lc · (∑_{P' ∈ fiber} β P') · 0^(rootMult x₀ - 1)
-                        · ∏_{β ≠ x₀} (x₀ - β)^(rootMult β)`
--/
-theorem normPoly_derivative_eval_eq_betaFiberSum_mul_prod_of_splits
-    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplit : normPoly_splits_over_Fq E D)
-    {α₀ : ZMod E.q} (hα₀ : α₀ ∈ (normPoly E D).roots.toFinset) :
-    eval α₀ (derivative (normPoly E D)) =
-      (normPoly E D).leadingCoeff *
-        ((((∑ P ∈ E.points.filter (fun P => P.1 = α₀),
-              betaConstructive E D P) : ℕ) : ZMod E.q) *
-          ((0 : ZMod E.q)) ^ ((rootMultiplicity α₀ (normPoly E D)) - 1) *
-          ∏ β ∈ (normPoly E D).roots.toFinset.erase α₀,
-            (α₀ - β) ^ (rootMultiplicity β (normPoly E D))) := by
-  rw [betaConstructive_fiber_sum_eq_rootMult_of_splits E D hD hSplit α₀]
-  exact normPoly_derivative_eval_at_root_of_splits E D hSplit hα₀
-
-/-- **Bridge (simple-root case) — the form Q3.3/Q3.4 consume.**
-
-At an affine `E`-zero sheet above a simple root `α₀` of `N(D)`,
-
-  `eval α₀ (N(D)') = lc · (∑_{P ∈ E.points, P.1 = α₀} β P)
-                        · ∏_{β ≠ α₀} (α₀ - β)^(rootMult β)`.
--/
-theorem normPoly_derivative_eval_simple_root_betaFiberSum_of_splits
-    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplit : normPoly_splits_over_Fq E D)
-    {α₀ : ZMod E.q} (hα₀ : α₀ ∈ (normPoly E D).roots.toFinset)
-    (hSimple : rootMultiplicity α₀ (normPoly E D) = 1) :
-    eval α₀ (derivative (normPoly E D)) =
-      (normPoly E D).leadingCoeff *
-        ((((∑ P ∈ E.points.filter (fun P => P.1 = α₀),
-              betaConstructive E D P) : ℕ) : ZMod E.q) *
-          ∏ β ∈ (normPoly E D).roots.toFinset.erase α₀,
-            (α₀ - β) ^ (rootMultiplicity β (normPoly E D))) := by
-  rw [betaConstructive_fiber_sum_eq_rootMult_of_splits E D hD hSplit α₀,
-      hSimple,
-      normPoly_derivative_eval_simple_root_of_splits E D hSplit hα₀ hSimple]
-  -- Remaining: ((1:ℕ) : ZMod E.q) on the LHS side matches up with
-  -- the one multiplicative factor on the RHS.
-  push_cast
-  ring
+/-! The former `betaConstructive_fiber_sum_eq_rootMult_of_splits`,
+`normPoly_derivative_eval_eq_betaFiberSum_mul_prod_of_splits`, and
+`normPoly_derivative_eval_simple_root_betaFiberSum_of_splits` lemmas
+were removed together with `sum_betaConstructive_fst_eq_of_splits`
+(BetaConstructive.lean): their proofs relied on
+`betaConstructive_sum_eq_degE`, which was deleted after Aristotle's
+counterexample falsified the underlying `divisor_degree_eq` axiom. The
+`rootMultiplicity`-level Identity C lemmas above are untouched and
+remain available for downstream consumers. -/
 
 end Divisor

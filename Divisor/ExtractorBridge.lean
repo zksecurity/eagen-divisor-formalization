@@ -485,16 +485,21 @@ theorem infinity_notin_insert_negP_image
   · exact infinity_ne_negP_aff E stmt h
   · exact infinity_notin_image_basesAffineEC E stmt msg hkm h
 
-/-- **D4 main theorem.** If `extractorDivisorCoeffs` is the divisor of a
-    rational function on `E` (i.e., `IsPrincipal`), then the group-law
-    equation `(-P) + Σ [extractedScalars i] · B_i = 0` holds.
+/-- **D4 main theorem (group-sum form).** Given that the group-weighted
+    sum of `extractorDivisorCoeffs` over its finite support vanishes,
+    the group-law equation
+    `(-P) + Σ [extractedScalars i] · B_i = 0` holds.
 
-    Combined with D5 (`target_eq_weightedSum_of_zero_sum`), this gives
-    the full group-law conclusion `target = Σ [extractedScalars i] · B_i`. -/
-theorem extractor_zeroSum_of_principal
+    This avoids the `IsPrincipal` detour — we only need the group-sum-zero
+    half of `principal_divisor_iff`. Combined with D5
+    (`target_eq_weightedSum_of_zero_sum`), this gives the full group-law
+    conclusion `target = Σ [extractedScalars i] · B_i`. -/
+theorem extractor_zeroSum_of_weightedSum
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
-    (hPrincipal : IsPrincipal E (extractorDivisorCoeffs E stmt msg hkm)) :
+    (hWSum :
+      ECPoint.weightedSum E (extractorDivisorCandidate E stmt msg hkm)
+        (fun P => ECPoint.zsmul E (extractorDivisorCoeffs E stmt msg hkm P) P) = 0) :
     ECPoint.add E
       (ECPoint.affine stmt.target.1 (-stmt.target.2))
       (ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
@@ -504,26 +509,9 @@ theorem extractor_zeroSum_of_principal
   classical
   set c := extractorDivisorCoeffs E stmt msg hkm with hc_def
   set candFs := extractorDivisorCandidate E stmt msg hkm
-  -- Step 1-2: finite support.
-  have hSupSub : Function.support c ⊆ ↑candFs :=
-    extractorDivisorCoeffs_support_subset_candidate E stmt msg hkm
-  have hFinSupp : Set.Finite (Function.support c) :=
-    (Finset.finite_toSet candFs).subset hSupSub
-  -- Step 3: principal_divisor_iff.
-  have ⟨_, hGroup⟩ := (principal_divisor_iff E c hFinSupp).mp hPrincipal
-  -- Step 4: extend group-sum from support to candidate Finset.
-  have hFinSupp_sub_candFs : hFinSupp.toFinset ⊆ candFs := by
-    intro P hP
-    rw [Set.Finite.mem_toFinset] at hP
-    exact hSupSub hP
   have hCandSum :
-      ECPoint.weightedSum E candFs (fun P => ECPoint.zsmul E (c P) P) = 0 := by
-    rw [ECPoint.weightedSum_subset_of_zero_outside E hFinSupp_sub_candFs ?_]
-    · exact hGroup
-    · intro P _ hPnotSup
-      rw [Set.Finite.mem_toFinset, Function.mem_support, not_not] at hPnotSup
-      rw [hPnotSup]
-      exact ECPoint.zsmul_zero E P
+      ECPoint.weightedSum E candFs (fun P => ECPoint.zsmul E (c P) P) = 0 :=
+    hWSum
   -- Step 5: expand weightedSum over candidate Finset.
   have hCandExpand :
       ECPoint.weightedSum E candFs (fun P => ECPoint.zsmul E (c P) P) =
@@ -666,20 +654,28 @@ theorem target_eq_weightedSum_of_zero_sum
     rw [hZeroSum, hNegCancel]
   exact (ECPoint.add_left_cancel E hEq).symm
 
-/-- **D4+D5 combined.** Given principality of the extractor's divisor
-    coefficient function (`extractorDivisorCoeffs`), conclude
-    `target = Σ [extractedScalars i] · B_i`. -/
-theorem target_eq_weightedSum_of_principal
+/-- **D4+D5 combined (group-sum form).** Given the group-sum-zero of
+    `extractorDivisorCoeffs` on its candidate Finset, conclude
+    `target = Σ [extractedScalars i] · B_i`.
+
+    Replaces the former `target_eq_weightedSum_of_principal` (which
+    required `IsPrincipal`): the `IsPrincipal` detour is no longer
+    available after `divisor_degree_eq` was deleted (see
+    `docs/divisor-degree-axiom-bug.md`), but the group-sum-zero side
+    survives unconditionally and is all the group-law conclusion needs. -/
+theorem target_eq_weightedSum_of_weightedSum
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
-    (hPrincipal : IsPrincipal E (extractorDivisorCoeffs E stmt msg hkm)) :
+    (hWSum :
+      ECPoint.weightedSum E (extractorDivisorCandidate E stmt msg hkm)
+        (fun P => ECPoint.zsmul E (extractorDivisorCoeffs E stmt msg hkm P) P) = 0) :
     ECPoint.affine stmt.target.1 stmt.target.2 =
       ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
         (fun i => ECPoint.zsmul E (extractedScalars E stmt msg hkm i)
           (ECPoint.affine (extractorBases E stmt msg hkm i).1
                           (extractorBases E stmt msg hkm i).2)) := by
   exact target_eq_weightedSum_of_zero_sum E stmt msg hkm
-    (extractor_zeroSum_of_principal E stmt msg hkm hNoNegP hPrincipal)
+    (extractor_zeroSum_of_weightedSum E stmt msg hkm hNoNegP hWSum)
 
 /-! ## Distinct-base-point enumeration
 
@@ -1576,7 +1572,9 @@ theorem distinctSigma_exists
       ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
         (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
         (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
-        ((∑ P ∈ E.points, β_fun P) = msg.toD.degE) →
+        ((∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE) →
+        (ECPoint.weightedSum E E.points
+          (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) →
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
           polyG E (zerosAt E msg.toD)
@@ -1591,8 +1589,9 @@ theorem distinctSigma_exists
             Fin (1 + baseImageCount E stmt msg hkm)),
       (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) ∧
       (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) ∧
-      ((∑ P ∈ E.points, β_fun P) = msg.toD.degE) ∧
-      IsPrincipal E (dCoeffs E msg.toD β_fun) ∧
+      ((∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE) ∧
+      (ECPoint.weightedSum E E.points
+        (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) ∧
       (∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ k)) ∧
       (∀ k, ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q)
             + distinctM' E stmt msg hkm (σ k) = 0) ∧
@@ -1600,8 +1599,8 @@ theorem distinctSigma_exists
   classical
   -- Step 1: nonzero-D hypothesis for `has_principal_divisor`.
   have hD : ¬ msg.toD.isZero := admSet_implies_toD_nonzero stmt msg hAdm
-  -- Step 2: extract `β_fun` via Silverman III.3.5.
-  obtain ⟨β_fun, hβsup, hβcov, hβsum, hβprincipal⟩ :=
+  -- Step 2: extract `β_fun` via (weakened) Silverman III.3.5.
+  obtain ⟨β_fun, hβsup, hβcov, hβsum, hβgroup⟩ :=
     CoordRingElt.exists_principal_dCoeffs E msg.toD hD
   -- Step 3: build the `Q` / `beta_nat` pair for the distinct-polyG bridge.
   have hQinj : Function.Injective (zerosAt E msg.toD) :=
@@ -1617,10 +1616,10 @@ theorem distinctSigma_exists
                  multAt E β_fun msg.toD k > 0 :=
     multAt_pos E β_fun msg.toD hβcov
   have hβSum : (∑ k : Fin (zerosCard E msg.toD),
-                   multAt E β_fun msg.toD k) = msg.toD.degE :=
-    sum_multAt_eq_degE E β_fun msg.toD hβsup hβsum
+                   multAt E β_fun msg.toD k) ≤ msg.toD.degE :=
+    sum_multAt_le_degE E β_fun msg.toD hβsup hβsum
   -- Step 4: each `multAt k` is strictly less than E.q (upper bound comes
-  -- from `multAt k ≤ Σ multAt = D.degE ≤ d < E.q`).
+  -- from `multAt k ≤ Σ multAt ≤ D.degE ≤ d < E.q`).
   have hBetaLt : ∀ k, multAt E β_fun msg.toD k < E.q := by
     intro k
     have hSingle : multAt E β_fun msg.toD k ≤
@@ -1629,8 +1628,7 @@ theorem distinctSigma_exists
         (f := fun k' => multAt E β_fun msg.toD k') ?_ (Finset.mem_univ k)
       intro k' _
       exact Nat.zero_le _
-    rw [hβSum] at hSingle
-    exact lt_of_le_of_lt (hSingle.trans hDeg) hd
+    exact lt_of_le_of_lt (hSingle.trans (hβSum.trans hDeg)) hd
   -- Step 5: `polyG` vanishes on non-vertical `E × E` in distinct form.
   have hPolyGZero' :
       ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
@@ -1638,9 +1636,9 @@ theorem distinctSigma_exists
         polyG E (zerosAt E msg.toD)
           (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
           (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
-          A₀ A₁ = 0 := hPolyGZero β_fun hβsup hβcov hβsum
+          A₀ A₁ = 0 := hPolyGZero β_fun hβsup hβcov hβsum hβgroup
   -- Step 6: set up T5's quantitative hypothesis.
-  -- `zerosCard E msg.toD ≤ d`: each multiplicity ≥ 1, sum = D.degE ≤ d.
+  -- `zerosCard E msg.toD ≤ d`: each multiplicity ≥ 1, sum ≤ D.degE ≤ d.
   have hd_zero_le_d : zerosCard E msg.toD ≤ d := by
     have hCardLe : zerosCard E msg.toD ≤
         ∑ k : Fin (zerosCard E msg.toD), multAt E β_fun msg.toD k := by
@@ -1649,7 +1647,7 @@ theorem distinctSigma_exists
               simp [Finset.sum_const, Finset.card_univ, Fintype.card_fin]
         _ ≤ ∑ k : Fin (zerosCard E msg.toD), multAt E β_fun msg.toD k :=
               Finset.sum_le_sum (fun k _ => hβPos k)
-    exact hCardLe.trans (hβSum.le.trans hDeg)
+    exact hCardLe.trans (hβSum.trans hDeg)
   -- `baseImageCount ≤ msg.k = stmt.k`.
   have hBICount_le : baseImageCount E stmt msg hkm ≤ stmt.k := by
     have hleK : baseImageCount E stmt msg hkm ≤ msg.k := by
@@ -1701,7 +1699,7 @@ theorem distinctSigma_exists
       (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
       hQuant hQinj hDistinctR_inj hBetaNz hPolyGZero'
   -- Step 9: package the output.
-  exact ⟨β_fun, σ, hβsup, hβcov, hβsum, hβprincipal,
+  exact ⟨β_fun, σ, hβsup, hβcov, hβsum, hβgroup,
          hσ_eq, hσ_betam, hσ_off⟩
 
 /-! ## S5: extractor coefficient function from σ
@@ -1853,17 +1851,17 @@ theorem multAt_at_sigma_zero_pos
   multAt_pos E β_fun D hβcov k₀
 
 /-- **Bound lemma.** For `k ≠ k₀` in `Fin (zerosCard E D)`,
-    `multAt k ≤ D.degE - 1`. Uses `multAt k + multAt k₀ ≤ ∑ multAt = D.degE`
+    `multAt k ≤ D.degE - 1`. Uses `multAt k + multAt k₀ ≤ ∑ multAt ≤ D.degE`
     with `multAt k₀ ≥ 1`. -/
 theorem multAt_le_degE_sub_one_of_ne
     (β_fun : ZMod E.q × ZMod E.q → ℕ) (D : CoordRingElt E.q)
     (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
-    (hβsum : (∑ P ∈ E.points, β_fun P) = D.degE)
+    (hβsum : (∑ P ∈ E.points, β_fun P) ≤ D.degE)
     (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
     {k k₀ : Fin (zerosCard E D)} (hne : k ≠ k₀) :
     multAt E β_fun D k + 1 ≤ D.degE := by
   classical
-  have hSum := sum_multAt_eq_degE E β_fun D hβsup hβsum
+  have hSum := sum_multAt_le_degE E β_fun D hβsup hβsum
   -- Insert: sum over {k, k₀} ≤ sum over univ.
   have hPair : multAt E β_fun D k + multAt E β_fun D k₀ ≤
                ∑ k' : Fin (zerosCard E D), multAt E β_fun D k' := by
@@ -1894,7 +1892,7 @@ theorem extractorCoeffFromSigma_satisfies_D3
     (β_fun : ZMod E.q × ZMod E.q → ℕ)
     (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0)
     (hβcov : ∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0)
-    (hβsum : (∑ P ∈ E.points, β_fun P) = msg.toD.degE)
+    (hβsum : (∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE)
     (σ : Fin (zerosCard E msg.toD) ↪
           Fin (1 + baseImageCount E stmt msg hkm))
     (_hσ_eq : ∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ k))
@@ -1940,26 +1938,26 @@ theorem extractorCoeffFromSigma_satisfies_D3
         -- Need: 0 < d. Use multAt_at_sigma_zero_pos + hβsum + hDeg.
         have hk₀_pos : 1 ≤ multAt E β_fun msg.toD k₀ :=
           multAt_at_sigma_zero_pos E β_fun msg.toD hβcov k₀
-        -- 1 ≤ multAt k₀ ≤ ∑ multAt = D.degE ≤ d.
-        have hSum := sum_multAt_eq_degE E β_fun msg.toD hβsup hβsum
+        -- 1 ≤ multAt k₀ ≤ ∑ multAt ≤ D.degE ≤ d.
+        have hSum := sum_multAt_le_degE E β_fun msg.toD hβsup hβsum
         have hSingle : multAt E β_fun msg.toD k₀ ≤
             ∑ k' : Fin (zerosCard E msg.toD), multAt E β_fun msg.toD k' := by
           refine Finset.single_le_sum
             (f := fun k' => multAt E β_fun msg.toD k') ?_ (Finset.mem_univ k₀)
           intro _ _; exact Nat.zero_le _
-        rw [hSum] at hSingle
+        have : multAt E β_fun msg.toD k₀ ≤ d := (hSingle.trans hSum).trans hDeg
         omega
     · rw [extractorCoeffFromSigma_noncanon E stmt msg hkm β_fun σ i hC]
       -- Same 0 < d argument.
       have hk₀_pos : 1 ≤ multAt E β_fun msg.toD k₀ :=
         multAt_at_sigma_zero_pos E β_fun msg.toD hβcov k₀
-      have hSum := sum_multAt_eq_degE E β_fun msg.toD hβsup hβsum
+      have hSum := sum_multAt_le_degE E β_fun msg.toD hβsup hβsum
       have hSingle : multAt E β_fun msg.toD k₀ ≤
           ∑ k' : Fin (zerosCard E msg.toD), multAt E β_fun msg.toD k' := by
         refine Finset.single_le_sum
           (f := fun k' => multAt E β_fun msg.toD k') ?_ (Finset.mem_univ k₀)
         intro _ _; exact Nat.zero_le _
-      rw [hSum] at hSingle
+      have : multAt E β_fun msg.toD k₀ ≤ d := (hSingle.trans hSum).trans hDeg
       omega
   -- (2) ZMod identity at canonical i.
   · intro i hC
@@ -2085,7 +2083,7 @@ theorem extractorDivisorCoeffs_eq_dCoeffs
     (β_fun : ZMod E.q × ZMod E.q → ℕ)
     (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0)
     (hβcov : ∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0)
-    (hβsum : (∑ P ∈ E.points, β_fun P) = msg.toD.degE)
+    (hβsum : (∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE)
     (σ : Fin (zerosCard E msg.toD) ↪
           Fin (1 + baseImageCount E stmt msg hkm))
     (hσ_eq : ∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ k))
@@ -2115,9 +2113,8 @@ theorem extractorDivisorCoeffs_eq_dCoeffs
       refine Finset.single_le_sum
         (f := fun k' => multAt E β_fun msg.toD k') ?_ (Finset.mem_univ k)
       intro _ _; exact Nat.zero_le _
-    have hSum := sum_multAt_eq_degE E β_fun msg.toD hβsup hβsum
-    rw [hSum] at hSingle
-    exact lt_of_le_of_lt (hSingle.trans hDeg) hd
+    have hSum := sum_multAt_le_degE E β_fun msg.toD hβsup hβsum
+    exact lt_of_le_of_lt ((hSingle.trans hSum).trans hDeg) hd
   have hMult_k₀_one_nat : multAt E β_fun msg.toD k₀ = 1 := by
     have hBM := hσ_betam k₀
     rw [hk₀, distinctM'_zero] at hBM
@@ -2290,9 +2287,15 @@ theorem extractorDivisorCoeffs_eq_dCoeffs
           rfl
 
 /-- **S6 + S4 + S5 combined.** Under the full T4 hypothesis set,
-    the extractor succeeds and its divisor coefficient function
-    is principal. -/
-theorem extractor_succeeds_and_isPrincipal
+    the extractor succeeds and its divisor coefficient function's
+    group-sum-zero surrogate holds on the candidate Finset.
+
+    Previously concluded `IsPrincipal (extractorDivisorCoeffs)`. After
+    `divisor_degree_eq` was invalidated (see
+    `docs/divisor-degree-axiom-bug.md`), we can no longer prove the
+    degree-0 half of `principal_divisor_iff.mpr`; only the group-sum-
+    zero half is needed downstream, so that's what we carry. -/
+theorem extractor_succeeds_and_groupSumZero
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
@@ -2306,7 +2309,9 @@ theorem extractor_succeeds_and_isPrincipal
       ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
         (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
         (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
-        ((∑ P ∈ E.points, β_fun P) = msg.toD.degE) →
+        ((∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE) →
+        (ECPoint.weightedSum E E.points
+          (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) →
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
           polyG E (zerosAt E msg.toD)
@@ -2317,10 +2322,11 @@ theorem extractor_succeeds_and_isPrincipal
       6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) + 1
         ≤ (validPairs E).card) :
     extractorSucceeds E stmt msg d hkm ∧
-    IsPrincipal E (extractorDivisorCoeffs E stmt msg hkm) := by
+    ECPoint.weightedSum E (extractorDivisorCandidate E stmt msg hkm)
+      (fun P => ECPoint.zsmul E (extractorDivisorCoeffs E stmt msg hkm P) P) = 0 := by
   classical
   -- Step 1: apply S4.
-  obtain ⟨β_fun, σ, hβsup, hβcov, hβsum, hdCoeffsPrincipal,
+  obtain ⟨β_fun, σ, hβsup, hβcov, hβsum, hβgroup,
           hσ_eq, hσ_betam, hσ_off⟩ :=
     distinctSigma_exists E stmt msg d hDeg hd hkm hAdm hNoNegP
       hAllZero hPolyGZero hValidPairsLarge
@@ -2338,16 +2344,59 @@ theorem extractor_succeeds_and_isPrincipal
     funext P
     exact extractorDivisorCoeffs_eq_dCoeffs E stmt msg d hDeg hd hkm
       hNoNegP β_fun hβsup hβcov hβsum σ hσ_eq hσ_betam hσ_off P
-  -- Step 4: transfer IsPrincipal.
+  -- Step 4: transfer group-sum-zero from the β-side to the extractor side.
   refine ⟨hSucceeds, ?_⟩
   rw [hEq]
-  exact hdCoeffsPrincipal
+  -- Goal: weightedSum over extractorDivisorCandidate of zsmul (dCoeffs ...) = 0.
+  -- β_fun's group sum on E.points is 0 (hβgroup). Combined with
+  -- `weightedSum_dCoeffs_candidate_eq`, this gives the weightedSum on
+  -- `dCoeffsCandidate` is 0. We need to transfer this to
+  -- `extractorDivisorCandidate` — it suffices to show the zsmul`-
+  -- contribution agrees on both candidate Finsets (via `hEq` for the
+  -- coefficient function and, once we unfold `dCoeffs`, the candidate
+  -- shapes differ but both strictly contain the joint support, so we
+  -- can reduce both weightedSums to the underlying support and match).
+  -- Concretely: produce the weightedSum-zero on a common enlargement
+  -- and use `weightedSum_subset_of_zero_outside`.
+  set c := dCoeffs E msg.toD β_fun with hc_def
+  set extCand := extractorDivisorCandidate E stmt msg hkm with hExtCand_def
+  have hβsup_P : ∀ P, β_fun P ≠ 0 → P ∈ E.points :=
+    fun P hP => (hβsup P hP).1
+  -- Finite support of c.
+  have hFinSupp : Set.Finite (Function.support c) :=
+    dCoeffs_finiteSupport E msg.toD β_fun hβsup_P
+  -- Group-sum-zero of c on hFinSupp.toFinset.
+  have hGSup :
+      ECPoint.weightedSum E hFinSupp.toFinset
+        (fun P => ECPoint.zsmul E (c P) P) = 0 :=
+    dCoeffs_groupSum_zero E msg.toD β_fun hβsup_P hβgroup hFinSupp
+  -- Function.support c ⊆ ↑extCand (via hEq and the extractor candidate lemma).
+  have hSupSub : Function.support c ⊆ ↑extCand := by
+    intro P hP
+    have hP' : extractorDivisorCoeffs E stmt msg hkm P ≠ 0 := by
+      rw [hEq]; exact hP
+    exact extractorDivisorCoeffs_support_subset_candidate E stmt msg hkm hP'
+  have hFinSupp_sub : hFinSupp.toFinset ⊆ extCand := by
+    intro P hP
+    rw [Set.Finite.mem_toFinset] at hP
+    exact hSupSub hP
+  -- Pad from support to extCand.
+  have hPad :
+      ECPoint.weightedSum E extCand
+          (fun P => ECPoint.zsmul E (c P) P)
+        = ECPoint.weightedSum E hFinSupp.toFinset
+            (fun P => ECPoint.zsmul E (c P) P) :=
+    ECPoint.weightedSum_subset_of_zero_outside E hFinSupp_sub
+      (fun P _ hPnotSup => by
+        rw [Set.Finite.mem_toFinset, Function.mem_support, not_not] at hPnotSup
+        rw [hPnotSup]; exact ECPoint.zsmul_zero E P)
+  rw [hPad]; exact hGSup
 
 /-! ## T4 theorem: the original bridge statement as a theorem -/
 
 /-- **T4 bridge theorem.** Derived from the S4+S5+S6 assembly
-    (`extractor_succeeds_and_isPrincipal`) combined with the
-    D4+D5 infrastructure (`target_eq_weightedSum_of_principal`).
+    (`extractor_succeeds_and_groupSumZero`) combined with the D4+D5
+    infrastructure (`target_eq_weightedSum_of_weightedSum`).
 
     Conclusion: `extractorSucceeds` and
     `target = Σ [extractedScalars i] · B_i`.
@@ -2368,7 +2417,9 @@ theorem extractorSucceeds_of_logDerivCheck_identically_zero_general
       ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
         (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
         (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
-        ((∑ P ∈ E.points, β_fun P) = msg.toD.degE) →
+        ((∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE) →
+        (ECPoint.weightedSum E E.points
+          (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) →
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
           polyG E (zerosAt E msg.toD)
@@ -2385,11 +2436,11 @@ theorem extractorSucceeds_of_logDerivCheck_identically_zero_general
                    (extractedScalars E stmt msg hkm i)
                    (ECPoint.affine (extractorBases E stmt msg hkm i).1
                                    (extractorBases E stmt msg hkm i).2)) := by
-  obtain ⟨hSucc, hPrincipal⟩ :=
-    extractor_succeeds_and_isPrincipal E stmt msg d hDeg hd hkm hAdm hNoNegP
+  obtain ⟨hSucc, hWSum⟩ :=
+    extractor_succeeds_and_groupSumZero E stmt msg d hDeg hd hkm hAdm hNoNegP
       hAllZero hPolyGZero hValidPairsLarge
   exact ⟨hSucc,
-    target_eq_weightedSum_of_principal E stmt msg hkm hNoNegP hPrincipal⟩
+    target_eq_weightedSum_of_weightedSum E stmt msg hkm hNoNegP hWSum⟩
 
 /-! ## Extractor validity (both cases) -/
 
@@ -2410,7 +2461,9 @@ theorem extracted_scalars_valid
       ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
         (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
         (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
-        ((∑ P ∈ E.points, β_fun P) = msg.toD.degE) →
+        ((∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE) →
+        (ECPoint.weightedSum E E.points
+          (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) →
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
           polyG E (zerosAt E msg.toD)
@@ -2459,7 +2512,9 @@ theorem ma_extractable
       ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
         (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
         (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
-        ((∑ P ∈ E.points, β_fun P) = msg.toD.degE) →
+        ((∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE) →
+        (ECPoint.weightedSum E E.points
+          (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) →
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
           polyG E (zerosAt E msg.toD)
@@ -2594,7 +2649,9 @@ theorem ip_knowledge_sound
       ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
         (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg1.toD.eval P.1 P.2 = 0) →
         (∀ P ∈ E.points, msg1.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
-        ((∑ P ∈ E.points, β_fun P) = msg1.toD.degE) →
+        ((∑ P ∈ E.points, β_fun P) ≤ msg1.toD.degE) →
+        (ECPoint.weightedSum E E.points
+          (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) →
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
           polyG E (zerosAt E msg1.toD)

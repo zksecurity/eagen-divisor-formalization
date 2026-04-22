@@ -24,7 +24,9 @@
     * `normZ E λ D` — the explicit product polynomial in z.
     * `normZ_ne_zero` — when D is nonzero (¬(a=0 ∧ b=0)), so is normZ
       (product of monics times nonzero constant).
-    * `normZ_natDegree_eq` — the degree equals `∑_P β(P) = D.degE`.
+    * `normZ_natDegree_le` — the degree is bounded by `D.degE`
+      (replacement for the former `normZ_natDegree_eq`, which relied on
+      the now-deleted `betaConstructive_sum_eq_degE`).
     * `normZ_eval` — evaluation at an arbitrary μ is
       `lc · ∏_Q (μ − z(Q))^{β(Q)}`.
     * `normZ_eval_at_zLambda_of_mem` — vanishing at `z(Q_k)` for any
@@ -123,8 +125,8 @@ theorem normZ_ne_zero (lam : ZMod E.q)
 
 /-! ## natDegree computation
 
-The natDegree of `normZ` is the sum of the multiplicities, which under
-the `divisor_degree_eq` axiom equals `D.degE`. -/
+The natDegree of `normZ` is the sum of the multiplicities, which is
+bounded above by `D.degE` via `betaConstructive_sum_le_degE`. -/
 
 /-- Each monic factor `(X − C α)^m` has natDegree `m`. -/
 theorem X_sub_C_pow_natDegree (α : ZMod E.q) (m : ℕ) :
@@ -167,33 +169,35 @@ theorem normZ_prod_natDegree (lam : ZMod E.q) (D : CoordRingElt E.q) :
     rw [Polynomial.natDegree_mul hFactorMonic.ne_zero hMonic.ne_zero]
     rw [X_sub_C_pow_natDegree, ih]
 
-/-- **natDegree identity (via `divisor_degree_eq`).** `normZ E λ D` has
-    natDegree equal to `D.degE` when `D` is nonzero. Relies on
-    `betaConstructive_sum_eq_degE` (Silverman III 3.4, already used as
-    an axiom in `BetaConstructive.lean`). -/
-theorem normZ_natDegree_eq (lam : ZMod E.q)
+/-- **natDegree bound (via `betaConstructive_sum_le_degE`).** `normZ E λ D`
+    has natDegree at most `D.degE` when `D` is nonzero. Replaces the
+    former `normZ_natDegree_eq`, which required the now-deleted
+    `betaConstructive_sum_eq_degE` (invalidated by Aristotle's
+    counterexample). -/
+theorem normZ_natDegree_le (lam : ZMod E.q)
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
-    (normZ E lam D).natDegree = D.degE := by
+    (normZ E lam D).natDegree ≤ D.degE := by
   classical
   unfold normZ
   rw [Polynomial.natDegree_mul, Polynomial.natDegree_C, zero_add]
   · rw [normZ_prod_natDegree]
-    -- ∑ Q ∈ zerosFinset, β Q = D.degE using betaConstructive_sum_eq_degE
-    have hSum := betaConstructive_sum_eq_degE E D hD
-    -- hSum: ∑ P ∈ E.points, β P = D.degE
-    -- LHS of goal sums over zerosFinset; outside zerosFinset β = 0.
-    rw [← hSum]
-    -- Goal: ∑ Q ∈ zerosFinset, β Q = ∑ P ∈ E.points, β P
-    -- Since zerosFinset = E.points.filter(D.eval = 0), use sum_subset with
-    -- filter_subset and β P = 0 off zerosFinset.
+    -- ∑ Q ∈ zerosFinset, β Q ≤ ∑ P ∈ E.points, β P ≤ D.degE.
+    have hSumLe : (∑ P ∈ E.points, betaConstructive E D P) ≤ D.degE :=
+      betaConstructive_sum_le_degE E D
+    have hZerosSubset :
+        (∑ Q ∈ E.points.filter (fun P => D.eval P.1 P.2 = 0),
+            betaConstructive E D Q)
+          = ∑ P ∈ E.points, betaConstructive E D P := by
+      apply Finset.sum_subset (Finset.filter_subset _ _)
+      intro P hPE hPNotZero
+      apply betaConstructive_of_not_zero
+      intro ⟨_, hPzero⟩
+      apply hPNotZero
+      exact Finset.mem_filter.mpr ⟨hPE, hPzero⟩
     show (∑ Q ∈ E.points.filter (fun P => D.eval P.1 P.2 = 0),
-              betaConstructive E D Q) = _
-    apply Finset.sum_subset (Finset.filter_subset _ _)
-    intro P hPE hPNotZero
-    apply betaConstructive_of_not_zero
-    intro ⟨_, hPzero⟩
-    apply hPNotZero
-    exact Finset.mem_filter.mpr ⟨hPE, hPzero⟩
+              betaConstructive E D Q) ≤ _
+    rw [hZerosSubset]
+    exact hSumLe
   · rw [Ne, C_eq_zero]
     exact normPoly_leadingCoeff_ne_zero E D hD
   · exact normZ_prod_ne_zero E lam D

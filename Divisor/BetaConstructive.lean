@@ -459,14 +459,13 @@ theorem betaConstructive_sum_le_degE
         sum_rootMultiplicity_le_natDegree E (normPoly E D)
     _ ≤ D.degE := normPoly_natDegree_le E D
 
-/-! ## Narrow Abel-theorem axioms
+/-! ## Narrow Abel-theorem axiom
 
-    The remaining two properties of `betaConstructive` needed downstream —
+    The remaining property of `betaConstructive` needed downstream —
     the weighted group-sum-zero identity (the "Abel's theorem on E"
-    content), and the equality `∑ β = D.degE` (the pole-order-at-∞
-    identity) — depend on function-field / Weierstrass-preparation
-    machinery beyond what we mechanize here. We record them as narrow
-    axioms covering exactly the classical facts they invoke, with no
+    content) — depends on function-field / Weierstrass-preparation
+    machinery beyond what we mechanize here. We record it as a narrow
+    axiom covering exactly the classical fact it invokes, with no
     bundling of support / coverage content (those are derived above).
 
     Classical citation: **Silverman, "The Arithmetic of Elliptic
@@ -479,10 +478,15 @@ theorem betaConstructive_sum_le_degE
     Specialized to `f = D = a(x) - b(x)·y` viewed as a nonzero element
     of `F_q[E] ⊂ F_q(E)`, the affine part of `div(D)` is recorded by
     the multiplicity function `betaConstructive D`, and the pole at `∞`
-    has order `D.degE`. Item (i) becomes
-    `∑ β(P) = D.degE` (the affine sum equals the pole order at `∞`),
-    and item (ii) becomes
+    has order `D.degE`. Item (ii) becomes
     `∑ β(P) · (affine P) = O` (the `∞` term contributes `0 · ∞ = 0`).
+
+    The pole-order-at-∞ identity `∑ β(P) = D.degE` (which would descend
+    from item (i)) is **NOT** recorded here: it fails when `normPoly`
+    does not split over `F_q` (see
+    `docs/divisor-degree-axiom-bug.md` for Aristotle's counterexample
+    `D = x² + 1` over `F_7`, `E : y² = x³ + 1`). Only the unconditional
+    bound `betaConstructive_sum_le_degE` is used downstream.
 -/
 
 /-- **Abel's theorem on E for `D`'s divisor** (Silverman III Prop 3.4,
@@ -498,23 +502,6 @@ axiom CoordRingElt.divisor_group_sum_zero
       (fun P => ECPoint.nsmul E (betaConstructive E D P)
                     (ECPoint.affine P.1 P.2)) = 0
 
-/-- **Pole-order-at-∞ identity** (Silverman III Prop 3.4, degree part).
-
-    The total affine multiplicity of the divisor of a nonzero
-    `D = a(x) - b(x)·y ∈ F_q[E]` equals `D.degE`, which is the pole
-    order of `D` at the point at infinity.
-
-    This strengthens `betaConstructive_sum_le_degE` from `≤` to `=`.
-    The gap is due to possible failure of `normPoly` to split over
-    `F_q` and edge-case inflation of `D.degE` in the
-    `D.b = 0 ∧ D.a.natDegree < 2` cases — neither of which is tracked
-    by a `rootMultiplicity`-based construction. The classical identity
-    holds over the algebraic closure and descends via the Galois
-    structure of the principal-divisor map. -/
-axiom CoordRingElt.divisor_degree_eq
-    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
-    (∑ P ∈ E.points, betaConstructive E D P) = D.degE
-
 /-! ## Derived theorem: `betaConstructive_group_sum_zero` -/
 
 /-- Direct restatement of the group-sum axiom as a convenience theorem
@@ -526,13 +513,6 @@ theorem betaConstructive_group_sum_zero
       (fun P => ECPoint.nsmul E (betaConstructive E D P)
                     (ECPoint.affine P.1 P.2)) = 0 :=
   CoordRingElt.divisor_group_sum_zero E D hD
-
-/-- Direct restatement of the degree axiom: the affine-multiplicity sum
-    of `betaConstructive` equals `D.degE`. -/
-theorem betaConstructive_sum_eq_degE
-    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
-    (∑ P ∈ E.points, betaConstructive E D P) = D.degE :=
-  CoordRingElt.divisor_degree_eq E D hD
 
 /-! ## Q3.1: split case — `betaConstructive` ↔ `rootMultiplicity` bridge
 
@@ -582,88 +562,12 @@ theorem sum_rootMultiplicity_eq_natDegree_of_splits
   rw [sum_rootMultiplicity_eq_card_roots]
   exact hSplit
 
-/-- **Q3.1 main bridge (total sum).** When `normPoly E D` splits over `F_q`
-and `D` is nontrivial (`¬ (D.a = 0 ∧ D.b = 0)`), the total sum of
-`betaConstructive` over `E`-points equals the total sum of
-`rootMultiplicity` over `F_q`:
-
-  `(∑ P ∈ E.points, β P) = ∑ α, rootMult α N(D)`.
-
-This is the identity Q3.2 consumes. The proof uses the inequality chain
-
-    D.degE = ∑ β ≤ ∑ α, rootMult α ≤ natDegree N(D) ≤ D.degE
-
-and the split hypothesis to collapse the middle inequality to `natDegree`
-via `sum_rootMultiplicity_eq_natDegree_of_splits`. -/
-theorem sum_betaConstructive_eq_sum_rootMultiplicity_of_splits
-    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplit : normPoly_splits_over_Fq E D) :
-    (∑ P ∈ E.points, betaConstructive E D P)
-      = ∑ α : ZMod E.q, rootMultiplicity α (normPoly E D) := by
-  classical
-  -- Two chains meeting: ∑β = D.degE, and ∑rootMult = natDegree ≤ D.degE.
-  have hBeta : (∑ P ∈ E.points, betaConstructive E D P) = D.degE :=
-    betaConstructive_sum_eq_degE E D hD
-  have hRoots : (∑ α : ZMod E.q, rootMultiplicity α (normPoly E D))
-                  = (normPoly E D).natDegree :=
-    sum_rootMultiplicity_eq_natDegree_of_splits E D hSplit
-  have hDeg : (normPoly E D).natDegree ≤ D.degE := normPoly_natDegree_le E D
-  -- The per-x₀ surrogate chain ∑ β ≤ ∑ rootMult.
-  have hLe : (∑ P ∈ E.points, betaConstructive E D P)
-              ≤ ∑ α : ZMod E.q, rootMultiplicity α (normPoly E D) := by
-    rw [sum_E_points_eq_sum_fiberwise E]
-    exact Finset.sum_le_sum (fun x₀ _ => sum_betaConstructive_fst_eq_le E D x₀)
-  -- Combine: D.degE ≤ ∑ rootMult = natDegree ≤ D.degE ⇒ equalities.
-  have hGe : (∑ α : ZMod E.q, rootMultiplicity α (normPoly E D))
-              ≤ (∑ P ∈ E.points, betaConstructive E D P) := by
-    rw [hBeta, hRoots]; exact hDeg
-  exact le_antisymm hLe hGe
-
-/-- **Corollary (split case, natDegree identity).** Under the split
-hypothesis, `natDegree (normPoly E D) = D.degE`. This follows from
-`natDegree ≤ D.degE` and the equality chain above forcing equality. -/
-theorem normPoly_natDegree_eq_degE_of_splits
-    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplit : normPoly_splits_over_Fq E D) :
-    (normPoly E D).natDegree = D.degE := by
-  have hSum := sum_betaConstructive_eq_sum_rootMultiplicity_of_splits E D hD hSplit
-  have hBeta : (∑ P ∈ E.points, betaConstructive E D P) = D.degE :=
-    betaConstructive_sum_eq_degE E D hD
-  have hRoots : (∑ α : ZMod E.q, rootMultiplicity α (normPoly E D))
-                  = (normPoly E D).natDegree :=
-    sum_rootMultiplicity_eq_natDegree_of_splits E D hSplit
-  -- From hSum: D.degE = ∑ β = ∑ rootMult = natDegree.
-  rw [← hRoots, ← hSum, hBeta]
-
-/-- **Corollary (per-`x₀` equality).** In the split case, the per-`x₀`
-inequality `sum_betaConstructive_fst_eq_le` tightens to an equality:
-for every `x₀ : F_q`,
-
-  `∑ P ∈ E.points, P.1 = x₀, β P = rootMultiplicity x₀ (normPoly E D)`.
-
-This follows from the Mathlib equality-forcing lemma
-`Finset.sum_eq_sum_iff_of_le`: equal totals + pointwise `≤` ⇒ pointwise `=`. -/
-theorem sum_betaConstructive_fst_eq_of_splits
-    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplit : normPoly_splits_over_Fq E D)
-    (x₀ : ZMod E.q) :
-    (∑ P ∈ E.points.filter (fun P => P.1 = x₀), betaConstructive E D P)
-      = rootMultiplicity x₀ (normPoly E D) := by
-  classical
-  -- Sum over x₀ : F_q of LHS equals the total sum of β (fiberwise lemma).
-  -- Sum over x₀ : F_q of RHS is total rootMultiplicity sum.
-  -- The per-x₀ bound `sum_betaConstructive_fst_eq_le` is `≤` pointwise.
-  -- The `sum_eq_sum_iff_of_le` flip converts equal totals + pointwise `≤`
-  -- to pointwise equality.
-  have hTotal := sum_betaConstructive_eq_sum_rootMultiplicity_of_splits E D hD hSplit
-  -- Rewrite the LHS of hTotal via fiberwise.
-  rw [sum_E_points_eq_sum_fiberwise E] at hTotal
-  -- Now hTotal is: ∑ x₀, (∑ P ∈ filter, β P) = ∑ x₀, rootMult x₀ N(D).
-  -- Apply Finset.sum_eq_sum_iff_of_le with the per-x₀ bound.
-  have hPtwise : ∀ x₀ ∈ (Finset.univ : Finset (ZMod E.q)),
-                   (∑ P ∈ E.points.filter (fun P => P.1 = x₀), betaConstructive E D P)
-                     ≤ rootMultiplicity x₀ (normPoly E D) :=
-    fun x₀ _ => sum_betaConstructive_fst_eq_le E D x₀
-  exact (Finset.sum_eq_sum_iff_of_le hPtwise).mp hTotal x₀ (Finset.mem_univ x₀)
+/-! The former `sum_betaConstructive_eq_sum_rootMultiplicity_of_splits`,
+`normPoly_natDegree_eq_degE_of_splits`, and `sum_betaConstructive_fst_eq_of_splits`
+lemmas were removed along with `betaConstructive_sum_eq_degE`. Their
+proofs relied on the equality `∑ β = D.degE`, which is unavailable after
+the Aristotle counterexample removed the `divisor_degree_eq` axiom. The
+split-case equalities remain true classically but are not required by
+any downstream consumer of `Divisor.ma_extractable`. -/
 
 end Divisor

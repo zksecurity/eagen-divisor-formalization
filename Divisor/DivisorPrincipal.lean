@@ -186,89 +186,73 @@ theorem weightedSum_dCoeffs_candidate_eq (D : CoordRingElt E.q)
   rcases P with ⟨x, y⟩
   rw [dCoeffs_affine, ECPoint.zsmul_natCast]
 
-/-! ## `dCoeffs_isPrincipal`
+/-! ## Group-sum surrogate for `dCoeffs`
 
-    Given `β` satisfying the conditions of `has_principal_divisor`,
-    `dCoeffs D β` is principal on `E`. This is the conversion step
-    from the axiom's multiplicity-level output to the `IsPrincipal`
-    predicate consumed by the D4 infrastructure. -/
+    After the `divisor_degree_eq` axiom was invalidated by Aristotle's
+    counterexample (`docs/divisor-degree-axiom-bug.md`), we cannot
+    produce `IsPrincipal (dCoeffs E D β)` from `has_principal_divisor`
+    alone: under the weakened `∑ β ≤ D.degE`, the degree-sum of
+    `dCoeffs` may be strictly negative, which violates the degree-0
+    side of `principal_divisor_iff`. The downstream consumer
+    (`ExtractorBridge.target_eq_weightedSum_of_principal`) only
+    extracts the group-sum-zero part of `IsPrincipal`, so we expose
+    that directly here and route around the `IsPrincipal` detour. -/
 
-/-- **Principal divisor of `D` in coefficient form.** Given `β` from
-    `has_principal_divisor`, the coefficient function `dCoeffs D β`
-    (with `-D.degE` at `∞` and `β(P)` at affine `P`) is principal. -/
-theorem dCoeffs_isPrincipal (D : CoordRingElt E.q)
+/-- **Group-sum-zero of `dCoeffs`.** Given `β` satisfying the
+    support condition and the Abel-theorem group-sum-zero property,
+    the coefficient function `dCoeffs E D β` has vanishing group sum
+    on its (finite) support. This is the half of `IsPrincipal` that
+    downstream actually needs. -/
+theorem dCoeffs_groupSum_zero (D : CoordRingElt E.q)
     (β : ZMod E.q × ZMod E.q → ℕ)
     (hβsup : ∀ P, β P ≠ 0 → P ∈ E.points)
-    (hβsum : (∑ P ∈ E.points, β P) = D.degE)
     (hβgroup : ECPoint.weightedSum E E.points
-        (fun P => ECPoint.nsmul E (β P) (ECPoint.affine P.1 P.2)) = 0) :
-    IsPrincipal E (dCoeffs E D β) := by
+        (fun P => ECPoint.nsmul E (β P) (ECPoint.affine P.1 P.2)) = 0)
+    (hFinSupp : Set.Finite (Function.support (dCoeffs E D β))) :
+    ECPoint.weightedSum E hFinSupp.toFinset
+        (fun P => ECPoint.zsmul E (dCoeffs E D β P) P) = 0 := by
   classical
   set c := dCoeffs E D β with hc_def
-  have hFinSupp : Set.Finite (Function.support c) :=
-    dCoeffs_finiteSupport E D β hβsup
-  apply (principal_divisor_iff E c hFinSupp).mpr
-  constructor
-  -- Degree sum = 0.
-  · -- Σ_{P ∈ hFinSupp.toFinset} c P = Σ_{P ∈ candidate} c P.
-    have hSubFS : hFinSupp.toFinset ⊆ dCoeffsCandidate E := by
-      intro P hP
-      rw [Set.Finite.mem_toFinset] at hP
-      exact dCoeffs_support_subset_candidate E D β hβsup hP
-    have hSumFS_eq_cand :
-        ∑ P ∈ hFinSupp.toFinset, c P
-          = ∑ P ∈ dCoeffsCandidate E, c P := by
-      rw [← Finset.sum_subset hSubFS]
-      intro P _ hPnotSup
-      rw [Set.Finite.mem_toFinset, Function.mem_support, not_not] at hPnotSup
-      exact hPnotSup
-    rw [hSumFS_eq_cand, sum_dCoeffs_candidate_eq E D β]
-    -- Σ (β P : ℤ) = ((Σ β P) : ℤ) = D.degE (by hβsum).
-    rw [show ∑ P ∈ E.points, (β P : ℤ)
-          = ((∑ P ∈ E.points, β P : ℕ) : ℤ) from by push_cast; rfl,
-        hβsum]
-    ring
-  -- Group sum = 0.
-  · have hSubFS : hFinSupp.toFinset ⊆ dCoeffsCandidate E := by
-      intro P hP
-      rw [Set.Finite.mem_toFinset] at hP
-      exact dCoeffs_support_subset_candidate E D β hβsup hP
-    have hCandSum :
-        ECPoint.weightedSum E (dCoeffsCandidate E)
-            (fun P => ECPoint.zsmul E (c P) P) = 0 := by
-      rw [weightedSum_dCoeffs_candidate_eq E D β]
-      exact hβgroup
-    -- The weightedSum on hFinSupp equals the weightedSum on candidate.
-    have h_pad :
-        ECPoint.weightedSum E (dCoeffsCandidate E)
-            (fun P => ECPoint.zsmul E (c P) P)
-          = ECPoint.weightedSum E hFinSupp.toFinset
-              (fun P => ECPoint.zsmul E (c P) P) :=
-      ECPoint.weightedSum_subset_of_zero_outside E hSubFS
-        (fun P _ hPnotSup => by
-          rw [Set.Finite.mem_toFinset, Function.mem_support, not_not] at hPnotSup
-          rw [hPnotSup]; exact ECPoint.zsmul_zero E P)
-    rw [← h_pad]
-    exact hCandSum
+  have hSubFS : hFinSupp.toFinset ⊆ dCoeffsCandidate E := by
+    intro P hP
+    rw [Set.Finite.mem_toFinset] at hP
+    exact dCoeffs_support_subset_candidate E D β hβsup hP
+  have hCandSum :
+      ECPoint.weightedSum E (dCoeffsCandidate E)
+          (fun P => ECPoint.zsmul E (c P) P) = 0 := by
+    rw [weightedSum_dCoeffs_candidate_eq E D β]
+    exact hβgroup
+  have h_pad :
+      ECPoint.weightedSum E (dCoeffsCandidate E)
+          (fun P => ECPoint.zsmul E (c P) P)
+        = ECPoint.weightedSum E hFinSupp.toFinset
+            (fun P => ECPoint.zsmul E (c P) P) :=
+    ECPoint.weightedSum_subset_of_zero_outside E hSubFS
+      (fun P _ hPnotSup => by
+        rw [Set.Finite.mem_toFinset, Function.mem_support, not_not] at hPnotSup
+        rw [hPnotSup]; exact ECPoint.zsmul_zero E P)
+  rw [← h_pad]
+  exact hCandSum
 
 /-! ## Convenience: `has_principal_divisor`-packaged existence -/
 
 /-- **Packaged existence.** A nonzero `D` has a multiplicity function
-    `β` whose `dCoeffs`-encoding is principal. Directly combines
-    `has_principal_divisor` with `dCoeffs_isPrincipal`. -/
+    `β` supported on its affine `E`-zeros, with
+    `∑ β ≤ D.degE`, the group-sum-zero property, and (as a derived
+    conclusion) the finite-support / group-sum-zero surrogate for
+    `dCoeffs`. Previously claimed `IsPrincipal (dCoeffs E D β)`;
+    weakened after `divisor_degree_eq` was removed (see the file
+    header for rationale). -/
 theorem CoordRingElt.exists_principal_dCoeffs
     (D : CoordRingElt E.q) (hD : ¬ D.isZero) :
     ∃ (β : ZMod E.q × ZMod E.q → ℕ),
       (∀ P, β P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0) ∧
       (∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β P ≠ 0) ∧
-      (∑ P ∈ E.points, β P) = D.degE ∧
-      IsPrincipal E (dCoeffs E D β) := by
+      (∑ P ∈ E.points, β P) ≤ D.degE ∧
+      ECPoint.weightedSum E E.points
+        (fun P => ECPoint.nsmul E (β P) (ECPoint.affine P.1 P.2)) = 0 := by
   have hD' : ¬ (D.a = 0 ∧ D.b = 0) := hD
-  obtain ⟨β, hβsup, hβzeros, hβsum, hβgroup⟩ :=
-    CoordRingElt.has_principal_divisor E D hD'
-  refine ⟨β, hβsup, hβzeros, hβsum, ?_⟩
-  exact dCoeffs_isPrincipal E D β
-    (fun P hP => (hβsup P hP).1) hβsum hβgroup
+  exact CoordRingElt.has_principal_divisor E D hD'
 
 /-! ## Fin-enumeration of `D`'s affine zeros on `E`
 
@@ -392,12 +376,12 @@ theorem sum_multAt_eq_sum_βfun
   exact hEvalNZ (hβsup P hβnz).2
 
 /-- Under the `has_principal_divisor`'s support condition and total-degree
-    condition, `∑ multAt = D.degE`. -/
-theorem sum_multAt_eq_degE
+    bound, `∑ multAt ≤ D.degE`. -/
+theorem sum_multAt_le_degE
     (β_fun : ZMod E.q × ZMod E.q → ℕ) (D : CoordRingElt E.q)
     (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
-    (hβsum : (∑ P ∈ E.points, β_fun P) = D.degE) :
-    (∑ k : Fin (zerosCard E D), multAt E β_fun D k) = D.degE := by
-  rw [sum_multAt_eq_sum_βfun E β_fun D hβsup, hβsum]
+    (hβsum : (∑ P ∈ E.points, β_fun P) ≤ D.degE) :
+    (∑ k : Fin (zerosCard E D), multAt E β_fun D k) ≤ D.degE := by
+  rw [sum_multAt_eq_sum_βfun E β_fun D hβsup]; exact hβsum
 
 end Divisor
