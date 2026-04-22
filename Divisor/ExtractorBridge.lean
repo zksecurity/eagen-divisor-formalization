@@ -1038,8 +1038,9 @@ theorem distinctM'_tail_group_invariant
     (iv) the density argument transferring vanishing from `defined`
     pairs to all non-vertical pairs on `E × E`.
 
-    Citation: Silverman Ch II §2 (local uniformizers, order of vanishing)
-    + Ch III §3 (principal divisors). -/
+    Citation: Silverman AEC Ch II §2 (local uniformizers, order of
+    vanishing, p. 19-26) + Ch III §3 (elliptic curves, principal
+    divisors, Cor 3.5 on p. 63). -/
 
 /-- **Phase 4 replacement theorem** for the old narrow axiom
     `polyG_zero_of_logDerivCheck_identically_zero`. The former
@@ -2491,46 +2492,77 @@ theorem extracted_scalars_valid
     The `hPolyGZero` hypothesis threaded through the extractor chain
     asserts that the denominator-cleared polynomial `polyG` vanishes
     on every non-vertical pair in `E × E`. Classically this is the
-    composite of two function-field / algebraic-geometry facts:
+    composite of two facts:
 
-    1. **Lemma 6 (function-field trace-of-log-derivative identity).**
-       For `D ∈ F_q[E]^×` and the degree-3 extension
+    1. **Function-field trace-of-log-derivative identity.**
+       For `D ∈ F_q[E]^×` and the degree-3 separable extension
        `F_q(E)/F_q(z)` with `z = y − λ x`, the chord-sum of scalar
        logarithmic-derivative terms at the three chord-fiber points
-       equals the negative sum of residues `−Σ_Q β(Q)/L_Q(Q)`:
+       equals the logarithmic derivative of the function-field norm:
 
        ```
-       Σ_i (dD/dz)(A_i)/D(A_i) = (N D)'/ (N D)
+       Σ_i (dD/dz)(A_i) / D(A_i)  =  (d/dz) N(D) / N(D)
        ```
 
-       where `N = N_{F_q(E)/F_q(z)}` is the function-field norm and
-       the residue-sum form follows from the partial-fraction
-       expansion of `(N D)' / (N D)` (Silverman III Prop 3.4
-       applied to the chord cubic `x³ − λ² x² + (A − 2λz) x + (B − z²)`).
+       where `N = N_{F_q(E)/F_q(z)}`. This is the general identity
+       `Tr_{L/K}(dg/g) = d(N_{L/K} g) / N_{L/K} g` specialised to the
+       degree-3 function-field extension cut out by the chord-cubic
+       `x³ − λ² x² + (A − 2 λ z) x + (B − z²)` (Vieta: the three chord
+       intersection `x`-coordinates are the roots). Combined with the
+       factorisation `N(D)(z) = lc(D)^3 · ∏_Q (z − z(Q))^{β(Q)}` as a
+       polynomial identity in `F_q[z]` — valid under the splitting /
+       accounting hypotheses on `normPoly E D` (no "phantom" roots at
+       non-rational `x`-coordinates) — and the chord-intercept partial-
+       fraction expansion `(normZ)'(μ)/normZ(μ) = -Σ_Q β(Q)/L_Q(Q)`
+       (already mechanised as `normZ_logDeriv_at_chord_intercept` in
+       `Divisor/NormZDecomp.lean`), one gets the residue-sum form
+       `Σ_i logDerivTerm(A_i) = -Σ_Q β(Q)/L_Q(Q)` which is the scalar
+       identity `chord_sum_eq_residue_sum` in
+       `Divisor/ChordLogDerivProof.lean`.
 
     2. **Density extension.** Vanishing of `polyG` on the "defined"
        subset of non-vertical pairs (where slope denominators are
        nonzero) extends to the full non-vertical set via polynomial
-       degree counting on `polyGPoly` against `card_zeros_on_E_le`
-       from `Divisor/CubicIntersection.lean`.
+       degree counting on `polyGPoly` against `card_zeros_on_E_le`.
+       Mechanised as `polyG_zero_on_nonvertical_of_defined` in
+       `Divisor/PolyGDensity.lean` (modulo a concrete density bound).
 
     Citations:
-      * Silverman, *The Arithmetic of Elliptic Curves*, III Prop 3.4
-        (divisor of a function, pole at ∞), III Cor 3.5 (principal
-        divisors).
-      * Stichtenoth, *Algebraic Function Fields and Codes*,
-        §III.4 (norm and conorm in function-field extensions). -/
+      * Silverman, *The Arithmetic of Elliptic Curves*
+        (AEC, GTM 106, 2009), III Cor 3.5 (Abel's theorem: principal-
+        divisor characterisation on E); II §3 (divisors of rational
+        functions); II §4 (differentials on a curve).
+      * Silverman, *Advanced Topics in the Arithmetic of Elliptic
+        Curves* (ATAEC, GTM 151, 1999), III §1 (elliptic curves over
+        function fields — establishes `F_q(E)/F_q(C)` as a finite
+        separable function-field extension).
+      * Stichtenoth, *Algebraic Function Fields and Codes*
+        (GTM 254, 2nd ed., 2009), §III.1-2 (norm `N_{F/E}` in a finite
+        separable extension of algebraic function fields;
+        multiplicativity and divisor-of-norm formula), §III.5
+        (differentials in function-field extensions).
+      * Lang, *Algebra* (GTM 211, 3rd ed., 2002), §VI.5 (norm and
+        trace of a finite field extension, multiplicativity, identity
+        `Tr(dg/g) = d(Ng)/(Ng)` via the characteristic-polynomial
+        formula). -/
 
-/-- **Axiom (Silverman III Prop 3.4 + density extension).**
-    For any `MAProverMsg` and any Silverman III.3.5-compliant
-    principal-divisor decomposition `β_fun` of `msg.toD`,
-    the denominator-cleared polynomial `polyG` vanishes on every
-    non-vertical pair in `E × E`.
+/-- **Axiom (function-field trace-of-log-derivative identity +
+    density extension).** For any `MAProverMsg` and any
+    Silverman AEC III Cor 3.5-compliant principal-divisor
+    decomposition `β_fun` of `msg.toD`, the denominator-cleared
+    polynomial `polyG` vanishes on every non-vertical pair in
+    `E × E`.
 
-    Packages the classical function-field trace-of-log-derivative
-    identity plus the density extension. Used to eliminate the
-    `hPolyGZero` hypothesis that would otherwise be threaded through
-    `ma_extractable` and `ip_knowledge_sound`. -/
+    Classical content (see docstring comment above for full
+    citations): Lang AEC VI.5 (norm/trace in a finite separable
+    extension) + Silverman ATAEC III §1 (function-field extension
+    `F_q(E)/F_q(z)`) + Stichtenoth §III.1-5 (function-field norm
+    and differentials) + Silverman AEC III Cor 3.5 (principal-
+    divisor characterisation on E).
+
+    Used to eliminate the `hPolyGZero` hypothesis that would
+    otherwise be threaded through `ma_extractable` and
+    `ip_knowledge_sound`. -/
 axiom polyG_zero_trace_formula
     {E : ECSetup} (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)

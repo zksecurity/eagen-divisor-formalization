@@ -174,21 +174,24 @@ noncomputable def ECPoint.add (E : ECSetup) :
     ECPoint.add E p 0 = p := by
   cases p <;> rfl
 
-/-- Commutativity of `ECPoint.add`. Classical; Silverman Ch III Prop 2.2(a). -/
+/-- Commutativity of `ECPoint.add`. Classical; Silverman AEC III Prop 2.2(c)
+    (commutativity of the composition law `P ⊕ Q = Q ⊕ P`, p. 51). -/
 axiom ECPoint.add_comm (E : ECSetup) (p q : ECPoint E.q) :
     ECPoint.add E p q = ECPoint.add E q p
 
-/-- Associativity of `ECPoint.add`. Classical; Silverman Ch III Prop 2.2(d).
-    The nontrivial group-law axiom — proof uses the Riemann-Roch / divisor
-    equivalence. -/
+/-- Associativity of `ECPoint.add`. Classical; Silverman AEC III Prop 2.2(e)
+    (`(P ⊕ Q) ⊕ R = P ⊕ (Q ⊕ R)`, p. 51). The nontrivial group-law
+    axiom — Silverman's proof uses the Riemann-Roch / divisor-class
+    equivalence via the σ-isomorphism (AEC III Prop 3.4(e)). -/
 axiom ECPoint.add_assoc (E : ECSetup) (p q r : ECPoint E.q) :
     ECPoint.add E (ECPoint.add E p q) r = ECPoint.add E p (ECPoint.add E q r)
 
-/-- Left inverse: `-p + p = 0`. Follows from the chord-and-tangent definition
-    (vertical line through `p` and `-p` has third intersection at `∞`).
-    We keep as axiom to avoid a case split on `p = -p` (2-torsion) matching
-    the `thirdPoint` branches; the facts we need downstream use this
-    abstractly anyway. -/
+/-- Left inverse: `-p + p = 0`. Classical; Silverman AEC III Prop 2.2(d)
+    (existence of inverse `P ⊕ (⊖P) = O`, p. 51). Follows from the
+    chord-and-tangent definition (vertical line through `p` and `-p` has
+    third intersection at `∞`). We keep as an axiom to avoid a case split
+    on `p = -p` (2-torsion) matching the `thirdPoint` branches; downstream
+    uses are abstract over this statement. -/
 axiom ECPoint.neg_add_cancel (E : ECSetup) (p : ECPoint E.q) :
     ECPoint.add E (-p) p = (0 : ECPoint E.q)
 

@@ -15,15 +15,16 @@ namespace Divisor
 variable (E : ECSetup)
 
 /-! ## Theorem 1: Principal Divisor Characterization
-    (Silverman, "Arithmetic of Elliptic Curves", Corollary 3.5)
+    (Silverman AEC III Corollary 3.5, p. 63)
 
 A divisor `D = Σ n_P · (P)` on `E` is principal iff
   (1) `Σ n_P = 0` (degree zero), and
   (2) `Σ [n_P] · P = O` in the group law.
 
-This is a foundational result in the theory of elliptic curves; it
-characterizes which formal ℤ-linear combinations of points arise as the
-divisor `div(f)` of some nonzero rational function `f ∈ F_q(E)×`.
+Silverman derives this from Prop 3.4(a,e) (p. 61-62, the divisor-
+class isomorphism `σ : Pic⁰(E) ≅ E`). It characterises which formal
+ℤ-linear combinations of points arise as the divisor `div(f)` of
+some nonzero rational function `f ∈ F_q(E)^×`.
 -/
 
 /-- `IsPrincipal E coeffs` means the divisor `Σ coeffs(P) · (P)` on `E`
@@ -34,7 +35,8 @@ divisor `div(f)` of some nonzero rational function `f ∈ F_q(E)×`.
     to two concrete conditions on `coeffs`. -/
 opaque IsPrincipal (E : ECSetup) (coeffs : ECPoint E.q → ℤ) : Prop
 
-/-- **Principal divisor characterization** (Silverman Cor 3.5, restated).
+/-- **Principal divisor characterization** (Silverman AEC III Cor 3.5,
+    p. 63, restated).
 
     A finitely-supported coefficient function `coeffs : ECPoint E.q → ℤ`
     is the divisor of some nonzero rational function on `E` iff the
@@ -50,15 +52,20 @@ axiom principal_divisor_iff
 /-! ## Theorem 2: Principal Divisor of a Rational Function on E
 
     The **`CoordRingElt.has_principal_divisor`** statement (Silverman
-    Ch III, Prop 3.4 + Cor 3.5 specialized) used to live here as an
+    AEC III Cor 3.5, p. 63, specialised) used to live here as an
     axiom. It is now a theorem proved in
     `Divisor/HasPrincipalDivisor.lean` from the constructive multiplicity
     `betaConstructive` (see `Divisor/BetaConstructive.lean`) together
-    with the narrow Abel-theorem axioms
-    `CoordRingElt.divisor_group_sum_zero` and
-    `CoordRingElt.divisor_degree_eq`, which capture exactly the
-    function-field content of Silverman III Prop 3.4 (group-sum-zero
-    and pole-at-∞ identities). -/
+    with the narrow Abel-theorem axiom
+    `CoordRingElt.divisor_group_sum_zero`, which captures the group-
+    sum-zero direction of Cor 3.5 (derived in Silverman from
+    Prop 3.4(a,e), p. 61-62). The pole-at-∞ identity
+    `Σ β(P) = D.degE` (which would correspond to the degree-zero
+    direction of Cor 3.5) is **not** recorded as an axiom — it fails
+    when `normPoly E D` does not split over `F_q`; see
+    `docs/divisor-degree-axiom-bug.md`. Only the unconditional bound
+    `∑ β(P) ≤ D.degE` (proved directly from `betaConstructive`'s
+    definition) is used downstream. -/
 
 /-! ## Hasse-Weil Bound (Hasse 1936, Weil 1948)
 

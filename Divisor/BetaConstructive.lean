@@ -469,11 +469,12 @@ theorem betaConstructive_sum_le_degE
     bundling of support / coverage content (those are derived above).
 
     Classical citation: **Silverman, "The Arithmetic of Elliptic
-    Curves", Chapter III, Proposition 3.4** — every nonzero rational
-    function `f` on an elliptic curve `E` has a principal divisor
-    `div(f) = Σ ord_P(f) · (P)` satisfying
-      (i)   `Σ ord_P(f) = 0` (total degree zero), and
-      (ii)  `Σ ord_P(f) · P = O` in the group law (Abel's theorem).
+    Curves" (AEC), Chapter III, Corollary 3.5** (p. 63) — a divisor
+    `D = Σ n_P · (P) ∈ Div(E)` is principal iff
+      (i)   `Σ n_P = 0` (total degree zero), and
+      (ii)  `Σ [n_P] · P = O` in the group law (Abel's theorem).
+    Silverman's proof derives Cor 3.5 from Prop 3.4(a,e) (p. 61-62,
+    the divisor-class iso `σ : Pic⁰(E) ≅ E`).
 
     Specialized to `f = D = a(x) - b(x)·y` viewed as a nonzero element
     of `F_q[E] ⊂ F_q(E)`, the affine part of `div(D)` is recorded by
@@ -489,8 +490,9 @@ theorem betaConstructive_sum_le_degE
     bound `betaConstructive_sum_le_degE` is used downstream.
 -/
 
-/-- **Abel's theorem on E for `D`'s divisor** (Silverman III Prop 3.4,
-    group-sum-zero part).
+/-- **Abel's theorem on E for `D`'s divisor** (Silverman AEC III
+    Corollary 3.5, group-sum-zero direction — derived in Silverman
+    from Prop 3.4(a,e)).
 
     The `β`-weighted group sum over `E`'s affine points vanishes:
     the divisor of the nonzero rational function `D = a(x) - b(x)·y`

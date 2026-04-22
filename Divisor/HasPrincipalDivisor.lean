@@ -31,7 +31,8 @@ namespace Divisor
 variable (E : ECSetup)
 
 /-- **Principal divisor of a nonzero `D ∈ F_q[E]`**
-    (Silverman Ch III, Prop 3.4 + Cor 3.5, specialized).
+    (Silverman AEC III Cor 3.5, specialized — partial form with
+    `≤` in place of `=` in the degree identity).
 
     For a nonzero `D = a(x) - b(x)·y` (with `(a, b) ≠ (0, 0)`), there is
     a multiplicity function `β : ZMod E.q × ZMod E.q → ℕ` such that:

@@ -25,9 +25,11 @@ The headline theorems live in `Divisor/ExtractorBridge.lean` and `Divisor/Soundn
 | Axiom | Source |
 |---|---|
 | `propext`, `Classical.choice`, `Quot.sound` | Lean core |
-| `ECPoint.add_assoc`, `add_comm`, `neg_add_cancel` | Silverman III §2 (group law) |
-| `CoordRingElt.divisor_group_sum_zero` | Silverman III Prop 3.4 (Abel's theorem on E) |
-| `polyG_zero_trace_formula` | Silverman III Prop 3.4 (function-field trace-of-log-derivative identity) + density extension |
+| `ECPoint.add_comm` | Silverman AEC III Prop 2.2(c) (p. 51) |
+| `ECPoint.add_assoc` | Silverman AEC III Prop 2.2(e) (p. 51) |
+| `ECPoint.neg_add_cancel` | Silverman AEC III Prop 2.2(d) (p. 51) |
+| `CoordRingElt.divisor_group_sum_zero` | Silverman AEC III Cor 3.5 (p. 63, group-sum-zero direction; derived from Prop 3.4(a,e)) |
+| `polyG_zero_trace_formula` | Function-field trace-of-log-derivative identity + density: Lang *Algebra* §VI.5, Silverman ATAEC III §1, Stichtenoth *Algebraic Function Fields and Codes* §III.1-5, Silverman AEC III Cor 3.5 |
 
 The former transient axiom `polyG_zero_of_logDerivCheck_identically_zero` was eliminated in Phase 4; the Phase-4 hypothesis `hPolyGZero` has been replaced by the classical axiom `polyG_zero_trace_formula` (Silverman III Prop 3.4 applied to the degree-3 extension `F_q(E)/F_q(z)`, `z = y − λ x`, plus a polynomial-degree density extension on `polyGPoly`). See "Phase 4 narrowing" below.
 
