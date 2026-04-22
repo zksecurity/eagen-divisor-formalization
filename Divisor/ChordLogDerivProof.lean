@@ -55,6 +55,8 @@
 import Divisor.Lemma6
 import Divisor.NormZDecomp
 import Divisor.BivariateLogDeriv
+import Divisor.ChordCubicSymmetric
+import Divisor.PFHelper
 import Mathlib
 
 open Polynomial Finset
@@ -125,7 +127,33 @@ over the three chord fiber points equals the negative sum of
 
 **Status**: open. This is the remaining algebraic content. Under the
 splitting + accounting hypotheses it reduces to a polynomial identity
-in `(ZMod E.q)[z]` between the function-field norm of `D` and `normZ`. -/
+in `(ZMod E.q)[z]` between the function-field norm of `D` and `normZ`.
+
+PROVIDED SOLUTION
+Under `hSplit` the three chord x-coordinates `x₀, x₁, x₂` are the
+roots of a monic cubic whose elementary symmetric polynomials are
+(see `Divisor/ChordCubicSymmetric.lean`):
+  * `e₁ = λ²`                       (`chord_x_sum_eq_lam_sq`)
+  * `e₂ = A − 2λμ`                  (`chord_x_pairwise_sum`)
+  * `e₃ = μ² − B`                   (`chord_x_triple_product`)
+The Lagrange partial-fraction identities over three distinct
+field elements (see `Divisor/PFHelper.lean`) give
+  * `∑ᵢ (c·xᵢ + d) / ∏_{j≠i}(xᵢ−xⱼ) = 0`         (`pf_affine_sum_zero`)
+  * `∑ᵢ xᵢ² / ∏_{j≠i}(xᵢ−xⱼ) = 1`                  (`pf_quadratic_sum_one`)
+  * `∑ᵢ (ax³+bx²+cx+d) / ∏_{j≠i}(xᵢ−xⱼ) = a·e₁+b` (`pf_cubic_sum`)
+
+Strategy: unfold `logDerivTerm_eq_explicit`
+(`Divisor/ClearedPolyForm.lean`) to get explicit rational form,
+express the three-term chord sum as a Lagrange partial-fraction sum
+over `x₀, x₁, x₂`, apply the PF identities with numerator polynomial
+extracted from `D.a, D.b, A, B, λ, μ`, then match against the
+residue-sum over `zerosFinset E D`.
+
+Alternative: introduce a helper theorem for the case `D.b = 0`
+(simpler — D is independent of y, normPoly = D.a², zerosFinset is
+determined by roots of D.a together with the y-sign), prove by PF
+identity + Vieta, then extend to `D.b ≠ 0` by a similar argument
+on `(D.a + y·D.b) · (D.a − y·D.b) = normPoly` paired evaluation. -/
 theorem chord_sum_eq_residue_sum
     (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
