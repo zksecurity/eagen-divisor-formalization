@@ -16,6 +16,7 @@ import Divisor.BivariateLogDeriv
 import Divisor.FunctionFieldZ
 import Divisor.NormZDecomp
 import Divisor.Lemma6
+import Divisor.ChordLogDerivProof
 import Divisor.HasPrincipalDivisor
 import Divisor.PolyGBridge
 import Divisor.Protocol
