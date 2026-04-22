@@ -1,6 +1,24 @@
 # Goal — `chordLogDerivMatchesNormZ`
 
-Prove a term of type `Divisor.chordLogDerivMatchesNormZ E D A₀ A₁` under natural non-degeneracy hypotheses. All definitions and theorems referenced below are in namespace `Divisor`; file paths are relative to this repository's root.
+Prove a term of type `Divisor.chordLogDerivMatchesNormZ E D A₀ A₁` under natural non-degeneracy hypotheses, including a **splitting hypothesis** `normPoly_splits_over_Fq E D` (see §0). All definitions and theorems referenced below are in namespace `Divisor`; file paths are relative to this repository's root.
+
+---
+
+## 0. Prerequisite: splitting hypothesis is required
+
+The statement `chordLogDerivMatchesNormZ E D A₀ A₁` is **false in general**. A concrete counterexample (worked out in a prior run):
+
+- `E : y² = x³ + 1` over `F_7`.
+- `D = x² + 1`, i.e. `D.a = X² + 1`, `D.b = 0`.
+- `A₀ = (0, 1)`, `A₁ = (1, 3)`, giving `λ = 2`, `μ = 1`, `A₂ = (3, 0)`.
+- `logDerivTerm` values: `0` at `(0,1)`, `4` at `(1,3)`, `0` at `(3,0)`; sum = `4`.
+- `normPoly = (x² + 1)²` has no roots in `F_7` (`−1` is not a QR mod 7).
+- `zerosFinset E D = ∅`, so `normZ E λ D = 1` (constant) and `normZ'(μ) = 0`.
+- **LHS** = `(0 + 4 + 0) · 1 = 4` ≠ `0` = **RHS**.
+
+The root cause: `normZ E λ D` only tracks zeros of `D` at F_q-rational points of `E`. When `normPoly E D` does not split over `F_q`, algebraic zeros of `D` living over non-rational x-coordinates contribute to the true function-field norm but are invisible to `normZ`. Under those conditions the target identity genuinely fails.
+
+The fix: add the hypothesis `hSplit : normPoly_splits_over_Fq E D` (defined at `Divisor/BetaConstructive.lean:535`). The splitting predicate asserts `Multiset.card (normPoly E D).roots = (normPoly E D).natDegree`, i.e. every root lives in `F_q`. Under this hypothesis the identity is provable and mathematically correct; the classical Silverman III Prop 3.4 / function-field norm argument goes through.
 
 ---
 
@@ -13,6 +31,7 @@ theorem chordLogDerivMatchesNormZ_holds
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
     (hNV : A₀.1 ≠ A₁.1)
     (hD  : ¬ (D.a = 0 ∧ D.b = 0))
+    (hSplit : normPoly_splits_over_Fq E D)
     (hA₀def : D.eval A₀.1 A₀.2 ≠ 0)
     (hA₁def : D.eval A₁.1 A₁.2 ≠ 0)
     (hA₂def : let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
@@ -28,7 +47,9 @@ theorem chordLogDerivMatchesNormZ_holds
     chordLogDerivMatchesNormZ E D A₀ A₁
 ```
 
-Hypotheses are flexible — additional non-degeneracies (e.g. `hQline`, `hNormZne`, `D.degE + 1 < E.q`) may be added if required.
+Hypotheses are flexible — additional non-degeneracies (e.g. `hQline`, `hNormZne`, `D.degE + 1 < E.q`) may be added if required. The one hypothesis that must be present is `hSplit`: without it, the target is false (see §0).
+
+**Do not introduce an axiom equivalent to the target.** The content Aristotle is asked to supply is the function-field trace-of-log-derivative identity (or equivalently, the polynomial identity `N(D)(z) = lc(D)^3 · ∏_Q (z − z(Q))^{β_Q}` in `F_q[z]`). A "proof" that takes the scalar identity itself as a hypothesis is not progress — it just renames the obstruction.
 
 ---
 
