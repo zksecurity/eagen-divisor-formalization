@@ -19,6 +19,7 @@ import Divisor.Lemma6
 import Divisor.ChordLogDerivProof
 import Divisor.HasPrincipalDivisor
 import Divisor.PolyGBridge
+import Divisor.PolyGDensity
 import Divisor.Protocol
 import Divisor.DivisorPrincipal
 import Divisor.Soundness
