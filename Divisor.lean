@@ -14,6 +14,7 @@ import Divisor.CubicIntersection
 import Divisor.LogDeriv
 import Divisor.ClearedPolyForm
 import Divisor.BetaConstructive
+import Divisor.BetaUnique
 import Divisor.NormLogDeriv
 import Divisor.BivariateLogDeriv
 import Divisor.FunctionFieldZ
