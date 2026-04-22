@@ -14,7 +14,13 @@
   of the Divisor development.
 -/
 import Mathlib.Algebra.BigOperators.GroupWithZero.Finset
-import Mathlib.Algebra.Polynomial.Eval
+import Mathlib.Algebra.Polynomial.Eval.Defs
+import Mathlib.Algebra.Polynomial.Eval.Coeff
+import Mathlib.Algebra.Polynomial.Eval.Degree
+import Mathlib.Algebra.Polynomial.Eval.SMul
+import Mathlib.Algebra.Polynomial.Eval.Algebra
+import Mathlib.Algebra.Polynomial.Eval.Subring
+import Mathlib.Algebra.Polynomial.Eval.Irreducible
 
 open Polynomial Finset
 

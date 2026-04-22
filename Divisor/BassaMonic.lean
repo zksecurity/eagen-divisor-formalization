@@ -139,8 +139,8 @@ theorem linear_form_zeros_le_three
                 ≤ g.roots.toFinset.card := by
                   apply Finset.card_le_card_of_injOn Prod.snd
                   · intro P hP
-                    simp only [Finset.mem_filter] at hP
-                    rw [Multiset.mem_toFinset, Polynomial.mem_roots hg_ne]
+                    rw [Finset.mem_coe, Finset.mem_filter] at hP
+                    rw [Finset.mem_coe, Multiset.mem_toFinset, Polynomial.mem_roots hg_ne]
                     simp only [Polynomial.IsRoot, g, Polynomial.eval_sub,
                                Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_C]
                     have := E.hOnCurve P hP.1; rw [hP.2] at this
@@ -197,7 +197,7 @@ theorem f_nonvanishing_proved {N : ℕ}
     have hne : (E.points \ bad).Nonempty := by
       rw [Finset.nonempty_iff_ne_empty]
       intro hemp
-      have := Finset.card_sdiff hsub
+      have := Finset.card_sdiff_of_subset hsub
       rw [hemp, Finset.card_empty] at this
       omega
     obtain ⟨A₁, hA₁⟩ := hne
@@ -334,7 +334,7 @@ theorem card_validPairs_lb :
       -- Total complement ≤ 2 * numAffine.
       calc (distinctPairs E.points).card - (validPairs E).card
           = ((distinctPairs E.points) \ (validPairs E)).card :=
-            (Finset.card_sdiff hvp).symm
+            (Finset.card_sdiff_of_subset hvp).symm
         _ ≤ 2 * ((distinctPairs E.points \ validPairs E).image Prod.fst).card := by
             apply Finset.card_le_mul_card_image
             intro A₀ _
@@ -367,8 +367,10 @@ theorem card_validPairs_lb :
                   set g : Polynomial (ZMod E.q) := Polynomial.X ^ 2 - Polynomial.C c₀
                   -- Inject via Prod.snd into S
                   apply (Finset.card_le_card_of_injOn Prod.snd (fun p hp => by
+                      rw [Finset.mem_coe] at hp
                       simp only [Finset.mem_filter, distinctPairs, Finset.mem_product] at hp
                       obtain ⟨⟨⟨_, hm2⟩, _⟩, hfst, hor⟩ := hp
+                      rw [Finset.mem_coe]
                       show p.2 ∈ S
                       simp only [S, Finset.mem_filter]
                       refine ⟨hm2, ?_⟩
@@ -377,6 +379,7 @@ theorem card_validPairs_lb :
                       · rw [Prod.mk.injEq] at hneg
                         exact hneg.1.symm.trans (congr_arg Prod.fst hfst)
                     ) (fun a ha b hb hsnd => by
+                      rw [Finset.mem_coe] at ha hb
                       have ha' := (Finset.mem_filter.mp ha).2
                       have hb' := (Finset.mem_filter.mp hb).2
                       exact Prod.ext (ha'.1.trans hb'.1.symm) hsnd
@@ -393,14 +396,16 @@ theorem card_validPairs_lb :
                       ≤ g.roots.toFinset.card := by
                         apply Finset.card_le_card_of_injOn Prod.snd
                         · intro P hP
+                          rw [Finset.mem_coe] at hP
                           simp only [S, Finset.mem_filter] at hP
-                          rw [Multiset.mem_toFinset, Polynomial.mem_roots hg_ne]
+                          rw [Finset.mem_coe, Multiset.mem_toFinset, Polynomial.mem_roots hg_ne]
                           simp only [Polynomial.IsRoot, g, Polynomial.eval_sub,
                                      Polynomial.eval_pow, Polynomial.eval_X,
                                      Polynomial.eval_C]
                           have := E.hOnCurve P hP.1; rw [hP.2] at this
                           linear_combination this
                         · intro ⟨_, _⟩ h1 ⟨_, _⟩ h2 hy
+                          rw [Finset.mem_coe] at h1 h2
                           have hx1 := (Finset.mem_filter.mp h1).2
                           have hx2 := (Finset.mem_filter.mp h2).2
                           exact Prod.ext (hx1.trans hx2.symm) hy

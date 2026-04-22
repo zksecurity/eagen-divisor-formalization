@@ -5,9 +5,11 @@
   bivariate polynomial on the F_q-rational points of an elliptic curve.
 -/
 import Divisor.Defs
+import Mathlib.Algebra.Field.ZMod
 import Mathlib.Algebra.Polynomial.Div
 import Mathlib.Algebra.Polynomial.FieldDivision
 import Mathlib.Algebra.Polynomial.Roots
+import Mathlib.Tactic.LinearCombination
 
 open Polynomial Finset
 
@@ -246,8 +248,8 @@ theorem card_points_with_fst_eq_le (x : ZMod E.q) :
       ≤ g.roots.toFinset.card := by
         apply Finset.card_le_card_of_injOn Prod.snd
         · intro P hP
-          simp only [Finset.mem_filter] at hP
-          rw [Multiset.mem_toFinset, Polynomial.mem_roots hg_ne]
+          rw [Finset.mem_coe, Finset.mem_filter] at hP
+          rw [Finset.mem_coe, Multiset.mem_toFinset, Polynomial.mem_roots hg_ne]
           simp only [Polynomial.IsRoot, g, Polynomial.eval_sub,
                      Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_C]
           have := E.hOnCurve P hP.1
@@ -367,7 +369,7 @@ theorem fiber_argument
       by_cases hAbad : A₀ ∈ badA₀
       · -- A₀ ∈ badA₀ but we filter p.1 ∉ badA₀ ⟹ the filter is empty.
         have : (zGood.filter (fun p => p.1 = A₀)) = ∅ := by
-          apply Finset.eq_empty_of_forall_not_mem
+          apply Finset.eq_empty_of_forall_notMem
           intro p hp
           simp only [Finset.mem_filter, zGood, zSet] at hp
           exact hp.1.2 (hp.2 ▸ hAbad)
@@ -380,8 +382,9 @@ theorem fiber_argument
               ≤ (E.points.filter (fun A₁ => f A₀ A₁ = 0)).card := by
                 apply Finset.card_le_card_of_injOn Prod.snd
                 · intro p hp
+                  rw [Finset.mem_coe] at hp
                   simp only [Finset.mem_filter, zGood, zSet, Finset.mem_product] at hp
-                  simp only [Finset.mem_filter]
+                  rw [Finset.mem_coe, Finset.mem_filter]
                   obtain ⟨⟨⟨⟨_, hp2⟩, hpf⟩, _⟩, hpeq⟩ := hp
                   exact ⟨hp2, hpeq ▸ hpf⟩
                 · intro p hp q hq heq

@@ -4,7 +4,9 @@
   Bezout's theorem for lines/cubics, and Lemma 1 (Slope Distribution).
 -/
 import Divisor.Defs
+import Mathlib.Algebra.Field.ZMod
 import Mathlib.Algebra.Polynomial.RingDivision
+import Mathlib.Algebra.Polynomial.Roots
 import Mathlib.Algebra.Polynomial.Degree.Lemmas
 import Mathlib.Tactic.LinearCombination
 
@@ -129,12 +131,22 @@ theorem slope_distribution (lam : ZMod E.q) :
           apply Finset.card_le_card_of_injOn Prod.snd
           · -- image in pointsOnLine.erase A₀
             intro ⟨a, b⟩ hab
-            simp only [Finset.mem_filter, pairsWithSlope, distinctPairs,
-                       Finset.mem_product] at hab
-            obtain ⟨⟨⟨⟨ha_mem, hb_mem⟩, hne⟩, hx, hslope⟩, hfst⟩ := hab
+            rw [Finset.mem_coe, Finset.mem_filter] at hab
+            have hab1 := hab.1
+            have hfst := hab.2
+            unfold pairsWithSlope at hab1
+            rw [Finset.mem_filter] at hab1
+            have hab2 := hab1.1
+            have hx := hab1.2.1
+            have hslope := hab1.2.2
+            unfold distinctPairs at hab2
+            rw [Finset.mem_filter, Finset.mem_product] at hab2
+            have ha_mem := hab2.1.1
+            have hb_mem := hab2.1.2
+            have hne := hab2.2
             -- a = first point, b = second point, hfst : a = p₀.1
             subst hfst  -- replace a by p₀.1
-            rw [Finset.mem_erase]
+            rw [Finset.mem_coe, Finset.mem_erase]
             constructor
             · exact fun heq => hne heq.symm
             · rw [pointsOnLine, Finset.mem_filter]

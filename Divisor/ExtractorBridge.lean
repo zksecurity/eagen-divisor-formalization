@@ -84,7 +84,7 @@ theorem extractorDivisorCoeffs_negP
   have hEmpty : ((Finset.univ : Finset (Fin msg.k)).filter
       (fun j => extractorBases E stmt msg hkm j =
                  (stmt.target.1, -stmt.target.2))) = ∅ := by
-    rw [Finset.eq_empty_iff_forall_not_mem]
+    rw [Finset.eq_empty_iff_forall_notMem]
     intro j hj
     apply hNoNegP
     exact ⟨j, hj⟩
@@ -361,9 +361,10 @@ theorem weightedSum_imageBases_eq_univ_zsmul_extractedScalars
   -- Step B: fold_image with injectivity on canonical.
   have hInj : ∀ x ∈ canFs, ∀ y ∈ canFs, bEC x = bEC y → x = y :=
     basesAffineEC_injOn_canonical E stmt msg hkm
+  have hInjOn : Set.InjOn bEC canFs := fun x hx y hy h => hInj x hx y hy h
   show (canFs.image bEC).fold (ECPoint.add E) 0
         (fun P => ECPoint.zsmul E (c P) P) = _
-  rw [Finset.fold_image hInj]
+  rw [Finset.fold_image hInjOn]
   -- After fold_image: canFs.fold (ECPoint.add E) 0 ((fun P => zsmul (c P) P) ∘ bEC).
   -- Step C: rewrite summand at canonical positions.
   have hFoldCongr :
@@ -427,7 +428,7 @@ theorem extractorDivisorCoeffs_support_subset_candidate
         apply hP
         have hEmpty : ((Finset.univ : Finset (Fin msg.k)).filter
             (fun j => extractorBases E stmt msg hkm j = (x, y))) = ∅ := by
-          rw [Finset.eq_empty_iff_forall_not_mem]
+          rw [Finset.eq_empty_iff_forall_notMem]
           intro j hj
           simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hj
           apply hNotInImage
@@ -444,7 +445,7 @@ theorem infinity_notin_image_basesAffineEC
   rw [Finset.mem_image] at hContra
   obtain ⟨j, _, heq⟩ := hContra
   unfold basesAffineEC at heq
-  exact ECPoint.noConfusion heq
+  cases heq
 
 /-- Under general case, `-P_aff` is not in the image of base points. -/
 theorem negP_notin_image_basesAffineEC
@@ -469,7 +470,8 @@ theorem negP_notin_image_basesAffineEC
 theorem infinity_ne_negP_aff
     (stmt : DlogStatement E.q) :
     (ECPoint.infinity : ECPoint E.q) ≠
-    ECPoint.affine stmt.target.1 (-stmt.target.2) := fun h => ECPoint.noConfusion h
+    ECPoint.affine stmt.target.1 (-stmt.target.2) := by
+  intro h; cases h
 
 /-- `∞` is not in `insert (-P_aff) (image basesAffineEC)`. -/
 theorem infinity_notin_insert_negP_image
@@ -614,7 +616,7 @@ theorem extractorSucceeds_of_natural_witness
   refine ⟨?_, hScalars_eq⟩
   -- Step 2: extractorSucceeds from the bound on coeff.
   intro i
-  rw [hScalars_eq i, Int.natAbs_ofNat]
+  rw [hScalars_eq i, Int.natAbs_natCast]
   exact hCoeff_bound i
 
 /-! ## D5: target from zero-sum of the extractor's divisor
@@ -1685,7 +1687,7 @@ theorem distinctSigma_exists
   have hBetaNz : ∀ k,
       ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q) ≠ 0 := by
     intro k
-    rw [Ne, ZMod.natCast_zmod_eq_zero_iff_dvd]
+    rw [Ne, CharP.cast_eq_zero_iff (ZMod E.q) E.q]
     intro hdvd
     have hPos : 0 < multAt E β_fun msg.toD k := hβPos k
     have hLt : multAt E β_fun msg.toD k < E.q := hBetaLt k
@@ -2063,7 +2065,7 @@ theorem extractorDivisorCoeffs_affine_not_in_baseImage
     ((Finset.univ : Finset (Fin msg.k)).filter
       (fun j => extractorBases E stmt msg hkm j = (x, y))) = ∅ := by
   classical
-  rw [Finset.eq_empty_iff_forall_not_mem]
+  rw [Finset.eq_empty_iff_forall_notMem]
   intro j hj
   simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hj
   apply hNot
@@ -2161,7 +2163,7 @@ theorem extractorDivisorCoeffs_eq_dCoeffs
         have hEmpty : ((Finset.univ : Finset (Fin msg.k)).filter
             (fun j => extractorBases E stmt msg hkm j =
                        (stmt.target.1, -stmt.target.2))) = ∅ := by
-          rw [Finset.eq_empty_iff_forall_not_mem]
+          rw [Finset.eq_empty_iff_forall_notMem]
           intro j hj
           apply hNoNegP
           exact ⟨j, hj⟩
@@ -2570,7 +2572,7 @@ theorem ma_extractable
         (validPairs E).filter
           (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hAS
       have hEmpty : acceptSet = ∅ := by
-        apply Finset.eq_empty_of_forall_not_mem
+        apply Finset.eq_empty_of_forall_notMem
         intro p hp
         simp only [hAS, Finset.mem_filter] at hp
         exact hAdm hp.2.2.1

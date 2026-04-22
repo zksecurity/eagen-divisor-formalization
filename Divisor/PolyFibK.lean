@@ -25,6 +25,8 @@ import Divisor.LogDeriv
 import Divisor.SlopeDist
 import Divisor.BassaMonic
 import Divisor.PartialFraction
+import Mathlib.Tactic.IntervalCases
+import Mathlib.Tactic.LinearCombination
 
 open Polynomial Finset
 
@@ -306,7 +308,7 @@ lemma interceptOf_fst_mem_goodIntercepts
     · exact hp1
     · exact hp2
   have hPair_card : ({p.1, p.2} : Finset _).card = 2 := by
-    rw [Finset.card_insert_of_not_mem (by simp [hne]), Finset.card_singleton]
+    rw [Finset.card_insert_of_notMem (by simp [hne]), Finset.card_singleton]
   omega
 
 /-- Per-slope bound: `|pairsWithSlope lam| ≤ 6 · |goodIntercepts lam|`.

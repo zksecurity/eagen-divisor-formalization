@@ -11,8 +11,12 @@
   Proof: union bound over three events.
 -/
 import Divisor.Defs
+import Mathlib.Algebra.Field.ZMod
 import Mathlib.Algebra.Polynomial.RingDivision
+import Mathlib.Algebra.Polynomial.Roots
 import Mathlib.Algebra.Polynomial.Degree.Lemmas
+import Mathlib.Tactic.LinearCombination
+import Mathlib.Tactic.FieldSimp
 
 open Classical Polynomial
 
@@ -118,14 +122,14 @@ theorem third_point_on_curve
               have hq5 : E.q ≥ 5 := E.hq_ge
               have : (2 : ZMod E.q) = ((2 : ℕ) : ZMod E.q) := by norm_cast
               rw [this]
-              rw [Ne, ZMod.natCast_zmod_eq_zero_iff_dvd]
+              rw [Ne, CharP.cast_eq_zero_iff (ZMod E.q) E.q]
               intro hdvd
               have : E.q ≤ 2 := Nat.le_of_dvd (by norm_num) hdvd
               omega
             exact (mul_eq_zero.mp hh).resolve_left h2
           exact h2t this
         have hlam_rel : lam * (2 * A₀.2) = 3 * A₀.1 ^ 2 + E.curveA := by
-          rw [hlam_def]; field_simp
+          rw [hlam_def, mul_assoc, inv_mul_cancel₀ h2y_ne, mul_one]
         -- Now: y₂² = x₂³ + A·x₂ + B, derivable from hC0 and hlam_rel.
         show y₂ ^ 2 = x₂ ^ 3 + E.curveA * x₂ + E.curveB
         simp only [hy2_def, hx2_def, hmu_def]
@@ -296,7 +300,7 @@ theorem card_filter_product_fiber_eq
       rw [Finset.mem_filter, Finset.mem_product]
       exact ⟨⟨hA₀, hA₁.1⟩, hA₁.2⟩
   · intro p hp
-    simp only [Finset.mem_filter, Finset.mem_product] at hp
+    simp only [Finset.mem_coe, Finset.mem_filter, Finset.mem_product] at hp
     exact hp.1.1
 
 /-! ## Standalone: third-point-affine zeros of D on E × E

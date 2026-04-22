@@ -120,7 +120,7 @@ theorem dCoeffs_infinity_notin_affine_image :
   intro hContra
   rw [Finset.mem_image] at hContra
   obtain ⟨_, _, heq⟩ := hContra
-  exact ECPoint.noConfusion heq
+  cases heq
 
 theorem sum_dCoeffs_candidate_eq (D : CoordRingElt E.q)
     (β : ZMod E.q × ZMod E.q → ℕ) :

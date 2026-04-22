@@ -357,7 +357,6 @@ theorem polyG_eq_product_mul_divided
       (Finset.mul_prod_erase _ _ (Finset.mem_univ k)).symm
     rw [hQall]
     field_simp
-    ring
   · -- Second sum: similar for `R`.
     apply Finset.sum_congr rfl
     intro j _
@@ -367,7 +366,6 @@ theorem polyG_eq_product_mul_divided
       (Finset.mul_prod_erase _ _ (Finset.mem_univ j)).symm
     rw [hRall]
     field_simp
-    ring
 
 /-- **Step 5 equivalence.** Under the nonvanishing hypothesis on every
     `ellP`, `polyG = 0` iff `polyGDivided = 0`. -/

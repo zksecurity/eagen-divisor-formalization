@@ -33,8 +33,11 @@
 import Divisor.Defs
 import Divisor.Axioms
 import Divisor.BassaMonic
+import Mathlib.Algebra.Polynomial.Derivative
+import Mathlib.Tactic.LinearCombination
+import Mathlib.Tactic.FieldSimp
 
-open Finset Classical
+open Finset Classical Polynomial
 
 namespace Divisor
 
@@ -114,7 +117,6 @@ theorem sum_div_iff_sum_mul_prod_erase {α : Type*} [DecidableEq α]
     rw [← Finset.mul_prod_erase s p hi]
     have hpi : p i ≠ 0 := hNonzero i hi
     field_simp
-    ring
   constructor
   · intro h
     rw [hEq, h, mul_zero]

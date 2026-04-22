@@ -92,7 +92,7 @@ theorem card_distinctPairs {α : Type*} [DecidableEq α] (S : Finset α) :
     simp only [Finset.mem_filter, Finset.mem_sdiff, Finset.mem_product, ne_eq,
                not_and, not_not]
     tauto
-  rw [hsplit, Finset.card_sdiff (Finset.filter_subset _ _),
+  rw [hsplit, Finset.card_sdiff_of_subset (Finset.filter_subset _ _),
       Finset.card_product, hdiag, hcard_diag]
 
 /-! ## Points -/
@@ -292,7 +292,7 @@ theorem ECPoint.weightedSum_subset_of_zero_outside (E : ECSetup) {α : Type*}
           · exact h0 x (Finset.mem_insert_of_mem hxt) hxs
         have hrec : ECPoint.weightedSum E t' f = ECPoint.weightedSum E (s.erase a) f :=
           ih hs_erase_sub h0'
-        rw [hs_insert, ECPoint.weightedSum_insert E (Finset.not_mem_erase _ _), hrec]
+        rw [hs_insert, ECPoint.weightedSum_insert E (Finset.notMem_erase _ _), hrec]
       · rw [h0 a (Finset.mem_insert_self _ _) hain, ECPoint.zero_add_curve]
         have hs_t' : s ⊆ t' := by
           intro x hx
@@ -343,7 +343,7 @@ theorem ECPoint.weightedSum_eq_single (E : ECSetup) {α : Type*} [DecidableEq α
     (hOther : ∀ b ∈ s, b ≠ a → f b = 0) :
     ECPoint.weightedSum E s f = f a := by
   induction s using Finset.induction_on with
-  | empty => exact absurd ha (Finset.not_mem_empty a)
+  | empty => exact absurd ha (Finset.notMem_empty a)
   | @insert b s' hbnmem ih =>
       rw [ECPoint.weightedSum_insert E hbnmem]
       by_cases hab : b = a

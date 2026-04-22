@@ -43,7 +43,8 @@
 import Divisor.Defs
 import Divisor.ClearedPolyForm
 import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.Algebra.BigOperators.Group.Finset
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.Tactic.IntervalCases
 
 open Polynomial Finset
 
@@ -309,7 +310,7 @@ theorem sum_betaConstructive_fst_eq_le
   · -- |S| = 2: S = {P₁, P₂} with P₁ ≠ P₂.
     rw [Finset.card_eq_two] at hScard
     obtain ⟨P₁, P₂, hNeq, hSP⟩ := hScard
-    rw [hSP, Finset.sum_insert (Finset.not_mem_singleton.mpr hNeq),
+    rw [hSP, Finset.sum_insert (Finset.notMem_singleton.mpr hNeq),
         Finset.sum_singleton]
     have hP₁ : P₁ ∈ E.points ∧ P₁.1 = x₀ := by
       have : P₁ ∈ S := by rw [hSP]; exact Finset.mem_insert_self _ _
@@ -428,7 +429,7 @@ theorem sum_rootMultiplicity_le_natDegree
         refine (Finset.sum_subset (Finset.subset_univ _) ?_).symm
         intro a _ hNotIn
         rw [Multiset.mem_toFinset] at hNotIn
-        exact Multiset.count_eq_zero_of_not_mem hNotIn
+        exact Multiset.count_eq_zero_of_notMem hNotIn
     _ ≤ p.natDegree := card_roots' p
 
 /-- Write `E.points` as a disjoint union over the `x`-coordinates of its
@@ -570,7 +571,7 @@ theorem sum_rootMultiplicity_eq_card_roots (p : (ZMod E.q)[X]) :
         refine (Finset.sum_subset (Finset.subset_univ _) ?_).symm
         intro a _ hNotIn
         rw [Multiset.mem_toFinset] at hNotIn
-        exact Multiset.count_eq_zero_of_not_mem hNotIn
+        exact Multiset.count_eq_zero_of_notMem hNotIn
 
 /-- Under the split hypothesis, the total `rootMultiplicity` sum equals
 `natDegree`. -/

@@ -24,7 +24,13 @@ import Divisor.LogDeriv
 import Divisor.CubicIntersection
 import Divisor.SupportDisjoint
 import Mathlib.Tactic.ComputeDegree
-import Mathlib.Algebra.Polynomial.Eval
+import Mathlib.Algebra.Polynomial.Eval.Defs
+import Mathlib.Algebra.Polynomial.Eval.Coeff
+import Mathlib.Algebra.Polynomial.Eval.Degree
+import Mathlib.Algebra.Polynomial.Eval.SMul
+import Mathlib.Algebra.Polynomial.Eval.Algebra
+import Mathlib.Algebra.Polynomial.Eval.Subring
+import Mathlib.Algebra.Polynomial.Eval.Irreducible
 
 open Polynomial Finset
 
@@ -290,7 +296,6 @@ theorem bivEval_dxdzDenA₀Scaled_eq (A₀ A₁ : ZMod E.q × ZMod E.q)
   have hden : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr hNV.symm
   simp only [bivEval_dxdzDenA₀Scaled, slopeOf]
   field_simp
-  ring
 
 theorem bivEval_dxdzDenA₁Scaled_eq (A₀ A₁ : ZMod E.q × ZMod E.q)
     (hNV : A₀.1 ≠ A₁.1) :
@@ -300,7 +305,6 @@ theorem bivEval_dxdzDenA₁Scaled_eq (A₀ A₁ : ZMod E.q × ZMod E.q)
   have hden : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr hNV.symm
   simp only [bivEval_dxdzDenA₁Scaled, slopeOf]
   field_simp
-  ring
 
 /-! ## Derivative-numerator polynomials `num(A_i) = D'.a(A_i.1) - D'.b(A_i.1) · A_i.2`.
 
@@ -475,7 +479,7 @@ theorem bivEval_finset_sum {α : Type*} (s : Finset α)
   classical
   induction s using Finset.induction_on with
   | empty => simp [bivEval]
-  | insert h ih =>
+  | @insert _ _ h ih =>
       rw [Finset.sum_insert h, bivEval_add, Finset.sum_insert h, ih]
 
 /-! ## Full `clearedFiberPoly` assembly
@@ -1350,7 +1354,7 @@ theorem bivEval_finset_prod {α : Type*} (s : Finset α)
   classical
   induction s using Finset.induction_on with
   | empty => simp [bivEval]
-  | insert h ih =>
+  | @insert _ _ h ih =>
       rw [Finset.prod_insert h, bivEval_mul, Finset.prod_insert h, ih]
 
 /-- On non-vertical pairs, `bivEval (linesProductScaled P k B A₀) A₁ =
@@ -1890,12 +1894,14 @@ theorem logDerivCheckFn_symm
       lineThrough_symm E A₁.1 A₁.2 A₀.1 A₀.2 (Ne.symm hNV)]
   ring
 
+set_option maxHeartbeats 1000000 in
 /-- Per-term clearing (i=0): `(old_num_scalar + correction_scalar) · (other) = LT(A₀) · denom`.
     The sum LHS matches the paper-faithful `logDerivTerm` numerator. -/
 private lemma clearedFiberPoly_lhs0_eq_LT_mul_denom
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hNV : A₀.1 ≠ A₁.1)
     (hD0 : D.eval A₀.1 A₀.2 ≠ 0)
     (hDx0 : 3 * A₀.1 ^ 2 + E.curveA
       - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2 ≠ 0) :
@@ -1928,14 +1934,46 @@ private lemma clearedFiberPoly_lhs0_eq_LT_mul_denom
       * (3 * A₀.1 ^ 2 + E.curveA
         - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2) ≠ 0 :=
     mul_ne_zero hD0 hDx0
-  field_simp
+  set T : ZMod E.q := D.eval A₀.1 A₀.2
+      * (3 * A₀.1 ^ 2 + E.curveA
+        - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2) with hT
+  have hT0 : T ≠ 0 := hDDx
+  have hTinv : T⁻¹ * T = 1 := inv_mul_cancel₀ hT0
+  -- Goal is (...)=(num)*T⁻¹ * (D.eval A₀.1 A₀.2 * D.eval A₁.1 A₁.2 * ... * (3*A₀.1^2+...) * ...).
+  -- Factor T out of the RHS denom: the RHS denom contains the factors of T.
+  have hfact : D.eval A₀.1 A₀.2 * D.eval A₁.1 A₁.2
+        * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁)
+        * (3 * A₀.1 ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+        * (3 * A₁.1 ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+        * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁))
+        * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+        * ∏ j : Fin k,
+            (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2
+      = T * (D.eval A₁.1 A₁.2
+        * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁)
+        * (3 * A₁.1 ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+        * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁))
+        * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+        * ∏ j : Fin k,
+            (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2) := by
+    rw [hT]; ring
+  rw [hfact]
+  rw [show ∀ (a b : ZMod E.q), a * T⁻¹ * (T * b) = a * (T⁻¹ * T) * b from
+        fun a b => by ring, hTinv]
   ring
 
+set_option maxHeartbeats 1000000 in
 /-- Per-term clearing (i=1). -/
 private lemma clearedFiberPoly_lhs1_eq_LT_mul_denom
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hNV : A₀.1 ≠ A₁.1)
     (hD1 : D.eval A₁.1 A₁.2 ≠ 0)
     (hDx1 : 3 * A₁.1 ^ 2 + E.curveA
       - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2 ≠ 0) :
@@ -1968,14 +2006,44 @@ private lemma clearedFiberPoly_lhs1_eq_LT_mul_denom
       * (3 * A₁.1 ^ 2 + E.curveA
         - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2) ≠ 0 :=
     mul_ne_zero hD1 hDx1
-  field_simp
+  set T : ZMod E.q := D.eval A₁.1 A₁.2
+      * (3 * A₁.1 ^ 2 + E.curveA
+        - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2) with hT
+  have hT0 : T ≠ 0 := hDDx
+  have hTinv : T⁻¹ * T = 1 := inv_mul_cancel₀ hT0
+  have hfact : D.eval A₀.1 A₀.2 * D.eval A₁.1 A₁.2
+        * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁)
+        * (3 * A₀.1 ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+        * (3 * A₁.1 ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+        * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁))
+        * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+        * ∏ j : Fin k,
+            (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2
+      = T * (D.eval A₀.1 A₀.2
+        * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁)
+        * (3 * A₀.1 ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+        * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁))
+        * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+        * ∏ j : Fin k,
+            (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2) := by
+    rw [hT]; ring
+  rw [hfact]
+  rw [show ∀ (a b : ZMod E.q), a * T⁻¹ * (T * b) = a * (T⁻¹ * T) * b from
+        fun a b => by ring, hTinv]
   ring
 
+set_option maxHeartbeats 1000000 in
 /-- Per-term clearing (i=2). -/
 private lemma clearedFiberPoly_lhs2_eq_LT_mul_denom
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hNV : A₀.1 ≠ A₁.1)
     (hD2 : D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) ≠ 0)
     (hDx2 : 3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
       - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁) ≠ 0) :
@@ -2009,7 +2077,34 @@ private lemma clearedFiberPoly_lhs2_eq_LT_mul_denom
       * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
         - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁)) ≠ 0 :=
     mul_ne_zero hD2 hDx2
-  field_simp
+  set T : ZMod E.q := D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁)
+      * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+        - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁)) with hT
+  have hT0 : T ≠ 0 := hDDx
+  have hTinv : T⁻¹ * T = 1 := inv_mul_cancel₀ hT0
+  have hfact : D.eval A₀.1 A₀.2 * D.eval A₁.1 A₁.2
+        * D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁)
+        * (3 * A₀.1 ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+        * (3 * A₁.1 ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+        * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁))
+        * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+        * ∏ j : Fin k,
+            (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2
+      = T * (D.eval A₀.1 A₀.2 * D.eval A₁.1 A₁.2
+        * (3 * A₀.1 ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2)
+        * (3 * A₁.1 ^ 2 + E.curveA
+            - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2)
+        * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2)
+        * ∏ j : Fin k,
+            (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2) := by
+    rw [hT]; ring
+  rw [hfact]
+  rw [show ∀ (a b : ZMod E.q), a * T⁻¹ * (T * b) = a * (T⁻¹ * T) * b from
+        fun a b => by ring, hTinv]
   ring
 
 /-- Per-term clearing (negP): `polyFormNegP = L(-P)⁻¹ · denom`. -/
@@ -2032,7 +2127,6 @@ private lemma clearedFiberPoly_negP_eq_Linv_mul_denom
       * logDerivCheckFnDenom E D P B A₀ A₁ := by
   rw [logDerivCheckFnDenom_eq_explicit]
   field_simp
-  ring
 
 /-- Per-term clearing (sum-j): for each `j`, `polyFormSum_j = m j · L(Bⱼ)⁻¹ · denom`. -/
 private lemma clearedFiberPoly_sumj_eq_Linv_mul_denom
@@ -2067,7 +2161,6 @@ private lemma clearedFiberPoly_sumj_eq_Linv_mul_denom
         (Finset.mem_univ j)).symm
   rw [hProdEq]
   field_simp
-  ring
 
 /-- **Main Phase B3 theorem**: on the non-vertical cone with all denominator
     factors nonzero, `bivEval (clearedFiberPoly …) A₁` equals
@@ -2117,9 +2210,9 @@ theorem clearedFiberPoly_identity
           = N * ((a + d) + (b + e) + (c + f) + g + h) from
         fun a b c d e f g h => by ring]
   -- Apply per-term sum lemmas to rewrite each (old_i + corr_i) = LT · denom.
-  rw [clearedFiberPoly_lhs0_eq_LT_mul_denom (E := E) D P B A₀ A₁ hD0 hDx0,
-      clearedFiberPoly_lhs1_eq_LT_mul_denom (E := E) D P B A₀ A₁ hD1 hDx1,
-      clearedFiberPoly_lhs2_eq_LT_mul_denom (E := E) D P B A₀ A₁ hD2 hDx2,
+  rw [clearedFiberPoly_lhs0_eq_LT_mul_denom (E := E) D P B A₀ A₁ hNV hD0 hDx0,
+      clearedFiberPoly_lhs1_eq_LT_mul_denom (E := E) D P B A₀ A₁ hNV hD1 hDx1,
+      clearedFiberPoly_lhs2_eq_LT_mul_denom (E := E) D P B A₀ A₁ hNV hD2 hDx2,
       clearedFiberPoly_negP_eq_Linv_mul_denom (E := E) D P B A₀ A₁ hLP]
   -- Now the Σ_j term — rewrite it via per-j sum lemma.
   rw [show (∑ j : Fin k, m j
@@ -2783,7 +2876,7 @@ theorem dxdzA₁_zero_pairs_card_le :
         (fun A₀ _ => resultantX_dxdzDenA₁Reduced_natDegree_le E A₀)
     -- Exc = ∅ because dxdzDenA₁Reduced A₀ ≠ 0 for any A₀.
     have hExc : (E.points.filter (fun A₀ => dxdzDenA₁Reduced (E := E) A₀ = 0)) = ∅ := by
-      apply Finset.eq_empty_of_forall_not_mem
+      apply Finset.eq_empty_of_forall_notMem
       intro A₀ hA₀
       simp only [Finset.mem_filter] at hA₀
       exact dxdzDenA₁Reduced_ne_zero E A₀ hA₀.2
@@ -3001,7 +3094,7 @@ theorem ZMod_two_ne_zero_of_E : (2 : ZMod E.q) ≠ 0 := by
   have hq5 := E.hq_ge
   have hlt : (2 : ℕ) < E.q := by omega
   have hne : (↑(2 : ℕ) : ZMod E.q) ≠ 0 := by
-    rw [Ne, ZMod.natCast_zmod_eq_zero_iff_dvd]
+    rw [Ne, CharP.cast_eq_zero_iff (ZMod E.q) E.q]
     intro hdvd
     exact Nat.not_lt.mpr (Nat.le_of_dvd (by omega) hdvd) hlt
   exact_mod_cast hne
@@ -5367,7 +5460,7 @@ theorem logDerivCheckFn_zero_set_bound
         by_cases hBadA₀ : A₀ ∈ bad_A₀_set
         · -- A₀ ∈ bad ⇒ goodZ.filter (p.1 = A₀) = ∅.
           have : goodZ.filter (fun p => p.1 = A₀) = ∅ := by
-            apply Finset.eq_empty_of_forall_not_mem
+            apply Finset.eq_empty_of_forall_notMem
             intro p hp
             simp only [hgoodZ, Finset.mem_filter] at hp
             exact hp.1.2 (hp.2 ▸ hBadA₀)
@@ -5380,12 +5473,13 @@ theorem logDerivCheckFn_zero_set_bound
                     logDerivCheckFn E D P k B m A₀ A₁ = 0)).card := by
                   apply Finset.card_le_card_of_injOn Prod.snd
                   · intro p hp
-                    simp only [hgoodZ, hdefZ, Finset.mem_filter,
+                    simp only [Finset.mem_coe, hgoodZ, hdefZ, Finset.mem_filter,
                                Finset.mem_product] at hp
-                    simp only [Finset.mem_filter]
+                    rw [Finset.mem_coe, Finset.mem_filter]
                     obtain ⟨⟨⟨⟨_, hp2⟩, hDef, hf⟩, _⟩, hpeq⟩ := hp
                     exact ⟨hp2, hpeq ▸ hDef, hpeq ▸ hf⟩
                   · intro p hp q hq heq
+                    rw [Finset.mem_coe] at hp hq
                     have hpe : p.1 = A₀ := (Finset.mem_filter.mp hp).2
                     have hqe : q.1 = A₀ := (Finset.mem_filter.mp hq).2
                     exact Prod.ext (hpe.trans hqe.symm) heq
