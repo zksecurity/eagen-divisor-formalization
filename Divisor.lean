@@ -2,6 +2,7 @@ import Divisor.Defs
 import Divisor.Axioms
 import Divisor.ChordCubicSymmetric
 import Divisor.PFHelper
+import Divisor.ChordLogDerivHelper
 import Divisor.PartialFraction
 import Divisor.PartialFractionExpansion
 import Divisor.PolyFibK
