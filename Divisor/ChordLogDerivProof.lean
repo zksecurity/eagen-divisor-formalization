@@ -30,20 +30,24 @@
     The chord-fiber product ∏ᵢ D(Aᵢ(z)) equals a nonzero constant times
     normZ(z), under splitting + accounting hypotheses.
     *Citation*: Stichtenoth, *Algebraic Function Fields and Codes*,
-    2nd ed., GTM 254, Proposition 3.1.9 (p.72–73, conorm of a principal
+    2nd ed., GTM 254, Proposition 3.1.9 (p.73, conorm of a principal
     divisor is a principal divisor) combined with the norm/conorm
     duality on Div in finite separable extensions (cf. Stichtenoth
-    §3.1 and the norm map `NF'/F` introduced in §3.7).
+    §3.1 and the norm map `N_{F'/F}` defined in Appendix A and used
+    in §3.7 Theorem 3.7.1, p.121).
 
   **AXIOM 2** (`chord_sum_eq_chord_fiber_product_logDeriv`):
     The sum of logDerivTerms at the three chord-fiber points equals the
     logarithmic derivative of the chord-fiber product at the chord
     intercept.
-    *Citation*: Lang, *Algebra*, 3rd ed., GTM 211, §VI.5 Theorem 5.1
-    (norm `N_{L/K}` as determinant of the multiplication map) +
-    §VIII.5 (Derivations, p.368) applied to the separable function-
-    field extension `F_q(E)/F_q(z)`: the trace-of-log-derivative
-    identity `Tr_{L/K}(dg/g) = d(N_{L/K}(g))/N_{L/K}(g)` follows from
+    *Citation*: Lang, *Algebra*, 3rd ed., GTM 211, §VI.5 "The Norm
+    and Trace" (p.284–285), Theorem 5.1 (multiplicativity of the
+    norm; product-of-embeddings formula `N_k^E(α) = ∏_σ σα` for E/k
+    separable) + §VIII.5 "Derivations" (p.369), Theorem 5.1 Case 1
+    (p.370, unique extension of a derivation to a separable algebraic
+    extension) applied to the separable function-field extension
+    `F_q(E)/F_q(z)`: the trace-of-log-derivative identity
+    `Tr_{L/K}(dg/g) = d(N_{L/K}(g))/N_{L/K}(g)` follows from
     differentiating the product formula `N_{L/K}(g) = ∏_σ σ(g)` over
     a Galois closure, with the derivation extended to the Galois
     closure per §VIII.5.
@@ -110,12 +114,13 @@ same multiplicities: the norm's roots are the z-coordinates of D's
 zeros on E, with multiplicities matching betaConstructive.
 
 **Citation**: Stichtenoth, *Algebraic Function Fields and Codes*,
-2nd ed., GTM 254, Proposition 3.1.9 (p.72–73) — the conorm of a
+2nd ed., GTM 254, Proposition 3.1.9 (p.73) — the conorm of a
 principal divisor is a principal divisor:
   Con_{F'/F}(div(x)) = div_{F'}(x),
-together with the norm map `NF'/F` (introduced in §3.7) which sends
-a function in F' to its product of Galois conjugates in F. The
-divisor-of-norm identity, for `y ∈ F'`,
+together with the norm map `N_{F'/F}` (defined in Appendix A,
+used in §3.7 Theorem 3.7.1, p.121) which sends a function in F'
+to its product of Galois conjugates in F. The divisor-of-norm
+identity, for `y ∈ F'`,
   div_F(N_{F'/F}(y)) = "Tr on divisors"(div_{F'}(y)),
 then identifies (under the splitting hypothesis) the roots and
 multiplicities of N(D)(z) with those of normZ(z), establishing
@@ -139,13 +144,15 @@ intercept μ. This is the function-field trace-of-log-derivative formula:
 specialised to g = D, K = F_q(z), L = F_q(E), and evaluated at the
 chord intercept μ = zLambda λ A₀.
 
-**Citation**: Lang, *Algebra*, 3rd ed., GTM 211, §VI.5 Theorem 5.1
-(the norm N_{L/K} as determinant of the multiplication map, and the
-characteristic polynomial connection) + §VIII.5 Derivations (p.368)
-for the extension of a derivation to a separable algebraic extension;
-the identity `Tr_{L/K}(dg/g) = d(N_{L/K}(g))/N_{L/K}(g)` follows from
-differentiating the product formula `N_{L/K}(g) = ∏_σ σ(g)` over a
-Galois closure. -/
+**Citation**: Lang, *Algebra*, 3rd ed., GTM 211, §VI.5 "The Norm and
+Trace" (p.284–285), whose Theorem 5.1 establishes multiplicativity
+of the norm together with the product-of-embeddings formula
+`N_k^E(α) = ∏_σ σα` (for E/k separable, p.285); combined with
+§VIII.5 "Derivations" (p.369), Theorem 5.1 Case 1 (p.370), which
+extends a derivation uniquely to a separable algebraic extension.
+The identity `Tr_{L/K}(dg/g) = d(N_{L/K}(g))/N_{L/K}(g)` follows
+from differentiating the product formula `N_{L/K}(g) = ∏_σ σ(g)`
+over a Galois closure. -/
 axiom chord_sum_eq_chord_fiber_product_logDeriv
     (E : ECSetup) (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
