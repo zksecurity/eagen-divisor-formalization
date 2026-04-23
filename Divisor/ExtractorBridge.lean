@@ -2587,6 +2587,7 @@ The original `axiom polyG_zero_trace_formula` universally quantified over
 theorem polyG_zero_trace_formula
     {E : ECSetup} (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
+    (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
     (hSplit : normPoly_splits_over_Fq E msg.toD)
     (hAccount : (∑ P ∈ E.points, betaConstructive E msg.toD P) =
                   (normPoly E msg.toD).natDegree)
@@ -3028,6 +3029,7 @@ theorem ma_extractable
     (stmt : DlogStatement E.q) (d : ℕ) (hd : d < E.q) (hd2 : 2 ≤ d)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ d)
     (hkm : stmt.k = msg.k)
+    (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
     (hSplit : normPoly_splits_over_Fq E msg.toD)
     (hAccount : (∑ P ∈ E.points, betaConstructive E msg.toD P) =
                   (normPoly E msg.toD).natDegree)
@@ -3085,7 +3087,7 @@ theorem ma_extractable
             (fun k => ((multAt E (betaConstructive E msg.toD) msg.toD k : ℕ) : ZMod E.q))
             (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
             A₀ A₁ = 0 :=
-      polyG_zero_trace_formula stmt msg hkm hSplit hAccount
+      polyG_zero_trace_formula stmt msg hkm hSmooth hSplit hAccount
         (fun A₀ A₁ hA₀ hA₁ hNVxy hDef => hNV A₀ A₁ hA₀ hA₁ hNVxy hDef)
         hLargeQ
     by_cases hAdm : stmt.admSet (msg.polyA, msg.polyB)
@@ -3173,6 +3175,7 @@ theorem ip_knowledge_sound
     (stmt : DlogStatement E.q) (d : ℕ) (hd : d < E.q) (hd2 : 2 ≤ d)
     (msg1 : MAProverMsg E.q) (hDeg : msg1.toD.degE ≤ d)
     (hkm : stmt.k = msg1.k)
+    (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
     (hSplit : normPoly_splits_over_Fq E msg1.toD)
     (hAccount : (∑ P ∈ E.points, betaConstructive E msg1.toD P) =
                   (normPoly E msg1.toD).natDegree)
@@ -3197,7 +3200,7 @@ theorem ip_knowledge_sound
         ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
         msg3 = msg3' := by
   refine ⟨?_, ?_⟩
-  · exact ma_extractable E stmt d hd hd2 msg1 hDeg hkm hSplit hAccount hLargeQ
+  · exact ma_extractable E stmt d hd hd2 msg1 hDeg hkm hSmooth hSplit hAccount hLargeQ
   · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
