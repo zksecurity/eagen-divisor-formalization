@@ -29,3 +29,4 @@ import Divisor.DivisorPrincipal
 import Divisor.Soundness
 import Divisor.ExtractorBridge
 import Divisor.PolyGTraceFormula
+import Divisor.TraceProof

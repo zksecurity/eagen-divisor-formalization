@@ -24,6 +24,9 @@
 import Divisor.Soundness
 import Divisor.DivisorPrincipal
 import Divisor.PolyFibK
+import Divisor.PolyGTraceFormula
+import Divisor.PolyGDensity
+import Divisor.TraceProof
 
 namespace Divisor
 
@@ -2594,7 +2597,102 @@ theorem polyG_zero_trace_formula
       polyG E (zerosAt E msg.toD)
         (fun k => ((multAt E (betaConstructive E msg.toD) msg.toD k : ℕ) : ZMod E.q))
         (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
-        A₀ A₁ = 0 := by sorry
+        A₀ A₁ = 0 := by
+  -- The proof proceeds in two phases:
+  -- Phase A: At "fully defined" pairs, show polyG = 0.
+  -- Phase B: Extend to ALL non-vertical pairs via density.
+  -- "Fully defined" = logDerivCheckFnDefined (baseAt) ∧ hQline.
+  set D := msg.toD
+  set Q_fn := zerosAt E D
+  set β_fn := fun k => ((multAt E (betaConstructive E D) D k : ℕ) : ZMod E.q)
+  set R_fn := distinctR E stmt msg hkm
+  set m_fn := distinctM' E stmt msg hkm
+  -- Define the "fully defined" predicate
+  set fullyDef : (ZMod E.q × ZMod E.q) → (ZMod E.q × ZMod E.q) → Prop :=
+    fun A₀ A₁ => logDerivCheckFnDefined E D stmt.target
+        (baseAt E stmt msg hkm) A₀ A₁ ∧
+      ∀ Q ∈ zerosFinset E D,
+        (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 ≠ 0
+  -- Apply density theorem
+  apply polyG_zero_on_nonvertical_of_defined E Q_fn β_fn R_fn m_fn fullyDef
+  · -- Sub-goal 1: polyG = 0 at fully defined pairs
+    intro A₀ A₁ hA₀ hA₁ hNV ⟨hDefBaseAt, hQline⟩
+    -- Handle D = 0 case
+    by_cases hDnz : D.a = 0 ∧ D.b = 0
+    · -- D = 0 means D.eval = 0 everywhere, contradicting logDerivCheckFnDefined
+      exfalso
+      unfold logDerivCheckFnDefined logDerivCheckFnDenom at hDefBaseAt
+      apply hDefBaseAt
+      have : D.eval A₀.1 A₀.2 = 0 := by
+        unfold CoordRingElt.eval; rw [hDnz.1, hDnz.2]; simp
+      simp [this]
+    · -- D is nonzero. Get logDerivCheckFn = 0.
+      -- First, bridge logDerivCheckFnDefined from baseAt to stmt.bases
+      have hDefRaw : logDerivCheckFnDefined E D stmt.target
+          stmt.bases A₀ A₁ := by
+        unfold logDerivCheckFnDefined logDerivCheckFnDenom at hDefBaseAt ⊢
+        intro hRawEqZero
+        apply hDefBaseAt
+        set common := D.eval A₀.1 A₀.2 * D.eval A₁.1 A₁.2 *
+          D.eval (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1)
+            (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 *
+              (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1) +
+                (A₀.2 - slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.1)) *
+          (3 * A₀.1 ^ 2 + E.curveA - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2) *
+          (3 * A₁.1 ^ 2 + E.curveA -
+            2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2) *
+          (3 * (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1) ^ 2 + E.curveA -
+            2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 *
+              (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 *
+                (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1) +
+                (A₀.2 - slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.1))) *
+          (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval stmt.target.1 (-stmt.target.2)
+        change common * ∏ j : Fin stmt.k,
+          (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
+            (stmt.bases j).1 (stmt.bases j).2 = 0 at hRawEqZero
+        change common * ∏ i : Fin (baseImageCount E stmt msg hkm),
+          (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
+            (baseAt E stmt msg hkm i).1 (baseAt E stmt msg hkm i).2 = 0
+        rcases mul_eq_zero.mp hRawEqZero with hCommon | hProd
+        · exact mul_eq_zero.mpr (Or.inl hCommon)
+        · rw [Finset.prod_eq_zero_iff] at hProd
+          obtain ⟨j, _, hj⟩ := hProd
+          apply mul_eq_zero.mpr; right
+          rw [Finset.prod_eq_zero_iff]
+          refine ⟨baseIndexOf E stmt msg hkm (finCongr hkm j),
+                  Finset.mem_univ _, ?_⟩
+          rw [baseAt_baseIndexOf]
+          have hEq : extractorBases E stmt msg hkm (finCongr hkm j) = stmt.bases j := by
+            unfold extractorBases; congr 1
+          rw [hEq]; exact hj
+      -- Get logDerivCheckFn = 0 from hAllZero
+      have hCheckRaw := hAllZero A₀ A₁ hA₀ hA₁ hNV hDefRaw
+      -- Convert to grouped form
+      have hCheckGrouped : logDerivCheckFn E D stmt.target
+          (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm)
+          (distinctM'_tail E stmt msg hkm) A₀ A₁ = 0 := by
+        rw [← logDerivCheckFn_eq_grouped E stmt msg hkm D stmt.target A₀ A₁]
+        exact hCheckRaw
+      -- Apply polyG_zero_at_defined_fincons
+      have hPolyGCons := polyG_zero_at_defined_fincons D hDnz hSplit hAccount
+        stmt.target (baseAt E stmt msg hkm) (distinctM'_tail E stmt msg hkm)
+        A₀ A₁ hA₀ hA₁ hNV hDefBaseAt hQline hCheckGrouped
+      -- Reindex from Fin.cons (= distinctRCons/distinctMCons) to distinctR/distinctM'
+      show polyG E Q_fn β_fn R_fn m_fn A₀ A₁ = 0
+      change polyG E (zerosAt E D)
+        (fun k => ((multAt E (betaConstructive E D) D k : ℕ) : ZMod E.q))
+        (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm) A₀ A₁ = 0
+      unfold distinctR distinctM'
+      rw [polyG_reindex]
+      exact hPolyGCons
+  · -- Sub-goal 2: density bound
+    -- For each A₀ ∈ E.points, enough A₁'s are fully defined.
+    -- This follows from Hasse-Weil + intersection bounds.
+    intro A₀ hA₀
+    -- The density bound:
+    -- |{A₁ ∈ E.points | A₀.1 ≠ A₁.1 ∧ fullyDef A₀ A₁}|
+    --   > 2 * (resultantX E (polyGPoly ... A₀)).natDegree
+    sorry
 
 /-! ## Theorem 6: Extractable MA protocol -/
 
