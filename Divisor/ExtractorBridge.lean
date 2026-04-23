@@ -2550,21 +2550,40 @@ theorem extracted_scalars_valid
        ∀ A₀ A₁, ... polyG ... (multAt E β_fun msg.toD k) ... = 0
 -/
 /-- **Narrowed trace-of-log-derivative identity (sorry'd theorem).**
-    Under the hypothesis `hAllZero` that `logDerivCheckFn` vanishes on
-    every defined non-vertical pair, and using the constructive
-    `betaConstructive E msg.toD` multiplicity function, the
-    denominator-cleared polynomial `polyG` vanishes on every
-    non-vertical pair in `E × E`.
+    Under the hypotheses `hSplit` (normPoly splits over F_q),
+    `hAccount` (betaConstructive accounting identity), and
+    `hAllZero` (logDerivCheckFn vanishes on every defined non-vertical
+    pair), the denominator-cleared polynomial `polyG` formed from
+    `betaConstructive E msg.toD` vanishes on every non-vertical pair
+    in `E × E`.
+
+    **All three hypotheses are essential**:
+    * Without `hSplit` + `hAccount`, Lemma 6
+      (`chord_sum_eq_residue_sum`) fails — see `docs/goal.md` §0 for
+      the concrete counterexample over `F_7`.
+    * Without `hAllZero`, a cheating prover's `msg.m` can make
+      `polyG ≠ 0` at some non-vertical pair (by the `polyG ⇔
+      paperResidue` Step-5 equivalence).
 
     The multiplicity function is fixed to `betaConstructive` rather
     than universally quantified over all decompositions. See
-    `BetaUnique.lean` for why universal quantification is unsound.
+    `BetaUnique.lean` for why universal quantification is unsound
+    (counterexample on `F_17`).
 
-    Classical content: Lang AEC VI.5 + Silverman ATAEC III §1 +
-    Stichtenoth §III.1–5 + Silverman AEC III Cor 3.5. -/
+    Classical content: Lang *Algebra* 3rd ed. §VI.5 (norm/trace of a
+    finite separable field extension) + Silverman ATAEC III §1
+    (function-field extension `F_q(E)/F_q(z)`) + Stichtenoth
+    *Algebraic Function Fields and Codes* 2nd ed. §III.1-5
+    (function-field norm, divisor-of-norm, differentials) +
+    Silverman AEC III Cor 3.5 (principal-divisor characterisation
+    on E). Combined with the Hasse-Weil bound (already an axiom) for
+    the density extension. -/
 theorem polyG_zero_trace_formula
     {E : ECSetup} (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
+    (hSplit : normPoly_splits_over_Fq E msg.toD)
+    (hAccount : (∑ P ∈ E.points, betaConstructive E msg.toD P) =
+                  (normPoly E msg.toD).natDegree)
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
@@ -2598,7 +2617,10 @@ theorem polyG_zero_trace_formula
 theorem ma_extractable
     (stmt : DlogStatement E.q) (d : ℕ) (hd : d < E.q) (hd2 : 2 ≤ d)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ d)
-    (hkm : stmt.k = msg.k) :
+    (hkm : stmt.k = msg.k)
+    (hSplit : normPoly_splits_over_Fq E msg.toD)
+    (hAccount : (∑ P ∈ E.points, betaConstructive E msg.toD P) =
+                  (normPoly E msg.toD).natDegree) :
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg d hd hkm = some wit
         ∧ dlogHolds E stmt wit) ∨
@@ -2650,7 +2672,7 @@ theorem ma_extractable
             (fun k => ((multAt E (betaConstructive E msg.toD) msg.toD k : ℕ) : ZMod E.q))
             (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
             A₀ A₁ = 0 :=
-      polyG_zero_trace_formula stmt msg hkm
+      polyG_zero_trace_formula stmt msg hkm hSplit hAccount
         (fun A₀ A₁ hA₀ hA₁ hNVxy hDef => hNV A₀ A₁ hA₀ hA₁ hNVxy hDef)
     by_cases hAdm : stmt.admSet (msg.polyA, msg.polyB)
     · classical
@@ -2736,7 +2758,10 @@ theorem ma_extractable
 theorem ip_knowledge_sound
     (stmt : DlogStatement E.q) (d : ℕ) (hd : d < E.q) (hd2 : 2 ≤ d)
     (msg1 : MAProverMsg E.q) (hDeg : msg1.toD.degE ≤ d)
-    (hkm : stmt.k = msg1.k) :
+    (hkm : stmt.k = msg1.k)
+    (hSplit : normPoly_splits_over_Fq E msg1.toD)
+    (hAccount : (∑ P ∈ E.points, betaConstructive E msg1.toD P) =
+                  (normPoly E msg1.toD).natDegree) :
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 d hd hkm = some wit
          ∧ dlogHolds E stmt wit) ∨
@@ -2755,7 +2780,7 @@ theorem ip_knowledge_sound
         ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
         msg3 = msg3' := by
   refine ⟨?_, ?_⟩
-  · exact ma_extractable E stmt d hd hd2 msg1 hDeg hkm
+  · exact ma_extractable E stmt d hd hd2 msg1 hDeg hkm hSplit hAccount
   · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
