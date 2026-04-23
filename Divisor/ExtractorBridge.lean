@@ -2838,7 +2838,125 @@ theorem polyG_zero_trace_formula
                 ∃ Q ∈ zerosFinset E D,
                   (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 = 0)).card
               ≤ 3 * D.degE := by
-            sorry
+            -- D.degE ≥ 3 for any CoordRingElt
+            have hDegE3 : 3 ≤ D.degE := by
+              show 3 ≤ max (2 * D.a.natDegree) (3 + 2 * D.b.natDegree)
+              omega
+            -- Split filter into non-vertical (A₁.1 ≠ A₀.1) and vertical (A₁.1 = A₀.1)
+            set S := E.points.filter (fun A₁ =>
+              ∃ Q ∈ zerosFinset E D,
+                (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 = 0) with hS_def
+            -- Vertical part: vert = {A₁ ∈ E | A₁.1 = A₀.1}
+            set vert := E.points.filter (fun A₁ => A₁.1 = A₀.1) with hV_def
+            have hVertCard : vert.card ≤ 2 := card_points_with_fst_eq_le E A₀.1
+            -- Non-vertical part: {A₁ ∈ E | A₁.1 ≠ A₀.1 ∧ ∃ Q ∈ zeros, eval = 0}
+            set nonvert := E.points.filter (fun A₁ =>
+              A₁.1 ≠ A₀.1 ∧ ∃ Q ∈ zerosFinset E D,
+                (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 = 0) with hNV_def
+            -- S ⊆ nonvert ∪ vert
+            have hSsub : S ⊆ nonvert ∪ vert := by
+              intro A₁ hA₁
+              simp only [hS_def, hNV_def, hV_def, Finset.mem_filter, Finset.mem_union] at hA₁ ⊢
+              obtain ⟨hMem, Q, hQ, hEval⟩ := hA₁
+              by_cases heq : A₁.1 = A₀.1
+              · right; exact ⟨hMem, heq⟩
+              · left; exact ⟨hMem, heq, Q, hQ, hEval⟩
+            -- For each Q ∈ zeros, the linear form as a function of A₁:
+            -- (Q.2-A₀.2)*A₁.1 + (-(Q.1-A₀.1))*A₁.2 + ((Q.1-A₀.1)*A₀.2 - (Q.2-A₀.2)*A₀.1)
+            -- has ≤ 3 zeros on E.points.
+            -- The non-vertical lineThrough.eval = 0 is equivalent to this linear form = 0
+            -- when A₁.1 ≠ A₀.1.
+            -- Also, A₀ satisfies the linear form = 0 (substitute A₁ = A₀).
+            -- So the non-vertical part of each per-Q set has ≤ 2 elements.
+            -- Bound non-vertical part
+            have hNVbound : nonvert.card ≤ 2 * zerosCard E D := by
+              -- nonvert ⊆ biUnion over Q of the per-Q non-vert linear form zeros
+              have hNVsub : nonvert ⊆ (zerosFinset E D).biUnion (fun Q =>
+                  (E.points.filter (fun A₁ =>
+                    (Q.2 - A₀.2) * A₁.1 + (-(Q.1 - A₀.1)) * A₁.2 +
+                      ((Q.1 - A₀.1) * A₀.2 - (Q.2 - A₀.2) * A₀.1) = 0)).erase A₀) := by
+                intro A₁ hA₁
+                simp only [hNV_def, Finset.mem_filter] at hA₁
+                obtain ⟨hMem, hNE, Q, hQmem, hEval⟩ := hA₁
+                rw [Finset.mem_biUnion]
+                refine ⟨Q, hQmem, ?_⟩
+                rw [Finset.mem_erase]
+                constructor
+                · -- A₁ ≠ A₀ since A₁.1 ≠ A₀.1
+                  intro heq; exact hNE (congr_arg Prod.fst heq)
+                · rw [Finset.mem_filter]
+                  refine ⟨hMem, ?_⟩
+                  -- lineThrough.eval = 0 iff linear form = 0 (when A₁.1 ≠ A₀.1)
+                  -- eval = Q.2 - s*Q.1 - (A₀.2 - s*A₀.1) where s = (A₁.2-A₀.2)*(A₁.1-A₀.1)⁻¹
+                  -- eval * (A₁.1 - A₀.1) = (Q.2-A₀.2)*(A₁.1-A₀.1) - (A₁.2-A₀.2)*(Q.1-A₀.1)
+                  -- = linearForm evaluated at A₁
+                  have hne : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr hNE
+                  have heval_expand : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 =
+                    Q.2 - (A₁.2 - A₀.2) * (A₁.1 - A₀.1)⁻¹ * Q.1 -
+                    (A₀.2 - (A₁.2 - A₀.2) * (A₁.1 - A₀.1)⁻¹ * A₀.1) := by
+                    simp only [lineThrough, Line.eval, slopeOf]
+                  have key : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 * (A₁.1 - A₀.1) =
+                    (Q.2 - A₀.2) * (A₁.1 - A₀.1) - (A₁.2 - A₀.2) * (Q.1 - A₀.1) := by
+                    simp only [lineThrough, Line.eval, slopeOf]
+                    set d := (A₁.1 - A₀.1) with hd_def
+                    set s := (A₁.2 - A₀.2) * d⁻¹ with hs_def
+                    -- s * d = A₁.2 - A₀.2
+                    have hsd : s * d = A₁.2 - A₀.2 := by
+                      rw [hs_def, mul_assoc, inv_mul_cancel₀ hne, mul_one]
+                    -- Goal: (Q.2 - s * Q.1 - (A₀.2 - s * A₀.1)) * d
+                    --     = (Q.2 - A₀.2) * d - (A₁.2 - A₀.2) * (Q.1 - A₀.1)
+                    calc (Q.2 - s * Q.1 - (A₀.2 - s * A₀.1)) * d
+                        = Q.2 * d - s * Q.1 * d - A₀.2 * d + s * A₀.1 * d := by ring
+                      _ = Q.2 * d - (A₁.2 - A₀.2) * Q.1 - A₀.2 * d + (A₁.2 - A₀.2) * A₀.1 := by
+                          rw [show s * Q.1 * d = (s * d) * Q.1 from by ring, hsd,
+                              show s * A₀.1 * d = (s * d) * A₀.1 from by ring, hsd]
+                      _ = (Q.2 - A₀.2) * d - (A₁.2 - A₀.2) * (Q.1 - A₀.1) := by ring
+                  -- From hEval: eval = 0, so eval * (A₁.1-A₀.1) = 0
+                  have hprod : (Q.2 - A₀.2) * (A₁.1 - A₀.1) - (A₁.2 - A₀.2) * (Q.1 - A₀.1) = 0 := by
+                    rw [← key, hEval, zero_mul]
+                  -- This equals the linear form
+                  linear_combination hprod
+              calc nonvert.card
+                  ≤ ((zerosFinset E D).biUnion _).card := Finset.card_le_card hNVsub
+                _ ≤ ∑ Q ∈ zerosFinset E D,
+                      ((E.points.filter (fun A₁ =>
+                        (Q.2 - A₀.2) * A₁.1 + (-(Q.1 - A₀.1)) * A₁.2 +
+                          ((Q.1 - A₀.1) * A₀.2 - (Q.2 - A₀.2) * A₀.1) = 0)).erase A₀).card :=
+                    Finset.card_biUnion_le
+                _ ≤ ∑ _Q ∈ zerosFinset E D, 2 := by
+                    apply Finset.sum_le_sum
+                    intro Q hQ
+                    -- Card of erase = card - 1 when A₀ is in the set
+                    have hA₀in : A₀ ∈ E.points.filter (fun A₁ =>
+                        (Q.2 - A₀.2) * A₁.1 + (-(Q.1 - A₀.1)) * A₁.2 +
+                          ((Q.1 - A₀.1) * A₀.2 - (Q.2 - A₀.2) * A₀.1) = 0) := by
+                      rw [Finset.mem_filter]
+                      exact ⟨hA₀, by ring⟩
+                    rw [Finset.card_erase_of_mem hA₀in]
+                    -- Card of filter ≤ 3 by linear_form_zeros_le_three
+                    have hle3 : (E.points.filter (fun A₁ =>
+                        (Q.2 - A₀.2) * A₁.1 + (-(Q.1 - A₀.1)) * A₁.2 +
+                          ((Q.1 - A₀.1) * A₀.2 - (Q.2 - A₀.2) * A₀.1) = 0)).card ≤ 3 := by
+                      apply linear_form_zeros_le_three
+                      -- Q ≠ A₀ since Q ∈ zerosFinset and A₀ ∉ zerosFinset
+                      have hQne : Q ≠ A₀ := fun heq => hA₀nz (heq ▸ hQ)
+                      by_contra h
+                      push_neg at h
+                      have hx : Q.1 = A₀.1 := by
+                        have := h.2; rw [neg_eq_zero] at this; exact eq_of_sub_eq_zero this
+                      have hy : Q.2 = A₀.2 := eq_of_sub_eq_zero h.1
+                      exact hQne (Prod.ext hx hy)
+                    omega
+                _ = 2 * zerosCard E D := by
+                    simp [Finset.sum_const, zerosCard]
+                    ring
+            -- Combine: S.card ≤ nonvert.card + vert.card ≤ 2*zerosCard + 2 ≤ 3*D.degE
+            calc S.card
+                ≤ (nonvert ∪ vert).card := Finset.card_le_card hSsub
+              _ ≤ nonvert.card + vert.card := Finset.card_union_le _ _
+              _ ≤ 2 * zerosCard E D + 2 := Nat.add_le_add hNVbound hVertCard
+              _ ≤ 2 * D.degE + 2 := by omega
+              _ ≤ 3 * D.degE := by omega
           have hRestBound : (E.points.filter (fun A₁ =>
                 ¬logDerivCheckFnDefined E D stmt.target (baseAt E stmt msg hkm) A₀ A₁) ∪
                E.points.filter (fun A₁ =>
