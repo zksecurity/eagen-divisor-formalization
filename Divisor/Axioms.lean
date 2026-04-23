@@ -69,16 +69,19 @@ axiom principal_divisor_iff
 
 /-! ## Hasse-Weil Bound (Hasse 1936, Weil 1948)
 
-|#E(F_q) - (q + 1)| <= 2 * sqrt(q)
+|#E(F_q) - (q + 1)| ≤ 2·√q, equivalently (#E - q - 1)² ≤ 4q.
 
-A fundamental result in arithmetic geometry, proved by Hasse for
-elliptic curves and generalized by Weil to higher genus curves.
--/
-axiom hasse_weil_upper :
-  E.numPoints ≤ E.q + 1 + 2 * Nat.sqrt E.q
+Citation: Silverman AEC Theorem V.1.1 (p.138), "Hasse". A fundamental
+result in arithmetic geometry, proved by Hasse for elliptic curves
+and generalized by Weil to higher genus curves.
 
-axiom hasse_weil_lower :
-  E.q + 1 - 2 * Nat.sqrt E.q ≤ E.numPoints
+**Integer-squared form.** Stated as `((numPoints - q - 1) : ℤ)² ≤ 4q`
+because `2·Nat.sqrt q = 2·⌊√q⌋` is strictly smaller than `⌊2·√q⌋` in
+general (e.g. at `q = 7`, `2·⌊√7⌋ = 4` while `⌊2·√7⌋ = 5`). The
+squared form is the sharp integer statement and implies both
+one-sided bounds when needed. -/
+axiom hasse_weil :
+  ((E.numPoints : ℤ) - E.q - 1)^2 ≤ 4 * E.q
 
 /-! The specialized DKL / variety Schwartz-Zippel bound on E × E is
     stated in `Divisor/LogDeriv.lean` as
