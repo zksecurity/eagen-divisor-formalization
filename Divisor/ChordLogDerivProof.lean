@@ -108,14 +108,13 @@ in a finite separable extension of function fields:
 where Con_{L/K} is the conorm (restriction of divisors). Under the
 splitting hypothesis, this identifies the roots and multiplicities
 of N(D)(z) with those of normZ(z), establishing proportionality. -/
-theorem chord_fiber_product_eq_normZ_under_split
+axiom chord_fiber_product_eq_normZ_under_split
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (hSplit : normPoly_splits_over_Fq E D)
     (hAccount : (∑ P ∈ E.points, betaConstructive E D P) =
                   (normPoly E D).natDegree) :
-    ∃ c : ZMod E.q, c ≠ 0 ∧ chord_fiber_product E lam D = C c * normZ E lam D := by
-  sorry
+    ∃ c : ZMod E.q, c ≠ 0 ∧ chord_fiber_product E lam D = C c * normZ E lam D
 
 /-! ## AXIOM 2: Trace-of-log-derivative identity (Lang §VI.5 + §VI.8)
 
@@ -134,7 +133,7 @@ characteristic polynomial connection) + §VI.8 (derivations in
 separable extensions; the identity
 Tr_{L/K}(dg/g) = d(N_{L/K}(g))/N_{L/K}(g) follows from differentiating
 the characteristic polynomial). -/
-theorem chord_sum_eq_chord_fiber_product_logDeriv
+axiom chord_sum_eq_chord_fiber_product_logDeriv
     (E : ECSetup) (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
@@ -162,8 +161,7 @@ theorem chord_sum_eq_chord_fiber_product_logDeriv
           (lam ^ 2 - A₀.1 - A₁.1,
            lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
     = eval μ (derivative (chord_fiber_product E lam D))
-      / (chord_fiber_product E lam D).eval μ := by
-  sorry
+      / (chord_fiber_product E lam D).eval μ
 
 /-! ## Helper: log-derivative of a constant multiple
 
