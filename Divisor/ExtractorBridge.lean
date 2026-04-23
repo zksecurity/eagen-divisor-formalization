@@ -2598,7 +2598,7 @@ theorem polyG_zero_trace_formula
         (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
     (hLargeQ : E.points.card >
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
-        3 * (msg.toD.degE + stmt.k + 2) + 5) :
+        3 * (msg.toD.degE + stmt.k + 2) + 14) :
     ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       polyG E (zerosAt E msg.toD)
@@ -2785,7 +2785,7 @@ theorem polyG_zero_trace_formula
               logDerivCheckFnDefined E D stmt.target (baseAt E stmt msg hkm) A₀ A₁ ∧
               (∀ Q ∈ zerosFinset E D,
                 (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 ≠ 0)))).card
-            ≤ 3 * (D.degE + stmt.k + 2) + 8 := by
+            ≤ 3 * (D.degE + stmt.k + 2) + 14 := by
           -- The bad predicate is ¬(A ∧ B ∧ C), so bad ⊆ ¬A ∪ ¬B ∪ ¬C.
           -- We bound each piece: ¬A (vertical) ≤ 2,
           -- ¬C (line through zero) ≤ 3*zerosCard,
@@ -2828,7 +2828,7 @@ theorem polyG_zero_trace_formula
                E.points.filter (fun A₁ =>
                 ∃ Q ∈ zerosFinset E D,
                   (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 = 0)).card
-              ≤ 3 * (D.degE + stmt.k + 2) + 6 := by
+              ≤ 3 * (D.degE + stmt.k + 2) + 12 := by
             sorry
           calc badFilter.card
               ≤ _ := Finset.card_le_card hSub
@@ -2839,9 +2839,9 @@ theorem polyG_zero_trace_formula
                   ∃ Q ∈ zerosFinset E D,
                     (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 = 0)).card :=
                 Finset.card_union_le _ _
-            _ ≤ 2 + (3 * (D.degE + stmt.k + 2) + 6) :=
+            _ ≤ 2 + (3 * (D.degE + stmt.k + 2) + 12) :=
                 Nat.add_le_add hVert hRestBound
-            _ ≤ 3 * (D.degE + stmt.k + 2) + 8 := by omega
+            _ ≤ 3 * (D.degE + stmt.k + 2) + 14 := by omega
         have hGoodCount := Finset.card_le_card hGoodSub
         have hSplitCard := Finset.filter_card_add_filter_neg_card_eq_card
           (fun A₁ => A₀.1 ≠ A₁.1 ∧
@@ -3090,7 +3090,7 @@ theorem ma_extractable
                   (normPoly E msg.toD).natDegree)
     (hLargeQ : E.points.card >
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
-        3 * (msg.toD.degE + stmt.k + 2) + 5) :
+        3 * (msg.toD.degE + stmt.k + 2) + 14) :
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg d hd hkm = some wit
         ∧ dlogHolds E stmt wit) ∨
@@ -3236,7 +3236,7 @@ theorem ip_knowledge_sound
                   (normPoly E msg1.toD).natDegree)
     (hLargeQ : E.points.card >
         2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
-        3 * (msg1.toD.degE + stmt.k + 2) + 5) :
+        3 * (msg1.toD.degE + stmt.k + 2) + 14) :
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 d hd hkm = some wit
          ∧ dlogHolds E stmt wit) ∨
