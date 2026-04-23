@@ -248,7 +248,8 @@ theorem extracted_scalars_valid_special
 
 /-! ## Completeness -/
 
-/-- **Weil reciprocity axiom** (classical, Silverman ch. III).
+/-- **Weil reciprocity axiom** (classical; Silverman AEC Exercise II.2.11,
+    p.39; see also [139, Chapter 4, Corollary 3.5] referenced there).
 
     If `msg` is the honest first-round message for `(stmt, wit)` — i.e.
     `msg.toD`'s divisor of zeros on `E` is `(-P) + Σ n_i · (B_i)` as

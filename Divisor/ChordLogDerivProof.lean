@@ -30,15 +30,23 @@
     The chord-fiber product ∏ᵢ D(Aᵢ(z)) equals a nonzero constant times
     normZ(z), under splitting + accounting hypotheses.
     *Citation*: Stichtenoth, *Algebraic Function Fields and Codes*,
-    2nd ed., GTM 254, Theorem III.1.11 (divisor-of-norm formula).
+    2nd ed., GTM 254, Proposition 3.1.9 (p.72–73, conorm of a principal
+    divisor is a principal divisor) combined with the norm/conorm
+    duality on Div in finite separable extensions (cf. Stichtenoth
+    §3.1 and the norm map `NF'/F` introduced in §3.7).
 
   **AXIOM 2** (`chord_sum_eq_chord_fiber_product_logDeriv`):
     The sum of logDerivTerms at the three chord-fiber points equals the
     logarithmic derivative of the chord-fiber product at the chord
     intercept.
-    *Citation*: Lang, *Algebra*, 3rd ed., GTM 211, §VI.5 Theorem 5.1 +
-    §VI.8 (trace-of-log-derivative identity
-    Tr_{L/K}(dg/g) = d(N_{L/K}(g))/N_{L/K}(g)).
+    *Citation*: Lang, *Algebra*, 3rd ed., GTM 211, §VI.5 Theorem 5.1
+    (norm `N_{L/K}` as determinant of the multiplication map) +
+    §VIII.5 (Derivations, p.368) applied to the separable function-
+    field extension `F_q(E)/F_q(z)`: the trace-of-log-derivative
+    identity `Tr_{L/K}(dg/g) = d(N_{L/K}(g))/N_{L/K}(g)` follows from
+    differentiating the product formula `N_{L/K}(g) = ∏_σ σ(g)` over
+    a Galois closure, with the derivation extended to the Galois
+    closure per §VIII.5.
 
   **DERIVED** (`chord_sum_eq_residue_sum`): theorem combining the two
   axioms with the existing `normZ_logDeriv_at_chord_intercept`.
@@ -102,12 +110,16 @@ same multiplicities: the norm's roots are the z-coordinates of D's
 zeros on E, with multiplicities matching betaConstructive.
 
 **Citation**: Stichtenoth, *Algebraic Function Fields and Codes*,
-2nd ed., GTM 254, Theorem III.1.11 — the divisor-of-norm formula
-in a finite separable extension of function fields:
-  div(N_{L/K}(x)) = Con_{L/K}(div(x))
-where Con_{L/K} is the conorm (restriction of divisors). Under the
-splitting hypothesis, this identifies the roots and multiplicities
-of N(D)(z) with those of normZ(z), establishing proportionality. -/
+2nd ed., GTM 254, Proposition 3.1.9 (p.72–73) — the conorm of a
+principal divisor is a principal divisor:
+  Con_{F'/F}(div(x)) = div_{F'}(x),
+together with the norm map `NF'/F` (introduced in §3.7) which sends
+a function in F' to its product of Galois conjugates in F. The
+divisor-of-norm identity, for `y ∈ F'`,
+  div_F(N_{F'/F}(y)) = "Tr on divisors"(div_{F'}(y)),
+then identifies (under the splitting hypothesis) the roots and
+multiplicities of N(D)(z) with those of normZ(z), establishing
+proportionality. -/
 axiom chord_fiber_product_eq_normZ_under_split
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0))
@@ -116,7 +128,7 @@ axiom chord_fiber_product_eq_normZ_under_split
                   (normPoly E D).natDegree) :
     ∃ c : ZMod E.q, c ≠ 0 ∧ chord_fiber_product E lam D = C c * normZ E lam D
 
-/-! ## AXIOM 2: Trace-of-log-derivative identity (Lang §VI.5 + §VI.8)
+/-! ## AXIOM 2: Trace-of-log-derivative identity (Lang §VI.5 + §VIII.5)
 
 The sum of logDerivTerms at the three chord-fiber points equals the
 logarithmic derivative of the chord-fiber product at the chord
@@ -129,10 +141,11 @@ chord intercept μ = zLambda λ A₀.
 
 **Citation**: Lang, *Algebra*, 3rd ed., GTM 211, §VI.5 Theorem 5.1
 (the norm N_{L/K} as determinant of the multiplication map, and the
-characteristic polynomial connection) + §VI.8 (derivations in
-separable extensions; the identity
-Tr_{L/K}(dg/g) = d(N_{L/K}(g))/N_{L/K}(g) follows from differentiating
-the characteristic polynomial). -/
+characteristic polynomial connection) + §VIII.5 Derivations (p.368)
+for the extension of a derivation to a separable algebraic extension;
+the identity `Tr_{L/K}(dg/g) = d(N_{L/K}(g))/N_{L/K}(g)` follows from
+differentiating the product formula `N_{L/K}(g) = ∏_σ σ(g)` over a
+Galois closure. -/
 axiom chord_sum_eq_chord_fiber_product_logDeriv
     (E : ECSetup) (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
@@ -195,7 +208,7 @@ negative sum of `β(Q) / L_Q(Q)` over the affine zeros of `D` (where
 
 Derived from `chord_fiber_product_eq_normZ_under_split` (AXIOM 1,
 Stichtenoth III.1.11) and `chord_sum_eq_chord_fiber_product_logDeriv`
-(AXIOM 2, Lang §VI.5 + §VI.8), combined with the existing
+(AXIOM 2, Lang §VI.5 + §VIII.5), combined with the existing
 `normZ_logDeriv_at_chord_intercept` (partial-fraction expansion). -/
 theorem chord_sum_eq_residue_sum
     (D : CoordRingElt E.q)
