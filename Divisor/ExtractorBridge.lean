@@ -3199,7 +3199,22 @@ theorem polyG_zero_trace_formula
           convert h_bad_card.trans _ using 1;
           -- Pre-existing Phase-1b filter extensionality
           -- (previously unreachable due to the Phase-1a sorry)
-          · sorry
+          · congr 1; ext A₁; simp only [Finset.mem_filter, not_and, not_not, ne_eq]
+            constructor
+            · intro ⟨hm, hp⟩; refine ⟨hm, ?_⟩
+              by_cases hZ : A₁ ∈ zerosFinset E D
+              · exact Or.inl hZ
+              · by_cases hR : ∃ j, R_fn j = A₁
+                · obtain ⟨j, rfl⟩ := hR; exact Or.inr ⟨j, Or.inl rfl⟩
+                · push_neg at hR
+                  exact Or.inr ⟨⟨0, by omega⟩, Or.inr (hp hZ hR)⟩
+            · intro ⟨hm, hp⟩; refine ⟨hm, ?_⟩
+              intro hnz hR
+              rcases hp with h1 | ⟨j, hj⟩
+              · exact absurd h1 hnz
+              · rcases hj with hj | hj
+                · exact absurd hj (hR j)
+                · exact hj
           · linarith
         have hGoodCount := Finset.card_le_card hGoodSub
         have hSplitCard := Finset.filter_card_add_filter_neg_card_eq_card
