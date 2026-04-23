@@ -1570,39 +1570,35 @@ theorem distinctSigma_exists
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
         (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
     (hPolyGZero :
-      ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
-        (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
-        (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
-        ((∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE) →
-        (ECPoint.weightedSum E E.points
-          (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) →
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
           polyG E (zerosAt E msg.toD)
-            (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
+            (fun k => ((multAt E (betaConstructive E msg.toD) msg.toD k : ℕ) : ZMod E.q))
             (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
             A₀ A₁ = 0)
     (hValidPairsLarge :
       6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) + 1
         ≤ (validPairs E).card) :
-    ∃ (β_fun : ZMod E.q × ZMod E.q → ℕ)
-      (σ : Fin (zerosCard E msg.toD) ↪
+    ∃ (σ : Fin (zerosCard E msg.toD) ↪
             Fin (1 + baseImageCount E stmt msg hkm)),
-      (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) ∧
-      (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) ∧
-      ((∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE) ∧
-      (ECPoint.weightedSum E E.points
-        (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) ∧
       (∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ k)) ∧
-      (∀ k, ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q)
+      (∀ k, ((multAt E (betaConstructive E msg.toD) msg.toD k : ℕ) : ZMod E.q)
             + distinctM' E stmt msg hkm (σ k) = 0) ∧
       (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) := by
   classical
-  -- Step 1: nonzero-D hypothesis for `has_principal_divisor`.
+  -- Step 1: nonzero-D hypothesis.
   have hD : ¬ msg.toD.isZero := admSet_implies_toD_nonzero stmt msg hAdm
-  -- Step 2: extract `β_fun` via (weakened) Silverman III.3.5.
-  obtain ⟨β_fun, hβsup, hβcov, hβsum, hβgroup⟩ :=
-    CoordRingElt.exists_principal_dCoeffs E msg.toD hD
+  -- Step 2: use `betaConstructive` directly.
+  set β_fun := betaConstructive E msg.toD with hβ_def
+  have hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0 :=
+    fun P hP => betaConstructive_support E msg.toD P hP
+  have hβcov : ∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0 :=
+    fun P hP hZ => betaConstructive_covers E msg.toD hD P hP hZ
+  have hβsum : (∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE :=
+    betaConstructive_sum_le_degE E msg.toD
+  have hβgroup : ECPoint.weightedSum E E.points
+      (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0 :=
+    betaConstructive_group_sum_zero E msg.toD hD
   -- Step 3: build the `Q` / `beta_nat` pair for the distinct-polyG bridge.
   have hQinj : Function.Injective (zerosAt E msg.toD) :=
     zerosAt_injective E msg.toD
@@ -1637,7 +1633,7 @@ theorem distinctSigma_exists
         polyG E (zerosAt E msg.toD)
           (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
           (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
-          A₀ A₁ = 0 := hPolyGZero β_fun hβsup hβcov hβsum hβgroup
+          A₀ A₁ = 0 := hPolyGZero
   -- Step 6: set up T5's quantitative hypothesis.
   -- `zerosCard E msg.toD ≤ d`: each multiplicity ≥ 1, sum ≤ D.degE ≤ d.
   have hd_zero_le_d : zerosCard E msg.toD ≤ d := by
@@ -1700,8 +1696,7 @@ theorem distinctSigma_exists
       (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
       hQuant hQinj hDistinctR_inj hBetaNz hPolyGZero'
   -- Step 9: package the output.
-  exact ⟨β_fun, σ, hβsup, hβcov, hβsum, hβgroup,
-         hσ_eq, hσ_betam, hσ_off⟩
+  exact ⟨σ, hσ_eq, hσ_betam, hσ_off⟩
 
 /-! ## S5: extractor coefficient function from σ
 
@@ -2307,16 +2302,10 @@ theorem extractor_succeeds_and_groupSumZero
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
         (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
     (hPolyGZero :
-      ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
-        (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
-        (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
-        ((∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE) →
-        (ECPoint.weightedSum E E.points
-          (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) →
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
           polyG E (zerosAt E msg.toD)
-            (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
+            (fun k => ((multAt E (betaConstructive E msg.toD) msg.toD k : ℕ) : ZMod E.q))
             (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
             A₀ A₁ = 0)
     (hValidPairsLarge :
@@ -2327,8 +2316,18 @@ theorem extractor_succeeds_and_groupSumZero
       (fun P => ECPoint.zsmul E (extractorDivisorCoeffs E stmt msg hkm P) P) = 0 := by
   classical
   -- Step 1: apply S4.
-  obtain ⟨β_fun, σ, hβsup, hβcov, hβsum, hβgroup,
-          hσ_eq, hσ_betam, hσ_off⟩ :=
+  set β_fun := betaConstructive E msg.toD
+  have hD : ¬ msg.toD.isZero := admSet_implies_toD_nonzero stmt msg hAdm
+  have hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0 :=
+    fun P hP => betaConstructive_support E msg.toD P hP
+  have hβcov : ∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0 :=
+    fun P hP hZ => betaConstructive_covers E msg.toD hD P hP hZ
+  have hβsum : (∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE :=
+    betaConstructive_sum_le_degE E msg.toD
+  have hβgroup : ECPoint.weightedSum E E.points
+      (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0 :=
+    betaConstructive_group_sum_zero E msg.toD hD
+  obtain ⟨σ, hσ_eq, hσ_betam, hσ_off⟩ :=
     distinctSigma_exists E stmt msg d hDeg hd hkm hAdm hNoNegP
       hAllZero hPolyGZero hValidPairsLarge
   -- Step 2: apply S5 to get extractorSucceeds + scalar identification.
@@ -2415,16 +2414,10 @@ theorem extractorSucceeds_of_logDerivCheck_identically_zero_general
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
         (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
     (hPolyGZero :
-      ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
-        (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
-        (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
-        ((∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE) →
-        (ECPoint.weightedSum E E.points
-          (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) →
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
           polyG E (zerosAt E msg.toD)
-            (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
+            (fun k => ((multAt E (betaConstructive E msg.toD) msg.toD k : ℕ) : ZMod E.q))
             (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
             A₀ A₁ = 0)
     (hValidPairsLarge :
@@ -2459,16 +2452,10 @@ theorem extracted_scalars_valid
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
         (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
     (hPolyGZero :
-      ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
-        (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
-        (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
-        ((∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE) →
-        (ECPoint.weightedSum E E.points
-          (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) →
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
           polyG E (zerosAt E msg.toD)
-            (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
+            (fun k => ((multAt E (betaConstructive E msg.toD) msg.toD k : ℕ) : ZMod E.q))
             (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
             A₀ A₁ = 0)
     (hValidPairsLarge :
@@ -2546,51 +2533,49 @@ theorem extracted_scalars_valid
         `Tr(dg/g) = d(Ng)/(Ng)` via the characteristic-polynomial
         formula). -/
 
-/-- **Axiom (function-field trace-of-log-derivative identity +
-    density extension, conditioned on `hAllZero`).** Under the
-    hypothesis `hAllZero` that `logDerivCheckFn` vanishes on every
-    defined non-vertical pair, and for any Silverman AEC III
-    Cor 3.5-compliant principal-divisor decomposition `β_fun` of
-    `msg.toD`, the denominator-cleared polynomial `polyG` vanishes on
-    every non-vertical pair in `E × E`.
+/- The original `axiom polyG_zero_trace_formula` universally quantified over
+   `β_fun`. That was unsound: see `BetaUnique.lean` for a counterexample where
+   distinct Silverman III Cor 3.5-compliant decompositions produce different
+   `multAt` values. The original axiom is commented out below and replaced by
+   a narrowed `theorem ... := by sorry` that fixes `β_fun` to
+   `betaConstructive E msg.toD`.
 
-    The `hAllZero` precondition is essential: `polyG` combines the
-    divisor-side series (`Q, β`) with the protocol-response series
-    (`R, m'` from `msg.m`). Without the logDerivCheck constraint the
-    two series need not cancel. Mathematically, `polyG = 0` at a
-    defined non-vertical pair ⇔ `logDerivCheckFn = 0` there (via the
-    `polyG ⇔ paperResidue` Step-5 equivalence).
+   Original (unsound under weakened sum-bound):
+   axiom polyG_zero_trace_formula
+       {E : ECSetup} (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+       (hkm : stmt.k = msg.k)
+       (hAllZero : ...)
+       (β_fun : ZMod E.q × ZMod E.q → ℕ)
+       (hβsup : ...) (hβcov : ...) (hβsum : ...) (hβgroup : ...) :
+       ∀ A₀ A₁, ... polyG ... (multAt E β_fun msg.toD k) ... = 0
+-/
+/-- **Narrowed trace-of-log-derivative identity (sorry'd theorem).**
+    Under the hypothesis `hAllZero` that `logDerivCheckFn` vanishes on
+    every defined non-vertical pair, and using the constructive
+    `betaConstructive E msg.toD` multiplicity function, the
+    denominator-cleared polynomial `polyG` vanishes on every
+    non-vertical pair in `E × E`.
 
-    Classical content: Lang AEC VI.5 (norm/trace in a finite separable
-    extension) + Silverman ATAEC III §1 (function-field extension
-    `F_q(E)/F_q(z)`) + Stichtenoth §III.1-5 (function-field norm
-    and differentials) + Silverman AEC III Cor 3.5 (principal-
-    divisor characterisation on E).
+    The multiplicity function is fixed to `betaConstructive` rather
+    than universally quantified over all decompositions. See
+    `BetaUnique.lean` for why universal quantification is unsound.
 
-    Used to eliminate the `hPolyGZero` hypothesis that would
-    otherwise be threaded through `ma_extractable` and
-    `ip_knowledge_sound`. -/
-axiom polyG_zero_trace_formula
+    Classical content: Lang AEC VI.5 + Silverman ATAEC III §1 +
+    Stichtenoth §III.1–5 + Silverman AEC III Cor 3.5. -/
+theorem polyG_zero_trace_formula
     {E : ECSetup} (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
-    (β_fun : ZMod E.q × ZMod E.q → ℕ)
-    (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0)
-    (hβcov : ∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0)
-    (hβsum : (∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE)
-    (hβgroup : ECPoint.weightedSum E E.points
-                 (fun P => ECPoint.nsmul E (β_fun P)
-                             (ECPoint.affine P.1 P.2)) = 0) :
+        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
     ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       polyG E (zerosAt E msg.toD)
-        (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
+        (fun k => ((multAt E (betaConstructive E msg.toD) msg.toD k : ℕ) : ZMod E.q))
         (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
-        A₀ A₁ = 0
+        A₀ A₁ = 0 := by sorry
 
 /-! ## Theorem 6: Extractable MA protocol -/
 
@@ -2656,23 +2641,17 @@ theorem ma_extractable
     -- After push_neg, `hNV` is exactly the `hAllZero` hypothesis needed
     -- by `polyG_zero_trace_formula`: logDerivCheckFn vanishes on every
     -- defined non-vertical pair.
+    -- `polyG_zero_trace_formula` now gives vanishing for `betaConstructive`
+    -- directly, without universal quantification over `β_fun`.
     have hPolyGZero :
-        ∀ (β_fun : ZMod E.q × ZMod E.q → ℕ),
-          (∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0) →
-          (∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0) →
-          ((∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE) →
-          (ECPoint.weightedSum E E.points
-            (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) →
-          ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
-            A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
-            polyG E (zerosAt E msg.toD)
-              (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
-              (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
-              A₀ A₁ = 0 :=
-      fun β_fun hβsup hβcov hβsum hβgroup =>
-        polyG_zero_trace_formula stmt msg hkm
-          (fun A₀ A₁ hA₀ hA₁ hNVxy hDef => hNV A₀ A₁ hA₀ hA₁ hNVxy hDef)
-          β_fun hβsup hβcov hβsum hβgroup
+        ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+          A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+          polyG E (zerosAt E msg.toD)
+            (fun k => ((multAt E (betaConstructive E msg.toD) msg.toD k : ℕ) : ZMod E.q))
+            (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
+            A₀ A₁ = 0 :=
+      polyG_zero_trace_formula stmt msg hkm
+        (fun A₀ A₁ hA₀ hA₁ hNVxy hDef => hNV A₀ A₁ hA₀ hA₁ hNVxy hDef)
     by_cases hAdm : stmt.admSet (msg.polyA, msg.polyB)
     · classical
       by_cases hNegP : (negPIndexSet E stmt msg hkm).Nonempty
