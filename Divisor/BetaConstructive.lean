@@ -459,7 +459,14 @@ theorem betaConstructive_sum_le_degE
         sum_rootMultiplicity_le_natDegree E (normPoly E D)
     _ ≤ D.degE := normPoly_natDegree_le E D
 
-/-! ## Narrow Abel-theorem axiom
+/-! ## Split predicate (used as precondition for the Abel-theorem axiom below) -/
+
+/-- Split predicate: `N(D)` has as many roots as its degree (counted with
+multiplicity) over `F_q`. Equivalent to saying every root is `F_q`-rational. -/
+def normPoly_splits_over_Fq (D : CoordRingElt E.q) : Prop :=
+  Multiset.card (normPoly E D).roots = (normPoly E D).natDegree
+
+/-! ## Narrow Abel-theorem axiom (under splitting)
 
     The remaining property of `betaConstructive` needed downstream —
     the weighted group-sum-zero identity (the "Abel's theorem on E"
@@ -476,30 +483,49 @@ theorem betaConstructive_sum_le_degE
     Silverman's proof derives Cor 3.5 from Prop 3.4(a,e) (p. 61-62,
     the divisor-class iso `σ : Pic⁰(E) ≅ E`).
 
-    Specialized to `f = D = a(x) - b(x)·y` viewed as a nonzero element
-    of `F_q[E] ⊂ F_q(E)`, the affine part of `div(D)` is recorded by
-    the multiplicity function `betaConstructive D`, and the pole at `∞`
-    has order `D.degE`. Item (ii) becomes
-    `∑ β(P) · (affine P) = O` (the `∞` term contributes `0 · ∞ = 0`).
+    Silverman states Cor 3.5 over the algebraic closure `E(K̄)`. When
+    specialised to `f = D = a(x) - b(x)·y ∈ F_q[E]^×`, the divisor
+    `div(D)` is a sum over geometric points `E(F̄_q)` with true
+    multiplicities. The F_q-surrogate `betaConstructive D` agrees with
+    those multiplicities at F_q-rational points, and the remaining
+    (non-F_q) support is empty, **precisely under the splitting
+    hypothesis** `normPoly_splits_over_Fq E D` (all zeros of `normPoly`
+    lie in `F_q`, so every geometric zero of `D` on `E` is
+    F_q-rational — no conjugate orbits contribute). Under that
+    hypothesis the F_q-sum identity is the direct specialisation of
+    Cor 3.5 to F_q-rational divisors.
 
-    The pole-order-at-∞ identity `∑ β(P) = D.degE` (which would descend
-    from item (i)) is **NOT** recorded here: it fails when `normPoly`
-    does not split over `F_q` (see
-    `docs/divisor-degree-axiom-bug.md` for Aristotle's counterexample
-    `D = x² + 1` over `F_7`, `E : y² = x³ + 1`). Only the unconditional
-    bound `betaConstructive_sum_le_degE` is used downstream.
+    **Why a precondition is required.** Without splitting, conjugate
+    orbits `{P, P^φ}` in `E(F_{q^r}) \ E(F_q)` contribute to Σ[n_P]·P
+    sums that are F_q-rational but nonzero: e.g. on
+    `E : y² = x³ + 1 / F_5` the line `y = 2x + 1` meets `E` at
+    `P₃ = (0,1) ∈ E(F_5)` and a Frobenius-conjugate pair
+    `P₁, P₂ ∈ E(F_{25}) \ E(F_5)`; Cor 3.5 gives `P₁+P₂+P₃ = O`, but
+    the F_5-sum `β(P₃)·P₃ = (0,1) ≠ O`. So the unguarded F_q-only
+    statement is literally false.
+
+    The pole-order-at-∞ identity `∑ β(P) = D.degE` (degree-zero
+    direction of Cor 3.5) would descend from item (i) under the same
+    splitting hypothesis; it is **NOT** recorded as an axiom because
+    only the unconditional bound `betaConstructive_sum_le_degE` is
+    used downstream. See `docs/divisor-degree-axiom-bug.md` for the
+    earlier (now-withdrawn) unconditional form and Aristotle's
+    counterexample `D = x² + 1` over `F_7`, `E : y² = x³ + 1`.
 -/
 
-/-- **Abel's theorem on E for `D`'s divisor** (Silverman AEC III
-    Corollary 3.5, group-sum-zero direction — derived in Silverman
-    from Prop 3.4(a,e)).
+/-- **Abel's theorem on E for `D`'s divisor, split form** (Silverman
+    AEC III Corollary 3.5, p.63, group-sum-zero direction — derived in
+    Silverman from Prop 3.4(a,e)).
 
-    The `β`-weighted group sum over `E`'s affine points vanishes:
-    the divisor of the nonzero rational function `D = a(x) - b(x)·y`
-    has group-sum zero, and the `∞` contribution is `-D.degE · (∞)`
-    which is `0` under the group law (since `∞` is the identity). -/
+    Under the splitting hypothesis `normPoly_splits_over_Fq E D`, every
+    geometric zero of `D` on `E` is F_q-rational, so the F_q-sum
+    matches the full `Σ [n_P] P` of Cor 3.5. The `β`-weighted group
+    sum over `E`'s affine points then vanishes: the divisor of the
+    nonzero rational function `D = a(x) - b(x)·y` has group-sum zero,
+    and the `∞` contribution is `-D.degE · (∞) = 0`. -/
 axiom CoordRingElt.divisor_group_sum_zero
-    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hSplit : normPoly_splits_over_Fq E D) :
     ECPoint.weightedSum E E.points
       (fun P => ECPoint.nsmul E (betaConstructive E D P)
                     (ECPoint.affine P.1 P.2)) = 0
@@ -507,14 +533,15 @@ axiom CoordRingElt.divisor_group_sum_zero
 /-! ## Derived theorem: `betaConstructive_group_sum_zero` -/
 
 /-- Direct restatement of the group-sum axiom as a convenience theorem
-    under the chosen `β = betaConstructive E D` representative. Downstream
-    consumers can substitute any symbol matching this signature. -/
+    under the chosen `β = betaConstructive E D` representative. Requires
+    the splitting hypothesis to match Silverman AEC III Cor 3.5 exactly. -/
 theorem betaConstructive_group_sum_zero
-    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hSplit : normPoly_splits_over_Fq E D) :
     ECPoint.weightedSum E E.points
       (fun P => ECPoint.nsmul E (betaConstructive E D P)
                     (ECPoint.affine P.1 P.2)) = 0 :=
-  CoordRingElt.divisor_group_sum_zero E D hD
+  CoordRingElt.divisor_group_sum_zero E D hD hSplit
 
 /-! ## Q3.1: split case — `betaConstructive` ↔ `rootMultiplicity` bridge
 
@@ -530,12 +557,10 @@ theorem betaConstructive_group_sum_zero
 
     Chaining these with the per-`x₀` bound forces equality everywhere.
     Q3.2 consumes the total-sum identity to instantiate the partial-fraction
-    expansion from Q3.0 at `p = normPoly E D`. -/
+    expansion from Q3.0 at `p = normPoly E D`.
 
-/-- Split predicate: `N(D)` has as many roots as its degree (counted with
-multiplicity) over `F_q`. Equivalent to saying every root is `F_q`-rational. -/
-def normPoly_splits_over_Fq (D : CoordRingElt E.q) : Prop :=
-  Multiset.card (normPoly E D).roots = (normPoly E D).natDegree
+    Note: the split predicate `normPoly_splits_over_Fq` itself is defined
+    above (used as a precondition for the Abel-theorem axiom). -/
 
 /-- Counting identity: the total sum of `rootMultiplicity α p` over `α : F_q`
 equals `Multiset.card p.roots`. Same argument as the first half of

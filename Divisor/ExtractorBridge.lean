@@ -1568,6 +1568,7 @@ theorem distinctSigma_exists
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hSplit : normPoly_splits_over_Fq E msg.toD)
     (_hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
@@ -1602,7 +1603,7 @@ theorem distinctSigma_exists
     betaConstructive_sum_le_degE E msg.toD
   have hβgroup : ECPoint.weightedSum E E.points
       (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0 :=
-    betaConstructive_group_sum_zero E msg.toD hD
+    betaConstructive_group_sum_zero E msg.toD hD hSplit
   -- Step 3: build the `Q` / `beta_nat` pair for the distinct-polyG bridge.
   have hQinj : Function.Injective (zerosAt E msg.toD) :=
     zerosAt_injective E msg.toD
@@ -2300,6 +2301,7 @@ theorem extractor_succeeds_and_groupSumZero
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hSplit : normPoly_splits_over_Fq E msg.toD)
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
@@ -2330,9 +2332,9 @@ theorem extractor_succeeds_and_groupSumZero
     betaConstructive_sum_le_degE E msg.toD
   have hβgroup : ECPoint.weightedSum E E.points
       (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0 :=
-    betaConstructive_group_sum_zero E msg.toD hD
+    betaConstructive_group_sum_zero E msg.toD hD hSplit
   obtain ⟨σ, hσ_eq, hσ_betam, hσ_off⟩ :=
-    distinctSigma_exists E stmt msg d hDeg hd hkm hAdm hNoNegP
+    distinctSigma_exists E stmt msg d hDeg hd hkm hAdm hNoNegP hSplit
       hAllZero hPolyGZero hValidPairsLarge
   -- Step 2: apply S5 to get extractorSucceeds + scalar identification.
   obtain ⟨hBound, hCanon, hNonCanon⟩ :=
@@ -2412,6 +2414,7 @@ theorem extractorSucceeds_of_logDerivCheck_identically_zero_general
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hSplit : normPoly_splits_over_Fq E msg.toD)
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
@@ -2436,7 +2439,7 @@ theorem extractorSucceeds_of_logDerivCheck_identically_zero_general
                                    (extractorBases E stmt msg hkm i).2)) := by
   obtain ⟨hSucc, hWSum⟩ :=
     extractor_succeeds_and_groupSumZero E stmt msg d hDeg hd hkm hAdm hNoNegP
-      hAllZero hPolyGZero hValidPairsLarge
+      hSplit hAllZero hPolyGZero hValidPairsLarge
   exact ⟨hSucc,
     target_eq_weightedSum_of_weightedSum E stmt msg hkm hNoNegP hWSum⟩
 
@@ -2450,6 +2453,7 @@ theorem extracted_scalars_valid
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hSplit : normPoly_splits_over_Fq E msg.toD)
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
@@ -2475,7 +2479,7 @@ theorem extracted_scalars_valid
   by_cases hNegP : (negPIndexSet E stmt msg hkm).Nonempty
   · exact extracted_scalars_valid_special E stmt msg hkm hNegP
   · exact (extractorSucceeds_of_logDerivCheck_identically_zero_general
-            E stmt msg d hDeg hd hkm hAdm hNegP hAllZero hPolyGZero
+            E stmt msg d hDeg hd hkm hAdm hNegP hSplit hAllZero hPolyGZero
             hValidPairsLarge).2
 
 /-! ## Classical axiom: polyG vanishing on E × E
@@ -3466,7 +3470,7 @@ theorem ma_extractable
         · left
           obtain ⟨hSucc, hRelation⟩ :=
             extractorSucceeds_of_logDerivCheck_identically_zero_general E stmt msg d
-              hDeg hd hkm hAdm hNegP
+              hDeg hd hkm hAdm hNegP hSplit
               (fun A₀ A₁ hA₀ hA₁ hDef => hNV A₀ A₁ hA₀ hA₁ hDef)
               hPolyGZero hL
           let wit : DlogWitness E.q :=

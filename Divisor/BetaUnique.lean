@@ -119,9 +119,12 @@ theorem support_iff_of_principal_conditions
     divisor class). -/
 
 /-- The weighted group sum of any valid β_fun equals that of
-    betaConstructive (both are zero). -/
+    betaConstructive (both are zero). Requires the splitting hypothesis
+    so that `betaConstructive_group_sum_zero` matches Silverman AEC III
+    Cor 3.5 exactly. -/
 theorem group_sum_eq_of_principal_conditions
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hSplit : normPoly_splits_over_Fq E D)
     (β_fun : ZMod E.q × ZMod E.q → ℕ)
     (hβgroup : ECPoint.weightedSum E E.points
                  (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) :
@@ -130,7 +133,7 @@ theorem group_sum_eq_of_principal_conditions
     ECPoint.weightedSum E E.points
       (fun P => ECPoint.nsmul E (betaConstructive E D P)
                     (ECPoint.affine P.1 P.2)) := by
-  rw [hβgroup, betaConstructive_group_sum_zero E D hD]
+  rw [hβgroup, betaConstructive_group_sum_zero E D hD hSplit]
 
 /-! ## Sum-bound agreement
 
