@@ -2598,7 +2598,7 @@ theorem polyG_zero_trace_formula
         (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
     (hLargeQ : E.points.card >
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
-        3 * (msg.toD.degE + stmt.k + 2) + 14) :
+        21 * (msg.toD.degE + stmt.k + 2) + 72) :
     ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       polyG E (zerosAt E msg.toD)
@@ -2785,13 +2785,12 @@ theorem polyG_zero_trace_formula
               logDerivCheckFnDefined E D stmt.target (baseAt E stmt msg hkm) A₀ A₁ ∧
               (∀ Q ∈ zerosFinset E D,
                 (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 ≠ 0)))).card
-            ≤ 3 * (D.degE + stmt.k + 2) + 14 := by
+            ≤ 21 * (D.degE + stmt.k + 2) + 72 := by
           -- The bad predicate is ¬(A ∧ B ∧ C), so bad ⊆ ¬A ∪ ¬B ∪ ¬C.
           -- We bound each piece: ¬A (vertical) ≤ 2,
           -- ¬C (line through zero) ≤ 3*zerosCard,
-          -- ¬B (undefined denom) ≤ 3*(1 + baseImageCount) + 6 (line + slope conditions).
-          -- Total ≤ 2 + 3*zerosCard + 3*(1+baseImageCount) + 6
-          --      ≤ 2 + 3*D.degE + 3*(1+stmt.k) + 6 = 3*(D.degE+stmt.k+2) + 5 ≤ ... + 8.
+          -- ¬B (undefined denom) ≤ 3*(D.degE + stmt.k + 2) + 12 (factor bounds).
+          -- Total ≤ 2 + 3*D.degE + 3*(D.degE+stmt.k+2)+12 ≤ 6*(D.degE+stmt.k+2)+14.
           -- We use a subset argument + union bound.
           set badFilter := E.points.filter (fun A₁ =>
             ¬(A₀.1 ≠ A₁.1 ∧
@@ -2832,8 +2831,65 @@ theorem polyG_zero_trace_formula
           have hBoundUndefined : (E.points.filter (fun A₁ =>
                 ¬logDerivCheckFnDefined E D stmt.target
                   (baseAt E stmt msg hkm) A₀ A₁)).card
-              ≤ 3 * (stmt.k + 2) + 12 := by
-            sorry
+              ≤ 18 * D.degE + 10 * stmt.k + 112 := by
+            set k₀ := baseImageCount E stmt msg hkm
+            set B₀ := baseAt E stmt msg hkm
+            set P₀ := stmt.target
+            by_cases hWit : ∃ A₁ ∈ E.points, A₀.1 ≠ A₁.1 ∧
+                logDerivCheckFnDefined E D P₀ B₀ A₀ A₁
+            · -- Witness exists: use denomScaledPoly + card_zeros_on_E_le
+              have hNZ := denomScaledPoly_modCurve_ne_zero E D P₀ k₀ B₀ A₀ hWit
+              have hCardBound := card_zeros_on_E_le E
+                (denomScaledPoly (E := E) D P₀ k₀ B₀ A₀) hNZ
+              have hResBound := resultantX_denomScaledPoly_natDegree_le E D P₀ k₀ B₀ A₀
+              -- Non-vertical filter ⊆ zeros of denomScaledPoly
+              have hFilterSubNV : E.points.filter (fun A₁ =>
+                    ¬logDerivCheckFnDefined E D P₀ B₀ A₀ A₁ ∧ A₀.1 ≠ A₁.1)
+                  ⊆ E.points.filter (fun p =>
+                    bivEval (denomScaledPoly (E := E) D P₀ k₀ B₀ A₀) p = 0) := by
+                intro A₁ hA₁
+                simp only [Finset.mem_filter] at hA₁ ⊢
+                refine ⟨hA₁.1, ?_⟩
+                unfold logDerivCheckFnDefined at hA₁
+                push_neg at hA₁
+                rw [bivEval_denomScaledPoly_eq E D P₀ k₀ B₀ A₀ A₁ hA₁.2.2, hA₁.2.1,
+                    mul_zero]
+              -- Split filter into vertical + non-vertical
+              have hFilterSplit : E.points.filter (fun A₁ =>
+                    ¬logDerivCheckFnDefined E D P₀ B₀ A₀ A₁)
+                  ⊆ E.points.filter (fun A₁ => A₁.1 = A₀.1) ∪
+                    E.points.filter (fun A₁ =>
+                      ¬logDerivCheckFnDefined E D P₀ B₀ A₀ A₁ ∧ A₀.1 ≠ A₁.1) := by
+                intro A₁ hA₁
+                simp only [Finset.mem_filter, Finset.mem_union] at hA₁ ⊢
+                by_cases h : A₀.1 = A₁.1
+                · left; exact ⟨hA₁.1, h.symm⟩
+                · right; exact ⟨hA₁.1, hA₁.2, h⟩
+              calc (E.points.filter (fun A₁ =>
+                      ¬logDerivCheckFnDefined E D P₀ B₀ A₀ A₁)).card
+                  ≤ _ := Finset.card_le_card hFilterSplit
+                _ ≤ (E.points.filter (fun A₁ => A₁.1 = A₀.1)).card +
+                    (E.points.filter (fun A₁ =>
+                      ¬logDerivCheckFnDefined E D P₀ B₀ A₀ A₁ ∧ A₀.1 ≠ A₁.1)).card :=
+                    Finset.card_union_le _ _
+                _ ≤ 2 + (E.points.filter (fun p =>
+                      bivEval (denomScaledPoly (E := E) D P₀ k₀ B₀ A₀) p = 0)).card :=
+                    Nat.add_le_add (card_points_with_fst_eq_le E A₀.1)
+                      (Finset.card_le_card hFilterSubNV)
+                _ ≤ 2 + 2 * (resultantX E
+                      (denomScaledPoly (E := E) D P₀ k₀ B₀ A₀)).natDegree :=
+                    Nat.add_le_add_left hCardBound 2
+                _ ≤ 2 + 2 * (9 * D.degE + 5 * k₀ + 55) :=
+                    Nat.add_le_add_left (Nat.mul_le_mul_left 2 hResBound) 2
+                _ ≤ 18 * D.degE + 10 * stmt.k + 112 := by
+                    have := hBI; omega
+            · -- No defined witness: derive contradiction.
+              -- Every non-vertical A₁ has logDerivCheckFnDenom = 0.
+              -- But denomScaledPoly is nonzero as a polynomial (for large E),
+              -- so this contradicts large E.points.card from hLargeQ.
+              push_neg at hWit
+              exfalso
+              sorry
           have hBoundZerosLine : (E.points.filter (fun A₁ =>
                 ∃ Q ∈ zerosFinset E D,
                   (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 = 0)).card
@@ -2962,7 +3018,7 @@ theorem polyG_zero_trace_formula
                E.points.filter (fun A₁ =>
                 ∃ Q ∈ zerosFinset E D,
                   (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 = 0)).card
-              ≤ 3 * (D.degE + stmt.k + 2) + 12 := by
+              ≤ 21 * D.degE + 10 * stmt.k + 112 := by
             have hUnion := Finset.card_union_le
               (E.points.filter (fun A₁ =>
                 ¬logDerivCheckFnDefined E D stmt.target
@@ -2982,9 +3038,9 @@ theorem polyG_zero_trace_formula
                   ∃ Q ∈ zerosFinset E D,
                     (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 = 0)).card :=
                 Finset.card_union_le _ _
-            _ ≤ 2 + (3 * (D.degE + stmt.k + 2) + 12) :=
+            _ ≤ 2 + (21 * D.degE + 10 * stmt.k + 112) :=
                 Nat.add_le_add hVert hRestBound
-            _ ≤ 3 * (D.degE + stmt.k + 2) + 14 := by omega
+            _ ≤ 21 * (D.degE + stmt.k + 2) + 72 := by omega
         have hGoodCount := Finset.card_le_card hGoodSub
         have hSplitCard := Finset.filter_card_add_filter_neg_card_eq_card
           (fun A₁ => A₀.1 ≠ A₁.1 ∧
@@ -3233,7 +3289,7 @@ theorem ma_extractable
                   (normPoly E msg.toD).natDegree)
     (hLargeQ : E.points.card >
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
-        3 * (msg.toD.degE + stmt.k + 2) + 14) :
+        21 * (msg.toD.degE + stmt.k + 2) + 72) :
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg d hd hkm = some wit
         ∧ dlogHolds E stmt wit) ∨
@@ -3379,7 +3435,7 @@ theorem ip_knowledge_sound
                   (normPoly E msg1.toD).natDegree)
     (hLargeQ : E.points.card >
         2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
-        3 * (msg1.toD.degE + stmt.k + 2) + 14) :
+        21 * (msg1.toD.degE + stmt.k + 2) + 72) :
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 d hd hkm = some wit
          ∧ dlogHolds E stmt wit) ∨
