@@ -2537,7 +2537,8 @@ theorem extracted_scalars_valid
         `Tr(dg/g) = d(Ng)/(Ng)` via the characteristic-polynomial
         formula). -/
 
-/- The original `axiom polyG_zero_trace_formula` universally quantified over
+/-
+The original `axiom polyG_zero_trace_formula` universally quantified over
    `β_fun`. That was unsound: see `BetaUnique.lean` for a counterexample where
    distinct Silverman III Cor 3.5-compliant decompositions produce different
    `multAt` values. The original axiom is commented out below and replaced by
@@ -2552,8 +2553,8 @@ theorem extracted_scalars_valid
        (β_fun : ZMod E.q × ZMod E.q → ℕ)
        (hβsup : ...) (hβcov : ...) (hβsum : ...) (hβgroup : ...) :
        ∀ A₀ A₁, ... polyG ... (multAt E β_fun msg.toD k) ... = 0
--/
-/-- **Narrowed trace-of-log-derivative identity (sorry'd theorem).**
+
+**Narrowed trace-of-log-derivative identity (sorry'd theorem).**
     Under the hypotheses `hSplit` (normPoly splits over F_q),
     `hAccount` (betaConstructive accounting identity), and
     `hAllZero` (logDerivCheckFn vanishes on every defined non-vertical
@@ -2581,7 +2582,8 @@ theorem extracted_scalars_valid
     (function-field norm, divisor-of-norm, differentials) +
     Silverman AEC III Cor 3.5 (principal-divisor characterisation
     on E). Combined with the Hasse-Weil bound (already an axiom) for
-    the density extension. -/
+    the density extension.
+-/
 theorem polyG_zero_trace_formula
     {E : ECSetup} (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
@@ -2725,7 +2727,162 @@ theorem polyG_zero_trace_formula
   have hPhase1 : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E D →
       ∀ A₁ ∈ E.points, A₀.1 ≠ A₁.1 →
       polyG E Q_fn β_fn R_fn m_fn A₀ A₁ = 0 := by
-    sorry
+    -- Two-step approach: Phase 1a for "non-special" A₀, Phase 1b via swap.
+    -- Phase 1a: A₀ not in zerosFinset and not in distinctR image
+    have hPhase1a : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E D →
+        (∀ j, R_fn j ≠ A₀) →
+        ∀ A₁ ∈ E.points, A₀.1 ≠ A₁.1 →
+        polyG E Q_fn β_fn R_fn m_fn A₀ A₁ = 0 := by
+      intro A₀ hA₀ hA₀nz hA₀nr
+      -- Use density: show polyGPoly(A₀) has enough zeros on E.
+      have hManyZeros : (E.points.filter (fun p =>
+          bivEval (polyGPoly (E := E) Q_fn β_fn R_fn m_fn A₀) p = 0)).card
+          > 2 * (resultantX E (polyGPoly (E := E) Q_fn β_fn R_fn m_fn A₀)).natDegree := by
+        -- The "good" set: A₁ where hPhaseA applies (fullyDef)
+        -- Its complement on E.points has cardinality ≤ 3*(D.degE + stmt.k + 2) + 5
+        -- Bound the resultant degree
+        have hResLe := resultantX_polyGPoly_natDegree_le E Q_fn β_fn R_fn m_fn A₀
+        -- zerosCard + (1 + baseImageCount) ≤ D.degE + stmt.k + 2
+        have hZC : zerosCard E D ≤ D.degE := by
+          have hβcov := betaConstructive_covers E D (by push_neg; intro ha; exact hDnz ha)
+          have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaConstructive E D) D k :=
+            fun k => multAt_pos E (betaConstructive E D) D hβcov k
+          have hβsum := betaConstructive_sum_le_degE E D
+          have hβeq := sum_multAt_eq_sum_βfun E (betaConstructive E D) D
+            (betaConstructive_support E D)
+          calc zerosCard E D
+              = ∑ _ : Fin (zerosCard E D), 1 := by
+                simp [Finset.sum_const, Finset.card_univ, Fintype.card_fin]
+            _ ≤ ∑ k : Fin (zerosCard E D), multAt E (betaConstructive E D) D k :=
+                Finset.sum_le_sum (fun k _ => hβpos k)
+            _ = ∑ P ∈ E.points, betaConstructive E D P := hβeq
+            _ ≤ D.degE := hβsum
+        have hBI : baseImageCount E stmt msg hkm ≤ stmt.k := by
+          calc baseImageCount E stmt msg hkm
+              ≤ msg.k := by
+                unfold baseImageCount baseImage
+                exact (Finset.card_image_le).trans (by rw [Finset.card_univ, Fintype.card_fin])
+            _ = stmt.k := hkm.symm
+        -- The good set (where hPhaseA applies) is a subset of the bivEval zero set
+        have hGoodSub : E.points.filter (fun A₁ =>
+            A₀.1 ≠ A₁.1 ∧
+            logDerivCheckFnDefined E D stmt.target (baseAt E stmt msg hkm) A₀ A₁ ∧
+            (∀ Q ∈ zerosFinset E D,
+              (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 ≠ 0))
+          ⊆ E.points.filter (fun p =>
+            bivEval (polyGPoly (E := E) Q_fn β_fn R_fn m_fn A₀) p = 0) := by
+          intro A₁ hA₁
+          simp only [Finset.mem_filter] at hA₁ ⊢
+          refine ⟨hA₁.1, ?_⟩
+          rw [bivEval_polyGPoly]
+          exact hPhaseA A₀ A₁ hA₀ hA₁.1 hA₁.2.1 hA₁.2.2.1 hA₁.2.2.2
+        -- Bound the complement of the good set
+        -- Bad A₁'s: vertical + collinear with special points + slope denoms
+        -- Total bad ≤ 3*(D.degE + stmt.k + 2) + 5
+        have hBadBound : (E.points.filter (fun A₁ =>
+            ¬(A₀.1 ≠ A₁.1 ∧
+              logDerivCheckFnDefined E D stmt.target (baseAt E stmt msg hkm) A₀ A₁ ∧
+              (∀ Q ∈ zerosFinset E D,
+                (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 ≠ 0)))).card
+            ≤ 3 * (D.degE + stmt.k + 2) + 5 := by
+          sorry
+        have hGoodCount := Finset.card_le_card hGoodSub
+        have hSplitCard := Finset.filter_card_add_filter_neg_card_eq_card
+          (fun A₁ => A₀.1 ≠ A₁.1 ∧
+            logDerivCheckFnDefined E D stmt.target (baseAt E stmt msg hkm) A₀ A₁ ∧
+            (∀ Q ∈ zerosFinset E D,
+              (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 ≠ 0))
+          (s := E.points)
+        omega
+      have hAllOnE := bivEval_zero_on_E_of_many_zeros E
+        (polyGPoly (E := E) Q_fn β_fn R_fn m_fn A₀) hManyZeros
+      intro A₁ hA₁ _
+      rw [← bivEval_polyGPoly]
+      exact hAllOnE A₁ hA₁
+    -- Phase 1b: A₀ in distinctR image (special), use swap from Phase 1a + density
+    intro A₀ hA₀ hA₀nz
+    by_cases hA₀r : ∀ j, R_fn j ≠ A₀
+    · -- Non-special: use Phase 1a directly
+      exact hPhase1a A₀ hA₀ hA₀nz hA₀r
+    · -- Special A₀: some R_fn j = A₀
+      push_neg at hA₀r
+      -- For A₁ not in zerosFinset, not in R-image, different x:
+      -- Phase 1a (applied to A₁ as "A₀") gives polyG(A₁, A₀) = 0
+      -- Swap gives polyG(A₀, A₁) = 0
+      -- Then density extends to all A₁.
+      have hSwapZeros : ∀ A₁ ∈ E.points, A₁ ∉ zerosFinset E D →
+          (∀ j, R_fn j ≠ A₁) → A₀.1 ≠ A₁.1 →
+          polyG E Q_fn β_fn R_fn m_fn A₀ A₁ = 0 := by
+        intro A₁ hA₁ hA₁nz hA₁nr hNV
+        exact polyG_swap_zero E Q_fn β_fn R_fn m_fn A₀ A₁
+          (hPhase1a A₁ hA₁ hA₁nz hA₁nr A₀ hA₀ hNV.symm)
+      -- Show enough zeros for density
+      have hManyZeros : (E.points.filter (fun p =>
+          bivEval (polyGPoly (E := E) Q_fn β_fn R_fn m_fn A₀) p = 0)).card
+          > 2 * (resultantX E (polyGPoly (E := E) Q_fn β_fn R_fn m_fn A₀)).natDegree := by
+        -- Good A₁: not in zerosFinset, not in R-image, different x
+        have hGoodSub : E.points.filter (fun A₁ =>
+            A₁ ∉ zerosFinset E D ∧ (∀ j, R_fn j ≠ A₁) ∧ A₀.1 ≠ A₁.1)
+          ⊆ E.points.filter (fun p =>
+            bivEval (polyGPoly (E := E) Q_fn β_fn R_fn m_fn A₀) p = 0) := by
+          intro A₁ hA₁
+          simp only [Finset.mem_filter] at hA₁ ⊢
+          refine ⟨hA₁.1, ?_⟩
+          rw [bivEval_polyGPoly]
+          exact hSwapZeros A₁ hA₁.1 hA₁.2.1 hA₁.2.2.1 hA₁.2.2.2
+        -- Bad A₁: in zerosFinset ∪ R-image ∪ same-x
+        -- |bad| ≤ |zerosFinset| + |R-image| + 2 ≤ D.degE + (1 + stmt.k) + 2
+        have hZC : zerosCard E D ≤ D.degE := by
+          have hβcov := betaConstructive_covers E D (by push_neg; intro ha; exact hDnz ha)
+          have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaConstructive E D) D k :=
+            fun k => multAt_pos E (betaConstructive E D) D hβcov k
+          have hβsum := betaConstructive_sum_le_degE E D
+          have hβeq := sum_multAt_eq_sum_βfun E (betaConstructive E D) D
+            (betaConstructive_support E D)
+          calc zerosCard E D
+              = ∑ _ : Fin (zerosCard E D), 1 := by
+                simp [Finset.sum_const, Finset.card_univ, Fintype.card_fin]
+            _ ≤ ∑ k : Fin (zerosCard E D), multAt E (betaConstructive E D) D k :=
+                Finset.sum_le_sum (fun k _ => hβpos k)
+            _ = ∑ P ∈ E.points, betaConstructive E D P := hβeq
+            _ ≤ D.degE := hβsum
+        have hBI : baseImageCount E stmt msg hkm ≤ stmt.k := by
+          calc baseImageCount E stmt msg hkm
+              ≤ msg.k := by
+                unfold baseImageCount baseImage
+                exact (Finset.card_image_le).trans (by rw [Finset.card_univ, Fintype.card_fin])
+            _ = stmt.k := hkm.symm
+        have hResLe := resultantX_polyGPoly_natDegree_le E Q_fn β_fn R_fn m_fn A₀
+        -- Count complement
+        have hBadBound : (E.points.filter (fun A₁ =>
+            ¬(A₁ ∉ zerosFinset E D ∧ (∀ j, R_fn j ≠ A₁) ∧ A₀.1 ≠ A₁.1))).card
+            ≤ D.degE + stmt.k + 5 := by
+          -- The cardinality of the bad set is at most the sum of the cardinalities of the three sets.
+          have h_bad_card : (Finset.filter (fun A₁ => A₁ ∈ zerosFinset E D ∨ ∃ j, R_fn j = A₁ ∨ A₀.1 = A₁.1) E.points).card ≤ D.degE + (1 + stmt.k) + 2 := by
+            refine' le_trans ( Finset.card_le_card _ ) _;
+            any_goals exact Finset.filter ( fun A₁ => A₁ ∈ zerosFinset E D ) E.points ∪ Finset.image R_fn Finset.univ ∪ Finset.filter ( fun A₁ => A₀.1 = A₁.1 ) E.points;
+            · grind +extAll;
+            · refine' le_trans ( Finset.card_union_le _ _ ) ( add_le_add ( le_trans ( Finset.card_union_le _ _ ) _ ) _ );
+              · refine' add_le_add _ _;
+                · refine' le_trans _ hZC;
+                  rw [ ← Finset.card_image_of_injective _ ( show Function.Injective ( fun x : ZMod E.q × ZMod E.q => x ) from fun x y hxy => by simpa using hxy ) ] ; exact Finset.card_le_card fun x hx => by aesop;
+                · exact le_trans ( Finset.card_image_le ) ( by simpa using by linarith );
+              · convert card_points_with_fst_eq_le E A₀.1 using 1;
+                simp +decide only [eq_comm];
+          convert h_bad_card.trans _ using 1;
+          · congr with x ; simp +contextual [ Classical.or_iff_not_imp_left ];
+            grind;
+          · linarith
+        have hGoodCount := Finset.card_le_card hGoodSub
+        have hSplitCard := Finset.filter_card_add_filter_neg_card_eq_card
+          (fun A₁ => A₁ ∉ zerosFinset E D ∧ (∀ j, R_fn j ≠ A₁) ∧ A₀.1 ≠ A₁.1)
+          (s := E.points)
+        omega
+      have hAllOnE := bivEval_zero_on_E_of_many_zeros E
+        (polyGPoly (E := E) Q_fn β_fn R_fn m_fn A₀) hManyZeros
+      intro A₁ hA₁ _
+      rw [← bivEval_polyGPoly]
+      exact hAllOnE A₁ hA₁
   -- Phase 2: For A₀ IN zerosFinset E D, polyG(A₀, ·) = 0 on all of E.
   -- Uses polyG_swap_zero + Phase 1 to get enough known zeros,
   -- then density (bivEval_zero_on_E_of_many_zeros) to extend.
@@ -2848,7 +3005,6 @@ theorem polyG_zero_trace_formula
   by_cases hA₀z : A₀ ∈ zerosFinset E D
   · exact hPhase2 A₀ hA₀ hA₀z A₁ hA₁ hNV
   · exact hPhase1 A₀ hA₀ hA₀z A₁ hA₁ hNV
-
 
 /-! ## Theorem 6: Extractable MA protocol -/
 
