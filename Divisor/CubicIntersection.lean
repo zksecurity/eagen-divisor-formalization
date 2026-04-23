@@ -226,6 +226,160 @@ theorem resultantX_ne_zero (f : (ZMod E.q)[X][X])
   rw [hg, ha, hb]
   simp
 
+/-! ## Primality of `curveEqPoly`
+
+    The curve polynomial `Y² − f(X)` is irreducible (hence prime) in
+    `(𝔽_q)[X][Y]` because `f(X) = X³ + A·X + B` has odd degree and
+    therefore cannot be a perfect square. We prove the prime property
+    directly: if `curveEqPoly ∣ f·g`, then `curveEqPoly ∣ f` or
+    `curveEqPoly ∣ g`. -/
+
+/-- If `f %ₘ curveEqPoly = 0` then both xPart and yPart are zero. -/
+theorem modCurve_eq_zero_iff_parts (f : (ZMod E.q)[X][X]) :
+    f %ₘ curveEqPoly E = 0 ↔ xPart E (f %ₘ curveEqPoly E) = 0 ∧ yPart E (f %ₘ curveEqPoly E) = 0 := by
+  constructor
+  · intro h; rw [h]; simp [xPart, yPart]
+  · intro ⟨hx, hy⟩
+    have := eq_xPart_add_yPart_mul_X E _ (modByMonic_curveEqPoly_natDegree_lt E f)
+    rw [this, hx, hy]; simp
+
+/-
+Multiplication formula for xPart of a product modulo curveEqPoly.
+    If `f = f₀ + f₁·Y` and `g = g₀ + g₁·Y`, then
+    `(f·g) mod curve = (f₀·g₀ + f₁·g₁·curveX) + (f₀·g₁ + f₁·g₀)·Y`.
+-/
+theorem xPart_mul_mod_curveEqPoly (f g : (ZMod E.q)[X][X]) :
+    xPart E ((f * g) %ₘ curveEqPoly E) =
+      xPart E (f %ₘ curveEqPoly E) * xPart E (g %ₘ curveEqPoly E) +
+      yPart E (f %ₘ curveEqPoly E) * yPart E (g %ₘ curveEqPoly E) * curveX E := by
+  have h_mod : (f * g) %ₘ curveEqPoly E = ((f %ₘ curveEqPoly E) * (g %ₘ curveEqPoly E)) %ₘ curveEqPoly E := by
+    exact?;
+  -- Since $f'$ and $g'$ are polynomials of degree less than 2, we can write them as $f' = a + bY$ and $g' = c + dY$.
+  obtain ⟨a, b, ha⟩ : ∃ a b : (ZMod E.q)[X], f %ₘ curveEqPoly E = C a + C b * X := by
+    have h_deg : (f %ₘ curveEqPoly E).natDegree < 2 := by
+      exact?;
+    rw [ eq_xPart_add_yPart_mul_X E _ h_deg ];
+    exact ⟨ _, _, rfl ⟩
+  obtain ⟨c, d, hb⟩ : ∃ c d : (ZMod E.q)[X], g %ₘ curveEqPoly E = C c + C d * X := by
+    have h_deg : (g %ₘ curveEqPoly E).natDegree < 2 := by
+      exact?;
+    rw [ eq_xPart_add_yPart_mul_X E _ h_deg ];
+    exact ⟨ _, _, rfl ⟩;
+  -- Now compute the product $(a + bY)(c + dY)$ modulo $Y^2 - f(X)$.
+  have h_prod_mod : ((C a + C b * X) * (C c + C d * X)) %ₘ curveEqPoly E = C (a * c + b * d * curveX E) + C (a * d + b * c) * X := by
+    rw [ show ( C a + C b * X ) * ( C c + C d * X ) = ( C ( a * c + b * d * curveX E ) + C ( a * d + b * c ) * X ) + ( curveEqPoly E ) * ( C ( b * d ) ) from ?_, Polynomial.add_modByMonic ];
+    · rw [ Polynomial.modByMonic_eq_sub_mul_div ];
+      · rw [ Polynomial.divByMonic_eq_zero_iff ( curveEqPoly_monic E ) |>.2 ] <;> norm_num;
+        · rw [ Polynomial.modByMonic_eq_zero_iff_dvd ];
+          · exact dvd_mul_right _ _;
+          · exact?;
+        · refine' lt_of_le_of_lt ( Polynomial.degree_add_le _ _ ) ( max_lt _ _ );
+          · refine' lt_of_le_of_lt ( Polynomial.degree_add_le _ _ ) ( max_lt _ _ );
+            · refine' lt_of_le_of_lt ( Polynomial.degree_mul_le _ _ ) _;
+              refine' lt_of_le_of_lt ( add_le_add ( Polynomial.degree_C_le ) ( Polynomial.degree_C_le ) ) _ ; norm_num [ curveEqPoly_natDegree_eq ];
+              rw [ Polynomial.degree_eq_natDegree ] <;> norm_num [ curveEqPoly_natDegree_eq ];
+              exact ne_of_apply_ne Polynomial.natDegree ( by erw [ curveEqPoly_natDegree_eq ] ; norm_num );
+            · refine' lt_of_le_of_lt ( Polynomial.degree_mul_le _ _ ) _;
+              refine' lt_of_le_of_lt ( add_le_add ( Polynomial.degree_mul_le _ _ ) ( Polynomial.degree_C_le ) ) _ ; norm_num;
+              refine' lt_of_le_of_lt ( add_le_add ( Polynomial.degree_C_le ) ( Polynomial.degree_C_le ) ) _ ; norm_num [ curveEqPoly_natDegree_eq ];
+              rw [ Polynomial.degree_eq_natDegree ] <;> norm_num [ curveEqPoly_natDegree_eq ];
+              exact ne_of_apply_ne Polynomial.natDegree ( by erw [ curveEqPoly_natDegree_eq ] ; norm_num );
+          · refine' lt_of_le_of_lt ( Polynomial.degree_mul_le _ _ ) _;
+            refine' lt_of_le_of_lt ( add_le_add ( Polynomial.degree_add_le _ _ ) le_rfl ) _;
+            refine' lt_of_le_of_lt ( add_le_add ( max_le _ _ ) le_rfl ) _;
+            exact 0;
+            · exact le_trans ( Polynomial.degree_mul_le _ _ ) ( by by_cases ha : a = 0 <;> by_cases hd : d = 0 <;> simp +decide [ ha, hd ] );
+            · exact le_trans ( Polynomial.degree_mul_le _ _ ) ( by by_cases hb : b = 0 <;> by_cases hc : c = 0 <;> simp +decide [ hb, hc ] );
+            · erw [ Polynomial.degree_X, Polynomial.degree_sub_eq_left_of_degree_lt ] <;> norm_num [ curveEqPoly_natDegree_eq ];
+              exact lt_of_le_of_lt ( Polynomial.degree_C_le ) ( by norm_num );
+      · exact?;
+    · unfold curveEqPoly; norm_num; ring;
+  simp_all +decide [ xPart, yPart ]
+
+theorem yPart_mul_mod_curveEqPoly (f g : (ZMod E.q)[X][X]) :
+    yPart E ((f * g) %ₘ curveEqPoly E) =
+      xPart E (f %ₘ curveEqPoly E) * yPart E (g %ₘ curveEqPoly E) +
+      yPart E (f %ₘ curveEqPoly E) * xPart E (g %ₘ curveEqPoly E) := by
+  unfold xPart yPart;
+  have h_deg : (f %ₘ curveEqPoly E).natDegree < 2 ∧ (g %ₘ curveEqPoly E).natDegree < 2 ∧ ((f * g) %ₘ curveEqPoly E).natDegree < 2 := by
+    exact ⟨ modByMonic_curveEqPoly_natDegree_lt E f, modByMonic_curveEqPoly_natDegree_lt E g, modByMonic_curveEqPoly_natDegree_lt E ( f * g ) ⟩;
+  have h_factor : (f %ₘ curveEqPoly E) * (g %ₘ curveEqPoly E) = ((f * g) %ₘ curveEqPoly E) + ((f %ₘ curveEqPoly E) * (g %ₘ curveEqPoly E) /ₘ curveEqPoly E) * curveEqPoly E := by
+    have h_factor : (f %ₘ curveEqPoly E) * (g %ₘ curveEqPoly E) = ((f %ₘ curveEqPoly E) * (g %ₘ curveEqPoly E)) %ₘ curveEqPoly E + ((f %ₘ curveEqPoly E) * (g %ₘ curveEqPoly E) /ₘ curveEqPoly E) * curveEqPoly E := by
+      rw [ Polynomial.modByMonic_eq_sub_mul_div _ ( curveEqPoly_monic E ) ] ; ring;
+      rw [ Polynomial.modByMonic_eq_sub_mul_div _ ( curveEqPoly_monic E ) ] ; ring;
+      rw [ Polynomial.modByMonic_eq_sub_mul_div _ ( curveEqPoly_monic E ) ] ; ring;
+    convert h_factor using 2;
+    exact?;
+  replace h_factor := congr_arg ( fun p => Polynomial.coeff p 1 ) h_factor ; simp_all +decide [ Polynomial.coeff_eq_zero_of_natDegree_lt ];
+  simp_all +decide [ Polynomial.coeff_mul ];
+  simp_all +decide [ Finset.Nat.sum_antidiagonal_succ, curveEqPoly ];
+  rw [ Polynomial.coeff_eq_zero_of_natDegree_lt ] <;> norm_num;
+  rw [ Polynomial.natDegree_divByMonic _ ( Polynomial.monic_X_pow_sub_C _ two_ne_zero ) ];
+  rw [ Polynomial.natDegree_sub_C ] ; norm_num;
+  exact Nat.sub_eq_zero_of_le ( le_trans ( Polynomial.natDegree_mul_le .. ) ( by linarith ) )
+
+/-- **Primality of the curve equation polynomial.**
+    `Y² − (X³+AX+B)` is prime in `(𝔽_q)[X][Y]`:
+    if it divides a product, it divides one of the factors. -/
+theorem curveEqPoly_dvd_mul (f g : (ZMod E.q)[X][X]) :
+    curveEqPoly E ∣ f * g → curveEqPoly E ∣ f ∨ curveEqPoly E ∣ g := by
+  rw [← Polynomial.modByMonic_eq_zero_iff_dvd (curveEqPoly_monic E),
+      ← Polynomial.modByMonic_eq_zero_iff_dvd (curveEqPoly_monic E),
+      ← Polynomial.modByMonic_eq_zero_iff_dvd (curveEqPoly_monic E)]
+  intro hfg
+  set f₀ := xPart E (f %ₘ curveEqPoly E)
+  set f₁ := yPart E (f %ₘ curveEqPoly E)
+  set g₀ := xPart E (g %ₘ curveEqPoly E)
+  set g₁ := yPart E (g %ₘ curveEqPoly E)
+  have hxp0 : xPart E (0 : (ZMod E.q)[X][X]) = 0 := by simp [xPart]
+  have hyp0 : yPart E (0 : (ZMod E.q)[X][X]) = 0 := by simp [yPart]
+  have h1 : f₀ * g₀ + f₁ * g₁ * curveX E = 0 := by
+    have h := xPart_mul_mod_curveEqPoly E f g
+    rw [hfg, hxp0] at h; exact h.symm
+  have h2 : f₀ * g₁ + f₁ * g₀ = 0 := by
+    have h := yPart_mul_mod_curveEqPoly E f g
+    rw [hfg, hyp0] at h; exact h.symm
+  -- Key identity: f₁ * (g₁² * curveX - g₀²) = 0
+  have hKey : f₁ * (g₁ ^ 2 * curveX E - g₀ ^ 2) = 0 := by
+    have : f₁ * (g₁ ^ 2 * curveX E - g₀ ^ 2) =
+      g₁ * (f₀ * g₀ + f₁ * g₁ * curveX E) - g₀ * (f₀ * g₁ + f₁ * g₀) := by ring
+    rw [this, h1, h2]; ring
+  rcases mul_eq_zero.mp hKey with hf₁ | hgk
+  · -- f₁ = 0
+    have hf₀g₁ : f₀ * g₁ = 0 := by
+      have := h2; rw [hf₁, zero_mul, add_zero] at this; exact this
+    rcases mul_eq_zero.mp hf₀g₁ with hf₀ | hg₁
+    · left; rw [modCurve_eq_zero_iff_parts]; exact ⟨hf₀, hf₁⟩
+    · have hf₀g₀ : f₀ * g₀ = 0 := by
+        have := h1; rw [hf₁, zero_mul, zero_mul, add_zero] at this; exact this
+      rcases mul_eq_zero.mp hf₀g₀ with hf₀ | hg₀
+      · left; rw [modCurve_eq_zero_iff_parts]; exact ⟨hf₀, hf₁⟩
+      · right; rw [modCurve_eq_zero_iff_parts]; exact ⟨hg₀, hg₁⟩
+  · -- g₁² * curveX - g₀² = 0, so g₀² = g₁² * curveX
+    have hgk' : g₀ ^ 2 - g₁ ^ 2 * curveX E = 0 := by
+      have : g₀ ^ 2 - g₁ ^ 2 * curveX E = -(g₁ ^ 2 * curveX E - g₀ ^ 2) := by ring
+      rw [this, hgk, neg_zero]
+    -- By the parity argument, this forces g₀ = g₁ = 0
+    by_cases hGnz : g₀ = 0 ∧ g₁ = 0
+    · right; rw [modCurve_eq_zero_iff_parts]; exact hGnz
+    · exact absurd hgk' (resultantX_aux_ne_zero E hGnz)
+
+/-- If a nonzero polynomial has outer degree `< 2`, then it is not
+    divisible by `curveEqPoly` (which has degree `2`). -/
+theorem not_curveEqPoly_dvd_of_natDegree_lt (f : (ZMod E.q)[X][X])
+    (hf : f ≠ 0) (hDeg : f.natDegree < 2) :
+    ¬ curveEqPoly E ∣ f := by
+  intro ⟨q, hq⟩
+  by_cases hq0 : q = 0
+  · exact hf (by rw [hq, hq0, mul_zero])
+  · have hc_ne : curveEqPoly E ≠ 0 := by
+      intro h; have := curveEqPoly_natDegree_eq E; rw [h, Polynomial.natDegree_zero] at this; omega
+    have h1 : 2 ≤ (curveEqPoly E * q).natDegree := by
+      rw [Polynomial.natDegree_mul hc_ne hq0, curveEqPoly_natDegree_eq]
+      omega
+    rw [← hq] at h1
+    omega
+
 /-! ## The final bound -/
 
 /-- Each `x : ZMod E.q` has at most 2 `y`-values with `(x, y) ∈ E.points`

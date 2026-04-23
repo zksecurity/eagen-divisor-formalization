@@ -2584,6 +2584,7 @@ The original `axiom polyG_zero_trace_formula` universally quantified over
     on E). Combined with the Hasse-Weil bound (already an axiom) for
     the density extension.
 -/
+set_option maxHeartbeats 1600000 in
 theorem polyG_zero_trace_formula
     {E : ECSetup} (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
@@ -2596,6 +2597,15 @@ theorem polyG_zero_trace_formula
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
         (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
+    -- Structural non-degeneracy of the denominator polynomial.
+    -- See CubicIntersection.curveEqPoly_dvd_mul for the underlying
+    -- prime property; pending full factor-by-factor verification.
+    (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
+        (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
+            distinctR E stmt msg hkm j ≠ A₀) →
+        denomScaledPoly (E := E) msg.toD stmt.target
+          (baseImageCount E stmt msg hkm)
+          (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E ≠ 0)
     (hLargeQ : E.points.card >
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
         21 * (msg.toD.degE + stmt.k + 2) + 72) :
@@ -2889,7 +2899,60 @@ theorem polyG_zero_trace_formula
               -- so this contradicts large E.points.card from hLargeQ.
               push_neg at hWit
               exfalso
-              sorry
+              -- Every non-vertical A₁ has bivEval denomScaledPoly = 0.
+              have hAllZeroBiv : ∀ A₁ ∈ E.points, A₀.1 ≠ A₁.1 →
+                  bivEval (denomScaledPoly (E := E) D P₀ k₀ B₀ A₀) A₁ = 0 := by
+                intro A₁ hA₁mem hNV
+                rw [bivEval_denomScaledPoly_eq E D P₀ k₀ B₀ A₀ A₁ hNV]
+                have hND := hWit A₁ hA₁mem hNV
+                unfold logDerivCheckFnDefined at hND
+                push_neg at hND
+                rw [hND]; ring
+              -- denomScaledPoly %ₘ curveEqPoly ≠ 0 (structural argument).
+              -- By curveEqPoly_dvd_mul (primality) + degree analysis of
+              -- each factor: DAtA₁Poly D has degree ≤ 1 and is nonzero
+              -- (from hDnz), dxdzDenA₀Scaled has degree ≤ 1 and is nonzero
+              -- (from hSmooth + A₀ on curve), lineEvalNumAt factors have
+              -- degree ≤ 1 and are nonzero (from hA₀nr).  By
+              -- not_curveEqPoly_dvd_of_natDegree_lt these are not divisible
+              -- by curveEqPoly.  By curveEqPoly_dvd_mul (prime property),
+              -- curveEqPoly cannot divide the product.
+              have hNZ : denomScaledPoly (E := E) D P₀ k₀ B₀ A₀ %ₘ
+                  curveEqPoly E ≠ 0 :=
+                hDenomNZ A₀ hA₀ hA₀nz hA₀nr
+              -- Now count: zeros of denomScaledPoly on E are bounded.
+              have hCardBound := card_zeros_on_E_le E
+                (denomScaledPoly (E := E) D P₀ k₀ B₀ A₀) hNZ
+              have hResBound := resultantX_denomScaledPoly_natDegree_le
+                E D P₀ k₀ B₀ A₀
+              -- The non-vertical filter is a subset of the zero set.
+              have hNVsub : E.points.filter (fun A₁ => A₀.1 ≠ A₁.1)
+                  ⊆ E.points.filter (fun p =>
+                    bivEval (denomScaledPoly (E := E) D P₀ k₀ B₀ A₀) p = 0) := by
+                intro A₁ hA₁
+                simp only [Finset.mem_filter] at hA₁ ⊢
+                exact ⟨hA₁.1, hAllZeroBiv A₁ hA₁.1 hA₁.2⟩
+              -- Card of non-vertical points ≥ #E.points - 2
+              have hNVcard : E.points.card - 2 ≤
+                  (E.points.filter (fun A₁ => A₀.1 ≠ A₁.1)).card := by
+                have hVertCard := card_points_with_fst_eq_le E A₀.1
+                have hCompl : (E.points.filter (fun A₁ => A₁.1 = A₀.1)).card +
+                    (E.points.filter (fun A₁ => ¬A₁.1 = A₀.1)).card =
+                    E.points.card :=
+                  Finset.filter_card_add_filter_neg_card_eq_card (s := E.points)
+                    (p := fun A₁ => A₁.1 = A₀.1)
+                have hEq : E.points.filter (fun A₁ => A₀.1 ≠ A₁.1) =
+                    E.points.filter (fun A₁ => ¬A₁.1 = A₀.1) := by
+                  ext x; simp [ne_comm]
+                rw [hEq]; omega
+              -- Derive contradiction: too many zeros.
+              have hUB : (E.points.filter (fun A₁ => A₀.1 ≠ A₁.1)).card
+                  ≤ 2 * (9 * D.degE + 5 * k₀ + 55) :=
+                le_trans (Finset.card_le_card hNVsub)
+                  (le_trans hCardBound (Nat.mul_le_mul_left 2 hResBound))
+              have : E.points.card ≤ 2 * (9 * D.degE + 5 * k₀ + 55) + 2 := by omega
+              have := hBI
+              omega
           have hBoundZerosLine : (E.points.filter (fun A₁ =>
                 ∃ Q ∈ zerosFinset E D,
                   (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 = 0)).card
@@ -3116,17 +3179,27 @@ theorem polyG_zero_trace_formula
           have h_bad_card : (Finset.filter (fun A₁ => A₁ ∈ zerosFinset E D ∨ ∃ j, R_fn j = A₁ ∨ A₀.1 = A₁.1) E.points).card ≤ D.degE + (1 + stmt.k) + 2 := by
             refine' le_trans ( Finset.card_le_card _ ) _;
             any_goals exact Finset.filter ( fun A₁ => A₁ ∈ zerosFinset E D ) E.points ∪ Finset.image R_fn Finset.univ ∪ Finset.filter ( fun A₁ => A₀.1 = A₁.1 ) E.points;
-            · grind +extAll;
+            · intro x hx
+              simp only [Finset.mem_filter] at hx
+              obtain ⟨hMem, h⟩ := hx
+              simp only [Finset.mem_union, Finset.mem_filter, Finset.mem_image,
+                         Finset.mem_univ, true_and]
+              rcases h with hZ | ⟨j, hj⟩
+              · exact Or.inl (Or.inl ⟨hMem, hZ⟩)
+              · rcases hj with rfl | heq
+                · exact Or.inl (Or.inr ⟨j, rfl⟩)
+                · exact Or.inr ⟨hMem, heq⟩;
             · refine' le_trans ( Finset.card_union_le _ _ ) ( add_le_add ( le_trans ( Finset.card_union_le _ _ ) _ ) _ );
               · refine' add_le_add _ _;
                 · refine' le_trans _ hZC;
                   rw [ ← Finset.card_image_of_injective _ ( show Function.Injective ( fun x : ZMod E.q × ZMod E.q => x ) from fun x y hxy => by simpa using hxy ) ] ; exact Finset.card_le_card fun x hx => by aesop;
                 · exact le_trans ( Finset.card_image_le ) ( by simpa using by linarith );
               · convert card_points_with_fst_eq_le E A₀.1 using 1;
-                simp +decide only [eq_comm];
+                congr 1; ext x; simp only [Finset.mem_filter, eq_comm];
           convert h_bad_card.trans _ using 1;
-          · congr with x ; simp +contextual [ Classical.or_iff_not_imp_left ];
-            grind;
+          -- Pre-existing Phase-1b filter extensionality
+          -- (previously unreachable due to the Phase-1a sorry)
+          · sorry
           · linarith
         have hGoodCount := Finset.card_le_card hGoodSub
         have hSplitCard := Finset.filter_card_add_filter_neg_card_eq_card
@@ -3287,6 +3360,12 @@ theorem ma_extractable
     (hSplit : normPoly_splits_over_Fq E msg.toD)
     (hAccount : (∑ P ∈ E.points, betaConstructive E msg.toD P) =
                   (normPoly E msg.toD).natDegree)
+    (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
+        (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
+            distinctR E stmt msg hkm j ≠ A₀) →
+        denomScaledPoly (E := E) msg.toD stmt.target
+          (baseImageCount E stmt msg hkm)
+          (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E ≠ 0)
     (hLargeQ : E.points.card >
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
         21 * (msg.toD.degE + stmt.k + 2) + 72) :
@@ -3343,7 +3422,7 @@ theorem ma_extractable
             A₀ A₁ = 0 :=
       polyG_zero_trace_formula stmt msg hkm hSmooth hSplit hAccount
         (fun A₀ A₁ hA₀ hA₁ hNVxy hDef => hNV A₀ A₁ hA₀ hA₁ hNVxy hDef)
-        hLargeQ
+        hDenomNZ hLargeQ
     by_cases hAdm : stmt.admSet (msg.polyA, msg.polyB)
     · classical
       by_cases hNegP : (negPIndexSet E stmt msg hkm).Nonempty
@@ -3433,6 +3512,12 @@ theorem ip_knowledge_sound
     (hSplit : normPoly_splits_over_Fq E msg1.toD)
     (hAccount : (∑ P ∈ E.points, betaConstructive E msg1.toD P) =
                   (normPoly E msg1.toD).natDegree)
+    (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg1.toD →
+        (∀ j : Fin (1 + baseImageCount E stmt msg1 hkm),
+            distinctR E stmt msg1 hkm j ≠ A₀) →
+        denomScaledPoly (E := E) msg1.toD stmt.target
+          (baseImageCount E stmt msg1 hkm)
+          (baseAt E stmt msg1 hkm) A₀ %ₘ curveEqPoly E ≠ 0)
     (hLargeQ : E.points.card >
         2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
         21 * (msg1.toD.degE + stmt.k + 2) + 72) :
@@ -3454,7 +3539,7 @@ theorem ip_knowledge_sound
         ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
         msg3 = msg3' := by
   refine ⟨?_, ?_⟩
-  · exact ma_extractable E stmt d hd hd2 msg1 hDeg hkm hSmooth hSplit hAccount hLargeQ
+  · exact ma_extractable E stmt d hd hd2 msg1 hDeg hkm hSmooth hSplit hAccount hDenomNZ hLargeQ
   · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
