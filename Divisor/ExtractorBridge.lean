@@ -2823,13 +2823,38 @@ theorem polyG_zero_trace_formula
           -- For the non-vertical bad conditions, use a crude bound:
           -- The filter ⊆ E.points, so card ≤ E.points.card.
           -- But we know the bound 3*(D.degE + stmt.k + 2) + 6 suffices.
+          -- Decompose hRestBound into two sub-bounds:
+          --   hBoundUndefined: card {A₁ | logDerivCheckFnDenom = 0} ≤ 3*(stmt.k + 2) + 12
+          --     (8-factor product decomposition; each factor contributes ≤ 3 or ≤ 12)
+          --   hBoundZerosLine: card {A₁ | ∃ Q ∈ zerosFinset, line passes through Q}
+          --                    ≤ 3 * zerosCard ≤ 3 * D.degE
+          --     (biUnion over zerosFinset + linear_form_zeros_le_three)
+          have hBoundUndefined : (E.points.filter (fun A₁ =>
+                ¬logDerivCheckFnDefined E D stmt.target
+                  (baseAt E stmt msg hkm) A₀ A₁)).card
+              ≤ 3 * (stmt.k + 2) + 12 := by
+            sorry
+          have hBoundZerosLine : (E.points.filter (fun A₁ =>
+                ∃ Q ∈ zerosFinset E D,
+                  (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 = 0)).card
+              ≤ 3 * D.degE := by
+            sorry
           have hRestBound : (E.points.filter (fun A₁ =>
                 ¬logDerivCheckFnDefined E D stmt.target (baseAt E stmt msg hkm) A₀ A₁) ∪
                E.points.filter (fun A₁ =>
                 ∃ Q ∈ zerosFinset E D,
                   (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 = 0)).card
               ≤ 3 * (D.degE + stmt.k + 2) + 12 := by
-            sorry
+            have hUnion := Finset.card_union_le
+              (E.points.filter (fun A₁ =>
+                ¬logDerivCheckFnDefined E D stmt.target
+                  (baseAt E stmt msg hkm) A₀ A₁))
+              (E.points.filter (fun A₁ =>
+                ∃ Q ∈ zerosFinset E D,
+                  (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 = 0))
+            have hSum :=
+              Nat.add_le_add hBoundUndefined hBoundZerosLine
+            omega
           calc badFilter.card
               ≤ _ := Finset.card_le_card hSub
             _ ≤ (E.points.filter (fun A₁ => A₁.1 = A₀.1)).card +
