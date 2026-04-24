@@ -1206,4 +1206,51 @@ theorem polyGFull_vanishes_on_ExE_of_polyG_zero
       bivEval₂ (polyGFull E Q beta R m) A₀ A₁ = 0 := by
   sorry
 
+/-- **T5 replacement: σ-matching from polyGFull vanishing.**
+
+    Given that `polyGFull` vanishes pointwise on all of `E × E` (a
+    strengthening of `polyG = 0` on non-vertical pairs), produce the
+    same σ-matching output as the original T5
+    (`log_deriv_nonvanishing_criterion`), without its quadratic
+    `|validPairs| ≥ 6·q·(d+M)²+…` precondition.
+
+    The precondition here is a MILD linear-in-(d+M) condition on
+    `|E.points|`, which is satisfied under the paper's `q ≥ 16`
+    framework once `d+M` is small enough (and our `q ≥ 5` baseline).
+
+    This replaces the T5 path inside
+    `extractorSucceeds_of_logDerivCheck_identically_zero_general`,
+    eliminating the `6·q·((d+k+1)+(d+k+1)·(d+k))` quadratic summand in
+    `ma_extractable`'s bound.
+
+    Proof strategy (paper `sections/ip.tex:552-634`, Steps 3-8):
+    * **Step 3-5** — view the polynomial identity `polyGFull ≡ 0` as a
+      rational-function identity in `(λ, μ)` parameters; for generic
+      `λ` the values `μ_R(λ) = R.2 - λ·R.1` on `{Q_k} ∪ {R_j}` are
+      distinct, giving a clean pole structure.
+    * **Step 6** — match residues at each pole `μ_R(λ)`: for every
+      `R ∈ E(F_q^alg)`, `n_R ≡ 1[R=-P] + Σ_{j:B_j=R} m_j (mod q)`.
+    * **Step 7** — lift from `F_q` back to integers: since each `n_R`
+      is bounded by `degBound < q`, the modular equality lifts.
+    * **Step 8** — use principal divisor axiom to produce σ-matching
+      (analogous to current `log_deriv_nonvanishing_criterion` output).
+
+    Kept as sorry pending full Lean mechanization of Steps 3-8. -/
+theorem sigma_matching_from_polyGFull_vanishing
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (hDistinctQ : Function.Injective Q)
+    (hDistinctR : Function.Injective R)
+    (hBetaNz : ∀ k, beta k ≠ 0)
+    (hVanishing : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points →
+      bivEval₂ (polyGFull E Q beta R m) A₀ A₁ = 0)
+    (hELarge : E.points.card > 4 * (d + M) + 2) :
+    ∃ (σ : Fin d ↪ Fin M),
+      (∀ k, Q k = R (σ k)) ∧
+      (∀ k, beta k + m (σ k) = 0) ∧
+      (∀ j, j ∉ Set.range σ → m j = 0) := by
+  sorry
+
 end Divisor
