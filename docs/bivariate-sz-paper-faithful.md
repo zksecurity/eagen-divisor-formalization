@@ -366,3 +366,4 @@ Phase-internal explorations (representation choice, proof factoring, degree-coun
 - **Aristotle use**: per-component degree and identity lemmas parallelise well. Dispatch in batches of 5-10 at a time. Phase 4 is the biggest Aristotle-friendly chunk.
 - **Build integrity**: run `lake build` (a) after each precondition step, (b) after each phase, (c) after the final cleanup. Full green build is the end-of-plan success gate — no broken references, no residual `sorry`, no axiom additions beyond the 10 planned ones.
 - **No axiom additions during plan execution.** If an unanticipated gap needs a textbook fact not already axiomatised, STOP, surface the gap, and re-plan the precondition step.
+- **Commit hygiene**: never sign commits (`--gpg-sign`, `-S`, `--no-gpg-sign`, or any GPG-related flag). Plain `git commit -m "…"`. Commit messages describe what the code change does, nothing else — no trailer lines, no co-authors, no attribution.
