@@ -28,10 +28,54 @@ variable {q : ℕ} [hq : Fact (Nat.Prime q)]
     `(0, 0) ∉ admSet`, captured by the `admSet_excludes_zero` field. -/
 structure DlogStatement (q : ℕ) [Fact (Nat.Prime q)] where
   k : ℕ
+  degBound : ℕ
   bases : Fin k → ZMod q × ZMod q
   target : ZMod q × ZMod q
   admSet : Polynomial (ZMod q) × Polynomial (ZMod q) → Prop
   admSet_excludes_zero : ¬ admSet (0, 0)
+
+/-! ## Concrete admissible sets (paper's four constructions) -/
+
+/-- Maximal: `{(a, b) : (a, b) ≠ (0, 0)}`. -/
+def admSetMax : Polynomial (ZMod q) × Polynomial (ZMod q) → Prop :=
+  fun ab => ab ≠ (0, 0)
+
+theorem admSetMax_excludes_zero : ¬ (admSetMax (q := q) (0, 0)) := by
+  intro h; exact h rfl
+
+/-- Parker: `{(a, b) : coeff(a, 1) = 1}`. -/
+def admSetParker : Polynomial (ZMod q) × Polynomial (ZMod q) → Prop :=
+  fun ab => ab.1.coeff 1 = 1
+
+theorem admSetParker_excludes_zero : ¬ (admSetParker (q := q) (0, 0)) := by
+  intro h
+  change (0 : Polynomial (ZMod q)).coeff 1 = 1 at h
+  simp at h
+
+/-- Eagen: `{(a, b) : coeff(a, 0) = 1}`. -/
+def admSetEagen : Polynomial (ZMod q) × Polynomial (ZMod q) → Prop :=
+  fun ab => ab.1.coeff 0 = 1
+
+theorem admSetEagen_excludes_zero : ¬ (admSetEagen (q := q) (0, 0)) := by
+  intro h
+  change (0 : Polynomial (ZMod q)).coeff 0 = 1 at h
+  simp at h
+
+/-- Hash: `{(a, b) : ⟨r, (coeffs a ‖ coeffs b)⟩ ≠ 0}` for some challenge
+    `r : ℕ → ZMod q`. The zero polynomial has all-zero coefficients, so
+    the inner product is `0`, hence excluded. -/
+def admSetHash (r : ℕ → ZMod q) :
+    Polynomial (ZMod q) × Polynomial (ZMod q) → Prop :=
+  fun ab =>
+    (∑ i ∈ Finset.range (ab.1.natDegree + 1), r i * ab.1.coeff i) +
+    (∑ i ∈ Finset.range (ab.2.natDegree + 1), r (ab.1.natDegree + 1 + i) * ab.2.coeff i)
+    ≠ 0
+
+theorem admSetHash_excludes_zero (r : ℕ → ZMod q) :
+    ¬ (admSetHash r (0, 0)) := by
+  intro h
+  apply h
+  simp
 
 /-- Witness for the discrete-log relation. Scalars are signed integers so
     that the paper's extractor special case `n_{j*} = -1` (for
@@ -170,7 +214,7 @@ def MAProverMsg.mAt {stmt : DlogStatement q} {msg : MAProverMsg q}
 def maVerifierAccepts (E : ECSetup) (stmt : DlogStatement E.q)
     (msg : MAProverMsg E.q) (chal : MAChallenge E.q)
     (hk : stmt.k = msg.k) : Prop :=
-  verifierDegreeCheck msg stmt.k ∧
+  verifierDegreeCheck msg stmt.degBound ∧
   stmt.admSet (msg.polyA, msg.polyB) ∧
   logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
     (fun i => msg.m (hk ▸ i)) chal.A₀ chal.A₁ = 0
@@ -204,7 +248,7 @@ def ipVerifierAccepts (E : ECSetup) (stmt : DlogStatement E.q)
   let D := msg1.toD
   let L := lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2
   let negP := (stmt.target.1, -stmt.target.2)
-  verifierDegreeCheck msg1 stmt.k ∧
+  verifierDegreeCheck msg1 stmt.degBound ∧
   (msg3.h 0 * D.eval chal.A₀.1 chal.A₀.2 =
     D.a.derivative.eval chal.A₀.1 - D.b.derivative.eval chal.A₀.1 * chal.A₀.2) ∧
   (msg3.h 1 * D.eval chal.A₁.1 chal.A₁.2 =

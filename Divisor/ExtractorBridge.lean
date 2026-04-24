@@ -3372,8 +3372,8 @@ theorem polyG_zero_trace_formula
     The second summand in the bound handles the "small `|validPairs|`"
     regime where the T5 quantitative criterion cannot be invoked. -/
 theorem ma_extractable
-    (stmt : DlogStatement E.q) (d : ℕ) (hd : d < E.q) (hd2 : 2 ≤ d)
-    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ d)
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
     (hSplit : normPoly_splits_over_Fq E msg.toD)
@@ -3389,13 +3389,15 @@ theorem ma_extractable
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
         21 * (msg.toD.degE + stmt.k + 2) + 72) :
     (∃ wit : DlogWitness E.q,
-        maExtractor E stmt msg d hd hkm = some wit
+        maExtractor E stmt msg stmt.degBound hd hkm = some wit
         ∧ dlogHolds E stmt wit) ∨
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (72 * (d + stmt.k + 6) + 4) * E.points.card
-        + 6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) := by
+      ≤ (72 * (stmt.degBound + stmt.k + 6) + 4) * E.points.card
+        + 6 * E.q * ((stmt.degBound + stmt.k + 1) +
+                     (stmt.degBound + stmt.k + 1) * (stmt.degBound + stmt.k)) := by
   classical
+  set d := stmt.degBound with hd_def
   by_cases hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ ∧
      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
@@ -3524,8 +3526,8 @@ theorem ma_extractable
     small-accept-set disjunction), plus uniqueness of the third-round
     response (which makes the IP-to-MA reduction tight). -/
 theorem ip_knowledge_sound
-    (stmt : DlogStatement E.q) (d : ℕ) (hd : d < E.q) (hd2 : 2 ≤ d)
-    (msg1 : MAProverMsg E.q) (hDeg : msg1.toD.degE ≤ d)
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg1 : MAProverMsg E.q) (hDeg : msg1.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg1.k)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
     (hSplit : normPoly_splits_over_Fq E msg1.toD)
@@ -3541,12 +3543,13 @@ theorem ip_knowledge_sound
         2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
         21 * (msg1.toD.degE + stmt.k + 2) + 72) :
     ((∃ wit : DlogWitness E.q,
-         maExtractor E stmt msg1 d hd hkm = some wit
+         maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
          ∧ dlogHolds E stmt wit) ∨
      ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
-      ≤ (72 * (d + stmt.k + 6) + 4) * E.points.card
-        + 6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)))
+      ≤ (72 * (stmt.degBound + stmt.k + 6) + 4) * E.points.card
+        + 6 * E.q * ((stmt.degBound + stmt.k + 1) +
+                     (stmt.degBound + stmt.k + 1) * (stmt.degBound + stmt.k)))
     ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
         (msg3 msg3' : IPProverMsg3 E.q),
         msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
@@ -3558,7 +3561,7 @@ theorem ip_knowledge_sound
         ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
         msg3 = msg3' := by
   refine ⟨?_, ?_⟩
-  · exact ma_extractable E stmt d hd hd2 msg1 hDeg hkm hSmooth hSplit hAccount hDenomNZ hLargeQ
+  · exact ma_extractable E stmt hd hd2 msg1 hDeg hkm hSmooth hSplit hAccount hDenomNZ hLargeQ
   · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'

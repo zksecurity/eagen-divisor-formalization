@@ -311,7 +311,7 @@ theorem ma_completeness
     (hk : stmt.k = wit.k) (hValid : dlogHolds E stmt wit)
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.k)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm) :
     ((E.points ×ˢ E.points).filter
