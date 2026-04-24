@@ -81,8 +81,6 @@ Divisor.weil_reciprocity_honest
 
 ### Textbook axioms — human-readable statements
 
-Each project-defined axiom cites a textbook result; the PDFs are in the repo root. See `docs/axiom-textbook-crosscheck.md` for the detailed cross-check.
-
 #### `ECPoint.add_comm` — Silverman AEC III Prop 2.2(c), p. 51
 
 Commutativity of the chord-and-tangent group law on `E`:
@@ -168,4 +166,4 @@ $$\bigl| |E(F_q)| - q - 1 \bigr| \le  2\sqrt{q}.$$
 
 ## Plan
 
-See `docs/axiom-elimination-plan.md` for the full history of axiom-elimination work, and `docs/axiom-textbook-crosscheck.md` for the textbook cross-check underlying this README.
+See `docs/axiom-elimination-plan.md` for the full history of axiom-elimination work.
