@@ -1060,6 +1060,71 @@ theorem log_deriv_sz_paper
         exact Nat.add_le_add hCoreBound hUndefBound
     _ = 54 * (D.degE + k + 6) * E.points.card := by ring
 
+/-! ## Phase 5 tightening (a): chord symmetry halving
+
+    The log-derivative check and its polynomial form `clearedFullPoly`
+    are invariant under the chord swap `(A₀, A₁) ↔ (A₁, A₀)`. The
+    physical intuition: `A₂ = -(A₀ + A₁)` is symmetric in `A₀, A₁`, as
+    is the line through them; the verifier-check value `f(A₀, A₁)`
+    is thus symmetric.
+
+    Formally, the substitution `(X 0, X 1) ↔ (X 2, X 3)` fixes
+    `clearedFullPoly`. As a consequence the zero set of `clearedFullPoly`
+    on `E × E` is symmetric, so bad pairs come in `(A₀, A₁)`-`(A₁, A₀)`
+    twins on the non-vertical cone (where `A₀ ≠ A₁`). Halving gives the
+    paper's `18·(d+k+6)·|E|` core bound (vs. our current `36·(d+k+6)·|E|`).
+
+    Stated as sorry'd scaffolding; proof dispatched to Aristotle. -/
+
+/-- The `(X 0, X 1) ↔ (X 2, X 3)` swap on FourVarPoly via `MvPolynomial.rename`. -/
+noncomputable def swapA₀A₁ (f : FourVarPoly E.q) : FourVarPoly E.q :=
+  MvPolynomial.rename
+    (fun i : Fin 4 => match i with
+      | ⟨0, _⟩ => (2 : Fin 4)
+      | ⟨1, _⟩ => (3 : Fin 4)
+      | ⟨2, _⟩ => (0 : Fin 4)
+      | ⟨3, _⟩ => (1 : Fin 4)) f
+
+/-- `bivEval₂ (swapA₀A₁ f) A₀ A₁ = bivEval₂ f A₁ A₀`. -/
+theorem bivEval₂_swapA₀A₁ (f : FourVarPoly E.q) (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (swapA₀A₁ E f) A₀ A₁ = bivEval₂ f A₁ A₀ := by
+  sorry
+
+/-- **Chord symmetry of `clearedFullPoly`.** Swapping `A₀` and `A₁`
+    leaves the polynomial identical. -/
+theorem clearedFullPoly_swap_eq
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q) :
+    swapA₀A₁ E (clearedFullPoly E D P k B m) = clearedFullPoly E D P k B m := by
+  sorry
+
+/-- **Pointwise symmetry of `clearedFullPoly` evaluation.** -/
+theorem bivEval₂_clearedFullPoly_swap
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (clearedFullPoly E D P k B m) A₀ A₁
+      = bivEval₂ (clearedFullPoly E D P k B m) A₁ A₀ := by
+  rw [← bivEval₂_swapA₀A₁ E (clearedFullPoly E D P k B m) A₁ A₀]
+  rw [clearedFullPoly_swap_eq]
+
+/-- **Halved SZ bound via chord symmetry (target).** Using the fact that
+    the zero set of a symmetric polynomial on `E × E` is closed under
+    coordinate swap, we halve the Lang-Weil bound. The bound on
+    non-degenerate bad pairs becomes `18·(D.degE + k + 6)·|E|`. -/
+theorem log_deriv_sz_paper_core_symmetric
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (_hDeg : D.degE < E.q)
+    (hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
+        logDerivCheckFnDefined E D P B A₀ A₁ ∧
+        logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          A₀ne_A₁x_cleared_pair E D P B m p)).card
+      ≤ 18 * (D.degE + k + 6) * E.points.card := by
+  sorry
+
 /-! ## Phase 6b: T5 replacement scaffolding
 
     To eliminate the quadratic `6·q·((d+k+1)+(d+k+1)·(d+k))` summand in
