@@ -1797,6 +1797,41 @@ theorem polyGFull_vanishes_on_ExE_of_polyG_zero
     ≤ 2 * (d + M + (d + M)) * E.points.card := le_trans hNVge (le_trans hZeroCard hLW)
   nlinarith [hELarge]
 
+/-- **Core σ-matching extraction from polyG ≡ 0 on E × E.**
+
+    The single remaining sorry consolidates paper Steps 3, 5, 6
+    (`sections/ip.tex:552-634`): for each `k ∈ Fin d`, find `j ∈ Fin M`
+    with `R j = Q k`; then `β_k + m(σ k) = 0` and `m_j = 0` off range σ.
+
+    Paper's approach uses a generic-λ slope selection whose classical
+    precondition is `|validPairs| ≥ 6·q·(d+M)²`, which is QUADRATIC in
+    `d+M`. Our `hELarge : |E| > 4·(d+M) + 2` is only LINEAR.
+
+    A direct paper-style mechanization without the quadratic
+    precondition requires:
+    - Rational-function analysis of `polyG` in `(λ, μ)` parameters,
+    - Pole-matching and residue-matching in `μ` for a generic `λ`,
+    - Mod-`q` lift of the residue equalities to integers,
+    - Application of the principal divisor axiom.
+
+    Kept as sorry pending full Lean mechanization. -/
+private lemma sigma_matching_core
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (hDistinctQ : Function.Injective Q)
+    (hDistinctR : Function.Injective R)
+    (hBetaNz : ∀ k, beta k ≠ 0)
+    (hPolyGAll : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points →
+      polyG E Q beta R m A₀ A₁ = 0)
+    (hELarge : E.points.card > 4 * (d + M) + 2) :
+    ∃ (σ : Fin d ↪ Fin M),
+      (∀ k, Q k = R (σ k)) ∧
+      (∀ k, beta k + m (σ k) = 0) ∧
+      (∀ j, j ∉ Set.range σ → m j = 0) := by
+  sorry
+
 /-- **T5 replacement: σ-matching from polyGFull vanishing.**
 
     Given that `polyGFull` vanishes pointwise on all of `E × E` (a
@@ -1805,28 +1840,10 @@ theorem polyGFull_vanishes_on_ExE_of_polyG_zero
     (`log_deriv_nonvanishing_criterion`), without its quadratic
     `|validPairs| ≥ 6·q·(d+M)²+…` precondition.
 
-    The precondition here is a MILD linear-in-(d+M) condition on
-    `|E.points|`, which is satisfied under the paper's `q ≥ 16`
-    framework once `d+M` is small enough (and our `q ≥ 5` baseline).
+    The linear `hELarge : |E| > 4·(d+M) + 2` is much milder than T5's
+    quadratic threshold.
 
-    This replaces the T5 path inside
-    `extractorSucceeds_of_logDerivCheck_identically_zero_general`,
-    eliminating the `6·q·((d+k+1)+(d+k+1)·(d+k))` quadratic summand in
-    `ma_extractable`'s bound.
-
-    Proof strategy (paper `sections/ip.tex:552-634`, Steps 3-8):
-    * **Step 3-5** — view the polynomial identity `polyGFull ≡ 0` as a
-      rational-function identity in `(λ, μ)` parameters; for generic
-      `λ` the values `μ_R(λ) = R.2 - λ·R.1` on `{Q_k} ∪ {R_j}` are
-      distinct, giving a clean pole structure.
-    * **Step 6** — match residues at each pole `μ_R(λ)`: for every
-      `R ∈ E(F_q^alg)`, `n_R ≡ 1[R=-P] + Σ_{j:B_j=R} m_j (mod q)`.
-    * **Step 7** — lift from `F_q` back to integers: since each `n_R`
-      is bounded by `degBound < q`, the modular equality lifts.
-    * **Step 8** — use principal divisor axiom to produce σ-matching
-      (analogous to current `log_deriv_nonvanishing_criterion` output).
-
-    Kept as sorry pending full Lean mechanization of Steps 3-8. -/
+    Internally consolidated via `sigma_matching_core`. -/
 theorem sigma_matching_from_polyGFull_vanishing
     {d M : ℕ}
     (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
@@ -1843,39 +1860,12 @@ theorem sigma_matching_from_polyGFull_vanishing
       (∀ k, beta k + m (σ k) = 0) ∧
       (∀ j, j ∉ Set.range σ → m j = 0) := by
   classical
-  -- Step 1: Derive polyG = 0 on ALL of E×E from polyGFull vanishing.
   have hPolyGAll : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
       polyG E Q beta R m A₀ A₁ = 0 := by
     intro A₀ A₁ h₀ h₁
     rw [← bivEval₂_polyGFull_eq_polyG E Q beta R m A₀ A₁]
     exact hVanishing A₀ A₁ h₀ h₁
-  -- Step 2: polyG = 0 on non-vertical E×E (weakened form).
-  have hfZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
-      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
-      polyG E Q beta R m A₀ A₁ = 0 :=
-    fun A₀ A₁ h₀ h₁ _ => hPolyGAll A₀ A₁ h₀ h₁
-  -- Step 3 (sub-sorry): For each k ∈ Fin d, show ∃ j with R j = Q k.
-  -- Bézout/pigeonhole argument — see docstring.
-  have hSigmaExists : ∀ k : Fin d, ∃ j : Fin M, R j = Q k := by
-    sorry
-  -- Step 4: Build the injective σ.
-  let sigma_fun : Fin d → Fin M := fun k => Classical.choose (hSigmaExists k)
-  have hσ_spec : ∀ k, R (sigma_fun k) = Q k :=
-    fun k => Classical.choose_spec (hSigmaExists k)
-  have hσ_inj : Function.Injective sigma_fun := by
-    intro k₁ k₂ h
-    have h1 := hσ_spec k₁
-    have h2 := hσ_spec k₂
-    rw [h] at h1
-    exact hDistinctQ (h1.symm.trans h2)
-  let σ : Fin d ↪ Fin M := ⟨sigma_fun, hσ_inj⟩
-  -- Step 5 (sub-sorry): m j = 0 for j ∉ range σ.
-  have hMoff : ∀ j, j ∉ Set.range σ → m j = 0 := by
-    sorry
-  -- Step 6 (sub-sorry): β_k + m(σ k) = 0.
-  have hBetaM : ∀ k, beta k + m (σ k) = 0 := by
-    sorry
-  exact ⟨σ, fun k => (hσ_spec k).symm, hBetaM, hMoff⟩
+  exact sigma_matching_core E Q beta R m hDistinctQ hDistinctR hBetaNz hPolyGAll hELarge
 
 end Divisor
