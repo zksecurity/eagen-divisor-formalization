@@ -124,7 +124,28 @@ identity, for `y ∈ F'`,
   div_F(N_{F'/F}(y)) = "Tr on divisors"(div_{F'}(y)),
 then identifies (under the splitting hypothesis) the roots and
 multiplicities of N(D)(z) with those of normZ(z), establishing
-proportionality. -/
+proportionality.
+
+**Textbook statement (verbatim), Stichtenoth Proposition 3.1.9, p.73:**
+
+> "Proposition 3.1.9. Let F′/K′ be an algebraic extension of the
+> function field F/K. For 0 ≠ x ∈ F let (x)₀^F, (x)∞^F, (x)^F resp.
+> (x)₀^{F′}, (x)∞^{F′}, (x)^{F′} denote the zero, pole, principal
+> divisor of x in Div(F) resp. in Div(F′). Then
+>   Con_{F′/F}((x)₀^F) = (x)₀^{F′},
+>   Con_{F′/F}((x)∞^F) = (x)∞^{F′},   and
+>   Con_{F′/F}((x)^F)  = (x)^{F′}."
+
+**Textbook statement (verbatim), Stichtenoth Theorem 3.7.1, p.121:**
+
+> "Theorem 3.7.1. Let F′/K′ be a Galois extension of F/K and
+> P₁, P₂ ∈ IP_{F′} be extensions of P ∈ IP_F. Then P₂ = σ(P₁) for
+> some σ ∈ Gal(F′/F). In other words, the Galois group acts
+> transitively on the set of extensions of P."
+
+The axiom below combines these (conorm identity + Galois-transitive
+norm `N_{F'/F}`) to identify `chord_fiber_product` with a nonzero
+constant multiple of `normZ` in our F_q(E)/F_q(z) setting. -/
 axiom chord_fiber_product_eq_normZ_under_split
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0))
@@ -152,7 +173,50 @@ of the norm together with the product-of-embeddings formula
 extends a derivation uniquely to a separable algebraic extension.
 The identity `Tr_{L/K}(dg/g) = d(N_{L/K}(g))/N_{L/K}(g)` follows
 from differentiating the product formula `N_{L/K}(g) = ∏_σ σ(g)`
-over a Galois closure. -/
+over a Galois closure.
+
+**Textbook statement (verbatim), Lang §VI.5, p.285 (product-of-embeddings):**
+
+> "Thus if E is separable over k, we have
+>     N^E_k(α) = ∏ σα
+> where the product is taken over the distinct embeddings of E in k^a
+> over k. Similarly, if E/k is separable, then
+>     Tr(α) = Σ σα."
+
+**Textbook statement (verbatim), Lang §VI.5 Theorem 5.1, p.285:**
+
+> "Theorem 5.1. Let E/k be a finite extension. Then the norm N^E_k is
+> a multiplicative homomorphism of E* into k* and the trace is an
+> additive homomorphism of E into k. If E ⊃ F ⊃ k is a tower of fields,
+> then the two maps are transitive, in other words,
+>     N^E_k = N^F_k ∘ N^E_F   and   Tr^E_k = Tr^F_k ∘ Tr^E_F.
+> If E = k(α), and f(X) = Irr(α, k, X) = X^n + a_{n-1} X^{n-1} + ⋯ + a_0,
+> then
+>     N^E_k(α) = (−1)^n a_0   and   Tr^E_k(α) = −a_{n-1}."
+
+**Textbook statement (verbatim), Lang §VIII.5 Theorem 5.1 Case 1, p.370:**
+
+> "Theorem 5.1. Let D be a derivation of a field K. Let
+> (x) = (x_1, …, x_n) be a finite family of elements in an extension
+> of K. Let {f_α(X)} be a set of generators for the ideal determined
+> by (x) in K[X]. Then, if (u) is any set of elements of K(x)
+> satisfying the equations
+>     0 = f_α^D(x) + Σ (∂f_α/∂x_i) u_i,
+> there is one and only one derivation D* of K(x) coinciding with D on
+> K, and such that D* x_i = u_i for every i."
+>
+> "Case 1. x is separable algebraic over K. Let f(X) be the
+> irreducible polynomial satisfied by x over K. Then f′(x) ≠ 0. We
+> have
+>     0 = f^D(x) + f′(x) u,
+> whence u = −f^D(x)/f′(x). Hence D extends to K(x) uniquely. If D is
+> trivial on K, then D is trivial on K(x)."
+
+The axiom below is the trace-of-logarithmic-derivative identity
+`Tr_{L/K}(dg/g) = d(N_{L/K}(g))/N_{L/K}(g)` obtained by
+differentiating `N(g) = ∏_σ σ(g)` (Lang VI.5, p.285) — with the
+derivation uniquely extended to the Galois closure via Lang VIII.5
+Theorem 5.1 Case 1 — then evaluating at the chord intercept μ. -/
 axiom chord_sum_eq_chord_fiber_product_logDeriv
     (E : ECSetup) (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)

@@ -40,7 +40,20 @@ opaque IsPrincipal (E : ECSetup) (coeffs : ECPoint E.q → ℤ) : Prop
 
     A finitely-supported coefficient function `coeffs : ECPoint E.q → ℤ`
     is the divisor of some nonzero rational function on `E` iff the
-    degree and group-sum conditions hold. -/
+    degree and group-sum conditions hold.
+
+    **Textbook statement (verbatim), Silverman AEC Corollary III.3.5, p.63:**
+
+    > "Corollary 3.5. Let E be an elliptic curve and let
+    > D = Σ n_P (P) ∈ Div(E). Then D is a principal divisor if and only if
+    >    Σ_{P ∈ E} n_P = 0   and   Σ_{P ∈ E} [n_P] P = O.
+    > (Note that the first sum is of integers, while the second is
+    > addition on E.)"
+
+    Silverman's statement is over `E(K̄)`; the Lean form restricts to
+    `ECPoint E.q` (F_q-rational points). F_q-descent follows from
+    Silverman's Remark 3.5.1 + Exercise 2.13b (GK̄/K-invariance of the
+    Abel-Jacobi exact sequence). -/
 axiom principal_divisor_iff
     (coeffs : ECPoint E.q → ℤ)
     (hFinSupp : Set.Finite (Function.support coeffs)) :
@@ -79,7 +92,15 @@ and generalized by Weil to higher genus curves.
 because `2·Nat.sqrt q = 2·⌊√q⌋` is strictly smaller than `⌊2·√q⌋` in
 general (e.g. at `q = 7`, `2·⌊√7⌋ = 4` while `⌊2·√7⌋ = 5`). The
 squared form is the sharp integer statement and implies both
-one-sided bounds when needed. -/
+one-sided bounds when needed.
+
+**Textbook statement (verbatim), Silverman AEC Theorem V.1.1, p.138:**
+
+> "Theorem 1.1. (Hasse) Let E/F_q be an elliptic curve defined over a
+> finite field. Then
+>     |#E(F_q) − q − 1| ≤ 2√q."
+
+Our `(·)² ≤ 4q` form is equivalent: `|x| ≤ 2√q  ↔  x² ≤ 4q` for `x ∈ ℤ`. -/
 axiom hasse_weil :
   ((E.numPoints : ℤ) - E.q - 1)^2 ≤ 4 * E.q
 

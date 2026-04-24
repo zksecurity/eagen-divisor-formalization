@@ -174,15 +174,31 @@ noncomputable def ECPoint.add (E : ECSetup) :
     ECPoint.add E p 0 = p := by
   cases p <;> rfl
 
+/-! ### Textbook statement (verbatim) — Silverman AEC III Prop 2.2, p.51
+
+> "Proposition 2.2. The composition law (III.2.1) has the following properties:
+>  (a) If a line L intersects E at the (not necessarily distinct) points P, Q, R, then (P ⊕ Q) ⊕ R = O.
+>  (b) P ⊕ O = P for all P ∈ E.
+>  (c) P ⊕ Q = Q ⊕ P for all P, Q ∈ E.
+>  (d) Let P ∈ E. There is a point of E, denoted by ⊖P, satisfying P ⊕ (⊖P) = O.
+>  (e) Let P, Q, R ∈ E. Then (P ⊕ Q) ⊕ R = P ⊕ (Q ⊕ R)."
+
+The three axioms below instantiate clauses (c), (e), (d) respectively for our
+concrete `ECPoint.add` implementation. -/
+
 /-- Commutativity of `ECPoint.add`. Classical; Silverman AEC III Prop 2.2(c)
-    (commutativity of the composition law `P ⊕ Q = Q ⊕ P`, p. 51). -/
+    (commutativity of the composition law `P ⊕ Q = Q ⊕ P`, p. 51).
+
+    Verbatim: *"(c) P ⊕ Q = Q ⊕ P for all P, Q ∈ E."* -/
 axiom ECPoint.add_comm (E : ECSetup) (p q : ECPoint E.q) :
     ECPoint.add E p q = ECPoint.add E q p
 
 /-- Associativity of `ECPoint.add`. Classical; Silverman AEC III Prop 2.2(e)
     (`(P ⊕ Q) ⊕ R = P ⊕ (Q ⊕ R)`, p. 51). The nontrivial group-law
     axiom — Silverman's proof uses the Riemann-Roch / divisor-class
-    equivalence via the σ-isomorphism (AEC III Prop 3.4(e)). -/
+    equivalence via the σ-isomorphism (AEC III Prop 3.4(e)).
+
+    Verbatim: *"(e) Let P, Q, R ∈ E. Then (P ⊕ Q) ⊕ R = P ⊕ (Q ⊕ R)."* -/
 axiom ECPoint.add_assoc (E : ECSetup) (p q r : ECPoint E.q) :
     ECPoint.add E (ECPoint.add E p q) r = ECPoint.add E p (ECPoint.add E q r)
 
@@ -191,7 +207,10 @@ axiom ECPoint.add_assoc (E : ECSetup) (p q r : ECPoint E.q) :
     chord-and-tangent definition (vertical line through `p` and `-p` has
     third intersection at `∞`). We keep as an axiom to avoid a case split
     on `p = -p` (2-torsion) matching the `thirdPoint` branches; downstream
-    uses are abstract over this statement. -/
+    uses are abstract over this statement.
+
+    Verbatim: *"(d) Let P ∈ E. There is a point of E, denoted by ⊖P, satisfying
+    P ⊕ (⊖P) = O."* -/
 axiom ECPoint.neg_add_cancel (E : ECSetup) (p : ECPoint E.q) :
     ECPoint.add E (-p) p = (0 : ECPoint E.q)
 

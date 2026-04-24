@@ -264,7 +264,25 @@ theorem extracted_scalars_valid_special
     fact that a principal divisor has zero sum of residues on `E`, so
     summing residues over the divisor of zeros yields the stated
     identity whenever the evaluation points avoid the support of that
-    divisor. -/
+    divisor.
+
+    **Textbook statement (verbatim), Silverman AEC Exercise II.2.11, p.39:**
+
+    > "2.11. Let C be a smooth curve and let f, g ∈ K̄(C)* be functions
+    > such that div(f) and div(g) have disjoint support. (See Exercise
+    > 2.10.) Prove Weil's reciprocity law
+    >     f(div(g)) = g(div(f))
+    > using the following two steps:
+    > (a) Verify Weil's reciprocity law directly for C = P¹.
+    > (b) Now prove it for arbitrary C by using the map g : C → P¹ to
+    >     reduce to (a)."
+
+    (Exercise 2.10 defines `f(D) = ∏_P f(P)^{n_P}` for D = Σ n_P (P)
+    when div(f) and D have disjoint supports.)
+
+    The axiom below is the specific consequence of Weil reciprocity
+    needed for completeness: `logDerivCheckFn` vanishes at every
+    challenge off the bad set. -/
 axiom weil_reciprocity_honest
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k)
