@@ -1,2 +1,3 @@
 .lake/
 *.pdf
+!axioms/papers/*.pdf
