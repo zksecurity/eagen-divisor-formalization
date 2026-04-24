@@ -470,16 +470,361 @@ noncomputable def clearedFullPoly (D : CoordRingElt E.q)
     + rhsTermNegPFull E D k B
     + rhsSumFull E D P k B m
 
-/-- **Phase 3 identity (target).** -/
+/-! ## Compatibility of Full atoms with `clearedFiberPoly` atoms. -/
+
+theorem bivEval₂_x₂ScaledFull_eq_bivEval (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (x₂ScaledFull E) A₀ A₁ = bivEval (x₂Scaled (E := E) A₀) A₁ := by
+  rw [bivEval₂_x₂ScaledFull, bivEval_x₂Scaled]
+
+theorem bivEval₂_y₂ScaledFull_eq_bivEval (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (y₂ScaledFull E) A₀ A₁ = bivEval (y₂Scaled (E := E) A₀) A₁ := by
+  rw [bivEval₂_y₂ScaledFull, bivEval_y₂Scaled]
+
+theorem bivEval₂_DAtA₀Full_eq_bivEval (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DAtA₀Full E D) A₀ A₁ =
+      bivEval (DAtA₀Poly (E := E) D A₀) A₁ := by
+  rw [bivEval₂_DAtA₀Full, bivEval_DAtA₀Poly]
+
+theorem bivEval₂_DAtA₁Full_eq_bivEval (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DAtA₁Full E D) A₀ A₁ =
+      bivEval (DAtA₁Poly (E := E) D) A₁ := by
+  rw [bivEval₂_DAtA₁Full, bivEval_DAtA₁Poly]
+
+theorem bivEval₂_DDerivAtA₀Full_eq_bivEval (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DDerivAtA₀Full E D) A₀ A₁ =
+      bivEval (DDerivAtA₀Poly (E := E) D A₀) A₁ := by
+  rw [bivEval₂_DDerivAtA₀Full, bivEval_DDerivAtA₀Poly]
+
+theorem bivEval₂_DDerivAtA₁Full_eq_bivEval (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DDerivAtA₁Full E D) A₀ A₁ =
+      bivEval (DDerivAtA₁Poly (E := E) D) A₁ := by
+  rw [bivEval₂_DDerivAtA₁Full, bivEval_DDerivAtA₁Poly]
+
+theorem bivEval₂_dxdzDenA₀Full_eq_bivEval (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (dxdzDenA₀Full E) A₀ A₁ =
+      bivEval (dxdzDenA₀Scaled (E := E) A₀) A₁ := by
+  rw [bivEval₂_dxdzDenA₀Full, bivEval_dxdzDenA₀Scaled]
+
+theorem bivEval₂_dxdzDenA₁Full_eq_bivEval (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (dxdzDenA₁Full E) A₀ A₁ =
+      bivEval (dxdzDenA₁Scaled (E := E) A₀) A₁ := by
+  rw [bivEval₂_dxdzDenA₁Full, bivEval_dxdzDenA₁Scaled]
+
+theorem bivEval₂_dxdzDenA₂Full_eq_bivEval (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (dxdzDenA₂Full E) A₀ A₁ =
+      bivEval (dxdzDenA₂Scaled (E := E) A₀) A₁ := by
+  sorry
+
+theorem bivEval₂_DAPartAtA₂ScaledFull_eq_bivEval (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DAPartAtA₂ScaledFull E D) A₀ A₁ =
+      bivEval (DAPartAtA₂Scaled (E := E) D A₀) A₁ := by
+  sorry
+
+theorem bivEval₂_DBPartAtA₂ScaledFull_eq_bivEval (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DBPartAtA₂ScaledFull E D) A₀ A₁ =
+      bivEval (DBPartAtA₂Scaled (E := E) D A₀) A₁ := by
+  sorry
+
+theorem bivEval₂_DAtA₂ScaledFull_eq_bivEval (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DAtA₂ScaledFull E D) A₀ A₁ =
+      bivEval (DAtA₂Scaled (E := E) D A₀) A₁ := by
+  unfold DAtA₂ScaledFull DAtA₂Scaled
+  rw [bivEval₂_sub, bivEval_sub,
+      bivEval₂_DAPartAtA₂ScaledFull_eq_bivEval,
+      bivEval₂_DBPartAtA₂ScaledFull_eq_bivEval]
+
+theorem bivEval₂_DDerivAPartAtA₂ScaledFull_eq_bivEval (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DDerivAPartAtA₂ScaledFull E D) A₀ A₁ =
+      bivEval (DDerivAPartAtA₂Scaled (E := E) D A₀) A₁ := by
+  sorry
+
+theorem bivEval₂_DDerivBPartAtA₂ScaledFull_eq_bivEval (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DDerivBPartAtA₂ScaledFull E D) A₀ A₁ =
+      bivEval (DDerivBPartAtA₂Scaled (E := E) D A₀) A₁ := by
+  sorry
+
+theorem bivEval₂_DDerivAtA₂ScaledFull_eq_bivEval (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DDerivAtA₂ScaledFull E D) A₀ A₁ =
+      bivEval (DDerivAtA₂Scaled (E := E) D A₀) A₁ := by
+  unfold DDerivAtA₂ScaledFull DDerivAtA₂Scaled
+  rw [bivEval₂_sub, bivEval_sub,
+      bivEval₂_DDerivAPartAtA₂ScaledFull_eq_bivEval,
+      bivEval₂_DDerivBPartAtA₂ScaledFull_eq_bivEval]
+
+theorem bivEval₂_lineEvalNumAtFull_eq_bivEval (pt : ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (lineEvalNumAtFull E pt) A₀ A₁ =
+      bivEval (lineEvalNumAt (E := E) A₀ pt) A₁ := by
+  rw [bivEval₂_lineEvalNumAtFull, bivEval_lineEvalNumAt]
+
+theorem bivEval₂_linesProductFull_eq_bivEval
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (linesProductFull E P k B) A₀ A₁ =
+      bivEval (linesProductScaled (E := E) P k B A₀) A₁ := by
+  classical
+  unfold linesProductFull linesProductScaled
+  rw [bivEval₂_mul, bivEval_mul,
+      bivEval₂_lineEvalNumAtFull_eq_bivEval]
+  congr 1
+  rw [bivEval₂_prod]
+  induction (Finset.univ : Finset (Fin k)) using Finset.induction_on with
+  | empty => simp [bivEval]
+  | @insert j s hj ih =>
+      rw [Finset.prod_insert hj, Finset.prod_insert hj,
+          bivEval_mul, ← ih, bivEval₂_lineEvalNumAtFull_eq_bivEval]
+
+theorem bivEval₂_linesProductNoNegPFull_eq_bivEval
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (linesProductNoNegPFull E k B) A₀ A₁ =
+      bivEval (linesProductNoNegPScaled (E := E) k B A₀) A₁ := by
+  classical
+  unfold linesProductNoNegPFull linesProductNoNegPScaled
+  rw [bivEval₂_prod]
+  induction (Finset.univ : Finset (Fin k)) using Finset.induction_on with
+  | empty => simp [bivEval]
+  | @insert j s hj ih =>
+      rw [Finset.prod_insert hj, Finset.prod_insert hj,
+          bivEval_mul, ← ih, bivEval₂_lineEvalNumAtFull_eq_bivEval]
+
+theorem bivEval₂_linesProductSkipBjFull_eq_bivEval
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (j₀ : Fin k) (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (linesProductSkipBjFull E P k B j₀) A₀ A₁ =
+      bivEval (linesProductSkipBjScaled (E := E) P k B A₀ j₀) A₁ := by
+  classical
+  unfold linesProductSkipBjFull linesProductSkipBjScaled
+  rw [bivEval₂_mul, bivEval_mul,
+      bivEval₂_lineEvalNumAtFull_eq_bivEval]
+  congr 1
+  rw [bivEval₂_prod]
+  induction ((Finset.univ : Finset (Fin k)).erase j₀) using Finset.induction_on with
+  | empty => simp [bivEval]
+  | @insert j s hj ih =>
+      rw [Finset.prod_insert hj, Finset.prod_insert hj,
+          bivEval_mul, ← ih, bivEval₂_lineEvalNumAtFull_eq_bivEval]
+
+theorem bivEval₂_DAllFull_eq_bivEval (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DAllFull E D) A₀ A₁ =
+      bivEval (DAllScaled (E := E) D A₀) A₁ := by
+  unfold DAllFull DAllScaled
+  rw [bivEval₂_mul, bivEval₂_mul, bivEval_mul, bivEval_mul,
+      bivEval₂_DAtA₀Full_eq_bivEval, bivEval₂_DAtA₁Full_eq_bivEval,
+      bivEval₂_DAtA₂ScaledFull_eq_bivEval]
+
+theorem bivEval₂_dxdzAllFull_eq_bivEval (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (dxdzAllFull E) A₀ A₁ =
+      bivEval (dxdzAllScaled (E := E) A₀) A₁ := by
+  unfold dxdzAllFull dxdzAllScaled
+  rw [bivEval₂_mul, bivEval₂_mul, bivEval_mul, bivEval_mul,
+      bivEval₂_dxdzDenA₀Full_eq_bivEval, bivEval₂_dxdzDenA₁Full_eq_bivEval,
+      bivEval₂_dxdzDenA₂Full_eq_bivEval]
+
+theorem bivEval₂_DBdydzAtA₀Full_eq_bivEval (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DBdydzAtA₀Full E D) A₀ A₁ =
+      bivEval (DBdydzAtA₀Poly (E := E) D A₀) A₁ := by
+  unfold DBdydzAtA₀Full DBdydzAtA₀Poly
+  simp [bivEval₂_mul, bivEval₂_neg, bivEval₂_add, bivEval₂_pow,
+        bivEval, embedScalar]
+
+theorem bivEval₂_DBdydzAtA₁Full_eq_bivEval (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DBdydzAtA₁Full E D) A₀ A₁ =
+      bivEval (DBdydzAtA₁Poly (E := E) D) A₁ := by
+  unfold DBdydzAtA₁Full DBdydzAtA₁Poly
+  simp [bivEval₂_mul, bivEval₂_neg, bivEval₂_add, bivEval₂_pow,
+        bivEval, embedInnerPoly, innerA₁x, embedScalar]
+
+theorem bivEval₂_DbAtA₂TightFull_eq_bivEval (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DbAtA₂TightFull E D) A₀ A₁ =
+      bivEval (DbAtA₂TightScaled (E := E) D A₀) A₁ := by
+  sorry
+
+theorem bivEval₂_dydzNumA₂Full_eq_bivEval (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (dydzNumA₂Full E) A₀ A₁ =
+      bivEval (dydzNumA₂Scaled (E := E) A₀) A₁ := by
+  sorry
+
+theorem bivEval₂_correctionA₂CoreFull_eq_bivEval (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (correctionA₂CoreFull E D) A₀ A₁ =
+      bivEval (correctionA₂ScaledCore (E := E) D A₀) A₁ := by
+  unfold correctionA₂CoreFull correctionA₂ScaledCore
+  rw [bivEval₂_mul, bivEval₂_mul, bivEval_mul, bivEval_mul,
+      bivEval₂_neg, bivEval_neg, bivEval₂_pow, bivEval_pow,
+      bivEval₂_DbAtA₂TightFull_eq_bivEval,
+      bivEval₂_dydzNumA₂Full_eq_bivEval, bivEval_lamDenPoly,
+      bivEval₂_lamDenFull]
+
+/-! ### Per-term compat lemmas. -/
+
+theorem bivEval₂_lhsTerm0Full_eq_bivEval
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (lhsTerm0Full E D P k B) A₀ A₁ =
+      bivEval (lhsTerm0Scaled (E := E) D P k B A₀) A₁ := by
+  unfold lhsTerm0Full lhsTerm0Scaled
+  simp only [bivEval₂_mul, bivEval_mul,
+      bivEval₂_DDerivAtA₀Full_eq_bivEval,
+      bivEval₂_DAtA₁Full_eq_bivEval,
+      bivEval₂_DAtA₂ScaledFull_eq_bivEval,
+      bivEval₂_dxdzDenA₁Full_eq_bivEval,
+      bivEval₂_dxdzDenA₂Full_eq_bivEval,
+      bivEval₂_linesProductFull_eq_bivEval]
+  simp [bivEval₂_mul, bivEval, embedScalar]
+
+theorem bivEval₂_lhsTerm1Full_eq_bivEval
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (lhsTerm1Full E D P k B) A₀ A₁ =
+      bivEval (lhsTerm1Scaled (E := E) D P k B A₀) A₁ := by
+  unfold lhsTerm1Full lhsTerm1Scaled
+  simp only [bivEval₂_mul, bivEval_mul,
+      bivEval₂_DDerivAtA₁Full_eq_bivEval,
+      bivEval₂_DAtA₀Full_eq_bivEval,
+      bivEval₂_DAtA₂ScaledFull_eq_bivEval,
+      bivEval₂_dxdzDenA₀Full_eq_bivEval,
+      bivEval₂_dxdzDenA₂Full_eq_bivEval,
+      bivEval₂_linesProductFull_eq_bivEval]
+  simp [bivEval₂_mul, bivEval, embedScalar, outerA₁y]
+
+theorem bivEval₂_lhsTerm2Full_eq_bivEval
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (lhsTerm2Full E D P k B) A₀ A₁ =
+      bivEval (lhsTerm2Scaled (E := E) D P k B A₀) A₁ := by
+  unfold lhsTerm2Full lhsTerm2Scaled
+  simp only [bivEval₂_mul, bivEval_mul,
+      bivEval₂_DDerivAtA₂ScaledFull_eq_bivEval,
+      bivEval₂_DAtA₀Full_eq_bivEval,
+      bivEval₂_DAtA₁Full_eq_bivEval,
+      bivEval₂_dxdzDenA₀Full_eq_bivEval,
+      bivEval₂_dxdzDenA₁Full_eq_bivEval,
+      bivEval₂_linesProductFull_eq_bivEval,
+      bivEval₂_y₂ScaledFull_eq_bivEval]
+  simp [bivEval₂_mul, bivEval, embedScalar]
+
+theorem bivEval₂_correctionTerm0Full_eq_bivEval
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (correctionTerm0Full E D P k B) A₀ A₁ =
+      bivEval (correctionTerm0Scaled (E := E) D P k B A₀) A₁ := by
+  unfold correctionTerm0Full correctionTerm0Scaled
+  simp only [bivEval₂_mul, bivEval_mul,
+      bivEval₂_DBdydzAtA₀Full_eq_bivEval,
+      bivEval₂_DAtA₁Full_eq_bivEval,
+      bivEval₂_DAtA₂ScaledFull_eq_bivEval,
+      bivEval₂_dxdzDenA₁Full_eq_bivEval,
+      bivEval₂_dxdzDenA₂Full_eq_bivEval,
+      bivEval₂_linesProductFull_eq_bivEval]
+
+theorem bivEval₂_correctionTerm1Full_eq_bivEval
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (correctionTerm1Full E D P k B) A₀ A₁ =
+      bivEval (correctionTerm1Scaled (E := E) D P k B A₀) A₁ := by
+  unfold correctionTerm1Full correctionTerm1Scaled
+  simp only [bivEval₂_mul, bivEval_mul,
+      bivEval₂_DBdydzAtA₁Full_eq_bivEval,
+      bivEval₂_DAtA₀Full_eq_bivEval,
+      bivEval₂_DAtA₂ScaledFull_eq_bivEval,
+      bivEval₂_dxdzDenA₀Full_eq_bivEval,
+      bivEval₂_dxdzDenA₂Full_eq_bivEval,
+      bivEval₂_linesProductFull_eq_bivEval]
+
+theorem bivEval₂_correctionTerm2Full_eq_bivEval
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (correctionTerm2Full E D P k B) A₀ A₁ =
+      bivEval (correctionTerm2Scaled (E := E) D P k B A₀) A₁ := by
+  unfold correctionTerm2Full correctionTerm2Scaled
+  simp only [bivEval₂_mul, bivEval_mul, bivEval₂_pow, bivEval_pow,
+      bivEval₂_correctionA₂CoreFull_eq_bivEval,
+      bivEval₂_DAtA₀Full_eq_bivEval,
+      bivEval₂_DAtA₁Full_eq_bivEval,
+      bivEval₂_dxdzDenA₀Full_eq_bivEval,
+      bivEval₂_dxdzDenA₁Full_eq_bivEval,
+      bivEval₂_linesProductFull_eq_bivEval,
+      bivEval₂_lamDenFull, bivEval_lamDenPoly]
+
+theorem bivEval₂_rhsTermNegPFull_eq_bivEval
+    (D : CoordRingElt E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (rhsTermNegPFull E D k B) A₀ A₁ =
+      bivEval (rhsTermNegPScaled (E := E) D k B A₀) A₁ := by
+  unfold rhsTermNegPFull rhsTermNegPScaled
+  rw [bivEval₂_mul, bivEval₂_mul, bivEval_mul, bivEval_mul,
+      bivEval₂_DAllFull_eq_bivEval, bivEval₂_dxdzAllFull_eq_bivEval,
+      bivEval₂_linesProductNoNegPFull_eq_bivEval]
+
+theorem bivEval₂_rhsSumFull_eq_bivEval
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (rhsSumFull E D P k B m) A₀ A₁ =
+      bivEval (rhsSumScaled (E := E) D P k B m A₀) A₁ := by
+  classical
+  unfold rhsSumFull rhsSumScaled
+  rw [bivEval₂_sum, bivEval_finset_sum]
+  refine Finset.sum_congr rfl (fun j _ => ?_)
+  rw [bivEval₂_mul, bivEval₂_mul, bivEval₂_mul,
+      bivEval_mul, bivEval_mul, bivEval_mul,
+      bivEval₂_DAllFull_eq_bivEval, bivEval₂_dxdzAllFull_eq_bivEval,
+      bivEval₂_linesProductSkipBjFull_eq_bivEval]
+  simp [bivEval, embedScalar]
+
+/-! ### `clearedFullPoly` ↔ `clearedFiberPoly` compat. -/
+
+theorem bivEval₂_clearedFullPoly_eq_bivEval
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (clearedFullPoly E D P k B m) A₀ A₁ =
+      bivEval (clearedFiberPoly (E := E) D P k B m A₀) A₁ := by
+  unfold clearedFullPoly clearedFiberPoly
+  simp only [bivEval₂_add, bivEval_add,
+      bivEval₂_lhsTerm0Full_eq_bivEval,
+      bivEval₂_lhsTerm1Full_eq_bivEval,
+      bivEval₂_lhsTerm2Full_eq_bivEval,
+      bivEval₂_correctionTerm0Full_eq_bivEval,
+      bivEval₂_correctionTerm1Full_eq_bivEval,
+      bivEval₂_correctionTerm2Full_eq_bivEval,
+      bivEval₂_rhsTermNegPFull_eq_bivEval,
+      bivEval₂_rhsSumFull_eq_bivEval]
+
+/-- **Phase 3 identity.** Follows from compat with `clearedFiberPoly`
+    combined with the existing `clearedFiberPoly_identity`. -/
 theorem clearedFullPoly_identity
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
-    (A₀ A₁ : ZMod E.q × ZMod E.q) (_hNV : A₀.1 ≠ A₁.1)
-    (_hDef : logDerivCheckFnDenom E D P B A₀ A₁ ≠ 0) :
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1)
+    (hDef : logDerivCheckFnDenom E D P B A₀ A₁ ≠ 0) :
     bivEval₂ (clearedFullPoly E D P k B m) A₀ A₁
       = (A₁.1 - A₀.1) ^ (D.degE + k + 6) *
           logDerivCheckFnCleared E D P k B m A₀ A₁ := by
-  sorry
+  rw [bivEval₂_clearedFullPoly_eq_bivEval,
+      clearedFiberPoly_identity E D P B m A₀ A₁ hNV hDef]
 
 /-- **Phase 4 bi-x-degree bound (target).** -/
 theorem clearedFullPoly_bi_x_degree_le
