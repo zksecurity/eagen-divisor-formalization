@@ -28,6 +28,7 @@ import Divisor.PolyGTraceFormula
 import Divisor.PolyGDensity
 import Divisor.TraceProof
 import Divisor.DensityBound
+import Divisor.ClearedFullPoly
 
 namespace Divisor
 
@@ -3366,11 +3367,21 @@ theorem polyG_zero_trace_formula
 
     * **Bound branch**: the set of accepting challenges in `validPairs`
       has cardinality at most
-      `(72 · (d + stmt.k + 6) + 4) · |E.points|
+      `36 · (d + stmt.k + 6) · |E.points|
         + 6 · q · ((d + k + 1) + (d + k + 1) · (d + k))`.
 
-    The second summand in the bound handles the "small `|validPairs|`"
-    regime where the T5 quantitative criterion cannot be invoked. -/
+    The linear coefficient `36` is delivered by `log_deriv_sz_paper`,
+    which applies the Lang-Weil axiom
+    `bivariate_poly_zeros_on_ExE_le` to `clearedFullPoly` on `E × E`.
+    This is a factor-of-two tightening over the earlier `72 · (…) + 4`
+    bound from `log_deriv_sz` (which routed through fiber/bad-A₀
+    decomposition).
+
+    The quadratic summand `6 · q · ((d+k+1) + (d+k+1)·(d+k))` handles
+    the "small `|validPairs|`" regime where the T5 quantitative
+    criterion cannot be invoked; eliminating it requires the Phase 6
+    T5 replacement (Lang-Weil + paper-aligned residue-matching on
+    `E × E`, see `docs/bivariate-sz-paper-faithful.md`). -/
 theorem ma_extractable
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
@@ -3393,7 +3404,7 @@ theorem ma_extractable
         ∧ dlogHolds E stmt wit) ∨
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (72 * (stmt.degBound + stmt.k + 6) + 4) * E.points.card
+      ≤ 36 * (stmt.degBound + stmt.k + 6) * E.points.card
         + 6 * E.q * ((stmt.degBound + stmt.k + 1) +
                      (stmt.degBound + stmt.k + 1) * (stmt.degBound + stmt.k)) := by
   classical
@@ -3402,7 +3413,9 @@ theorem ma_extractable
      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ ∧
      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
        (fun i => msg.m (hkm ▸ i)) A₀ A₁ ≠ 0
-  · -- Nonvanishing on defined subset: `log_deriv_sz` bounds the NotEq bad set.
+  · -- Nonvanishing on defined subset: `log_deriv_sz_paper` bounds NotEq
+    -- via Lang-Weil on E × E, yielding `36·(d + k + 6)·|E|` (tighter
+    -- than the old `72·(d + k + 6) + 4` coefficient via `log_deriv_sz`).
     right
     set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
       (validPairs E).filter
@@ -3418,10 +3431,10 @@ theorem ma_extractable
     have hCardLe : acceptSet.card ≤ badSet.card := Finset.card_le_card hSub
     have hDegLt : msg.toD.degE < E.q := lt_of_le_of_lt hDeg hd
     have hBound :=
-      log_deriv_sz E msg.toD stmt.target stmt.bases
+      log_deriv_sz_paper E msg.toD stmt.target stmt.bases
         (fun i => msg.m (hkm ▸ i)) hDegLt hNV
-    have hMono : (72 * (msg.toD.degE + stmt.k + 6) + 4) * E.points.card
-                 ≤ (72 * (d + stmt.k + 6) + 4) * E.points.card := by
+    have hMono : 36 * (msg.toD.degE + stmt.k + 6) * E.points.card
+                 ≤ 36 * (d + stmt.k + 6) * E.points.card := by
       apply Nat.mul_le_mul_right
       have : msg.toD.degE + stmt.k + 6 ≤ d + stmt.k + 6 := by
         exact Nat.add_le_add_right (Nat.add_le_add_right hDeg _) _
@@ -3547,7 +3560,7 @@ theorem ip_knowledge_sound
          ∧ dlogHolds E stmt wit) ∨
      ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
-      ≤ (72 * (stmt.degBound + stmt.k + 6) + 4) * E.points.card
+      ≤ 36 * (stmt.degBound + stmt.k + 6) * E.points.card
         + 6 * E.q * ((stmt.degBound + stmt.k + 1) +
                      (stmt.degBound + stmt.k + 1) * (stmt.degBound + stmt.k)))
     ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)

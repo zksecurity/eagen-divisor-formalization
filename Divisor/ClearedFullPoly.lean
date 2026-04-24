@@ -517,19 +517,35 @@ theorem bivEval₂_dxdzDenA₁Full_eq_bivEval (A₀ A₁ : ZMod E.q × ZMod E.q)
 theorem bivEval₂_dxdzDenA₂Full_eq_bivEval (A₀ A₁ : ZMod E.q × ZMod E.q) :
     bivEval₂ (dxdzDenA₂Full E) A₀ A₁ =
       bivEval (dxdzDenA₂Scaled (E := E) A₀) A₁ := by
-  sorry
+  rw [bivEval_dxdzDenA₂Scaled]
+  simp [dxdzDenA₂Full, bivEval₂_sub, bivEval₂_add, bivEval₂_mul, bivEval₂_pow]
 
 theorem bivEval₂_DAPartAtA₂ScaledFull_eq_bivEval (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q) :
     bivEval₂ (DAPartAtA₂ScaledFull E D) A₀ A₁ =
       bivEval (DAPartAtA₂Scaled (E := E) D A₀) A₁ := by
-  sorry
+  unfold DAPartAtA₂ScaledFull DAPartAtA₂Scaled
+  rw [bivEval₂_sum, bivEval_finset_sum]
+  refine Finset.sum_congr rfl (fun n _ => ?_)
+  rw [bivEval₂_mul, bivEval₂_mul, bivEval₂_pow, bivEval₂_pow,
+      bivEval_mul, bivEval_mul, bivEval_pow, bivEval_pow,
+      bivEval₂_C, bivEval_embedScalar,
+      bivEval₂_x₂ScaledFull_eq_bivEval,
+      bivEval₂_lamDenFull, bivEval_lamDenPoly]
 
 theorem bivEval₂_DBPartAtA₂ScaledFull_eq_bivEval (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q) :
     bivEval₂ (DBPartAtA₂ScaledFull E D) A₀ A₁ =
       bivEval (DBPartAtA₂Scaled (E := E) D A₀) A₁ := by
-  sorry
+  unfold DBPartAtA₂ScaledFull DBPartAtA₂Scaled
+  rw [bivEval₂_sum, bivEval_finset_sum]
+  refine Finset.sum_congr rfl (fun n _ => ?_)
+  rw [bivEval₂_mul, bivEval₂_mul, bivEval₂_mul, bivEval₂_pow, bivEval₂_pow,
+      bivEval_mul, bivEval_mul, bivEval_mul, bivEval_pow, bivEval_pow,
+      bivEval₂_C, bivEval_embedScalar,
+      bivEval₂_x₂ScaledFull_eq_bivEval,
+      bivEval₂_y₂ScaledFull_eq_bivEval,
+      bivEval₂_lamDenFull, bivEval_lamDenPoly]
 
 theorem bivEval₂_DAtA₂ScaledFull_eq_bivEval (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q) :
@@ -544,13 +560,28 @@ theorem bivEval₂_DDerivAPartAtA₂ScaledFull_eq_bivEval (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q) :
     bivEval₂ (DDerivAPartAtA₂ScaledFull E D) A₀ A₁ =
       bivEval (DDerivAPartAtA₂Scaled (E := E) D A₀) A₁ := by
-  sorry
+  unfold DDerivAPartAtA₂ScaledFull DDerivAPartAtA₂Scaled
+  rw [bivEval₂_sum, bivEval_finset_sum]
+  refine Finset.sum_congr rfl (fun n _ => ?_)
+  rw [bivEval₂_mul, bivEval₂_mul, bivEval₂_pow, bivEval₂_pow,
+      bivEval_mul, bivEval_mul, bivEval_pow, bivEval_pow,
+      bivEval₂_C, bivEval_embedScalar,
+      bivEval₂_x₂ScaledFull_eq_bivEval,
+      bivEval₂_lamDenFull, bivEval_lamDenPoly]
 
 theorem bivEval₂_DDerivBPartAtA₂ScaledFull_eq_bivEval (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q) :
     bivEval₂ (DDerivBPartAtA₂ScaledFull E D) A₀ A₁ =
       bivEval (DDerivBPartAtA₂Scaled (E := E) D A₀) A₁ := by
-  sorry
+  unfold DDerivBPartAtA₂ScaledFull DDerivBPartAtA₂Scaled
+  rw [bivEval₂_sum, bivEval_finset_sum]
+  refine Finset.sum_congr rfl (fun n _ => ?_)
+  rw [bivEval₂_mul, bivEval₂_mul, bivEval₂_mul, bivEval₂_pow, bivEval₂_pow,
+      bivEval_mul, bivEval_mul, bivEval_mul, bivEval_pow, bivEval_pow,
+      bivEval₂_C, bivEval_embedScalar,
+      bivEval₂_x₂ScaledFull_eq_bivEval,
+      bivEval₂_y₂ScaledFull_eq_bivEval,
+      bivEval₂_lamDenFull, bivEval_lamDenPoly]
 
 theorem bivEval₂_DDerivAtA₂ScaledFull_eq_bivEval (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q) :
@@ -652,12 +683,21 @@ theorem bivEval₂_DbAtA₂TightFull_eq_bivEval (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q) :
     bivEval₂ (DbAtA₂TightFull E D) A₀ A₁ =
       bivEval (DbAtA₂TightScaled (E := E) D A₀) A₁ := by
-  sorry
+  unfold DbAtA₂TightFull DbAtA₂TightScaled
+  rw [bivEval₂_sum, bivEval_finset_sum]
+  refine Finset.sum_congr rfl (fun n _ => ?_)
+  rw [bivEval₂_mul, bivEval₂_mul, bivEval₂_pow, bivEval₂_pow,
+      bivEval_mul, bivEval_mul, bivEval_pow, bivEval_pow,
+      bivEval₂_C, bivEval_embedScalar,
+      bivEval₂_x₂ScaledFull_eq_bivEval,
+      bivEval₂_lamDenFull, bivEval_lamDenPoly]
 
 theorem bivEval₂_dydzNumA₂Full_eq_bivEval (A₀ A₁ : ZMod E.q × ZMod E.q) :
     bivEval₂ (dydzNumA₂Full E) A₀ A₁ =
       bivEval (dydzNumA₂Scaled (E := E) A₀) A₁ := by
-  sorry
+  unfold dydzNumA₂Full dydzNumA₂Scaled
+  simp [bivEval₂_add, bivEval₂_mul, bivEval₂_pow,
+        bivEval_add, bivEval_mul, bivEval_pow]
 
 theorem bivEval₂_correctionA₂CoreFull_eq_bivEval (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q) :
