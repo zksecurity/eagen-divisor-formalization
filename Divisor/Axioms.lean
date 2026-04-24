@@ -19,6 +19,7 @@ import Divisor.Axioms.AxiomWeilReciprocityHonest
 import Divisor.Axioms.AxiomCoordRingEltDivisorGroupSumZero
 import Divisor.Axioms.AxiomChordFiberProductEqNormZUnderSplit
 import Divisor.Axioms.AxiomChordSumEqChordFiberProductLogDeriv
+import Divisor.Axioms.AxiomBivariatePolyZerosOnExELe
 
 -- All axiom declarations + downstream instances (Std.Commutative /
 -- Std.Associative, ECPoint.add_left_cancel) live in their respective
