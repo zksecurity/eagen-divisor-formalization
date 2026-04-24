@@ -51,3 +51,34 @@ The quadratic summand `6·q·((d+k+1) + (d+k+1)·(d+k))` in `ma_extractable`'s b
 
 - Remove dead log_deriv_sz infrastructure (fiber-count bound, bad-A₀ bound, resultantX_* theorems) once Phase 5 outer closes without using them.
 - Run `#print axioms ma_extractable` to confirm axiom list is exactly the 10 planned. No `sorryAx` creep.
+
+## Session update (after Aristotle dispatches)
+
+Post-dispatch state:
+
+**Closed by Aristotle:**
+- `clearedFullPoly_bi_x_degree_le` — 9·(D.degE + k + 6) bi-X-degree bound (project `eae97513`, ~300 LOC of private helpers)
+- `bivEval₂_polyGFull_eq_polyG` — polyGFull = polyG compat (project `57bee5a1`)
+- `polyGFull_bi_x_degree_le` — (d+M, d+M) bound (project `57bee5a1`)
+- `polyGFull_vanishes_on_ExE_of_polyG_zero` — Lang-Weil contrapositive under linear `|E| > 4(d+M)+2` (project `57bee5a1`)
+- `bivEval₂_swapA₀A₁` — swap at polynomial vs evaluation level (project `7771ba3b`)
+- `bivEval₂_clearedFullPoly_swap_zero` — zero-set symmetry (uses signed version)
+
+**Analytical findings:**
+- `clearedFullPoly_swap_eq` ORIGINAL CLAIM IS FALSE: the swap gives `(-1)^(D.degE + k) · clearedFullPoly`, not equality. Replaced with `clearedFullPoly_swap_signed` (sorry pending sign-tracking algebra).
+- Chord symmetry HALVING ARGUMENT DOES NOT WORK: an involution on the bad set only shows even cardinality, does not reduce Lang-Weil bound. The plan's `36 → 18` tightening needs a different mechanism (likely Y-linearity-aware Lang-Weil).
+
+**Remaining sorries (top-level):**
+1. `clearedFullPoly_swap_signed` — sign tracking under swap; tough.
+2. `sigma_matching_from_polyGFull_vanishing` — 3 internal Bézout/pigeonhole sub-sorries (Steps 3, 5, 6 of paper proof); partially dispatched (`6e5f6092`, queued).
+
+**Paths to exact paper `18·(d+k)·|E|` bound:**
+
+| Slack | Current bound contribution | Path |
+|---|---|---|
+| Factor 2 in Lang-Weil axiom | `36·…` vs target `18·…` | Derive a Y-linearity-aware Lang-Weil theorem from the existing axiom, exploiting that `clearedFullPoly` mod curve equations is Y-linear. |
+| `+6` offset | `(d+k+6)` vs target `(d+k)` | Redefine `clearedFullPoly` with per-factor mod-curve reduction instead of uniform `lamDen^N` scaling. Major refactor. |
+| `+18·(…)` boundary | log_deriv_sz_paper outer: 36+18=54 | Unify denom-undefined pairs into the Lang-Weil zero set via a single polynomial that vanishes on both. |
+| Quadratic term | `+ 6q·((d+k+1)+(d+k+1)·(d+k))` | Close `sigma_matching_from_polyGFull_vanishing` and rewire `ma_extractable` to drop the quadratic fallback. |
+
+Each of these is an independent follow-up Aristotle dispatch.
