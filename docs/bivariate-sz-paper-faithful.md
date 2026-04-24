@@ -1,5 +1,17 @@
 # Bivariate SZ Paper-Faithful Plan (current → paper)
 
+**Session progress note (2026-04-24):** see `docs/session-progress.md`
+for the state at end of this session. Achieved:
+`54·(d+k+6)·|E| + quadratic` (linear coeff 72→54, quadratic unchanged).
+The remaining gap to paper's exact `18·(d+k)·|E|` decomposes into:
+(a) boundary unification (`+18·(…)` → 0 via unifying in Lang-Weil on
+stronger polynomial), (b) chord-symmetry halving (`36 → 18`),
+(c) uniform-clearing offset drop (`+6 → 0` via direct mod-curve
+reduction), (d) T5 replacement to eliminate the quadratic. Each is a
+separate follow-up Aristotle dispatch.
+
+
+
 **Goal**: match the paper's bound on `ma_extractable` verbatim — `18·(degBound + k)·|E|`, as stated in `sections/ec.tex:763-779` (Lemma "Schwartz-Zippel for Log-Derivative of Norm Check") and `sections/ip.tex:410` (Theorem `thm:ma`, knowledge-soundness error).
 
 Replace the current `(72·(d+k+6) + 4)·|E| + 6q·((d+k+1) + (d+k+1)(d+k))` with `18·(d+k)·|E|` via a single Weil/Bezout-on-E×E argument that obviates the λ-parametrisation + T5 pipeline.
