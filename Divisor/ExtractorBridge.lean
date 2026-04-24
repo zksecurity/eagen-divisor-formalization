@@ -3367,15 +3367,16 @@ theorem polyG_zero_trace_formula
 
     * **Bound branch**: the set of accepting challenges in `validPairs`
       has cardinality at most
-      `36 · (d + stmt.k + 6) · |E.points|
+      `54 · (d + stmt.k + 6) · |E.points|
         + 6 · q · ((d + k + 1) + (d + k + 1) · (d + k))`.
 
-    The linear coefficient `36` is delivered by `log_deriv_sz_paper`,
-    which applies the Lang-Weil axiom
-    `bivariate_poly_zeros_on_ExE_le` to `clearedFullPoly` on `E × E`.
-    This is a factor-of-two tightening over the earlier `72 · (…) + 4`
-    bound from `log_deriv_sz` (which routed through fiber/bad-A₀
-    decomposition).
+    The linear coefficient `54` is delivered by `log_deriv_sz_paper`,
+    which combines (a) the Lang-Weil axiom
+    `bivariate_poly_zeros_on_ExE_le` applied to `clearedFullPoly` on
+    `E × E` (`36·(…)`) with (b) the denominator-factor boundary bound
+    `logDerivCheckFn_undefined_set_bound` (`18·(…)`). This is a
+    tightening over the earlier `72·(…) + 4` bound from `log_deriv_sz`
+    (which routed through fiber / bad-A₀ decomposition).
 
     The quadratic summand `6 · q · ((d+k+1) + (d+k+1)·(d+k))` handles
     the "small `|validPairs|`" regime where the T5 quantitative
@@ -3404,7 +3405,7 @@ theorem ma_extractable
         ∧ dlogHolds E stmt wit) ∨
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ 36 * (stmt.degBound + stmt.k + 6) * E.points.card
+      ≤ 54 * (stmt.degBound + stmt.k + 6) * E.points.card
         + 6 * E.q * ((stmt.degBound + stmt.k + 1) +
                      (stmt.degBound + stmt.k + 1) * (stmt.degBound + stmt.k)) := by
   classical
@@ -3433,8 +3434,8 @@ theorem ma_extractable
     have hBound :=
       log_deriv_sz_paper E msg.toD stmt.target stmt.bases
         (fun i => msg.m (hkm ▸ i)) hDegLt hNV
-    have hMono : 36 * (msg.toD.degE + stmt.k + 6) * E.points.card
-                 ≤ 36 * (d + stmt.k + 6) * E.points.card := by
+    have hMono : 54 * (msg.toD.degE + stmt.k + 6) * E.points.card
+                 ≤ 54 * (d + stmt.k + 6) * E.points.card := by
       apply Nat.mul_le_mul_right
       have : msg.toD.degE + stmt.k + 6 ≤ d + stmt.k + 6 := by
         exact Nat.add_le_add_right (Nat.add_le_add_right hDeg _) _
@@ -3560,7 +3561,7 @@ theorem ip_knowledge_sound
          ∧ dlogHolds E stmt wit) ∨
      ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
-      ≤ 36 * (stmt.degBound + stmt.k + 6) * E.points.card
+      ≤ 54 * (stmt.degBound + stmt.k + 6) * E.points.card
         + 6 * E.q * ((stmt.degBound + stmt.k + 1) +
                      (stmt.degBound + stmt.k + 1) * (stmt.degBound + stmt.k)))
     ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)

@@ -1006,19 +1006,58 @@ theorem log_deriv_sz_paper_core
 
 /-- **Phase 5 `log_deriv_sz_paper` (outer, with-boundary form).**
 
-    Combines the core inclusion with existing boundary bounds (F1-F6 of
-    `ClearedPolyForm.lean`) — left as `sorry` pending the boundary
-    accumulation step. Target final bound: `K·(D.degE + k + C)·|E|` for
-    K ≤ 44, matching plan Phase 5 fallback. -/
+    Combines the core Lang-Weil bound (`36·(…)`) on the denom-defined
+    pairs with the boundary bound (`18·(…)`) from
+    `logDerivCheckFn_undefined_set_bound` for the denom-undefined pairs.
+    Total: `54·(D.degE + k + 6)·|E|`, a strict improvement over
+    `log_deriv_sz`'s `(72·(d+k+6)+4)·|E|`. -/
 theorem log_deriv_sz_paper
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
-    (_hDeg : D.degE < E.q)
-    (_hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
+    (hDeg : D.degE < E.q)
+    (hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
         logDerivCheckFnDefined E D P B A₀ A₁ ∧
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     (badChallengesNotEq E D P B m).card ≤
-      36 * (D.degE + k + 6) * E.points.card := by
-  sorry
+      54 * (D.degE + k + 6) * E.points.card := by
+  classical
+  -- badChallengesNotEq splits by `logDerivCheckFnDefined`.
+  set badNE := badChallengesNotEq E D P B m with hBNE_def
+  set defBad := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      A₀ne_A₁x_cleared_pair E D P B m p) with hDB_def
+  set undefAll := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      ¬ logDerivCheckFnDefined E D P B p.1 p.2) with hUA_def
+  have hSub : badNE ⊆ defBad ∪ undefAll := by
+    intro p hp
+    simp only [hBNE_def, badChallengesNotEq, Finset.mem_filter] at hp
+    obtain ⟨hVP, hCheck⟩ := hp
+    have hDP : p ∈ distinctPairs E.points := (Finset.mem_filter.mp hVP).1
+    have hEE : p ∈ E.points ×ˢ E.points := (Finset.mem_filter.mp hDP).1
+    have hNeq : p.1.1 ≠ p.2.1 := ((Finset.mem_filter.mp hVP).2).1
+    by_cases hDef : logDerivCheckFnDefined E D P B p.1 p.2
+    · exact Finset.mem_union.mpr (Or.inl (Finset.mem_filter.mpr
+        ⟨hEE, hNeq, hDef, hCheck⟩))
+    · exact Finset.mem_union.mpr (Or.inr (Finset.mem_filter.mpr
+        ⟨hEE, hDef⟩))
+  have hCardSplit : badNE.card ≤ defBad.card + undefAll.card :=
+    le_trans (Finset.card_le_card hSub) (Finset.card_union_le _ _)
+  have hCoreBound := log_deriv_sz_paper_core E D P B m hDeg hNV
+  -- Derive ¬(D.a = 0 ∧ D.b = 0) from the witness.
+  have hD : ¬(D.a = 0 ∧ D.b = 0) := by
+    obtain ⟨A₀, A₁, _, _, _, hDef, _⟩ := hNV
+    intro ⟨ha, hb⟩
+    have : logDerivCheckFnDenom E D P B A₀ A₁ = 0 := by
+      unfold logDerivCheckFnDenom CoordRingElt.eval
+      rw [ha, hb]; simp
+    exact hDef this
+  have hUndefBound := logDerivCheckFn_undefined_set_bound E D P k B hD
+  calc badNE.card
+    ≤ defBad.card + undefAll.card := hCardSplit
+    _ ≤ 36 * (D.degE + k + 6) * E.points.card +
+        18 * (D.degE + k + 6) * E.points.card := by
+        exact Nat.add_le_add hCoreBound hUndefBound
+    _ = 54 * (D.degE + k + 6) * E.points.card := by ring
 
 end Divisor
