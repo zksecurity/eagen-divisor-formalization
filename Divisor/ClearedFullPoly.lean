@@ -866,13 +866,460 @@ theorem clearedFullPoly_identity
   rw [bivEval₂_clearedFullPoly_eq_bivEval,
       clearedFiberPoly_identity E D P B m A₀ A₁ hNV hDef]
 
-/-- **Phase 4 bi-x-degree bound (target).** -/
+/-! ### Phase 4: bi-x-degree bound — atomic helpers -/
+
+private lemma varA₀y_bi : bi_x_degree_le E (varA₀y E) 0 0 := by
+  unfold varA₀y; exact bi_x_degree_le.Y₀
+private lemma varA₁y_bi : bi_x_degree_le E (varA₁y E) 0 0 := by
+  unfold varA₁y; exact bi_x_degree_le.Y₁
+private lemma lamNumFull_bi : bi_x_degree_le E (lamNumFull E) 0 0 := by
+  unfold lamNumFull
+  exact bi_x_degree_le.sub (varA₁y_bi E) (varA₀y_bi E)
+private lemma lamDenFull_bi : bi_x_degree_le E (lamDenFull E) 1 1 := by
+  unfold lamDenFull
+  exact (show bi_x_degree_le E (varA₁x E) 1 1 by
+    unfold varA₁x; exact bi_x_degree_le.X₁.mono (by omega) (by omega)).sub
+   (show bi_x_degree_le E (varA₀x E) 1 1 by
+    unfold varA₀x; exact bi_x_degree_le.X₀.mono (by omega) (by omega))
+
+private lemma lineEvalNumAtFull_bi (pt : ZMod E.q × ZMod E.q) :
+    bi_x_degree_le E (lineEvalNumAtFull E pt) 1 1 := by
+  unfold lineEvalNumAtFull embedScalarFull
+  have h1 : bi_x_degree_le E
+      (((MvPolynomial.C pt.2 : FourVarPoly E.q) - varA₀y E) * lamDenFull E) 1 1 :=
+    ((bi_x_degree_le.C pt.2).sub (varA₀y_bi E)).mul (lamDenFull_bi E)
+  have h2 : bi_x_degree_le E
+      (((MvPolynomial.C pt.1 : FourVarPoly E.q) - varA₀x E) * lamNumFull E) 1 1 := by
+    have hc : bi_x_degree_le E (MvPolynomial.C pt.1 : FourVarPoly E.q) 1 0 :=
+      (bi_x_degree_le.C pt.1).mono (by omega) (by omega)
+    have hx : bi_x_degree_le E (varA₀x E) 1 0 := by unfold varA₀x; exact bi_x_degree_le.X₀
+    have hl : bi_x_degree_le E (lamNumFull E) 1 1 := (lamNumFull_bi E).mono (by omega) (by omega)
+    exact ((hc.sub hx).mul (lamNumFull_bi E)).mono (by omega) (by omega)
+  exact h1.sub h2
+
+private lemma x₂ScaledFull_bi : bi_x_degree_le E (x₂ScaledFull E) 3 3 := by
+  unfold x₂ScaledFull
+  exact ((lamNumFull_bi E).pow 2 |>.mono (by omega) (by omega)).sub
+    (((show bi_x_degree_le E (varA₀x E) 1 1 by
+        unfold varA₀x; exact bi_x_degree_le.X₀.mono (by omega) (by omega)).add
+       (show bi_x_degree_le E (varA₁x E) 1 1 by
+        unfold varA₁x; exact bi_x_degree_le.X₁.mono (by omega) (by omega))).mul
+       ((lamDenFull_bi E).pow 2) |>.mono (by omega) (by omega))
+
+private lemma y₂ScaledFull_bi : bi_x_degree_le E (y₂ScaledFull E) 3 3 := by
+  unfold y₂ScaledFull
+  have h1 : bi_x_degree_le E (lamNumFull E * x₂ScaledFull E) 3 3 :=
+    ((lamNumFull_bi E).mul (x₂ScaledFull_bi E)).mono (by omega) (by omega)
+  have h2 : bi_x_degree_le E
+      ((varA₀y E * lamDenFull E - varA₀x E * lamNumFull E) * lamDenFull E ^ 2) 3 3 := by
+    have ha : bi_x_degree_le E (varA₀y E * lamDenFull E) 1 1 :=
+      (varA₀y_bi E).mul (lamDenFull_bi E)
+    have hb : bi_x_degree_le E (varA₀x E * lamNumFull E) 1 1 :=
+      ((show bi_x_degree_le E (varA₀x E) 1 0 by
+        unfold varA₀x; exact bi_x_degree_le.X₀).mul
+        (lamNumFull_bi E)).mono (by omega) (by omega)
+    exact (ha.sub hb).mul ((lamDenFull_bi E).pow 2)
+  exact h1.add h2
+
+private lemma liftPoly_bi_0 (p : (ZMod E.q)[X]) :
+    bi_x_degree_le E (liftPoly E p 0) p.natDegree 0 :=
+  ⟨liftPoly_degreeOf_target_le E p 0,
+   le_of_eq (liftPoly_degreeOf_other E p 0 2 (by decide))⟩
+
+private lemma liftPoly_bi_2 (p : (ZMod E.q)[X]) :
+    bi_x_degree_le E (liftPoly E p 2) 0 p.natDegree :=
+  ⟨le_of_eq (liftPoly_degreeOf_other E p 2 0 (by decide)),
+   liftPoly_degreeOf_target_le E p 2⟩
+
+private lemma a_natDegree_le_degE (D : CoordRingElt E.q) :
+    D.a.natDegree ≤ D.degE := by
+  unfold CoordRingElt.degE
+  exact le_trans (Nat.le_mul_of_pos_left _ (by omega)) (le_max_left _ _)
+
+private lemma b_natDegree_le_degE (D : CoordRingElt E.q) :
+    D.b.natDegree ≤ D.degE := by
+  unfold CoordRingElt.degE
+  exact le_trans (le_trans (Nat.le_mul_of_pos_left _ (by omega))
+    (Nat.le_add_left _ _)) (le_max_right _ _)
+
+private lemma two_a_le_degE (D : CoordRingElt E.q) :
+    2 * D.a.natDegree ≤ D.degE := by
+  unfold CoordRingElt.degE; exact le_max_left _ _
+
+private lemma two_b_plus_3_le_degE (D : CoordRingElt E.q) :
+    3 + 2 * D.b.natDegree ≤ D.degE := by
+  unfold CoordRingElt.degE; exact le_max_right _ _
+
+private lemma deriv_a_natDegree_le_degE (D : CoordRingElt E.q) :
+    (Polynomial.derivative D.a).natDegree ≤ D.degE :=
+  le_trans (le_trans (Polynomial.natDegree_derivative_le _) (Nat.sub_le _ _))
+    (a_natDegree_le_degE E D)
+
+private lemma deriv_b_natDegree_le_degE (D : CoordRingElt E.q) :
+    (Polynomial.derivative D.b).natDegree ≤ D.degE :=
+  le_trans (le_trans (Polynomial.natDegree_derivative_le _) (Nat.sub_le _ _))
+    (b_natDegree_le_degE E D)
+
+private lemma DAtA₀Full_bi (D : CoordRingElt E.q) :
+    bi_x_degree_le E (DAtA₀Full E D) D.degE 0 := by
+  unfold DAtA₀Full
+  have ha := a_natDegree_le_degE E D
+  have hb := b_natDegree_le_degE E D
+  exact ((liftPoly_bi_0 E D.a).mono (by omega) (by omega)).sub
+    (((liftPoly_bi_0 E D.b).mul (varA₀y_bi E)).mono (by omega) (by omega))
+
+private lemma DAtA₁Full_bi (D : CoordRingElt E.q) :
+    bi_x_degree_le E (DAtA₁Full E D) 0 D.degE := by
+  unfold DAtA₁Full
+  have ha := a_natDegree_le_degE E D
+  have hb := b_natDegree_le_degE E D
+  exact ((liftPoly_bi_2 E D.a).mono (by omega) (by omega)).sub
+    (((liftPoly_bi_2 E D.b).mul (varA₁y_bi E)).mono (by omega) (by omega))
+
+private lemma DDerivAtA₀Full_bi (D : CoordRingElt E.q) :
+    bi_x_degree_le E (DDerivAtA₀Full E D) D.degE 0 := by
+  unfold DDerivAtA₀Full
+  have ha := deriv_a_natDegree_le_degE E D
+  have hb := deriv_b_natDegree_le_degE E D
+  exact ((liftPoly_bi_0 E (Polynomial.derivative D.a)).mono (by omega) (by omega)).sub
+    (((liftPoly_bi_0 E (Polynomial.derivative D.b)).mul (varA₀y_bi E)).mono (by omega) (by omega))
+
+private lemma DDerivAtA₁Full_bi (D : CoordRingElt E.q) :
+    bi_x_degree_le E (DDerivAtA₁Full E D) 0 D.degE := by
+  unfold DDerivAtA₁Full
+  have ha := deriv_a_natDegree_le_degE E D
+  have hb := deriv_b_natDegree_le_degE E D
+  exact ((liftPoly_bi_2 E (Polynomial.derivative D.a)).mono (by omega) (by omega)).sub
+    (((liftPoly_bi_2 E (Polynomial.derivative D.b)).mul (varA₁y_bi E)).mono (by omega) (by omega))
+
+private lemma APartScaledFull_bi (a_coeff : ℕ → ZMod E.q) (deg bound : ℕ)
+    (hbd : deg ≤ bound) (h2d : 2 * deg ≤ bound) :
+    bi_x_degree_le E
+      (∑ n ∈ Finset.range (deg + 1),
+        (MvPolynomial.C (a_coeff n) : FourVarPoly E.q)
+          * x₂ScaledFull E ^ n * lamDenFull E ^ (bound - 2 * n))
+      (2 * bound) (2 * bound) := by
+  apply bi_x_degree_le.sum
+  intro n hn
+  simp only [Finset.mem_range] at hn
+  have hn' : n ≤ deg := by omega
+  apply bi_x_degree_le.mono
+  · exact ((bi_x_degree_le.C _).mul ((x₂ScaledFull_bi E).pow n)).mul
+      ((lamDenFull_bi E).pow (bound - 2 * n))
+  · omega
+  · omega
+
+private lemma BPartScaledFull_bi (b_coeff : ℕ → ZMod E.q) (deg bound : ℕ)
+    (hbd : deg ≤ bound) (h3d : 3 + 2 * deg ≤ bound) :
+    bi_x_degree_le E
+      (∑ n ∈ Finset.range (deg + 1),
+        (MvPolynomial.C (b_coeff n) : FourVarPoly E.q)
+          * x₂ScaledFull E ^ n * y₂ScaledFull E
+          * lamDenFull E ^ (bound - 2 * n - 3))
+      (2 * bound) (2 * bound) := by
+  apply bi_x_degree_le.sum
+  intro n hn
+  simp only [Finset.mem_range] at hn
+  have hn' : n ≤ deg := by omega
+  apply bi_x_degree_le.mono
+  · exact (((bi_x_degree_le.C _).mul ((x₂ScaledFull_bi E).pow n)).mul
+      (y₂ScaledFull_bi E)).mul ((lamDenFull_bi E).pow (bound - 2 * n - 3))
+  · have : 2 * n + 3 ≤ bound := by omega
+    omega
+  · have : 2 * n + 3 ≤ bound := by omega
+    omega
+
+private lemma DAtA₂ScaledFull_bi (D : CoordRingElt E.q) :
+    bi_x_degree_le E (DAtA₂ScaledFull E D) (2 * D.degE) (2 * D.degE) := by
+  unfold DAtA₂ScaledFull
+  have hA : bi_x_degree_le E (DAPartAtA₂ScaledFull E D) (2 * D.degE) (2 * D.degE) := by
+    unfold DAPartAtA₂ScaledFull
+    exact APartScaledFull_bi E (D.a.coeff) D.a.natDegree D.degE
+      (a_natDegree_le_degE E D) (two_a_le_degE E D)
+  have hB : bi_x_degree_le E (DBPartAtA₂ScaledFull E D) (2 * D.degE) (2 * D.degE) := by
+    unfold DBPartAtA₂ScaledFull
+    exact BPartScaledFull_bi E (D.b.coeff) D.b.natDegree D.degE
+      (b_natDegree_le_degE E D) (two_b_plus_3_le_degE E D)
+  exact hA.sub hB
+
+private lemma DDerivAtA₂ScaledFull_bi (D : CoordRingElt E.q) :
+    bi_x_degree_le E (DDerivAtA₂ScaledFull E D) (2 * D.degE) (2 * D.degE) := by
+  unfold DDerivAtA₂ScaledFull
+  have hda := deriv_a_natDegree_le_degE E D
+  have hdb := deriv_b_natDegree_le_degE E D
+  have h2da : 2 * (Polynomial.derivative D.a).natDegree ≤ D.degE := by
+    have := Polynomial.natDegree_derivative_le D.a
+    have := two_a_le_degE E D; omega
+  have h2db : 2 * (Polynomial.derivative D.b).natDegree ≤ D.degE := by
+    have := Polynomial.natDegree_derivative_le D.b
+    have := two_b_plus_3_le_degE E D; omega
+  have h3db : 3 + 2 * (Polynomial.derivative D.b).natDegree ≤ D.degE := by
+    have := Polynomial.natDegree_derivative_le D.b
+    have := two_b_plus_3_le_degE E D; omega
+  have hA : bi_x_degree_le E (DDerivAPartAtA₂ScaledFull E D) (2 * D.degE) (2 * D.degE) := by
+    unfold DDerivAPartAtA₂ScaledFull
+    exact APartScaledFull_bi E _ _ _ hda h2da
+  have hB : bi_x_degree_le E (DDerivBPartAtA₂ScaledFull E D) (2 * D.degE) (2 * D.degE) := by
+    unfold DDerivBPartAtA₂ScaledFull
+    exact BPartScaledFull_bi E _ _ _ hdb h3db
+  exact hA.sub hB
+
+private lemma dxdzDenA₀Full_bi : bi_x_degree_le E (dxdzDenA₀Full E) 3 1 := by
+  unfold dxdzDenA₀Full
+  have hx0 : bi_x_degree_le E (varA₀x E) 1 0 := by unfold varA₀x; exact bi_x_degree_le.X₀
+  have h3x2 : bi_x_degree_le E
+      ((MvPolynomial.C (3 : ZMod E.q) : FourVarPoly E.q) * varA₀x E ^ 2) 2 0 :=
+    (bi_x_degree_le.C _).mul (hx0.pow 2)
+  have hfst : bi_x_degree_le E
+      (((MvPolynomial.C (3 : ZMod E.q) : FourVarPoly E.q) * varA₀x E ^ 2
+        + (MvPolynomial.C E.curveA : FourVarPoly E.q)) * lamDenFull E) 3 1 :=
+    (h3x2.add ((bi_x_degree_le.C E.curveA).mono (by omega) (by omega))).mul (lamDenFull_bi E)
+  have hsnd : bi_x_degree_le E
+      ((MvPolynomial.C (2 : ZMod E.q) : FourVarPoly E.q) * varA₀y E * lamNumFull E) 3 1 :=
+    ((bi_x_degree_le.C _).mul (varA₀y_bi E) |>.mul (lamNumFull_bi E)).mono (by omega) (by omega)
+  exact hfst.sub hsnd
+
+private lemma dxdzDenA₁Full_bi : bi_x_degree_le E (dxdzDenA₁Full E) 1 3 := by
+  unfold dxdzDenA₁Full
+  have hx1 : bi_x_degree_le E (varA₁x E) 0 1 := by unfold varA₁x; exact bi_x_degree_le.X₁
+  have h3x2 : bi_x_degree_le E
+      ((MvPolynomial.C (3 : ZMod E.q) : FourVarPoly E.q) * varA₁x E ^ 2) 0 2 :=
+    (bi_x_degree_le.C _).mul (hx1.pow 2)
+  have hfst : bi_x_degree_le E
+      (((MvPolynomial.C (3 : ZMod E.q) : FourVarPoly E.q) * varA₁x E ^ 2
+        + (MvPolynomial.C E.curveA : FourVarPoly E.q)) * lamDenFull E) 1 3 :=
+    (h3x2.add ((bi_x_degree_le.C E.curveA).mono (by omega) (by omega))).mul (lamDenFull_bi E)
+  have hsnd : bi_x_degree_le E
+      ((MvPolynomial.C (2 : ZMod E.q) : FourVarPoly E.q) * varA₁y E * lamNumFull E) 1 3 :=
+    ((bi_x_degree_le.C _).mul (varA₁y_bi E) |>.mul (lamNumFull_bi E)).mono (by omega) (by omega)
+  exact hfst.sub hsnd
+
+private lemma dxdzDenA₂Full_bi : bi_x_degree_le E (dxdzDenA₂Full E) 6 6 := by
+  unfold dxdzDenA₂Full
+  have h1 : bi_x_degree_le E
+      ((MvPolynomial.C (3 : ZMod E.q) : FourVarPoly E.q) * x₂ScaledFull E ^ 2) 6 6 :=
+    ((bi_x_degree_le.C _).mul ((x₂ScaledFull_bi E).pow 2)).mono (by omega) (by omega)
+  have h2 : bi_x_degree_le E
+      ((MvPolynomial.C E.curveA : FourVarPoly E.q) * lamDenFull E ^ 4) 6 6 :=
+    ((bi_x_degree_le.C E.curveA).mul ((lamDenFull_bi E).pow 4)).mono (by omega) (by omega)
+  have h3 : bi_x_degree_le E
+      ((MvPolynomial.C (2 : ZMod E.q) : FourVarPoly E.q) * lamNumFull E * y₂ScaledFull E) 6 6 :=
+    ((bi_x_degree_le.C _).mul (lamNumFull_bi E) |>.mul (y₂ScaledFull_bi E)).mono (by omega) (by omega)
+  exact (h1.add h2).sub h3
+
+private lemma DBdydzAtA₀Full_bi (D : CoordRingElt E.q) :
+    bi_x_degree_le E (DBdydzAtA₀Full E D) D.degE 0 := by
+  unfold DBdydzAtA₀Full
+  have hb := b_natDegree_le_degE E D
+  have hb3 := two_b_plus_3_le_degE E D
+  have hx0 : bi_x_degree_le E (varA₀x E) 1 0 := by unfold varA₀x; exact bi_x_degree_le.X₀
+  have h3x2a : bi_x_degree_le E
+      ((MvPolynomial.C (3 : ZMod E.q) : FourVarPoly E.q) * varA₀x E ^ 2
+        + (MvPolynomial.C E.curveA : FourVarPoly E.q)) 2 0 :=
+    ((bi_x_degree_le.C _).mul (hx0.pow 2)).add ((bi_x_degree_le.C E.curveA).mono (by omega) (by omega))
+  exact ((liftPoly_bi_0 E D.b).neg.mul h3x2a).mono (by omega) (by omega)
+
+private lemma DBdydzAtA₁Full_bi (D : CoordRingElt E.q) :
+    bi_x_degree_le E (DBdydzAtA₁Full E D) 0 D.degE := by
+  unfold DBdydzAtA₁Full
+  have hb := b_natDegree_le_degE E D
+  have hb3 := two_b_plus_3_le_degE E D
+  have hx1 : bi_x_degree_le E (varA₁x E) 0 1 := by unfold varA₁x; exact bi_x_degree_le.X₁
+  have h3x2a : bi_x_degree_le E
+      ((MvPolynomial.C (3 : ZMod E.q) : FourVarPoly E.q) * varA₁x E ^ 2
+        + (MvPolynomial.C E.curveA : FourVarPoly E.q)) 0 2 :=
+    ((bi_x_degree_le.C _).mul (hx1.pow 2)).add ((bi_x_degree_le.C E.curveA).mono (by omega) (by omega))
+  exact ((liftPoly_bi_2 E D.b).neg.mul h3x2a).mono (by omega) (by omega)
+
+private lemma correctionA₂CoreFull_bi (D : CoordRingElt E.q) :
+    bi_x_degree_le E (correctionA₂CoreFull E D)
+      (2 * D.degE + 3) (2 * D.degE + 3) := by
+  unfold correctionA₂CoreFull
+  have hb := b_natDegree_le_degE E D
+  have h2b3 := two_b_plus_3_le_degE E D
+  have hDb : bi_x_degree_le E (DbAtA₂TightFull E D)
+      (3 * D.b.natDegree) (3 * D.b.natDegree) := by
+    unfold DbAtA₂TightFull
+    apply bi_x_degree_le.sum
+    intro n hn
+    simp only [Finset.mem_range] at hn
+    exact ((bi_x_degree_le.C _).mul ((x₂ScaledFull_bi E).pow n) |>.mul
+      ((lamDenFull_bi E).pow (2 * D.b.natDegree - 2 * n))).mono (by omega) (by omega)
+  have hDyz : bi_x_degree_le E (dydzNumA₂Full E) 6 6 := by
+    unfold dydzNumA₂Full
+    exact ((bi_x_degree_le.C (3 : ZMod E.q)).mul
+      ((x₂ScaledFull_bi E).pow 2) |>.mono (by omega) (by omega)).add
+      ((bi_x_degree_le.C E.curveA).mul ((lamDenFull_bi E).pow 4)
+        |>.mono (by omega) (by omega))
+  exact (hDb.neg.mul hDyz |>.mul
+    ((lamDenFull_bi E).pow (D.degE - 2 * D.b.natDegree - 3))).mono (by omega) (by omega)
+
+private lemma linesProductFull_bi (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    bi_x_degree_le E (linesProductFull E P k B) (k + 1) (k + 1) := by
+  unfold linesProductFull
+  exact ((lineEvalNumAtFull_bi E (P.1, -P.2)).mul
+    (bi_x_degree_le.prod_fin (fun j => lineEvalNumAtFull E (B j))
+      (fun j => lineEvalNumAtFull_bi E (B j)))).mono (by omega) (by omega)
+
+private lemma linesProductNoNegPFull_bi
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    bi_x_degree_le E (linesProductNoNegPFull E k B) k k := by
+  unfold linesProductNoNegPFull
+  exact (bi_x_degree_le.prod_fin (fun j => lineEvalNumAtFull E (B j))
+    (fun j => lineEvalNumAtFull_bi E (B j))).mono (by omega) (by omega)
+
+private lemma bi_x_degree_le_prod_finset_fin {k : ℕ}
+    (s : Finset (Fin k)) (f : Fin k → FourVarPoly E.q) {dX dY : ℕ}
+    (hf : ∀ i ∈ s, bi_x_degree_le E (f i) dX dY) :
+    bi_x_degree_le E (∏ i ∈ s, f i) (s.card * dX) (s.card * dY) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => refine ⟨?_, ?_⟩ <;> simp [MvPolynomial.degreeOf_C]
+  | @insert a s has ih =>
+    rw [Finset.prod_insert has, Finset.card_insert_of_notMem has]
+    exact (bi_x_degree_le.mul (hf a (Finset.mem_insert_self a s))
+      (ih (fun i hi => hf i (Finset.mem_insert_of_mem hi)))).mono (by nlinarith) (by nlinarith)
+
+private lemma linesProductSkipBjFull_bi (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (j : Fin k) :
+    bi_x_degree_le E (linesProductSkipBjFull E P k B j) k k := by
+  unfold linesProductSkipBjFull
+  have h1 := lineEvalNumAtFull_bi E (P.1, -P.2)
+  have h2 := bi_x_degree_le_prod_finset_fin E ((Finset.univ (α := Fin k)).erase j)
+    (fun j => lineEvalNumAtFull E (B j))
+    (fun i _ => lineEvalNumAtFull_bi E (B i))
+  have hcard_eq : ((Finset.univ (α := Fin k)).erase j).card = k - 1 := by
+    rw [Finset.card_erase_of_mem (Finset.mem_univ j), Finset.card_fin]
+  have hk : 0 < k := Fin.pos j
+  rw [hcard_eq] at h2
+  exact (h1.mul h2).mono (by omega) (by omega)
+
+/-! ### Phase 4: bi-x-degree bound — summand helpers -/
+
+private lemma lhsTerm0Full_bi (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    bi_x_degree_le E (lhsTerm0Full E D P k B)
+      (9 * (D.degE + k + 6)) (9 * (D.degE + k + 6)) := by
+  unfold lhsTerm0Full
+  exact ((((((DDerivAtA₀Full_bi E D).mul
+    ((bi_x_degree_le.C (2 : ZMod E.q)).mul (varA₀y_bi E))).mul
+    (DAtA₁Full_bi E D)).mul
+    (DAtA₂ScaledFull_bi E D)).mul
+    (dxdzDenA₁Full_bi E)).mul
+    (dxdzDenA₂Full_bi E)).mul
+    (linesProductFull_bi E P B) |>.mono (by omega) (by omega)
+
+private lemma lhsTerm1Full_bi (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    bi_x_degree_le E (lhsTerm1Full E D P k B)
+      (9 * (D.degE + k + 6)) (9 * (D.degE + k + 6)) := by
+  unfold lhsTerm1Full
+  exact ((((((DDerivAtA₁Full_bi E D).mul
+    ((bi_x_degree_le.C (2 : ZMod E.q)).mul (varA₁y_bi E))).mul
+    (DAtA₀Full_bi E D)).mul
+    (DAtA₂ScaledFull_bi E D)).mul
+    (dxdzDenA₀Full_bi E)).mul
+    (dxdzDenA₂Full_bi E)).mul
+    (linesProductFull_bi E P B) |>.mono (by omega) (by omega)
+
+private lemma lhsTerm2Full_bi (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    bi_x_degree_le E (lhsTerm2Full E D P k B)
+      (9 * (D.degE + k + 6)) (9 * (D.degE + k + 6)) := by
+  unfold lhsTerm2Full
+  exact ((((((DDerivAtA₂ScaledFull_bi E D).mul
+    ((bi_x_degree_le.C (2 : ZMod E.q)).mul (y₂ScaledFull_bi E))).mul
+    (DAtA₀Full_bi E D)).mul
+    (DAtA₁Full_bi E D)).mul
+    (dxdzDenA₀Full_bi E)).mul
+    (dxdzDenA₁Full_bi E)).mul
+    (linesProductFull_bi E P B) |>.mono (by omega) (by omega)
+
+private lemma correctionTerm0Full_bi (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    bi_x_degree_le E (correctionTerm0Full E D P k B)
+      (9 * (D.degE + k + 6)) (9 * (D.degE + k + 6)) := by
+  unfold correctionTerm0Full
+  exact (((((DBdydzAtA₀Full_bi E D).mul
+    (DAtA₁Full_bi E D)).mul
+    (DAtA₂ScaledFull_bi E D)).mul
+    (dxdzDenA₁Full_bi E)).mul
+    (dxdzDenA₂Full_bi E)).mul
+    (linesProductFull_bi E P B) |>.mono (by omega) (by omega)
+
+private lemma correctionTerm1Full_bi (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    bi_x_degree_le E (correctionTerm1Full E D P k B)
+      (9 * (D.degE + k + 6)) (9 * (D.degE + k + 6)) := by
+  unfold correctionTerm1Full
+  exact (((((DBdydzAtA₁Full_bi E D).mul
+    (DAtA₀Full_bi E D)).mul
+    (DAtA₂ScaledFull_bi E D)).mul
+    (dxdzDenA₀Full_bi E)).mul
+    (dxdzDenA₂Full_bi E)).mul
+    (linesProductFull_bi E P B) |>.mono (by omega) (by omega)
+
+private lemma correctionTerm2Full_bi (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    bi_x_degree_le E (correctionTerm2Full E D P k B)
+      (9 * (D.degE + k + 6)) (9 * (D.degE + k + 6)) := by
+  unfold correctionTerm2Full
+  exact ((((((correctionA₂CoreFull_bi E D).mul
+    (DAtA₀Full_bi E D)).mul
+    (DAtA₁Full_bi E D)).mul
+    (dxdzDenA₀Full_bi E)).mul
+    (dxdzDenA₁Full_bi E)).mul
+    (linesProductFull_bi E P B)).mul
+    ((lamDenFull_bi E).pow 2) |>.mono (by omega) (by omega)
+
+private lemma rhsTermNegPFull_bi (D : CoordRingElt E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    bi_x_degree_le E (rhsTermNegPFull E D k B)
+      (9 * (D.degE + k + 6)) (9 * (D.degE + k + 6)) := by
+  unfold rhsTermNegPFull DAllFull dxdzAllFull
+  exact (((((DAtA₀Full_bi E D).mul (DAtA₁Full_bi E D)).mul
+    (DAtA₂ScaledFull_bi E D)).mul
+    ((dxdzDenA₀Full_bi E).mul (dxdzDenA₁Full_bi E) |>.mul (dxdzDenA₂Full_bi E))).mul
+    (linesProductNoNegPFull_bi E B)).mono (by omega) (by omega)
+
+private lemma rhsSumFull_bi (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (m : Fin k → ZMod E.q) :
+    bi_x_degree_le E (rhsSumFull E D P k B m)
+      (9 * (D.degE + k + 6)) (9 * (D.degE + k + 6)) := by
+  unfold rhsSumFull
+  apply bi_x_degree_le.sum
+  intro j _
+  unfold DAllFull dxdzAllFull
+  exact ((((bi_x_degree_le.C (m j)).mul
+    (((DAtA₀Full_bi E D).mul (DAtA₁Full_bi E D)).mul (DAtA₂ScaledFull_bi E D))).mul
+    ((dxdzDenA₀Full_bi E).mul (dxdzDenA₁Full_bi E) |>.mul (dxdzDenA₂Full_bi E))).mul
+    (linesProductSkipBjFull_bi E P B j)).mono (by omega) (by omega)
+
+/-- **Phase 4 bi-x-degree bound.** `clearedFullPoly` has bi-x-degree
+    bounded by `9·(D.degE + k + 6)` in both `X 0` and `X 2`. Each of
+    the 8 summands is proven separately via private helpers above. -/
 theorem clearedFullPoly_bi_x_degree_le
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q) :
     bi_x_degree_le E (clearedFullPoly E D P k B m)
       (9 * (D.degE + k + 6)) (9 * (D.degE + k + 6)) := by
-  sorry
+  unfold clearedFullPoly
+  exact (lhsTerm0Full_bi E D P B).add (lhsTerm1Full_bi E D P B)
+    |>.add (lhsTerm2Full_bi E D P B)
+    |>.add (correctionTerm0Full_bi E D P B)
+    |>.add (correctionTerm1Full_bi E D P B)
+    |>.add (correctionTerm2Full_bi E D P B)
+    |>.add (rhsTermNegPFull_bi E D B)
+    |>.add (rhsSumFull_bi E D P B m)
 
 /-- **Phase 5 nonzero-witness on E × E.** Any non-degenerate log-deriv
     witness `(A₀, A₁)` yields `bivEval₂ clearedFullPoly A₀ A₁ ≠ 0` via
