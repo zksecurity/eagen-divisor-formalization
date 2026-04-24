@@ -229,21 +229,119 @@ theorem clearedFullPoly_nonzero_witness
       bivEval₂ (clearedFullPoly E D P k B m) A₀ A₁ ≠ 0 := by
   sorry
 
-/-- **Phase 5 `log_deriv_sz_paper` (target).**
+/-! ### Log-derivative bad-set inclusion into Lang-Weil zero set
 
-    The cardinality of `badChallengesNotEq` — pairs `(A₀, A₁)` in
-    `validPairs E` at which the verifier's log-derivative check vanishes
-    — is at most `36·(D.degE + k + 6)·|E|`.
+    A pair `(A₀, A₁) ∈ E.points × E.points` at which the verifier's
+    log-derivative check vanishes (with denominators defined and line
+    non-vertical) also satisfies `bivEval₂ clearedFullPoly A₀ A₁ = 0`.
+    This inclusion is the input to Lang-Weil. -/
 
-    This is the Event_NotEq bound of `sections/ip.tex:462-481`: we
-    apply the Lang-Weil axiom `bivariate_poly_zeros_on_ExE_le` to
-    `clearedFullPoly` at bi-x-degree `(9·(d+k+6), 9·(d+k+6))` and
-    conclude via the identity `bivEval₂ clearedFullPoly ∝
-    logDerivCheckFnCleared`. The Lang-Weil constant `2·(dX+dY)` yields
-    `2·(9+9)·(d+k+6)·|E| = 36·(d+k+6)·|E|`. The paper's tighter
-    `18·(d+k)·|E|` requires a factor-of-two chord-symmetry tightening
-    left as a follow-up (see Phase 5 "Open question" in
-    `docs/bivariate-sz-paper-faithful.md`). -/
+/-- Non-degenerate bad-pair predicate used by `log_deriv_sz_paper_core`:
+    the pair lies on the non-vertical cone, has defined denominators,
+    and the check function vanishes. -/
+noncomputable def A₀ne_A₁x_cleared_pair
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) : Prop :=
+  p.1.1 ≠ p.2.1 ∧
+  logDerivCheckFnDenom E D P B p.1 p.2 ≠ 0 ∧
+  logDerivCheckFn E D P k B m p.1 p.2 = 0
+
+/-- `A₀ne_A₁x_cleared_pair` is decidable classically. -/
+noncomputable instance A₀ne_A₁x_cleared_pair.decidablePred
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q) :
+    DecidablePred (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      A₀ne_A₁x_cleared_pair E D P B m p) := by
+  classical exact fun _ => Classical.propDecidable _
+
+/-- **Bad-pair → clearedFullPoly-zero inclusion.** On the non-vertical
+    cone with `logDerivCheckFnDenom ≠ 0`, `logDerivCheckFn = 0`
+    implies `bivEval₂ clearedFullPoly = 0`.
+
+    Proof: `bivEval₂ clearedFullPoly = (A₁.1 - A₀.1)^N ·
+    logDerivCheckFnCleared = (A₁.1 - A₀.1)^N · logDerivCheckFn · denom`;
+    vanishes since `logDerivCheckFn = 0`. -/
+theorem bivEval₂_clearedFullPoly_eq_zero_of_bad
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1)
+    (hDef : logDerivCheckFnDenom E D P B A₀ A₁ ≠ 0)
+    (hZero : logDerivCheckFn E D P k B m A₀ A₁ = 0) :
+    bivEval₂ (clearedFullPoly E D P k B m) A₀ A₁ = 0 := by
+  rw [clearedFullPoly_identity E D P B m A₀ A₁ hNV hDef]
+  unfold logDerivCheckFnCleared
+  rw [hZero, zero_mul, mul_zero]
+
+/-! ### The paper-faithful Schwartz-Zippel bound via Lang-Weil.
+
+    Combining the three helpers (`clearedFullPoly_identity`,
+    `clearedFullPoly_bi_x_degree_le`, `clearedFullPoly_nonzero_witness`)
+    with the `bivariate_poly_zeros_on_ExE_le` axiom yields the
+    Event_NotEq bound. The bound `36·(D.degE + k + 6)·|E|` comes from
+    `2·(dX + dY) = 2·(9 + 9) = 36` at bi-x-degree `(9·(d+k+6), 9·(d+k+6))`.
+
+    A boundary correction accounts for pairs in `badChallengesNotEq`
+    where either the line is vertical (`A₀.1 = A₁.1`) or a denominator
+    factor vanishes. These pairs lie outside the identity's scope but
+    are bounded by existing F1-F6 bounds in `ClearedPolyForm.lean`.
+
+    For this session we deliver the **core inclusion bound**, which is
+    the nondegenerate part of the argument. The boundary correction
+    term is delegated to a follow-up alongside the `18·(d+k)` tightening
+    mentioned in the plan's Phase 5 "Open question".  -/
+
+/-- **Phase 5 `log_deriv_sz_paper` (core, non-degenerate part).**
+
+    The cardinality of the non-degenerate bad set —
+    pairs `(A₀, A₁) ∈ E.points × E.points` where the verifier's
+    log-derivative check vanishes AND the denominator stays defined
+    AND the line is non-vertical — is at most `36·(D.degE + k + 6)·|E|`.
+
+    This matches the paper's Event_NotEq bound of
+    `sections/ip.tex:462-481` (via Hasse) up to the factor-of-2 gap
+    discussed in `docs/bivariate-sz-paper-faithful.md` Phase 5. -/
+theorem log_deriv_sz_paper_core
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (_hDeg : D.degE < E.q)
+    (hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
+        logDerivCheckFnDefined E D P B A₀ A₁ ∧
+        logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          A₀ne_A₁x_cleared_pair E D P B m p)).card
+      ≤ 36 * (D.degE + k + 6) * E.points.card := by
+  classical
+  -- Reduce to: bad-on-cone pairs ⊆ clearedFullPoly-zero pairs.
+  set S : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+    (E.points ×ˢ E.points).filter
+      (fun p => A₀ne_A₁x_cleared_pair E D P B m p) with hSdef
+  set T : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+    (E.points ×ˢ E.points).filter
+      (fun p => bivEval₂ (clearedFullPoly E D P k B m) p.1 p.2 = 0) with hTdef
+  have hSub : S ⊆ T := by
+    intro p hp
+    simp only [hSdef, Finset.mem_filter, Finset.mem_product] at hp
+    simp only [hTdef, Finset.mem_filter, Finset.mem_product]
+    refine ⟨hp.1, ?_⟩
+    obtain ⟨hNVx, hDef, hCheck⟩ := hp.2
+    exact bivEval₂_clearedFullPoly_eq_zero_of_bad E D P B m p.1 p.2 hNVx
+      hDef hCheck
+  calc S.card ≤ T.card := Finset.card_le_card hSub
+    _ ≤ 2 * (9 * (D.degE + k + 6) + 9 * (D.degE + k + 6)) * E.points.card := by
+        have hBideg := clearedFullPoly_bi_x_degree_le E D P B m
+        have hNZ := clearedFullPoly_nonzero_witness E D P B m hNV
+        exact bivariate_poly_zeros_on_ExE_le E (clearedFullPoly E D P k B m)
+          _ _ hBideg hNZ
+    _ = 36 * (D.degE + k + 6) * E.points.card := by ring
+
+/-- **Phase 5 `log_deriv_sz_paper` (outer, with-boundary form).**
+
+    Combines the core inclusion with existing boundary bounds (F1-F6 of
+    `ClearedPolyForm.lean`) — left as `sorry` pending the boundary
+    accumulation step. Target final bound: `K·(D.degE + k + C)·|E|` for
+    K ≤ 44, matching plan Phase 5 fallback. -/
 theorem log_deriv_sz_paper
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
