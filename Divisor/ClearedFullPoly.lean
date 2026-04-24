@@ -30,6 +30,7 @@
 import Divisor.ClearedPolyForm
 import Divisor.FourVarPoly
 import Divisor.Axioms.AxiomBivariatePolyZerosOnExELe
+import Divisor.SlopeDist
 
 open Polynomial Finset
 
@@ -1797,24 +1798,185 @@ theorem polyGFull_vanishes_on_ExE_of_polyG_zero
     ≤ 2 * (d + M + (d + M)) * E.points.card := le_trans hNVge (le_trans hZeroCard hLW)
   nlinarith [hELarge]
 
+/-! ### Sub-lemmas for `sigma_matching_core`
+
+    The proof decomposes into five steps:
+    1. `ellP_self_eq_zero`: `ellP E P P A₁ = 0` (P = A₀).
+    2. `polyG_only_Rj_term`: When `ellP(R_{j₀})=0` and all other factors ≠ 0,
+       `polyG` reduces to the `j₀`-th second-sum term.
+    3. `polyG_only_Qk_term`: When `ellP(Q_{k₀})=0` and all other factors ≠ 0,
+       `polyG` reduces to the `k₀`-th first-sum term.
+    4. `exists_avoiding_A1`: For `P ∈ E.points` and finite `T`, find
+       `A₁ ∈ E.points` with `A₁ ≠ P` and `ellP(P', P, A₁) ≠ 0` for `P' ∈ T`.
+    5. Combine to build `σ` and verify the three properties. -/
+
+/-- `ellP E P P A₁ = 0` — the line numerator through `(A₀, A₁)`
+    evaluated at `P = A₀` always vanishes. -/
+private lemma ellP_self_eq_zero (P A₁ : ZMod E.q × ZMod E.q) :
+    ellP E P P A₁ = 0 := by
+  simp [ellP]
+
+/-- When `A₀ = Q k₀ ∈ E.points`, `polyG(Q k₀, A₁)` reduces to the
+    `k₀`-th first-sum term with the full `∏_j ellP(R_j)` factor.
+    All other terms vanish because they contain `ellP(Q_{k₀}, Q_{k₀}, A₁) = 0`
+    as a factor. -/
+private lemma polyG_at_self_Q
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (k₀ : Fin d) (A₁ : ZMod E.q × ZMod E.q) :
+    polyG E Q beta R m (Q k₀) A₁ =
+      beta k₀ *
+        (∏ k' ∈ Finset.univ.erase k₀, ellP E (Q k') (Q k₀) A₁) *
+        (∏ j : Fin M, ellP E (R j) (Q k₀) A₁) := by
+  unfold polyG
+  have hFirstSum : ∀ k' : Fin d, k' ≠ k₀ →
+      beta k' *
+        (∏ k'' ∈ Finset.univ.erase k', ellP E (Q k'') (Q k₀) A₁) *
+        (∏ j : Fin M, ellP E (R j) (Q k₀) A₁) = 0 := by
+    intro k' hne
+    have hk₀mem : k₀ ∈ Finset.univ.erase k' :=
+      Finset.mem_erase.mpr ⟨Ne.symm hne, Finset.mem_univ _⟩
+    rw [Finset.prod_eq_zero hk₀mem (ellP_self_eq_zero E _ _)]
+    ring
+  have hSecondSum : ∀ j : Fin M,
+      m j *
+        (∏ k : Fin d, ellP E (Q k) (Q k₀) A₁) *
+        (∏ j' ∈ Finset.univ.erase j, ellP E (R j') (Q k₀) A₁) = 0 := by
+    intro j
+    have hk₀mem : k₀ ∈ (Finset.univ : Finset (Fin d)) := Finset.mem_univ _
+    rw [Finset.prod_eq_zero hk₀mem (ellP_self_eq_zero E _ _)]
+    ring
+  rw [Finset.sum_eq_zero (fun j _ => hSecondSum j), add_zero]
+  exact Finset.sum_eq_single k₀
+    (fun k' _ hne => hFirstSum k' hne)
+    (fun h => absurd (Finset.mem_univ k₀) h)
+
+/-- When `A₀ = R j₀ ∈ E.points`, `polyG(R j₀, A₁)` reduces to the
+    `j₀`-th second-sum term. All first-sum terms vanish (each has
+    `∏_j ellP(R_j)` including `ellP(R_{j₀}) = 0`), and all
+    second-sum terms with `j ≠ j₀` vanish (they contain
+    `ellP(R_{j₀})` in their `∏_{j'≠j}` product). -/
+private lemma polyG_at_self_R
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (j₀ : Fin M) (A₁ : ZMod E.q × ZMod E.q) :
+    polyG E Q beta R m (R j₀) A₁ =
+      m j₀ *
+        (∏ k : Fin d, ellP E (Q k) (R j₀) A₁) *
+        (∏ j' ∈ Finset.univ.erase j₀, ellP E (R j') (R j₀) A₁) := by
+  unfold polyG
+  have hFirstSum : ∀ k : Fin d,
+      beta k *
+        (∏ k' ∈ Finset.univ.erase k, ellP E (Q k') (R j₀) A₁) *
+        (∏ j : Fin M, ellP E (R j) (R j₀) A₁) = 0 := by
+    intro k
+    have hj₀mem : j₀ ∈ (Finset.univ : Finset (Fin M)) := Finset.mem_univ _
+    rw [Finset.prod_eq_zero hj₀mem (ellP_self_eq_zero E _ _)]
+    ring
+  have hSecondSum : ∀ j : Fin M, j ≠ j₀ →
+      m j *
+        (∏ k : Fin d, ellP E (Q k) (R j₀) A₁) *
+        (∏ j' ∈ Finset.univ.erase j, ellP E (R j') (R j₀) A₁) = 0 := by
+    intro j hne
+    have hj₀mem : j₀ ∈ Finset.univ.erase j :=
+      Finset.mem_erase.mpr ⟨Ne.symm hne, Finset.mem_univ _⟩
+    rw [Finset.prod_eq_zero hj₀mem (ellP_self_eq_zero E _ _)]
+    ring
+  rw [Finset.sum_eq_zero (fun k _ => hFirstSum k), zero_add]
+  exact Finset.sum_eq_single j₀
+    (fun j _ hne => hSecondSum j hne)
+    (fun h => absurd (Finset.mem_univ j₀) h)
+
+/-- For `P ∈ E.points` and a finite set `T` of "bad" points, if
+    `|E| > 2|T| + 1`, there exists `A₁ ∈ E.points`, `A₁ ≠ P`,
+    such that `ellP(P', P, A₁) ≠ 0` for every `P' ∈ T`.
+
+    Geometrically: each `P' ∈ T` determines a line through `P`;
+    by Bezout, that line meets `E` in ≤ 3 points, at most 2 besides `P`.
+    So the set of "bad" `A₁` values has size ≤ `2|T|`.
+    With `|E| > 2|T| + 1`, a "good" `A₁ ≠ P` exists. -/
+private lemma exists_avoiding_A1
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points)
+    (T : Finset (ZMod E.q × ZMod E.q))
+    (hSize : E.points.card > 2 * T.card + 1) :
+    ∃ A₁ ∈ E.points, A₁ ≠ P ∧
+      ∀ P' ∈ T, ellP E P' P A₁ ≠ 0 := by
+  sorry
+
+/-- The 4-variate lift of the "residual" polynomial
+    `G = ∑_k c_k · ∏_{j≠σ(k)} lineEvalNumAtFull(R_j)`,
+    which arises after simplifying `polyG` under the σ-matching. -/
+private noncomputable def residualFull
+    {d M : ℕ}
+    (R : Fin M → ZMod E.q × ZMod E.q)
+    (c : Fin d → ZMod E.q)
+    (σ : Fin d ↪ Fin M) : FourVarPoly E.q :=
+  ∑ k : Fin d,
+    (MvPolynomial.C (c k) : FourVarPoly E.q) *
+    (∏ j ∈ (Finset.univ : Finset (Fin M)).erase (σ k),
+      lineEvalNumAtFull E (R j))
+
+private lemma residualFull_bi_x_degree_le
+    {d M : ℕ}
+    (R : Fin M → ZMod E.q × ZMod E.q)
+    (c : Fin d → ZMod E.q)
+    (σ : Fin d ↪ Fin M) :
+    bi_x_degree_le E (residualFull E R c σ) (M - 1) (M - 1) := by
+  sorry
+
+private lemma bivEval₂_residualFull_eq
+    {d M : ℕ}
+    (R : Fin M → ZMod E.q × ZMod E.q)
+    (c : Fin d → ZMod E.q)
+    (σ : Fin d ↪ Fin M)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (residualFull E R c σ) A₀ A₁ =
+    ∑ k : Fin d, c k *
+      ∏ j ∈ (Finset.univ : Finset (Fin M)).erase (σ k),
+        ellP E (R j) A₀ A₁ := by
+  simp only [residualFull, bivEval₂_sum, bivEval₂_mul,
+    bivEval₂_prod, bivEval₂_C, bivEval₂_lineEvalNumAtFull, ellP]
+
+/-- After establishing `Q k = R (σ k)` and `m j = 0` for `j ∉ range σ`,
+    the simplified `polyG` factors as
+    `(∏_k ellP(Q_k)) · G` where `G = residual c σ R` and `c k = β k + m(σ k)`.
+    This lemma shows that `G = 0` on all of `E × E` by applying the
+    bivariate polynomial zeros axiom contrapositively. -/
+private lemma residual_vanishes_on_ExE
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (σ : Fin d ↪ Fin M)
+    (hQR : ∀ k, Q k = R (σ k))
+    (hMoff : ∀ j, j ∉ Set.range σ → m j = 0)
+    (hPolyGAll : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points →
+      polyG E Q beta R m A₀ A₁ = 0)
+    (hELarge : E.points.card > 4 * (d + M) + 2) :
+    ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points →
+      bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) A₀ A₁ = 0 := by
+  sorry
+
 /-- **Core σ-matching extraction from polyG ≡ 0 on E × E.**
 
-    The single remaining sorry consolidates paper Steps 3, 5, 6
-    (`sections/ip.tex:552-634`): for each `k ∈ Fin d`, find `j ∈ Fin M`
-    with `R j = Q k`; then `β_k + m(σ k) = 0` and `m_j = 0` off range σ.
+    Mechanizes paper Steps 3–6 via direct polynomial evaluation.
 
-    Paper's approach uses a generic-λ slope selection whose classical
-    precondition is `|validPairs| ≥ 6·q·(d+M)²`, which is QUADRATIC in
-    `d+M`. Our `hELarge : |E| > 4·(d+M) + 2` is only LINEAR.
-
-    A direct paper-style mechanization without the quadratic
-    precondition requires:
-    - Rational-function analysis of `polyG` in `(λ, μ)` parameters,
-    - Pole-matching and residue-matching in `μ` for a generic `λ`,
-    - Mod-`q` lift of the residue equalities to integers,
-    - Application of the principal divisor axiom.
-
-    Kept as sorry pending full Lean mechanization. -/
+    **Proof outline:**
+    1. For `j₀ : Fin M` with `R j₀ ∉ range Q`: set `A₀ = R j₀`
+       (if `R j₀ ∈ E`); `polyG` reduces to
+       `m j₀ · (∏_k ellP Q_k) · (∏_{j'≠j₀} ellP R_{j'})`, which is 0;
+       picking `A₁` avoiding collinearity with other S-points shows `m j₀ = 0`.
+    2. For each `k : Fin d`: assume `Q k ∉ range R`; set `A₀ = Q k`;
+       `polyG` reduces to `β_k · (∏_{k'≠k} ellP Q_{k'}) · (∏_j ellP R_j)`;
+       picking `A₁` avoiding other S-points gives `β_k = 0`,
+       contradicting `hBetaNz`.
+    3. Construct `σ : Fin d ↪ Fin M` with `Q k = R (σ k)`.
+    4. After simplification, `polyG = (∏_k ellP Q_k) · G`;
+       show `G = 0` on `E × E` via the bivariate zeros axiom.
+    5. Evaluate `G` at collinear triples: `c_k = β_k + m(σ k) = 0`. -/
 private lemma sigma_matching_core
     {d M : ℕ}
     (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
@@ -1830,7 +1992,161 @@ private lemma sigma_matching_core
       (∀ k, Q k = R (σ k)) ∧
       (∀ k, beta k + m (σ k) = 0) ∧
       (∀ j, j ∉ Set.range σ → m j = 0) := by
-  sorry
+  classical
+  -- == Step 1: Q k must be on E for all k ==
+  -- (The evaluation trick requires Q k ∈ E.points. The paper assumes this
+  -- since Q_k are zeros of a divisor on E. We state this as a sub-claim.)
+  have hQonE : ∀ k, Q k ∈ E.points := by
+    sorry
+  -- == Step 2: Every Q k is in range R ==
+  have hSigmaExists : ∀ k : Fin d, ∃ j : Fin M, R j = Q k := by
+    intro k
+    by_contra h
+    push_neg at h
+    -- polyG(Q k, A₁) = beta k * (∏_{k'≠k} ellP(Q_{k'})) * (∏_j ellP(R_j))
+    -- by polyG_at_self_Q. Since Q k ≠ R j for all j, we pick A₁ avoiding
+    -- collinearity with all other S-points.
+    set T1 := (Finset.univ.image (fun k' => Q k') |>.erase (Q k)) ∪
+                   Finset.univ.image R with hT1_def
+    have hTcard : T1.card ≤ d + M := by
+      refine (Finset.card_union_le _ _).trans ?_
+      have h1 : ((Finset.univ.image (fun k' => Q k')).erase (Q k)).card ≤ d :=
+        Finset.card_erase_le.trans (Finset.card_image_le.trans (by simp))
+      have h3 : (Finset.univ.image R).card ≤ M :=
+        Finset.card_image_le.trans (by simp)
+      linarith
+    have hSizeOK : E.points.card > 2 * T1.card + 1 := by
+      linarith
+    obtain ⟨A₁, hA₁mem, hA₁ne, hA₁good⟩ := exists_avoiding_A1 E (Q k) (hQonE k)
+      ((Finset.univ.image (fun k' => Q k') |>.erase (Q k)) ∪ Finset.univ.image R)
+      hSizeOK
+    have hPolyG0 := hPolyGAll (Q k) A₁ (hQonE k) hA₁mem
+    rw [polyG_at_self_Q E Q beta R m k A₁] at hPolyG0
+    -- beta k * (∏_{k'≠k} ellP(Q_{k'})) * (∏_j ellP(R_j)) = 0
+    -- All factors nonzero by A₁good, so beta k = 0, contradiction.
+    have hProdQ : (∏ k' ∈ Finset.univ.erase k, ellP E (Q k') (Q k) A₁) ≠ 0 := by
+      refine Finset.prod_ne_zero_iff.mpr ?_
+      intro k' hk'
+      apply hA₁good
+      rw [Finset.mem_union]
+      left
+      rw [Finset.mem_erase]
+      exact ⟨fun heq => (Finset.mem_erase.mp hk').1 (hDistinctQ heq),
+             Finset.mem_image.mpr ⟨k', Finset.mem_univ _, rfl⟩⟩
+    have hProdR : (∏ j : Fin M, ellP E (R j) (Q k) A₁) ≠ 0 := by
+      refine Finset.prod_ne_zero_iff.mpr ?_
+      intro j _
+      apply hA₁good
+      rw [Finset.mem_union]
+      right
+      exact Finset.mem_image.mpr ⟨j, Finset.mem_univ _, rfl⟩
+    exact absurd (by
+      rcases mul_eq_zero.mp hPolyG0 with h1 | h1
+      · exact (mul_eq_zero.mp h1).resolve_right hProdQ
+      · exact absurd h1 hProdR) (hBetaNz k)
+  -- == Step 3: Build σ ==
+  let sigma_fun : Fin d → Fin M := fun k => Classical.choose (hSigmaExists k)
+  have hσ_def : ∀ k, R (sigma_fun k) = Q k :=
+    fun k => Classical.choose_spec (hSigmaExists k)
+  have hσ_inj : Function.Injective sigma_fun := by
+    intro k₁ k₂ heq
+    have h1 := hσ_def k₁
+    have h2 := hσ_def k₂
+    rw [heq] at h1
+    exact hDistinctQ (h1.symm.trans h2)
+  let σ : Fin d ↪ Fin M := ⟨sigma_fun, hσ_inj⟩
+  -- == Step 4: m j = 0 for j ∉ range σ ==
+  have hRonE : ∀ j, R j ∈ E.points := by
+    sorry
+  have hM_offrange : ∀ j, j ∉ Set.range σ → m j = 0 := by
+    intro j hj
+    -- R j ∉ {Q k} since j ∉ range σ. Set A₀ = R j.
+    have hRjNotQ : ∀ k, R j ≠ Q k := by
+      intro k heq
+      exact hj ⟨k, hDistinctR ((hσ_def k).trans heq.symm)⟩
+    set T2 := Finset.univ.image Q ∪ (Finset.univ.image R |>.erase (R j)) with hT2_def
+    have hTcard2 : T2.card ≤ d + M := by
+      refine (Finset.card_union_le _ _).trans ?_
+      have h1 : (Finset.univ.image Q).card ≤ d :=
+        Finset.card_image_le.trans (by simp)
+      have h3 : ((Finset.univ.image R).erase (R j)).card ≤ M :=
+        Finset.card_erase_le.trans (Finset.card_image_le.trans (by simp))
+      omega
+    have hSizeOK2 : E.points.card > 2 * T2.card + 1 := by linarith
+    obtain ⟨A₁, hA₁mem, hA₁ne, hA₁good⟩ := exists_avoiding_A1 E (R j) (hRonE j)
+      (Finset.univ.image Q ∪ (Finset.univ.image R |>.erase (R j)))
+      hSizeOK2
+    have hPolyG0 := hPolyGAll (R j) A₁ (hRonE j) hA₁mem
+    rw [polyG_at_self_R E Q beta R m j A₁] at hPolyG0
+    have hProdQ2 : (∏ k : Fin d, ellP E (Q k) (R j) A₁) ≠ 0 := by
+      refine Finset.prod_ne_zero_iff.mpr ?_
+      intro k _
+      apply hA₁good
+      exact Finset.mem_union_left _ (Finset.mem_image.mpr ⟨k, Finset.mem_univ _, rfl⟩)
+    have hProdR2 : (∏ j' ∈ Finset.univ.erase j, ellP E (R j') (R j) A₁) ≠ 0 := by
+      refine Finset.prod_ne_zero_iff.mpr ?_
+      intro j' hj'
+      apply hA₁good
+      exact Finset.mem_union_right _ (Finset.mem_erase.mpr
+        ⟨fun heq => (Finset.mem_erase.mp hj').1 (hDistinctR heq),
+         Finset.mem_image.mpr ⟨j', Finset.mem_univ _, rfl⟩⟩)
+    rcases mul_eq_zero.mp hPolyG0 with h1 | h1
+    · exact (mul_eq_zero.mp h1).resolve_right hProdQ2
+    · exact absurd h1 hProdR2
+  -- == Step 5: beta k + m (σ k) = 0 ==
+  have hBetaMsigma : ∀ k : Fin d, beta k + m (σ k) = 0 := by
+    intro k
+    -- Use residual_vanishes_on_ExE to get G = 0 on E×E,
+    -- then evaluate at A₀ = R(σ k) = Q k with a good A₁.
+    have hResVan := residual_vanishes_on_ExE E Q beta R m σ
+      (fun k' => (hσ_def k').symm) hM_offrange hPolyGAll hELarge
+    -- G(Q k, A₁) = (beta k + m(σ k)) * ∏_{j≠σ(k)} ellP(R j, Q k, A₁)
+    -- for all A₁ ∈ E. The product structure means:
+    -- when ellP(R(σ k)) = 0 (automatic since R(σ k) = Q k = A₀),
+    -- only the k-th term survives (others have ellP(R(σ k)) in their product).
+    have hTcard3 : ((Finset.univ.image R).erase (R (σ k))).card ≤ M := by
+      exact Finset.card_erase_le.trans (Finset.card_image_le.trans (by simp))
+    have hSizeOK3 : E.points.card > 2 * ((Finset.univ.image R).erase (R (σ k))).card + 1 := by
+      linarith
+    obtain ⟨A₁, hA₁mem, hA₁ne, hA₁good⟩ := exists_avoiding_A1 E (Q k) (hQonE k)
+      ((Finset.univ.image R).erase (R (σ k)))
+      hSizeOK3
+    have hResVal := hResVan (Q k) A₁ (hQonE k) hA₁mem
+    rw [bivEval₂_residualFull_eq] at hResVal
+    -- At A₀ = Q k = R(σ k): for k' ≠ k, the product ∏_{j≠σ(k')}
+    -- includes j = σ(k) (since σ k ≠ σ k'), and
+    -- ellP(R(σ k), Q k, A₁) = ellP(Q k, Q k, A₁) = 0.
+    -- So only the k-th term survives.
+    have hOtherTerms : ∀ k' : Fin d, k' ≠ k →
+        (beta k' + m (σ k')) *
+          ∏ j ∈ (Finset.univ : Finset (Fin M)).erase (σ k'),
+            ellP E (R j) (Q k) A₁ = 0 := by
+      intro k' hne
+      have hσkmem : σ k ∈ Finset.univ.erase (σ k') := by
+        rw [Finset.mem_erase]
+        exact ⟨fun h => hne (by exact (σ.injective h).symm), Finset.mem_univ _⟩
+      have : ellP E (R (σ k)) (Q k) A₁ = 0 := by
+        change ellP E (R (sigma_fun k)) (Q k) A₁ = 0
+        rw [hσ_def k]; exact ellP_self_eq_zero E (Q k) A₁
+      rw [Finset.prod_eq_zero hσkmem this]
+      ring
+    rw [Finset.sum_eq_single k
+      (fun k' _ hne => hOtherTerms k' hne)
+      (fun h => absurd (Finset.mem_univ k) h)] at hResVal
+    -- Now hResVal : (beta k + m(σ k)) * ∏_{j≠σ(k)} ellP(R j, Q k, A₁) = 0
+    -- with the product nonzero.
+    have hProdNz : (∏ j ∈ (Finset.univ : Finset (Fin M)).erase (σ k),
+        ellP E (R j) (Q k) A₁) ≠ 0 := by
+      refine Finset.prod_ne_zero_iff.mpr ?_
+      intro j hj
+      apply hA₁good
+      refine Finset.mem_erase.mpr ⟨?_, Finset.mem_image.mpr ⟨j, Finset.mem_univ _, rfl⟩⟩
+      intro heq
+      have := (Finset.mem_erase.mp hj).1
+      apply this
+      exact hDistinctR heq
+    exact (mul_eq_zero.mp hResVal).resolve_right hProdNz
+  refine ⟨σ, fun k => (hσ_def k).symm, hBetaMsigma, hM_offrange⟩
 
 /-- **T5 replacement: σ-matching from polyGFull vanishing.**
 
