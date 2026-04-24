@@ -183,20 +183,292 @@ noncomputable def lineEvalNumAtFull (pt : ZMod E.q × ZMod E.q) :
       (pt.2 - A₀.2) * (A₁.1 - A₀.1) - (pt.1 - A₀.1) * (A₁.2 - A₀.2) := by
   simp [lineEvalNumAtFull, bivEval₂_sub, bivEval₂_mul]
 
-/-! ## Phase 2/3/4/5 target theorems (proofs deferred to separate
-       sub-files dispatched to Aristotle).
+/-! ## Phase 2: Full atoms — 4-variate mirror of `clearedFiberPoly`. -/
 
-    The placeholder `clearedFullPoly := 0` below will be replaced once
-    the full per-component assembly is in place. Until then, the four
-    target theorems carry `sorry` — they are the Aristotle-dispatch
-    targets. -/
+/-- Scaled `x₂`-polynomial, 4-variate form. Equals `lamDen² · x₂` when
+    `A₀.1 ≠ A₁.1`. Mirror of `x₂Scaled`. -/
+noncomputable def x₂ScaledFull : FourVarPoly E.q :=
+  lamNumFull E ^ 2
+  - (varA₀x E + varA₁x E) * lamDenFull E ^ 2
 
-/-- **Phase 2 assembly (placeholder).** Full explicit form lands in a
-    subsequent commit after the Full component lemmas are all in place. -/
-noncomputable def clearedFullPoly (_D : CoordRingElt E.q)
-    (_P : ZMod E.q × ZMod E.q) (k : ℕ) (_B : Fin k → ZMod E.q × ZMod E.q)
-    (_m : Fin k → ZMod E.q) : FourVarPoly E.q :=
-  0
+/-- Scaled `y₂`-polynomial, 4-variate form. Mirror of `y₂Scaled`. -/
+noncomputable def y₂ScaledFull : FourVarPoly E.q :=
+  lamNumFull E * x₂ScaledFull E
+  + (varA₀y E * lamDenFull E - varA₀x E * lamNumFull E) * lamDenFull E ^ 2
+
+@[simp] theorem bivEval₂_x₂ScaledFull (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (x₂ScaledFull E) A₀ A₁ =
+      (A₁.2 - A₀.2) ^ 2 - (A₀.1 + A₁.1) * (A₁.1 - A₀.1) ^ 2 := by
+  simp [x₂ScaledFull, bivEval₂_sub, bivEval₂_mul, bivEval₂_pow, bivEval₂_add]
+
+@[simp] theorem bivEval₂_y₂ScaledFull (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (y₂ScaledFull E) A₀ A₁ =
+      (A₁.2 - A₀.2) *
+        ((A₁.2 - A₀.2) ^ 2 - (A₀.1 + A₁.1) * (A₁.1 - A₀.1) ^ 2)
+      + (A₀.2 * (A₁.1 - A₀.1) - A₀.1 * (A₁.2 - A₀.2))
+        * (A₁.1 - A₀.1) ^ 2 := by
+  simp [y₂ScaledFull, bivEval₂_sub, bivEval₂_mul, bivEval₂_pow, bivEval₂_add]
+
+/-- `D(A₀)` as a 4-variate polynomial, mirror of `DAtA₀Poly` (which is
+    a constant scalar in the 2-variate `clearedFiberPoly`). -/
+noncomputable def DAtA₀Full (D : CoordRingElt E.q) : FourVarPoly E.q :=
+  liftPoly E D.a 0 - liftPoly E D.b 0 * varA₀y E
+
+/-- `D(A₁)` as a 4-variate polynomial, mirror of `DAtA₁Poly`. -/
+noncomputable def DAtA₁Full (D : CoordRingElt E.q) : FourVarPoly E.q :=
+  liftPoly E D.a 2 - liftPoly E D.b 2 * varA₁y E
+
+@[simp] theorem bivEval₂_DAtA₀Full (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DAtA₀Full E D) A₀ A₁ = D.eval A₀.1 A₀.2 := by
+  simp [DAtA₀Full, bivEval₂_sub, bivEval₂_mul, CoordRingElt.eval]
+
+@[simp] theorem bivEval₂_DAtA₁Full (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DAtA₁Full E D) A₀ A₁ = D.eval A₁.1 A₁.2 := by
+  simp [DAtA₁Full, bivEval₂_sub, bivEval₂_mul, CoordRingElt.eval]
+
+/-- `D'(A₀)` 4-variate form. -/
+noncomputable def DDerivAtA₀Full (D : CoordRingElt E.q) : FourVarPoly E.q :=
+  liftPoly E (Polynomial.derivative D.a) 0
+  - liftPoly E (Polynomial.derivative D.b) 0 * varA₀y E
+
+/-- `D'(A₁)` 4-variate form. -/
+noncomputable def DDerivAtA₁Full (D : CoordRingElt E.q) : FourVarPoly E.q :=
+  liftPoly E (Polynomial.derivative D.a) 2
+  - liftPoly E (Polynomial.derivative D.b) 2 * varA₁y E
+
+@[simp] theorem bivEval₂_DDerivAtA₀Full (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DDerivAtA₀Full E D) A₀ A₁ =
+      (Polynomial.derivative D.a).eval A₀.1
+        - (Polynomial.derivative D.b).eval A₀.1 * A₀.2 := by
+  simp [DDerivAtA₀Full, bivEval₂_sub, bivEval₂_mul]
+
+@[simp] theorem bivEval₂_DDerivAtA₁Full (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (DDerivAtA₁Full E D) A₀ A₁ =
+      (Polynomial.derivative D.a).eval A₁.1
+        - (Polynomial.derivative D.b).eval A₁.1 * A₁.2 := by
+  simp [DDerivAtA₁Full, bivEval₂_sub, bivEval₂_mul]
+
+/-- `dxdz_den(A₀) · lamDen` 4-variate form. -/
+noncomputable def dxdzDenA₀Full : FourVarPoly E.q :=
+  ((MvPolynomial.C 3 : FourVarPoly E.q) * varA₀x E ^ 2
+      + (MvPolynomial.C E.curveA : FourVarPoly E.q)) * lamDenFull E
+  - (MvPolynomial.C 2 : FourVarPoly E.q) * varA₀y E * lamNumFull E
+
+/-- `dxdz_den(A₁) · lamDen` 4-variate form. -/
+noncomputable def dxdzDenA₁Full : FourVarPoly E.q :=
+  ((MvPolynomial.C 3 : FourVarPoly E.q) * varA₁x E ^ 2
+      + (MvPolynomial.C E.curveA : FourVarPoly E.q)) * lamDenFull E
+  - (MvPolynomial.C 2 : FourVarPoly E.q) * varA₁y E * lamNumFull E
+
+/-- `dxdz_den(A₂) · lamDen⁴` 4-variate form. -/
+noncomputable def dxdzDenA₂Full : FourVarPoly E.q :=
+  (MvPolynomial.C 3 : FourVarPoly E.q) * x₂ScaledFull E ^ 2
+  + (MvPolynomial.C E.curveA : FourVarPoly E.q) * lamDenFull E ^ 4
+  - (MvPolynomial.C 2 : FourVarPoly E.q) * lamNumFull E * y₂ScaledFull E
+
+@[simp] theorem bivEval₂_dxdzDenA₀Full (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (dxdzDenA₀Full E) A₀ A₁ =
+      (3 * A₀.1 ^ 2 + E.curveA) * (A₁.1 - A₀.1)
+      - 2 * A₀.2 * (A₁.2 - A₀.2) := by
+  simp [dxdzDenA₀Full, bivEval₂_sub, bivEval₂_add, bivEval₂_mul, bivEval₂_pow]
+
+@[simp] theorem bivEval₂_dxdzDenA₁Full (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (dxdzDenA₁Full E) A₀ A₁ =
+      (3 * A₁.1 ^ 2 + E.curveA) * (A₁.1 - A₀.1)
+      - 2 * A₁.2 * (A₁.2 - A₀.2) := by
+  simp [dxdzDenA₁Full, bivEval₂_sub, bivEval₂_add, bivEval₂_mul, bivEval₂_pow]
+
+/-- Contribution `Σ a_n · x₂Scaled^n · lamDen^(D.degE-2n)`, 4-variate. -/
+noncomputable def DAPartAtA₂ScaledFull (D : CoordRingElt E.q) : FourVarPoly E.q :=
+  ∑ n ∈ Finset.range (D.a.natDegree + 1),
+    (MvPolynomial.C (D.a.coeff n) : FourVarPoly E.q)
+      * x₂ScaledFull E ^ n
+      * lamDenFull E ^ (D.degE - 2 * n)
+
+/-- Contribution `Σ b_n · x₂Scaled^n · y₂Scaled · lamDen^(D.degE-2n-3)`, 4-variate. -/
+noncomputable def DBPartAtA₂ScaledFull (D : CoordRingElt E.q) : FourVarPoly E.q :=
+  ∑ n ∈ Finset.range (D.b.natDegree + 1),
+    (MvPolynomial.C (D.b.coeff n) : FourVarPoly E.q)
+      * x₂ScaledFull E ^ n
+      * y₂ScaledFull E
+      * lamDenFull E ^ (D.degE - 2 * n - 3)
+
+/-- `D(A₂) · lamDen^D.degE`, 4-variate. -/
+noncomputable def DAtA₂ScaledFull (D : CoordRingElt E.q) : FourVarPoly E.q :=
+  DAPartAtA₂ScaledFull E D - DBPartAtA₂ScaledFull E D
+
+/-- Derivative analogues. -/
+noncomputable def DDerivAPartAtA₂ScaledFull (D : CoordRingElt E.q) :
+    FourVarPoly E.q :=
+  ∑ n ∈ Finset.range ((Polynomial.derivative D.a).natDegree + 1),
+    (MvPolynomial.C ((Polynomial.derivative D.a).coeff n) : FourVarPoly E.q)
+      * x₂ScaledFull E ^ n
+      * lamDenFull E ^ (D.degE - 2 * n)
+
+noncomputable def DDerivBPartAtA₂ScaledFull (D : CoordRingElt E.q) :
+    FourVarPoly E.q :=
+  ∑ n ∈ Finset.range ((Polynomial.derivative D.b).natDegree + 1),
+    (MvPolynomial.C ((Polynomial.derivative D.b).coeff n) : FourVarPoly E.q)
+      * x₂ScaledFull E ^ n
+      * y₂ScaledFull E
+      * lamDenFull E ^ (D.degE - 2 * n - 3)
+
+noncomputable def DDerivAtA₂ScaledFull (D : CoordRingElt E.q) : FourVarPoly E.q :=
+  DDerivAPartAtA₂ScaledFull E D - DDerivBPartAtA₂ScaledFull E D
+
+/-- Line-product `L(-P) · ∏_j L(B_j)`, 4-variate. Scales by `lamDen^(k+1)`. -/
+noncomputable def linesProductFull
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) :
+    FourVarPoly E.q :=
+  lineEvalNumAtFull E (P.1, -P.2)
+    * ∏ j : Fin k, lineEvalNumAtFull E (B j)
+
+/-- Line-product without the `-P` factor. -/
+noncomputable def linesProductNoNegPFull
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) : FourVarPoly E.q :=
+  ∏ j : Fin k, lineEvalNumAtFull E (B j)
+
+/-- Line-product with the `j₀`th factor skipped. -/
+noncomputable def linesProductSkipBjFull
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (j₀ : Fin k) : FourVarPoly E.q :=
+  lineEvalNumAtFull E (P.1, -P.2)
+    * ∏ j ∈ (Finset.univ (α := Fin k)).erase j₀, lineEvalNumAtFull E (B j)
+
+/-- `D(A₀) · D(A₁) · D(A₂) · lamDen^D.degE`. -/
+noncomputable def DAllFull (D : CoordRingElt E.q) : FourVarPoly E.q :=
+  DAtA₀Full E D * DAtA₁Full E D * DAtA₂ScaledFull E D
+
+/-- `dxdz_den(A₀) · dxdz_den(A₁) · dxdz_den(A₂) · lamDen^6`. -/
+noncomputable def dxdzAllFull : FourVarPoly E.q :=
+  dxdzDenA₀Full E * dxdzDenA₁Full E * dxdzDenA₂Full E
+
+/-- `-b(A₀.1) · (3·A₀.1² + A)` scalar-ish lift. -/
+noncomputable def DBdydzAtA₀Full (D : CoordRingElt E.q) : FourVarPoly E.q :=
+  (-liftPoly E D.b 0) *
+    ((MvPolynomial.C 3 : FourVarPoly E.q) * varA₀x E ^ 2
+      + (MvPolynomial.C E.curveA : FourVarPoly E.q))
+
+/-- `-b(A₁.1) · (3·A₁.1² + A)`. -/
+noncomputable def DBdydzAtA₁Full (D : CoordRingElt E.q) : FourVarPoly E.q :=
+  (-liftPoly E D.b 2) *
+    ((MvPolynomial.C 3 : FourVarPoly E.q) * varA₁x E ^ 2
+      + (MvPolynomial.C E.curveA : FourVarPoly E.q))
+
+/-- `b(chordX₂) · lamDen^(2·b.natDegree)`, 4-variate (tight scaling). -/
+noncomputable def DbAtA₂TightFull (D : CoordRingElt E.q) : FourVarPoly E.q :=
+  ∑ n ∈ Finset.range (D.b.natDegree + 1),
+    (MvPolynomial.C (D.b.coeff n) : FourVarPoly E.q)
+      * x₂ScaledFull E ^ n
+      * lamDenFull E ^ (2 * D.b.natDegree - 2 * n)
+
+/-- `(3·chordX₂² + A) · lamDen⁴`. -/
+noncomputable def dydzNumA₂Full : FourVarPoly E.q :=
+  (MvPolynomial.C 3 : FourVarPoly E.q) * x₂ScaledFull E ^ 2
+    + (MvPolynomial.C E.curveA : FourVarPoly E.q) * lamDenFull E ^ 4
+
+/-- Correction core at A₂. -/
+noncomputable def correctionA₂CoreFull (D : CoordRingElt E.q) :
+    FourVarPoly E.q :=
+  (-DbAtA₂TightFull E D) * dydzNumA₂Full E
+    * lamDenFull E ^ (D.degE - 2 * D.b.natDegree - 3)
+
+/-! ## 6 term Full definitions. -/
+
+/-- LHS i=0 term (Full). -/
+noncomputable def lhsTerm0Full (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) :
+    FourVarPoly E.q :=
+  DDerivAtA₀Full E D
+    * ((MvPolynomial.C 2 : FourVarPoly E.q) * varA₀y E)
+    * DAtA₁Full E D
+    * DAtA₂ScaledFull E D
+    * dxdzDenA₁Full E
+    * dxdzDenA₂Full E
+    * linesProductFull E P k B
+
+noncomputable def lhsTerm1Full (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) :
+    FourVarPoly E.q :=
+  DDerivAtA₁Full E D
+    * ((MvPolynomial.C 2 : FourVarPoly E.q) * varA₁y E)
+    * DAtA₀Full E D
+    * DAtA₂ScaledFull E D
+    * dxdzDenA₀Full E
+    * dxdzDenA₂Full E
+    * linesProductFull E P k B
+
+noncomputable def lhsTerm2Full (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) :
+    FourVarPoly E.q :=
+  DDerivAtA₂ScaledFull E D
+    * ((MvPolynomial.C 2 : FourVarPoly E.q) * y₂ScaledFull E)
+    * DAtA₀Full E D
+    * DAtA₁Full E D
+    * dxdzDenA₀Full E
+    * dxdzDenA₁Full E
+    * linesProductFull E P k B
+
+noncomputable def correctionTerm0Full (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) :
+    FourVarPoly E.q :=
+  DBdydzAtA₀Full E D
+    * DAtA₁Full E D
+    * DAtA₂ScaledFull E D
+    * dxdzDenA₁Full E
+    * dxdzDenA₂Full E
+    * linesProductFull E P k B
+
+noncomputable def correctionTerm1Full (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) :
+    FourVarPoly E.q :=
+  DBdydzAtA₁Full E D
+    * DAtA₀Full E D
+    * DAtA₂ScaledFull E D
+    * dxdzDenA₀Full E
+    * dxdzDenA₂Full E
+    * linesProductFull E P k B
+
+noncomputable def correctionTerm2Full (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) :
+    FourVarPoly E.q :=
+  correctionA₂CoreFull E D
+    * DAtA₀Full E D
+    * DAtA₁Full E D
+    * dxdzDenA₀Full E
+    * dxdzDenA₁Full E
+    * linesProductFull E P k B
+    * lamDenFull E ^ 2
+
+noncomputable def rhsTermNegPFull (D : CoordRingElt E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) : FourVarPoly E.q :=
+  DAllFull E D * dxdzAllFull E * linesProductNoNegPFull E k B
+
+noncomputable def rhsSumFull (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (m : Fin k → ZMod E.q) : FourVarPoly E.q :=
+  ∑ j : Fin k,
+    (MvPolynomial.C (m j) : FourVarPoly E.q)
+      * DAllFull E D * dxdzAllFull E
+      * linesProductSkipBjFull E P k B j
+
+/-- **The full 4-variate cleared-fiber polynomial.** Mirror of
+    `clearedFiberPoly` with `A₀.1, A₀.2` lifted to `X 0, X 1`. -/
+noncomputable def clearedFullPoly (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (m : Fin k → ZMod E.q) : FourVarPoly E.q :=
+  lhsTerm0Full E D P k B
+    + lhsTerm1Full E D P k B
+    + lhsTerm2Full E D P k B
+    + correctionTerm0Full E D P k B
+    + correctionTerm1Full E D P k B
+    + correctionTerm2Full E D P k B
+    + rhsTermNegPFull E D k B
+    + rhsSumFull E D P k B m
 
 /-- **Phase 3 identity (target).** -/
 theorem clearedFullPoly_identity
