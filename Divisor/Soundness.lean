@@ -248,50 +248,9 @@ theorem extracted_scalars_valid_special
 
 /-! ## Completeness -/
 
-/-- **Weil reciprocity axiom** (classical; Silverman AEC Exercise II.2.11,
-    p.39; see also [139, Chapter 4, Corollary 3.5] referenced there).
-
-    If `msg` is the honest first-round message for `(stmt, wit)` — i.e.
-    `msg.toD`'s divisor of zeros on `E` is `(-P) + Σ n_i · (B_i)` as
-    encoded by `MAProverMsg.isHonestFor` — then the log-derivative
-    identity `logDerivCheckFn` vanishes at every challenge whose
-    `{A₀, A₁, A₂}` is disjoint from `supp((D)_0)` (equivalently:
-    `(A₀, A₁) ∉ badChallengesCompleteness E msg.toD`).
-
-    This is Weil reciprocity applied to the principal divisor of the
-    rational function `D / L^m` where `L` is the chord line through
-    `A₀, A₁, A₂`: the log-derivative identity is obtained from the
-    fact that a principal divisor has zero sum of residues on `E`, so
-    summing residues over the divisor of zeros yields the stated
-    identity whenever the evaluation points avoid the support of that
-    divisor.
-
-    **Textbook statement (verbatim), Silverman AEC Exercise II.2.11, p.39:**
-
-    > "2.11. Let C be a smooth curve and let f, g ∈ K̄(C)* be functions
-    > such that div(f) and div(g) have disjoint support. (See Exercise
-    > 2.10.) Prove Weil's reciprocity law
-    >     f(div(g)) = g(div(f))
-    > using the following two steps:
-    > (a) Verify Weil's reciprocity law directly for C = P¹.
-    > (b) Now prove it for arbitrary C by using the map g : C → P¹ to
-    >     reduce to (a)."
-
-    (Exercise 2.10 defines `f(D) = ∏_P f(P)^{n_P}` for D = Σ n_P (P)
-    when div(f) and D have disjoint supports.)
-
-    The axiom below is the specific consequence of Weil reciprocity
-    needed for completeness: `logDerivCheckFn` vanishes at every
-    challenge off the bad set. -/
-axiom weil_reciprocity_honest
-    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
-    (A₀ A₁ : ZMod E.q × ZMod E.q)
-    (hGood : (A₀, A₁) ∉ badChallengesCompleteness E msg.toD) :
-    logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-      (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0
+-- `weil_reciprocity_honest` declared in
+-- `Divisor/Axioms/AxiomWeilReciprocityHonest.lean`; imported via
+-- `Divisor.Axioms` at the top of this file.
 
 /-- **Completeness.** For the honest prover's first-round message `msg`
     (witnessed by `isHonestFor`), the set of challenges on which the MA

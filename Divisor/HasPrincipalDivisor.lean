@@ -29,6 +29,7 @@
 -/
 import Divisor.Defs
 import Divisor.BetaConstructive
+import Divisor.Axioms.AxiomCoordRingEltDivisorGroupSumZero
 
 namespace Divisor
 

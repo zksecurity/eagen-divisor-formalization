@@ -60,6 +60,8 @@ import Divisor.NormZDecomp
 import Divisor.BivariateLogDeriv
 import Divisor.ChordCubicSymmetric
 import Divisor.PFHelper
+import Divisor.Axioms.AxiomChordFiberProductEqNormZUnderSplit
+import Divisor.Axioms.AxiomChordSumEqChordFiberProductLogDeriv
 import Mathlib
 
 open Polynomial Finset
@@ -90,162 +92,9 @@ theorem normZ_eval_ne_zero_of_hQline
   apply hL
   rw [hLsub, heq, sub_self]
 
-/-! ## Opaque definition: chord-fiber product
-
-The chord-fiber product ∏ᵢ D(Aᵢ(z)) is the function-field norm
-N_{F_q(E)/F_q(z)}(D) viewed as a polynomial in z, where A₀(z), A₁(z),
-A₂(z) are the three chord-fiber points parametrised by z = y − λx.
-
-This is left opaque because its concrete construction requires
-resultant infrastructure (Sylvester matrix over three sheets) that
-is not currently available. The two axioms below capture the two
-key properties of this norm that the proof needs. -/
-
-/-- The chord-fiber product: ∏ᵢ D(Aᵢ(z)) as a polynomial in z.
-Represents the function-field norm N_{F_q(E)/F_q(z)}(D). -/
-noncomputable opaque chord_fiber_product (E : ECSetup) (lam : ZMod E.q) (D : CoordRingElt E.q) : (ZMod E.q)[X]
-
-/-! ## AXIOM 1: Divisor-of-norm formula (Stichtenoth III.1.11)
-
-Under the splitting and accounting hypotheses, the chord-fiber product
-∏ᵢ D(Aᵢ(z)) (the function-field norm) equals a nonzero constant times
-normZ(z). This is because both polynomials have the same roots with the
-same multiplicities: the norm's roots are the z-coordinates of D's
-zeros on E, with multiplicities matching betaConstructive.
-
-**Citation**: Stichtenoth, *Algebraic Function Fields and Codes*,
-2nd ed., GTM 254, Proposition 3.1.9 (p.73) — the conorm of a
-principal divisor is a principal divisor:
-  Con_{F'/F}(div(x)) = div_{F'}(x),
-together with the norm map `N_{F'/F}` (defined in Appendix A,
-used in §3.7 Theorem 3.7.1, p.121) which sends a function in F'
-to its product of Galois conjugates in F. The divisor-of-norm
-identity, for `y ∈ F'`,
-  div_F(N_{F'/F}(y)) = "Tr on divisors"(div_{F'}(y)),
-then identifies (under the splitting hypothesis) the roots and
-multiplicities of N(D)(z) with those of normZ(z), establishing
-proportionality.
-
-**Textbook statement (verbatim), Stichtenoth Proposition 3.1.9, p.73:**
-
-> "Proposition 3.1.9. Let F′/K′ be an algebraic extension of the
-> function field F/K. For 0 ≠ x ∈ F let (x)₀^F, (x)∞^F, (x)^F resp.
-> (x)₀^{F′}, (x)∞^{F′}, (x)^{F′} denote the zero, pole, principal
-> divisor of x in Div(F) resp. in Div(F′). Then
->   Con_{F′/F}((x)₀^F) = (x)₀^{F′},
->   Con_{F′/F}((x)∞^F) = (x)∞^{F′},   and
->   Con_{F′/F}((x)^F)  = (x)^{F′}."
-
-**Textbook statement (verbatim), Stichtenoth Theorem 3.7.1, p.121:**
-
-> "Theorem 3.7.1. Let F′/K′ be a Galois extension of F/K and
-> P₁, P₂ ∈ IP_{F′} be extensions of P ∈ IP_F. Then P₂ = σ(P₁) for
-> some σ ∈ Gal(F′/F). In other words, the Galois group acts
-> transitively on the set of extensions of P."
-
-The axiom below combines these (conorm identity + Galois-transitive
-norm `N_{F'/F}`) to identify `chord_fiber_product` with a nonzero
-constant multiple of `normZ` in our F_q(E)/F_q(z) setting. -/
-axiom chord_fiber_product_eq_normZ_under_split
-    (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
-    (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplit : normPoly_splits_over_Fq E D)
-    (hAccount : (∑ P ∈ E.points, betaConstructive E D P) =
-                  (normPoly E D).natDegree) :
-    ∃ c : ZMod E.q, c ≠ 0 ∧ chord_fiber_product E lam D = C c * normZ E lam D
-
-/-! ## AXIOM 2: Trace-of-log-derivative identity (Lang §VI.5 + §VIII.5)
-
-The sum of logDerivTerms at the three chord-fiber points equals the
-logarithmic derivative of the chord-fiber product at the chord
-intercept μ. This is the function-field trace-of-log-derivative formula:
-
-    Tr_{L/K}(dg/g) = d(N_{L/K}(g)) / N_{L/K}(g)
-
-specialised to g = D, K = F_q(z), L = F_q(E), and evaluated at the
-chord intercept μ = zLambda λ A₀.
-
-**Citation**: Lang, *Algebra*, 3rd ed., GTM 211, §VI.5 "The Norm and
-Trace" (p.284–285), whose Theorem 5.1 establishes multiplicativity
-of the norm together with the product-of-embeddings formula
-`N_k^E(α) = ∏_σ σα` (for E/k separable, p.285); combined with
-§VIII.5 "Derivations" (p.369), Theorem 5.1 Case 1 (p.370), which
-extends a derivation uniquely to a separable algebraic extension.
-The identity `Tr_{L/K}(dg/g) = d(N_{L/K}(g))/N_{L/K}(g)` follows
-from differentiating the product formula `N_{L/K}(g) = ∏_σ σ(g)`
-over a Galois closure.
-
-**Textbook statement (verbatim), Lang §VI.5, p.285 (product-of-embeddings):**
-
-> "Thus if E is separable over k, we have
->     N^E_k(α) = ∏ σα
-> where the product is taken over the distinct embeddings of E in k^a
-> over k. Similarly, if E/k is separable, then
->     Tr(α) = Σ σα."
-
-**Textbook statement (verbatim), Lang §VI.5 Theorem 5.1, p.285:**
-
-> "Theorem 5.1. Let E/k be a finite extension. Then the norm N^E_k is
-> a multiplicative homomorphism of E* into k* and the trace is an
-> additive homomorphism of E into k. If E ⊃ F ⊃ k is a tower of fields,
-> then the two maps are transitive, in other words,
->     N^E_k = N^F_k ∘ N^E_F   and   Tr^E_k = Tr^F_k ∘ Tr^E_F.
-> If E = k(α), and f(X) = Irr(α, k, X) = X^n + a_{n-1} X^{n-1} + ⋯ + a_0,
-> then
->     N^E_k(α) = (−1)^n a_0   and   Tr^E_k(α) = −a_{n-1}."
-
-**Textbook statement (verbatim), Lang §VIII.5 Theorem 5.1 Case 1, p.370:**
-
-> "Theorem 5.1. Let D be a derivation of a field K. Let
-> (x) = (x_1, …, x_n) be a finite family of elements in an extension
-> of K. Let {f_α(X)} be a set of generators for the ideal determined
-> by (x) in K[X]. Then, if (u) is any set of elements of K(x)
-> satisfying the equations
->     0 = f_α^D(x) + Σ (∂f_α/∂x_i) u_i,
-> there is one and only one derivation D* of K(x) coinciding with D on
-> K, and such that D* x_i = u_i for every i."
->
-> "Case 1. x is separable algebraic over K. Let f(X) be the
-> irreducible polynomial satisfied by x over K. Then f′(x) ≠ 0. We
-> have
->     0 = f^D(x) + f′(x) u,
-> whence u = −f^D(x)/f′(x). Hence D extends to K(x) uniquely. If D is
-> trivial on K, then D is trivial on K(x)."
-
-The axiom below is the trace-of-logarithmic-derivative identity
-`Tr_{L/K}(dg/g) = d(N_{L/K}(g))/N_{L/K}(g)` obtained by
-differentiating `N(g) = ∏_σ σ(g)` (Lang VI.5, p.285) — with the
-derivation uniquely extended to the Galois closure via Lang VIII.5
-Theorem 5.1 Case 1 — then evaluating at the chord intercept μ. -/
-axiom chord_sum_eq_chord_fiber_product_logDeriv
-    (E : ECSetup) (D : CoordRingElt E.q)
-    (A₀ A₁ : ZMod E.q × ZMod E.q)
-    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
-    (hNV : A₀.1 ≠ A₁.1)
-    (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (hA₀def : D.eval A₀.1 A₀.2 ≠ 0)
-    (hA₁def : D.eval A₁.1 A₁.2 ≠ 0)
-    (hA₂def : let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
-              let x₂  := lam ^ 2 - A₀.1 - A₁.1
-              let y₂  := lam * x₂ + (A₀.2 - lam * A₀.1)
-              D.eval x₂ y₂ ≠ 0)
-    (hDen : let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
-            ∀ pt : ZMod E.q × ZMod E.q,
-              pt = A₀ ∨ pt = A₁ ∨
-              pt = (lam ^ 2 - A₀.1 - A₁.1,
-                    lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
-              → 3 * pt.1 ^ 2 + E.curveA - 2 * lam * pt.2 ≠ 0)
-    (hChordNorm : (chord_fiber_product E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) D).eval
-      (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀) ≠ 0) :
-    let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
-    let μ := zLambda E lam A₀
-    logDerivTerm E D E.curveA lam A₀
-      + logDerivTerm E D E.curveA lam A₁
-      + logDerivTerm E D E.curveA lam
-          (lam ^ 2 - A₀.1 - A₁.1,
-           lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
-    = eval μ (derivative (chord_fiber_product E lam D))
-      / (chord_fiber_product E lam D).eval μ
+-- Opaque `chord_fiber_product` + both chord axioms moved to
+-- `Divisor/Axioms/AxiomChordFiberProductEqNormZUnderSplit.lean` and
+-- `Divisor/Axioms/AxiomChordSumEqChordFiberProductLogDeriv.lean`.
 
 /-! ## Helper: log-derivative of a constant multiple
 

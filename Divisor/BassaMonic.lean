@@ -8,7 +8,6 @@
   soundness bound via variety SZ.
 -/
 import Divisor.Defs
-import Divisor.Axioms
 import Divisor.SlopeDist
 
 open Finset

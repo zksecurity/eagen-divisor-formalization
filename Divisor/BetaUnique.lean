@@ -83,6 +83,7 @@
 -/
 import Divisor.BetaConstructive
 import Divisor.DivisorPrincipal
+import Divisor.Axioms.AxiomCoordRingEltDivisorGroupSumZero
 
 open Polynomial Finset
 

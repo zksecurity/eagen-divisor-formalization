@@ -2,7 +2,6 @@
   Divisor/Protocol.lean — Protocol definitions for the discrete log relation.
 -/
 import Divisor.Defs
-import Divisor.Axioms
 import Divisor.LogDeriv
 
 open Polynomial Finset
