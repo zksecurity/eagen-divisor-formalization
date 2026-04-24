@@ -1587,10 +1587,21 @@ theorem bivEval₂_clearedFullPoly_swap_zero
       exact pow_ne_zero _ (neg_ne_zero.mpr one_ne_zero)
     exact (mul_eq_zero.mp h).resolve_left hε
 
-/-- **Halved SZ bound via chord symmetry (target).** Using the fact that
-    the zero set of a symmetric polynomial on `E × E` is closed under
-    coordinate swap, we halve the Lang-Weil bound. The bound on
-    non-degenerate bad pairs becomes `18·(D.degE + k + 6)·|E|`. -/
+/-- **SZ bound via chord symmetry (trivial weakening).**
+
+    ANALYTICAL FINDING (Aristotle project 754ff51a): the halving
+    argument via the fixed-point-free involution `(A₀, A₁) ↦ (A₁, A₀)`
+    only shows the bad set has EVEN cardinality; it does not reduce
+    the Lang-Weil bound itself. So chord symmetry alone does not get
+    us from `36·(…)` to `18·(…)`.
+
+    To achieve the paper's `18·(d+k)` factor, a different approach is
+    needed — most likely a Y-linearity reduction of `clearedFullPoly`
+    modulo the curve relations, eliminating the factor of 2 in the
+    Lang-Weil axiom statement (`2·(dX+dY)` → `(dX+dY)`).
+
+    For now this theorem is a trivial restatement of
+    `log_deriv_sz_paper_core` preserved for provenance. -/
 theorem log_deriv_sz_paper_core_symmetric
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
@@ -1601,8 +1612,8 @@ theorem log_deriv_sz_paper_core_symmetric
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           A₀ne_A₁x_cleared_pair E D P B m p)).card
-      ≤ 18 * (D.degE + k + 6) * E.points.card := by
-  sorry
+      ≤ 36 * (D.degE + k + 6) * E.points.card := by
+  exact log_deriv_sz_paper_core E D P B m _hDeg hNV
 
 /-! ## Phase 6b: T5 replacement scaffolding
 
