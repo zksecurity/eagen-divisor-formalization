@@ -1535,25 +1535,57 @@ noncomputable def swapA₀A₁ (f : FourVarPoly E.q) : FourVarPoly E.q :=
 /-- `bivEval₂ (swapA₀A₁ f) A₀ A₁ = bivEval₂ f A₁ A₀`. -/
 theorem bivEval₂_swapA₀A₁ (f : FourVarPoly E.q) (A₀ A₁ : ZMod E.q × ZMod E.q) :
     bivEval₂ (swapA₀A₁ E f) A₀ A₁ = bivEval₂ f A₁ A₀ := by
-  sorry
+  unfold bivEval₂ swapA₀A₁
+  rw [MvPolynomial.eval_rename]
+  have : bivEval₂Fun A₀ A₁ ∘ (fun i : Fin 4 => match i with
+      | ⟨0, _⟩ => (2 : Fin 4)
+      | ⟨1, _⟩ => (3 : Fin 4)
+      | ⟨2, _⟩ => (0 : Fin 4)
+      | ⟨3, _⟩ => (1 : Fin 4)) = bivEval₂Fun A₁ A₀ := by
+    funext i
+    fin_cases i <;> simp [bivEval₂Fun]
+  rw [this]
 
-/-- **Chord symmetry of `clearedFullPoly`.** Swapping `A₀` and `A₁`
-    leaves the polynomial identical. -/
-theorem clearedFullPoly_swap_eq
+/- **Chord symmetry of `clearedFullPoly` is ANTI-symmetric up to sign.**
+    The naive `swapA₀A₁ clearedFullPoly = clearedFullPoly` is FALSE:
+    `lamNumFull` and `lamDenFull` are anti-symmetric under the swap, and
+    tracing the clearing exponents shows each summand picks up
+    `(-1)^(D.degE + k)`. For the halving argument only zero-set symmetry
+    matters, which holds regardless of the sign. -/
+
+/-- **Signed chord symmetry of `clearedFullPoly`** (target, sorry'd).
+    Swapping `(A₀, A₁)` multiplies by `(-1)^(D.degE + k)`. -/
+theorem clearedFullPoly_swap_signed
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q) :
-    swapA₀A₁ E (clearedFullPoly E D P k B m) = clearedFullPoly E D P k B m := by
+    swapA₀A₁ E (clearedFullPoly E D P k B m)
+      = ((-1 : ZMod E.q) ^ (D.degE + k)) • clearedFullPoly E D P k B m := by
   sorry
 
-/-- **Pointwise symmetry of `clearedFullPoly` evaluation.** -/
-theorem bivEval₂_clearedFullPoly_swap
+/-- **Zero-set symmetry of `clearedFullPoly` evaluation.** Replaces the
+    original `bivEval₂_clearedFullPoly_swap` (which claimed pointwise
+    equality that turns out to be false up to sign) with the
+    zero-equivalence form, which is all that the halving argument
+    needs: `ε · x = 0 ↔ x = 0` in a field. -/
+theorem bivEval₂_clearedFullPoly_swap_zero
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q) :
-    bivEval₂ (clearedFullPoly E D P k B m) A₀ A₁
-      = bivEval₂ (clearedFullPoly E D P k B m) A₁ A₀ := by
-  rw [← bivEval₂_swapA₀A₁ E (clearedFullPoly E D P k B m) A₁ A₀]
-  rw [clearedFullPoly_swap_eq]
+    bivEval₂ (clearedFullPoly E D P k B m) A₀ A₁ = 0 ↔
+    bivEval₂ (clearedFullPoly E D P k B m) A₁ A₀ = 0 := by
+  have key : bivEval₂ (clearedFullPoly E D P k B m) A₁ A₀
+      = ((-1 : ZMod E.q) ^ (D.degE + k)) *
+        bivEval₂ (clearedFullPoly E D P k B m) A₀ A₁ := by
+    rw [← bivEval₂_swapA₀A₁ E (clearedFullPoly E D P k B m) A₀ A₁]
+    rw [clearedFullPoly_swap_signed]
+    simp [bivEval₂, MvPolynomial.smul_eval]
+  constructor
+  · intro h; rw [key, h, mul_zero]
+  · intro h
+    rw [key] at h
+    have hε : ((-1 : ZMod E.q) ^ (D.degE + k)) ≠ 0 := by
+      exact pow_ne_zero _ (neg_ne_zero.mpr one_ne_zero)
+    exact (mul_eq_zero.mp h).resolve_left hε
 
 /-- **Halved SZ bound via chord symmetry (target).** Using the fact that
     the zero set of a symmetric polynomial on `E × E` is closed under
@@ -1799,6 +1831,40 @@ theorem sigma_matching_from_polyGFull_vanishing
       (∀ k, Q k = R (σ k)) ∧
       (∀ k, beta k + m (σ k) = 0) ∧
       (∀ j, j ∉ Set.range σ → m j = 0) := by
-  sorry
+  classical
+  -- Step 1: Derive polyG = 0 on ALL of E×E from polyGFull vanishing.
+  have hPolyGAll : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points →
+      polyG E Q beta R m A₀ A₁ = 0 := by
+    intro A₀ A₁ h₀ h₁
+    rw [← bivEval₂_polyGFull_eq_polyG E Q beta R m A₀ A₁]
+    exact hVanishing A₀ A₁ h₀ h₁
+  -- Step 2: polyG = 0 on non-vertical E×E (weakened form).
+  have hfZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      polyG E Q beta R m A₀ A₁ = 0 :=
+    fun A₀ A₁ h₀ h₁ _ => hPolyGAll A₀ A₁ h₀ h₁
+  -- Step 3 (sub-sorry): For each k ∈ Fin d, show ∃ j with R j = Q k.
+  -- Bézout/pigeonhole argument — see docstring.
+  have hSigmaExists : ∀ k : Fin d, ∃ j : Fin M, R j = Q k := by
+    sorry
+  -- Step 4: Build the injective σ.
+  let sigma_fun : Fin d → Fin M := fun k => Classical.choose (hSigmaExists k)
+  have hσ_spec : ∀ k, R (sigma_fun k) = Q k :=
+    fun k => Classical.choose_spec (hSigmaExists k)
+  have hσ_inj : Function.Injective sigma_fun := by
+    intro k₁ k₂ h
+    have h1 := hσ_spec k₁
+    have h2 := hσ_spec k₂
+    rw [h] at h1
+    exact hDistinctQ (h1.symm.trans h2)
+  let σ : Fin d ↪ Fin M := ⟨sigma_fun, hσ_inj⟩
+  -- Step 5 (sub-sorry): m j = 0 for j ∉ range σ.
+  have hMoff : ∀ j, j ∉ Set.range σ → m j = 0 := by
+    sorry
+  -- Step 6 (sub-sorry): β_k + m(σ k) = 0.
+  have hBetaM : ∀ k, beta k + m (σ k) = 0 := by
+    sorry
+  exact ⟨σ, fun k => (hσ_spec k).symm, hBetaM, hMoff⟩
 
 end Divisor
