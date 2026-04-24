@@ -1060,4 +1060,85 @@ theorem log_deriv_sz_paper
         exact Nat.add_le_add hCoreBound hUndefBound
     _ = 54 * (D.degE + k + 6) * E.points.card := by ring
 
+/-! ## Phase 6b: T5 replacement scaffolding
+
+    To eliminate the quadratic `6·q·((d+k+1)+(d+k+1)·(d+k))` summand in
+    `ma_extractable`'s bound, we need to close the `hAllZero` branch
+    (where `logDerivCheckFn ≡ 0` on non-vertical E×E) without T5's
+    `exists_good_lambda` step (whose quadratic threshold on
+    `|validPairs|` is the source of the quadratic summand).
+
+    Path: view `polyG` as a 4-variate polynomial (`polyGFull`) and
+    apply the Lang-Weil contrapositive. If `polyG` vanishes pointwise
+    on all but a small subset of E × E, then by `bivariate_poly_zeros
+    _on_ExE_le`, `polyGFull` has no nonzero witness on E × E — a
+    stronger statement than pointwise vanishing on non-vertical pairs.
+    From there the paper-aligned residue-matching argument
+    (`sections/ip.tex:552-634`) extracts the σ-matching directly.
+
+    This section provides the 4-variate polyG scaffold. The
+    residue-matching step itself is a separate Aristotle dispatch. -/
+
+/-- 4-variate lift of `polyG`. Each `ellP (P)` becomes `lineEvalNumAtFull P`. -/
+noncomputable def polyGFull
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q) :
+    FourVarPoly E.q :=
+  (∑ k : Fin d,
+    (MvPolynomial.C (beta k) : FourVarPoly E.q) *
+    (∏ k' ∈ (Finset.univ (α := Fin d)).erase k, lineEvalNumAtFull E (Q k')) *
+    (∏ j : Fin M, lineEvalNumAtFull E (R j))) +
+  (∑ j : Fin M,
+    (MvPolynomial.C (m j) : FourVarPoly E.q) *
+    (∏ k : Fin d, lineEvalNumAtFull E (Q k)) *
+    (∏ j' ∈ (Finset.univ (α := Fin M)).erase j, lineEvalNumAtFull E (R j')))
+
+/-- Compat: `polyGFull` at `(A₀, A₁)` agrees with `polyG Q beta R m A₀ A₁`. -/
+theorem bivEval₂_polyGFull_eq_polyG
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    bivEval₂ (polyGFull E Q beta R m) A₀ A₁ = polyG E Q beta R m A₀ A₁ := by
+  sorry
+
+/-- `polyGFull` has bi-x-degree `(d + M - 1, d + M - 1)`.
+
+    Proof: each `lineEvalNumAtFull` has bi-x-degree `(1, 1)`. A product
+    of `d + M − 1` such (in each summand of either sum) gives `(d + M −
+    1, d + M − 1)`. Summing over `d + M` summands preserves the bound. -/
+theorem polyGFull_bi_x_degree_le
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q) :
+    bi_x_degree_le E (polyGFull E Q beta R m) (d + M) (d + M) := by
+  sorry
+
+/-- **T5-replacement vanishing lemma (target).**
+
+    If `polyG` vanishes on every non-vertical pair of `E.points ×
+    E.points`, and `|E|` is large enough (linear in `d + M`) to make
+    the Lang-Weil contrapositive bite, then `polyGFull` has no nonzero
+    witness on `E × E` — i.e. `bivEval₂ polyGFull A₀ A₁ = 0` for all
+    `(A₀, A₁) ∈ E.points × E.points`, including vertical pairs.
+
+    This is the Stage-B T5 replacement: it derives a strictly stronger
+    hypothesis (pointwise vanishing on all of E × E, not just
+    non-vertical pairs) from the `hAllZero` input. The resulting
+    stronger vanishing is what the paper-aligned σ-matching step
+    (`sections/ip.tex:552-634`) consumes. -/
+theorem polyGFull_vanishes_on_ExE_of_polyG_zero
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (hPolyGZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      polyG E Q beta R m A₀ A₁ = 0)
+    (hELarge : E.points.card > 4 * (d + M) + 2) :
+    ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points →
+      bivEval₂ (polyGFull E Q beta R m) A₀ A₁ = 0 := by
+  sorry
+
 end Divisor
