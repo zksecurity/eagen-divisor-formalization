@@ -116,13 +116,6 @@ where $f(D) = \prod_P f(P)^{n_P}$ for $D = \sum_P n_P(P)$. The axiom concludes t
 $$\mathrm{logDerivCheckFn}(D, \mathrm{target}, k, \mathrm{bases}, m, A_0, A_1) \;=\; 0.$$
 This packages Weil reciprocity applied to $D / L^m$ (where $L$ is the chord line) plus residue/differential arithmetic not stated in Exercise 2.11.
 
-### Out-of-path axioms
-
-The following are axioms in the codebase but not on the current soundness/completeness surfaces:
-
-- `Divisor.principal_divisor_iff` — Silverman AEC III Cor 3.5, full biconditional, $\mathbb{F}_q$-rational specialization (uses Remark 3.5.1 + Exercise II.2.13(b) for descent).
-- `Divisor.hasse_weil` — Silverman AEC V Thm 1.1, p. 138, squared form $\bigl((\#E - q - 1)\bigr)^2 \le 4q$ (equivalent to the standard $|\#E - q - 1| \le 2\sqrt q$).
-
 ## Outstanding work
 
 - **Eliminate `chord_fiber_product_eq_normZ_under_split`**: prove the function-field norm identity $\prod_i D(A_i(z)) = c \cdot N_D(z)$ in Lean, using conorm + Galois-transitive norm machinery.
