@@ -164,6 +164,3 @@ $$\bigl| |E(F_q)| - q - 1 \bigr| \le  2\sqrt{q}.$$
 - **Downgrade `weil_reciprocity_honest`**: split into (i) a verbatim Weil reciprocity axiom matching Exercise II.2.11 and (ii) a proved residue/differential reduction to `logDerivCheckFn`.
 - **Mechanize `CoordRingElt.divisor_group_sum_zero`** (Silverman III Cor 3.5 forward direction) — requires function-field infrastructure.
 
-## Plan
-
-See `docs/axiom-elimination-plan.md` for the full history of axiom-elimination work.
