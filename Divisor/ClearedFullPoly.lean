@@ -1166,7 +1166,42 @@ theorem bivEval₂_polyGFull_eq_polyG
     (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q) :
     bivEval₂ (polyGFull E Q beta R m) A₀ A₁ = polyG E Q beta R m A₀ A₁ := by
-  sorry
+  simp only [polyGFull, polyG, bivEval₂_add, bivEval₂_sum, bivEval₂_mul,
+    bivEval₂_prod, bivEval₂_C, bivEval₂_lineEvalNumAtFull, ellP]
+
+private theorem lineEvalNumAtFull_bi_x_degree_le (pt : ZMod E.q × ZMod E.q) :
+    bi_x_degree_le E (lineEvalNumAtFull E pt) 1 1 := by
+  unfold lineEvalNumAtFull
+  apply bi_x_degree_le.sub
+  · have h1 : bi_x_degree_le E (embedScalarFull E pt.2 - varA₀y E) 0 0 :=
+      bi_x_degree_le.sub (by unfold embedScalarFull; exact bi_x_degree_le.C _)
+        (by unfold varA₀y; exact bi_x_degree_le.Y₀)
+    have h2 : bi_x_degree_le E (lamDenFull E) 1 1 := by
+      unfold lamDenFull varA₁x varA₀x
+      exact bi_x_degree_le.sub (bi_x_degree_le.mono bi_x_degree_le.X₁ (by omega) (by omega))
+        (bi_x_degree_le.mono bi_x_degree_le.X₀ (by omega) (by omega))
+    simpa using bi_x_degree_le.mul h1 h2
+  · have h1 : bi_x_degree_le E (embedScalarFull E pt.1 - varA₀x E) 1 0 :=
+      bi_x_degree_le.sub
+        (bi_x_degree_le.mono (by unfold embedScalarFull; exact bi_x_degree_le.C _)
+          (by omega) (by omega))
+        (by unfold varA₀x; exact bi_x_degree_le.mono bi_x_degree_le.X₀ (by omega) (by omega))
+    have h2 : bi_x_degree_le E (lamNumFull E) 0 0 := by
+      unfold lamNumFull varA₁y varA₀y
+      exact bi_x_degree_le.sub bi_x_degree_le.Y₁ bi_x_degree_le.Y₀
+    exact bi_x_degree_le.mono (bi_x_degree_le.mul h1 h2) (by omega) (by omega)
+
+private theorem bi_x_degree_le_prod_finset {α : Type*} [DecidableEq α]
+    (s : Finset α) (f : α → FourVarPoly E.q)
+    (hf : ∀ i ∈ s, bi_x_degree_le E (f i) 1 1) :
+    bi_x_degree_le E (∏ i ∈ s, f i) s.card s.card := by
+  induction s using Finset.induction_on with
+  | empty => simp; exact ⟨(MvPolynomial.degreeOf_one _).le, (MvPolynomial.degreeOf_one _).le⟩
+  | @insert a s has ih =>
+    rw [Finset.prod_insert has, Finset.card_insert_of_notMem has]
+    have hmul := bi_x_degree_le.mul (hf a (Finset.mem_insert_self a s))
+      (ih (fun i hi => hf i (Finset.mem_insert_of_mem hi)))
+    convert hmul using 1 <;> omega
 
 /-- `polyGFull` has bi-x-degree `(d + M - 1, d + M - 1)`.
 
@@ -1178,7 +1213,40 @@ theorem polyGFull_bi_x_degree_le
     (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
     (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q) :
     bi_x_degree_le E (polyGFull E Q beta R m) (d + M) (d + M) := by
-  sorry
+  unfold polyGFull
+  apply bi_x_degree_le.add
+  · apply bi_x_degree_le.sum
+    intro k _
+    have hC : bi_x_degree_le E (MvPolynomial.C (beta k) : FourVarPoly E.q) 0 0 :=
+      bi_x_degree_le.C _
+    have hErase : bi_x_degree_le E
+        (∏ k' ∈ (Finset.univ (α := Fin d)).erase k, lineEvalNumAtFull E (Q k'))
+        ((Finset.univ (α := Fin d)).erase k).card
+        ((Finset.univ (α := Fin d)).erase k).card :=
+      bi_x_degree_le_prod_finset E _ _ (fun i _ => lineEvalNumAtFull_bi_x_degree_le E (Q i))
+    have hProd : bi_x_degree_le E
+        (∏ j : Fin M, lineEvalNumAtFull E (R j)) (M * 1) (M * 1) :=
+      bi_x_degree_le.prod_fin _ (fun j => lineEvalNumAtFull_bi_x_degree_le E (R j))
+    have hEraseCard : ((Finset.univ (α := Fin d)).erase k).card ≤ d :=
+      le_trans Finset.card_erase_le (by simp)
+    have hMul := bi_x_degree_le.mul (bi_x_degree_le.mul hC hErase) hProd
+    apply bi_x_degree_le.mono hMul <;> omega
+  · apply bi_x_degree_le.sum
+    intro j _
+    have hC : bi_x_degree_le E (MvPolynomial.C (m j) : FourVarPoly E.q) 0 0 :=
+      bi_x_degree_le.C _
+    have hProd : bi_x_degree_le E
+        (∏ k : Fin d, lineEvalNumAtFull E (Q k)) (d * 1) (d * 1) :=
+      bi_x_degree_le.prod_fin _ (fun k => lineEvalNumAtFull_bi_x_degree_le E (Q k))
+    have hErase : bi_x_degree_le E
+        (∏ j' ∈ (Finset.univ (α := Fin M)).erase j, lineEvalNumAtFull E (R j'))
+        ((Finset.univ (α := Fin M)).erase j).card
+        ((Finset.univ (α := Fin M)).erase j).card :=
+      bi_x_degree_le_prod_finset E _ _ (fun i _ => lineEvalNumAtFull_bi_x_degree_le E (R i))
+    have hEraseCard : ((Finset.univ (α := Fin M)).erase j).card ≤ M :=
+      le_trans Finset.card_erase_le (by simp)
+    have hMul := bi_x_degree_le.mul (bi_x_degree_le.mul hC hProd) hErase
+    apply bi_x_degree_le.mono hMul <;> omega
 
 /-- **T5-replacement vanishing lemma (target).**
 
@@ -1204,7 +1272,40 @@ theorem polyGFull_vanishes_on_ExE_of_polyG_zero
     ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
       bivEval₂ (polyGFull E Q beta R m) A₀ A₁ = 0 := by
-  sorry
+  by_contra h
+  push_neg at h
+  obtain ⟨A₀, A₁, hA₀, hA₁, hNZ⟩ := h
+  have hBideg := polyGFull_bi_x_degree_le E Q beta R m
+  have hLW := bivariate_poly_zeros_on_ExE_le E (polyGFull E Q beta R m) (d + M) (d + M)
+    hBideg ⟨A₀, A₁, hA₀, hA₁, hNZ⟩
+  have hNVsub : (E.points ×ˢ E.points).filter
+      (fun p : _ × _ => p.1.1 ≠ p.2.1) ⊆
+    (E.points ×ˢ E.points).filter
+      (fun p => bivEval₂ (polyGFull E Q beta R m) p.1 p.2 = 0) := by
+    intro p hp
+    simp only [Finset.mem_filter, Finset.mem_product] at hp ⊢
+    exact ⟨hp.1, by rw [bivEval₂_polyGFull_eq_polyG]; exact hPolyGZero _ _ hp.1.1 hp.1.2 hp.2⟩
+  have hVertBd := card_vertical_pairs_le E
+  have hCardProd : (E.points ×ˢ E.points).card = E.points.card * E.points.card :=
+    Finset.card_product _ _
+  have hNVcard : ((E.points ×ˢ E.points).filter
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) => p.1.1 ≠ p.2.1)).card
+    + ((E.points ×ˢ E.points).filter
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) => p.1.1 = p.2.1)).card
+    = (E.points ×ˢ E.points).card := by
+    classical
+    have h := @Finset.card_filter_add_card_filter_not
+      _ (E.points ×ˢ E.points) (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) => p.1.1 = p.2.1)
+      _ _
+    linarith
+  have hZeroCard := Finset.card_le_card hNVsub
+  have hNVge : E.points.card * E.points.card - 2 * E.points.card
+    ≤ ((E.points ×ˢ E.points).filter
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) => p.1.1 ≠ p.2.1)).card := by
+    rw [hCardProd] at hNVcard; omega
+  have hChain : E.points.card * E.points.card - 2 * E.points.card
+    ≤ 2 * (d + M + (d + M)) * E.points.card := le_trans hNVge (le_trans hZeroCard hLW)
+  nlinarith [hELarge]
 
 /-- **T5 replacement: σ-matching from polyGFull vanishing.**
 
