@@ -874,17 +874,28 @@ theorem clearedFullPoly_bi_x_degree_le
       (9 * (D.degE + k + 6)) (9 * (D.degE + k + 6)) := by
   sorry
 
-/-- **Phase 5 nonzero-witness on E × E (target).** -/
+/-- **Phase 5 nonzero-witness on E × E.** Any non-degenerate log-deriv
+    witness `(A₀, A₁)` yields `bivEval₂ clearedFullPoly A₀ A₁ ≠ 0` via
+    the Phase 3 identity: `bivEval₂ clearedFullPoly = (A₁.1 − A₀.1)^N ·
+    logDerivCheckFn · logDerivCheckFnDenom`, all three factors nonzero. -/
 theorem clearedFullPoly_nonzero_witness
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
-    (_hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
+    (hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
         logDerivCheckFnDefined E D P B A₀ A₁ ∧
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     ∃ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points ∧ A₁ ∈ E.points ∧
       bivEval₂ (clearedFullPoly E D P k B m) A₀ A₁ ≠ 0 := by
-  sorry
+  obtain ⟨A₀, A₁, hA₀, hA₁, hNVx, hDef, hCheck⟩ := hNV
+  refine ⟨A₀, A₁, hA₀, hA₁, ?_⟩
+  rw [clearedFullPoly_identity E D P B m A₀ A₁ hNVx hDef]
+  unfold logDerivCheckFnCleared
+  have hDenNZ : logDerivCheckFnDenom E D P B A₀ A₁ ≠ 0 := hDef
+  have hPowNZ : (A₁.1 - A₀.1) ^ (D.degE + k + 6) ≠ 0 := by
+    apply pow_ne_zero
+    exact sub_ne_zero.mpr hNVx.symm
+  exact mul_ne_zero hPowNZ (mul_ne_zero hCheck hDenNZ)
 
 /-! ### Log-derivative bad-set inclusion into Lang-Weil zero set
 
