@@ -3597,12 +3597,19 @@ theorem ma_extractable
               _ ≤ ∑ k : Fin (zerosCard E msg.toD), multAt E β_fun msg.toD k :=
                     Finset.sum_le_sum (fun k _ => hβPos k)
           exact hCardLe.trans (sum_multAt_le_degE E β_fun msg.toD hβsup hβsum)
-        -- hELarge: hLargeQ implies |E| > 4*(d+M)+2.
+        -- hELarge_old: 4·(d+M)+2 < |E|. Used by sigma_matching_core (which still
+        -- relies on the sorry'd `residual_vanishes_on_ExE`).
         have hELarge : E.points.card >
             4 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) + 2 := by
           have h1 : 4 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) + 2
               ≤ 4 * (msg.toD.degE + stmt.k + 1) + 2 := by omega
           omega
+        -- hELarge_dkl: new DKL+Bezout threshold for `polyGFull_vanishes_on_ExE_of_polyG_zero`.
+        -- TODO Phase E refinement: derive from hLargeQ via Hasse + crude q ≤ 2|E| bound.
+        have hELarge_dkl :
+            E.points.card * E.points.card - 2 * E.points.card
+              > 18 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) * E.q := by
+          sorry
         -- Step A: get polyGFull vanishing on all E × E from polyG vanishing
         -- on non-vertical pairs, via Lang-Weil contrapositive.
         have hPolyGFullVanishing :
@@ -3615,7 +3622,7 @@ theorem ma_extractable
             (zerosAt E msg.toD)
             (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
             (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
-            hPolyGZero hELarge
+            hPolyGZero hELarge_dkl
         -- Step B: obtain σ-matching from polyGFull vanishing.
         obtain ⟨σ, hσ_eq, hσ_betam, hσ_off⟩ :=
           sigma_matching_from_polyGFull_vanishing E

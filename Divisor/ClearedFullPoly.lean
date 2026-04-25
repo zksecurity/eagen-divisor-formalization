@@ -1750,19 +1750,108 @@ theorem polyGFull_bi_x_degree_le
     have hMul := bi_x_degree_le.mul (bi_x_degree_le.mul hC hProd) hErase
     apply bi_x_degree_le.mono hMul <;> omega
 
-/-- **T5-replacement vanishing lemma (target).**
+/-- **Total-degree bound for `lineEvalNumAtFull`.** Bilinear of total
+    degree 2 in `(X 0, Y 0, X 1, Y 1)`. -/
+private theorem lineEvalNumAtFull_total_degree_le' (P : ZMod E.q × ZMod E.q) :
+    total_degree_le E (lineEvalNumAtFull E P) 2 := by
+  unfold lineEvalNumAtFull
+  refine total_degree_le.sub ?_ ?_
+  · have h1 : total_degree_le E (embedScalarFull E P.2 - varA₀y E) 1 := by
+      unfold embedScalarFull varA₀y
+      exact total_degree_le.sub ((total_degree_le.C _).mono (Nat.zero_le _))
+        (total_degree_le.X _)
+    have h2 : total_degree_le E (lamDenFull E) 1 := by
+      unfold lamDenFull varA₁x varA₀x
+      exact total_degree_le.sub (total_degree_le.X _) (total_degree_le.X _)
+    exact total_degree_le.mul h1 h2
+  · have h1 : total_degree_le E (embedScalarFull E P.1 - varA₀x E) 1 := by
+      unfold embedScalarFull varA₀x
+      exact total_degree_le.sub ((total_degree_le.C _).mono (Nat.zero_le _))
+        (total_degree_le.X _)
+    have h2 : total_degree_le E (lamNumFull E) 1 := by
+      unfold lamNumFull varA₁y varA₀y
+      exact total_degree_le.sub (total_degree_le.X _) (total_degree_le.X _)
+    exact total_degree_le.mul h1 h2
+
+/-- **Total-degree bound for `polyGFull`.** Each summand has at most
+    `(d-1)+M` factors of degree-2 `lineEvalNumAtFull` (or symmetrically
+    `d+(M-1)`), giving total degree `2·(d+M-1)`. We state the looser
+    `≤ 2·(d+M)` to avoid Nat-subtraction edge cases. -/
+private theorem polyGFull_total_degree_le'
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q) :
+    total_degree_le E (polyGFull E Q beta R m) (2 * (d + M)) := by
+  classical
+  unfold polyGFull
+  refine total_degree_le.add ?_ ?_
+  · refine total_degree_le.sum _ _ ?_
+    intro k _
+    have hβ : total_degree_le E (MvPolynomial.C (beta k) : FourVarPoly E.q) 0 :=
+      total_degree_le.C _
+    have hQErase : total_degree_le E
+        (∏ k' ∈ (Finset.univ (α := Fin d)).erase k, lineEvalNumAtFull E (Q k'))
+        (((Finset.univ (α := Fin d)).erase k).card * 2) := by
+      refine total_degree_le.prod_const _ _ ?_
+      intro k' _
+      exact lineEvalNumAtFull_total_degree_le' E (Q k')
+    have hR : total_degree_le E
+        (∏ j : Fin M, lineEvalNumAtFull E (R j))
+        ((Finset.univ (α := Fin M)).card * 2) := by
+      refine total_degree_le.prod_const _ _ ?_
+      intro j _
+      exact lineEvalNumAtFull_total_degree_le' E (R j)
+    have hMul := total_degree_le.mul (total_degree_le.mul hβ hQErase) hR
+    refine hMul.mono ?_
+    have hEC : ((Finset.univ (α := Fin d)).erase k).card ≤ d := by
+      have := Finset.card_erase_le (s := (Finset.univ (α := Fin d))) (a := k)
+      simpa using this
+    have hMC : (Finset.univ (α := Fin M)).card = M := by simp
+    rw [hMC]
+    set ce := ((Finset.univ (α := Fin d)).erase k).card with hce
+    have hCE : ce * 2 ≤ d * 2 := Nat.mul_le_mul_right 2 hEC
+    omega
+  · refine total_degree_le.sum _ _ ?_
+    intro j _
+    have hm : total_degree_le E (MvPolynomial.C (m j) : FourVarPoly E.q) 0 :=
+      total_degree_le.C _
+    have hQ : total_degree_le E
+        (∏ k : Fin d, lineEvalNumAtFull E (Q k))
+        ((Finset.univ (α := Fin d)).card * 2) := by
+      refine total_degree_le.prod_const _ _ ?_
+      intro k _
+      exact lineEvalNumAtFull_total_degree_le' E (Q k)
+    have hRErase : total_degree_le E
+        (∏ j' ∈ (Finset.univ (α := Fin M)).erase j, lineEvalNumAtFull E (R j'))
+        (((Finset.univ (α := Fin M)).erase j).card * 2) := by
+      refine total_degree_le.prod_const _ _ ?_
+      intro j' _
+      exact lineEvalNumAtFull_total_degree_le' E (R j')
+    have hMul := total_degree_le.mul (total_degree_le.mul hm hQ) hRErase
+    refine hMul.mono ?_
+    have hEC : ((Finset.univ (α := Fin M)).erase j).card ≤ M := by
+      have := Finset.card_erase_le (s := (Finset.univ (α := Fin M))) (a := j)
+      simpa using this
+    have hDC : (Finset.univ (α := Fin d)).card = d := by simp
+    rw [hDC]
+    set ce := ((Finset.univ (α := Fin M)).erase j).card with hce
+    have hCE : ce * 2 ≤ M * 2 := Nat.mul_le_mul_right 2 hEC
+    omega
+
+/-- **T5-replacement vanishing lemma via DKL+Bezout.**
 
     If `polyG` vanishes on every non-vertical pair of `E.points ×
-    E.points`, and `|E|` is large enough (linear in `d + M`) to make
-    the Lang-Weil contrapositive bite, then `polyGFull` has no nonzero
-    witness on `E × E` — i.e. `bivEval₂ polyGFull A₀ A₁ = 0` for all
+    E.points`, and `|E|² - 2|E| > 18·(d + M)·E.q` (Hasse-tractable
+    threshold from the new axiom), then `polyGFull` has no nonzero
+    witness on `E × E` — `bivEval₂ polyGFull A₀ A₁ = 0` for all
     `(A₀, A₁) ∈ E.points × E.points`, including vertical pairs.
 
-    This is the Stage-B T5 replacement: it derives a strictly stronger
-    hypothesis (pointwise vanishing on all of E × E, not just
-    non-vertical pairs) from the `hAllZero` input. The resulting
-    stronger vanishing is what the paper-aligned σ-matching step
-    (`sections/ip.tex:552-634`) consumes. -/
+    Proof: apply the corrected `bivariate_poly_zeros_on_ExE_le` axiom
+    (DKL+Bezout) to `polyGFull` of total degree `≤ 2·(d+M)`. If it
+    were non-zero somewhere on `E×E`, its zero set would have
+    cardinality `≤ 9·2·(d+M)·q = 18·(d+M)·q`, but non-vertical pairs
+    (which it contains) number at least `|E|²-2|E|`. The threshold
+    creates a contradiction. -/
 theorem polyGFull_vanishes_on_ExE_of_polyG_zero
     {d M : ℕ}
     (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
@@ -1770,13 +1859,50 @@ theorem polyGFull_vanishes_on_ExE_of_polyG_zero
     (hPolyGZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       polyG E Q beta R m A₀ A₁ = 0)
-    (hELarge : E.points.card > 4 * (d + M) + 2) :
+    (hELarge : E.points.card * E.points.card - 2 * E.points.card
+                  > 18 * (d + M) * E.q) :
     ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
       bivEval₂ (polyGFull E Q beta R m) A₀ A₁ = 0 := by
-  -- TODO Phase A5: bridge to new axiom signature (total_degree_le).
-  -- Replaced by `polyG_paper`-based vanishing in Phase D.
-  sorry
+  classical
+  by_contra h
+  push_neg at h
+  obtain ⟨A₀, A₁, hA₀, hA₁, hNZ⟩ := h
+  have hDeg := polyGFull_total_degree_le' E Q beta R m
+  have hLW := bivariate_poly_zeros_on_ExE_le E (polyGFull E Q beta R m)
+    (2 * (d + M)) hDeg ⟨A₀, A₁, hA₀, hA₁, hNZ⟩
+  have hNVsub : (E.points ×ˢ E.points).filter
+      (fun p : _ × _ => p.1.1 ≠ p.2.1) ⊆
+    (E.points ×ˢ E.points).filter
+      (fun p => bivEval₂ (polyGFull E Q beta R m) p.1 p.2 = 0) := by
+    intro p hp
+    simp only [Finset.mem_filter, Finset.mem_product] at hp ⊢
+    refine ⟨hp.1, ?_⟩
+    rw [bivEval₂_polyGFull_eq_polyG]
+    exact hPolyGZero _ _ hp.1.1 hp.1.2 hp.2
+  have hCardProd : (E.points ×ˢ E.points).card = E.points.card * E.points.card :=
+    Finset.card_product _ _
+  have hNVcard : ((E.points ×ˢ E.points).filter
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) => p.1.1 ≠ p.2.1)).card
+    + ((E.points ×ˢ E.points).filter
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) => p.1.1 = p.2.1)).card
+    = (E.points ×ˢ E.points).card := by
+    have h := @Finset.card_filter_add_card_filter_not
+      _ (E.points ×ˢ E.points)
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) => p.1.1 = p.2.1)
+      _ _
+    linarith
+  have hVertBd := card_vertical_pairs_le E
+  have hZeroCard := Finset.card_le_card hNVsub
+  have hNVge : E.points.card * E.points.card - 2 * E.points.card
+    ≤ ((E.points ×ˢ E.points).filter
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) => p.1.1 ≠ p.2.1)).card := by
+    rw [hCardProd] at hNVcard; omega
+  have hChain : E.points.card * E.points.card - 2 * E.points.card
+    ≤ 9 * (2 * (d + M)) * E.q := le_trans hNVge (le_trans hZeroCard hLW)
+  have hRw : 9 * (2 * (d + M)) * E.q = 18 * (d + M) * E.q := by ring
+  rw [hRw] at hChain
+  exact absurd hChain (Nat.not_le.mpr hELarge)
 
 /-! ### Sub-lemmas for `sigma_matching_core`
 
