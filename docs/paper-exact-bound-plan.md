@@ -3,6 +3,74 @@
 Self-contained plan to tighten `Divisor.ma_extractable`'s bound from
 its current state to the paper's exact bound.
 
+## Execution log (2026-04-25)
+
+Pre-dispatch analysis identified an issue with Phase 1's preferred
+Approach B (polynomial identity without `hDef`):
+
+- Each atom of `clearedFiberPoly` (e.g., `lhsTerm0Scaled`) does NOT
+  contain the i-th `denom` factor (e.g., `D(A₀)·dxdz(A₀)`).
+- When that factor vanishes (denom-zero), the atom evaluates to a
+  generically-nonzero polynomial value.
+- Hence `bivEval clearedFiberPoly` is NOT zero on denom-zero pairs,
+  so the polynomial identity does NOT hold pointwise on denom-zero
+  pairs (the RHS is 0 via `LDCFn · 0`, but LHS is nonzero in
+  general).
+
+Conclusion: Approach B as written is logically infeasible.
+
+### Outcomes
+
+**Phase 1 — Aristotle project `6c966bed`. SUCCESS via Option B.**
+Bound tightened from `54·(D.degE + k + 6)·|E|` to
+`48·(D.degE + k + 6)·|E|`. Boundary contribution exposed at its true
+value `(6d+9k+71)·|E|` (vs. previously loosened `18·(d+k+6)·|E|`).
+Combined with core Lang-Weil bound `36·(d+k+6)·|E|`, total is
+`42d+45k+287 ≤ 48·(d+k+6)·|E|`.
+
+Files modified:
+- `Divisor/ClearedPolyForm.lean`: added
+  `logDerivCheckFn_undefined_set_bound_tight`.
+- `Divisor/ClearedFullPoly.lean`: `log_deriv_sz_paper` now uses tight
+  bound.
+- `Divisor/ExtractorBridge.lean`: `ma_extractable` returns `48·(…)`.
+- 7 user axioms + standard 3 Lean axioms; `#print axioms
+  ma_extractable` unchanged.
+
+**Phase 2 — Aristotle project `f103e9bb`. BLOCKED — would need a new
+axiom.**
+Investigation report: `docs/y-linear-investigation-report.md`. The
+existing `bivariate_poly_zeros_on_ExE_le` axiom outputs
+`2·(dX+dY)·|E|`; the factor of 2 is opaque to any preprocessing.
+Y-linearity gives the polynomial structure (1 root per X-fibre vs 2)
+needed to halve the bound, but the existing axiom's statement cannot
+expose this. Aristotle considered four approaches (direct application,
+product trick `f·f^σ`, sub-poly decomposition, fibre-counting); all
+either fail or worsen the bound.
+
+Aristotle did add the `bi_y_linear` definition to
+`Divisor/FourVarPoly.lean` (with `bi_y_linear.of_degreeOf` helper) so
+a future axiom-update session can reuse it.
+
+**Phase 3 — DEFERRED.** ~500 LOC refactor is unsuited for a single
+session and Aristotle does not refactor architecture.
+
+**Phase 4 — DEFERRED.** Cleanup of dead infrastructure can occur once
+Phase 3 outcome is known.
+
+### Final bound after Phases 1+2
+
+`((validPairs E).filter (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+   ≤ 48 · (stmt.degBound + stmt.k + 6) · E.points.card`
+
+Down from `54·(stmt.degBound + stmt.k + 6)·|E|`. ~11% improvement.
+
+To reach paper-exact `18·(stmt.degBound + stmt.k)·|E|`, we still need
+(a) a new axiom for the Y-linear Lang-Weil (Phase 2), and (b) the
+Phase 3 refactor (drop `+6` offset). Phase 2's blocker is a hard
+boundary; the plan's "no new axioms" constraint must be relaxed to
+proceed.
+
 ## Starting state
 
 `Divisor.ma_extractable` (in `Divisor/ExtractorBridge.lean`) currently

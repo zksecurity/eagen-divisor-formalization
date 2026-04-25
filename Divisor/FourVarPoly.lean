@@ -239,4 +239,22 @@ theorem bi_x_degree_le.prod_fin
       have hrw' : (n + 1) * dY = dY + n * dY := by ring
       rw [hrw, hrw']; exact hmul
 
+/-- **Y-linearity predicate.** A 4-variate polynomial `f` is Y-linear
+    when it has degree ≤ 1 in both `Y₀` (variable 1) and `Y₁` (variable 3).
+
+    Structurally, Y-linear polynomials have the form
+    `a(X₀,X₂)·Y₀·Y₁ + b(X₀,X₂)·Y₀ + c(X₀,X₂)·Y₁ + d(X₀,X₂)`.
+
+    On the curve `E : Y² = X³ + AX + B`, Y-linearity means that for
+    each `(X₀, X₂)` pair, the equation `f = 0` restricted to the
+    curve has at most 1 solution in `(Y₀, Y₁)` (vs. 2 in general),
+    saving a factor of 2 in the Lang-Weil zero-count bound. -/
+def bi_y_linear (_E : ECSetup) (f : FourVarPoly _E.q) : Prop :=
+  f.degreeOf 1 ≤ 1 ∧ f.degreeOf 3 ≤ 1
+
+theorem bi_y_linear.of_degreeOf {E : ECSetup} {f : FourVarPoly E.q}
+    (h1 : f.degreeOf 1 ≤ 1) (h3 : f.degreeOf 3 ≤ 1) :
+    bi_y_linear E f :=
+  ⟨h1, h3⟩
+
 end Divisor
