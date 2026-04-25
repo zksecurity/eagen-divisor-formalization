@@ -1,18 +1,51 @@
 # Plan: Reach paper-exact bound `18·(d+k)·|E|`
 
-**Starting point** (tag `session-end`): `ma_extractable` bound is
-`54·(stmt.degBound + stmt.k + 6) · E.points.card`, purely linear, no
-quadratic. 7 user axioms used, no `sorryAx`. One unused sorry
-(`clearedFullPoly_swap_signed`).
+Self-contained plan to tighten `Divisor.ma_extractable`'s bound from
+its current state to the paper's exact bound.
 
-**Target**: `18·(stmt.degBound + stmt.k) · E.points.card` — exactly
-matching `sections/ip.tex:478` Event_NotEq bound (via Hasse).
+## Starting state (tag `session-end` in git)
 
-Three independent slacks. Each phase below is dispatch-able.
+`Divisor.ma_extractable` (in `Divisor/ExtractorBridge.lean`) currently
+proves:
+
+```
+((validPairs E).filter (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+  ≤ 54 * (stmt.degBound + stmt.k + 6) * E.points.card
+```
+
+Properties:
+- Purely linear in `(d + k)·|E|` (no quadratic term).
+- 7 user-defined axioms (no `sorryAx`):
+  `bivariate_poly_zeros_on_ExE_le`,
+  `chord_fiber_product_eq_normZ_under_split`,
+  `chord_sum_eq_chord_fiber_product_logDeriv`,
+  `CoordRingElt.divisor_group_sum_zero`,
+  `ECPoint.add_assoc`, `ECPoint.add_comm`, `ECPoint.neg_add_cancel`.
+- One unused sorry: `clearedFullPoly_swap_signed` (chord-symmetry
+  dead-end, not in any proof chain).
+
+## Target
+
+`sections/ip.tex:478` Event_NotEq bound:
+
+```
+((validPairs E).filter (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+  ≤ 18 * (stmt.degBound + stmt.k) * E.points.card
+```
+
+Three independent slacks separate current from target:
+
+| Slack | Source | Plan phase |
+|---|---|---|
+| `54 → 36` (linear coefficient `+18` boundary term) | `log_deriv_sz_paper` splits into `36·(d+k+6)·|E|` (Lang-Weil core) + `18·(d+k+6)·|E|` (F1-F8 boundary) | Phase 1 |
+| `36 → 18` (factor of 2) | Lang-Weil axiom states `2·(dX+dY)·|E|`; the `2` accounts for two Y-branches per X | Phase 2 |
+| `(d+k+6) → (d+k)` (offset `+6`) | Uniform `lamDen^N` clearing scale in `clearedFiberPoly` adds `+1` (D), `+4` (`dxdz`), `+1` (`-P` line) | Phase 3 |
+
+Phases are independent and parallelisable.
 
 ---
 
-## Phase 8 — Boundary unification (54 → 36)
+## Phase 1 — Boundary unification (`54 → 36`)
 
 **Goal:** drop the `+18·(d+k+6)·|E|` boundary contribution from
 `logDerivCheckFn_undefined_set_bound` by absorbing the denom-undefined
@@ -68,48 +101,34 @@ Note: in `ZMod q`, polynomial identities can fail to extend from
 sub-domains because `x^q - x ≡ 0` on `F_q` but not as polynomials.
 The identity needs to hold AS POLYNOMIALS, not just pointwise.
 
-**Sub-task 8.1**: Refactor `clearedFiberPoly_identity` to prove the
-identity in the polynomial ring `(ZMod q)[X][X]` directly (without
-hDef hypothesis). This requires reformulating the existing lemma's
-proof to use polynomial-equality reasoning rather than field
-arithmetic.
+**Sub-task 1.1**: Refactor `clearedFiberPoly_identity` (in
+`Divisor/ClearedPolyForm.lean:2172`) to prove the identity in the
+polynomial ring `(ZMod q)[X][X]` directly (without `hDef` hypothesis).
+Reformulate the existing proof to use polynomial-equality reasoning
+rather than field arithmetic.
 
-**Sub-task 8.2**: Once identity holds without `hDef`, modify
-`bivEval₂_clearedFullPoly_eq_zero_of_bad` to drop the `hDef`
-hypothesis. Then `clearedFullPoly` vanishes on the FULL bad set
-(not just denom-defined part).
+**Sub-task 1.2**: Once identity holds without `hDef`, modify
+`bivEval₂_clearedFullPoly_eq_zero_of_bad` (in
+`Divisor/ClearedFullPoly.lean`) to drop the `hDef` hypothesis.
+`clearedFullPoly` then vanishes on the FULL bad set (not just
+denom-defined part).
 
-**Sub-task 8.3**: Replace `log_deriv_sz_paper`'s split-then-add with
+**Sub-task 1.3**: Replace `log_deriv_sz_paper`'s split-then-add with
 a single Lang-Weil application:
 ```
 badNE ⊆ {bivEval₂ clearedFullPoly = 0} on E×E
 badNE.card ≤ 36·(d+k+6)·|E|
 ```
+Update `ma_extractable`'s bound from `54·(…)` to `36·(…)`.
 
-**Aristotle dispatch**: ~1 medium prompt with focus on polynomial
-identity reformulation. Risk: proof restructuring may be heavy.
+**Risk**: proof restructuring may be heavy. If Approach B fails,
+explore Approach A (with care to bound the degree blow-up).
 
-### Approach C — direct accept-set count
-
-Instead of bounding `badChallengesNotEq`, bound `acceptSet` directly:
-```
-acceptSet := validPairs ∩ {maVerifierAccepts}
-```
-The verifier's accept condition includes `D ≠ 0` checks etc. Maybe the
-bound `acceptSet.card ≤ ?` is sharper than `badNE.card`.
-
-**Verdict**: requires reasoning about `maVerifierAccepts` definition;
-unclear payoff.
-
-### Recommendation: Approach B
-
-State sub-tasks 8.1–8.3 as sorries; dispatch each.
-
-**Bound after Phase 8**: `36·(d+k+6)·|E|`.
+**Bound after Phase 1**: `36·(d+k+6)·|E|`.
 
 ---
 
-## Phase 9 — Y-linearity-aware Lang-Weil (36 → 18)
+## Phase 2 — Y-linearity-aware Lang-Weil (`36 → 18`)
 
 **Goal:** halve the Lang-Weil bound for `clearedFullPoly` by
 exploiting that, after reduction modulo the curve relations
@@ -117,10 +136,10 @@ exploiting that, after reduction modulo the curve relations
 (degree ≤ 1 in `X 1` and `X 3`).
 
 The current axiom gives `2·(dX + dY)·|E|` — the factor of 2 absorbs
-two `Y_i`-branches per `X_i`. For Y-linear polynomials, each fibre
-gives at most one Y-value (not two), shaving the factor of 2.
+two `Y_i`-branches per `X_i`. For Y-linear polynomials, each X-fibre
+gives at most one Y-value per branch, shaving the factor of 2.
 
-### Sub-task 9.1: define `bi_y_linear_le`
+### Sub-task 2.1: define `bi_y_linear`
 
 ```lean
 def bi_y_linear (E : ECSetup) (f : FourVarPoly E.q) : Prop :=
@@ -129,7 +148,7 @@ def bi_y_linear (E : ECSetup) (f : FourVarPoly E.q) : Prop :=
 
 (degree ≤ 1 in `X 1 = Y_0` and `X 3 = Y_1`).
 
-### Sub-task 9.2: derive a Y-linearity-aware Lang-Weil from existing axiom
+### Sub-task 2.2: derive a Y-linearity-aware Lang-Weil
 
 ```lean
 theorem bivariate_poly_zeros_on_ExE_le_y_linear
@@ -140,50 +159,51 @@ theorem bivariate_poly_zeros_on_ExE_le_y_linear
     {pairs vanishing}.card ≤ (dX + dY) * E.points.card
 ```
 
-Half of the existing axiom's bound. Proof: ???
+Half of the existing axiom's bound. Whether this is derivable from
+the existing `bivariate_poly_zeros_on_ExE_le` axiom is an open
+question — it might require a modified Lang-Weil argument with
+Y-linearity baked in. If not derivable, would need a NEW axiom,
+which violates the no-new-axioms constraint.
 
-This may NOT be derivable from the existing axiom alone — it might
-require a modified Lang-Weil argument with the Y-linearity assumption
-baked in. If derivable: pure refinement. If not: needs a NEW axiom
-(Y-linearity-aware Lang-Weil), which conflicts with the
-"no new axioms" constraint.
-
-**Sub-task 9.2a**: Investigate whether the existing axiom's
+**Sub-task 2.2a**: Investigate whether the existing axiom's
 `2·(dX+dY)` factor is essentially optimal or can be tightened for
 Y-linear polynomials. Look at the axiom's docstring + Lang-Weil
 1954 paper Theorem 1.
 
-### Sub-task 9.3: prove `clearedFullPoly` is Y-linear MOD CURVE
-
-`clearedFullPoly` mod (curveEq₀, curveEq₁) is Y-linear: each Y_i^2
-gets reduced to X_i^3 + A·X_i + B. Need to formalise:
+### Sub-task 2.3: define `%ₘ₂` and prove `clearedFullPoly` is Y-linear MOD CURVE
 
 ```lean
-theorem clearedFullPoly_y_linear_mod_curve : ...
+noncomputable def MvPolynomial.modByMonic₂ (f g h : FourVarPoly q) : FourVarPoly q := ...
+notation:65 f " %ₘ₂ " "(" g "," h ")" => MvPolynomial.modByMonic₂ f g h
+
+theorem clearedFullPoly_y_linear_mod_curve (D P k B m) :
+    bi_y_linear E (clearedFullPoly E D P k B m %ₘ₂ (curveEq₀ E, curveEq₁ E))
 ```
 
-Requires the `%ₘ₂` operator (mod both curves) which the plan mentioned
-but isn't defined yet.
+`clearedFullPoly` mod (curveEq₀, curveEq₁) is Y-linear: each `Y_i^2`
+gets reduced to `X_i^3 + A·X_i + B`. The reduction is defined and
+computable — the key is to formalise it cleanly.
 
-### Sub-task 9.4: apply Y-linearity-aware bound
+### Sub-task 2.4: apply the Y-linearity-aware bound
 
-If 9.2 gives `(dX+dY)·|E|` and 9.3 gives Y-linearity, combine.
+If 2.2 gives `(dX+dY)·|E|` and 2.3 gives Y-linearity, combine to
+update `log_deriv_sz_paper_core`'s bound to `18·(d+k+6)·|E|`.
 
-**Aristotle dispatch**: 9.1 (trivial); 9.2 (research-y, may fail);
-9.3 (medium, requires `%ₘ₂` definition); 9.4 (small).
+**Risk**: 2.2 may genuinely require a new axiom. Investigate first
+before proceeding.
 
-**Bound after Phase 9** (if 9.2 succeeds): `18·(d+k+6)·|E|`.
+**Bound after Phase 2** (if 2.2 succeeds): `18·(d+k+6)·|E|`.
 
 ---
 
-## Phase 10 — Drop the `+6` offset (18·(d+k+6) → 18·(d+k))
+## Phase 3 — Drop the `+6` offset (`(d+k+6) → (d+k)`)
 
 **Goal:** remove the `+6` from the bi-x-degree bound on
 `clearedFullPoly` by replacing the uniform `lamDen^N` clearing scale
 with per-factor mod-curve reduction.
 
-Current `clearedFullPoly` has `9·(d+k+6)` as bi-x-degree per axis.
-The `+6` decomposes as:
+Current `clearedFullPoly` has bi-x-degree `9·(d+k+6)` per axis. The
+`+6` decomposes as:
 - `+1` for D's degE
 - `+4` from `dxdzAllScaled` (three `dxdz` factors + corrections via `lamDen^4`)
 - `+1` for `-P` line factor (`linesProductScaled` has `lamDen^(k+1)`)
@@ -191,48 +211,58 @@ The `+6` decomposes as:
 These offsets exist because `clearedFiberPoly` was built with uniform
 clearing `lamDen^N` to keep the algebra uniform. The paper reduces
 mod the curve equation directly in the coordinate ring, achieving
-9·(d+k) without these.
+`9·(d+k)` without these.
 
-### Sub-task 10.1: redefine `clearedFullPoly` with per-factor clearing
+### Sub-task 3.1: redefine `clearedFullPoly` with per-factor clearing
 
-Major refactor. Each Full-component now has its own scaling factor,
-and the assembly carefully combines them so the final
-`clearedFullPoly` has bi-x-degree `9·(d+k)` per axis.
+Major refactor of `Divisor/ClearedFullPoly.lean`. Each Full-component
+gets its own scaling factor, and the assembly carefully combines them
+so the final `clearedFullPoly` has bi-x-degree `9·(d+k)` per axis.
 
-### Sub-task 10.2: re-prove identity, degree bound, nonzero witness
+### Sub-task 3.2: re-prove identity, degree bound, nonzero witness
 
 The compatibility chain `bivEval₂ clearedFullPoly = bivEval clearedFiberPoly`
 needs to be re-derived for the new structure. Most of the helpers
-(varA*y_bi, lamDen_bi, line_bi, x₂Scaled_bi, etc.) carry over but
-the assembly changes.
+(`varA*y_bi`, `lamDen_bi`, `line_bi`, `x₂Scaled_bi`, etc.) carry over
+but the assembly changes.
 
-### Sub-task 10.3: re-wire downstream
+Either re-prove `clearedFullPoly_identity` directly with the new
+scaling, or re-define `clearedFiberPoly` (in
+`Divisor/ClearedPolyForm.lean`) to match.
+
+### Sub-task 3.3: re-wire downstream
 
 `log_deriv_sz_paper_core`, `sigma_matching_*`, `ma_extractable` all
 use the bi-x-degree bound. Update to `9·(d+k)`.
 
-**Aristotle dispatch**: 10.1 + 10.2 are major (~500 LOC rewrite); 10.3
-is mostly mechanical re-wiring.
+**Risk**: ~500 LOC rewrite across `ClearedFullPoly.lean` and possibly
+`ClearedPolyForm.lean`. Many helper lemmas need updating.
 
-**Bound after Phase 10**: `18·(d+k)·|E|` — paper-exact.
+**Bound after Phase 3**: `18·(d+k)·|E|` — paper-exact (when combined
+with Phases 1 + 2).
 
 ---
 
-## Phase 11 — Optional cleanup
+## Phase 4 — Cleanup
 
-After Phases 8-10:
+After Phases 1-3:
 
-- Remove dead infrastructure: `log_deriv_sz`,
+- Remove dead infrastructure now unreferenced:
+  `log_deriv_sz` (in `ClearedPolyForm.lean`),
   `logDerivCheckFn_fiber_count_bound`,
-  `logDerivCheckFn_badA₀_bound`, `resultantX_*`,
+  `logDerivCheckFn_badA₀_bound`,
+  `resultantX_*` family,
   `extractorSucceeds_of_logDerivCheck_identically_zero_general`,
-  `extracted_scalars_valid`, `extractor_succeeds_and_groupSumZero`,
-  `distinctSigma_exists`, `log_deriv_nonvanishing_criterion` (T5)
-  if unreferenced.
-- Resolve the unused `clearedFullPoly_swap_signed` sorry (either
-  prove it or delete it).
+  `extracted_scalars_valid` (general case),
+  `extractor_succeeds_and_groupSumZero`,
+  `distinctSigma_exists`,
+  `log_deriv_nonvanishing_criterion` (T5, in `PolyFibK.lean`).
+- Resolve `clearedFullPoly_swap_signed`: either prove it (the
+  signed version IS true and provable with care) or delete it.
 - Re-run `#print axioms ma_extractable` and verify the axiom list
-  matches expectations.
+  matches expectations (still 7 user axioms, no `sorryAx`).
+- Run a full `lake build` and confirm zero warnings about unused
+  definitions.
 
 ---
 
@@ -240,36 +270,39 @@ After Phases 8-10:
 
 | Phase | Sub-tasks | Estimated Aristotle dispatches |
 |---|---|---|
-| 8 (boundary unification) | 8.1–8.3 | 1 medium |
-| 9 (Y-linearity) | 9.1–9.4 | 3 (one risky) |
-| 10 (offset drop) | 10.1–10.3 | 3 (one major refactor) |
-| 11 (cleanup) | — | 1 medium |
+| 1 (boundary unification) | 1.1–1.3 | 1 medium |
+| 2 (Y-linearity) | 2.1–2.4 | 3 (2.2 risky) |
+| 3 (offset drop) | 3.1–3.3 | 3 (3.1 major refactor) |
+| 4 (cleanup) | — | 1 medium |
 
 Total: ~8 Aristotle dispatches, ~1-2 sessions.
+
+## Phase ordering and parallelism
+
+Phases are independent and can be parallelised:
+
+- Phase 1 needs no other phase.
+- Phase 2 needs no other phase (only the `%ₘ₂` definition for 2.3,
+  which is a self-contained sub-task).
+- Phase 3 is independent of 1 and 2 but the most invasive.
+
+Recommended order: run Phase 1 first (smallest, most likely to
+succeed). Then dispatch Phases 2 and 3 in parallel (each in its own
+Aristotle dispatch, modifying mostly disjoint code regions — Phase
+2 touches the Lang-Weil layer, Phase 3 the polynomial construction).
+Cleanup (Phase 4) after all three converge.
 
 ## Stop conditions
 
 If any phase requires a NEW axiom not in the current 7-axiom set
-(or the original 10 planned), STOP and surface the gap. The current
-axiom usage is established and stable; new axioms warrant a
-re-planning step.
+(or the 10 axioms originally planned in
+`docs/bivariate-sz-paper-faithful.md`), STOP and surface the gap.
+The current axiom usage is established and stable; new axioms warrant
+a re-planning step.
 
-Specific risk: Phase 9.2 (Y-linearity-aware Lang-Weil) may not be
+Specific risk: Phase 2.2 (Y-linearity-aware Lang-Weil) may not be
 derivable from the existing axiom and may genuinely require a new
-axiom. Investigate first before committing to the proof.
-
-## Phase ordering
-
-Phases are mostly INDEPENDENT and can be parallelised:
-
-- Phase 8 needs no other phase.
-- Phase 9 needs no other phase (only the `%ₘ₂` definition for 9.3,
-  which is its own sub-task).
-- Phase 10 is independent of 8 and 9 but the most invasive.
-
-Run Phase 8 first (smallest, most likely to succeed). Then dispatch
-Phases 9 and 10 in parallel (each in its own Aristotle dispatch).
-Cleanup (Phase 11) after all three converge.
+axiom. Investigate before committing to the full proof.
 
 ---
 
@@ -300,13 +333,14 @@ new types, and structural changes must be in place BEFORE dispatch.
    - Fallback instructions: "if X is intractable, weaken to Y" or
      "leave sorry with documentation".
    - Build command: `lake build Divisor.<TargetFile>`.
-   - Hard constraints: "no new axioms", "only modify `<file>.lean>`",
+   - Hard constraints: "no new axioms", "only modify `<file>.lean`",
      "build must pass", "partial closures OK".
 4. **Dispatch** with `aristotle submit "$(cat <prompt>)" --project-dir <repo>`.
    Capture the project ID.
 5. **Wait via background task**: `aristotle result <id> --wait
    --destination <tar>` with `run_in_background: true`. Optionally
-   set up a progress monitor with `Monitor` for periodic notifications.
+   set up a progress monitor with the `Monitor` tool for periodic
+   notifications.
 6. **Merge** when the wait task completes:
    - Extract the tarball.
    - Diff against your current file.
@@ -320,7 +354,7 @@ new types, and structural changes must be in place BEFORE dispatch.
 
 ### Per-phase prompt skeletons
 
-#### Phase 8 — Boundary unification (Approach B)
+#### Phase 1 — Boundary unification (Approach B)
 
 ```
 Refactor `clearedFiberPoly_identity` (in
@@ -353,7 +387,7 @@ If the polynomial-identity reformulation is intractable, leave
 [hard constraints]
 ```
 
-#### Phase 9 — Y-linearity Lang-Weil
+#### Phase 2 — Y-linearity Lang-Weil
 
 ```
 Prove or refute the Y-linearity-tightened Lang-Weil:
@@ -380,7 +414,7 @@ combine to get the `18·(d+k+6)·|E|` bound.
 [hard constraints]
 ```
 
-#### Phase 10 — Offset drop
+#### Phase 3 — Offset drop
 
 ```
 Redefine `clearedFullPoly` (in `Divisor/ClearedFullPoly.lean`) using
@@ -415,8 +449,8 @@ After the refactor:
   `clearedFullPoly_identity` directly, or re-define
   `clearedFiberPoly` to match.
 - Downstream `log_deriv_sz_paper_core` updates to `36·(d+k)·|E|`.
-- Combined with Phase 8 (boundary unification): `36·(d+k)·|E|` total.
-- Combined with Phase 9 (Y-linearity): `18·(d+k)·|E|` — paper-exact.
+- Combined with Phase 1 (boundary unification): `36·(d+k)·|E|` total.
+- Combined with Phase 2 (Y-linearity): `18·(d+k)·|E|` — paper-exact.
 
 This is the most invasive phase. Expect ~500 LOC of refactor across
 ClearedFullPoly.lean and possibly ClearedPolyForm.lean.
@@ -424,7 +458,7 @@ ClearedFullPoly.lean and possibly ClearedPolyForm.lean.
 [hard constraints]
 ```
 
-### Tips drawn from Phase 2-7 dispatches
+### Tips drawn from prior dispatches
 
 - **Project size**: `divisors-faithful` is ~1MB of source. Aristotle
   takes 10-90 minutes per dispatch depending on complexity. Queue
@@ -449,5 +483,6 @@ ClearedFullPoly.lean and possibly ClearedPolyForm.lean.
   prompt was likely too vague. Add concrete strategy hints
   ("Approach A", "use lemma X from file Y") and paper context.
 - **`#print axioms <theorem>`**: run after each phase to verify no
-  new axioms have crept in. Add `#print axioms ma_extractable` to
-  `Divisor.lean` (top-level) — the build prints the list.
+  new axioms have crept in. Append `#print axioms ma_extractable` to
+  `Divisor.lean` (top-level) — the build prints the list as an
+  `info` diagnostic.
