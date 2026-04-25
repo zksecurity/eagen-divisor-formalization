@@ -1430,22 +1430,477 @@ theorem liftPoly_total_degree_le (p : (ZMod E.q)[X]) (i : Fin 4) :
     _ = n := by omega
     _ ≤ p.natDegree := hn'
 
+/-! ### Total-degree bound helpers for atoms of `clearedFullPoly`. -/
+
+private theorem lamNumFull_td : total_degree_le E (lamNumFull E) 1 := by
+  unfold lamNumFull varA₁y varA₀y
+  exact total_degree_le.sub (total_degree_le.X _) (total_degree_le.X _)
+
+private theorem lamDenFull_td : total_degree_le E (lamDenFull E) 1 := by
+  unfold lamDenFull varA₁x varA₀x
+  exact total_degree_le.sub (total_degree_le.X _) (total_degree_le.X _)
+
+private theorem varA₀x_td : total_degree_le E (varA₀x E) 1 := by
+  unfold varA₀x; exact total_degree_le.X _
+
+private theorem varA₀y_td : total_degree_le E (varA₀y E) 1 := by
+  unfold varA₀y; exact total_degree_le.X _
+
+private theorem varA₁x_td : total_degree_le E (varA₁x E) 1 := by
+  unfold varA₁x; exact total_degree_le.X _
+
+private theorem varA₁y_td : total_degree_le E (varA₁y E) 1 := by
+  unfold varA₁y; exact total_degree_le.X _
+
+private theorem lineEvalNumAtFull_td (P : ZMod E.q × ZMod E.q) :
+    total_degree_le E (lineEvalNumAtFull E P) 2 := by
+  unfold lineEvalNumAtFull
+  refine total_degree_le.sub ?_ ?_
+  · exact total_degree_le.mul
+      (by unfold embedScalarFull varA₀y
+          exact total_degree_le.sub ((total_degree_le.C _).mono (Nat.zero_le _))
+            (total_degree_le.X _))
+      (lamDenFull_td E)
+  · exact total_degree_le.mul
+      (by unfold embedScalarFull varA₀x
+          exact total_degree_le.sub ((total_degree_le.C _).mono (Nat.zero_le _))
+            (total_degree_le.X _))
+      (lamNumFull_td E)
+
+private theorem x₂ScaledFull_td : total_degree_le E (x₂ScaledFull E) 3 := by
+  unfold x₂ScaledFull
+  apply total_degree_le.sub
+  · exact ((lamNumFull_td E).pow 2).mono (by omega)
+  · exact (total_degree_le.mul
+      (total_degree_le.add (varA₀x_td E) (varA₁x_td E))
+      ((lamDenFull_td E).pow 2)).mono (by omega)
+
+private theorem y₂ScaledFull_td : total_degree_le E (y₂ScaledFull E) 4 := by
+  unfold y₂ScaledFull
+  apply total_degree_le.add
+  · exact (total_degree_le.mul (lamNumFull_td E) (x₂ScaledFull_td E)).mono (by omega)
+  · exact (total_degree_le.mul
+      (total_degree_le.sub
+        (total_degree_le.mul (varA₀y_td E) (lamDenFull_td E))
+        (total_degree_le.mul (varA₀x_td E) (lamNumFull_td E)))
+      ((lamDenFull_td E).pow 2)).mono (by omega)
+
+private theorem DAtA₀Full_td (D : CoordRingElt E.q) :
+    total_degree_le E (DAtA₀Full E D) D.degE := by
+  unfold DAtA₀Full
+  apply total_degree_le.sub
+  · exact (liftPoly_total_degree_le E D.a 0).mono (a_natDegree_le_degE E D)
+  · exact (total_degree_le.mul (liftPoly_total_degree_le E D.b 0) (varA₀y_td E)).mono
+      (by have := two_b_plus_3_le_degE E D; omega)
+
+private theorem DAtA₁Full_td (D : CoordRingElt E.q) :
+    total_degree_le E (DAtA₁Full E D) D.degE := by
+  unfold DAtA₁Full
+  apply total_degree_le.sub
+  · exact (liftPoly_total_degree_le E D.a 2).mono (a_natDegree_le_degE E D)
+  · exact (total_degree_le.mul (liftPoly_total_degree_le E D.b 2) (varA₁y_td E)).mono
+      (by have := two_b_plus_3_le_degE E D; omega)
+
+private theorem DDerivAtA₀Full_td (D : CoordRingElt E.q) :
+    total_degree_le E (DDerivAtA₀Full E D) D.degE := by
+  unfold DDerivAtA₀Full
+  apply total_degree_le.sub
+  · exact (liftPoly_total_degree_le E (Polynomial.derivative D.a) 0).mono
+      (deriv_a_natDegree_le_degE E D)
+  · exact (total_degree_le.mul
+      (liftPoly_total_degree_le E (Polynomial.derivative D.b) 0) (varA₀y_td E)).mono
+      (by have := Polynomial.natDegree_derivative_le D.b
+          have := two_b_plus_3_le_degE E D; omega)
+
+private theorem DDerivAtA₁Full_td (D : CoordRingElt E.q) :
+    total_degree_le E (DDerivAtA₁Full E D) D.degE := by
+  unfold DDerivAtA₁Full
+  apply total_degree_le.sub
+  · exact (liftPoly_total_degree_le E (Polynomial.derivative D.a) 2).mono
+      (deriv_a_natDegree_le_degE E D)
+  · exact (total_degree_le.mul
+      (liftPoly_total_degree_le E (Polynomial.derivative D.b) 2) (varA₁y_td E)).mono
+      (by have := Polynomial.natDegree_derivative_le D.b
+          have := two_b_plus_3_le_degE E D; omega)
+
+private theorem dxdzDenA₀Full_td : total_degree_le E (dxdzDenA₀Full E) 3 := by
+  unfold dxdzDenA₀Full
+  have hCmul : total_degree_le E
+      ((MvPolynomial.C 3 : FourVarPoly E.q) * varA₀x E ^ 2) 2 :=
+    total_degree_le.mul (total_degree_le.C _) ((varA₀x_td E).pow 2)
+  have hCa : total_degree_le E (MvPolynomial.C E.curveA : FourVarPoly E.q) 2 :=
+    (total_degree_le.C _).mono (Nat.zero_le _)
+  have hsum : total_degree_le E _ 2 := total_degree_le.add hCmul hCa
+  have hfst : total_degree_le E _ 3 := total_degree_le.mul hsum (lamDenFull_td E)
+  have hC2 : total_degree_le E
+      ((MvPolynomial.C 2 : FourVarPoly E.q) * varA₀y E * lamNumFull E) 2 :=
+    total_degree_le.mul (total_degree_le.mul (total_degree_le.C _) (varA₀y_td E)) (lamNumFull_td E)
+  exact total_degree_le.sub hfst (hC2.mono (by omega))
+
+private theorem dxdzDenA₁Full_td : total_degree_le E (dxdzDenA₁Full E) 3 := by
+  unfold dxdzDenA₁Full
+  have hCmul : total_degree_le E
+      ((MvPolynomial.C 3 : FourVarPoly E.q) * varA₁x E ^ 2) 2 :=
+    total_degree_le.mul (total_degree_le.C _) ((varA₁x_td E).pow 2)
+  have hCa : total_degree_le E (MvPolynomial.C E.curveA : FourVarPoly E.q) 2 :=
+    (total_degree_le.C _).mono (Nat.zero_le _)
+  have hsum : total_degree_le E _ 2 := total_degree_le.add hCmul hCa
+  have hfst : total_degree_le E _ 3 := total_degree_le.mul hsum (lamDenFull_td E)
+  have hC2 : total_degree_le E
+      ((MvPolynomial.C 2 : FourVarPoly E.q) * varA₁y E * lamNumFull E) 2 :=
+    total_degree_le.mul (total_degree_le.mul (total_degree_le.C _) (varA₁y_td E)) (lamNumFull_td E)
+  exact total_degree_le.sub hfst (hC2.mono (by omega))
+
+private theorem dxdzDenA₂Full_td : total_degree_le E (dxdzDenA₂Full E) 6 := by
+  unfold dxdzDenA₂Full
+  have h1 : total_degree_le E
+      ((MvPolynomial.C 3 : FourVarPoly E.q) * x₂ScaledFull E ^ 2) 6 :=
+    total_degree_le.mul (total_degree_le.C _) ((x₂ScaledFull_td E).pow 2)
+  have h2 : total_degree_le E
+      ((MvPolynomial.C E.curveA : FourVarPoly E.q) * lamDenFull E ^ 4) 4 :=
+    total_degree_le.mul (total_degree_le.C _) ((lamDenFull_td E).pow 4)
+  have hfst : total_degree_le E _ 6 := total_degree_le.add h1 (h2.mono (by omega))
+  have hsnd : total_degree_le E
+      ((MvPolynomial.C 2 : FourVarPoly E.q) * lamNumFull E * y₂ScaledFull E) 5 :=
+    total_degree_le.mul (total_degree_le.mul (total_degree_le.C _) (lamNumFull_td E))
+      (y₂ScaledFull_td E)
+  exact total_degree_le.sub hfst (hsnd.mono (by omega))
+
+private theorem DAPartAtA₂ScaledFull_td (D : CoordRingElt E.q) :
+    total_degree_le E (DAPartAtA₂ScaledFull E D) (2 * D.degE) := by
+  unfold DAPartAtA₂ScaledFull
+  apply total_degree_le.sum
+  intro n hn
+  have hn' : n ≤ D.a.natDegree := by
+    simp [Finset.mem_range] at hn; omega
+  have ha := two_a_le_degE E D
+  -- bound: 0 + 3*n + 1*(D.degE - 2*n) = D.degE + n ≤ D.degE + D.a.natDegree ≤ 2*D.degE
+  exact (total_degree_le.mul
+    (total_degree_le.mul (total_degree_le.C _)
+      ((x₂ScaledFull_td E).pow n))
+    ((lamDenFull_td E).pow (D.degE - 2 * n))).mono
+    (by omega)
+
+private theorem DBPartAtA₂ScaledFull_td (D : CoordRingElt E.q) :
+    total_degree_le E (DBPartAtA₂ScaledFull E D) (2 * D.degE) := by
+  unfold DBPartAtA₂ScaledFull
+  apply total_degree_le.sum
+  intro n hn
+  have hn' : n ≤ D.b.natDegree := by
+    simp [Finset.mem_range] at hn; omega
+  have hb := two_b_plus_3_le_degE E D
+  -- bound: 0 + 3*n + 4 + 1*(D.degE-2*n-3) ≤ D.degE+n+1 ≤ D.degE+b.nd+1 ≤ 2*D.degE
+  exact (total_degree_le.mul
+    (total_degree_le.mul
+      (total_degree_le.mul (total_degree_le.C _)
+        ((x₂ScaledFull_td E).pow n))
+      (y₂ScaledFull_td E))
+    ((lamDenFull_td E).pow (D.degE - 2 * n - 3))).mono
+    (by omega)
+
+private theorem DAtA₂ScaledFull_td (D : CoordRingElt E.q) :
+    total_degree_le E (DAtA₂ScaledFull E D) (2 * D.degE) := by
+  unfold DAtA₂ScaledFull
+  exact total_degree_le.sub (DAPartAtA₂ScaledFull_td E D) (DBPartAtA₂ScaledFull_td E D)
+
+private theorem DDerivAPartAtA₂ScaledFull_td (D : CoordRingElt E.q) :
+    total_degree_le E (DDerivAPartAtA₂ScaledFull E D) (2 * D.degE) := by
+  unfold DDerivAPartAtA₂ScaledFull
+  apply total_degree_le.sum
+  intro n hn
+  have hn' : n ≤ (Polynomial.derivative D.a).natDegree := by
+    simp [Finset.mem_range] at hn; omega
+  have hda := Polynomial.natDegree_derivative_le D.a
+  have ha := two_a_le_degE E D
+  exact (total_degree_le.mul
+    (total_degree_le.mul (total_degree_le.C _)
+      ((x₂ScaledFull_td E).pow n))
+    ((lamDenFull_td E).pow (D.degE - 2 * n))).mono
+    (by omega)
+
+private theorem DDerivBPartAtA₂ScaledFull_td (D : CoordRingElt E.q) :
+    total_degree_le E (DDerivBPartAtA₂ScaledFull E D) (2 * D.degE) := by
+  unfold DDerivBPartAtA₂ScaledFull
+  apply total_degree_le.sum
+  intro n hn
+  have hn' : n ≤ (Polynomial.derivative D.b).natDegree := by
+    simp [Finset.mem_range] at hn; omega
+  have hdb := Polynomial.natDegree_derivative_le D.b
+  have hb := two_b_plus_3_le_degE E D
+  exact (total_degree_le.mul
+    (total_degree_le.mul
+      (total_degree_le.mul (total_degree_le.C _)
+        ((x₂ScaledFull_td E).pow n))
+      (y₂ScaledFull_td E))
+    ((lamDenFull_td E).pow (D.degE - 2 * n - 3))).mono
+    (by omega)
+
+private theorem DDerivAtA₂ScaledFull_td (D : CoordRingElt E.q) :
+    total_degree_le E (DDerivAtA₂ScaledFull E D) (2 * D.degE) := by
+  unfold DDerivAtA₂ScaledFull
+  exact total_degree_le.sub (DDerivAPartAtA₂ScaledFull_td E D) (DDerivBPartAtA₂ScaledFull_td E D)
+
+private theorem linesProductFull_td (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    total_degree_le E (linesProductFull E P k B) (2 * k + 2) := by
+  classical
+  unfold linesProductFull
+  have h1 := lineEvalNumAtFull_td E (P.1, -P.2)
+  have h2 : total_degree_le E (∏ j : Fin k, lineEvalNumAtFull E (B j))
+      (Finset.univ.card * 2) :=
+    total_degree_le.prod_const _ _ (fun j _ => lineEvalNumAtFull_td E (B j))
+  exact (total_degree_le.mul h1 h2).mono (by simp; omega)
+
+private theorem linesProductNoNegPFull_td
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    total_degree_le E (linesProductNoNegPFull E k B) (2 * k) := by
+  classical
+  unfold linesProductNoNegPFull
+  have h : total_degree_le E (∏ j : Fin k, lineEvalNumAtFull E (B j))
+      (Finset.univ.card * 2) :=
+    total_degree_le.prod_const _ _ (fun j _ => lineEvalNumAtFull_td E (B j))
+  exact h.mono (by simp; omega)
+
+private theorem linesProductSkipBjFull_td (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (j₀ : Fin k) :
+    total_degree_le E (linesProductSkipBjFull E P k B j₀) (2 * k) := by
+  classical
+  unfold linesProductSkipBjFull
+  have h1 := lineEvalNumAtFull_td E (P.1, -P.2)
+  have h2 : total_degree_le E
+      (∏ j ∈ (Finset.univ (α := Fin k)).erase j₀, lineEvalNumAtFull E (B j))
+      (((Finset.univ (α := Fin k)).erase j₀).card * 2) :=
+    total_degree_le.prod_const _ _ (fun j _ => lineEvalNumAtFull_td E (B j))
+  have hcard : ((Finset.univ (α := Fin k)).erase j₀).card = k - 1 := by
+    rw [Finset.card_erase_of_mem (Finset.mem_univ j₀)]; simp
+  have hk : k ≥ 1 := Fin.pos j₀
+  exact (total_degree_le.mul h1 h2).mono (by omega)
+
+private theorem DAllFull_td (D : CoordRingElt E.q) :
+    total_degree_le E (DAllFull E D) (4 * D.degE) := by
+  unfold DAllFull
+  exact (total_degree_le.mul (total_degree_le.mul (DAtA₀Full_td E D) (DAtA₁Full_td E D))
+    (DAtA₂ScaledFull_td E D)).mono (by omega)
+
+private theorem dxdzAllFull_td : total_degree_le E (dxdzAllFull E) 12 := by
+  unfold dxdzAllFull
+  exact (total_degree_le.mul (total_degree_le.mul (dxdzDenA₀Full_td E) (dxdzDenA₁Full_td E))
+    (dxdzDenA₂Full_td E)).mono (by omega)
+
+private theorem DBdydzAtA₀Full_td (D : CoordRingElt E.q) :
+    total_degree_le E (DBdydzAtA₀Full E D) D.degE := by
+  unfold DBdydzAtA₀Full
+  have hb : total_degree_le E (-liftPoly E D.b 0) D.b.natDegree :=
+    total_degree_le.neg (liftPoly_total_degree_le E D.b 0)
+  have hCmul : total_degree_le E
+      ((MvPolynomial.C 3 : FourVarPoly E.q) * varA₀x E ^ 2) 2 :=
+    total_degree_le.mul (total_degree_le.C _) ((varA₀x_td E).pow 2)
+  have hCa : total_degree_le E (MvPolynomial.C E.curveA : FourVarPoly E.q) 2 :=
+    (total_degree_le.C _).mono (Nat.zero_le _)
+  have hq : total_degree_le E _ 2 := total_degree_le.add hCmul hCa
+  exact (total_degree_le.mul hb hq).mono
+    (by have := two_b_plus_3_le_degE E D; omega)
+
+private theorem DBdydzAtA₁Full_td (D : CoordRingElt E.q) :
+    total_degree_le E (DBdydzAtA₁Full E D) D.degE := by
+  unfold DBdydzAtA₁Full
+  have hb : total_degree_le E (-liftPoly E D.b 2) D.b.natDegree :=
+    total_degree_le.neg (liftPoly_total_degree_le E D.b 2)
+  have hCmul : total_degree_le E
+      ((MvPolynomial.C 3 : FourVarPoly E.q) * varA₁x E ^ 2) 2 :=
+    total_degree_le.mul (total_degree_le.C _) ((varA₁x_td E).pow 2)
+  have hCa : total_degree_le E (MvPolynomial.C E.curveA : FourVarPoly E.q) 2 :=
+    (total_degree_le.C _).mono (Nat.zero_le _)
+  have hq : total_degree_le E _ 2 := total_degree_le.add hCmul hCa
+  exact (total_degree_le.mul hb hq).mono
+    (by have := two_b_plus_3_le_degE E D; omega)
+
+private theorem DbAtA₂TightFull_td (D : CoordRingElt E.q) :
+    total_degree_le E (DbAtA₂TightFull E D) (3 * D.b.natDegree) := by
+  unfold DbAtA₂TightFull
+  apply total_degree_le.sum
+  intro n hn
+  have hn' : n ≤ D.b.natDegree := by simp [Finset.mem_range] at hn; omega
+  exact (total_degree_le.mul
+    (total_degree_le.mul (total_degree_le.C _)
+      ((x₂ScaledFull_td E).pow n))
+    ((lamDenFull_td E).pow (2 * D.b.natDegree - 2 * n))).mono (by omega)
+
+private theorem dydzNumA₂Full_td : total_degree_le E (dydzNumA₂Full E) 6 := by
+  unfold dydzNumA₂Full
+  have h1 : total_degree_le E
+      ((MvPolynomial.C 3 : FourVarPoly E.q) * x₂ScaledFull E ^ 2) 6 :=
+    total_degree_le.mul (total_degree_le.C _) ((x₂ScaledFull_td E).pow 2)
+  have h2 : total_degree_le E
+      ((MvPolynomial.C E.curveA : FourVarPoly E.q) * lamDenFull E ^ 4) 4 :=
+    total_degree_le.mul (total_degree_le.C _) ((lamDenFull_td E).pow 4)
+  exact total_degree_le.add h1 (h2.mono (by omega))
+
+private theorem correctionA₂CoreFull_td (D : CoordRingElt E.q) :
+    total_degree_le E (correctionA₂CoreFull E D) (D.degE + D.b.natDegree + 3) := by
+  unfold correctionA₂CoreFull
+  have h1 : total_degree_le E (-DbAtA₂TightFull E D) (3 * D.b.natDegree) :=
+    total_degree_le.neg (DbAtA₂TightFull_td E D)
+  have h2 := dydzNumA₂Full_td E
+  have h3 := (lamDenFull_td E).pow (D.degE - 2 * D.b.natDegree - 3)
+  exact (total_degree_le.mul (total_degree_le.mul h1 h2) h3).mono
+    (by have := two_b_plus_3_le_degE E D; omega)
+
 /-! ### Total-degree bound on `clearedFullPoly`.
 
     Each of the 8 summands has total degree ≤ 4·D.degE + 2·k + 12.
-    The dominant contributions are:
-    — D-evaluation atoms (`DAtA₀Full`, `DAtA₁Full`): td ≤ D.degE each.
-    — Scaled D-at-A₂ (`DAtA₂ScaledFull`): td ≤ 2·D.degE.
-    — `dxdz` denominators: td ≤ 3 or 6.
-    — `linesProductFull`: td ≤ 2·(k+1).
-    — Multiplicative combination of ~7 factors per summand. -/
+    We combine the atom bounds via `total_degree_le.add`/`.mul`/`.mono`. -/
+
+private theorem lhsTerm0Full_td (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    total_degree_le E (lhsTerm0Full E D P k B) (4 * D.degE + 2 * k + 12) := by
+  unfold lhsTerm0Full
+  have h2y : total_degree_le E
+      ((MvPolynomial.C 2 : FourVarPoly E.q) * varA₀y E) 1 :=
+    total_degree_le.mul (total_degree_le.C _) (varA₀y_td E)
+  exact (total_degree_le.mul
+    (total_degree_le.mul
+      (total_degree_le.mul
+        (total_degree_le.mul
+          (total_degree_le.mul
+            (total_degree_le.mul (DDerivAtA₀Full_td E D) h2y)
+            (DAtA₁Full_td E D))
+          (DAtA₂ScaledFull_td E D))
+        (dxdzDenA₁Full_td E))
+      (dxdzDenA₂Full_td E))
+    (linesProductFull_td E P B)).mono (by omega)
+
+private theorem lhsTerm1Full_td (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    total_degree_le E (lhsTerm1Full E D P k B) (4 * D.degE + 2 * k + 12) := by
+  unfold lhsTerm1Full
+  have h2y : total_degree_le E
+      ((MvPolynomial.C 2 : FourVarPoly E.q) * varA₁y E) 1 :=
+    total_degree_le.mul (total_degree_le.C _) (varA₁y_td E)
+  exact (total_degree_le.mul
+    (total_degree_le.mul
+      (total_degree_le.mul
+        (total_degree_le.mul
+          (total_degree_le.mul
+            (total_degree_le.mul (DDerivAtA₁Full_td E D) h2y)
+            (DAtA₀Full_td E D))
+          (DAtA₂ScaledFull_td E D))
+        (dxdzDenA₀Full_td E))
+      (dxdzDenA₂Full_td E))
+    (linesProductFull_td E P B)).mono (by omega)
+
+private theorem lhsTerm2Full_td (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    total_degree_le E (lhsTerm2Full E D P k B) (4 * D.degE + 2 * k + 12) := by
+  unfold lhsTerm2Full
+  have h2y : total_degree_le E
+      ((MvPolynomial.C 2 : FourVarPoly E.q) * y₂ScaledFull E) 4 :=
+    total_degree_le.mul (total_degree_le.C _) (y₂ScaledFull_td E)
+  exact (total_degree_le.mul
+    (total_degree_le.mul
+      (total_degree_le.mul
+        (total_degree_le.mul
+          (total_degree_le.mul
+            (total_degree_le.mul (DDerivAtA₂ScaledFull_td E D) h2y)
+            (DAtA₀Full_td E D))
+          (DAtA₁Full_td E D))
+        (dxdzDenA₀Full_td E))
+      (dxdzDenA₁Full_td E))
+    (linesProductFull_td E P B)).mono (by omega)
+
+private theorem correctionTerm0Full_td (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    total_degree_le E (correctionTerm0Full E D P k B) (4 * D.degE + 2 * k + 12) := by
+  unfold correctionTerm0Full
+  exact (total_degree_le.mul
+    (total_degree_le.mul
+      (total_degree_le.mul
+        (total_degree_le.mul
+          (total_degree_le.mul
+            (DBdydzAtA₀Full_td E D)
+            (DAtA₁Full_td E D))
+          (DAtA₂ScaledFull_td E D))
+        (dxdzDenA₁Full_td E))
+      (dxdzDenA₂Full_td E))
+    (linesProductFull_td E P B)).mono (by omega)
+
+private theorem correctionTerm1Full_td (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    total_degree_le E (correctionTerm1Full E D P k B) (4 * D.degE + 2 * k + 12) := by
+  unfold correctionTerm1Full
+  exact (total_degree_le.mul
+    (total_degree_le.mul
+      (total_degree_le.mul
+        (total_degree_le.mul
+          (total_degree_le.mul
+            (DBdydzAtA₁Full_td E D)
+            (DAtA₀Full_td E D))
+          (DAtA₂ScaledFull_td E D))
+        (dxdzDenA₀Full_td E))
+      (dxdzDenA₂Full_td E))
+    (linesProductFull_td E P B)).mono (by omega)
+
+private theorem correctionTerm2Full_td (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    total_degree_le E (correctionTerm2Full E D P k B) (4 * D.degE + 2 * k + 12) := by
+  unfold correctionTerm2Full
+  exact (total_degree_le.mul
+    (total_degree_le.mul
+      (total_degree_le.mul
+        (total_degree_le.mul
+          (total_degree_le.mul
+            (total_degree_le.mul
+              (correctionA₂CoreFull_td E D)
+              (DAtA₀Full_td E D))
+            (DAtA₁Full_td E D))
+          (dxdzDenA₀Full_td E))
+        (dxdzDenA₁Full_td E))
+      (linesProductFull_td E P B))
+    ((lamDenFull_td E).pow 2)).mono
+    (by have := two_b_plus_3_le_degE E D; omega)
+
+private theorem rhsTermNegPFull_td (D : CoordRingElt E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    total_degree_le E (rhsTermNegPFull E D k B) (4 * D.degE + 2 * k + 12) := by
+  unfold rhsTermNegPFull
+  exact (total_degree_le.mul
+    (total_degree_le.mul (DAllFull_td E D) (dxdzAllFull_td E))
+    (linesProductNoNegPFull_td E B)).mono (by omega)
+
+private theorem rhsSumFull_td (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q) :
+    total_degree_le E (rhsSumFull E D P k B m) (4 * D.degE + 2 * k + 12) := by
+  unfold rhsSumFull
+  apply total_degree_le.sum
+  intro j _
+  exact (total_degree_le.mul
+    (total_degree_le.mul
+      (total_degree_le.mul (total_degree_le.C (m j))
+        (DAllFull_td E D))
+      (dxdzAllFull_td E))
+    (linesProductSkipBjFull_td E P B j)).mono (by omega)
 
 theorem clearedFullPoly_total_degree_le
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q) :
     total_degree_le E (clearedFullPoly E D P k B m)
       (4 * D.degE + 2 * k + 12) := by
-  sorry
+  unfold clearedFullPoly
+  apply total_degree_le.add
+  · apply total_degree_le.add
+    · apply total_degree_le.add
+      · apply total_degree_le.add
+        · apply total_degree_le.add
+          · apply total_degree_le.add
+            · apply total_degree_le.add
+              · exact lhsTerm0Full_td E D P B
+              · exact lhsTerm1Full_td E D P B
+            · exact lhsTerm2Full_td E D P B
+          · exact correctionTerm0Full_td E D P B
+        · exact correctionTerm1Full_td E D P B
+      · exact correctionTerm2Full_td E D P B
+    · exact rhsTermNegPFull_td E D B
+  · exact rhsSumFull_td E D P B m
 
 /-! ### Hasse-Weil derived bound: q ≤ 2·|E| for |E| ≥ 8. -/
 
