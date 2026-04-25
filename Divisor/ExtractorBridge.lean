@@ -3609,7 +3609,34 @@ theorem ma_extractable
         have hELarge_dkl :
             E.points.card * E.points.card - 2 * E.points.card
               > 18 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) * E.q := by
-          sorry
+          -- Derive from hLargeQ via Hasse-Weil.
+          -- Let N = E.points.card, q = E.q, DM = zerosCard + (1 + baseImageCount).
+          -- From hLargeQ: N > 31*(msg.toD.degE + stmt.k + 2) + 78.
+          -- From hSum_le: DM ≤ d + stmt.k + 1.  And d = stmt.degBound ≥ msg.toD.degE.
+          -- From Hasse: ((N+1 : ℤ) - q - 1)^2 ≤ 4*q, i.e., ((N : ℤ) - q)^2 ≤ 4*q.
+          set N := E.points.card
+          set DM := zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)
+          -- Hasse bound in usable form
+          have hHasse : ((N : ℤ) - E.q)^2 ≤ 4 * E.q := by
+            have h := hasse_weil E
+            rw [E.hNumPoints] at h
+            push_cast at h ⊢
+            linarith
+          -- DM + 1 ≤ msg.toD.degE + stmt.k + 2
+          have hDM1 : DM + 1 ≤ msg.toD.degE + stmt.k + 2 := by omega
+          -- Step 1: From Hasse + N ≥ 140, derive 5*q ≤ 7*N + 10
+          have hQ : 5 * (E.q : ℤ) ≤ 7 * N + 10 := by
+            by_contra hc; push_neg at hc
+            nlinarith [sq_nonneg ((N : ℤ) - E.q),
+                       sq_nonneg (5 * (E.q : ℤ) - 7 * N - 11)]
+          -- Step 2: N*N > 2*N + 18*DM*q by nlinarith
+          suffices h : N * N > 2 * N + 18 * DM * E.q by omega
+          suffices h : (N : ℤ)^2 > 2 * N + 18 * DM * E.q by
+            have : (N : ℤ)^2 = ↑(N * N) := by push_cast; ring
+            rw [this] at h; exact_mod_cast h
+          have h31 : 31 * (DM : ℤ) < (N : ℤ) - 109 := by omega
+          nlinarith [sq_nonneg (N : ℤ),
+                     mul_le_mul_of_nonneg_left hQ (show (0 : ℤ) ≤ 18 * ↑DM by omega)]
         -- Step A: get polyGFull vanishing on all E × E from polyG vanishing
         -- on non-vertical pairs, via Lang-Weil contrapositive.
         have hPolyGFullVanishing :
@@ -3630,7 +3657,7 @@ theorem ma_extractable
             (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
             (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
             hQinj hDistinctR_inj hBetaNz hQonE hRonE
-            hPolyGFullVanishing hELarge
+            hPolyGFullVanishing hELarge hELarge_dkl
         -- Step C: from σ-matching, obtain extractorSucceeds and the
         -- group-sum relation, using existing S5 + D3 + D4 + D5 infrastructure.
         obtain ⟨hBound, hCanon, hNonCanon⟩ :=

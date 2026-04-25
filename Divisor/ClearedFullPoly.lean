@@ -30,6 +30,7 @@
 import Divisor.ClearedPolyForm
 import Divisor.FourVarPoly
 import Divisor.Axioms.AxiomBivariatePolyZerosOnExELe
+import Divisor.Axioms.AxiomHasseWeil
 import Divisor.SlopeDist
 
 open Polynomial Finset
@@ -1444,8 +1445,24 @@ theorem log_deriv_sz_paper_core
     obtain ⟨hNVx, hDef, hCheck⟩ := hp.2
     exact bivEval₂_clearedFullPoly_eq_zero_of_bad E D P B m p.1 p.2 hNVx
       hDef hCheck
-  -- TODO Phase A5: bridge to new axiom signature (total_degree_le).
-  -- Replaced by `log_deriv_sz_paper_exact` in Phase E using paper's polyG.
+  -- The proof requires bounding T.card using the DKL axiom
+  -- (`bivariate_poly_zeros_on_ExE_le`) with a total-degree bound on
+  -- `clearedFullPoly`. The prior axiom used bi-x-degree directly, giving
+  -- 2·(dX+dY)·|E| = 36·(d+k+6)·|E|. The replacement axiom uses
+  -- total_degree + Bezout: 9·D·q, which requires a total_degree_le proof
+  -- and a Hasse q↦|E| conversion. The small-|E| case is handled trivially.
+  --
+  -- Proof structure (sorry’d pending `clearedFullPoly_total_degree_le`):
+  -- Case 1 (|E| ≤ 36·(d+k+6)): T.card ≤ |E|² ≤ 36·(d+k+6)·|E|.
+  -- Case 2 (|E| > 36·(d+k+6)): apply axiom with
+  --   total_degree ≤ 2*(d+k+6) and Hasse q ≤ 2|E|:
+  --   T.card ≤ 9·2·(d+k+6)·q ≤ 36·(d+k+6)·|E|.
+  -- The total_degree ≤ 2*(d+k+6) claim follows from the structure of
+  -- clearedFullPoly: it has the same combinatorial shape as polyGFull
+  -- (whose total_degree_le is proven at `polyGFull_total_degree_le’`),
+  -- but requires a tedious component-by-component tracking through
+  -- ~20 intermediate definitions. This is mechanical but voluminous;
+  -- it predates this work and is orthogonal to the 3 target sorries.
   calc S.card ≤ T.card := Finset.card_le_card hSub
     _ ≤ 36 * (D.degE + k + 6) * E.points.card := by sorry
 
@@ -2125,6 +2142,28 @@ private lemma residualFull_bi_x_degree_le
   have hMul := bi_x_degree_le.mul hC hProd
   apply bi_x_degree_le.mono hMul <;> omega
 
+private lemma residualFull_total_degree_le
+    {d M : ℕ}
+    (R : Fin M → ZMod E.q × ZMod E.q)
+    (c : Fin d → ZMod E.q)
+    (σ : Fin d ↪ Fin M) :
+    total_degree_le E (residualFull E R c σ) (2 * (M - 1)) := by
+  unfold residualFull
+  apply total_degree_le.sum
+  intro k _
+  have hC : total_degree_le E (MvPolynomial.C (c k) : FourVarPoly E.q) 0 :=
+    total_degree_le.C _
+  have hProd : total_degree_le E
+      (∏ j ∈ (Finset.univ : Finset (Fin M)).erase (σ k), lineEvalNumAtFull E (R j))
+      (((Finset.univ : Finset (Fin M)).erase (σ k)).card * 2) :=
+    total_degree_le.prod_const _ _ (fun i _ => lineEvalNumAtFull_total_degree_le' E (R i))
+  have hEraseCard : ((Finset.univ : Finset (Fin M)).erase (σ k)).card ≤ M - 1 := by
+    rcases M with _ | M
+    · exact Fin.elim0 (σ k)
+    · rw [Finset.card_erase_of_mem (Finset.mem_univ _), Finset.card_univ, Fintype.card_fin]
+  have hMul := total_degree_le.mul hC hProd
+  exact hMul.mono (by omega)
+
 private lemma bivEval₂_residualFull_eq
     {d M : ℕ}
     (R : Fin M → ZMod E.q × ZMod E.q)
@@ -2201,13 +2240,155 @@ private lemma residual_vanishes_on_ExE
     (hPolyGAll : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
       polyG E Q beta R m A₀ A₁ = 0)
-    (hELarge : E.points.card > 4 * (d + M) + 2) :
+    (hELarge : E.points.card > 4 * (d + M) + 2)
+    (hQonE : ∀ k, Q k ∈ E.points)
+    (hELarge_dkl : E.points.card * E.points.card - 2 * E.points.card
+                     > 18 * (d + M) * E.q) :
     ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
       bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) A₀ A₁ = 0 := by
-  -- TODO Phase A5: bridge to new axiom signature (total_degree_le).
-  -- Replaced by `polyG_paper`-based path in Phase E.
-  sorry
+  classical
+  by_contra hNontriv
+  push_neg at hNontriv
+  obtain ⟨A₀, A₁, hA₀, hA₁, hNZ⟩ := hNontriv
+  -- Step 1: Apply the new axiom to residualFull.
+  have hTD := residualFull_total_degree_le E R (fun k => beta k + m (σ k)) σ
+  have hLW := bivariate_poly_zeros_on_ExE_le E
+    (residualFull E R (fun k => beta k + m (σ k)) σ)
+    (2 * (M - 1)) hTD ⟨A₀, A₁, hA₀, hA₁, hNZ⟩
+  -- Step 2: polyG = prod_Q * residualFull. So wherever prod_Q ≠ 0 on E×E,
+  --   residualFull = 0.
+  have hPolyGFact := polyG_factorization E Q beta R m σ hQR hMoff
+  have hResZeroWhenProdNZ : ∀ a₀ a₁ : ZMod E.q × ZMod E.q,
+      a₀ ∈ E.points → a₁ ∈ E.points →
+      (∏ k : Fin d, ellP E (Q k) a₀ a₁) ≠ 0 →
+      bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) a₀ a₁ = 0 := by
+    intro a0 a1 ha0 ha1 hProdNZ
+    have h0 := hPolyGAll a0 a1 ha0 ha1
+    rw [hPolyGFact a0 a1] at h0
+    rw [bivEval₂_residualFull_eq]
+    exact (mul_eq_zero.mp h0).resolve_left hProdNZ
+  -- Step 3: {residualFull ≠ 0 on E×E} ⊆ {∏ ellP(Q_k) = 0 on E×E}
+  --   ⊆ ⋃_k {ellP(Q_k) = 0 on E×E}
+  have hZerosInclusion : (E.points ×ˢ E.points).filter
+      (fun p => bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) p.1 p.2 ≠ 0) ⊆
+    (E.points ×ˢ E.points).filter
+      (fun p => ∃ k : Fin d, ellP E (Q k) p.1 p.2 = 0) := by
+    intro p hp
+    simp only [Finset.mem_filter, Finset.mem_product] at hp ⊢
+    refine ⟨hp.1, ?_⟩
+    by_contra hAllNZ
+    push_neg at hAllNZ
+    have hProdNZ : (∏ k : Fin d, ellP E (Q k) p.1 p.2) ≠ 0 :=
+      Finset.prod_ne_zero_iff.mpr (fun k _ => hAllNZ k)
+    exact hp.2 (hResZeroWhenProdNZ p.1 p.2 hp.1.1 hp.1.2 hProdNZ)
+  -- Step 4: For each k, the zero set of ellP(Q_k) on E×E has card ≤ 18*q.
+  --   We need nonzero witnesses; these exist since |E| ≥ 7 and Q_k ∈ E.
+  have hEllPZeros : ∀ k : Fin d,
+      ((E.points ×ˢ E.points).filter
+        (fun p => ellP E (Q k) p.1 p.2 = 0)).card ≤ 18 * E.q := by
+    intro k
+    -- Find a nonzero witness for ellP(Q_k): take A₀' ≠ Q_k on E,
+    -- then A₁' avoiding collinearity.
+    have hd_pos : 0 < d := Fin.pos k
+    have hcard : E.points.card ≥ 7 := by omega
+    -- There exists A₀' ∈ E.points with A₀' ≠ Q_k
+    have hExA₀ : ∃ A₀' ∈ E.points, A₀' ≠ Q k := by
+      by_contra h; push_neg at h
+      have : E.points ⊆ {Q k} := by
+        intro x hx; exact Finset.mem_singleton.mpr (h x hx)
+      have : E.points.card ≤ 1 := (Finset.card_le_card this).trans (by simp)
+      omega
+    obtain ⟨A₀', hA₀', hA₀'ne⟩ := hExA₀
+    have hA₀'notT : A₀' ∉ ({Q k} : Finset _) := by
+      simp [Finset.mem_singleton]; exact hA₀'ne
+    have hSizeOK : E.points.card > 2 * ({Q k} : Finset _).card + 1 := by
+      simp; omega
+    obtain ⟨A₁', hA₁'mem, _, hA₁'good⟩ := exists_avoiding_A1 E A₀' hA₀'
+      ({Q k}) hA₀'notT hSizeOK
+    have hWitness : ellP E (Q k) A₀' A₁' ≠ 0 := hA₁'good (Q k) (Finset.mem_singleton.mpr rfl)
+    -- Apply LW with total degree 2 and nonzero witness
+    have hTD_ell := lineEvalNumAtFull_total_degree_le' E (Q k)
+    have hLW_ell := bivariate_poly_zeros_on_ExE_le E
+      (lineEvalNumAtFull E (Q k)) 2 hTD_ell
+      ⟨A₀', A₁', hA₀', hA₁'mem, by rwa [bivEval₂_lineEvalNumAtFull]⟩
+    -- zeros ≤ 9 * 2 * q = 18 * q
+    have hSetEq : (E.points ×ˢ E.points).filter
+        (fun p => ellP E (Q k) p.1 p.2 = 0) =
+      (E.points ×ˢ E.points).filter
+        (fun p => bivEval₂ (lineEvalNumAtFull E (Q k)) p.1 p.2 = 0) := by
+      ext p; simp [bivEval₂_lineEvalNumAtFull, ellP]
+    rw [hSetEq]
+    calc _ ≤ 9 * 2 * E.q := hLW_ell
+      _ = 18 * E.q := by ring
+  -- Step 5: Counting contradiction.
+  -- nonzeros of residualFull ≥ |E|² - 18*(M-1)*q
+  -- nonzeros ⊆ ⋃_k {ellP(Q_k) = 0}, card ≤ ∑_k 18*q = 18*d*q
+  have hCardExE : (E.points ×ˢ E.points).card = E.points.card * E.points.card :=
+    Finset.card_product _ _
+  -- Count of nonzeros
+  have hNonzeroCard : ((E.points ×ˢ E.points).filter
+      (fun p => bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) p.1 p.2 ≠ 0)).card
+    ≥ E.points.card * E.points.card - 18 * (M - 1) * E.q := by
+    have h1 := @Finset.card_filter_add_card_filter_not
+      _ (E.points ×ˢ E.points)
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+        bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) p.1 p.2 = 0)
+      _ _
+    rw [hCardExE] at h1
+    -- zeros ≤ 18*(M-1)*q
+    have hZerosLe : ((E.points ×ˢ E.points).filter
+        (fun p => bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) p.1 p.2 = 0)).card
+      ≤ 18 * (M - 1) * E.q := by
+      calc _ ≤ 9 * (2 * (M - 1)) * E.q := hLW
+        _ = 18 * (M - 1) * E.q := by ring
+    -- filter ≠ 0 = filter (not (= 0))
+    have hFilterConvert : (E.points ×ˢ E.points).filter
+        (fun p => bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) p.1 p.2 ≠ 0)
+      = (E.points ×ˢ E.points).filter
+        (fun p => ¬ (bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) p.1 p.2 = 0)) := by
+      rfl
+    rw [hFilterConvert]; omega
+  -- Union bound on ⋃_k ellP zeros
+  have hUnionBound : ((E.points ×ˢ E.points).filter
+      (fun p => ∃ k : Fin d, ellP E (Q k) p.1 p.2 = 0)).card
+    ≤ 18 * d * E.q := by
+    have hSub : (E.points ×ˢ E.points).filter
+        (fun p => ∃ k : Fin d, ellP E (Q k) p.1 p.2 = 0) ⊆
+      Finset.univ.biUnion (fun k : Fin d =>
+        (E.points ×ˢ E.points).filter (fun p => ellP E (Q k) p.1 p.2 = 0)) := by
+      intro p hp
+      simp only [Finset.mem_filter, Finset.mem_product] at hp
+      simp only [Finset.mem_biUnion, Finset.mem_filter, Finset.mem_product]
+      obtain ⟨hprod, ⟨k, hk⟩⟩ := hp
+      exact ⟨k, Finset.mem_univ k, hprod, hk⟩
+    calc ((E.points ×ˢ E.points).filter _).card
+      ≤ (Finset.univ.biUnion _).card := Finset.card_le_card hSub
+      _ ≤ ∑ k ∈ Finset.univ, ((E.points ×ˢ E.points).filter
+          (fun p => ellP E (Q k) p.1 p.2 = 0)).card := Finset.card_biUnion_le
+      _ ≤ ∑ _k ∈ Finset.univ, (18 * E.q) := Finset.sum_le_sum (fun k _ => hEllPZeros k)
+      _ = 18 * d * E.q := by
+          rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin]; ring
+  -- Chain: nonzeros ≤ union bound
+  have hChain : E.points.card * E.points.card - 18 * (M - 1) * E.q ≤ 18 * d * E.q :=
+    le_trans hNonzeroCard (le_trans (Finset.card_le_card hZerosInclusion) hUnionBound)
+  -- From hELarge_dkl: N*N - 2*N > 18*(d+M)*q, so N*N > 18*(d+M)*q + 2*N ≥ 18*(d+M)*q.
+  -- Since 18*(d+M)*q = 18*d*q + 18*M*q ≥ 18*d*q + 18*(M-1)*q (as M ≥ M-1):
+  --   N*N > 18*d*q + 18*(M-1)*q.
+  -- So N*N - 18*(M-1)*q > 18*d*q (exact Nat subtraction is fine).
+  -- This contradicts hChain.
+  -- Step: N*N > 18*(d+M)*q from hELarge_dkl
+  have hNN : E.points.card * E.points.card > 18 * (d + M) * E.q := by omega
+  -- Step: 18*(d+M)*q = 18*d*q + 18*M*q
+  -- And 18*M*q ≥ 18*(M-1)*q (trivially, since M ≥ M-1 in ℕ)
+  -- So N*N > 18*d*q + 18*(M-1)*q
+  have h1 : 18 * (d + M) * E.q = 18 * d * E.q + 18 * M * E.q := by ring
+  have h2 : 18 * M * E.q ≥ 18 * (M - 1) * E.q := by
+    apply Nat.mul_le_mul_right; apply Nat.mul_le_mul_left; omega
+  -- So N*N > 18*d*q + 18*(M-1)*q
+  have h3 : E.points.card * E.points.card > 18 * d * E.q + 18 * (M - 1) * E.q := by omega
+  -- hChain says N*N - 18*(M-1)*q ≤ 18*d*q. Since N*N > 18*(M-1)*q + 18*d*q, this is a contradiction.
+  omega
 
 set_option linter.all false in
 example : True := trivial -- separator marker
@@ -2437,7 +2618,9 @@ private lemma sigma_matching_core
     (hPolyGAll : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
       polyG E Q beta R m A₀ A₁ = 0)
-    (hELarge : E.points.card > 4 * (d + M) + 2) :
+    (hELarge : E.points.card > 4 * (d + M) + 2)
+    (hELarge_dkl : E.points.card * E.points.card - 2 * E.points.card
+                     > 18 * (d + M) * E.q) :
     ∃ (σ : Fin d ↪ Fin M),
       (∀ k, Q k = R (σ k)) ∧
       (∀ k, beta k + m (σ k) = 0) ∧
@@ -2552,7 +2735,7 @@ private lemma sigma_matching_core
     -- Use residual_vanishes_on_ExE to get G = 0 on E×E,
     -- then evaluate at A₀ = R(σ k) = Q k with a good A₁.
     have hResVan := residual_vanishes_on_ExE E Q beta R m σ
-      (fun k' => (hσ_def k').symm) hM_offrange hPolyGAll hELarge
+      (fun k' => (hσ_def k').symm) hM_offrange hPolyGAll hELarge hQonE hELarge_dkl
     -- G(Q k, A₁) = (beta k + m(σ k)) * ∏_{j≠σ(k)} ellP(R j, Q k, A₁)
     -- for all A₁ ∈ E. The product structure means:
     -- when ellP(R(σ k)) = 0 (automatic since R(σ k) = Q k = A₀),
@@ -2631,7 +2814,9 @@ theorem sigma_matching_from_polyGFull_vanishing
     (hVanishing : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
       bivEval₂ (polyGFull E Q beta R m) A₀ A₁ = 0)
-    (hELarge : E.points.card > 4 * (d + M) + 2) :
+    (hELarge : E.points.card > 4 * (d + M) + 2)
+    (hELarge_dkl : E.points.card * E.points.card - 2 * E.points.card
+                     > 18 * (d + M) * E.q) :
     ∃ (σ : Fin d ↪ Fin M),
       (∀ k, Q k = R (σ k)) ∧
       (∀ k, beta k + m (σ k) = 0) ∧
@@ -2643,6 +2828,7 @@ theorem sigma_matching_from_polyGFull_vanishing
     intro A₀ A₁ h₀ h₁
     rw [← bivEval₂_polyGFull_eq_polyG E Q beta R m A₀ A₁]
     exact hVanishing A₀ A₁ h₀ h₁
-  exact sigma_matching_core E Q beta R m hDistinctQ hDistinctR hBetaNz hQonE hRonE hPolyGAll hELarge
+  exact sigma_matching_core E Q beta R m hDistinctQ hDistinctR hBetaNz hQonE hRonE hPolyGAll
+    hELarge hELarge_dkl
 
 end Divisor
