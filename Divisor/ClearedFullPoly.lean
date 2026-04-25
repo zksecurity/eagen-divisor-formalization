@@ -1900,10 +1900,88 @@ private lemma polyG_at_self_R
 private lemma exists_avoiding_A1
     (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points)
     (T : Finset (ZMod E.q × ZMod E.q))
+    (hPnotT : P ∉ T)
     (hSize : E.points.card > 2 * T.card + 1) :
     ∃ A₁ ∈ E.points, A₁ ≠ P ∧
       ∀ P' ∈ T, ellP E P' P A₁ ≠ 0 := by
-  sorry
+  classical
+  -- For each P' ∈ T (with P' ≠ P since P ∉ T), the set of A₁ ∈ E.points
+  -- where ellP E P' P A₁ = 0 has card ≤ 3 by Bezout (linear_form_zeros_le_three).
+  -- P is always one of those zeros, so at most 2 other bad A₁ per P'.
+  -- Define bad = {P} ∪ ⋃_{P' ∈ T} {A₁ ∈ E.points | A₁ ≠ P ∧ ellP = 0}
+  -- |bad| ≤ 1 + 2|T| = 2|T| + 1 < |E|.
+  set badPerP' := fun (P' : ZMod E.q × ZMod E.q) =>
+    (E.points.filter (fun A₁ => ellP E P' P A₁ = 0)).erase P
+  -- Each badPerP' has card ≤ 2 (when P' ≠ P)
+  have hBadCard : ∀ P' ∈ T, (badPerP' P').card ≤ 2 := by
+    intro P' hP'T
+    have hP'neP : P' ≠ P := fun h => hPnotT (h ▸ hP'T)
+    -- ellP E P' P A₁ = (P'.2 - P.2)*A₁.1 + (-(P'.1 - P.1))*A₁.2 +
+    --   ((P'.1 - P.1)*P.2 - (P'.2 - P.2)*P.1)
+    -- The linear form has coefficients a = P'.2 - P.2, b = -(P'.1 - P.1)
+    -- At least one is nonzero since P' ≠ P.
+    have hab : (P'.2 - P.2) ≠ 0 ∨ (-(P'.1 - P.1)) ≠ 0 := by
+      by_contra h
+      push_neg at h
+      have h1 : P'.2 = P.2 := by linear_combination h.1
+      have h2 : P'.1 = P.1 := by linear_combination -h.2
+      exact hP'neP (Prod.ext h2 h1)
+    have hFilterSub : E.points.filter (fun A₁ => ellP E P' P A₁ = 0) ⊆
+        E.points.filter (fun A₁ =>
+          (P'.2 - P.2) * A₁.1 + (-(P'.1 - P.1)) * A₁.2 +
+          ((P'.1 - P.1) * P.2 - (P'.2 - P.2) * P.1) = 0) := by
+      intro A₁ hA₁
+      simp only [Finset.mem_filter] at hA₁ ⊢
+      refine ⟨hA₁.1, ?_⟩
+      simp only [ellP] at hA₁
+      linear_combination hA₁.2
+    have hCard3 : (E.points.filter (fun A₁ =>
+        ellP E P' P A₁ = 0)).card ≤ 3 := by
+      calc (E.points.filter (fun A₁ => ellP E P' P A₁ = 0)).card
+          ≤ (E.points.filter (fun A₁ =>
+              (P'.2 - P.2) * A₁.1 + (-(P'.1 - P.1)) * A₁.2 +
+              ((P'.1 - P.1) * P.2 - (P'.2 - P.2) * P.1) = 0)).card :=
+            Finset.card_le_card hFilterSub
+        _ ≤ 3 := linear_form_zeros_le_three E _ _ _ (by tauto)
+    calc (badPerP' P').card
+        = (E.points.filter (fun A₁ => ellP E P' P A₁ = 0)).card - 1 := by
+          exact Finset.card_erase_of_mem (Finset.mem_filter.mpr ⟨hP, by simp [ellP]⟩)
+      _ ≤ 2 := by omega
+  -- bad = {P} ∪ ⋃_{P' ∈ T} badPerP'
+  set bad := ({P} : Finset _) ∪ T.biUnion badPerP'
+  have hBadSub : bad ⊆ E.points := by
+    intro x hx
+    simp only [bad, Finset.mem_union, Finset.mem_singleton, Finset.mem_biUnion] at hx
+    rcases hx with rfl | ⟨P', _, hx⟩
+    · exact hP
+    · exact (Finset.mem_filter.mp (Finset.mem_of_mem_erase hx)).1
+  have hBadCard_total : bad.card ≤ 2 * T.card + 1 := by
+    calc bad.card ≤ ({P} : Finset _).card + (T.biUnion badPerP').card :=
+          Finset.card_union_le _ _
+      _ ≤ 1 + ∑ P' ∈ T, (badPerP' P').card := by
+          simp only [Finset.card_singleton]
+          linarith [Finset.card_biUnion_le (s := T) (t := badPerP')]
+      _ ≤ 1 + ∑ _ ∈ T, 2 :=
+          Nat.add_le_add_left (Finset.sum_le_sum hBadCard) _
+      _ = 2 * T.card + 1 := by simp [Finset.sum_const]; ring
+  -- E.points \ bad is nonempty
+  have hGoodNonempty : (E.points \ bad).Nonempty := by
+    rw [Finset.sdiff_nonempty]
+    intro hSub
+    have := Finset.card_le_card hSub
+    omega
+  obtain ⟨A₁, hA₁⟩ := hGoodNonempty.exists_mem
+  rw [Finset.mem_sdiff] at hA₁
+  refine ⟨A₁, hA₁.1, ?_, ?_⟩
+  · intro heq
+    exact hA₁.2 (Finset.mem_union_left _ (Finset.mem_singleton.mpr heq))
+  · intro P' hP'T hEllP
+    apply hA₁.2
+    apply Finset.mem_union_right
+    apply Finset.mem_biUnion.mpr
+    exact ⟨P', hP'T, Finset.mem_erase.mpr
+      ⟨fun heq => hA₁.2 (Finset.mem_union_left _ (Finset.mem_singleton.mpr heq)),
+       Finset.mem_filter.mpr ⟨hA₁.1, hEllP⟩⟩⟩
 
 /-- The 4-variate lift of the "residual" polynomial
     `G = ∑_k c_k · ∏_{j≠σ(k)} lineEvalNumAtFull(R_j)`,
@@ -1924,7 +2002,22 @@ private lemma residualFull_bi_x_degree_le
     (c : Fin d → ZMod E.q)
     (σ : Fin d ↪ Fin M) :
     bi_x_degree_le E (residualFull E R c σ) (M - 1) (M - 1) := by
-  sorry
+  unfold residualFull
+  apply bi_x_degree_le.sum
+  intro k _
+  have hC : bi_x_degree_le E (MvPolynomial.C (c k) : FourVarPoly E.q) 0 0 :=
+    bi_x_degree_le.C _
+  have hProd : bi_x_degree_le E
+      (∏ j ∈ (Finset.univ : Finset (Fin M)).erase (σ k), lineEvalNumAtFull E (R j))
+      ((Finset.univ : Finset (Fin M)).erase (σ k)).card
+      ((Finset.univ : Finset (Fin M)).erase (σ k)).card :=
+    bi_x_degree_le_prod_finset E _ _ (fun i _ => lineEvalNumAtFull_bi_x_degree_le E (R i))
+  have hEraseCard : ((Finset.univ : Finset (Fin M)).erase (σ k)).card ≤ M - 1 := by
+    rcases M with _ | M
+    · exact Fin.elim0 (σ k)
+    · rw [Finset.card_erase_of_mem (Finset.mem_univ _), Finset.card_univ, Fintype.card_fin]
+  have hMul := bi_x_degree_le.mul hC hProd
+  apply bi_x_degree_le.mono hMul <;> omega
 
 private lemma bivEval₂_residualFull_eq
     {d M : ℕ}
@@ -1938,6 +2031,54 @@ private lemma bivEval₂_residualFull_eq
         ellP E (R j) A₀ A₁ := by
   simp only [residualFull, bivEval₂_sum, bivEval₂_mul,
     bivEval₂_prod, bivEval₂_C, bivEval₂_lineEvalNumAtFull, ellP]
+
+/-- Algebraic identity: `polyG = (∏_k ellP(Q_k)) · residualFull` under σ-matching. -/
+private lemma polyG_factorization
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (σ : Fin d ↪ Fin M)
+    (hQR : ∀ k, Q k = R (σ k))
+    (hMoff : ∀ j, j ∉ Set.range σ → m j = 0)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    polyG E Q beta R m A₀ A₁ =
+      (∏ k : Fin d, ellP E (Q k) A₀ A₁) *
+      (∑ k : Fin d, (beta k + m (σ k)) *
+        ∏ j ∈ (Finset.univ : Finset (Fin M)).erase (σ k), ellP E (R j) A₀ A₁) := by
+  classical
+  set F := fun j => ∏ j' ∈ (Finset.univ : Finset (Fin M)).erase j, ellP E (R j') A₀ A₁
+  set prodQ := ∏ k : Fin d, ellP E (Q k) A₀ A₁
+  set prodR := ∏ j : Fin M, ellP E (R j) A₀ A₁
+  have hKey : ∀ k : Fin d,
+      (∏ k' ∈ (Finset.univ : Finset (Fin d)).erase k, ellP E (Q k') A₀ A₁) * prodR =
+      prodQ * F (σ k) := by
+    intro k
+    have h1 : prodQ = ellP E (Q k) A₀ A₁ *
+      ∏ k' ∈ Finset.univ.erase k, ellP E (Q k') A₀ A₁ :=
+      (Finset.mul_prod_erase _ (fun k => ellP E (Q k) A₀ A₁) (Finset.mem_univ k)).symm
+    have h2 : prodR = ellP E (R (σ k)) A₀ A₁ * F (σ k) :=
+      (Finset.mul_prod_erase _ (fun j => ellP E (R j) A₀ A₁) (Finset.mem_univ (σ k))).symm
+    rw [hQR k] at h1; rw [h1, h2]; ring
+  have hSecond :
+      (∑ j : Fin M, m j * prodQ * F j) =
+      ∑ k : Fin d, m (σ k) * prodQ * F (σ k) := by
+    rw [← Finset.sum_filter_add_sum_filter_not Finset.univ (fun j => j ∈ Set.range σ)]
+    have hOff : ∑ j ∈ Finset.univ.filter (fun j => j ∉ Set.range σ),
+        m j * prodQ * F j = 0 :=
+      Finset.sum_eq_zero (fun j hj => by rw [Finset.mem_filter] at hj; rw [hMoff j hj.2]; ring)
+    rw [hOff, add_zero]
+    rw [← Finset.sum_image (f := fun j => m j * prodQ * F j) (g := σ) (s := Finset.univ)]
+    · congr 1; ext j; simp [Finset.mem_image, Set.mem_range]
+    · intro k₁ _ k₂ _ h; exact σ.injective h
+  have hFirst :
+      (∑ k : Fin d, beta k *
+        (∏ k' ∈ Finset.univ.erase k, ellP E (Q k') A₀ A₁) * prodR) =
+      ∑ k : Fin d, beta k * prodQ * F (σ k) := by
+    congr 1; ext k; rw [mul_assoc, hKey k]; ring
+  unfold polyG
+  rw [hFirst, hSecond, ← Finset.sum_add_distrib]
+  rw [Finset.mul_sum]
+  congr 1; ext k; ring
 
 /-- After establishing `Q k = R (σ k)` and `m j = 0` for `j ∉ range σ`,
     the simplified `polyG` factors as
@@ -1958,7 +2099,197 @@ private lemma residual_vanishes_on_ExE
     ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
       bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) A₀ A₁ = 0 := by
-  sorry
+  by_contra hNontriv
+  push_neg at hNontriv
+  obtain ⟨A₀, A₁, hA₀, hA₁, hNZ⟩ := hNontriv
+  -- From the algebraic identity and polyG = 0:
+  -- (∏_k ellP(Q_k)) * residualFull = polyG = 0 on E×E
+  -- At the nonzero witness (A₀, A₁): residualFull ≠ 0, so ∏ ellP(Q_k) = 0.
+  have hPolyGFact := polyG_factorization E Q beta R m σ hQR hMoff
+  -- For all (A₀, A₁) ∈ E×E with ∏ ellP ≠ 0, residualFull = 0.
+  have hResZeroWhenProdNZ : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points →
+      (∏ k : Fin d, ellP E (Q k) A₀ A₁) ≠ 0 →
+      bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) A₀ A₁ = 0 := by
+    intro a0 a1 ha0 ha1 hProdNZ
+    have h0 := hPolyGAll a0 a1 ha0 ha1
+    rw [hPolyGFact a0 a1] at h0
+    have h1 := bivEval₂_residualFull_eq E R (fun k => beta k + m (σ k)) σ a0 a1
+    rw [h1]
+    rcases mul_eq_zero.mp h0 with hProd0 | hRes0
+    · exact absurd hProd0 hProdNZ
+    · exact hRes0
+  -- Lang-Weil on residualFull: zeros ≤ 4*(M-1)*|E|
+  have hBideg := residualFull_bi_x_degree_le E R (fun k => beta k + m (σ k)) σ
+  have hLW := bivariate_poly_zeros_on_ExE_le E
+    (residualFull E R (fun k => beta k + m (σ k)) σ) (M - 1) (M - 1)
+    hBideg ⟨A₀, A₁, hA₀, hA₁, hNZ⟩
+  -- {residualFull ≠ 0 on E×E} ⊆ {∏ ellP(Q_k) = 0 on E×E}
+  -- ⊆ ⋃_k {ellP(Q_k) = 0 on E×E}
+  -- Bound each {ellP(Q_k) = 0}: for fixed A₀, at most 3 bad A₁ (by Bezout).
+  -- Plus A₀ = Q_k gives |E| pairs. Total per k: ≤ 4|E|.
+  -- ⋃: ≤ 4d|E|.
+  -- nonzeros = |E|² - zeros ≥ |E|² - 4(M-1)|E| (from LW).
+  -- But nonzeros ≤ 4d|E| (from inclusion).
+  -- |E|² - 4(M-1)|E| ≤ 4d|E|, so |E| ≤ 4(d+M-1) < |E|. Contradiction.
+  -- Count {residualFull ≠ 0 on E×E}
+  have hCardExE : (E.points ×ˢ E.points).card = E.points.card * E.points.card :=
+    Finset.card_product _ _
+  have hZerosInclusion : (E.points ×ˢ E.points).filter
+      (fun p => bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) p.1 p.2 ≠ 0) ⊆
+    (E.points ×ˢ E.points).filter
+      (fun p => ∃ k : Fin d, ellP E (Q k) p.1 p.2 = 0) := by
+    intro p hp
+    simp only [Finset.mem_filter, Finset.mem_product] at hp ⊢
+    refine ⟨hp.1, ?_⟩
+    by_contra hAllNZ
+    push_neg at hAllNZ
+    have hProdNZ : (∏ k : Fin d, ellP E (Q k) p.1 p.2) ≠ 0 :=
+      Finset.prod_ne_zero_iff.mpr (fun k _ => hAllNZ k)
+    exact hp.2 (hResZeroWhenProdNZ p.1 p.2 hp.1.1 hp.1.2 hProdNZ)
+  -- Count {ellP(Q_k) = 0 on E×E} for each k, using Bezout:
+  -- For each k, #{(A₀,A₁) | ellP(Q_k) = 0} ≤ 4|E|
+  -- This follows from: for each A₀, #{A₁ | ellP = 0} ≤ 3 (when A₀ ≠ Q_k)
+  -- and for A₀ = Q_k: all |E| values of A₁ work.
+  have hEllPZeroCount : ∀ k : Fin d,
+      ((E.points ×ˢ E.points).filter
+        (fun p => ellP E (Q k) p.1 p.2 = 0)).card ≤ 4 * E.points.card := by
+    intro k
+    -- #{(A₀,A₁) ∈ E×E | ellP(Q_k,A₀,A₁)=0}
+    -- = Σ_{A₀ ∈ E} #{A₁ ∈ E | ellP(Q_k,A₀,A₁)=0}
+    -- For each A₀ ≠ Q_k: ellP is a nonzero linear form in A₁, so ≤ 3 zeros.
+    -- For A₀ = Q_k (if on E): all |E| values of A₁ work.
+    -- Total ≤ |E| + 3*(|E|-1) ≤ 4|E|.
+    -- We use a simpler bound: for every A₀, ≤ |E| values of A₁. So ≤ |E|*|E|.
+    -- But we need 4|E|, not |E|².
+    -- Actually, use: #{pairs} = Σ_{A₀} |fiber(A₀)| ≤ |E| * max_fiber
+    -- But max_fiber ≤ |E| gives |E|². Need per-A₀ bound.
+    -- Use the bivariate_poly_zeros_on_ExE_le axiom on lineEvalNumAtFull(Q_k).
+    -- lineEvalNumAtFull(Q_k) has bi_x_degree (1,1). If it has a nonzero witness
+    -- on E×E, then zeros ≤ 2*(1+1)*|E| = 4*|E|.
+    -- If no nonzero witness: all of E×E are zeros, so card = |E|².
+    -- But we need ≤ 4|E|, which requires |E|² ≤ 4|E|, i.e., |E| ≤ 4.
+    -- This fails for large E. So we need the nonzero witness.
+    -- A nonzero witness exists when d ≥ 1 (which is true since k : Fin d).
+    -- For any Q_k, take A₀ ∈ E with A₀ ≠ Q_k (need |E| ≥ 2, true since |E| > 4*(d+M)+2 ≥ 6).
+    -- Then the linear form ellP(Q_k, A₀, ·) in A₁ is nonzero.
+    -- By linear_form_zeros_le_three, ≤ 3 zeros on E. Since |E| ≥ 4, ∃ A₁ nonzero.
+    by_cases hWitness : ∃ A₀ A₁ : ZMod E.q × ZMod E.q,
+        A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ ellP E (Q k) A₀ A₁ ≠ 0
+    · -- Has nonzero witness: use Lang-Weil
+      have hBi : bi_x_degree_le E (lineEvalNumAtFull E (Q k)) 1 1 :=
+        lineEvalNumAtFull_bi_x_degree_le E (Q k)
+      have hNZW : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧
+          bivEval₂ (lineEvalNumAtFull E (Q k)) A₀ A₁ ≠ 0 := by
+        obtain ⟨a0, a1, ha0, ha1, hne⟩ := hWitness
+        exact ⟨a0, a1, ha0, ha1, by rwa [bivEval₂_lineEvalNumAtFull]⟩
+      have hLW_k := bivariate_poly_zeros_on_ExE_le E (lineEvalNumAtFull E (Q k)) 1 1 hBi hNZW
+      have hFilterEq : (E.points ×ˢ E.points).filter (fun p => ellP E (Q k) p.1 p.2 = 0) =
+          (E.points ×ˢ E.points).filter
+            (fun p => bivEval₂ (lineEvalNumAtFull E (Q k)) p.1 p.2 = 0) := by
+        congr 1; ext p; simp [bivEval₂_lineEvalNumAtFull, ellP]
+      rw [hFilterEq]; linarith
+    · -- No nonzero witness: ellP = 0 everywhere on E×E.
+      -- This is impossible when |E| ≥ 5:
+      -- There exist A₀, A₁ ∈ E with ellP(Q_k, A₀, A₁) ≠ 0.
+      push_neg at hWitness
+      exfalso
+      -- |E| ≥ 2, so ∃ A₀ ∈ E.
+      have hE2 : 2 ≤ E.points.card := by linarith
+      -- Pick any A₀ ∈ E. If A₀ = Q_k, pick another.
+      have hNE : E.points.Nonempty := Finset.card_pos.mp (by linarith)
+      obtain ⟨A₀, hA₀⟩ := hNE
+      -- ellP(Q_k, A₀, A₁) for fixed A₀ is a linear form in A₁
+      -- If A₀ ≠ Q_k, the form is nonzero and has ≤ 3 zeros on E.
+      -- Since |E| ≥ 4, there exists A₁ with ellP ≠ 0. Contradiction.
+      have hAllZero := hWitness A₀
+      -- For any A₁ ∈ E: ellP(Q_k, A₀, A₁) = 0.
+      -- In particular, this is a linear form in A₁.
+      -- The coefficients are (Q_k.2 - A₀.2, -(Q_k.1 - A₀.1)).
+      -- By linear_form_zeros_le_three, if the form is nonzero, ≤ 3 zeros.
+      -- But ALL of E are zeros, so the form must be zero, meaning Q_k = A₀.
+      -- So Q_k = A₀ for every A₀ ∈ E, which is impossible if |E| ≥ 2.
+      -- More carefully: pick A₀ ∈ E and A₀' ∈ E with A₀ ≠ A₀'.
+      -- Both satisfy Q_k = A₀ and Q_k = A₀', giving A₀ = A₀'. Contradiction.
+      -- So the form must be zero for all A₀ ∈ E, meaning Q_k = A₀ for all A₀.
+      -- But there are ≥ 2 distinct A₀'s.
+      -- Actually, the argument is simpler: for A₀ = Q_k, ellP = 0 for all A₁.
+      -- For A₀ ≠ Q_k, ellP is a nonzero linear form. If |E| ≥ 4, it can't
+      -- vanish on all of E. But it does (by hWitness). So A₀ ≠ Q_k can't hold.
+      -- So ALL A₀ ∈ E must equal Q_k, but |E| ≥ 2, contradiction.
+      have : ∀ A₀ ∈ E.points, A₀ = Q k := by
+        intro A₀' hA₀'
+        by_contra hne
+        -- ellP(Q_k, A₀', ·) is a nonzero linear form
+        -- It's: (Q k).2 - A₀'.2) * A₁.1 + (-(Q k).1 + A₀'.1) * A₁.2 + ...
+        -- Nonzero since Q_k ≠ A₀'
+        have hab : ((Q k).2 - A₀'.2) ≠ 0 ∨ (-((Q k).1 - A₀'.1)) ≠ 0 := by
+          by_contra h; push_neg at h
+          apply hne
+          have h1 : A₀'.1 = (Q k).1 := by
+            have := h.2; simp only [neg_eq_zero, sub_eq_zero] at this; exact this.symm
+          have h2 : A₀'.2 = (Q k).2 := by
+            have := h.1; rw [sub_eq_zero] at this; exact this.symm
+          exact Prod.ext h1 h2
+        -- By linear_form_zeros_le_three: ≤ 3 zeros on E
+        have hLin : (E.points.filter (fun A₁ =>
+            ((Q k).2 - A₀'.2) * A₁.1 + (-((Q k).1 - A₀'.1)) * A₁.2 +
+            (((Q k).1 - A₀'.1) * A₀'.2 - ((Q k).2 - A₀'.2) * A₀'.1) = 0)).card ≤ 3 :=
+          linear_form_zeros_le_three E _ _ _ (by tauto)
+        -- But all of E has ellP = 0, so the filter is all of E
+        have hAllE : E.points.filter (fun A₁ =>
+            ((Q k).2 - A₀'.2) * A₁.1 + (-((Q k).1 - A₀'.1)) * A₁.2 +
+            (((Q k).1 - A₀'.1) * A₀'.2 - ((Q k).2 - A₀'.2) * A₀'.1) = 0) = E.points := by
+          apply Finset.filter_true_of_mem
+          intro A₁ hA₁
+          have := hWitness A₀' A₁ hA₀' hA₁
+          unfold ellP at this; ring_nf; ring_nf at this; convert this using 1; ring
+        rw [hAllE] at hLin
+        have : 0 < d := Fin.pos k
+        linarith
+      -- All of E = {Q k}, but |E| ≥ 2, so ∃ two distinct elements
+      obtain ⟨a, ha, b, hb, hab⟩ := Finset.one_lt_card.mp (by omega : 1 < E.points.card)
+      exact hab ((this a ha).trans (this b hb).symm)
+  -- Union bound
+  have hUnionBound :
+      ((E.points ×ˢ E.points).filter
+        (fun p => ∃ k : Fin d, ellP E (Q k) p.1 p.2 = 0)).card ≤
+      4 * d * E.points.card := by
+    calc ((E.points ×ˢ E.points).filter
+          (fun p => ∃ k : Fin d, ellP E (Q k) p.1 p.2 = 0)).card
+        ≤ (Finset.univ.biUnion (fun k : Fin d =>
+            (E.points ×ˢ E.points).filter (fun p => ellP E (Q k) p.1 p.2 = 0))).card := by
+          apply Finset.card_le_card; intro p hp
+          simp only [Finset.mem_filter, Finset.mem_product, Finset.mem_biUnion,
+            Finset.mem_univ, true_and] at hp ⊢
+          obtain ⟨⟨h1, h2⟩, k, hk⟩ := hp
+          exact ⟨k, ⟨h1, h2⟩, hk⟩
+      _ ≤ ∑ k : Fin d, ((E.points ×ˢ E.points).filter
+            (fun p => ellP E (Q k) p.1 p.2 = 0)).card :=
+          Finset.card_biUnion_le
+      _ ≤ ∑ _ : Fin d, (4 * E.points.card) :=
+          Finset.sum_le_sum (fun k _ => hEllPZeroCount k)
+      _ = d * (4 * E.points.card) := by simp [Finset.sum_const]
+      _ = 4 * d * E.points.card := by ring
+  -- Counting
+  have hNonzerosCard :
+      ((E.points ×ˢ E.points).filter
+        (fun p => bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) p.1 p.2 ≠ 0)).card ≤
+      4 * d * E.points.card :=
+    le_trans (Finset.card_le_card hZerosInclusion) hUnionBound
+  -- Zeros of residualFull + nonzeros = |E×E|
+  have hSplit : ((E.points ×ˢ E.points).filter
+      (fun p => bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) p.1 p.2 = 0)).card +
+    ((E.points ×ˢ E.points).filter
+      (fun p => bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) p.1 p.2 ≠ 0)).card =
+    (E.points ×ˢ E.points).card := by
+    have h := Finset.card_filter_add_card_filter_not
+      (fun p : _ × _ => bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) p.1 p.2 = 0)
+      (s := E.points ×ˢ E.points)
+    simp only [ne_eq] at h ⊢
+    linarith
+  have hNatBound : 2 * (M - 1 + (M - 1)) + 4 * d ≤ 4 * (d + M) := by omega
+  nlinarith [hCardExE, hLW, hNonzerosCard, hSplit, hELarge, hNatBound]
 
 /-- **Core σ-matching extraction from polyG ≡ 0 on E × E.**
 
@@ -1984,6 +2315,8 @@ private lemma sigma_matching_core
     (hDistinctQ : Function.Injective Q)
     (hDistinctR : Function.Injective R)
     (hBetaNz : ∀ k, beta k ≠ 0)
+    (hQonE : ∀ k, Q k ∈ E.points)
+    (hRonE : ∀ j, R j ∈ E.points)
     (hPolyGAll : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
       polyG E Q beta R m A₀ A₁ = 0)
@@ -1993,11 +2326,6 @@ private lemma sigma_matching_core
       (∀ k, beta k + m (σ k) = 0) ∧
       (∀ j, j ∉ Set.range σ → m j = 0) := by
   classical
-  -- == Step 1: Q k must be on E for all k ==
-  -- (The evaluation trick requires Q k ∈ E.points. The paper assumes this
-  -- since Q_k are zeros of a divisor on E. We state this as a sub-claim.)
-  have hQonE : ∀ k, Q k ∈ E.points := by
-    sorry
   -- == Step 2: Every Q k is in range R ==
   have hSigmaExists : ∀ k : Fin d, ∃ j : Fin M, R j = Q k := by
     intro k
@@ -2017,9 +2345,13 @@ private lemma sigma_matching_core
       linarith
     have hSizeOK : E.points.card > 2 * T1.card + 1 := by
       linarith
+    have hQk_notT : Q k ∉ T1 := by
+      simp only [T1, Finset.mem_union, Finset.mem_erase, Finset.mem_image]
+      push_neg
+      exact ⟨fun habs => absurd rfl habs, fun j _ => h j⟩
     obtain ⟨A₁, hA₁mem, hA₁ne, hA₁good⟩ := exists_avoiding_A1 E (Q k) (hQonE k)
       ((Finset.univ.image (fun k' => Q k') |>.erase (Q k)) ∪ Finset.univ.image R)
-      hSizeOK
+      hQk_notT hSizeOK
     have hPolyG0 := hPolyGAll (Q k) A₁ (hQonE k) hA₁mem
     rw [polyG_at_self_Q E Q beta R m k A₁] at hPolyG0
     -- beta k * (∏_{k'≠k} ellP(Q_{k'})) * (∏_j ellP(R_j)) = 0
@@ -2056,8 +2388,6 @@ private lemma sigma_matching_core
     exact hDistinctQ (h1.symm.trans h2)
   let σ : Fin d ↪ Fin M := ⟨sigma_fun, hσ_inj⟩
   -- == Step 4: m j = 0 for j ∉ range σ ==
-  have hRonE : ∀ j, R j ∈ E.points := by
-    sorry
   have hM_offrange : ∀ j, j ∉ Set.range σ → m j = 0 := by
     intro j hj
     -- R j ∉ {Q k} since j ∉ range σ. Set A₀ = R j.
@@ -2073,9 +2403,15 @@ private lemma sigma_matching_core
         Finset.card_erase_le.trans (Finset.card_image_le.trans (by simp))
       omega
     have hSizeOK2 : E.points.card > 2 * T2.card + 1 := by linarith
+    have hRj_notT : R j ∉ T2 := by
+      simp only [T2, Finset.mem_union, Finset.mem_image, Finset.mem_erase]
+      intro h
+      rcases h with ⟨k, _, hQk⟩ | ⟨hne, _⟩
+      · exact hRjNotQ k hQk.symm
+      · exact hne rfl
     obtain ⟨A₁, hA₁mem, hA₁ne, hA₁good⟩ := exists_avoiding_A1 E (R j) (hRonE j)
       (Finset.univ.image Q ∪ (Finset.univ.image R |>.erase (R j)))
-      hSizeOK2
+      hRj_notT hSizeOK2
     have hPolyG0 := hPolyGAll (R j) A₁ (hRonE j) hA₁mem
     rw [polyG_at_self_R E Q beta R m j A₁] at hPolyG0
     have hProdQ2 : (∏ k : Fin d, ellP E (Q k) (R j) A₁) ≠ 0 := by
@@ -2108,9 +2444,15 @@ private lemma sigma_matching_core
       exact Finset.card_erase_le.trans (Finset.card_image_le.trans (by simp))
     have hSizeOK3 : E.points.card > 2 * ((Finset.univ.image R).erase (R (σ k))).card + 1 := by
       linarith
+    have hQk_notT3 : Q k ∉ (Finset.univ.image R).erase (R (σ k)) := by
+      simp only [Finset.mem_erase, Finset.mem_image]
+      intro ⟨_, j, _, hRjQk⟩
+      have : R (σ k) = R j := (hσ_def k).trans hRjQk.symm
+      have : σ k = j := hDistinctR this
+      simp_all
     obtain ⟨A₁, hA₁mem, hA₁ne, hA₁good⟩ := exists_avoiding_A1 E (Q k) (hQonE k)
       ((Finset.univ.image R).erase (R (σ k)))
-      hSizeOK3
+      hQk_notT3 hSizeOK3
     have hResVal := hResVan (Q k) A₁ (hQonE k) hA₁mem
     rw [bivEval₂_residualFull_eq] at hResVal
     -- At A₀ = Q k = R(σ k): for k' ≠ k, the product ∏_{j≠σ(k')}
@@ -2167,6 +2509,8 @@ theorem sigma_matching_from_polyGFull_vanishing
     (hDistinctQ : Function.Injective Q)
     (hDistinctR : Function.Injective R)
     (hBetaNz : ∀ k, beta k ≠ 0)
+    (hQonE : ∀ k, Q k ∈ E.points)
+    (hRonE : ∀ j, R j ∈ E.points)
     (hVanishing : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
       bivEval₂ (polyGFull E Q beta R m) A₀ A₁ = 0)
@@ -2182,6 +2526,6 @@ theorem sigma_matching_from_polyGFull_vanishing
     intro A₀ A₁ h₀ h₁
     rw [← bivEval₂_polyGFull_eq_polyG E Q beta R m A₀ A₁]
     exact hVanishing A₀ A₁ h₀ h₁
-  exact sigma_matching_core E Q beta R m hDistinctQ hDistinctR hBetaNz hPolyGAll hELarge
+  exact sigma_matching_core E Q beta R m hDistinctQ hDistinctR hBetaNz hQonE hRonE hPolyGAll hELarge
 
 end Divisor
