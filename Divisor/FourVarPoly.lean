@@ -257,4 +257,89 @@ theorem bi_y_linear.of_degreeOf {E : ECSetup} {f : FourVarPoly E.q}
     bi_y_linear E f :=
   ⟨h1, h3⟩
 
+/-- **Total-degree bound.** `total_degree_le E f D` asserts that
+    the total degree of the 4-variate polynomial `f` is at most `D`.
+
+    Used by the corrected `bivariate_poly_zeros_on_ExE_le` axiom
+    (DKL'14 Claim 7.2 + Hartshorne Bezout): a 4-variate polynomial
+    of total degree `D` cuts a hypersurface of degree `D` in `A⁴`,
+    intersecting `E × E` (degree 9 in `P⁸` via Segre) in a curve of
+    degree at most `9·D`, with `≤ 9·D·q` `F_q`-points by DKL Claim 7.2. -/
+def total_degree_le (_E : ECSetup) (f : FourVarPoly _E.q) (D : ℕ) : Prop :=
+  f.totalDegree ≤ D
+
+theorem total_degree_le.add
+    {E : ECSetup} {f g : FourVarPoly E.q} {D : ℕ}
+    (hf : total_degree_le E f D) (hg : total_degree_le E g D) :
+    total_degree_le E (f + g) D :=
+  (MvPolynomial.totalDegree_add _ _).trans (max_le hf hg)
+
+theorem total_degree_le.sub
+    {E : ECSetup} {f g : FourVarPoly E.q} {D : ℕ}
+    (hf : total_degree_le E f D) (hg : total_degree_le E g D) :
+    total_degree_le E (f - g) D := by
+  have := MvPolynomial.totalDegree_sub f g
+  exact this.trans (max_le hf hg)
+
+theorem total_degree_le.mul
+    {E : ECSetup} {f g : FourVarPoly E.q} {Df Dg : ℕ}
+    (hf : total_degree_le E f Df) (hg : total_degree_le E g Dg) :
+    total_degree_le E (f * g) (Df + Dg) :=
+  (MvPolynomial.totalDegree_mul _ _).trans (Nat.add_le_add hf hg)
+
+theorem total_degree_le.neg
+    {E : ECSetup} {f : FourVarPoly E.q} {D : ℕ}
+    (hf : total_degree_le E f D) :
+    total_degree_le E (-f) D := by
+  unfold total_degree_le
+  rw [MvPolynomial.totalDegree_neg]; exact hf
+
+theorem total_degree_le.C
+    {E : ECSetup} (c : ZMod E.q) :
+    total_degree_le E (C c : FourVarPoly E.q) 0 := by
+  unfold total_degree_le
+  rw [MvPolynomial.totalDegree_C]
+
+theorem total_degree_le.X
+    {E : ECSetup} [Fact (Nat.Prime E.q)] (i : Fin 4) :
+    total_degree_le E (X i : FourVarPoly E.q) 1 := by
+  unfold total_degree_le
+  haveI : Nontrivial (ZMod E.q) := ZMod.nontrivial _
+  rw [MvPolynomial.totalDegree_X]
+
+theorem total_degree_le.mono
+    {E : ECSetup} {f : FourVarPoly E.q} {D D' : ℕ}
+    (hf : total_degree_le E f D) (h : D ≤ D') :
+    total_degree_le E f D' :=
+  hf.trans h
+
+theorem total_degree_le.pow
+    {E : ECSetup} {f : FourVarPoly E.q} {D : ℕ}
+    (hf : total_degree_le E f D) (n : ℕ) :
+    total_degree_le E (f ^ n) (n * D) :=
+  (MvPolynomial.totalDegree_pow _ _).trans (Nat.mul_le_mul_left n hf)
+
+theorem total_degree_le.sum
+    {E : ECSetup} {α : Type*} (s : Finset α) (f : α → FourVarPoly E.q)
+    {D : ℕ} (hf : ∀ i ∈ s, total_degree_le E (f i) D) :
+    total_degree_le E (∑ i ∈ s, f i) D :=
+  MvPolynomial.totalDegree_finsetSum_le hf
+
+theorem total_degree_le.prod
+    {E : ECSetup} {α : Type*} (s : Finset α) (f : α → FourVarPoly E.q)
+    {D : α → ℕ} (hf : ∀ i ∈ s, total_degree_le E (f i) (D i)) :
+    total_degree_le E (∏ i ∈ s, f i) (∑ i ∈ s, D i) := by
+  refine (MvPolynomial.totalDegree_finset_prod s f).trans ?_
+  exact Finset.sum_le_sum hf
+
+theorem total_degree_le.prod_const
+    {E : ECSetup} {α : Type*} (s : Finset α) (f : α → FourVarPoly E.q)
+    {D : ℕ} (hf : ∀ i ∈ s, total_degree_le E (f i) D) :
+    total_degree_le E (∏ i ∈ s, f i) (s.card * D) := by
+  refine (MvPolynomial.totalDegree_finset_prod s f).trans ?_
+  classical
+  calc (∑ i ∈ s, (f i).totalDegree)
+      ≤ ∑ _i ∈ s, D := Finset.sum_le_sum hf
+    _ = s.card * D := by rw [Finset.sum_const]; ring
+
 end Divisor

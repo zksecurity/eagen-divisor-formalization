@@ -1444,13 +1444,10 @@ theorem log_deriv_sz_paper_core
     obtain ⟨hNVx, hDef, hCheck⟩ := hp.2
     exact bivEval₂_clearedFullPoly_eq_zero_of_bad E D P B m p.1 p.2 hNVx
       hDef hCheck
+  -- TODO Phase A5: bridge to new axiom signature (total_degree_le).
+  -- Replaced by `log_deriv_sz_paper_exact` in Phase E using paper's polyG.
   calc S.card ≤ T.card := Finset.card_le_card hSub
-    _ ≤ 2 * (9 * (D.degE + k + 6) + 9 * (D.degE + k + 6)) * E.points.card := by
-        have hBideg := clearedFullPoly_bi_x_degree_le E D P B m
-        have hNZ := clearedFullPoly_nonzero_witness E D P B m hNV
-        exact bivariate_poly_zeros_on_ExE_le E (clearedFullPoly E D P k B m)
-          _ _ hBideg hNZ
-    _ = 36 * (D.degE + k + 6) * E.points.card := by ring
+    _ ≤ 36 * (D.degE + k + 6) * E.points.card := by sorry
 
 /-- **Phase 5 `log_deriv_sz_paper` (outer, with-boundary form).**
 
@@ -1777,40 +1774,9 @@ theorem polyGFull_vanishes_on_ExE_of_polyG_zero
     ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
       bivEval₂ (polyGFull E Q beta R m) A₀ A₁ = 0 := by
-  by_contra h
-  push_neg at h
-  obtain ⟨A₀, A₁, hA₀, hA₁, hNZ⟩ := h
-  have hBideg := polyGFull_bi_x_degree_le E Q beta R m
-  have hLW := bivariate_poly_zeros_on_ExE_le E (polyGFull E Q beta R m) (d + M) (d + M)
-    hBideg ⟨A₀, A₁, hA₀, hA₁, hNZ⟩
-  have hNVsub : (E.points ×ˢ E.points).filter
-      (fun p : _ × _ => p.1.1 ≠ p.2.1) ⊆
-    (E.points ×ˢ E.points).filter
-      (fun p => bivEval₂ (polyGFull E Q beta R m) p.1 p.2 = 0) := by
-    intro p hp
-    simp only [Finset.mem_filter, Finset.mem_product] at hp ⊢
-    exact ⟨hp.1, by rw [bivEval₂_polyGFull_eq_polyG]; exact hPolyGZero _ _ hp.1.1 hp.1.2 hp.2⟩
-  have hVertBd := card_vertical_pairs_le E
-  have hCardProd : (E.points ×ˢ E.points).card = E.points.card * E.points.card :=
-    Finset.card_product _ _
-  have hNVcard : ((E.points ×ˢ E.points).filter
-      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) => p.1.1 ≠ p.2.1)).card
-    + ((E.points ×ˢ E.points).filter
-      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) => p.1.1 = p.2.1)).card
-    = (E.points ×ˢ E.points).card := by
-    classical
-    have h := @Finset.card_filter_add_card_filter_not
-      _ (E.points ×ˢ E.points) (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) => p.1.1 = p.2.1)
-      _ _
-    linarith
-  have hZeroCard := Finset.card_le_card hNVsub
-  have hNVge : E.points.card * E.points.card - 2 * E.points.card
-    ≤ ((E.points ×ˢ E.points).filter
-      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) => p.1.1 ≠ p.2.1)).card := by
-    rw [hCardProd] at hNVcard; omega
-  have hChain : E.points.card * E.points.card - 2 * E.points.card
-    ≤ 2 * (d + M + (d + M)) * E.points.card := le_trans hNVge (le_trans hZeroCard hLW)
-  nlinarith [hELarge]
+  -- TODO Phase A5: bridge to new axiom signature (total_degree_le).
+  -- Replaced by `polyG_paper`-based vanishing in Phase D.
+  sorry
 
 /-! ### Sub-lemmas for `sigma_matching_core`
 
@@ -2113,6 +2079,16 @@ private lemma residual_vanishes_on_ExE
     ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
       bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) A₀ A₁ = 0 := by
+  -- TODO Phase A5: bridge to new axiom signature (total_degree_le).
+  -- Replaced by `polyG_paper`-based path in Phase E.
+  sorry
+
+set_option linter.all false in
+example : True := trivial -- separator marker
+/-
+Old body of `residual_vanishes_on_ExE` (kept commented for reference; uses
+the old `bivariate_poly_zeros_on_ExE_le` axiom signature with `bi_x_degree_le`):
+
   by_contra hNontriv
   push_neg at hNontriv
   obtain ⟨A₀, A₁, hA₀, hA₁, hNZ⟩ := hNontriv
@@ -2304,6 +2280,7 @@ private lemma residual_vanishes_on_ExE
     linarith
   have hNatBound : 2 * (M - 1 + (M - 1)) + 4 * d ≤ 4 * (d + M) := by omega
   nlinarith [hCardExE, hLW, hNonzerosCard, hSplit, hELarge, hNatBound]
+-/
 
 /-- **Core σ-matching extraction from polyG ≡ 0 on E × E.**
 
