@@ -69,8 +69,13 @@ Post-dispatch state:
 - Chord symmetry HALVING ARGUMENT DOES NOT WORK: an involution on the bad set only shows even cardinality, does not reduce Lang-Weil bound. The plan's `36 → 18` tightening needs a different mechanism (likely Y-linearity-aware Lang-Weil).
 
 **Remaining sorries (top-level):**
-1. `clearedFullPoly_swap_signed` — sign tracking under swap; tough.
-2. `sigma_matching_from_polyGFull_vanishing` — 3 internal Bézout/pigeonhole sub-sorries (Steps 3, 5, 6 of paper proof); partially dispatched (`6e5f6092`, queued).
+1. `clearedFullPoly_swap_signed` — sign tracking under swap; UNUSED in proof chain.
+
+`sigma_matching_from_polyGFull_vanishing` is now FULLY PROVEN (Aristotle projects 6e5f6092, 43de7f00, fa1f41ef). Paper Steps 3-6 mechanized via:
+- `polyG_at_self_Q` / `polyG_at_self_R` — polyG reduction at self points
+- `exists_avoiding_A1` — Bezout-on-curve geometric existence
+- `residualFull` + bi-degree + vanishing-on-ExE — Lang-Weil contrapositive on residual after σ-matching
+- `sigma_matching_core` — full assembly
 
 **Paths to exact paper `18·(d+k)·|E|` bound:**
 
