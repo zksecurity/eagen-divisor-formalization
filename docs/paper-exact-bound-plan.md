@@ -742,3 +742,49 @@ hNV (∃ pair where logDerivCheckFn ≠ 0), via the iff direction of
 Lots of dead code candidates (clearedFullPoly atoms, T5-related
 infra, log_deriv_sz_paper_core itself once Branch 1 is rewired).
 Run cleanup after Phase E full completion.
+
+### 2026-04-25 — Session 2 (continuation)
+
+**All phases complete. ma_extractable bound established.**
+
+Additional commits:
+* `db92a6b` — Aristotle dispatch a5df902e: filled
+  `residual_vanishes_on_ExE` and `hELarge_dkl` sorries (2 of 3).
+* `975b561` — Aristotle dispatch f99a3622: routed
+  `log_deriv_sz_paper_core` via DKL+Bezout + Hasse, leaving only
+  `clearedFullPoly_total_degree_le` sorry'd (mechanical).
+* `e3f6b13` — Aristotle dispatch 990114e3: filled
+  `clearedFullPoly_total_degree_le` (~30 helper lemmas, 8 summand
+  bounds combined). NO sorryAx in ma_extractable.
+* `466a3c7` — Phase F cleanup: deleted dead chord-symmetry block
+  and `log_deriv_sz`.
+
+**Final ma_extractable axiom inventory:**
+
+```
+Divisor.ma_extractable depends on:
+  propext, Classical.choice, Quot.sound,             [3 standard]
+  Divisor.bivariate_poly_zeros_on_ExE_le,            [DKL+Bezout]
+  Divisor.chord_fiber_product_eq_normZ_under_split,
+  Divisor.chord_sum_eq_chord_fiber_product_logDeriv,
+  Divisor.hasse_weil,
+  Divisor.CoordRingElt.divisor_group_sum_zero,
+  Divisor.ECPoint.add_assoc, .add_comm, .neg_add_cancel
+                                                     [8 user axioms]
+```
+
+**Final ma_extractable bound:**
+```
+  ≤ 84 * (stmt.degBound + stmt.k + 6) * E.points.card
+```
+
+The constant 84 (vs the plan's earlier target 18) reflects the
+constants from DKL+Bezout (factor 9 from Segre embedding of E×E)
+and Hasse-Weil (factor 2 from q ≤ 2·|E|), combined with the boundary
+term and the 4·D.degE+2·k+12 total-degree bound on clearedFullPoly:
+9 · (4·(d) + 2·k + 12) · 2 + (6d+9k+71) → ≈ 84·(d+k+6).
+
+**Final sorry count: 0.**
+
+`#print axioms Divisor.ma_extractable` — verified clean.
+`lake build` — verified passing.
