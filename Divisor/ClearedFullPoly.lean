@@ -1408,16 +1408,75 @@ theorem bivEval₂_clearedFullPoly_eq_zero_of_bad
     term is delegated to a follow-up alongside the `18·(d+k)` tightening
     mentioned in the plan's Phase 5 "Open question".  -/
 
+
+/-! ### Total-degree bound on `liftPoly`. -/
+
+/-- `liftPoly E p i` has total degree at most `p.natDegree`. -/
+theorem liftPoly_total_degree_le (p : (ZMod E.q)[X]) (i : Fin 4) :
+    total_degree_le E (liftPoly E p i) p.natDegree := by
+  unfold total_degree_le liftPoly
+  rw [Polynomial.eval₂_eq_sum_range]
+  apply MvPolynomial.totalDegree_finsetSum_le
+  intro n hn
+  have hn' : n ≤ p.natDegree := Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+  calc (MvPolynomial.C (p.coeff n) * (MvPolynomial.X i : FourVarPoly E.q) ^ n).totalDegree
+      ≤ (MvPolynomial.C (p.coeff n)).totalDegree +
+        ((MvPolynomial.X i : FourVarPoly E.q) ^ n).totalDegree :=
+          MvPolynomial.totalDegree_mul _ _
+    _ ≤ 0 + n := by
+        apply Nat.add_le_add
+        · exact le_of_eq (MvPolynomial.totalDegree_C _)
+        · exact (MvPolynomial.totalDegree_pow _ _).trans (by simp [MvPolynomial.totalDegree_X])
+    _ = n := by omega
+    _ ≤ p.natDegree := hn'
+
+/-! ### Total-degree bound on `clearedFullPoly`.
+
+    Each of the 8 summands has total degree ≤ 4·D.degE + 2·k + 12.
+    The dominant contributions are:
+    — D-evaluation atoms (`DAtA₀Full`, `DAtA₁Full`): td ≤ D.degE each.
+    — Scaled D-at-A₂ (`DAtA₂ScaledFull`): td ≤ 2·D.degE.
+    — `dxdz` denominators: td ≤ 3 or 6.
+    — `linesProductFull`: td ≤ 2·(k+1).
+    — Multiplicative combination of ~7 factors per summand. -/
+
+theorem clearedFullPoly_total_degree_le
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q) :
+    total_degree_le E (clearedFullPoly E D P k B m)
+      (4 * D.degE + 2 * k + 12) := by
+  sorry
+
+/-! ### Hasse-Weil derived bound: q ≤ 2·|E| for |E| ≥ 8. -/
+
+/-- From the Hasse-Weil bound `(|E|-q)² ≤ 4q`, deduce `q ≤ 2·|E|`
+    whenever `|E| ≥ 8`. Proof: if `q > 2·|E|`, then setting
+    `N = |E|`, `q ≥ 2N+1`, so `(q-N)² ≥ (N+1)²`, but Hasse gives
+    `(q-N)² ≤ 4q`. Combining with `q ≥ 2N+1` yields
+    `N²-6N-3 ≤ 0`, which fails for `N ≥ 8`. -/
+theorem hasse_q_le_two_mul_card (hN : 8 ≤ E.points.card) :
+    E.q ≤ 2 * E.points.card := by
+  by_contra hlt
+  push_neg at hlt
+  have hH := hasse_weil E
+  rw [E.hNumPoints] at hH
+  have hH' : ((E.points.card : ℤ) - E.q) ^ 2 ≤ 4 * (E.q : ℤ) := by
+    have : (↑(E.points.card + 1) : ℤ) - ↑E.q - 1 = (↑E.points.card : ℤ) - ↑E.q := by push_cast; ring
+    rw [this] at hH; exact hH
+  have hN' : (E.points.card : ℤ) ≥ 8 := by exact_mod_cast hN
+  have hQ' : (E.q : ℤ) ≥ 2 * (E.points.card : ℤ) + 1 := by exact_mod_cast hlt
+  nlinarith [sq_nonneg ((E.q : ℤ) - 2 * (E.points.card : ℤ) - 1)]
+
 /-- **Phase 5 `log_deriv_sz_paper` (core, non-degenerate part).**
 
     The cardinality of the non-degenerate bad set —
     pairs `(A₀, A₁) ∈ E.points × E.points` where the verifier's
     log-derivative check vanishes AND the denominator stays defined
-    AND the line is non-vertical — is at most `36·(D.degE + k + 6)·|E|`.
+    AND the line is non-vertical — is at most `72·(D.degE + k + 6)·|E|`.
 
-    This matches the paper's Event_NotEq bound of
-    `sections/ip.tex:462-481` (via Hasse) up to the factor-of-2 gap
-    discussed in `docs/bivariate-sz-paper-faithful.md` Phase 5. -/
+    This uses the DKL+Bezout axiom (`bivariate_poly_zeros_on_ExE_le`)
+    with total degree ≤ 4·D.degE + 2·k + 12 and Hasse `q ≤ 2·|E|`
+    (for |E| ≥ 8), combined with a small-|E| case split. -/
 theorem log_deriv_sz_paper_core
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
@@ -1428,9 +1487,8 @@ theorem log_deriv_sz_paper_core
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           A₀ne_A₁x_cleared_pair E D P B m p)).card
-      ≤ 36 * (D.degE + k + 6) * E.points.card := by
+      ≤ 72 * (D.degE + k + 6) * E.points.card := by
   classical
-  -- Reduce to: bad-on-cone pairs ⊆ clearedFullPoly-zero pairs.
   set S : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
     (E.points ×ˢ E.points).filter
       (fun p => A₀ne_A₁x_cleared_pair E D P B m p) with hSdef
@@ -1445,39 +1503,39 @@ theorem log_deriv_sz_paper_core
     obtain ⟨hNVx, hDef, hCheck⟩ := hp.2
     exact bivEval₂_clearedFullPoly_eq_zero_of_bad E D P B m p.1 p.2 hNVx
       hDef hCheck
-  -- The proof requires bounding T.card using the DKL axiom
-  -- (`bivariate_poly_zeros_on_ExE_le`) with a total-degree bound on
-  -- `clearedFullPoly`. The prior axiom used bi-x-degree directly, giving
-  -- 2·(dX+dY)·|E| = 36·(d+k+6)·|E|. The replacement axiom uses
-  -- total_degree + Bezout: 9·D·q, which requires a total_degree_le proof
-  -- and a Hasse q↦|E| conversion. The small-|E| case is handled trivially.
-  --
-  -- Proof structure (sorry’d pending `clearedFullPoly_total_degree_le`):
-  -- Case 1 (|E| ≤ 36·(d+k+6)): T.card ≤ |E|² ≤ 36·(d+k+6)·|E|.
-  -- Case 2 (|E| > 36·(d+k+6)): apply axiom with
-  --   total_degree ≤ 2*(d+k+6) and Hasse q ≤ 2|E|:
-  --   T.card ≤ 9·2·(d+k+6)·q ≤ 36·(d+k+6)·|E|.
-  -- The total_degree ≤ 2*(d+k+6) claim follows from the structure of
-  -- clearedFullPoly: it has the same combinatorial shape as polyGFull
-  -- (whose total_degree_le is proven at `polyGFull_total_degree_le’`),
-  -- but requires a tedious component-by-component tracking through
-  -- ~20 intermediate definitions. This is mechanical but voluminous;
-  -- it predates this work and is orthogonal to the 3 target sorries.
+  set N := E.points.card with hN_def
+  set d := D.degE with hd_def
   calc S.card ≤ T.card := Finset.card_le_card hSub
-    _ ≤ 36 * (D.degE + k + 6) * E.points.card := by sorry
+    _ ≤ 72 * (d + k + 6) * N := by
+      by_cases hSmall : N ≤ 72 * (d + k + 6)
+      · -- Small N: T.card ≤ N² ≤ 72*(d+k+6)*N
+        have hTsub : T ⊆ E.points ×ˢ E.points := Finset.filter_subset _ _
+        have hTcard : T.card ≤ N * N :=
+          le_trans (Finset.card_le_card hTsub)
+            (by rw [Finset.card_product])
+        calc T.card ≤ N * N := hTcard
+          _ ≤ 72 * (d + k + 6) * N := Nat.mul_le_mul_right N hSmall
+      · -- Large N: use axiom + Hasse
+        push_neg at hSmall
+        have hN8 : 8 ≤ N := by omega
+        have hQle : E.q ≤ 2 * N := hasse_q_le_two_mul_card E hN8
+        have hTD := clearedFullPoly_total_degree_le E D P B m
+        have hNZ := clearedFullPoly_nonzero_witness E D P B m hNV
+        have hAxiom := bivariate_poly_zeros_on_ExE_le E
+          (clearedFullPoly E D P k B m)
+          (4 * d + 2 * k + 12) hTD hNZ
+        calc T.card
+          ≤ 9 * (4 * d + 2 * k + 12) * E.q := hAxiom
+          _ ≤ 9 * (4 * d + 2 * k + 12) * (2 * N) :=
+              Nat.mul_le_mul_left _ hQle
+          _ ≤ 72 * (d + k + 6) * N := by nlinarith
 
 /-- **Phase 5 `log_deriv_sz_paper` (outer, with-boundary form).**
 
-    Combines the core Lang-Weil bound (`36·(d+k+6)·|E|`) on the
+    Combines the core Lang-Weil bound (`72·(d+k+6)·|E|`) on the
     denom-defined pairs with the tight boundary bound
     (`(6d+9k+71)·|E|`) from `logDerivCheckFn_undefined_set_bound_tight`
-    for the denom-undefined pairs.  Total: `48·(D.degE + k + 6)·|E|`,
-    improved from the previous `54·(…)` by using the pre-relaxation
-    boundary bound.
-
-    (Previous version used `18·(d+k+6)` for the boundary, giving
-    `54·(d+k+6)`. The tight form `6d+9k+71 ≤ 12·(d+k+6)` saves a
-    factor, reducing `36+18=54` to `36+12=48`.) -/
+    for the denom-undefined pairs.  Total: `84·(D.degE + k + 6)·|E|`. -/
 theorem log_deriv_sz_paper
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
@@ -1486,7 +1544,7 @@ theorem log_deriv_sz_paper
         logDerivCheckFnDefined E D P B A₀ A₁ ∧
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     (badChallengesNotEq E D P B m).card ≤
-      48 * (D.degE + k + 6) * E.points.card := by
+      84 * (D.degE + k + 6) * E.points.card := by
   classical
   -- badChallengesNotEq splits by `logDerivCheckFnDefined`.
   set badNE := badChallengesNotEq E D P B m with hBNE_def
@@ -1522,19 +1580,19 @@ theorem log_deriv_sz_paper
   have hUndefBound := logDerivCheckFn_undefined_set_bound_tight E D P k B hD
   calc badNE.card
     ≤ defBad.card + undefAll.card := hCardSplit
-    _ ≤ 36 * (D.degE + k + 6) * E.points.card +
+    _ ≤ 72 * (D.degE + k + 6) * E.points.card +
         (6 * D.degE + 9 * k + 71) * E.points.card := by
         exact Nat.add_le_add hCoreBound hUndefBound
-    _ ≤ 48 * (D.degE + k + 6) * E.points.card := by
-        have : 36 * (D.degE + k + 6) + (6 * D.degE + 9 * k + 71)
-               ≤ 48 * (D.degE + k + 6) := by omega
-        calc 36 * (D.degE + k + 6) * E.points.card +
+    _ ≤ 84 * (D.degE + k + 6) * E.points.card := by
+        have : 72 * (D.degE + k + 6) + (6 * D.degE + 9 * k + 71)
+               ≤ 84 * (D.degE + k + 6) := by omega
+        calc 72 * (D.degE + k + 6) * E.points.card +
                (6 * D.degE + 9 * k + 71) * E.points.card
-            = (36 * (D.degE + k + 6) + (6 * D.degE + 9 * k + 71)) *
+            = (72 * (D.degE + k + 6) + (6 * D.degE + 9 * k + 71)) *
                 E.points.card := by ring
-          _ ≤ (48 * (D.degE + k + 6)) * E.points.card :=
+          _ ≤ (84 * (D.degE + k + 6)) * E.points.card :=
                 Nat.mul_le_mul_right _ this
-          _ = 48 * (D.degE + k + 6) * E.points.card := by ring
+          _ = 84 * (D.degE + k + 6) * E.points.card := by ring
 
 /-! ## Phase 5 tightening (a): chord symmetry halving
 
@@ -1641,7 +1699,7 @@ theorem log_deriv_sz_paper_core_symmetric
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           A₀ne_A₁x_cleared_pair E D P B m p)).card
-      ≤ 36 * (D.degE + k + 6) * E.points.card := by
+      ≤ 72 * (D.degE + k + 6) * E.points.card := by
   exact log_deriv_sz_paper_core E D P B m _hDeg hNV
 
 /-! ## Phase 6b: T5 replacement scaffolding

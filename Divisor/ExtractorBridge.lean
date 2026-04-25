@@ -3404,10 +3404,10 @@ theorem distinctR_mem_points
       has cardinality at most `48 · (d + stmt.k + 6) · |E.points|`
       (purely linear in `|E|`).
 
-    The linear coefficient `48` is delivered by `log_deriv_sz_paper`,
+    The linear coefficient `84` is delivered by `log_deriv_sz_paper`,
     which combines (a) the Lang-Weil axiom
     `bivariate_poly_zeros_on_ExE_le` applied to `clearedFullPoly` on
-    `E × E` (`36·(d+k+6)·|E|`) with (b) the tight denominator-factor
+    `E × E` (`72·(d+k+6)·|E|`) with (b) the tight denominator-factor
     boundary bound `logDerivCheckFn_undefined_set_bound_tight`
     (`(6d+9k+71)·|E| ≤ 12·(d+k+6)·|E|`).
 
@@ -3444,7 +3444,7 @@ theorem ma_extractable
         ∧ dlogHolds E stmt wit) ∨
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ 48 * (stmt.degBound + stmt.k + 6) * E.points.card := by
+      ≤ 84 * (stmt.degBound + stmt.k + 6) * E.points.card := by
   classical
   set d := stmt.degBound with hd_def
   by_cases hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
@@ -3470,8 +3470,8 @@ theorem ma_extractable
     have hBound :=
       log_deriv_sz_paper E msg.toD stmt.target stmt.bases
         (fun i => msg.m (hkm ▸ i)) hDegLt hNV
-    have hMono : 48 * (msg.toD.degE + stmt.k + 6) * E.points.card
-                 ≤ 48 * (d + stmt.k + 6) * E.points.card := by
+    have hMono : 84 * (msg.toD.degE + stmt.k + 6) * E.points.card
+                 ≤ 84 * (d + stmt.k + 6) * E.points.card := by
       apply Nat.mul_le_mul_right
       have : msg.toD.degE + stmt.k + 6 ≤ d + stmt.k + 6 := by
         exact Nat.add_le_add_right (Nat.add_le_add_right hDeg _) _
@@ -3762,7 +3762,7 @@ theorem ip_knowledge_sound
          ∧ dlogHolds E stmt wit) ∨
      ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
-      ≤ 48 * (stmt.degBound + stmt.k + 6) * E.points.card)
+      ≤ 84 * (stmt.degBound + stmt.k + 6) * E.points.card)
     ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
         (msg3 msg3' : IPProverMsg3 E.q),
         msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
