@@ -3354,6 +3354,41 @@ theorem polyG_zero_trace_formula
   · exact hPhase2 A₀ hA₀ hA₀z A₁ hA₁ hNV
   · exact hPhase1 A₀ hA₀ hA₀z A₁ hA₁ hNV
 
+/-! ## Helper lemmas for the polyGFull path -/
+
+/-- Negation of the y-coordinate preserves membership in `E.points`. -/
+theorem neg_y_mem_points (x y : ZMod E.q)
+    (h : (x, y) ∈ E.points) : (x, -y) ∈ E.points := by
+  apply E.hComplete
+  have hc := E.hOnCurve _ h
+  simp only at hc ⊢
+  rw [neg_sq]; exact hc
+
+/-- Every value of `distinctR` lies in `E.points`, given that the
+    statement's target and all bases are on the curve. -/
+theorem distinctR_mem_points
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (j : Fin (1 + baseImageCount E stmt msg hkm)) :
+    distinctR E stmt msg hkm j ∈ E.points := by
+  by_cases hj0 : j.val = 0
+  · have hj : j = ⟨0, by omega⟩ := Fin.ext hj0
+    rw [hj, distinctR_zero]
+    exact neg_y_mem_points E stmt.target.1 stmt.target.2 hTargetOnE
+  · have hpos : 0 < j.val := Nat.pos_of_ne_zero hj0
+    have hlt : j.val - 1 < baseImageCount E stmt msg hkm := by omega
+    set i : Fin (baseImageCount E stmt msg hkm) := ⟨j.val - 1, hlt⟩
+    have hj : j = ⟨i.val + 1, by omega⟩ := Fin.ext (by simp [i]; omega)
+    rw [hj, distinctR_succ]
+    have hmem := baseAt_mem_baseImage E stmt msg hkm i
+    rw [baseImage, Finset.mem_image] at hmem
+    obtain ⟨idx, _, hbase⟩ := hmem
+    rw [← hbase]
+    unfold extractorBases
+    exact hBasesOnE _
+
 /-! ## Theorem 6: Extractable MA protocol -/
 
 /-- **Theorem 6 (MA extractability) — upgraded form with valid witness.**
@@ -3366,23 +3401,24 @@ theorem polyG_zero_trace_formula
       returns `some wit`; or
 
     * **Bound branch**: the set of accepting challenges in `validPairs`
-      has cardinality at most
-      `54 · (d + stmt.k + 6) · |E.points|
-        + 6 · q · ((d + k + 1) + (d + k + 1) · (d + k))`.
+      has cardinality at most `54 · (d + stmt.k + 6) · |E.points|`
+      (purely linear in `|E|`).
 
     The linear coefficient `54` is delivered by `log_deriv_sz_paper`,
     which combines (a) the Lang-Weil axiom
     `bivariate_poly_zeros_on_ExE_le` applied to `clearedFullPoly` on
     `E × E` (`36·(…)`) with (b) the denominator-factor boundary bound
-    `logDerivCheckFn_undefined_set_bound` (`18·(…)`). This is a
-    tightening over the earlier `72·(…) + 4` bound from `log_deriv_sz`
-    (which routed through fiber / bad-A₀ decomposition).
+    `logDerivCheckFn_undefined_set_bound` (`18·(…)`).
 
-    The quadratic summand `6 · q · ((d+k+1) + (d+k+1)·(d+k))` handles
-    the "small `|validPairs|`" regime where the T5 quantitative
-    criterion cannot be invoked; eliminating it requires the Phase 6
-    T5 replacement (Lang-Weil + paper-aligned residue-matching on
-    `E × E`, see `docs/bivariate-sz-paper-faithful.md`). -/
+    The previous quadratic summand `6·q·((d+k+1)+(d+k+1)·(d+k))` has
+    been eliminated by routing through `sigma_matching_from_polyGFull_vanishing`
+    (the Phase 6 T5 replacement) instead of the original T5 with its
+    quadratic `|validPairs|` threshold.
+
+    **New hypotheses** (compared to the previous version):
+    `hTargetOnE` and `hBasesOnE` assert that the statement's target and
+    base points lie on the curve. These are needed for the polyGFull
+    σ-matching path which requires `hRonE : ∀ j, distinctR j ∈ E.points`. -/
 theorem ma_extractable
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
@@ -3397,6 +3433,8 @@ theorem ma_extractable
         denomScaledPoly (E := E) msg.toD stmt.target
           (baseImageCount E stmt msg hkm)
           (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E ≠ 0)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
         21 * (msg.toD.degE + stmt.k + 2) + 72) :
@@ -3405,9 +3443,7 @@ theorem ma_extractable
         ∧ dlogHolds E stmt wit) ∨
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ 54 * (stmt.degBound + stmt.k + 6) * E.points.card
-        + 6 * E.q * ((stmt.degBound + stmt.k + 1) +
-                     (stmt.degBound + stmt.k + 1) * (stmt.degBound + stmt.k)) := by
+      ≤ 54 * (stmt.degBound + stmt.k + 6) * E.points.card := by
   classical
   set d := stmt.degBound with hd_def
   by_cases hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
@@ -3415,8 +3451,7 @@ theorem ma_extractable
      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
        (fun i => msg.m (hkm ▸ i)) A₀ A₁ ≠ 0
   · -- Nonvanishing on defined subset: `log_deriv_sz_paper` bounds NotEq
-    -- via Lang-Weil on E × E, yielding `36·(d + k + 6)·|E|` (tighter
-    -- than the old `72·(d + k + 6) + 4` coefficient via `log_deriv_sz`).
+    -- via Lang-Weil on E × E, yielding `54·(d + k + 6)·|E|`.
     right
     set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
       (validPairs E).filter
@@ -3440,14 +3475,10 @@ theorem ma_extractable
       have : msg.toD.degE + stmt.k + 6 ≤ d + stmt.k + 6 := by
         exact Nat.add_le_add_right (Nat.add_le_add_right hDeg _) _
       omega
-    exact le_trans hCardLe (le_trans hBound
-      (le_trans hMono (Nat.le_add_right _ _)))
+    exact le_trans hCardLe (le_trans hBound hMono)
   · push_neg at hNV
-    -- After push_neg, `hNV` is exactly the `hAllZero` hypothesis needed
-    -- by `polyG_zero_trace_formula`: logDerivCheckFn vanishes on every
-    -- defined non-vertical pair.
-    -- `polyG_zero_trace_formula` now gives vanishing for `betaConstructive`
-    -- directly, without universal quantification over `β_fun`.
+    -- After push_neg, `hNV` is exactly the `hAllZero` hypothesis:
+    -- logDerivCheckFn vanishes on every defined non-vertical pair.
     have hPolyGZero :
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
@@ -3480,46 +3511,179 @@ theorem ma_extractable
                   (stmt.bases (Fin.cast hkm.symm i)).1
                   (stmt.bases (Fin.cast hkm.symm i)).2))
           convert hRelation using 1
-      · by_cases hL :
-            6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) + 1
-              ≤ (validPairs E).card
-        · left
-          obtain ⟨hSucc, hRelation⟩ :=
-            extractorSucceeds_of_logDerivCheck_identically_zero_general E stmt msg d
-              hDeg hd hkm hAdm hNegP hSplit
-              (fun A₀ A₁ hA₀ hA₁ hDef => hNV A₀ A₁ hA₀ hA₁ hDef)
-              hPolyGZero hL
-          let wit : DlogWitness E.q :=
-            ⟨msg.k, extractedScalars E stmt msg hkm, d, hSucc⟩
-          refine ⟨wit, ?_, ?_⟩
-          · show (if h : extractorSucceeds E stmt msg d hkm
-                  then some (⟨msg.k, extractedScalars E stmt msg hkm, d, h⟩ : DlogWitness E.q)
-                  else none) = _
-            rw [dif_pos hSucc]
-          · refine ⟨hkm, ?_⟩
-            show (ECPoint.affine stmt.target.1 stmt.target.2 : ECPoint E.q) =
-              ECPoint.weightedSum E (Finset.univ : Finset (Fin wit.k))
-                (fun i => ECPoint.zsmul E (wit.scalars i)
-                  (ECPoint.affine
-                    (stmt.bases (Fin.cast hkm.symm i)).1
-                    (stmt.bases (Fin.cast hkm.symm i)).2))
-            convert hRelation using 1
-        · -- Small-validPairs regime: bound directly by `|validPairs| < threshold`.
-          right
-          push_neg at hL
-          set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
-            (validPairs E).filter
-              (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hAS
-          have hSubVP : acceptSet ⊆ validPairs E := by
-            intro p hp
-            simp only [hAS, Finset.mem_filter] at hp
-            exact hp.1
-          have hCardLe : acceptSet.card ≤ (validPairs E).card :=
-            Finset.card_le_card hSubVP
-          have hVP : (validPairs E).card
-              ≤ 6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) :=
-            Nat.lt_succ_iff.mp hL
-          exact le_trans hCardLe (le_trans hVP (Nat.le_add_left _ _))
+      · -- ¬hNegP: use polyGFull path to obtain σ-matching.
+        -- This replaces the old by_cases on |validPairs| (T5 path)
+        -- and eliminates the quadratic fallback.
+        left
+        -- Set up β_fun and its properties.
+        set β_fun := betaConstructive E msg.toD with hβ_def
+        have hD : ¬ msg.toD.isZero := admSet_implies_toD_nonzero stmt msg hAdm
+        have hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0 :=
+          fun P hP => betaConstructive_support E msg.toD P hP
+        have hβcov : ∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0 :=
+          fun P hP hZ => betaConstructive_covers E msg.toD hD P hP hZ
+        have hβsum : (∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE :=
+          betaConstructive_sum_le_degE E msg.toD
+        have hβgroup : ECPoint.weightedSum E E.points
+            (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0 :=
+          betaConstructive_group_sum_zero E msg.toD hD hSplit
+        -- Prepare injective/nonzero hypotheses for sigma_matching.
+        have hQinj : Function.Injective (zerosAt E msg.toD) :=
+          zerosAt_injective E msg.toD
+        have hDistinctR_inj : Function.Injective (distinctR E stmt msg hkm) :=
+          distinctR_injective E stmt msg hkm hNegP
+        have hβPos : ∀ k : Fin (zerosCard E msg.toD),
+                       multAt E β_fun msg.toD k > 0 :=
+          multAt_pos E β_fun msg.toD hβcov
+        have hBetaLt : ∀ k, multAt E β_fun msg.toD k < E.q := by
+          intro k
+          have hSingle : multAt E β_fun msg.toD k ≤
+              ∑ k' : Fin (zerosCard E msg.toD), multAt E β_fun msg.toD k' := by
+            refine Finset.single_le_sum
+              (f := fun k' => multAt E β_fun msg.toD k') ?_ (Finset.mem_univ k)
+            intro k' _; exact Nat.zero_le _
+          have hβSum : (∑ k : Fin (zerosCard E msg.toD),
+                         multAt E β_fun msg.toD k) ≤ msg.toD.degE :=
+            sum_multAt_le_degE E β_fun msg.toD hβsup hβsum
+          exact lt_of_le_of_lt (hSingle.trans (hβSum.trans hDeg)) hd
+        have hBetaNz : ∀ k,
+            ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q) ≠ 0 := by
+          intro k
+          rw [Ne, CharP.cast_eq_zero_iff (ZMod E.q) E.q]
+          intro hdvd
+          have hPos : 0 < multAt E β_fun msg.toD k := hβPos k
+          have hLt : multAt E β_fun msg.toD k < E.q := hBetaLt k
+          exact Nat.not_lt.mpr (Nat.le_of_dvd hPos hdvd) hLt
+        -- Membership hypotheses.
+        have hQonE : ∀ k, zerosAt E msg.toD k ∈ E.points :=
+          fun k => zerosAt_mem_E E msg.toD k
+        have hRonE : ∀ j, distinctR E stmt msg hkm j ∈ E.points :=
+          fun j => distinctR_mem_points E stmt msg hkm hTargetOnE hBasesOnE j
+        -- Size bounds: zerosCard + M ≤ d + k + 1.
+        have hd_zero_le_d : zerosCard E msg.toD ≤ d := by
+          have hCardLe : zerosCard E msg.toD ≤
+              ∑ k : Fin (zerosCard E msg.toD), multAt E β_fun msg.toD k := by
+            calc zerosCard E msg.toD
+                = ∑ _k : Fin (zerosCard E msg.toD), 1 := by
+                    simp [Finset.sum_const, Finset.card_univ, Fintype.card_fin]
+              _ ≤ ∑ k : Fin (zerosCard E msg.toD), multAt E β_fun msg.toD k :=
+                    Finset.sum_le_sum (fun k _ => hβPos k)
+          have hβSum : (∑ k : Fin (zerosCard E msg.toD),
+                         multAt E β_fun msg.toD k) ≤ msg.toD.degE :=
+            sum_multAt_le_degE E β_fun msg.toD hβsup hβsum
+          exact hCardLe.trans (hβSum.trans hDeg)
+        have hBICount_le : baseImageCount E stmt msg hkm ≤ stmt.k := by
+          have hleK : baseImageCount E stmt msg hkm ≤ msg.k := by
+            unfold baseImageCount baseImage
+            refine (Finset.card_image_le (f := extractorBases E stmt msg hkm)
+                       (s := Finset.univ)).trans ?_
+            rw [Finset.card_univ, Fintype.card_fin]
+          rw [hkm]; exact hleK
+        have hSum_le :
+            zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)
+              ≤ d + stmt.k + 1 := by
+          have : zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)
+                  ≤ d + (1 + stmt.k) :=
+            Nat.add_le_add hd_zero_le_d (Nat.add_le_add_left hBICount_le _)
+          omega
+        -- zerosCard ≤ msg.toD.degE (each mult ≥ 1, sum ≤ degE).
+        have hZC_degE : zerosCard E msg.toD ≤ msg.toD.degE := by
+          have hCardLe : zerosCard E msg.toD ≤
+              ∑ k : Fin (zerosCard E msg.toD), multAt E β_fun msg.toD k := by
+            calc zerosCard E msg.toD
+                = ∑ _k : Fin (zerosCard E msg.toD), 1 := by
+                    simp [Finset.sum_const, Finset.card_univ, Fintype.card_fin]
+              _ ≤ ∑ k : Fin (zerosCard E msg.toD), multAt E β_fun msg.toD k :=
+                    Finset.sum_le_sum (fun k _ => hβPos k)
+          exact hCardLe.trans (sum_multAt_le_degE E β_fun msg.toD hβsup hβsum)
+        -- hELarge: hLargeQ implies |E| > 4*(d+M)+2.
+        have hELarge : E.points.card >
+            4 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) + 2 := by
+          have h1 : 4 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) + 2
+              ≤ 4 * (msg.toD.degE + stmt.k + 1) + 2 := by omega
+          omega
+        -- Step A: get polyGFull vanishing on all E × E from polyG vanishing
+        -- on non-vertical pairs, via Lang-Weil contrapositive.
+        have hPolyGFullVanishing :
+            ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+              A₀ ∈ E.points → A₁ ∈ E.points →
+              bivEval₂ (polyGFull E (zerosAt E msg.toD)
+                (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
+                (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)) A₀ A₁ = 0 :=
+          polyGFull_vanishes_on_ExE_of_polyG_zero E
+            (zerosAt E msg.toD)
+            (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
+            (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
+            hPolyGZero hELarge
+        -- Step B: obtain σ-matching from polyGFull vanishing.
+        obtain ⟨σ, hσ_eq, hσ_betam, hσ_off⟩ :=
+          sigma_matching_from_polyGFull_vanishing E
+            (zerosAt E msg.toD)
+            (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
+            (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
+            hQinj hDistinctR_inj hBetaNz hQonE hRonE
+            hPolyGFullVanishing hELarge
+        -- Step C: from σ-matching, obtain extractorSucceeds and the
+        -- group-sum relation, using existing S5 + D3 + D4 + D5 infrastructure.
+        obtain ⟨hBound, hCanon, hNonCanon⟩ :=
+          extractorCoeffFromSigma_satisfies_D3 E stmt msg d hDeg hkm hNegP
+            β_fun hβsup hβcov hβsum σ hσ_eq hσ_betam hσ_off
+        obtain ⟨hSucceeds, _hScalars_eq⟩ :=
+          extractorSucceeds_of_natural_witness E stmt msg d hd hkm hNegP
+            (extractorCoeffFromSigma E stmt msg hkm β_fun σ)
+            hBound hCanon hNonCanon
+        -- Step D: pointwise matching ⇒ functional equality for divisor coefficients.
+        have hEq : extractorDivisorCoeffs E stmt msg hkm =
+                   dCoeffs E msg.toD β_fun := by
+          funext P
+          exact extractorDivisorCoeffs_eq_dCoeffs E stmt msg d hDeg hd hkm
+            hNegP β_fun hβsup hβcov hβsum σ hσ_eq hσ_betam hσ_off P
+        -- Step E: group-sum-zero transfer.
+        have hβsup_P : ∀ P, β_fun P ≠ 0 → P ∈ E.points :=
+          fun P hP => (hβsup P hP).1
+        have hFinSupp : Set.Finite (Function.support (dCoeffs E msg.toD β_fun)) :=
+          dCoeffs_finiteSupport E msg.toD β_fun hβsup_P
+        have hGSup :
+            ECPoint.weightedSum E hFinSupp.toFinset
+              (fun P => ECPoint.zsmul E (dCoeffs E msg.toD β_fun P) P) = 0 :=
+          dCoeffs_groupSum_zero E msg.toD β_fun hβsup_P hβgroup hFinSupp
+        have hSupSub : Function.support (dCoeffs E msg.toD β_fun) ⊆
+            ↑(extractorDivisorCandidate E stmt msg hkm) := by
+          intro P hP
+          have hP' : extractorDivisorCoeffs E stmt msg hkm P ≠ 0 := by
+            rw [hEq]; exact hP
+          exact extractorDivisorCoeffs_support_subset_candidate E stmt msg hkm hP'
+        have hFinSupp_sub : hFinSupp.toFinset ⊆
+            extractorDivisorCandidate E stmt msg hkm := by
+          intro P hP
+          rw [Set.Finite.mem_toFinset] at hP
+          exact hSupSub hP
+        have hWSum : ECPoint.weightedSum E (extractorDivisorCandidate E stmt msg hkm)
+            (fun P => ECPoint.zsmul E (dCoeffs E msg.toD β_fun P) P) = 0 := by
+          rw [ECPoint.weightedSum_subset_of_zero_outside E hFinSupp_sub
+            (fun P _ hPnotSup => by
+              rw [Set.Finite.mem_toFinset, Function.mem_support, not_not] at hPnotSup
+              rw [hPnotSup]; exact ECPoint.zsmul_zero E P)]
+          exact hGSup
+        have hWSum' : ECPoint.weightedSum E (extractorDivisorCandidate E stmt msg hkm)
+            (fun P => ECPoint.zsmul E (extractorDivisorCoeffs E stmt msg hkm P) P) = 0 := by
+          convert hWSum using 2; funext P; rw [hEq]
+        have hRelation := target_eq_weightedSum_of_weightedSum E stmt msg hkm hNegP hWSum'
+        let wit : DlogWitness E.q :=
+          ⟨msg.k, extractedScalars E stmt msg hkm, d, hSucceeds⟩
+        refine ⟨wit, ?_, ?_⟩
+        · show (if h : extractorSucceeds E stmt msg d hkm
+                then some (⟨msg.k, extractedScalars E stmt msg hkm, d, h⟩ : DlogWitness E.q)
+                else none) = _
+          rw [dif_pos hSucceeds]
+        · refine ⟨hkm, ?_⟩
+          show (ECPoint.affine stmt.target.1 stmt.target.2 : ECPoint E.q) =
+            ECPoint.weightedSum E (Finset.univ : Finset (Fin wit.k))
+              (fun i => ECPoint.zsmul E (wit.scalars i)
+                (ECPoint.affine
+                  (stmt.bases (Fin.cast hkm.symm i)).1
+                  (stmt.bases (Fin.cast hkm.symm i)).2))
+          convert hRelation using 1
     · right
       set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
         (validPairs E).filter
@@ -3553,6 +3717,8 @@ theorem ip_knowledge_sound
         denomScaledPoly (E := E) msg1.toD stmt.target
           (baseImageCount E stmt msg1 hkm)
           (baseAt E stmt msg1 hkm) A₀ %ₘ curveEqPoly E ≠ 0)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
         2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
         21 * (msg1.toD.degE + stmt.k + 2) + 72) :
@@ -3561,9 +3727,7 @@ theorem ip_knowledge_sound
          ∧ dlogHolds E stmt wit) ∨
      ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
-      ≤ 54 * (stmt.degBound + stmt.k + 6) * E.points.card
-        + 6 * E.q * ((stmt.degBound + stmt.k + 1) +
-                     (stmt.degBound + stmt.k + 1) * (stmt.degBound + stmt.k)))
+      ≤ 54 * (stmt.degBound + stmt.k + 6) * E.points.card)
     ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
         (msg3 msg3' : IPProverMsg3 E.q),
         msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
@@ -3575,7 +3739,8 @@ theorem ip_knowledge_sound
         ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
         msg3 = msg3' := by
   refine ⟨?_, ?_⟩
-  · exact ma_extractable E stmt hd hd2 msg1 hDeg hkm hSmooth hSplit hAccount hDenomNZ hLargeQ
+  · exact ma_extractable E stmt hd hd2 msg1 hDeg hkm hSmooth hSplit hAccount hDenomNZ
+           hTargetOnE hBasesOnE hLargeQ
   · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
