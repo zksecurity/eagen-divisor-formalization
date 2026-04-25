@@ -1,5 +1,27 @@
 # Paper-Faithful Bound: Session Execution Status
 
+## END STATE (tag `quadratic-eliminated`)
+
+`ma_extractable`'s bound:
+```
+((validPairs E).filter (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+  ≤ 54 * (stmt.degBound + stmt.k + 6) * E.points.card
+```
+
+Purely linear. Quadratic eliminated.
+
+`#print axioms ma_extractable` (no sorryAx):
+- propext, Classical.choice, Quot.sound (built-in)
+- bivariate_poly_zeros_on_ExE_le (Lang-Weil)
+- chord_fiber_product_eq_normZ_under_split
+- chord_sum_eq_chord_fiber_product_logDeriv
+- CoordRingElt.divisor_group_sum_zero
+- ECPoint.add_assoc, ECPoint.add_comm, ECPoint.neg_add_cancel
+
+7 user-defined axioms + 3 built-ins. No sorryAx.
+
+
+
 Execution of `docs/bivariate-sz-paper-faithful.md` — orchestrator notes.
 
 ## Completed
