@@ -676,4 +676,69 @@ After Phase F:
 
 ## Execution log
 
-(populated as phases complete)
+### 2026-04-25 — Session 1
+
+**Phases A, B, C completed; Phase E partial.**
+
+Commits:
+* `aa7668f` — Phase A: replace `bivariate_poly_zeros_on_ExE_le` axiom
+  (DKL'14 Claim 7.2 + Hartshorne I.7.7 Bezout, taking `total_degree_le`
+  instead of `bi_x_degree_le`, returning `9·D·E.q`).
+* `74df4f7` — Phase B: define `polyG` (paper §5) with totalDeg ≤ 2·(d+M)
+  via `polyGFull_total_degree_le` and `lineEvalNumAtFull_total_degree_le`
+  (later moved into `ClearedFullPoly.lean`).
+* `950121b` — Phase C+E partial: rewire
+  `polyGFull_vanishes_on_ExE_of_polyG_zero` to use the new axiom; new
+  threshold `|E|² - 2|E| > 18·(d+M)·E.q`.
+
+**Phase A counterexamples** (preserved in `axioms/bivariate_poly_zeros_on_ExE_le.md`):
+| f | q | curve | old bound | new bound | actual |
+|---|---|---|---|---|---|
+| Y₀+Y₁ | 5 | y²=x³+1 | 0 | 45 | 5 |
+| Y₀+Y₁ | 11 | y²=x³+x+3 | 0 | 99 | 41 |
+| Y₀·Y₁ | 5 | y²=x³+1 | 0 | 90 | 9 |
+
+**ma_extractable axiom inventory** (after this session):
+
+```
+Divisor.ma_extractable depends on:
+  propext, sorryAx, Classical.choice, Quot.sound,  -- 4 standard
+  Divisor.bivariate_poly_zeros_on_ExE_le,           -- corrected axiom
+  Divisor.chord_fiber_product_eq_normZ_under_split,
+  Divisor.chord_sum_eq_chord_fiber_product_logDeriv,
+  Divisor.CoordRingElt.divisor_group_sum_zero,
+  Divisor.ECPoint.add_assoc,
+  Divisor.ECPoint.add_comm,
+  Divisor.ECPoint.neg_add_cancel
+```
+
+7 user axioms + standard. The corrected `bivariate_poly_zeros_on_ExE_le`
+appears in the closure (good — confirms the new axiom is plumbed
+through ma_extractable's proof).
+
+**Remaining sorries (deferred to next session):**
+1. `log_deriv_sz_paper_core` body in `ClearedFullPoly.lean:1450`
+   — Phase E1+E2: replace via polyGFull-based proof for paper-exact
+   bound `18·(d+k)·E.q`. Requires either a witness lemma or the iff
+   direction of `polyG_eq_zero_iff_paperResidue` plus a density
+   argument on hQline.
+2. `residual_vanishes_on_ExE` body in `ClearedFullPoly.lean:2210`
+   — sigma_matching path; needs the new DKL approach with stronger
+   threshold (or refactor sigma_matching_core to use the new
+   threshold form `|E|² - 2|E| > 18·(d+M)·E.q`).
+3. `hELarge_dkl` derivation in `ExtractorBridge.lean:3608` — needs
+   a Hasse-based bound `q ≤ 3·|E|` (or similar) to bridge from
+   `hLargeQ` to the new threshold form. Could be a small derived
+   lemma using `hasse_weil`.
+
+**Phase D (witness lemma) reframed:**
+The plan's Phase D was paper §5 Lemma 8 (∑Q ≠ ∑P → polyGFull ≠ 0
+somewhere on E×E). In practice, the witness for Phase E's
+`log_deriv_sz_paper_exact` can come inline from Branch 1's existing
+hNV (∃ pair where logDerivCheckFn ≠ 0), via the iff direction of
+`polyG_eq_zero_iff_paperResidue`. Standalone Phase D not yet needed.
+
+**Phase F (cleanup) deferred:**
+Lots of dead code candidates (clearedFullPoly atoms, T5-related
+infra, log_deriv_sz_paper_core itself once Branch 1 is rewired).
+Run cleanup after Phase E full completion.
