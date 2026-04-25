@@ -1927,11 +1927,17 @@ theorem hasse_q_le_two_mul_card (hN : 8 ≤ E.points.card) :
     The cardinality of the non-degenerate bad set —
     pairs `(A₀, A₁) ∈ E.points × E.points` where the verifier's
     log-derivative check vanishes AND the denominator stays defined
-    AND the line is non-vertical — is at most `72·(D.degE + k + 6)·|E|`.
+    AND the line is non-vertical — is at most
+    `36·(2·D.degE + k + 6)·|E|`.
 
     This uses the DKL+Bezout axiom (`bivariate_poly_zeros_on_ExE_le`)
     with total degree ≤ 4·D.degE + 2·k + 12 and Hasse `q ≤ 2·|E|`
-    (for |E| ≥ 8), combined with a small-|E| case split. -/
+    (for |E| ≥ 8), combined with a small-|E| case split.
+
+    **Tightened**: previous bound `72·(D.degE+k+6)·|E|` lost precision
+    by rounding `36·(2d+k+6)` up to `72·(d+k+6)`. The refined form
+    preserves the `2d` vs `d` distinction in the DKL degree bound,
+    ultimately yielding a tighter constant in `log_deriv_sz_paper`. -/
 theorem log_deriv_sz_paper_core
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
@@ -1942,7 +1948,7 @@ theorem log_deriv_sz_paper_core
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           A₀ne_A₁x_cleared_pair E D P B m p)).card
-      ≤ 72 * (D.degE + k + 6) * E.points.card := by
+      ≤ 36 * (2 * D.degE + k + 6) * E.points.card := by
   classical
   set S : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
     (E.points ×ˢ E.points).filter
@@ -1961,15 +1967,15 @@ theorem log_deriv_sz_paper_core
   set N := E.points.card with hN_def
   set d := D.degE with hd_def
   calc S.card ≤ T.card := Finset.card_le_card hSub
-    _ ≤ 72 * (d + k + 6) * N := by
-      by_cases hSmall : N ≤ 72 * (d + k + 6)
-      · -- Small N: T.card ≤ N² ≤ 72*(d+k+6)*N
+    _ ≤ 36 * (2 * d + k + 6) * N := by
+      by_cases hSmall : N ≤ 36 * (2 * d + k + 6)
+      · -- Small N: T.card ≤ N² ≤ 36*(2d+k+6)*N
         have hTsub : T ⊆ E.points ×ˢ E.points := Finset.filter_subset _ _
         have hTcard : T.card ≤ N * N :=
           le_trans (Finset.card_le_card hTsub)
             (by rw [Finset.card_product])
         calc T.card ≤ N * N := hTcard
-          _ ≤ 72 * (d + k + 6) * N := Nat.mul_le_mul_right N hSmall
+          _ ≤ 36 * (2 * d + k + 6) * N := Nat.mul_le_mul_right N hSmall
       · -- Large N: use axiom + Hasse
         push_neg at hSmall
         have hN8 : 8 ≤ N := by omega
@@ -1983,14 +1989,21 @@ theorem log_deriv_sz_paper_core
           ≤ 9 * (4 * d + 2 * k + 12) * E.q := hAxiom
           _ ≤ 9 * (4 * d + 2 * k + 12) * (2 * N) :=
               Nat.mul_le_mul_left _ hQle
-          _ ≤ 72 * (d + k + 6) * N := by nlinarith
+          _ ≤ 36 * (2 * d + k + 6) * N := by nlinarith
 
 /-- **Phase 5 `log_deriv_sz_paper` (outer, with-boundary form).**
 
-    Combines the core Lang-Weil bound (`72·(d+k+6)·|E|`) on the
-    denom-defined pairs with the tight boundary bound
-    (`(6d+9k+71)·|E|`) from `logDerivCheckFn_undefined_set_bound_tight`
-    for the denom-undefined pairs.  Total: `84·(D.degE + k + 6)·|E|`. -/
+    Combines the tightened core Lang-Weil bound
+    (`36·(2d+k+6)·|E|`) on the denom-defined pairs with the tight
+    boundary bound (`(6d+9k+71)·|E|`) from
+    `logDerivCheckFn_undefined_set_bound_tight` for the
+    denom-undefined pairs.  Total: `78·(D.degE + k + 6)·|E|`.
+
+    **Tightened**: previous bound was `84·(D.degE+k+6)·|E|`.
+    The improvement comes from preserving the `2d` dependence in the
+    DKL degree bound (total degree `4d+2k+12` gives DKL count
+    `≤ 9·(4d+2k+12)·q = 36·(2d+k+6)·q`), rather than rounding to
+    `72·(d+k+6)·q`. -/
 theorem log_deriv_sz_paper
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
@@ -1999,7 +2012,7 @@ theorem log_deriv_sz_paper
         logDerivCheckFnDefined E D P B A₀ A₁ ∧
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     (badChallengesNotEq E D P B m).card ≤
-      84 * (D.degE + k + 6) * E.points.card := by
+      78 * (D.degE + k + 6) * E.points.card := by
   classical
   -- badChallengesNotEq splits by `logDerivCheckFnDefined`.
   set badNE := badChallengesNotEq E D P B m with hBNE_def
@@ -2035,19 +2048,19 @@ theorem log_deriv_sz_paper
   have hUndefBound := logDerivCheckFn_undefined_set_bound_tight E D P k B hD
   calc badNE.card
     ≤ defBad.card + undefAll.card := hCardSplit
-    _ ≤ 72 * (D.degE + k + 6) * E.points.card +
-        (6 * D.degE + 9 * k + 71) * E.points.card := by
-        exact Nat.add_le_add hCoreBound hUndefBound
-    _ ≤ 84 * (D.degE + k + 6) * E.points.card := by
-        have : 72 * (D.degE + k + 6) + (6 * D.degE + 9 * k + 71)
-               ≤ 84 * (D.degE + k + 6) := by omega
-        calc 72 * (D.degE + k + 6) * E.points.card +
+    _ ≤ 36 * (2 * D.degE + k + 6) * E.points.card +
+        (6 * D.degE + 9 * k + 71) * E.points.card :=
+        Nat.add_le_add hCoreBound hUndefBound
+    _ ≤ 78 * (D.degE + k + 6) * E.points.card := by
+        have : 36 * (2 * D.degE + k + 6) + (6 * D.degE + 9 * k + 71)
+               ≤ 78 * (D.degE + k + 6) := by omega
+        calc 36 * (2 * D.degE + k + 6) * E.points.card +
                (6 * D.degE + 9 * k + 71) * E.points.card
-            = (72 * (D.degE + k + 6) + (6 * D.degE + 9 * k + 71)) *
+            = (36 * (2 * D.degE + k + 6) + (6 * D.degE + 9 * k + 71)) *
                 E.points.card := by ring
-          _ ≤ (84 * (D.degE + k + 6)) * E.points.card :=
+          _ ≤ (78 * (D.degE + k + 6)) * E.points.card :=
                 Nat.mul_le_mul_right _ this
-          _ = 84 * (D.degE + k + 6) * E.points.card := by ring
+          _ = 78 * (D.degE + k + 6) * E.points.card := by ring
 
 /- (Deleted Phase 5 chord-symmetry block: swapA₀A₁, bivEval₂_swapA₀A₁,
     clearedFullPoly_swap_signed, bivEval₂_clearedFullPoly_swap_zero,
@@ -2269,6 +2282,62 @@ private theorem polyGFull_total_degree_le'
     set ce := ((Finset.univ (α := Fin M)).erase j).card with hce
     have hCE : ce * 2 ≤ M * 2 := Nat.mul_le_mul_right 2 hEC
     omega
+
+/-- **Tight total-degree bound for `polyGFull`.** Each summand has
+    exactly `(d−1)+M` or `d+(M−1)` degree-2 factors, giving total
+    degree `≤ 2·(d+M−1)` (using Nat subtraction, which is 0 when
+    `d+M=0`). This is 2 less than the loose bound
+    `polyGFull_total_degree_le'`. -/
+theorem polyGFull_total_degree_le_tight
+    {d M : ℕ}
+    (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
+    (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q) :
+    total_degree_le E (polyGFull E Q beta R m) (2 * (d + M - 1)) := by
+  classical
+  unfold polyGFull
+  refine total_degree_le.add ?_ ?_
+  · refine total_degree_le.sum _ _ ?_
+    intro k _
+    have hβ : total_degree_le E (MvPolynomial.C (beta k) : FourVarPoly E.q) 0 :=
+      total_degree_le.C _
+    have hQErase : total_degree_le E
+        (∏ k' ∈ (Finset.univ (α := Fin d)).erase k, lineEvalNumAtFull E (Q k'))
+        (((Finset.univ (α := Fin d)).erase k).card * 2) := by
+      refine total_degree_le.prod_const _ _ ?_
+      intro k' _; exact lineEvalNumAtFull_total_degree_le' E (Q k')
+    have hR : total_degree_le E
+        (∏ j : Fin M, lineEvalNumAtFull E (R j))
+        ((Finset.univ (α := Fin M)).card * 2) := by
+      refine total_degree_le.prod_const _ _ ?_
+      intro j _; exact lineEvalNumAtFull_total_degree_le' E (R j)
+    have hMul := total_degree_le.mul (total_degree_le.mul hβ hQErase) hR
+    refine hMul.mono ?_
+    have hEC : ((Finset.univ (α := Fin d)).erase k).card = d - 1 := by
+      rw [Finset.card_erase_of_mem (Finset.mem_univ k)]; simp
+    have hMC : (Finset.univ (α := Fin M)).card = M := by simp
+    have hd1 : 1 ≤ d := by have := k.isLt; omega
+    rw [hEC, hMC]; omega
+  · refine total_degree_le.sum _ _ ?_
+    intro j _
+    have hm : total_degree_le E (MvPolynomial.C (m j) : FourVarPoly E.q) 0 :=
+      total_degree_le.C _
+    have hQ : total_degree_le E
+        (∏ k : Fin d, lineEvalNumAtFull E (Q k))
+        ((Finset.univ (α := Fin d)).card * 2) := by
+      refine total_degree_le.prod_const _ _ ?_
+      intro k _; exact lineEvalNumAtFull_total_degree_le' E (Q k)
+    have hRErase : total_degree_le E
+        (∏ j' ∈ (Finset.univ (α := Fin M)).erase j, lineEvalNumAtFull E (R j'))
+        (((Finset.univ (α := Fin M)).erase j).card * 2) := by
+      refine total_degree_le.prod_const _ _ ?_
+      intro j' _; exact lineEvalNumAtFull_total_degree_le' E (R j')
+    have hMul := total_degree_le.mul (total_degree_le.mul hm hQ) hRErase
+    refine hMul.mono ?_
+    have hEC : ((Finset.univ (α := Fin M)).erase j).card = M - 1 := by
+      rw [Finset.card_erase_of_mem (Finset.mem_univ j)]; simp
+    have hDC : (Finset.univ (α := Fin d)).card = d := by simp
+    have hM1 : 1 ≤ M := by have := j.isLt; omega
+    rw [hEC, hDC]; omega
 
 /-- **T5-replacement vanishing lemma via DKL+Bezout.**
 
