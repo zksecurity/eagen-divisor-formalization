@@ -5383,6 +5383,127 @@ theorem logDerivCheckFn_undefined_set_bound
         apply Nat.mul_le_mul_right
         omega
 
+/-- **Tight boundary bound.** The undefined subset has cardinality at
+    most `(6·d + 9·k + 71)·|E|`, where `d = D.degE`. This is the
+    pre-relaxation form of `logDerivCheckFn_undefined_set_bound`
+    (which rounds up to `18·(d+k+6)·|E|`). -/
+theorem logDerivCheckFn_undefined_set_bound_tight
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    ((E.points ×ˢ E.points).filter
+      (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+        ¬ logDerivCheckFnDefined E D P B p.1 p.2)).card
+      ≤ (6 * D.degE + 9 * k + 71) * E.points.card := by
+  classical
+  set S1 := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      D.eval p.1.1 p.1.2 = 0) with hS1def
+  set S2 := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      D.eval p.2.1 p.2.2 = 0) with hS2def
+  set S3 := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      D.eval (chordX₂ p.1 p.2) (chordY₂ p.1 p.2) = 0) with hS3def
+  set S4 := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      3 * p.1.1 ^ 2 + E.curveA
+        - 2 * slopeOf p.1.1 p.1.2 p.2.1 p.2.2 * p.1.2 = 0) with hS4def
+  set S5 := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      3 * p.2.1 ^ 2 + E.curveA
+        - 2 * slopeOf p.1.1 p.1.2 p.2.1 p.2.2 * p.2.2 = 0) with hS5def
+  set S6 := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      3 * (chordX₂ p.1 p.2) ^ 2 + E.curveA
+        - 2 * slopeOf p.1.1 p.1.2 p.2.1 p.2.2 * (chordY₂ p.1 p.2) = 0) with hS6def
+  set S7 := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      (lineThrough p.1.1 p.1.2 p.2.1 p.2.2).eval P.1 (-P.2) = 0) with hS7def
+  set S8 := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      ∃ j : Fin k, (lineThrough p.1.1 p.1.2 p.2.1 p.2.2).eval (B j).1 (B j).2 = 0)
+    with hS8def
+  set U := (E.points ×ˢ E.points).filter
+    (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+      ¬ logDerivCheckFnDefined E D P B p.1 p.2) with hUdef
+  have hSub : U ⊆ S1 ∪ S2 ∪ S3 ∪ S4 ∪ S5 ∪ S6 ∪ S7 ∪ S8 := by
+    intro p hp
+    simp only [hUdef, Finset.mem_filter, Finset.mem_product] at hp
+    obtain ⟨⟨h1E, h2E⟩, hNotDef⟩ := hp
+    have hDenom : logDerivCheckFnDenom E D P B p.1 p.2 = 0 := by
+      unfold logDerivCheckFnDefined at hNotDef
+      exact not_not.mp hNotDef
+    unfold logDerivCheckFnDenom at hDenom
+    simp only [Finset.mem_union, hS1def, hS2def, hS3def, hS4def, hS5def,
+               hS6def, hS7def, hS8def, Finset.mem_filter, Finset.mem_product]
+    have h1 := hDenom
+    rcases mul_eq_zero.mp h1 with h | h
+    · rcases mul_eq_zero.mp h with h | h
+      · rcases mul_eq_zero.mp h with h | h
+        · rcases mul_eq_zero.mp h with h | h
+          · rcases mul_eq_zero.mp h with h | h
+            · rcases mul_eq_zero.mp h with h | h
+              · rcases mul_eq_zero.mp h with h | h
+                · exact Or.inl (Or.inl (Or.inl (Or.inl (Or.inl (Or.inl
+                    (Or.inl ⟨⟨h1E, h2E⟩, h⟩))))))
+                · exact Or.inl (Or.inl (Or.inl (Or.inl (Or.inl (Or.inl
+                    (Or.inr ⟨⟨h1E, h2E⟩, h⟩))))))
+              · exact Or.inl (Or.inl (Or.inl (Or.inl (Or.inl (Or.inr
+                  ⟨⟨h1E, h2E⟩, h⟩)))))
+            · exact Or.inl (Or.inl (Or.inl (Or.inl (Or.inr
+                ⟨⟨h1E, h2E⟩, h⟩))))
+          · exact Or.inl (Or.inl (Or.inl (Or.inr ⟨⟨h1E, h2E⟩, h⟩)))
+        · exact Or.inl (Or.inl (Or.inr ⟨⟨h1E, h2E⟩, h⟩))
+      · exact Or.inl (Or.inr ⟨⟨h1E, h2E⟩, h⟩)
+    · right
+      refine ⟨⟨h1E, h2E⟩, ?_⟩
+      rw [Finset.prod_eq_zero_iff] at h
+      obtain ⟨j, _, hj⟩ := h
+      exact ⟨j, hj⟩
+  have hS1 : S1.card ≤ 2 * D.degE * E.points.card :=
+    DAtA₀_zero_pairs_card_le E D hD
+  have hS2 : S2.card ≤ 2 * D.degE * E.points.card :=
+    DAtA₁_zero_pairs_card_le E D hD
+  have hS3 : S3.card ≤ (2 * D.degE + 2) * E.points.card :=
+    DAtA₂_zero_pairs_card_le E D hD
+  have hS4 : S4.card ≤ 14 * E.points.card :=
+    dxdzA₀_zero_pairs_card_le E
+  have hS5 : S5.card ≤ 14 * E.points.card :=
+    dxdzA₁_zero_pairs_card_le E
+  have hS6 : S6.card ≤ 32 * E.points.card :=
+    dxdzA₂_zero_pairs_card_le E
+  have hS7 : S7.card ≤ 9 * E.points.card :=
+    linePNeg_zero_pairs_card_le E P
+  have hS8 : S8.card ≤ 9 * k * E.points.card :=
+    lineBj_zero_pairs_card_le E B
+  calc U.card
+      ≤ (S1 ∪ S2 ∪ S3 ∪ S4 ∪ S5 ∪ S6 ∪ S7 ∪ S8).card :=
+        Finset.card_le_card hSub
+    _ ≤ S1.card + S2.card + S3.card + S4.card + S5.card + S6.card
+         + S7.card + S8.card := by
+        refine le_trans (Finset.card_union_le _ _) ?_
+        refine Nat.add_le_add ?_ le_rfl
+        refine le_trans (Finset.card_union_le _ _) ?_
+        refine Nat.add_le_add ?_ le_rfl
+        refine le_trans (Finset.card_union_le _ _) ?_
+        refine Nat.add_le_add ?_ le_rfl
+        refine le_trans (Finset.card_union_le _ _) ?_
+        refine Nat.add_le_add ?_ le_rfl
+        refine le_trans (Finset.card_union_le _ _) ?_
+        refine Nat.add_le_add ?_ le_rfl
+        refine le_trans (Finset.card_union_le _ _) ?_
+        refine Nat.add_le_add ?_ le_rfl
+        exact Finset.card_union_le _ _
+    _ ≤ 2 * D.degE * E.points.card + 2 * D.degE * E.points.card
+         + (2 * D.degE + 2) * E.points.card + 14 * E.points.card
+         + 14 * E.points.card + 32 * E.points.card + 9 * E.points.card
+         + 9 * k * E.points.card := by
+        exact Nat.add_le_add (Nat.add_le_add (Nat.add_le_add
+          (Nat.add_le_add (Nat.add_le_add (Nat.add_le_add
+            (Nat.add_le_add hS1 hS2) hS3) hS4) hS5) hS6) hS7) hS8
+    _ = (6 * D.degE + 9 * k + 71) * E.points.card := by ring
+
 /-- **Phase 2 main theorem**: mechanized zero-set bound on `E × E`.
     Derived from the defined-fiber + bad-A₀ + undefined-bad-event
     axioms via the set-union split.

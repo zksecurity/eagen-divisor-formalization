@@ -1454,11 +1454,16 @@ theorem log_deriv_sz_paper_core
 
 /-- **Phase 5 `log_deriv_sz_paper` (outer, with-boundary form).**
 
-    Combines the core Lang-Weil bound (`36·(…)`) on the denom-defined
-    pairs with the boundary bound (`18·(…)`) from
-    `logDerivCheckFn_undefined_set_bound` for the denom-undefined pairs.
-    Total: `54·(D.degE + k + 6)·|E|`, a strict improvement over
-    `log_deriv_sz`'s `(72·(d+k+6)+4)·|E|`. -/
+    Combines the core Lang-Weil bound (`36·(d+k+6)·|E|`) on the
+    denom-defined pairs with the tight boundary bound
+    (`(6d+9k+71)·|E|`) from `logDerivCheckFn_undefined_set_bound_tight`
+    for the denom-undefined pairs.  Total: `48·(D.degE + k + 6)·|E|`,
+    improved from the previous `54·(…)` by using the pre-relaxation
+    boundary bound.
+
+    (Previous version used `18·(d+k+6)` for the boundary, giving
+    `54·(d+k+6)`. The tight form `6d+9k+71 ≤ 12·(d+k+6)` saves a
+    factor, reducing `36+18=54` to `36+12=48`.) -/
 theorem log_deriv_sz_paper
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
@@ -1467,7 +1472,7 @@ theorem log_deriv_sz_paper
         logDerivCheckFnDefined E D P B A₀ A₁ ∧
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     (badChallengesNotEq E D P B m).card ≤
-      54 * (D.degE + k + 6) * E.points.card := by
+      48 * (D.degE + k + 6) * E.points.card := by
   classical
   -- badChallengesNotEq splits by `logDerivCheckFnDefined`.
   set badNE := badChallengesNotEq E D P B m with hBNE_def
@@ -1500,13 +1505,22 @@ theorem log_deriv_sz_paper
       unfold logDerivCheckFnDenom CoordRingElt.eval
       rw [ha, hb]; simp
     exact hDef this
-  have hUndefBound := logDerivCheckFn_undefined_set_bound E D P k B hD
+  have hUndefBound := logDerivCheckFn_undefined_set_bound_tight E D P k B hD
   calc badNE.card
     ≤ defBad.card + undefAll.card := hCardSplit
     _ ≤ 36 * (D.degE + k + 6) * E.points.card +
-        18 * (D.degE + k + 6) * E.points.card := by
+        (6 * D.degE + 9 * k + 71) * E.points.card := by
         exact Nat.add_le_add hCoreBound hUndefBound
-    _ = 54 * (D.degE + k + 6) * E.points.card := by ring
+    _ ≤ 48 * (D.degE + k + 6) * E.points.card := by
+        have : 36 * (D.degE + k + 6) + (6 * D.degE + 9 * k + 71)
+               ≤ 48 * (D.degE + k + 6) := by omega
+        calc 36 * (D.degE + k + 6) * E.points.card +
+               (6 * D.degE + 9 * k + 71) * E.points.card
+            = (36 * (D.degE + k + 6) + (6 * D.degE + 9 * k + 71)) *
+                E.points.card := by ring
+          _ ≤ (48 * (D.degE + k + 6)) * E.points.card :=
+                Nat.mul_le_mul_right _ this
+          _ = 48 * (D.degE + k + 6) * E.points.card := by ring
 
 /-! ## Phase 5 tightening (a): chord symmetry halving
 
