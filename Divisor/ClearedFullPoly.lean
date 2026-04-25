@@ -2049,113 +2049,15 @@ theorem log_deriv_sz_paper
                 Nat.mul_le_mul_right _ this
           _ = 84 * (D.degE + k + 6) * E.points.card := by ring
 
-/-! ## Phase 5 tightening (a): chord symmetry halving
+/- (Deleted Phase 5 chord-symmetry block: swapA₀A₁, bivEval₂_swapA₀A₁,
+    clearedFullPoly_swap_signed, bivEval₂_clearedFullPoly_swap_zero,
+    log_deriv_sz_paper_core_symmetric — Aristotle project 754ff51a
+    determined chord symmetry alone doesn't halve the bound; replaced
+    by DKL+Bezout path. Section preserved as a one-line note.) -/
 
-    The log-derivative check and its polynomial form `clearedFullPoly`
-    are invariant under the chord swap `(A₀, A₁) ↔ (A₁, A₀)`. The
-    physical intuition: `A₂ = -(A₀ + A₁)` is symmetric in `A₀, A₁`, as
-    is the line through them; the verifier-check value `f(A₀, A₁)`
-    is thus symmetric.
+/-! [DELETED] Phase 5 chord-symmetry block — see Phase F cleanup commit.
+-/
 
-    Formally, the substitution `(X 0, X 1) ↔ (X 2, X 3)` fixes
-    `clearedFullPoly`. As a consequence the zero set of `clearedFullPoly`
-    on `E × E` is symmetric, so bad pairs come in `(A₀, A₁)`-`(A₁, A₀)`
-    twins on the non-vertical cone (where `A₀ ≠ A₁`). Halving gives the
-    paper's `18·(d+k+6)·|E|` core bound (vs. our current `36·(d+k+6)·|E|`).
-
-    Stated as sorry'd scaffolding; proof dispatched to Aristotle. -/
-
-/-- The `(X 0, X 1) ↔ (X 2, X 3)` swap on FourVarPoly via `MvPolynomial.rename`. -/
-noncomputable def swapA₀A₁ (f : FourVarPoly E.q) : FourVarPoly E.q :=
-  MvPolynomial.rename
-    (fun i : Fin 4 => match i with
-      | ⟨0, _⟩ => (2 : Fin 4)
-      | ⟨1, _⟩ => (3 : Fin 4)
-      | ⟨2, _⟩ => (0 : Fin 4)
-      | ⟨3, _⟩ => (1 : Fin 4)) f
-
-/-- `bivEval₂ (swapA₀A₁ f) A₀ A₁ = bivEval₂ f A₁ A₀`. -/
-theorem bivEval₂_swapA₀A₁ (f : FourVarPoly E.q) (A₀ A₁ : ZMod E.q × ZMod E.q) :
-    bivEval₂ (swapA₀A₁ E f) A₀ A₁ = bivEval₂ f A₁ A₀ := by
-  unfold bivEval₂ swapA₀A₁
-  rw [MvPolynomial.eval_rename]
-  have : bivEval₂Fun A₀ A₁ ∘ (fun i : Fin 4 => match i with
-      | ⟨0, _⟩ => (2 : Fin 4)
-      | ⟨1, _⟩ => (3 : Fin 4)
-      | ⟨2, _⟩ => (0 : Fin 4)
-      | ⟨3, _⟩ => (1 : Fin 4)) = bivEval₂Fun A₁ A₀ := by
-    funext i
-    fin_cases i <;> simp [bivEval₂Fun]
-  rw [this]
-
-/- **Chord symmetry of `clearedFullPoly` is ANTI-symmetric up to sign.**
-    The naive `swapA₀A₁ clearedFullPoly = clearedFullPoly` is FALSE:
-    `lamNumFull` and `lamDenFull` are anti-symmetric under the swap, and
-    tracing the clearing exponents shows each summand picks up
-    `(-1)^(D.degE + k)`. For the halving argument only zero-set symmetry
-    matters, which holds regardless of the sign. -/
-
-/-- **Signed chord symmetry of `clearedFullPoly`** (target, sorry'd).
-    Swapping `(A₀, A₁)` multiplies by `(-1)^(D.degE + k)`. -/
-theorem clearedFullPoly_swap_signed
-    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
-    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q) :
-    swapA₀A₁ E (clearedFullPoly E D P k B m)
-      = ((-1 : ZMod E.q) ^ (D.degE + k)) • clearedFullPoly E D P k B m := by
-  sorry
-
-/-- **Zero-set symmetry of `clearedFullPoly` evaluation.** Replaces the
-    original `bivEval₂_clearedFullPoly_swap` (which claimed pointwise
-    equality that turns out to be false up to sign) with the
-    zero-equivalence form, which is all that the halving argument
-    needs: `ε · x = 0 ↔ x = 0` in a field. -/
-theorem bivEval₂_clearedFullPoly_swap_zero
-    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
-    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
-    (A₀ A₁ : ZMod E.q × ZMod E.q) :
-    bivEval₂ (clearedFullPoly E D P k B m) A₀ A₁ = 0 ↔
-    bivEval₂ (clearedFullPoly E D P k B m) A₁ A₀ = 0 := by
-  have key : bivEval₂ (clearedFullPoly E D P k B m) A₁ A₀
-      = ((-1 : ZMod E.q) ^ (D.degE + k)) *
-        bivEval₂ (clearedFullPoly E D P k B m) A₀ A₁ := by
-    rw [← bivEval₂_swapA₀A₁ E (clearedFullPoly E D P k B m) A₀ A₁]
-    rw [clearedFullPoly_swap_signed]
-    simp [bivEval₂, MvPolynomial.smul_eval]
-  constructor
-  · intro h; rw [key, h, mul_zero]
-  · intro h
-    rw [key] at h
-    have hε : ((-1 : ZMod E.q) ^ (D.degE + k)) ≠ 0 := by
-      exact pow_ne_zero _ (neg_ne_zero.mpr one_ne_zero)
-    exact (mul_eq_zero.mp h).resolve_left hε
-
-/-- **SZ bound via chord symmetry (trivial weakening).**
-
-    ANALYTICAL FINDING (Aristotle project 754ff51a): the halving
-    argument via the fixed-point-free involution `(A₀, A₁) ↦ (A₁, A₀)`
-    only shows the bad set has EVEN cardinality; it does not reduce
-    the Lang-Weil bound itself. So chord symmetry alone does not get
-    us from `36·(…)` to `18·(…)`.
-
-    To achieve the paper's `18·(d+k)` factor, a different approach is
-    needed — most likely a Y-linearity reduction of `clearedFullPoly`
-    modulo the curve relations, eliminating the factor of 2 in the
-    Lang-Weil axiom statement (`2·(dX+dY)` → `(dX+dY)`).
-
-    For now this theorem is a trivial restatement of
-    `log_deriv_sz_paper_core` preserved for provenance. -/
-theorem log_deriv_sz_paper_core_symmetric
-    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
-    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
-    (_hDeg : D.degE < E.q)
-    (hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
-        logDerivCheckFnDefined E D P B A₀ A₁ ∧
-        logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          A₀ne_A₁x_cleared_pair E D P B m p)).card
-      ≤ 72 * (D.degE + k + 6) * E.points.card := by
-  exact log_deriv_sz_paper_core E D P B m _hDeg hNV
 
 /-! ## Phase 6b: T5 replacement scaffolding
 

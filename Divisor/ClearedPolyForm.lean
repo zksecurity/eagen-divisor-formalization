@@ -5648,30 +5648,6 @@ theorem logDerivCheckFn_zero_set_bound
     _ = (72 * (D.degE + k + 6) + 4) * E.points.card := by
         rw [hKdef, hK'def]; ring
 
-/-- Lift of Phase 2 bound from `E.points ×ˢ E.points` to `validPairs E`.
-    Requires a **non-vertical** witness of `logDerivCheckFn ≠ 0` on the
-    defined subset. -/
-theorem log_deriv_sz (D : CoordRingElt E.q)
-    (P : ZMod E.q × ZMod E.q)
-    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
-    (hDeg : D.degE < E.q)
-    (hNonvanishing : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
-       logDerivCheckFnDefined E D P B A₀ A₁ ∧
-       logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
-    (badChallengesNotEq E D P B m).card
-      ≤ (72 * (D.degE + k + 6) + 4) * E.points.card := by
-  have hBound := logDerivCheckFn_zero_set_bound E D P B m hDeg hNonvanishing
-  have hsub : badChallengesNotEq E D P B m ⊆
-      (E.points ×ˢ E.points).filter
-        (fun p => logDerivCheckFn E D P k B m p.1 p.2 = 0) := by
-    intro p hp
-    simp only [badChallengesNotEq, Finset.mem_filter] at hp
-    obtain ⟨hVP, hf⟩ := hp
-    have hDP : p ∈ distinctPairs E.points := (Finset.mem_filter.mp hVP).1
-    have hEE : p ∈ E.points ×ˢ E.points := (Finset.mem_filter.mp hDP).1
-    exact Finset.mem_filter.mpr ⟨hEE, hf⟩
-  exact le_trans (Finset.card_le_card hsub) hBound
-
 end Phase2
 
 end Divisor
