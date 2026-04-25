@@ -3,7 +3,7 @@
 Self-contained plan to tighten `Divisor.ma_extractable`'s bound from
 its current state to the paper's exact bound.
 
-## Starting state (tag `session-end` in git)
+## Starting state
 
 `Divisor.ma_extractable` (in `Divisor/ExtractorBridge.lean`) currently
 proves:
