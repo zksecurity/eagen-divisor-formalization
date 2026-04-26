@@ -302,35 +302,44 @@ theorem ma_completeness
   exact le_trans (Finset.card_le_card hSub)
     (support_disjointness E msg.toD (numZeros E msg.toD) (le_refl _))
 
-/-- **IP Completeness reduction (off `event_deg`).** On every challenge
-    where the divisor `D = msg.toD` does not vanish at any of
-    `A_0, A_1, A_2` and the chord-line `L_{A_0,A_1}` does not pass
-    through `-P` (i.e. off paper's `event_deg`), the honest IP prover
-    constructs a third-round message `(h_0, h_1, h_2, g)` that the IP
-    verifier accepts. Specifically:
+/-- **IP Completeness (off `event_deg`).** On every challenge where
+    `logDerivCheckFnDefined` holds (paper: `¬event_deg`; equivalently,
+    all 8 denominator factors of the verifier's field expression are
+    nonzero), the honest IP prover constructs a third-round message
+    that the IP verifier accepts:
 
     * `h_i := D'(A_i) / D(A_i)` satisfies `h_i · D(A_i) = D'(A_i)`,
-    * `g := -1 / L(-P)` satisfies `g · L(-P) = -1`.
+    * `g := -1 / L(-P)` satisfies `g · L(-P) = -1`,
 
-    Combined with `ma_completeness` (which bounds the `event_deg`
-    sub-cases `D(A_i) = 0` and `A_2 = ∞`), this realises paper Theorem
-    `\ref{thm:ip}`'s claim `\compErr_{IP} = \compErr_{MA}` without
-    introducing new axioms: any IP completeness rejection lies in
-    `event_deg` (the additional `L(-P) = 0` sub-case is paper-side
-    accounted for by the same `event_deg` framework). -/
+    where `A_2 := computeA₂ chal = (chordX₂, chordY₂)` is the third
+    chord-intersection.
+
+    Mirrors paper Theorem `\ref{thm:ip}`'s claim `\compErr_{IP}` is
+    bounded analogously to `\compErr_{MA}` once `event_deg` is
+    accounted for — see `ip_completeness_card_bound` below for the
+    cardinality form. -/
 theorem ip_completeness
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
-    (hD₀_nz : msg.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0)
-    (hD₁_nz : msg.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0)
-    (hD₂_nz : msg.toD.eval A₂.1 A₂.2 ≠ 0)
-    (hLP_nz : (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
-                stmt.target.1 (-stmt.target.2) ≠ 0)
+    (chal : MAChallenge E.q)
+    (hDef : logDerivCheckFnDefined E msg.toD stmt.target stmt.bases
+              chal.A₀ chal.A₁)
     (hDegK : msg.toD.degE ≤ stmt.degBound) :
     ∃ msg3 : IPProverMsg3 E.q,
-      ipVerifierAccepts E stmt msg chal A₂ msg3 := by
+      ipVerifierAccepts E stmt msg chal (computeA₂ chal) msg3 := by
   let _ := hkm
+  -- Extract the four needed nondegen facts from logDerivCheckFnDefined.
+  have hFactors := logDerivCheckFnDenom_factors_ne_zero E msg.toD stmt.target
+                     stmt.bases chal.A₀ chal.A₁ hDef
+  obtain ⟨hD₀_nz, hD₁_nz, hD₂_chord_nz, _, _, _, hLP_nz, _⟩ := hFactors
+  -- D(A_2)-nondegeneracy: A_2 = computeA₂ chal = (chordX₂, chordY₂)
+  -- definitionally; use this to align with the chord form from hFactors.
+  have hA₂_eq : computeA₂ chal =
+      (chordX₂ chal.A₀ chal.A₁, chordY₂ chal.A₀ chal.A₁) := rfl
+  have hD₂_nz : msg.toD.eval (computeA₂ chal).1 (computeA₂ chal).2 ≠ 0 := by
+    rw [hA₂_eq]; exact hD₂_chord_nz
+  -- Construct honest msg3.
   let D := msg.toD
+  let A₂ := computeA₂ chal
   let h0 := (D.a.derivative.eval chal.A₀.1 -
               D.b.derivative.eval chal.A₀.1 * chal.A₀.2) /
                 D.eval chal.A₀.1 chal.A₀.2
@@ -345,16 +354,83 @@ theorem ip_completeness
   refine ⟨⟨fun i => match i with | 0 => h0 | 1 => h1 | 2 => h2, g⟩,
           hDegK, ?_, ?_, ?_, ?_⟩
   · show h0 * D.eval chal.A₀.1 chal.A₀.2 = _
-    simp only [h0]
-    exact div_mul_cancel₀ _ hD₀_nz
+    simp only [h0]; exact div_mul_cancel₀ _ hD₀_nz
   · show h1 * D.eval chal.A₁.1 chal.A₁.2 = _
-    simp only [h1]
-    exact div_mul_cancel₀ _ hD₁_nz
+    simp only [h1]; exact div_mul_cancel₀ _ hD₁_nz
   · show h2 * D.eval A₂.1 A₂.2 = _
-    simp only [h2]
-    exact div_mul_cancel₀ _ hD₂_nz
+    simp only [h2]; exact div_mul_cancel₀ _ hD₂_nz
   · show g * _ = -1
-    simp only [g]
-    exact div_mul_cancel₀ _ hLP_nz
+    simp only [g]; exact div_mul_cancel₀ _ hLP_nz
+
+/-- **IP Completeness — cardinality form.** The set of challenges on
+    which no third-round message makes the IP verifier accept is
+    bounded by
+
+      `(3·N + 1)·|E_aff| + (6·d + 9·k + 71)·|E.points|`,
+
+    where `N = numZeros E msg.toD`, `d = msg.toD.degE`, and
+    `k = stmt.k`. The first summand reuses the `ma_completeness` bound
+    (covering `D(A_i) = 0` and `A_2 = ∞` cases via
+    `badChallengesCompleteness`); the second is the `event_deg`
+    cardinality bound `logDerivCheckFn_undefined_set_bound_tight`
+    (DKL+Bezout on `E×E`, paper-exact).
+
+    This is the cardinality analogue of `ip_completeness` and mirrors
+    the `ma_extractable` soundness bound shape (main term + boundary
+    term). -/
+theorem ip_completeness_card_bound
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k) (hValid : dlogHolds E stmt wit)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
+    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
+    ((E.points ×ˢ E.points).filter
+        (fun p => ¬ ∃ msg3 : IPProverMsg3 E.q,
+                  ipVerifierAccepts E stmt msg ⟨p.1, p.2⟩
+                       (computeA₂ ⟨p.1, p.2⟩) msg3)).card
+      ≤ (3 * numZeros E msg.toD + 1) * E.numAffine
+        + (6 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := by
+  classical
+  -- IP rejection set ⊆ MA rejection set ∪ ¬event_deg (undefined set).
+  -- Bound each summand separately.
+  set rejectIP : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+    (E.points ×ˢ E.points).filter
+      (fun p => ¬ ∃ msg3 : IPProverMsg3 E.q,
+                ipVerifierAccepts E stmt msg ⟨p.1, p.2⟩
+                  (computeA₂ ⟨p.1, p.2⟩) msg3) with hRIPdef
+  set rejectMA : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+    (E.points ×ˢ E.points).filter
+      (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hRMAdef
+  set undefSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+    (E.points ×ˢ E.points).filter
+      (fun p => ¬ logDerivCheckFnDefined E msg.toD stmt.target stmt.bases
+                  p.1 p.2) with hUdef
+  -- IP rejection ⊆ MA rejection ∪ undef.
+  have hSub : rejectIP ⊆ rejectMA ∪ undefSet := by
+    intro p hp
+    simp only [hRIPdef, Finset.mem_filter] at hp
+    obtain ⟨hp_pts, hp_no_msg3⟩ := hp
+    rw [Finset.mem_union]
+    by_cases hDef : logDerivCheckFnDefined E msg.toD stmt.target stmt.bases p.1 p.2
+    · -- Off undef-set: ip_completeness gives ∃ msg3, contradicting hp_no_msg3.
+      exfalso
+      apply hp_no_msg3
+      exact ip_completeness E stmt msg hkm ⟨p.1, p.2⟩ hDef hDegK
+    · right
+      simp only [hUdef, Finset.mem_filter]
+      exact ⟨hp_pts, hDef⟩
+  calc rejectIP.card
+      ≤ (rejectMA ∪ undefSet).card := Finset.card_le_card hSub
+    _ ≤ rejectMA.card + undefSet.card := Finset.card_union_le _ _
+    _ ≤ (3 * numZeros E msg.toD + 1) * E.numAffine
+          + (6 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := by
+        apply Nat.add_le_add
+        · exact ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm
+                  hHonestDivisor
+        · exact logDerivCheckFn_undefined_set_bound_tight E msg.toD stmt.target
+                  stmt.k stmt.bases hD
 
 end Divisor
