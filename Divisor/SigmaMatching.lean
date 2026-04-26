@@ -37,8 +37,7 @@ variable (E : ECSetup)
     From there the paper-aligned residue-matching argument
     (`sections/ip.tex:552-634`) extracts the σ-matching directly.
 
-    This section provides the 4-variate polyG scaffold. The
-    residue-matching step itself is a separate Aristotle dispatch. -/
+    This section provides the 4-variate polyG scaffold. -/
 
 /-- 4-variate lift of `polyG`. Each `ellP (P)` becomes `lineEvalNumAtFull P`. -/
 noncomputable def polyGFull

@@ -37,7 +37,7 @@ def comparisonFn {N : ℕ}
   (Finset.univ.prod (fun i => linearFormL E A₀ A₁ (Q i))) -
   (Finset.univ.prod (fun i => linearFormL E A₀ A₁ (P i)))
 
-/-! ## Rationality of f (formerly Bassa Lem 3)
+/-! ## Rationality of f
 
 In our formalization, Q_i and P_i are all in E(F_q), so f is
 automatically defined over F_q. No Galois theory needed. -/
@@ -50,7 +50,7 @@ theorem f_rational {N : ℕ}
     -- automatically over F_q since all inputs are in F_q.
     True := trivial
 
-/-! ## Non-vanishing of f on E x E (formerly Bassa Lem 4)
+/-! ## Non-vanishing of f on E x E
 
 Proved from Bezout + Hasse-Weil. The argument:
 
@@ -439,16 +439,11 @@ theorem card_validPairs_lb :
 /-! ## Theorems 4 / 5 (Schwartz-Zippel on E × E for the norm check)
 
 Paper `thm:bassa-monic` and `thm:bassa-soundness` give probability
-bounds for the norm-based verifier equation. These are **not on the
-dependency chain for `ma_extractable`** — the live soundness proof
+bounds for the norm-based verifier equation. The live soundness proof
 goes through `cor:log-derivative` (`log_deriv_sz` here) rather than
-the norm-based route — so the detailed statements were placeholder
-stubs returning `True`. The supporting infrastructure in this file
-(`f_nonvanishing_proved`, `linear_form_zeros_le_three`) remains useful
-for a future formalization of the alternative three-cases proof, but
-the top-level `bassa_monic` / `bassa_soundness_*` stubs carried no
-content. Removed to avoid giving the impression that the norm-check
-branch is mechanized.
+the norm-based route. The supporting infrastructure here
+(`f_nonvanishing_proved`, `linear_form_zeros_le_three`) is available
+for an alternative three-cases proof.
 
 The norm-check bounds for the full alternative route would state,
 roughly, `#{(A₀,A₁) : norm equality holds and (D)_0 ≠ Σ(P_i)} ≤ 18 N q`.

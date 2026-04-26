@@ -1,9 +1,9 @@
 /-
   Divisor/FunctionFieldZ.lean
 
-  Queue-3 step . The chord-coordinate
-  norm polynomial `normZ E λ D` for `D = a(x) − y·b(x) ∈ F_q[E]` with
-  respect to the chord coordinate `z = y − λ·x`.
+  The chord-coordinate norm polynomial `normZ E λ D` for
+  `D = a(x) − y·b(x) ∈ F_q[E]` with respect to the chord coordinate
+  `z = y − λ·x`.
 
   Paper reference (`\ref{lem:log-derivative}`, `sections/ec.tex:557-579`):
     `N(D) = lc(D)^3 · ∏_k (z − z(Q_k))^{β_k}`
@@ -170,10 +170,7 @@ theorem normZ_prod_natDegree (lam : ZMod E.q) (D : CoordRingElt E.q) :
     rw [X_sub_C_pow_natDegree, ih]
 
 /-- **natDegree bound (via `betaConstructive_sum_le_degE`).** `normZ E λ D`
-    has natDegree at most `D.degE` when `D` is nonzero. Replaces the
-    former `normZ_natDegree_eq`, which required the now-deleted
-    `betaConstructive_sum_eq_degE` (invalidated by Aristotle's
-    counterexample). -/
+    has natDegree at most `D.degE` when `D` is nonzero. -/
 theorem normZ_natDegree_le (lam : ZMod E.q)
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     (normZ E lam D).natDegree ≤ D.degE := by

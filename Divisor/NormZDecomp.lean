@@ -1,18 +1,16 @@
 /-
   Divisor/NormZDecomp.lean
 
-  Queue-3 step . Derivative and
-  partial-fraction-expansion identities for `normZ E λ D`, the
-  chord-coordinate norm polynomial 
+  Derivative and partial-fraction-expansion identities for
+  `normZ E λ D`, the chord-coordinate norm polynomial.
 
-  Because chose to DEFINE `normZ E λ D` as the explicit
-  product form
+  `normZ E λ D` is defined directly as the explicit product form
 
     `normZ E λ D = C lc * ∏_{Q ∈ zerosFinset} (X - C (zLambda λ Q))^(β Q)`
 
   with `lc = (normPoly E D).leadingCoeff` and `β = betaConstructive E D`,
-  the "norm decomposition" (nominal target) is already
-  definitional. What downstream phases actually consume is the
+  so the "norm decomposition" is definitional. What downstream consumers
+  actually use is the
   derivative / log-derivative data. This module provides:
 
   * `normZ_derivative`: explicit formula for `(normZ E λ D).derivative`

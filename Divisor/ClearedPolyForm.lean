@@ -599,7 +599,7 @@ noncomputable def correctionA₂ScaledCore (D : CoordRingElt E.q)
     * dydzNumA₂Scaled (E := E) A₀
     * lamDenPoly (E := E) A₀ ^ (D.degE - 2 * D.b.natDegree - 3)
 
-/-- LHS i=0 term: the OLD `num_x·2y` factor only (pre-correction). -/
+/-- LHS i=0 term: the `num_x·2y` factor only (pre-correction). -/
 noncomputable def lhsTerm0Scaled (D : CoordRingElt E.q)
     (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
     (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=

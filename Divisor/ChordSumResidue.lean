@@ -302,7 +302,7 @@ theorem chordLogDerivMatchesNormZ_iff_ratio
 /-! ## Alternate interface: `chordLogDerivMatchesNormZ` from a polynomial identity
 
 The following theorem packages the chord-log-deriv match in a form
-that a Phase-4 proof could discharge via a polynomial identity: if
+discharged by a polynomial identity: if
 `normZ(z) · chordDenomProd(z) = (normZ)'(z) · [some polynomial in z]`
 holds, the scalar form follows by evaluation at μ. (Not used
 internally; exported for downstream callers.) -/

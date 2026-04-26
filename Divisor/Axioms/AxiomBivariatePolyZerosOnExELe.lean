@@ -54,8 +54,7 @@ variable (E : ECSetup)
     3. By Bezout (Hartshorne I.7.7, hypersurface-meets-surface form),
        the intersection `V = H_f ∩ (E × E)` has dimension `≤ 1` and
        degree at most `9 · D`.
-    4. By DKL'14 Claim 7.2 with `(n, d, k) = (8, 9D, 1)` (or by the
-       elementary curve point-count of EOT'10 Lemma A.3),
+    4. By DKL'14 Claim 7.2 with `(n, d, k) = (8, 9D, 1)`,
        `|V(F_q)| ≤ 9·D·q`.
 
     **Alternative: EOT'10 Lemma A.3 (verbatim, p. 23):**
@@ -63,15 +62,12 @@ variable (E : ECSetup)
     > Let V ⊂ ℙ^N be a projective variety of dimension n and degree
     > d. Then |V(F)| ≤ d(|F|+1)^n.
 
-    With `n = 1`, `d ≤ 9D`: `|V(F_q)| ≤ 9D·(q+1) ≤ 9D·q` for the
-    sufficiently large `q ≥ 5` enforced by `ECSetup`.
+    With `n = 1`, `d ≤ 9D`, EOT gives the weaker estimate
+    `|V(F_q)| ≤ 9D·(q+1)`, hence `≤ 18D·q` for `q ≥ 1`. It is a useful
+    sanity check on the linear-in-`q` shape, but not the source of the
+    axiom's sharp `9D·q` constant.
 
-    **Replaces an unsound prior axiom.** A previous form claimed
-    `2·(dX + dY)·|E|` based only on bi-x-degree (`bi_x_degree_le`),
-    which was Sage-falsified by counterexamples such as
-    `f = Y₀ + Y₁` over `y² = x³ + 1` over `F_5` (axiom predicted 0,
-    actual count is 5). The cause is that the X-bi-degree alone
-    ignores the Y-degree contribution; total degree captures it. -/
+-/
 axiom bivariate_poly_zeros_on_ExE_le
     (f : FourVarPoly E.q) (D : ℕ)
     (hDeg : total_degree_le E f D)

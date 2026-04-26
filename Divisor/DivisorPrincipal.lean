@@ -190,12 +190,9 @@ theorem weightedSum_dCoeffs_candidate_eq (D : CoordRingElt E.q)
 
 /-! ## Group-sum surrogate for `dCoeffs`
 
-    After the `divisor_degree_eq` axiom was invalidated by Aristotle's
-    counterexample (`docs/divisor-degree-axiom-bug.md`), we cannot
-    produce `IsPrincipal (dCoeffs E D β)` from `has_principal_divisor`
-    alone: under the weakened `∑ β ≤ D.degE`, the degree-sum of
-    `dCoeffs` may be strictly negative, which violates the degree-0
-    side of `principal_divisor_iff`. The downstream consumer
+    Under `∑ β ≤ D.degE`, the degree-sum of `dCoeffs` may be strictly
+    negative, which violates the degree-0 side of
+    `principal_divisor_iff`. The downstream consumer
     (`ExtractorBridge.target_eq_weightedSum_of_principal`) only
     extracts the group-sum-zero part of `IsPrincipal`, so we expose
     that directly here and route around the `IsPrincipal` detour. -/
@@ -242,9 +239,7 @@ theorem dCoeffs_groupSum_zero (D : CoordRingElt E.q)
     `β` supported on its affine `E`-zeros, with
     `∑ β ≤ D.degE`, the group-sum-zero property, and (as a derived
     conclusion) the finite-support / group-sum-zero surrogate for
-    `dCoeffs`. Previously claimed `IsPrincipal (dCoeffs E D β)`;
-    weakened after `divisor_degree_eq` was removed (see the file
-    header for rationale). -/
+    `dCoeffs`. -/
 theorem CoordRingElt.exists_principal_dCoeffs
     (D : CoordRingElt E.q) (hD : ¬ D.isZero)
     (hSplit : normPoly_splits_over_Fq E D) :

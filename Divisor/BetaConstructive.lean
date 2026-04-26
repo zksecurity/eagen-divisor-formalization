@@ -1,7 +1,7 @@
 /-
   Divisor/BetaConstructive.lean
 
-  Queue-2 Phase-B step QB1: a constructive multiplicity function
+  A constructive multiplicity function
   `betaConstructive D : ZMod E.q × ZMod E.q → ℕ` derived directly from
   `D.a, D.b` (no function-field / Weierstrass-preparation machinery
   invoked, and no appeal to the `CoordRingElt.has_principal_divisor`
@@ -38,7 +38,6 @@
   The equality variant of the last property (`∑ β = D.degE`) is
   classical (pole at `∞` is exactly `D.degE`) but over `F_q` it
   requires `N(D)` to split; we only establish the upper bound here.
-  QB2 / QB3 consume this surrogate; see the plan doc.
 -/
 import Divisor.Defs
 import Divisor.ClearedPolyForm
@@ -240,8 +239,7 @@ theorem betaConstructive_covers
 /-! ## Sheet partition
 
     For a fixed `x₀ : ZMod E.q`, the `E`-points above `x₀` form the
-    Finset `E.points.filter (·.1 = x₀)`. This set has cardinality ≤ 2
-    (proved previously as `card_points_with_fst_eq_le`).
+    Finset `E.points.filter (·.1 = x₀)`. This set has cardinality ≤ 2.
 
     Sum over sheets at `x₀` of `β`:
     * 0 if no sheet is a `D`-zero,
@@ -509,9 +507,7 @@ def normPoly_splits_over_Fq (D : CoordRingElt E.q) : Prop :=
     direction of Cor 3.5) would descend from item (i) under the same
     splitting hypothesis; it is **NOT** recorded as an axiom because
     only the unconditional bound `betaConstructive_sum_le_degE` is
-    used downstream. See `docs/divisor-degree-axiom-bug.md` for the
-    earlier (now-withdrawn) unconditional form and Aristotle's
-    counterexample `D = x² + 1` over `F_7`, `E : y² = x³ + 1`.
+    used downstream.
 -/
 
 -- `CoordRingElt.divisor_group_sum_zero` axiom + derived
@@ -520,7 +516,7 @@ def normPoly_splits_over_Fq (D : CoordRingElt E.q) : Prop :=
 -- Downstream files should import that axiom file (or the `Axioms`
 -- hub) directly.
 
-/-! ## Q3.1: split case — `betaConstructive` ↔ `rootMultiplicity` bridge
+/-! ## Split case — `betaConstructive` ↔ `rootMultiplicity` bridge
 
     When `normPoly E D` splits over `F_q` in the sense that its root
     multiset has cardinality equal to its `natDegree`, the per-`x₀`
@@ -532,12 +528,7 @@ def normPoly_splits_over_Fq (D : CoordRingElt E.q) : Prop :=
     * Under the split hypothesis, `Multiset.card roots = natDegree N(D)`.
     * `natDegree N(D) ≤ D.degE` (`normPoly_natDegree_le`).
 
-    Chaining these with the per-`x₀` bound forces equality everywhere.
-    Q3.2 consumes the total-sum identity to instantiate the partial-fraction
-    expansion from Q3.0 at `p = normPoly E D`.
-
-    Note: the split predicate `normPoly_splits_over_Fq` itself is defined
-    above (used as a precondition for the Abel-theorem axiom). -/
+    Chaining these with the per-`x₀` bound forces equality everywhere. -/
 
 /-- Counting identity: the total sum of `rootMultiplicity α p` over `α : F_q`
 equals `Multiset.card p.roots`. Same argument as the first half of

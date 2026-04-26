@@ -54,7 +54,7 @@ Verbatim:
 
 > Let V ⊂ ℙ^N be a projective variety of dimension n and degree d. Then |V(F)| ≤ d(|F|+1)^n.
 
-This is an alternative path (with a slightly weaker constant) to the same conclusion.
+This is an alternative path to the same linear-in-`q` shape, with a weaker constant.
 
 ## Derivation chain
 
@@ -65,7 +65,7 @@ Let `V := {f = 0} ∩ (E × E)`.
 3. **Bezout intersection.** By Hartshorne I.7.7 (hypersurface-meets-surface form), the intersection `V = H_f ∩ (E × E)` has dimension `≤ 1` and degree at most `9 · D`.
 4. **DKL point count.** By DKL'14 Claim 7.2 with `(n, d, k) = (8, 9D, 1)`, `|V(F_q)| ≤ 9D · |F_q|^1 = 9D · q`.
 
-(Equivalently via EOT'10 Lemma A.3 with `n = 1`, `d ≤ 9D`: `|V(F_q)| ≤ 9D·(q+1)`. For `q ≥ 5` this is within a small constant of the DKL bound; we use the cleaner DKL form `9·D·q`.)
+(Alternatively via EOT'10 Lemma A.3 with `n = 1`, `d ≤ 9D`: `|V(F_q)| ≤ 9D·(q+1)`, hence `≤ 18D·q` for `q ≥ 1`. This confirms the same linear-in-`q` shape with a weaker constant; the Lean axiom's `9D·q` constant is justified by the DKL route above.)
 
 ## Old axiom (unsound — replaced)
 

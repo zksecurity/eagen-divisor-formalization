@@ -1,31 +1,21 @@
 /-
   Divisor/HasPrincipalDivisor.lean
 
-  Queue-2 Phase-B step QB3: derive `CoordRingElt.has_principal_divisor`
-  as a THEOREM from the Queue-2 artifacts, eliminating the previous
-  axiom of the same name in `Divisor/Axioms.lean`.
-
-  The statement packages four facts about a nonzero
-  `D = a(x) - b(x)·y ∈ F_q[E]`:
+  `CoordRingElt.has_principal_divisor` packages four facts about a
+  nonzero `D = a(x) - b(x)·y ∈ F_q[E]`:
   * there is a multiplicity function `β : ZMod E.q × ZMod E.q → ℕ`
     supported on `D`'s affine zeros on `E`,
   * `β` covers every `E`-rational `D`-zero,
   * `∑_{P ∈ E.points} β(P) ≤ D.degE`, and
   * the `β`-weighted group sum on `E.points` vanishes.
 
-  The witness is `β := betaConstructive E D` (QB1). The four properties
-  are the QB1 lemmas `betaConstructive_support`, `betaConstructive_covers`,
-  the QB2 unconditional bound `betaConstructive_sum_le_degE` (≤, not =
-  — see `docs/divisor-degree-axiom-bug.md`), and the QB2 derived theorem
+  The witness is `β := betaConstructive E D`. The four properties come
+  from `betaConstructive_support`, `betaConstructive_covers`, the
+  unconditional bound `betaConstructive_sum_le_degE`, and the derived
   `betaConstructive_group_sum_zero` (requires `normPoly_splits_over_Fq E D`
   so it matches Silverman AEC III Cor 3.5 exactly — without splitting,
   F_q-restricted sums miss Frobenius-conjugate orbit contributions, so
   the F_q-sum identity is strictly weaker than Cor 3.5's F̄_q-sum).
-
-  This module keeps downstream code shape-compatible: it re-exposes
-  the signature that `Divisor/Axioms.lean` used to state as an axiom,
-  modulo the degree-sum being an inequality instead of an equality and
-  the splitting precondition on the group-sum-zero component.
 -/
 import Divisor.Defs
 import Divisor.BetaConstructive
@@ -47,16 +37,7 @@ variable (E : ECSetup)
     * every `E`-rational affine `D`-zero is in `β`'s support,
     * `∑_{P ∈ E.points} β(P) ≤ D.degE`, and
     * the `β`-weighted group sum on `E.points` is `0`
-      (the Abel-theorem content under splitting).
-
-    Previously an axiom with `=` in the third clause and no splitting
-    precondition; the equality direction was falsified by Aristotle's
-    counterexample (see `docs/divisor-degree-axiom-bug.md`) and is now
-    weakened to `≤`. The group-sum-zero clause inherits the splitting
-    hypothesis from `betaConstructive_group_sum_zero`, which is the
-    F_q-restricted specialisation of Silverman AEC III Cor 3.5 that is
-    valid precisely when every geometric zero of `D` descends to
-    `E(F_q)` (no Frobenius-conjugate orbits missed). -/
+      (the Abel-theorem content under splitting). -/
 theorem CoordRingElt.has_principal_divisor
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (hSplit : normPoly_splits_over_Fq E D) :

@@ -1,11 +1,10 @@
 /-
   Divisor/NormLogDeriv.lean
 
-  Queue-3 step Q3.2. Log-derivative of `normPoly E D` in
-  denominator-cleared form, specialized from Q3.0's generic
-  partial-fraction expansion (`derivative_eq_sum_rootMultiplicity`) and
-  Q3.1's total / per-x₀ `betaConstructive` <-> `rootMultiplicity`
-  bridges.
+  Log-derivative of `normPoly E D` in denominator-cleared form,
+  specialized from the generic partial-fraction expansion
+  (`derivative_eq_sum_rootMultiplicity`) and the total / per-x₀
+  `betaConstructive` <-> `rootMultiplicity` bridges.
 
   Exports (all in namespace `Divisor`):
 
@@ -25,10 +24,6 @@
     *simple* root (rootMult = 1), expressing
     `eval α₀ (derivative (normPoly E D))` as
     `leadingCoeff · ∏_{β ≠ α₀} (α₀ - β)^{rootMult β}`.
-  The former `betaConstructive`-fiber-sum bridges (Q3.1 → Q3.2/Q3.3
-  consumer aliases) were removed together with `betaConstructive_sum_eq_degE`
-  after Aristotle's counterexample invalidated the `divisor_degree_eq`
-  axiom; see `Divisor/BetaConstructive.lean` for the note.
 
   No new axioms, no `sorry` / `admit`. Purely univariate polynomial
   algebra plus the `rootMultiplicity`-form Identity C.
@@ -48,8 +43,8 @@ variable (E : ECSetup)
 polynomial admits the explicit Finset factorization
 `N(D) = C lc · ∏ α ∈ roots.toFinset, (X - C α) ^ (rootMult α N(D))`.
 
-This is the direct instantiation of Q3.0's
-`splits_factorization_of_roots_card_eq` at `p = normPoly E D`. -/
+Direct instantiation of `splits_factorization_of_roots_card_eq` at
+`p = normPoly E D`. -/
 theorem normPoly_splits_factorization
     (D : CoordRingElt E.q) (hSplit : normPoly_splits_over_Fq E D) :
     normPoly E D = C (normPoly E D).leadingCoeff *
@@ -68,7 +63,7 @@ its `F_q`-rational roots, each summand being a polynomial:
 
 where `S = (normPoly E D).roots.toFinset`.
 
-This is the direct instantiation of Q3.0's
+Direct instantiation of
 `derivative_eq_sum_rootMultiplicity_of_roots_card_eq` at
 `p = normPoly E D`. -/
 theorem normPoly_derivative_eq_sum_of_splits
@@ -105,7 +100,7 @@ theorem normPoly_derivative_eq_isolate_of_splits
   classical
   -- Rewrite via the split factorization and apply the isolate lemma.
   have hFact := normPoly_splits_factorization E D hSplit
-  -- Use Q3.0's isolate lemma specialized to `c = leadingCoeff`,
+  -- Apply the isolate lemma specialized to `c = leadingCoeff`,
   -- `S = roots.toFinset`, `m = rootMultiplicity`.
   have h := derivative_C_mul_prod_X_sub_C_pow_isolate
     (K := ZMod E.q) (normPoly E D).leadingCoeff
@@ -270,9 +265,7 @@ theorem normPoly_derivative_eval_at_root_of_splits
 *simple* (rootMultiplicity = 1), the evaluation of the derivative is a
 clean scalar product of leading coefficient and "off-root" factors:
 
-  `eval α₀ (N(D)') = lc · ∏_{β ∈ roots \ {α₀}} (α₀ - β)^(rootMult β)`.
-
-This is the form needed by Q3.3/Q3.4 at simple roots. -/
+  `eval α₀ (N(D)') = lc · ∏_{β ∈ roots \ {α₀}} (α₀ - β)^(rootMult β)`. -/
 theorem normPoly_derivative_eval_simple_root_of_splits
     (D : CoordRingElt E.q) (hSplit : normPoly_splits_over_Fq E D)
     {α₀ : ZMod E.q} (hα₀ : α₀ ∈ (normPoly E D).roots.toFinset)
@@ -285,15 +278,5 @@ theorem normPoly_derivative_eval_simple_root_of_splits
   rw [normPoly_derivative_eval_at_root_of_splits E D hSplit hα₀, hSimple]
   -- rootMult α₀ = 1 ⇒ 0^(1-1) = 0^0 = 1, and ((1:ℕ):ZMod E.q) = 1.
   simp
-
-/-! The former `betaConstructive_fiber_sum_eq_rootMult_of_splits`,
-`normPoly_derivative_eval_eq_betaFiberSum_mul_prod_of_splits`, and
-`normPoly_derivative_eval_simple_root_betaFiberSum_of_splits` lemmas
-were removed together with `sum_betaConstructive_fst_eq_of_splits`
-(BetaConstructive.lean): their proofs relied on
-`betaConstructive_sum_eq_degE`, which was deleted after Aristotle's
-counterexample falsified the underlying `divisor_degree_eq` axiom. The
-`rootMultiplicity`-level Identity C lemmas above are untouched and
-remain available for downstream consumers. -/
 
 end Divisor

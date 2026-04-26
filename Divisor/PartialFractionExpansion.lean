@@ -153,8 +153,8 @@ theorem derivative_eq_sum_of_split_factorization [DecidableEq K]
 /-! ### Denominator-cleared identity using `roots.toFinset`
 
 The most common instance of the above, specialized to the root set of
-`p` with `rootMultiplicity` as the multiplicity map. This is the exact
-shape that Q3.1 will consume when instantiating on `p = normPoly E D`. -/
+`p` with `rootMultiplicity` as the multiplicity map. This is the
+shape consumed when instantiating on `p = normPoly E D`. -/
 
 /-- **PFE over `p.roots.toFinset`.** When `p` admits the "split" form
 with roots from `p.roots.toFinset` and multiplicities `rootMultiplicity _ p`,
@@ -214,7 +214,7 @@ theorem derivative_eq_sum_rootMultiplicity_of_roots_card_eq
 
 /-! ### Denominator-cleared identity: multiplying by the full product
 
-For Q3.2/Q3.3, the useful shape is:
+The useful shape is:
 
   p.derivative · (X - C α₀)
     = something involving (rootMult α₀ p) on the "singular" summand,

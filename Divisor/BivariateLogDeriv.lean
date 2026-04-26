@@ -1,12 +1,12 @@
 /-
   Divisor/BivariateLogDeriv.lean
 
-  Queue-3 step Q3.3. Denominator-cleared polynomial identity relating
-  the scalar `logDerivTerm` (on `E × E`, defined via an explicit rational
+  Denominator-cleared polynomial identity relating the scalar
+  `logDerivTerm` (on `E × E`, defined via an explicit rational
   formula in `(a, b, a', b', x, y, λ)`) to the univariate norm polynomial
   `N(D) = a² − b² · curveX` and its formal derivative `N(D)'`.
 
-  Strategy per the axiom-elimination plan Q3.3:
+  Strategy:
 
   1. `logDerivTerm(pt, λ) = num · dxdz_num / (den · dxdz_den)` where
      * `num := a'(x) − b'(x) · y`
@@ -35,8 +35,8 @@
 
   The `logDerivTermSum` definition and a sum-form denominator-cleared
   identity over the three chord intersections is provided as `Layer 4`;
-  Layer 4 just sums Layer 3 pointwise and is consumed by Q3.4 to match
-  the scalar identity against `polyG`'s first sum.
+  Layer 4 just sums Layer 3 pointwise to match the scalar identity
+  against `polyG`'s first sum.
 
   No new axioms, no `sorry` / `admit`.
 -/

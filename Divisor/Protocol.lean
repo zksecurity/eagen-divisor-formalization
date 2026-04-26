@@ -171,14 +171,7 @@ noncomputable def honestDivisorCoeffs (E : ECSetup) (stmt : DlogStatement E.q)
     * `msg.m_i ≡ wit.scalars i (mod q)` — the reduced scalar vector matches.
     * The divisor `(-P) + Σ_i n_i · (B_i) - degE(D) · (∞)` is principal
       (so `D = msg.toD` can be interpreted as a rational function with
-      this divisor, via `IsPrincipal` from `Axioms.lean`).
-
-    Replaces the previous `True` placeholder, which was a soundness hole:
-    with `True`, `weil_reciprocity_honest` could be invoked for an
-    arbitrary (possibly malicious) `msg`, yielding the false conclusion
-    that `logDerivCheckFn = 0` everywhere for it. The two conjuncts here
-    cannot hold jointly unless `msg` genuinely encodes the honest
-    witness, closing the hole. -/
+      this divisor, via `IsPrincipal` from `Axioms.lean`). -/
 def MAProverMsg.isHonestFor (E : ECSetup) (msg : MAProverMsg E.q)
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (hkm : stmt.k = msg.k) : Prop :=

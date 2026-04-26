@@ -1550,12 +1550,10 @@ theorem polyG_distinct_zero_cons
     have hRaw := hAllZero A₀ A₁ hA₀ hA₁ hNV hDefRaw
     rw [logDerivCheckFn_eq_grouped] at hRaw
     exact hRaw
-  -- Apply narrow bridge theorem (formerly the transient axiom, now a
-  -- theorem taking the scalar `hPolyGZero` hypothesis).
+  -- Apply narrow bridge theorem.
   -- The conclusion uses `Fin.cons (P.1,-P.2) baseAt` and
   -- `Fin.cons (-1) (fun j => -distinctM'_tail j)`, which definitionally
-  -- equal `distinctRCons` and `distinctMCons` (the latter has a
-  -- negated tail per Session 41 sign resolution).
+  -- equal `distinctRCons` and `distinctMCons`.
   exact polyG_zero_of_logDerivCheck_identically_zero E
     msg.toD hD stmt.target (baseImageCount E stmt msg hkm)
     (baseAt E stmt msg hkm) (distinctM'_tail E stmt msg hkm) hAllZero'
@@ -2401,13 +2399,9 @@ theorem extractorDivisorCoeffs_eq_dCoeffs
 
 /-- **S6 + S4 + S5 combined.** Under the full T4 hypothesis set,
     the extractor succeeds and its divisor coefficient function's
-    group-sum-zero surrogate holds on the candidate Finset.
-
-    Previously concluded `IsPrincipal (extractorDivisorCoeffs)`. After
-    `divisor_degree_eq` was invalidated (see
-    `docs/divisor-degree-axiom-bug.md`), we can no longer prove the
-    degree-0 half of `principal_divisor_iff.mpr`; only the group-sum-
-    zero half is needed downstream, so that's what we carry. -/
+    group-sum-zero surrogate holds on the candidate Finset. Only the
+    group-sum-zero half of `principal_divisor_iff.mpr` is carried;
+    the degree-0 half is not needed downstream. -/
 theorem extractor_succeeds_and_groupSumZero
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
@@ -3324,8 +3318,6 @@ theorem polyG_zero_trace_formula
               · convert card_points_with_fst_eq_le E A₀.1 using 1;
                 congr 1; ext x; simp only [Finset.mem_filter, eq_comm];
           convert h_bad_card.trans _ using 1;
-          -- Pre-existing Phase-1b filter extensionality
-          -- (previously unreachable due to the Phase-1a sorry)
           · congr 1; ext A₁; simp only [Finset.mem_filter, not_and, not_not, ne_eq]
             constructor
             · intro ⟨hm, hp⟩; refine ⟨hm, ?_⟩

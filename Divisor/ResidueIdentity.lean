@@ -1,7 +1,7 @@
 /-
   Divisor/ResidueIdentity.lean
 
-  Queue-3 step Q3.4 (partial). Scaffolding lemmas for the scalar residue
+  Scaffolding lemmas for the scalar residue
   identity connecting `logDerivCheckFn` (the log-derivative check on
   `E × E` at defined non-vertical pairs) to `polyG` (the denominator-
   cleared polynomial in the `(Q, β, R, m)` data) at canonical divisor
@@ -9,11 +9,10 @@
 
   The full proof of the target theorem requires a Vieta-style collapse of
   the three chord x-coordinates plus the partial-fraction expansion for
-  `N(D)'` (Q3.2), combined with the per-sheet β vs. rootMultiplicity
-  bridge (Q3.1). That argument spans hundreds of lines of careful
+  `N(D)'`, combined with the per-sheet β vs. rootMultiplicity
+  bridge. That argument spans hundreds of lines of careful
   polynomial manipulation over the split hypothesis. This module records
-  the key reusable Layer-4 identities and matching lemmas that a
-  subsequent session (or a broadened Q3.4) can consume.
+  the key reusable Layer-4 identities and matching lemmas.
 
   Landed lemmas:
 
@@ -33,8 +32,8 @@
     Layer-3 equations by appropriate `∏ N(D)(x_j)` factors and sums; the
     aggregate gives the chord-level denominator-cleared identity.
 
-  No new axioms, no `sorry` / `admit`. Non-trivial layers consumable by
-  Q3.4 / Q3.5 without requiring the full residue identity closure.
+  No new axioms, no `sorry` / `admit`. Layers usable without
+  requiring the full residue identity closure.
 -/
 import Divisor.BivariateLogDeriv
 import Divisor.NormLogDeriv
@@ -92,8 +91,8 @@ theorem chord_A₂_y_eq (A₀ A₁ : ZMod E.q × ZMod E.q) :
     ```
 
     This module states the pointwise denominator-cleared triple (one
-    equation per `i`) and leaves the full aggregation step (Vieta +
-    PFE matching against `polyG`'s β-sum) to the next iteration of Q3.4.
+    equation per `i`); the full aggregation step (Vieta + PFE matching
+    against `polyG`'s β-sum) is not closed here.
 -/
 
 /-- **Layer 4 sum-form (RHS only, paper-faithful)**. The sum of Layer 3
@@ -511,16 +510,11 @@ theorem polyG_eq_zero_iff_paperResidue
     matching the derivation exactly:
     `Σ_k β_k/L_Q(Q_k) = L_Q(-P)⁻¹ + Σ_j m_j/L_Q(B_j)`.
 
-    This still requires mechanizing `\ref{lem:log-derivative}` itself (paper's
-    `lem:log-deriv-norm`) to close the axiom as a theorem, which
-    remains deferred (requires function-field infrastructure per the
-    axiom-elimination plan).
+    Mechanizing `\ref{lem:log-derivative}` itself (paper's
+    `lem:log-deriv-norm`) to close the axiom as a theorem requires
+    function-field infrastructure not in this development. -/
 
-    The downstream cascade (`distinctMCons`, `extractedScalars`, D3
-    witness interface) was propagated consistently in the same
-    session; see `ExtractorBridge.lean`'s commentary. -/
-
-/-! ## Summary note (Q3.4 status)
+/-! ## Bridge structure
 
 ```
 theorem polyG_zero_of_logDerivCheck_zero_at_defined_canonical
@@ -543,13 +537,10 @@ theorem polyG_zero_of_logDerivCheck_zero_at_defined_canonical
               A₀ A₁ = 0
 ```
 
-requires closing a deep residue-identity argument that exceeds this
-module's 300-LOC budget. (The Session 41 sign resolution negated the
-tail in the axiom's `m'` argument to `fun j => -m j`; the signs now
-align with `logDerivCheckFn`'s RHS convention as derived above.) The classical proof proceeds by:
+Closing this requires a deep residue-identity argument. Outline:
 
-1. Aggregating the three pointwise Layer-3 identities (Q3.3,
-   `logDerivTerm_denom_cleared_pointwise` / `_in_chordRHSSingle`) over
+1. Aggregate the three pointwise Layer-3 identities
+   (`logDerivTerm_denom_cleared_pointwise` / `_in_chordRHSSingle`) over
    the chord intersections to get
    ```
    (∏_i N(D)(x_i)) · (∏_i (3x_i² + A − 2λy_i)) · Σ_i logDerivTerm(A_i, λ)
@@ -558,12 +549,12 @@ align with `logDerivCheckFn`'s RHS convention as derived above.) The classical p
    which is a polynomial identity in `(x_i, y_i, a, a', b, b', λ)` with
    no rational denominators.
 
-2. Applying Vieta (`chord_Vieta_x_sum`) to express `x₂ = λ² − x₀ − x₁` and
-   collapsing the x-coord sum dependence.
+2. Apply Vieta (`chord_Vieta_x_sum`) to express `x₂ = λ² − x₀ − x₁` and
+   collapse the x-coord sum dependence.
 
-3. Converting `Σ_i logDerivTerm(A_i, λ)` into an explicit product via the
-   partial-fraction expansion for `N(D)'` from Q3.2 + the beta-fiber
-   bridge from Q3.1. Specifically:
+3. Convert `Σ_i logDerivTerm(A_i, λ)` into an explicit product via the
+   partial-fraction expansion for `N(D)'` plus the beta-fiber
+   bridge:
    ```
    Σ_i logDerivTerm(A_i, λ) · (denoms)
       = Σ_α ∈ roots (βFiber α) / L_Q((α, y_α))
@@ -571,35 +562,19 @@ align with `logDerivCheckFn`'s RHS convention as derived above.) The classical p
    ```
    under `hSplit`.
 
-4. Matching against `polyG`'s first sum:
+4. Match against `polyG`'s first sum:
    `Σ_k β_k · ∏_{k'≠k} ellP(Q_k') = Σ_k β_k / L_Q(Q_k) · ∏_all L_Q(Q_k') · (A₁-A₀)^{...}`
    via `ellP_eq_lineEval_mul` and the per-sheet-to-per-fiber re-indexing
    from `zerosAt` / `multAt` matching `betaConstructive`'s fiber sums.
 
-5. Matching against `polyG`'s second sum: clearing denominators on the
+5. Match against `polyG`'s second sum: clear denominators on the
    `-1/L(-P) - Σ m_j/L(B_j) = Σ m'_j / L(R_j)` pocket (R = cons (-P) B,
-   m' = cons (-1) (fun j => -m j) fix), which is
+   m' = cons (-1) (fun j => -m j)), which is
    the `sum_div_iff_sum_mul_prod_erase` identity from `LogDeriv.lean`.
 
-Steps 1-2 are tractable but lengthy (~400 LOC). Step 3 is deep
-(~600+ LOC) and requires pushing `rootMultiplicity`-level PFE through
-an explicit `x_i, y_i`-parametrized substitution plus careful case
-analysis on per-fiber sheet membership. Step 4 is ~200 LOC. Step 5
-is ~100 LOC.
-
-Total realistic effort: ~1500 LOC + substantial new infrastructure
-(Vieta polynomial identity, chord-cubic discriminant tracking,
-fiber-level per-sheet sum identity).
-
-**Partial progress landed here**: Vieta sum, L-Line-zLambda equivalence,
-Layer-3 in chordRHSSingle form, ellP-inverse form. These are consumed
-by steps 1, 2, 4. Steps 3 and 5 remain.
-
-**Recommendation for Q3.4 re-attempt**: broaden scope to ~1500 LOC
-across multiple new modules (`ChordSum.lean`, `VietaCollapse.lean`,
-`BetaFiberMatch.lean`), or narrow the target theorem's hypothesis to
-include the scalar residue identity as an assumption (deferring to a
-still-later session). -/
+Vieta sum, L-Line-zLambda equivalence, Layer-3 in chordRHSSingle form,
+and ellP-inverse form are landed here, consumable by steps 1, 2, 4.
+Steps 3 and 5 are not closed. -/
 
 /-! ## Chord-residue bridge from `\ref{lem:log-derivative}` hypothesis
 
