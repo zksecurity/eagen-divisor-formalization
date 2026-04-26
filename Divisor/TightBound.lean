@@ -256,7 +256,7 @@ theorem log_deriv_sz_paper_core_tight
     and nonzero (i.e. `f ≢ 0` in the paper's notation), bound the
     cardinality of the accepting challenge set by
 
-      `18·(d + k)·|F_q| + (6·d + 9·k + 71)·|E.points|`.
+      `18·(d + k)·|F_q| + (3·d + 9·k + 71)·|E.points|`.
 
     Realised via `lem:log-derivative` (SZ-on-(E×E) applied to the
     cleared log-deriv polynomial) plus the Hasse bound. -/
@@ -272,7 +272,7 @@ theorem log_deriv_sz_paper_tight
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     (eventNotEq E D P B (fun i => m i)).card
       ≤ 18 * (D.degE + k) * E.q +
-        (6 * D.degE + 9 * k + 71) * E.points.card := by
+        (3 * D.degE + 9 * k + 71) * E.points.card := by
   classical
   have hDnz := hDnz_from_hNV D P B m hNV
   -- Split: defined-bad + undefined
@@ -302,7 +302,7 @@ theorem log_deriv_sz_paper_tight
           (fun p => ¬ logDerivCheckFnDefined E D P B p.1 p.2)).card :=
         le_trans (Finset.card_le_card hSub) (Finset.card_union_le _ _)
     _ ≤ 18 * (D.degE + k) * E.q +
-          (6 * D.degE + 9 * k + 71) * E.points.card :=
+          (3 * D.degE + 9 * k + 71) * E.points.card :=
         Nat.add_le_add hCoreBound hUndefBound
 
 end Divisor

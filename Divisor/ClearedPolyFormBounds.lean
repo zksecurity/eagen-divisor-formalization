@@ -3042,11 +3042,11 @@ theorem logDerivCheckFn_undefined_set_bound
       obtain ⟨j, _, hj⟩ := h
       exact ⟨j, hj⟩
   -- Bound each sub-event.
-  have hS1 : S1.card ≤ 2 * D.degE * E.points.card :=
+  have hS1 : S1.card ≤ D.degE * E.points.card :=
     DAtA₀_zero_pairs_card_le E D hD
-  have hS2 : S2.card ≤ 2 * D.degE * E.points.card :=
+  have hS2 : S2.card ≤ D.degE * E.points.card :=
     DAtA₁_zero_pairs_card_le E D hD
-  have hS3 : S3.card ≤ (2 * D.degE + 2) * E.points.card :=
+  have hS3 : S3.card ≤ (D.degE + 2) * E.points.card :=
     DAtA₂_zero_pairs_card_le E D hD
   have hS4 : S4.card ≤ 14 * E.points.card :=
     dxdzA₀_zero_pairs_card_le E
@@ -3077,20 +3077,20 @@ theorem logDerivCheckFn_undefined_set_bound
         refine le_trans (Finset.card_union_le _ _) ?_
         refine Nat.add_le_add ?_ le_rfl
         exact Finset.card_union_le _ _
-    _ ≤ 2 * D.degE * E.points.card + 2 * D.degE * E.points.card
-         + (2 * D.degE + 2) * E.points.card + 14 * E.points.card
+    _ ≤ D.degE * E.points.card + D.degE * E.points.card
+         + (D.degE + 2) * E.points.card + 14 * E.points.card
          + 14 * E.points.card + 32 * E.points.card + 9 * E.points.card
          + 9 * k * E.points.card := by
         exact Nat.add_le_add (Nat.add_le_add (Nat.add_le_add
           (Nat.add_le_add (Nat.add_le_add (Nat.add_le_add
             (Nat.add_le_add hS1 hS2) hS3) hS4) hS5) hS6) hS7) hS8
-    _ = (6 * D.degE + 9 * k + 71) * E.points.card := by ring
+    _ = (3 * D.degE + 9 * k + 71) * E.points.card := by ring
     _ ≤ 18 * (D.degE + k + 6) * E.points.card := by
         apply Nat.mul_le_mul_right
         omega
 
 /-- **Tight boundary bound.** The undefined subset has cardinality at
-    most `(6·d + 9·k + 71)·|E|`, where `d = D.degE`. This is the
+    most `(3·d + 9·k + 71)·|E|`, where `d = D.degE`. This is the
     pre-relaxation form of `logDerivCheckFn_undefined_set_bound`
     (which rounds up to `18·(d+k+6)·|E|`). -/
 theorem logDerivCheckFn_undefined_set_bound_tight
@@ -3100,7 +3100,7 @@ theorem logDerivCheckFn_undefined_set_bound_tight
     ((E.points ×ˢ E.points).filter
       (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
         ¬ logDerivCheckFnDefined E D P B p.1 p.2)).card
-      ≤ (6 * D.degE + 9 * k + 71) * E.points.card := by
+      ≤ (3 * D.degE + 9 * k + 71) * E.points.card := by
   classical
   set S1 := (E.points ×ˢ E.points).filter
     (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
@@ -3167,11 +3167,11 @@ theorem logDerivCheckFn_undefined_set_bound_tight
       rw [Finset.prod_eq_zero_iff] at h
       obtain ⟨j, _, hj⟩ := h
       exact ⟨j, hj⟩
-  have hS1 : S1.card ≤ 2 * D.degE * E.points.card :=
+  have hS1 : S1.card ≤ D.degE * E.points.card :=
     DAtA₀_zero_pairs_card_le E D hD
-  have hS2 : S2.card ≤ 2 * D.degE * E.points.card :=
+  have hS2 : S2.card ≤ D.degE * E.points.card :=
     DAtA₁_zero_pairs_card_le E D hD
-  have hS3 : S3.card ≤ (2 * D.degE + 2) * E.points.card :=
+  have hS3 : S3.card ≤ (D.degE + 2) * E.points.card :=
     DAtA₂_zero_pairs_card_le E D hD
   have hS4 : S4.card ≤ 14 * E.points.card :=
     dxdzA₀_zero_pairs_card_le E
@@ -3201,14 +3201,14 @@ theorem logDerivCheckFn_undefined_set_bound_tight
         refine le_trans (Finset.card_union_le _ _) ?_
         refine Nat.add_le_add ?_ le_rfl
         exact Finset.card_union_le _ _
-    _ ≤ 2 * D.degE * E.points.card + 2 * D.degE * E.points.card
-         + (2 * D.degE + 2) * E.points.card + 14 * E.points.card
+    _ ≤ D.degE * E.points.card + D.degE * E.points.card
+         + (D.degE + 2) * E.points.card + 14 * E.points.card
          + 14 * E.points.card + 32 * E.points.card + 9 * E.points.card
          + 9 * k * E.points.card := by
         exact Nat.add_le_add (Nat.add_le_add (Nat.add_le_add
           (Nat.add_le_add (Nat.add_le_add (Nat.add_le_add
             (Nat.add_le_add hS1 hS2) hS3) hS4) hS5) hS6) hS7) hS8
-    _ = (6 * D.degE + 9 * k + 71) * E.points.card := by ring
+    _ = (3 * D.degE + 9 * k + 71) * E.points.card := by ring
 
 /-- **main theorem**: mechanized zero-set bound on `E × E`.
     Derived from the defined-fiber + bad-A₀ + undefined-bad-event

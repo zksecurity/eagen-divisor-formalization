@@ -18,6 +18,7 @@
   the proof of the log-derivative bound.
 -/
 import Divisor.Defs
+import Divisor.CurveEvalZerosHelper
 import Divisor.LogDeriv
 import Divisor.CubicIntersection
 import Divisor.SupportDisjoint
@@ -731,9 +732,10 @@ noncomputable def clearedFiberPoly (D : CoordRingElt E.q)
     + rhsTermNegPScaled (E := E) D k B A₀
     + rhsSumScaled (E := E) D P k B m A₀
 
-/-! ## Helper: `numZeros E D ≤ 2 · D.degE`
+/-! ## Helper: `numZeros E D ≤ D.degE`
 
-    Concrete bound via `card_zeros_on_E_le` applied to `DAtA₁Poly D`. -/
+    Paper-tight bound via the canonical reduction `α(X) + β(X)·Y` and
+    norm-polynomial root counting (see `Divisor/CurveEvalZerosHelper.lean`). -/
 
 theorem DAtA₁Poly_natDegree_lt_two (D : CoordRingElt E.q) :
     (DAtA₁Poly (E := E) D).natDegree < 2 := by
@@ -803,26 +805,18 @@ theorem resultantX_DAtA₁Poly_natDegree_le (D : CoordRingElt E.q) :
     rw [Nat.add_comm]
     exact le_max_right _ _
 
-/-- **Helper**: `numZeros E D ≤ 2 · D.degE` whenever `D` is not the zero
-    coord-ring element. -/
-theorem numZeros_le_two_degE (D : CoordRingElt E.q)
+/-- **Helper**: `numZeros E D ≤ D.degE` whenever `D` is not the zero
+    coord-ring element.
+
+    Discharged by `Divisor.CurveEvalZeros.zeros_card_le_degE`, which
+    uses the norm polynomial `D.a² − D.b²·c(X)` plus a multiplicity
+    argument (`rootMultiplicity ≥ 2` at common roots of `D.a, D.b`) to
+    halve the trivial `2·D.degE` count. -/
+theorem numZeros_le_degE (D : CoordRingElt E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
-    numZeros E D ≤ 2 * D.degE := by
-  classical
-  have hMod_nz : DAtA₁Poly (E := E) D %ₘ curveEqPoly E ≠ 0 := by
-    rw [DAtA₁Poly_modByMonic_self]
-    exact DAtA₁Poly_ne_zero_of_ab E D hD
-  have hZeros_eq :
-      zeros D E.points
-        = E.points.filter (fun p => bivEval (DAtA₁Poly (E := E) D) p = 0) := by
-    unfold zeros
-    apply Finset.filter_congr
-    intro p _
-    rw [bivEval_DAtA₁Poly]
-  unfold numZeros
-  rw [hZeros_eq]
-  refine le_trans (card_zeros_on_E_le E (DAtA₁Poly (E := E) D) hMod_nz) ?_
-  exact Nat.mul_le_mul_left 2 (resultantX_DAtA₁Poly_natDegree_le E D)
+    numZeros E D ≤ D.degE := by
+  unfold numZeros zeros
+  exact Divisor.CurveEvalZeros.zeros_card_le_degE E D hD
 
 /-! ## T3 per-factor bounds.
 
@@ -832,13 +826,13 @@ theorem numZeros_le_two_degE (D : CoordRingElt E.q)
     and F2 (`D(A₁) = 0`). Remaining factors handled in follow-up work. -/
 
 /-- F1: pairs `(A₀, A₁) ∈ E × E` with `D.eval A₀.1 A₀.2 = 0` are at most
-    `numZeros D · |E| ≤ 2·D.degE · |E|`. -/
+    `numZeros D · |E| ≤ D.degE · |E|`. -/
 theorem DAtA₀_zero_pairs_card_le (D : CoordRingElt E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     ((E.points ×ˢ E.points).filter
       (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
         D.eval p.1.1 p.1.2 = 0)).card
-    ≤ 2 * D.degE * E.points.card := by
+    ≤ D.degE * E.points.card := by
   classical
   have hEq :
       (E.points ×ˢ E.points).filter
@@ -851,17 +845,17 @@ theorem DAtA₀_zero_pairs_card_le (D : CoordRingElt E.q)
   rw [hEq, Finset.card_product]
   calc (zeros D E.points).card * E.points.card
       = numZeros E D * E.points.card := rfl
-    _ ≤ (2 * D.degE) * E.points.card :=
-          Nat.mul_le_mul_right _ (numZeros_le_two_degE E D hD)
+    _ ≤ D.degE * E.points.card :=
+          Nat.mul_le_mul_right _ (numZeros_le_degE E D hD)
 
 /-- F2: pairs `(A₀, A₁) ∈ E × E` with `D.eval A₁.1 A₁.2 = 0` are at most
-    `|E| · numZeros D ≤ 2·D.degE · |E|` (symmetric to F1). -/
+    `|E| · numZeros D ≤ D.degE · |E|` (symmetric to F1). -/
 theorem DAtA₁_zero_pairs_card_le (D : CoordRingElt E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     ((E.points ×ˢ E.points).filter
       (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
         D.eval p.2.1 p.2.2 = 0)).card
-    ≤ 2 * D.degE * E.points.card := by
+    ≤ D.degE * E.points.card := by
   classical
   have hEq :
       (E.points ×ˢ E.points).filter
@@ -874,9 +868,9 @@ theorem DAtA₁_zero_pairs_card_le (D : CoordRingElt E.q)
   rw [hEq, Finset.card_product]
   calc E.points.card * (zeros D E.points).card
       = E.points.card * numZeros E D := rfl
-    _ ≤ E.points.card * (2 * D.degE) :=
-          Nat.mul_le_mul_left _ (numZeros_le_two_degE E D hD)
-    _ = 2 * D.degE * E.points.card := by ring
+    _ ≤ E.points.card * D.degE :=
+          Nat.mul_le_mul_left _ (numZeros_le_degE E D hD)
+    _ = D.degE * E.points.card := by ring
 
 /-! ### Chord-case `x₂, y₂` formulas
 
@@ -2240,7 +2234,7 @@ theorem clearedFiberPoly_identity
   ring
 
 /-- F3: pairs `(A₀, A₁) ∈ E × E` with `D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) = 0`
-    are at most `(2·D.degE + 2) · |E|`.
+    are at most `(D.degE + 2) · |E|`.
 
     Split: vertical (`A₀.1 = A₁.1`, ≤ 2·|E|) via curve-fiber; non-vertical
     (≤ |E|·numZeros D via `thirdPoint_inj_on_A₁` from support-disjoint lemma). -/
@@ -2249,7 +2243,7 @@ theorem DAtA₂_zero_pairs_card_le (D : CoordRingElt E.q)
     ((E.points ×ˢ E.points).filter
       (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
         D.eval (chordX₂ p.1 p.2) (chordY₂ p.1 p.2) = 0)).card
-    ≤ (2 * D.degE + 2) * E.points.card := by
+    ≤ (D.degE + 2) * E.points.card := by
   classical
   set S := (E.points ×ˢ E.points).filter
     (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
@@ -2306,15 +2300,15 @@ theorem DAtA₂_zero_pairs_card_le (D : CoordRingElt E.q)
       _ ≤ E.numAffine * numZeros E D :=
           card_thirdPoint_affine_D_zero_pairs_le E D
       _ = E.points.card * numZeros E D := rfl
-  have hSnv_bd' : Snv.card ≤ 2 * D.degE * E.points.card := by
+  have hSnv_bd' : Snv.card ≤ D.degE * E.points.card := by
     calc Snv.card ≤ E.points.card * numZeros E D := hSnv_bd
-      _ ≤ E.points.card * (2 * D.degE) :=
-            Nat.mul_le_mul_left _ (numZeros_le_two_degE E D hD)
-      _ = 2 * D.degE * E.points.card := by ring
+      _ ≤ E.points.card * D.degE :=
+            Nat.mul_le_mul_left _ (numZeros_le_degE E D hD)
+      _ = D.degE * E.points.card := by ring
   calc S.card = Svert.card + Snv.card := hSplit.symm
-    _ ≤ 2 * E.points.card + 2 * D.degE * E.points.card :=
+    _ ≤ 2 * E.points.card + D.degE * E.points.card :=
         Nat.add_le_add hSvert_bd hSnv_bd'
-    _ = (2 * D.degE + 2) * E.points.card := by ring
+    _ = (D.degE + 2) * E.points.card := by ring
 
 
 end Divisor

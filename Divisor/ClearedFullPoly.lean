@@ -1996,15 +1996,9 @@ theorem log_deriv_sz_paper_core
 
     Combines the tightened core Lang-Weil bound
     (`36·(2d+k+6)·|E|`) on the denom-defined pairs with the tight
-    boundary bound (`(6d+9k+71)·|E|`) from
+    boundary bound (`(3d+9k+71)·|E|`) from
     `logDerivCheckFn_undefined_set_bound_tight` for the
-    denom-undefined pairs.  Total: `78·(D.degE + k + 6)·|E|`.
-
-    **Tightened**: previous bound was `84·(D.degE+k+6)·|E|`.
-    The improvement comes from preserving the `2d` dependence in the
-    DKL degree bound (total degree `4d+2k+12` gives DKL count
-    `≤ 9·(4d+2k+12)·q = 36·(2d+k+6)·q`), rather than rounding to
-    `72·(d+k+6)·q`. -/
+    denom-undefined pairs. Total: `78·(D.degE + k + 6)·|E|`. -/
 theorem log_deriv_sz_paper
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
@@ -2050,14 +2044,14 @@ theorem log_deriv_sz_paper
   calc badNE.card
     ≤ defBad.card + undefAll.card := hCardSplit
     _ ≤ 36 * (2 * D.degE + k + 6) * E.points.card +
-        (6 * D.degE + 9 * k + 71) * E.points.card :=
+        (3 * D.degE + 9 * k + 71) * E.points.card :=
         Nat.add_le_add hCoreBound hUndefBound
     _ ≤ 78 * (D.degE + k + 6) * E.points.card := by
-        have : 36 * (2 * D.degE + k + 6) + (6 * D.degE + 9 * k + 71)
+        have : 36 * (2 * D.degE + k + 6) + (3 * D.degE + 9 * k + 71)
                ≤ 78 * (D.degE + k + 6) := by omega
         calc 36 * (2 * D.degE + k + 6) * E.points.card +
-               (6 * D.degE + 9 * k + 71) * E.points.card
-            = (36 * (2 * D.degE + k + 6) + (6 * D.degE + 9 * k + 71)) *
+               (3 * D.degE + 9 * k + 71) * E.points.card
+            = (36 * (2 * D.degE + k + 6) + (3 * D.degE + 9 * k + 71)) *
                 E.points.card := by ring
           _ ≤ (78 * (D.degE + k + 6)) * E.points.card :=
                 Nat.mul_le_mul_right _ this
