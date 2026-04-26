@@ -1,26 +1,30 @@
 /-
-  Divisor/DefsPre.lean — Core definitions (no typeclass instances requiring axioms)
+  Divisor/DefsPre.lean — Core definitions
 
-  Split out from `Divisor/Defs.lean` so that the ECPoint axiom files
-  (`Divisor/Axioms/AxiomECPoint*.lean`) can import the bare ECPoint type
-  + `ECPoint.add` definition without pulling in the `Std.Commutative` /
-  `Std.Associative` instances (which depend on the axioms).
-
-  Import chain:
-    DefsPre  <-  Axioms/AxiomECPoint*  <-  Defs
+  The on-curve point group is mathlib's `WeierstrassCurve.Affine.Point`,
+  which bundles the nonsingular hypothesis structurally. The local
+  abbreviation `ECPoint E := (E.toW).toAffine.Point` reuses mathlib's
+  full `AddCommGroup` instance — no chord-tangent axioms needed.
 -/
+import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 import Mathlib.Data.ZMod.Basic
+import Mathlib.Algebra.Field.ZMod
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.Basic
 import Mathlib.RingTheory.Polynomial.Basic
 import Mathlib.Order.MinMax
 import Mathlib.Data.Finset.Prod
+import Mathlib.Tactic.LinearCombination
 
-open Finset Polynomial
+open Finset Polynomial WeierstrassCurve
 
 namespace Divisor
 
-/-- Short Weierstrass curve y^2 = x^3 + Ax + B over F_q with point set -/
+/-- Short Weierstrass curve `y² = x³ + Ax + B` over `F_q`, plus its
+    affine point set as a `Finset`. The discriminant condition `hDisc`
+    is `4A³ + 27B² ≠ 0`, equivalent to `Δ_W ≠ 0` (up to the unit `−16`).
+    Bundling it here means every on-curve `(x, y)` is automatically a
+    nonsingular point of the underlying `WeierstrassCurve`. -/
 structure ECSetup where
   q : ℕ
   hq_prime : Nat.Prime q
@@ -29,6 +33,7 @@ structure ECSetup where
   points : Finset (ZMod q × ZMod q)
   hOnCurve : ∀ p ∈ points, p.2 ^ 2 = p.1 ^ 3 + curveA * p.1 + curveB
   hComplete : ∀ x y : ZMod q, y ^ 2 = x ^ 3 + curveA * x + curveB → (x, y) ∈ points
+  hDisc : 4 * curveA ^ 3 + 27 * curveB ^ 2 ≠ 0
   numPoints : ℕ
   hNumPoints : numPoints = points.card + 1
   hq_ge : q ≥ 5
@@ -40,6 +45,86 @@ instance : Fact (Nat.Prime E.q) := ⟨E.hq_prime⟩
 noncomputable abbrev ECSetup.numAffine : ℕ := E.points.card
 
 theorem ECSetup.numPoints_eq : E.numPoints = E.numAffine + 1 := E.hNumPoints
+
+/-- The underlying mathlib Weierstrass curve, with `a₁ = a₂ = a₃ = 0`,
+    `a₄ = curveA`, `a₆ = curveB`. -/
+def ECSetup.toW (E : ECSetup) : WeierstrassCurve (ZMod E.q) where
+  a₁ := 0
+  a₂ := 0
+  a₃ := 0
+  a₄ := E.curveA
+  a₆ := E.curveB
+
+@[simp] theorem ECSetup.toW_a₁ : E.toW.a₁ = 0 := rfl
+@[simp] theorem ECSetup.toW_a₂ : E.toW.a₂ = 0 := rfl
+@[simp] theorem ECSetup.toW_a₃ : E.toW.a₃ = 0 := rfl
+@[simp] theorem ECSetup.toW_a₄ : E.toW.a₄ = E.curveA := rfl
+@[simp] theorem ECSetup.toW_a₆ : E.toW.a₆ = E.curveB := rfl
+
+/-- Affine equation in our short-Weierstrass conventions. -/
+theorem ECSetup.equation_iff (E : ECSetup) (x y : ZMod E.q) :
+    E.toW.toAffine.Equation x y ↔ y ^ 2 = x ^ 3 + E.curveA * x + E.curveB := by
+  rw [Affine.equation_iff]
+  simp only [ECSetup.toW_a₁, ECSetup.toW_a₂, ECSetup.toW_a₃,
+             ECSetup.toW_a₄, ECSetup.toW_a₆]
+  constructor
+  · intro h; linear_combination h
+  · intro h; linear_combination h
+
+/-- Mathlib's discriminant `Δ` equals `−16(4A³ + 27B²)` for our short
+    Weierstrass form. So `hDisc` (i.e. `4A³ + 27B² ≠ 0`) implies `Δ ≠ 0`
+    when the characteristic is at least 5. -/
+theorem ECSetup.toW_Δ_ne_zero (E : ECSetup) : E.toW.Δ ≠ 0 := by
+  -- 16 ≠ 0 in ZMod E.q since q is prime ≥ 5 (so q ∤ 16 = 2^4).
+  have h16 : (16 : ZMod E.q) ≠ 0 := by
+    have hq5 : E.q ≥ 5 := E.hq_ge
+    have hcast : (16 : ZMod E.q) = ((16 : ℕ) : ZMod E.q) := by norm_cast
+    rw [hcast, Ne, CharP.cast_eq_zero_iff (ZMod E.q) E.q]
+    intro hdvd
+    -- q ∣ 16 = 2^4, q prime, so q ∣ 2 hence q = 2; contradicts q ≥ 5.
+    have hprime := E.hq_prime
+    have h16_eq : (16 : ℕ) = 2 ^ 4 := by norm_num
+    rw [h16_eq] at hdvd
+    have hq_dvd_2 : E.q ∣ 2 := hprime.dvd_of_dvd_pow hdvd
+    have : E.q ≤ 2 := Nat.le_of_dvd (by norm_num) hq_dvd_2
+    omega
+  intro hΔ
+  apply E.hDisc
+  have hΔ_eq : E.toW.Δ = -16 * (4 * E.curveA ^ 3 + 27 * E.curveB ^ 2) := by
+    show -E.toW.b₂ ^ 2 * E.toW.b₈ - 8 * E.toW.b₄ ^ 3
+        - 27 * E.toW.b₆ ^ 2 + 9 * E.toW.b₂ * E.toW.b₄ * E.toW.b₆ = _
+    show -(E.toW.a₁ ^ 2 + 4 * E.toW.a₂) ^ 2 *
+          (E.toW.a₁ ^ 2 * E.toW.a₆ + 4 * E.toW.a₂ * E.toW.a₆
+            - E.toW.a₁ * E.toW.a₃ * E.toW.a₄ + E.toW.a₂ * E.toW.a₃ ^ 2
+            - E.toW.a₄ ^ 2)
+        - 8 * (2 * E.toW.a₄ + E.toW.a₁ * E.toW.a₃) ^ 3
+        - 27 * (E.toW.a₃ ^ 2 + 4 * E.toW.a₆) ^ 2
+        + 9 * (E.toW.a₁ ^ 2 + 4 * E.toW.a₂) * (2 * E.toW.a₄ + E.toW.a₁ * E.toW.a₃)
+            * (E.toW.a₃ ^ 2 + 4 * E.toW.a₆) = _
+    rw [ECSetup.toW_a₁, ECSetup.toW_a₂, ECSetup.toW_a₃,
+        ECSetup.toW_a₄, ECSetup.toW_a₆]
+    ring
+  -- Conclude: the second factor must be zero.
+  by_contra hDisc'
+  have hZ : -16 * (4 * E.curveA ^ 3 + 27 * E.curveB ^ 2) = 0 := hΔ_eq ▸ hΔ
+  -- Use the field instance on ZMod E.q.
+  have : (4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 : ZMod E.q) = 0 := by
+    have h16' : (-16 : ZMod E.q) ≠ 0 := by
+      intro h
+      apply h16
+      have hh : (16 : ZMod E.q) = -(-16 : ZMod E.q) := by ring
+      rw [hh, h]; ring
+    -- divide both sides by -16.
+    have := mul_left_cancel₀ h16' (by rw [hZ]; ring : (-16 : ZMod E.q) *
+      (4 * E.curveA ^ 3 + 27 * E.curveB ^ 2) = (-16 : ZMod E.q) * 0)
+    exact this
+  exact hDisc' this
+
+/-- An affine point `(x, y)` on the curve is automatically nonsingular
+    in the mathlib sense, by the bundled discriminant hypothesis. -/
+theorem ECSetup.equation_iff_nonsingular (E : ECSetup) {x y : ZMod E.q} :
+    E.toW.toAffine.Equation x y ↔ E.toW.toAffine.Nonsingular x y :=
+  Affine.equation_iff_nonsingular_of_Δ_ne_zero E.toW_Δ_ne_zero
 
 /-! ## Lines -/
 
@@ -96,103 +181,89 @@ theorem card_distinctPairs {α : Type*} [DecidableEq α] (S : Finset α) :
       (S ×ˢ S) \ (S ×ˢ S).filter (fun p : α × α => p.1 = p.2) := by
     ext p
     simp only [Finset.mem_filter, Finset.mem_sdiff, Finset.mem_product, ne_eq,
-               not_and, not_not]
+               not_and]
     tauto
   rw [hsplit, Finset.card_sdiff_of_subset (Finset.filter_subset _ _),
       Finset.card_product, hdiag, hcard_diag]
 
 /-! ## Points -/
 
-inductive ECPoint (q : ℕ) [Fact (Nat.Prime q)] where
-  | affine (x y : ZMod q) : ECPoint q
-  | infinity : ECPoint q
-  deriving DecidableEq
+/-- The group of `F_q`-points on `E`, represented by mathlib's
+    `WeierstrassCurve.Affine.Point`. Bundles the nonsingular condition
+    structurally — off-curve `(x, y)` pairs are unrepresentable. -/
+abbrev ECPoint (E : ECSetup) : Type := E.toW.toAffine.Point
 
-def ECPoint.neg : ECPoint q → ECPoint q
-  | .affine x y => .affine x (-y)
-  | .infinity => .infinity
+namespace ECPoint
 
-instance : Neg (ECPoint q) := ⟨ECPoint.neg⟩
+variable {E : ECSetup}
 
+/-- The point at infinity. -/
+abbrev infinity : ECPoint E := WeierstrassCurve.Affine.Point.zero
+
+/-- Smart constructor for an affine point given on-curve evidence. -/
+noncomputable def affineOfEqn (E : ECSetup) {x y : ZMod E.q}
+    (h : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB) : ECPoint E :=
+  .some (E.equation_iff_nonsingular.mp ((E.equation_iff x y).mpr h))
+
+/-- Smart constructor for an affine point given membership in `E.points`. -/
+noncomputable def affineOfMem (E : ECSetup) {p : ZMod E.q × ZMod E.q}
+    (hp : p ∈ E.points) : ECPoint E :=
+  affineOfEqn E (E.hOnCurve p hp)
+
+/-- An affine point `(x, y)` from raw coordinates, junk-tolerant: returns
+    the genuine affine point if `(x, y)` is on the curve, else falls back
+    to `0` (the point at infinity). Convenient for total-function lambdas
+    in `weightedSum` where off-curve coefficients are zero anyway, so
+    the junk fallback is never observed. -/
+noncomputable def affine (E : ECSetup) (x y : ZMod E.q) : ECPoint E :=
+  open Classical in
+  if h : E.toW.toAffine.Nonsingular x y then .some h else 0
+
+/-- `ECPoint.affine E x y = .some h` whenever `(x, y)` is nonsingular. -/
+theorem affine_of_nonsingular (E : ECSetup) {x y : ZMod E.q}
+    (h : E.toW.toAffine.Nonsingular x y) :
+    affine E x y = .some h := by
+  unfold affine
+  rw [dif_pos h]
+
+/-- `ECPoint.affine E x y` agrees with the smart `affineOfMem` constructor
+    on points of `E.points`. -/
+theorem affine_eq_affineOfMem (E : ECSetup) {p : ZMod E.q × ZMod E.q}
+    (hp : p ∈ E.points) :
+    affine E p.1 p.2 = ECPoint.affineOfMem E hp := by
+  rcases p with ⟨x, y⟩
+  exact affine_of_nonsingular E
+    (E.equation_iff_nonsingular.mp ((E.equation_iff x y).mpr (E.hOnCurve _ hp)))
+
+end ECPoint
+
+/-- Third-intersection point of the chord/tangent line through `A₀`, `A₁`
+    with the curve `E`. Operates on raw `ZMod q × ZMod q` pairs and
+    returns either an `affine` point (when the third intersection is
+    finite) or `infinity` (vertical line / 2-torsion case). The result
+    is a junk-value coordinate pair — turned into a group element only
+    via `thirdPoint_eq_neg_add` (which requires on-curve hypotheses).
+    Defined here because downstream geometric lemmas reason about its
+    coordinates directly. -/
 noncomputable def thirdPoint (E : ECSetup) (A₀ A₁ : ZMod E.q × ZMod E.q) :
-    ECPoint E.q :=
+    Option (ZMod E.q × ZMod E.q) :=
   if A₀.1 = A₁.1 then
     if A₀.2 = A₁.2 then
-      if A₀.2 = 0 then .infinity
+      if A₀.2 = 0 then none
       else
         let lam := (3 * A₀.1 ^ 2 + E.curveA) * (2 * A₀.2)⁻¹
         let mu := A₀.2 - lam * A₀.1
         let x₂ := lam ^ 2 - 2 * A₀.1
         let y₂ := lam * x₂ + mu
-        .affine x₂ y₂
+        some (x₂, y₂)
     else
-      .infinity
+      none
   else
     let lam := (A₁.2 - A₀.2) * (A₁.1 - A₀.1)⁻¹
     let mu := A₀.2 - lam * A₀.1
     let x₂ := lam ^ 2 - A₀.1 - A₁.1
     let y₂ := lam * x₂ + mu
-    .affine x₂ y₂
-
-/-- Zero of the elliptic-curve group: the point at infinity. -/
-def ECPoint.zero : ECPoint q := .infinity
-
-instance : Zero (ECPoint q) := ⟨ECPoint.zero⟩
-
-@[simp] theorem ECPoint.zero_def : (0 : ECPoint q) = .infinity := rfl
-
-/-- The elliptic-curve group operation on `ECPoint E.q`. -/
-noncomputable def ECPoint.add (E : ECSetup) :
-    ECPoint E.q → ECPoint E.q → ECPoint E.q
-  | .infinity, p => p
-  | p, .infinity => p
-  | .affine x₀ y₀, .affine x₁ y₁ =>
-      match thirdPoint E (x₀, y₀) (x₁, y₁) with
-      | .infinity => .infinity
-      | .affine x₂ y₂ => .affine x₂ (-y₂)
-
-@[simp] theorem ECPoint.zero_add_curve (E : ECSetup) (p : ECPoint E.q) :
-    ECPoint.add E 0 p = p := by
-  cases p <;> rfl
-
-@[simp] theorem ECPoint.add_zero_curve (E : ECSetup) (p : ECPoint E.q) :
-    ECPoint.add E p 0 = p := by
-  cases p <;> rfl
-
-/-- Iterated group sum: `nsmul E n p = p + p + ⋯ + p` (`n` copies). -/
-noncomputable def ECPoint.nsmul (E : ECSetup) : ℕ → ECPoint E.q → ECPoint E.q
-  | 0, _ => 0
-  | n + 1, p => ECPoint.add E p (ECPoint.nsmul E n p)
-
-@[simp] theorem ECPoint.nsmul_zero (E : ECSetup) (p : ECPoint E.q) :
-    ECPoint.nsmul E 0 p = 0 := rfl
-
-@[simp] theorem ECPoint.nsmul_succ (E : ECSetup) (n : ℕ) (p : ECPoint E.q) :
-    ECPoint.nsmul E (n + 1) p = ECPoint.add E p (ECPoint.nsmul E n p) := rfl
-
-/-- Integer scalar multiplication on `ECPoint E.q`: `zsmul E n p = [n] · p`. -/
-noncomputable def ECPoint.zsmul (E : ECSetup) (n : ℤ) (p : ECPoint E.q) :
-    ECPoint E.q :=
-  match n with
-  | Int.ofNat m => ECPoint.nsmul E m p
-  | Int.negSucc m => -(ECPoint.nsmul E (m + 1) p)
-
-@[simp] theorem ECPoint.zsmul_zero (E : ECSetup) (p : ECPoint E.q) :
-    ECPoint.zsmul E 0 p = 0 := rfl
-
-@[simp] theorem ECPoint.zsmul_one (E : ECSetup) (p : ECPoint E.q) :
-    ECPoint.zsmul E 1 p = p := by
-  show ECPoint.nsmul E 1 p = p
-  show ECPoint.add E p (ECPoint.nsmul E 0 p) = p
-  show ECPoint.add E p 0 = p
-  exact ECPoint.add_zero_curve E p
-
-@[simp] theorem ECPoint.zsmul_neg_one (E : ECSetup) (p : ECPoint E.q) :
-    ECPoint.zsmul E (-1) p = -p := by
-  show -(ECPoint.nsmul E 1 p) = -p
-  show -(ECPoint.add E p (ECPoint.nsmul E 0 p)) = -p
-  show -(ECPoint.add E p 0) = -p
-  rw [ECPoint.add_zero_curve]
+    some (x₂, y₂)
 
 /-- `IsPrincipal E coeffs` means the divisor `Σ coeffs(P) · (P)` on `E`
     arises as `div(f)` for some nonzero `f ∈ F_q(E)×`.
@@ -201,6 +272,6 @@ noncomputable def ECPoint.zsmul (E : ECSetup) (n : ℤ) (p : ECPoint E.q) :
     elements (not formalized here). The characterization
     `principal_divisor_iff` (see `Divisor/Axioms/AxiomPrincipalDivisorIff.lean`)
     pins it down to two concrete conditions on `coeffs`. -/
-opaque IsPrincipal (E : ECSetup) (coeffs : ECPoint E.q → ℤ) : Prop
+opaque IsPrincipal (E : ECSetup) (coeffs : ECPoint E → ℤ) : Prop
 
 end Divisor

@@ -12,15 +12,15 @@
 -/
 import Divisor.Axioms.AxiomPrincipalDivisorIff
 import Divisor.Axioms.AxiomHasseWeil
-import Divisor.Axioms.AxiomECPointAddComm
-import Divisor.Axioms.AxiomECPointAddAssoc
-import Divisor.Axioms.AxiomECPointNegAddCancel
 import Divisor.Axioms.AxiomWeilReciprocityHonest
 import Divisor.Axioms.AxiomCoordRingEltDivisorGroupSumZero
 import Divisor.Axioms.AxiomChordFiberProductEqNormZUnderSplit
 import Divisor.Axioms.AxiomChordSumEqChordFiberProductLogDeriv
 import Divisor.Axioms.AxiomBivariatePolyZerosOnExELe
 
--- All axiom declarations + downstream instances (Std.Commutative /
--- Std.Associative, ECPoint.add_left_cancel) live in their respective
--- files. This hub file exists only as a single import entry point.
+-- The four ECPoint group-law axioms (add_comm, add_assoc, neg_add_cancel,
+-- and the closure axiom) have been retired: `ECPoint E` is now
+-- `WeierstrassCurve.Affine.Point E.toW` from mathlib, which carries an
+-- `AddCommGroup` instance derived from the Picard-group bijection
+-- (Silverman III.3.4). The chord-tangent law is therefore a theorem,
+-- not a primitive of this development.

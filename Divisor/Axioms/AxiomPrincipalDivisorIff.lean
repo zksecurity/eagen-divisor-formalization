@@ -46,7 +46,7 @@ some nonzero rational function `f ∈ F_q(E)^×`.
     Silverman's Remark 3.5.1 + Exercise 2.13b (GK̄/K-invariance of the
     Abel-Jacobi exact sequence). -/
 axiom principal_divisor_iff
-    (coeffs : ECPoint E.q → ℤ)
+    (coeffs : ECPoint E → ℤ)
     (hFinSupp : Set.Finite (Function.support coeffs)) :
     IsPrincipal E coeffs ↔
       (∑ P ∈ hFinSupp.toFinset, coeffs P = 0) ∧
