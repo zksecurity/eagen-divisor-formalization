@@ -31,6 +31,7 @@ import Divisor.Protocol
 import Divisor.DivisorPrincipal
 import Divisor.Soundness
 import Divisor.ExtractorBridge
+import Divisor.ExtractorBridgeTheorems
 import Divisor.PolyGTraceFormula
 import Divisor.TraceProof
 import Divisor.DensityBound
