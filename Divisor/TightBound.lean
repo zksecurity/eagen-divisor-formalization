@@ -67,8 +67,6 @@ theorem logDerivCheckFn_zero_of_polyG_zero
     (D : CoordRingElt E.q)
     (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (hSplit : normPoly_splits_over_Fq E D)
-    (hAccount : (∑ P ∈ E.points, betaConstructive E D P) =
-                  (normPoly E D).natDegree)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
     (B : Fin k → ZMod E.q × ZMod E.q)
     (m : Fin k → ZMod E.q)
@@ -76,33 +74,88 @@ theorem logDerivCheckFn_zero_of_polyG_zero
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1)
     (hDef : logDerivCheckFnDefined E D P B A₀ A₁)
     (hPolyG : polyG E (zerosAt E D)
-      (fun k' => ((multAt E (betaConstructive E D) D k' : ℕ) : ZMod E.q))
+      (fun k' => ((multAt E (betaTrue E D hDnz) D k' : ℕ) : ZMod E.q))
       (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j))
       A₀ A₁ = 0) :
     logDerivCheckFn E D P k B m A₀ A₁ = 0 := by
-  revert hDef hPolyG A₀ A₁ hA₀ hA₁ hNV;
-  intros A₀ A₁ hA₀ hA₁ hNV hDef hPolyG
-  have hQline : ∀ Q ∈ zerosFinset E D, (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 ≠ 0 := by
-    exact?;
-  have hRline : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (P.1) (-P.2) ≠ 0 ∧ ∀ j : Fin k, (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 ≠ 0 := by
-    unfold logDerivCheckFnDefined at hDef;
-    unfold logDerivCheckFnDenom at hDef; simp_all +decide [ Finset.prod_eq_zero_iff, sub_eq_zero ] ;
-  have hPaperResidue : paperResidueDivided E (zerosAt E D) (fun k' => (multAt E (betaConstructive E D) D k')) (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)) A₀ A₁ = 0 := by
-    have := polyG_eq_zero_iff_paperResidue E ( zerosAt E D ) ( fun k' => ( multAt E ( betaConstructive E D ) D k' : ZMod E.q ) ) ( Fin.cons ( P.1, -P.2 ) B ) ( Fin.cons ( -1 ) fun j => -m j ) A₀ A₁;
-    simp_all +decide [ Fin.forall_fin_succ ];
-    exact this fun k => hQline _ _ <| by simp +decide [ zerosAt ] ;
-  convert congr_arg ( fun x : ZMod E.q => -x ) hPaperResidue using 1;
-  · unfold logDerivCheckFn paperResidueDivided;
-    simp +decide [ Fin.sum_univ_succ, Fin.cons ];
-    rw [ chord_sum_eq_residue_sum_fin ];
-    all_goals norm_num [ logDerivCheckFnDefined ] at *;
-    any_goals tauto;
-    · unfold multAt; ring;
-    · exact fun h => hDef <| by unfold logDerivCheckFnDenom; simp +decide [ h ] ;
-    · exact fun h => hDef <| by unfold logDerivCheckFnDenom; simp +decide [ h ] ;
-    · exact fun h => hDef <| by unfold logDerivCheckFnDenom; aesop;
-    · unfold logDerivCheckFnDenom at hDef; aesop;
-  · norm_num
+  -- Extract individual nonzero conditions from `hDef` (mirror of
+  -- `polyG_zero_at_defined_fincons` in TraceProof.lean).
+  unfold logDerivCheckFnDefined logDerivCheckFnDenom at hDef
+  set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLamDef
+  set L := lineThrough A₀.1 A₀.2 A₁.1 A₁.2 with hLDef
+  set x₂ := lam ^ 2 - A₀.1 - A₁.1 with hx₂Def
+  set y₂ := lam * x₂ + (A₀.2 - lam * A₀.1) with hy₂Def
+  have hProdNZ := hDef
+  have hBlineProd : (univ : Finset (Fin k)).prod (fun j => L.eval (B j).1 (B j).2) ≠ 0 :=
+    right_ne_zero_of_mul hProdNZ
+  have h7 : L.eval P.1 (-P.2) ≠ 0 :=
+    right_ne_zero_of_mul (left_ne_zero_of_mul hProdNZ)
+  have hLeftOf7 := left_ne_zero_of_mul (left_ne_zero_of_mul hProdNZ)
+  have h6 : 3 * x₂ ^ 2 + E.curveA - 2 * lam * y₂ ≠ 0 :=
+    right_ne_zero_of_mul hLeftOf7
+  have hLeftOf6 := left_ne_zero_of_mul hLeftOf7
+  have h5 : 3 * A₁.1 ^ 2 + E.curveA - 2 * lam * A₁.2 ≠ 0 :=
+    right_ne_zero_of_mul hLeftOf6
+  have hLeftOf5 := left_ne_zero_of_mul hLeftOf6
+  have h4 : 3 * A₀.1 ^ 2 + E.curveA - 2 * lam * A₀.2 ≠ 0 :=
+    right_ne_zero_of_mul hLeftOf5
+  have hLeftOf4 := left_ne_zero_of_mul hLeftOf5
+  have h3 : D.eval x₂ y₂ ≠ 0 := right_ne_zero_of_mul hLeftOf4
+  have hLeftOf3 := left_ne_zero_of_mul hLeftOf4
+  have h2 : D.eval A₁.1 A₁.2 ≠ 0 := right_ne_zero_of_mul hLeftOf3
+  have h1 : D.eval A₀.1 A₀.2 ≠ 0 := left_ne_zero_of_mul hLeftOf3
+  have hDen : ∀ pt : ZMod E.q × ZMod E.q,
+      pt = A₀ ∨ pt = A₁ ∨ pt = (x₂, y₂)
+      → 3 * pt.1 ^ 2 + E.curveA - 2 * lam * pt.2 ≠ 0 := by
+    rintro pt (rfl | rfl | rfl) <;> assumption
+  have hBline : ∀ j : Fin k, L.eval (B j).1 (B j).2 ≠ 0 := by
+    intro j hj; exact hBlineProd (Finset.prod_eq_zero (Finset.mem_univ j) hj)
+  -- Chord avoids D-zeros.
+  have hQline : ∀ Q ∈ zerosFinset E D,
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 ≠ 0 :=
+    chord_avoids_D_zeros_of_denom_defined D P B A₀ A₁ hA₀ hA₁ hNV hDef
+  -- The β properties.
+  have hβsup := betaTrue_support E D hDnz
+  have hβcov := betaTrue_covers E D hDnz
+  have hAccount := betaTrue_account E D hDnz hSplit
+  -- Lemma 6 with β = betaTrue.
+  have hLemma6 := chord_sum_eq_residue_sum_fin E D (betaTrue E D hDnz) A₀ A₁
+    hA₀ hA₁ hNV hDnz hSplit hβsup hβcov hAccount h1 h2 h3 hQline hDen
+  -- multAt = β at zerosAt.
+  have hLemma6' :
+      logDerivTerm E D E.curveA lam A₀
+        + logDerivTerm E D E.curveA lam A₁
+        + logDerivTerm E D E.curveA lam (x₂, y₂)
+      = -∑ k' : Fin (zerosCard E D),
+          ((multAt E (betaTrue E D hDnz) D k' : ℕ) : ZMod E.q) *
+            ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
+              (zerosAt E D k').1 (zerosAt E D k').2)⁻¹ := by
+    convert hLemma6 using 2
+  -- Bridge polyG = 0 → paperResidueDivided = 0.
+  have hQlineFin : ∀ k' : Fin (zerosCard E D),
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
+        (zerosAt E D k').1 (zerosAt E D k').2 ≠ 0 :=
+    hQline_fin_of_finset E D A₀ A₁ hQline
+  have hRlineFin : ∀ j : Fin (k + 1),
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
+        ((Fin.cons (P.1, -P.2) B : Fin (k + 1) → ZMod E.q × ZMod E.q) j).1
+        ((Fin.cons (P.1, -P.2) B : Fin (k + 1) → ZMod E.q × ZMod E.q) j).2 ≠ 0 := by
+    intro j
+    rcases Fin.eq_zero_or_eq_succ j with h | ⟨i, rfl⟩
+    · subst h; simpa using h7
+    · simpa using hBline i
+  have hPolyGEq := polyG_eq_zero_iff_paperResidue E (zerosAt E D)
+    (fun k' => ((multAt E (betaTrue E D hDnz) D k' : ℕ) : ZMod E.q))
+    (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)) A₀ A₁
+    hNV hQlineFin hRlineFin
+  have hPaperResidue := hPolyGEq.mp hPolyG
+  -- Now match logDerivCheckFn against -paperResidueDivided.
+  show logDerivCheckFn E D P k B m A₀ A₁ = 0
+  simp only [logDerivCheckFn]
+  simp only [paperResidueDivided] at hPaperResidue
+  rw [hLemma6']
+  simp only [Fin.sum_univ_succ, Fin.cons_zero, Fin.cons_succ] at hPaperResidue
+  linear_combination -hPaperResidue
 
 /-! ### Step 3: Bad pair → polyGFull = 0 -/
 
@@ -110,8 +163,6 @@ theorem bad_pair_implies_polyGFull_zero
     (D : CoordRingElt E.q)
     (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (hSplit : normPoly_splits_over_Fq E D)
-    (hAccount : (∑ P ∈ E.points, betaConstructive E D P) =
-                  (normPoly E D).natDegree)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
     (B : Fin k → ZMod E.q × ZMod E.q)
     (m : Fin k → ZMod E.q)
@@ -121,11 +172,13 @@ theorem bad_pair_implies_polyGFull_zero
     (hDef : logDerivCheckFnDenom E D P B A₀ A₁ ≠ 0)
     (hCheck : logDerivCheckFn E D P k B m A₀ A₁ = 0) :
     bivEval₂ (polyGFull E (zerosAt E D)
-      (fun k' => ((multAt E (betaConstructive E D) D k' : ℕ) : ZMod E.q))
+      (fun k' => ((multAt E (betaTrue E D hDnz) D k' : ℕ) : ZMod E.q))
       (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)))
       A₀ A₁ = 0 := by
   rw [bivEval₂_polyGFull_eq_polyG]
-  exact polyG_zero_at_defined_fincons D hDnz hSplit hAccount P B m A₀ A₁
+  exact polyG_zero_at_defined_fincons D hDnz (betaTrue E D hDnz)
+    (betaTrue_support E D hDnz) (betaTrue_covers E D hDnz)
+    hSplit (betaTrue_account E D hDnz hSplit) P B m A₀ A₁
     hA₀ hA₁ hNVx hDef
     (chord_avoids_D_zeros_of_denom_defined D P B A₀ A₁ hA₀ hA₁ hNVx hDef)
     hCheck
@@ -136,8 +189,6 @@ theorem polyGFull_nonzero_at_witness
     (D : CoordRingElt E.q)
     (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (hSplit : normPoly_splits_over_Fq E D)
-    (hAccount : (∑ P ∈ E.points, betaConstructive E D P) =
-                  (normPoly E D).natDegree)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
     (B : Fin k → ZMod E.q × ZMod E.q)
     (m : Fin k → ZMod E.q)
@@ -147,12 +198,12 @@ theorem polyGFull_nonzero_at_witness
     (hDef : logDerivCheckFnDefined E D P B A₀ A₁)
     (hCheck : logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     bivEval₂ (polyGFull E (zerosAt E D)
-      (fun k' => ((multAt E (betaConstructive E D) D k' : ℕ) : ZMod E.q))
+      (fun k' => ((multAt E (betaTrue E D hDnz) D k' : ℕ) : ZMod E.q))
       (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)))
       A₀ A₁ ≠ 0 := by
   intro hContra
   rw [bivEval₂_polyGFull_eq_polyG] at hContra
-  exact hCheck (logDerivCheckFn_zero_of_polyG_zero D hDnz hSplit hAccount
+  exact hCheck (logDerivCheckFn_zero_of_polyG_zero D hDnz hSplit
     P B m A₀ A₁ hA₀ hA₁ hNVx hDef hContra)
 
 /-! ### Step 5: zerosCard ≤ degE -/
@@ -160,19 +211,19 @@ theorem polyGFull_nonzero_at_witness
 private lemma zerosCard_le_degE' (D : CoordRingElt E.q)
     (hDnz : ¬ (D.a = 0 ∧ D.b = 0)) :
     zerosCard E D ≤ D.degE := by
-  have hβcov := betaConstructive_covers E D hDnz
+  have hβcov := betaTrue_covers E D hDnz
   have hβpos : ∀ k' : Fin (zerosCard E D),
-      1 ≤ multAt E (betaConstructive E D) D k' :=
-    fun k' => multAt_pos E (betaConstructive E D) D hβcov k'
+      1 ≤ multAt E (betaTrue E D hDnz) D k' :=
+    fun k' => multAt_pos E (betaTrue E D hDnz) D hβcov k'
   calc zerosCard E D
       = ∑ _ : Fin (zerosCard E D), 1 := by
         rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul, mul_one]
-    _ ≤ ∑ k' : Fin (zerosCard E D), multAt E (betaConstructive E D) D k' :=
+    _ ≤ ∑ k' : Fin (zerosCard E D), multAt E (betaTrue E D hDnz) D k' :=
         Finset.sum_le_sum (fun k' _ => hβpos k')
-    _ = ∑ P ∈ E.points, betaConstructive E D P :=
-        sum_multAt_eq_sum_βfun E (betaConstructive E D) D
-          (betaConstructive_support E D)
-    _ ≤ D.degE := betaConstructive_sum_le_degE E D
+    _ = ∑ P ∈ E.points, betaTrue E D hDnz P :=
+        sum_multAt_eq_sum_βfun E (betaTrue E D hDnz) D
+          (betaTrue_support E D hDnz)
+    _ ≤ D.degE := betaTrue_sum_le_degE E D hDnz
 
 /-! ### Step 6: Tight core bound -/
 
@@ -195,8 +246,6 @@ theorem log_deriv_sz_paper_core_tight
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (_hDeg : D.degE < E.q)
     (hSplit : normPoly_splits_over_Fq E D)
-    (hAccount : (∑ P ∈ E.points, betaConstructive E D P) =
-                  (normPoly E D).natDegree)
     (hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
         logDerivCheckFnDefined E D P B A₀ A₁ ∧
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
@@ -207,7 +256,7 @@ theorem log_deriv_sz_paper_core_tight
   classical
   have hDnz := hDnz_from_hNV D P B m hNV
   set polyGF := polyGFull E (zerosAt E D)
-    (fun k' => ((multAt E (betaConstructive E D) D k' : ℕ) : ZMod E.q))
+    (fun k' => ((multAt E (betaTrue E D hDnz) D k' : ℕ) : ZMod E.q))
     (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j))
   -- bad ⊆ {polyGFull = 0 on E × E}
   have hBadSub : (E.points ×ˢ E.points).filter
@@ -219,20 +268,20 @@ theorem log_deriv_sz_paper_core_tight
     refine ⟨hp.1, ?_⟩
     obtain ⟨hNVx, hDenom, hCheck⟩ := hp.2
     have hprod := Finset.mem_product.mp hp.1
-    exact bad_pair_implies_polyGFull_zero D hDnz hSplit hAccount P B m
+    exact bad_pair_implies_polyGFull_zero D hDnz hSplit P B m
       p.1 p.2 hprod.1 hprod.2 hNVx hDenom hCheck
   -- nonzero witness
   obtain ⟨wA₀, wA₁, hwA₀, hwA₁, hwNV, hwDef, hwCheck⟩ := hNV
   have hWitness : ∃ a₀ a₁, a₀ ∈ E.points ∧ a₁ ∈ E.points ∧
       bivEval₂ polyGF a₀ a₁ ≠ 0 :=
     ⟨wA₀, wA₁, hwA₀, hwA₁,
-      polyGFull_nonzero_at_witness D hDnz hSplit hAccount P B m
+      polyGFull_nonzero_at_witness D hDnz hSplit P B m
         wA₀ wA₁ hwA₀ hwA₁ hwNV hwDef hwCheck⟩
   -- degree bound
   set d := zerosCard E D
   set M := k + 1
   have hTD := polyGFull_total_degree_le_tight E (zerosAt E D)
-    (fun k' => ((multAt E (betaConstructive E D) D k' : ℕ) : ZMod E.q))
+    (fun k' => ((multAt E (betaTrue E D hDnz) D k' : ℕ) : ZMod E.q))
     (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j))
   have hdM1 : d + M - 1 = d + k := by omega
   rw [hdM1] at hTD
@@ -265,8 +314,6 @@ theorem log_deriv_sz_paper_tight
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (hDeg : D.degE < E.q)
     (hSplit : normPoly_splits_over_Fq E D)
-    (hAccount : (∑ P ∈ E.points, betaConstructive E D P) =
-                  (normPoly E D).natDegree)
     (hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
         logDerivCheckFnDefined E D P B A₀ A₁ ∧
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
@@ -293,7 +340,7 @@ theorem log_deriv_sz_paper_tight
     · exact Finset.mem_union.mpr (Or.inr (Finset.mem_filter.mpr
         ⟨hEE, hDef⟩))
   have hCoreBound := log_deriv_sz_paper_core_tight D P B m hDeg
-    hSplit hAccount hNV
+    hSplit hNV
   have hUndefBound := logDerivCheckFn_undefined_set_bound_tight E D P k B hDnz
   calc (eventNotEq E D P B (fun i => m i)).card
       ≤ ((E.points ×ˢ E.points).filter

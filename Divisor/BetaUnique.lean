@@ -64,17 +64,17 @@
 
   ### Weaker true statements
 
-  We prove two weaker statements that ARE true:
+  We prove a weaker statement that IS true:
 
   1. **Support agreement** (`support_iff_of_principal_conditions`):
      any valid β_fun is nonzero at exactly the same points as
      betaConstructive — the zero locus of D on E.
 
-  2. **Group-sum agreement** (`group_sum_eq_of_principal_conditions`):
-     any valid β_fun has the same weighted group sum as
-     betaConstructive (namely zero). This expresses the fact
-     that both represent principal divisors with the same underlying
-     rational function D up to the sign of the pole at ∞.
+  (A previous "group-sum agreement" lemma asserted that any valid
+  β_fun has the same group sum as betaConstructive — both zero. That
+  rested on `betaConstructive_group_sum_zero`, which is false; see
+  the F_5 counterexample at `AxiomExistsDivisorMultiplicity.lean`.
+  The lemma has been deleted.)
 
   Neither statement suffices to bridge `polyG_zero_trace_formula`
   from the betaConstructive case to the general case, because polyG
@@ -83,7 +83,7 @@
 -/
 import Divisor.BetaConstructive
 import Divisor.DivisorPrincipal
-import Divisor.Axioms.AxiomCoordRingEltDivisorGroupSumZero
+import Divisor.HasPrincipalDivisor
 
 open Polynomial Finset
 
@@ -113,28 +113,19 @@ theorem support_iff_of_principal_conditions
     obtain ⟨hPE, hPZ⟩ := betaConstructive_support E D P hBC
     exact hβcov P hPE hPZ
 
-/-! ## Weaker true statement 2: Group-sum agreement
+/-! ## Group-sum agreement: deleted as a stand-alone lemma.
 
-    Both β_fun and betaConstructive yield vanishing weighted group
-    sums (both represent the affine part of the same principal
-    divisor class). -/
-
-/-- The weighted group sum of any valid β_fun equals that of
-    betaConstructive (both are zero). Requires the splitting hypothesis
-    so that `betaConstructive_group_sum_zero` matches Silverman AEC III
-    Cor 3.5 exactly. -/
-theorem group_sum_eq_of_principal_conditions
-    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplit : normPoly_splits_over_Fq E D)
-    (β_fun : ZMod E.q × ZMod E.q → ℕ)
-    (hβgroup : ECPoint.weightedSum E E.points
-                 (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine E P.1 P.2)) = 0) :
-    ECPoint.weightedSum E E.points
-      (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine E P.1 P.2)) =
-    ECPoint.weightedSum E E.points
-      (fun P => ECPoint.nsmul E (betaConstructive E D P)
-                    (ECPoint.affine E P.1 P.2)) := by
-  rw [hβgroup, betaConstructive_group_sum_zero E D hD hSplit]
+    Previously this file proved that any valid β_fun has the same
+    weighted group sum as `betaConstructive E D`, by appeal to the
+    (now-deleted) `betaConstructive_group_sum_zero` axiom. The
+    underlying claim was false: `betaConstructive`'s twin Nat-division
+    surrogate fails Abel's group-sum identity in general (counter-
+    example: `E : y² = x³ + 1 / F_5`, `D = (x²+1) - (1+2x)·y`, where
+    the β-weighted group sum is `(0,1) ≠ O` despite splitting). The
+    correct group-sum-zero statement holds only for the *true*
+    divisor multiplicity (now `CoordRingElt.exists_divisor_multiplicity`,
+    consumed via `CoordRingElt.has_principal_divisor`), not for
+    `betaConstructive`. -/
 
 /-! ## Sum-bound agreement
 

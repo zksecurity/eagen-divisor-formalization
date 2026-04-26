@@ -17,13 +17,16 @@ namespace Divisor
 variable {E : ECSetup}
 
 /-- **polyG vanishes at a fully defined pair in Fin.cons form.**
-    Combines chord_sum_eq_residue_sum + polyG_zero_of_Lemma6_and_logDerivCheck_zero
-    to show polyG = 0 at a single pair where all conditions hold. -/
+    Parameterised over an arbitrary β_fun (the existential from
+    `CoordRingElt.exists_divisor_multiplicity` / `has_principal_divisor`). -/
 theorem polyG_zero_at_defined_fincons
     (D : CoordRingElt E.q)
     (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (β_fun : ZMod E.q × ZMod E.q → ℕ)
+    (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
+    (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
     (hSplit : normPoly_splits_over_Fq E D)
-    (hAccount : (∑ P ∈ E.points, betaConstructive E D P) =
+    (hAccount : (∑ P ∈ E.points, β_fun P) =
                   (normPoly E D).natDegree)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
     (B : Fin k → ZMod E.q × ZMod E.q)
@@ -35,7 +38,7 @@ theorem polyG_zero_at_defined_fincons
       (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 ≠ 0)
     (hCheck : logDerivCheckFn E D P k B m A₀ A₁ = 0) :
     polyG E (zerosAt E D)
-      (fun k' => ((multAt E (betaConstructive E D) D k' : ℕ) : ZMod E.q))
+      (fun k' => ((multAt E β_fun D k' : ℕ) : ZMod E.q))
       (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j))
       A₀ A₁ = 0 := by
   -- Extract individual conditions from hDef
@@ -73,7 +76,7 @@ theorem polyG_zero_at_defined_fincons
   have hBline : ∀ j : Fin k, L.eval (B j).1 (B j).2 ≠ 0 := by
     intro j hj; exact hBlineProd (prod_eq_zero (mem_univ j) hj)
   -- Apply the existing bridge theorem
-  exact polyG_zero_betaConstructive_at_defined E D hDnz hSplit hAccount
+  exact polyG_zero_at_defined E D hDnz β_fun hβsup hβcov hSplit hAccount
     P B m A₀ A₁ hA₀ hA₁ hNV h1 h2 h3 hQline hDen h7 hBline hCheck
 
 end Divisor

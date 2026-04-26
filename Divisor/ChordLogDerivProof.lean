@@ -2,58 +2,21 @@
   Divisor/ChordLogDerivProof.lean
 
   Proof of `chordLogDerivMatchesNormZ` under splitting and norm-accounting
-  hypotheses.
+  hypotheses, parameterised over an arbitrary multiplicity function β_fun.
 
   ## Proof structure
 
-  The target `chordLogDerivMatchesNormZ E D A₀ A₁` unfolds to:
+  The target `chordLogDerivMatchesNormZ E D β_fun A₀ A₁` unfolds to:
 
       (LT₀ + LT₁ + LT₂) · normZ(μ) = normZ'(μ)
 
-  where LTᵢ = logDerivTerm(Aᵢ, λ), μ = zLambda λ A₀.
+  where LTᵢ = logDerivTerm(Aᵢ, λ), μ = zLambda λ A₀, and normZ uses β_fun.
 
-  **Step 1.** Show `normZ(μ) ≠ 0` from `hQline` (the hypothesis that no
-  zero of D lies on the chord line). This uses
-  `normZ_eval_ne_zero_at_nonroot` and the bridge
-  `L_eval_eq_zLambda_sub`. ✓ Proved.
-
-  **Step 2.** Reduce to the ratio form via `chordLogDerivMatchesNormZ_of_ratio_eq`:
-
-      LT₀ + LT₁ + LT₂ = normZ'(μ) / normZ(μ)
-
-  ✓ Done (one-liner application).
-
-  **Step 3.** Prove the ratio identity `trace_logDeriv_eq_normZ_logDeriv`
-  by decomposing into two independent axioms:
-
-  **AXIOM 1** (`chord_fiber_product_eq_normZ_under_split`):
-    The chord-fiber product ∏ᵢ D(Aᵢ(z)) equals a nonzero constant times
-    normZ(z), under splitting + accounting hypotheses.
-    *Citation*: Stichtenoth, *Algebraic Function Fields and Codes*,
-    2nd ed., GTM 254, Proposition 3.1.9 (p.73, conorm of a principal
-    divisor is a principal divisor) combined with the norm/conorm
-    duality on Div in finite separable extensions (cf. Stichtenoth
-    §3.1 and the norm map `N_{F'/F}` defined in Appendix A and used
-    in §3.7 Theorem 3.7.1, p.121).
-
-  **AXIOM 2** (`chord_sum_eq_chord_fiber_product_logDeriv`):
-    The sum of logDerivTerms at the three chord-fiber points equals the
-    logarithmic derivative of the chord-fiber product at the chord
-    intercept.
-    *Citation*: Lang, *Algebra*, 3rd ed., GTM 211, §VI.5 "The Norm
-    and Trace" (p.284–285), Theorem 5.1 (multiplicativity of the
-    norm; product-of-embeddings formula `N_k^E(α) = ∏_σ σα` for E/k
-    separable) + §VIII.5 "Derivations" (p.369), Theorem 5.1 Case 1
-    (p.370, unique extension of a derivation to a separable algebraic
-    extension) applied to the separable function-field extension
-    `F_q(E)/F_q(z)`: the trace-of-log-derivative identity
-    `Tr_{L/K}(dg/g) = d(N_{L/K}(g))/N_{L/K}(g)` follows from
-    differentiating the product formula `N_{L/K}(g) = ∏_σ σ(g)` over
-    a Galois closure, with the derivation extended to the Galois
-    closure per §VIII.5.
-
-  **DERIVED** (`chord_sum_eq_residue_sum`): theorem combining the two
-  axioms with the existing `normZ_logDeriv_at_chord_intercept`.
+  **Step 1.** Show `normZ(μ) ≠ 0` from `hQline`.
+  **Step 2.** Reduce to ratio form via `chordLogDerivMatchesNormZ_of_ratio_eq`.
+  **Step 3.** Prove the ratio identity via two axioms:
+    AXIOM 1 (`chord_fiber_product_eq_normZ_under_split`): chord_fiber_product = c·normZ.
+    AXIOM 2 (`chord_sum_eq_chord_fiber_product_logDeriv`): chord-sum = log-deriv of chord_fiber_product.
 -/
 import Divisor.ChordSumResidue
 import Divisor.NormZDecomp
@@ -73,18 +36,17 @@ variable (E : ECSetup)
 /-! ## Step 1: normZ(μ) ≠ 0 from hQline -/
 
 /-- When no zero of D lies on the chord line (`hQline`), the norm
-polynomial `normZ` is nonzero at the chord intercept μ = zLambda λ A₀.
-This is because `L(Q) = z(Q) − μ`, so `L(Q) ≠ 0` implies `μ ≠ z(Q)`,
-and `normZ` has no root at μ. -/
+polynomial `normZ` is nonzero at the chord intercept μ = zLambda λ A₀. -/
 theorem normZ_eval_ne_zero_of_hQline
     (D : CoordRingElt E.q)
+    (β_fun : ZMod E.q × ZMod E.q → ℕ)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (hQline : ∀ Q ∈ zerosFinset E D,
       (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 ≠ 0) :
-    (normZ E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) D).eval
+    (normZ E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) D β_fun).eval
       (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀) ≠ 0 := by
-  apply normZ_eval_ne_zero_at_nonroot E _ D hD
+  apply normZ_eval_ne_zero_at_nonroot E _ D hD β_fun
   intro Q hQ
   have hL := hQline Q hQ
   have hLsub := L_eval_eq_zLambda_sub E A₀ A₁ Q
@@ -92,13 +54,7 @@ theorem normZ_eval_ne_zero_of_hQline
   apply hL
   rw [hLsub, heq, sub_self]
 
--- Opaque `chord_fiber_product` + both chord axioms moved to
--- `Divisor/Axioms/AxiomChordFiberProductEqNormZUnderSplit.lean` and
--- `Divisor/Axioms/AxiomChordSumEqChordFiberProductLogDeriv.lean`.
-
-/-! ## Helper: log-derivative of a constant multiple
-
-If f = C c * g with c ≠ 0, then f'(μ)/f(μ) = g'(μ)/g(μ). -/
+/-! ## Helper: log-derivative of a constant multiple -/
 
 theorem logDeriv_const_mul {K : Type*} [Field K]
     (c : K) (hc : c ≠ 0) (g : K[X]) (μ : K) (hg : g.eval μ ≠ 0) :
@@ -107,38 +63,23 @@ theorem logDeriv_const_mul {K : Type*} [Field K]
   rw [derivative_C_mul, eval_C_mul, eval_C_mul]
   field_simp
 
-/-! ## Step 3: The chord_sum_eq_residue_sum derived theorem
-
-This is the function-field content: the sum of logDerivTerms at the
-three chord intersection points equals the negative residue sum.
-
-Mathematically, this follows from:
-1. AXIOM 2: the sum of logDerivTerms equals the log-derivative of
-   chord_fiber_product at μ.
-2. AXIOM 1: chord_fiber_product = c · normZ for some nonzero c, under
-   splitting + accounting.
-3. Log-derivative invariance: (c·f)'/c·f = f'/f for constant c ≠ 0.
-4. normZ_logDeriv_at_chord_intercept: normZ'(μ)/normZ(μ) = -Σ β/L.
--/
+/-! ## Step 3: chord_sum_eq_residue_sum -/
 
 /-- **Theorem (scalar trace-of-log-derivative identity on the chord fiber).**
-The sum of `logDerivTerm` over the three chord fiber points equals the
-negative sum of `β(Q) / L_Q(Q)` over the affine zeros of `D` (where
-`β = betaConstructive E D`).
-
-Derived from `chord_fiber_product_eq_normZ_under_split` (AXIOM 1,
-Stichtenoth III.1.11) and `chord_sum_eq_chord_fiber_product_logDeriv`
-(AXIOM 2, Lang §VI.5 + §VIII.5), combined with the existing
-`normZ_logDeriv_at_chord_intercept` (partial-fraction expansion). -/
+Parameterised over an arbitrary multiplicity function β_fun. The
+support / coverage / accounting hypotheses on β_fun ensure the
+chord-fiber-product axiom applies. -/
 theorem chord_sum_eq_residue_sum
     (D : CoordRingElt E.q)
+    (β_fun : ZMod E.q × ZMod E.q → ℕ)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
     (hNV : A₀.1 ≠ A₁.1)
     (hD  : ¬ (D.a = 0 ∧ D.b = 0))
     (hSplit : normPoly_splits_over_Fq E D)
-    (hAccount : (∑ P ∈ E.points, betaConstructive E D P) =
-                  (normPoly E D).natDegree)
+    (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
+    (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
+    (hAccount : (∑ P ∈ E.points, β_fun P) = (normPoly E D).natDegree)
     (hA₀def : D.eval A₀.1 A₀.2 ≠ 0)
     (hA₁def : D.eval A₁.1 A₁.2 ≠ 0)
     (hA₂def : let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
@@ -160,23 +101,19 @@ theorem chord_sum_eq_residue_sum
           (lam ^ 2 - A₀.1 - A₁.1,
            lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
     = -∑ Q ∈ zerosFinset E D,
-        (betaConstructive E D Q : ZMod E.q) *
+        (β_fun Q : ZMod E.q) *
           ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2)⁻¹ := by
   classical
   set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLam
   set μ := zLambda E lam A₀ with hMu
-  -- Step 1: normZ(μ) ≠ 0 from hQline
-  have hNormZne : (normZ E lam D).eval μ ≠ 0 := by
+  have hNormZne : (normZ E lam D β_fun).eval μ ≠ 0 := by
     rw [hMu, hLam]
-    exact normZ_eval_ne_zero_of_hQline E D A₀ A₁ hD hQline
-  -- Step 2: AXIOM 1 — chord_fiber_product = c * normZ
+    exact normZ_eval_ne_zero_of_hQline E D β_fun A₀ A₁ hD hQline
   obtain ⟨c, hc_ne, hcfp_eq⟩ :=
-    chord_fiber_product_eq_normZ_under_split E D lam hD hSplit hAccount
-  -- Step 3: chord_fiber_product(μ) ≠ 0
+    chord_fiber_product_eq_normZ_under_split E D lam hD hSplit β_fun hβsup hβcov hAccount
   have hcfp_ne : (chord_fiber_product E lam D).eval μ ≠ 0 := by
     rw [hcfp_eq, eval_mul, eval_C]
     exact mul_ne_zero hc_ne hNormZne
-  -- Step 4: AXIOM 2 — LHS = cfp'(μ)/cfp(μ)
   have hAxiom2 : logDerivTerm E D E.curveA lam A₀
         + logDerivTerm E D E.curveA lam A₁
         + logDerivTerm E D E.curveA lam
@@ -187,15 +124,12 @@ theorem chord_sum_eq_residue_sum
     rw [hLam, hMu]
     exact chord_sum_eq_chord_fiber_product_logDeriv E D A₀ A₁
       hA₀ hA₁ hNV hD hA₀def hA₁def hA₂def hDen (by rw [← hLam, ← hMu]; exact hcfp_ne)
-  -- Step 5: cfp'(μ)/cfp(μ) = normZ'(μ)/normZ(μ) via constant-multiple cancellation
   have hLogDeriv : eval μ (derivative (chord_fiber_product E lam D))
       / (chord_fiber_product E lam D).eval μ =
-      eval μ (derivative (normZ E lam D)) / (normZ E lam D).eval μ := by
+      eval μ (derivative (normZ E lam D β_fun)) / (normZ E lam D β_fun).eval μ := by
     rw [hcfp_eq]
-    exact logDeriv_const_mul c hc_ne (normZ E lam D) μ hNormZne
-  -- Step 6: normZ_logDeriv_at_chord_intercept — normZ'(μ) = -(normZ(μ) * Σ β/L)
-  have hPFE := normZ_logDeriv_at_chord_intercept E D A₀ A₁ hQline
-  -- Abbreviations for the target
+    exact logDeriv_const_mul c hc_ne (normZ E lam D β_fun) μ hNormZne
+  have hPFE := normZ_logDeriv_at_chord_intercept E D β_fun A₀ A₁ hQline
   set LT : ZMod E.q :=
     logDerivTerm E D E.curveA lam A₀
       + logDerivTerm E D E.curveA lam A₁
@@ -203,43 +137,33 @@ theorem chord_sum_eq_residue_sum
           (lam ^ 2 - A₀.1 - A₁.1,
            lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
     with hLT
-  set N : ZMod E.q := (normZ E lam D).eval μ with hN
-  set Nd : ZMod E.q := eval μ (derivative (normZ E lam D)) with hNd
+  set N : ZMod E.q := (normZ E lam D β_fun).eval μ with hN
+  set Nd : ZMod E.q := eval μ (derivative (normZ E lam D β_fun)) with hNd
   set S : ZMod E.q :=
     ∑ Q ∈ zerosFinset E D,
-      (betaConstructive E D Q : ZMod E.q) *
+      (β_fun Q : ZMod E.q) *
         ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2)⁻¹ with hS
-  -- Chain: LT = cfp'/cfp = normZ'/normZ = -S
-  -- hPFE: Nd = -(N * S)
   change Nd = -(N * S) at hPFE
-  -- hAxiom2: LT = cfp'/cfp
-  -- hLogDeriv: cfp'/cfp = Nd/N
-  -- So LT = Nd/N
   have hLT_eq : LT = Nd / N := by
     rw [hAxiom2, hLogDeriv]
-  -- Nd = -(N * S) and N ≠ 0 ⇒ Nd/N = -S
   have hNd_div : Nd / N = -S := by
     rw [hPFE]
     field_simp
-  -- Conclude: LT = -S
   show LT = -S
   rw [hLT_eq, hNd_div]
 
-/-- **Trace-of-log-derivative identity.** The chord-sum of logDerivTerms
-equals the logarithmic derivative of normZ at the chord intercept.
-
-**Proof**: combines `chord_sum_eq_residue_sum` (scalar identity `(⋆)`)
-with `normZ_logDeriv_at_chord_intercept` (partial-fraction expansion of
-normZ's log-derivative into residue sum form) and cancels `normZ(μ) ≠ 0`. -/
+/-- **Trace-of-log-derivative identity.** -/
 theorem trace_logDeriv_eq_normZ_logDeriv
     (D : CoordRingElt E.q)
+    (β_fun : ZMod E.q × ZMod E.q → ℕ)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
     (hNV : A₀.1 ≠ A₁.1)
     (hD  : ¬ (D.a = 0 ∧ D.b = 0))
     (hSplit : normPoly_splits_over_Fq E D)
-    (hAccount : (∑ P ∈ E.points, betaConstructive E D P) =
-                  (normPoly E D).natDegree)
+    (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
+    (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
+    (hAccount : (∑ P ∈ E.points, β_fun P) = (normPoly E D).natDegree)
     (hA₀def : D.eval A₀.1 A₀.2 ≠ 0)
     (hA₁def : D.eval A₁.1 A₁.2 ≠ 0)
     (hA₂def : let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
@@ -254,7 +178,7 @@ theorem trace_logDeriv_eq_normZ_logDeriv
               pt = (lam ^ 2 - A₀.1 - A₁.1,
                     lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
               → 3 * pt.1 ^ 2 + E.curveA - 2 * lam * pt.2 ≠ 0)
-    (hNormZne : (normZ E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) D).eval
+    (hNormZne : (normZ E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) D β_fun).eval
       (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀) ≠ 0) :
     let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
     logDerivTerm E D E.curveA lam A₀
@@ -263,17 +187,14 @@ theorem trace_logDeriv_eq_normZ_logDeriv
           (lam ^ 2 - A₀.1 - A₁.1,
            lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
     = eval (zLambda E lam A₀)
-        (derivative (normZ E lam D))
-      / (normZ E lam D).eval (zLambda E lam A₀) := by
+        (derivative (normZ E lam D β_fun))
+      / (normZ E lam D β_fun).eval (zLambda E lam A₀) := by
   classical
   set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLam
   set μ := zLambda E lam A₀ with hMu
-  -- Scalar identity (⋆): Σ LT = -Σ β/L
-  have hScalar := chord_sum_eq_residue_sum E D A₀ A₁
-    hA₀ hA₁ hNV hD hSplit hAccount hA₀def hA₁def hA₂def hQline hDen
-  -- PFE: eval μ (deriv normZ) = -(normZ(μ) · Σ β/L)
-  have hPFE := normZ_logDeriv_at_chord_intercept E D A₀ A₁ hQline
-  -- Abbreviations
+  have hScalar := chord_sum_eq_residue_sum E D β_fun A₀ A₁
+    hA₀ hA₁ hNV hD hSplit hβsup hβcov hAccount hA₀def hA₁def hA₂def hQline hDen
+  have hPFE := normZ_logDeriv_at_chord_intercept E D β_fun A₀ A₁ hQline
   set LT : ZMod E.q :=
     logDerivTerm E D E.curveA lam A₀
       + logDerivTerm E D E.curveA lam A₁
@@ -281,17 +202,14 @@ theorem trace_logDeriv_eq_normZ_logDeriv
           (lam ^ 2 - A₀.1 - A₁.1,
            lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
     with hLT
-  set N : ZMod E.q := (normZ E lam D).eval μ with hN
-  set Nd : ZMod E.q := eval μ (derivative (normZ E lam D)) with hNd
+  set N : ZMod E.q := (normZ E lam D β_fun).eval μ with hN
+  set Nd : ZMod E.q := eval μ (derivative (normZ E lam D β_fun)) with hNd
   set S : ZMod E.q :=
     ∑ Q ∈ zerosFinset E D,
-      (betaConstructive E D Q : ZMod E.q) *
+      (β_fun Q : ZMod E.q) *
         ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2)⁻¹ with hS
-  -- hScalar: LT = -S
   change LT = -S at hScalar
-  -- hPFE: Nd = -(N * S)
   change Nd = -(N * S) at hPFE
-  -- Goal: LT = Nd / N
   show LT = Nd / N
   rw [hPFE, hScalar]
   field_simp
@@ -299,27 +217,18 @@ theorem trace_logDeriv_eq_normZ_logDeriv
 /-! ## Step 2 + Assembly: Main theorem -/
 
 /-- **Main theorem: `chordLogDerivMatchesNormZ` under splitting and
-accounting hypotheses.**
-
-**Hypotheses:**
-* `hSplit`: normPoly splits completely over F_q.
-* `hAccount`: the total betaConstructive sum equals normPoly's natDegree.
-  This ensures every root of normPoly corresponds to F_q-rational E-points
-  with matching multiplicity (no "phantom" roots at non-rational points).
-* Standard non-degeneracy: D nonzero, D nonvanishing at chord points,
-  dx/dz denominators nonzero, zeros of D not on the chord line.
-
-**Proof:** Reduces to `trace_logDeriv_eq_normZ_logDeriv` via the ratio
-equivalence `chordLogDerivMatchesNormZ_of_ratio_eq`. -/
+accounting hypotheses, parameterised over β_fun.** -/
 theorem chordLogDerivMatchesNormZ_holds
     (D : CoordRingElt E.q)
+    (β_fun : ZMod E.q × ZMod E.q → ℕ)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
     (hNV : A₀.1 ≠ A₁.1)
     (hD  : ¬ (D.a = 0 ∧ D.b = 0))
     (hSplit : normPoly_splits_over_Fq E D)
-    (hAccount : (∑ P ∈ E.points, betaConstructive E D P) =
-                  (normPoly E D).natDegree)
+    (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
+    (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
+    (hAccount : (∑ P ∈ E.points, β_fun P) = (normPoly E D).natDegree)
     (hA₀def : D.eval A₀.1 A₀.2 ≠ 0)
     (hA₁def : D.eval A₁.1 A₁.2 ≠ 0)
     (hA₂def : let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
@@ -334,13 +243,10 @@ theorem chordLogDerivMatchesNormZ_holds
               pt = (lam ^ 2 - A₀.1 - A₁.1,
                     lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
               → 3 * pt.1 ^ 2 + E.curveA - 2 * lam * pt.2 ≠ 0) :
-    chordLogDerivMatchesNormZ E D A₀ A₁ := by
-  -- Step 1: normZ(μ) ≠ 0
-  have hNormZne := normZ_eval_ne_zero_of_hQline E D A₀ A₁ hD hQline
-  -- Step 2: reduce to ratio form
-  apply chordLogDerivMatchesNormZ_of_ratio_eq E D A₀ A₁ hNormZne
-  -- Step 3: apply the trace identity
-  exact trace_logDeriv_eq_normZ_logDeriv E D A₀ A₁
-    hA₀ hA₁ hNV hD hSplit hAccount hA₀def hA₁def hA₂def hQline hDen hNormZne
+    chordLogDerivMatchesNormZ E D β_fun A₀ A₁ := by
+  have hNormZne := normZ_eval_ne_zero_of_hQline E D β_fun A₀ A₁ hD hQline
+  apply chordLogDerivMatchesNormZ_of_ratio_eq E D β_fun A₀ A₁ hNormZne
+  exact trace_logDeriv_eq_normZ_logDeriv E D β_fun A₀ A₁
+    hA₀ hA₁ hNV hD hSplit hβsup hβcov hAccount hA₀def hA₁def hA₂def hQline hDen hNormZne
 
 end Divisor

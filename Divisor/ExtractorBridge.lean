@@ -1683,7 +1683,7 @@ theorem distinctSigma_exists
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
           polyG E (zerosAt E msg.toD)
-            (fun k => ((multAt E (betaConstructive E msg.toD) msg.toD k : ℕ) : ZMod E.q))
+            (fun k => ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q))
             (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
             A₀ A₁ = 0)
     (hValidPairsLarge :
@@ -1692,23 +1692,26 @@ theorem distinctSigma_exists
     ∃ (σ : Fin (zerosCard E msg.toD) ↪
             Fin (1 + baseImageCount E stmt msg hkm)),
       (∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ k)) ∧
-      (∀ k, ((multAt E (betaConstructive E msg.toD) msg.toD k : ℕ) : ZMod E.q)
+      (∀ k, ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q)
             + distinctM' E stmt msg hkm (σ k) = 0) ∧
       (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) := by
   classical
   -- Step 1: nonzero-D hypothesis.
   have hD : ¬ msg.toD.isZero := admSet_implies_toD_nonzero stmt msg hAdm
-  -- Step 2: use `betaConstructive` directly.
-  set β_fun := betaConstructive E msg.toD with hβ_def
+  -- Step 2: use the canonical `betaCanonical` (totalised existential
+  -- from `CoordRingElt.exists_divisor_multiplicity`). We work with
+  -- `betaCanonical` rather than `betaTrue` so the conclusion's
+  -- `multAt`-cast doesn't have to thread the `hD` parameter.
+  set β_fun := betaCanonical E msg.toD with hβ_def
   have hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0 :=
-    fun P hP => betaConstructive_support E msg.toD P hP
+    betaCanonical_support E msg.toD
   have hβcov : ∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0 :=
-    fun P hP hZ => betaConstructive_covers E msg.toD hD P hP hZ
+    betaCanonical_covers E msg.toD hD
   have hβsum : (∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE :=
-    betaConstructive_sum_le_degE E msg.toD
+    betaCanonical_sum_le_degE E msg.toD
   have hβgroup : ECPoint.weightedSum E E.points
       (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine E P.1 P.2)) = 0 :=
-    betaConstructive_group_sum_zero E msg.toD hD hSplit
+    betaCanonical_group_sum_zero E msg.toD hSplit
   -- Step 3: build the `Q` / `beta_nat` pair for the distinct-polyG bridge.
   have hQinj : Function.Injective (zerosAt E msg.toD) :=
     zerosAt_injective E msg.toD
@@ -2417,7 +2420,7 @@ theorem extractor_succeeds_and_groupSumZero
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
           polyG E (zerosAt E msg.toD)
-            (fun k => ((multAt E (betaConstructive E msg.toD) msg.toD k : ℕ) : ZMod E.q))
+            (fun k => ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q))
             (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
             A₀ A₁ = 0)
     (hValidPairsLarge :
@@ -2428,17 +2431,17 @@ theorem extractor_succeeds_and_groupSumZero
       (fun P => ECPoint.zsmul E (extractorDivisorCoeffs E stmt msg hkm P) P) = 0 := by
   classical
   -- Step 1: apply S4.
-  set β_fun := betaConstructive E msg.toD
   have hD : ¬ msg.toD.isZero := admSet_implies_toD_nonzero stmt msg hAdm
+  set β_fun := betaCanonical E msg.toD
   have hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0 :=
-    fun P hP => betaConstructive_support E msg.toD P hP
+    betaCanonical_support E msg.toD
   have hβcov : ∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0 :=
-    fun P hP hZ => betaConstructive_covers E msg.toD hD P hP hZ
+    betaCanonical_covers E msg.toD hD
   have hβsum : (∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE :=
-    betaConstructive_sum_le_degE E msg.toD
+    betaCanonical_sum_le_degE E msg.toD
   have hβgroup : ECPoint.weightedSum E E.points
       (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine E P.1 P.2)) = 0 :=
-    betaConstructive_group_sum_zero E msg.toD hD hSplit
+    betaCanonical_group_sum_zero E msg.toD hSplit
   obtain ⟨σ, hσ_eq, hσ_betam, hσ_off⟩ :=
     distinctSigma_exists E stmt msg d hDeg hd hkm hAdm hNoNegP hSplit
       hAllZero hPolyGZero hValidPairsLarge
@@ -2532,7 +2535,7 @@ theorem extractorSucceeds_of_logDerivCheck_identically_zero_general
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
           polyG E (zerosAt E msg.toD)
-            (fun k => ((multAt E (betaConstructive E msg.toD) msg.toD k : ℕ) : ZMod E.q))
+            (fun k => ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q))
             (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
             A₀ A₁ = 0)
     (hValidPairsLarge :
@@ -2573,7 +2576,7 @@ theorem extracted_scalars_valid
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
           polyG E (zerosAt E msg.toD)
-            (fun k => ((multAt E (betaConstructive E msg.toD) msg.toD k : ℕ) : ZMod E.q))
+            (fun k => ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q))
             (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
             A₀ A₁ = 0)
     (hValidPairsLarge :
@@ -2711,8 +2714,6 @@ theorem polyG_zero_trace_formula
     (hkm : stmt.k = msg.k)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
     (hSplit : normPoly_splits_over_Fq E msg.toD)
-    (hAccount : (∑ P ∈ E.points, betaConstructive E msg.toD P) =
-                  (normPoly E msg.toD).natDegree)
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
@@ -2733,13 +2734,17 @@ theorem polyG_zero_trace_formula
     ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       polyG E (zerosAt E msg.toD)
-        (fun k => ((multAt E (betaConstructive E msg.toD) msg.toD k : ℕ) : ZMod E.q))
+        (fun k => ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q))
         (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
         A₀ A₁ = 0 := by
   classical
   set D := msg.toD with hD_def
   set Q_fn := zerosAt E D
-  set β_fn := fun k => ((multAt E (betaConstructive E D) D k : ℕ) : ZMod E.q)
+  set β_fn := fun k => ((multAt E (betaCanonical E D) D k : ℕ) : ZMod E.q)
+  -- Accounting identity for the canonical β.
+  have hAccount : (∑ P ∈ E.points, betaCanonical E D P) =
+                    (normPoly E D).natDegree :=
+    betaCanonical_account E D hSplit
   set R_fn := distinctR E stmt msg hkm
   set m_fn := distinctM' E stmt msg hkm
   -- Case: D = 0 (trivial: β = 0 and Q-products contain ellP(A₀, A₀, A₁) = 0)
@@ -2751,14 +2756,14 @@ theorem polyG_zero_trace_formula
     -- β_fn = 0: normPoly = 0 when D = 0, so ∑ beta = 0, so each beta = 0
     have hNormZero : normPoly E D = 0 := by
       rw [normPoly_eq]; simp [hDnz.1, hDnz.2]
-    have hβall : ∀ P ∈ E.points, betaConstructive E D P = 0 := by
-      intro P hP
-      have hSum0 : (∑ P' ∈ E.points, betaConstructive E D P') = 0 := by
-        rw [hAccount, hNormZero]; simp
-      exact Finset.sum_eq_zero_iff_of_nonneg (fun i _ => Nat.zero_le _) |>.mp hSum0 P hP
+    have hβall : ∀ P, betaCanonical E D P = 0 := by
+      intro P
+      have hZero : betaCanonical E D = fun _ => 0 :=
+        betaCanonical_eq_zero E D hDnz
+      rw [hZero]
     have hβ_fn_zero : ∀ k, β_fn k = 0 := by
-      intro k; show ((multAt E (betaConstructive E D) D k : ℕ) : ZMod E.q) = 0
-      unfold multAt; rw [hβall _ (zerosAt_mem_E E D k)]; simp
+      intro k; show ((multAt E (betaCanonical E D) D k : ℕ) : ZMod E.q) = 0
+      unfold multAt; rw [hβall _]; simp
     -- A₀ ∈ zerosFinset (since D.eval = 0 everywhere)
     have hA₀z : A₀ ∈ zerosFinset E D := by
       simp only [zerosFinset, zeros, Finset.mem_filter]
@@ -2844,12 +2849,16 @@ theorem polyG_zero_trace_formula
           (distinctM'_tail E stmt msg hkm) A₀ A₁ = 0 := by
         rw [← logDerivCheckFn_eq_grouped E stmt msg hkm D stmt.target A₀ A₁]
         exact hCheckRaw
-      have hPolyGCons := polyG_zero_at_defined_fincons D hDnz hSplit hAccount
+      have hPolyGCons := polyG_zero_at_defined_fincons D hDnz
+        (betaCanonical E D)
+        (betaCanonical_support E D)
+        (betaCanonical_covers E D hDnz)
+        hSplit (betaCanonical_account E D hSplit)
         stmt.target (baseAt E stmt msg hkm) (distinctM'_tail E stmt msg hkm)
         A₀ A₁ hA₀ hA₁ hNV hDefBaseAt hQline hCheckGrouped
       show polyG E Q_fn β_fn R_fn m_fn A₀ A₁ = 0
       change polyG E (zerosAt E D)
-        (fun k => ((multAt E (betaConstructive E D) D k : ℕ) : ZMod E.q))
+        (fun k => ((multAt E (betaCanonical E D) D k : ℕ) : ZMod E.q))
         (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm) A₀ A₁ = 0
       unfold distinctR distinctM'
       rw [polyG_reindex]
@@ -2876,18 +2885,19 @@ theorem polyG_zero_trace_formula
         have hResLe := resultantX_polyGPoly_natDegree_le E Q_fn β_fn R_fn m_fn A₀
         -- zerosCard + (1 + baseImageCount) ≤ D.degE + stmt.k + 2
         have hZC : zerosCard E D ≤ D.degE := by
-          have hβcov := betaConstructive_covers E D (by push_neg; intro ha; exact hDnz ha)
-          have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaConstructive E D) D k :=
-            fun k => multAt_pos E (betaConstructive E D) D hβcov k
-          have hβsum := betaConstructive_sum_le_degE E D
-          have hβeq := sum_multAt_eq_sum_βfun E (betaConstructive E D) D
-            (betaConstructive_support E D)
+          have hβcov := betaCanonical_covers E D
+            (by push_neg; intro ha; exact hDnz ha)
+          have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaCanonical E D) D k :=
+            fun k => multAt_pos E (betaCanonical E D) D hβcov k
+          have hβsum := betaCanonical_sum_le_degE E D
+          have hβeq := sum_multAt_eq_sum_βfun E (betaCanonical E D) D
+            (betaCanonical_support E D)
           calc zerosCard E D
               = ∑ _ : Fin (zerosCard E D), 1 := by
                 simp [Finset.sum_const, Finset.card_univ, Fintype.card_fin]
-            _ ≤ ∑ k : Fin (zerosCard E D), multAt E (betaConstructive E D) D k :=
+            _ ≤ ∑ k : Fin (zerosCard E D), multAt E (betaCanonical E D) D k :=
                 Finset.sum_le_sum (fun k _ => hβpos k)
-            _ = ∑ P ∈ E.points, betaConstructive E D P := hβeq
+            _ = ∑ P ∈ E.points, betaCanonical E D P := hβeq
             _ ≤ D.degE := hβsum
         have hBI : baseImageCount E stmt msg hkm ≤ stmt.k := by
           calc baseImageCount E stmt msg hkm
@@ -3272,18 +3282,19 @@ theorem polyG_zero_trace_formula
         -- Bad A₁: in zerosFinset ∪ R-image ∪ same-x
         -- |bad| ≤ |zerosFinset| + |R-image| + 2 ≤ D.degE + (1 + stmt.k) + 2
         have hZC : zerosCard E D ≤ D.degE := by
-          have hβcov := betaConstructive_covers E D (by push_neg; intro ha; exact hDnz ha)
-          have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaConstructive E D) D k :=
-            fun k => multAt_pos E (betaConstructive E D) D hβcov k
-          have hβsum := betaConstructive_sum_le_degE E D
-          have hβeq := sum_multAt_eq_sum_βfun E (betaConstructive E D) D
-            (betaConstructive_support E D)
+          have hβcov := betaCanonical_covers E D
+            (by push_neg; intro ha; exact hDnz ha)
+          have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaCanonical E D) D k :=
+            fun k => multAt_pos E (betaCanonical E D) D hβcov k
+          have hβsum := betaCanonical_sum_le_degE E D
+          have hβeq := sum_multAt_eq_sum_βfun E (betaCanonical E D) D
+            (betaCanonical_support E D)
           calc zerosCard E D
               = ∑ _ : Fin (zerosCard E D), 1 := by
                 simp [Finset.sum_const, Finset.card_univ, Fintype.card_fin]
-            _ ≤ ∑ k : Fin (zerosCard E D), multAt E (betaConstructive E D) D k :=
+            _ ≤ ∑ k : Fin (zerosCard E D), multAt E (betaCanonical E D) D k :=
                 Finset.sum_le_sum (fun k _ => hβpos k)
-            _ = ∑ P ∈ E.points, betaConstructive E D P := hβeq
+            _ = ∑ P ∈ E.points, betaCanonical E D P := hβeq
             _ ≤ D.degE := hβsum
         have hBI : baseImageCount E stmt msg hkm ≤ stmt.k := by
           calc baseImageCount E stmt msg hkm
@@ -3379,19 +3390,19 @@ theorem polyG_zero_trace_formula
       -- By hLargeQ, the bound holds.
       have hZCle : (zerosFinset E D).card ≤ D.degE + stmt.k + 2 := by
         have hZCle' : zerosCard E D ≤ D.degE := by
-          have hβcov := betaConstructive_covers E D (by
+          have hβcov := betaCanonical_covers E D (by
             push_neg; intro ha; exact hDnz ha)
-          have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaConstructive E D) D k :=
-            fun k => multAt_pos E (betaConstructive E D) D hβcov k
-          have hβsum := betaConstructive_sum_le_degE E D
-          have hβeq := sum_multAt_eq_sum_βfun E (betaConstructive E D) D
-            (betaConstructive_support E D)
+          have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaCanonical E D) D k :=
+            fun k => multAt_pos E (betaCanonical E D) D hβcov k
+          have hβsum := betaCanonical_sum_le_degE E D
+          have hβeq := sum_multAt_eq_sum_βfun E (betaCanonical E D) D
+            (betaCanonical_support E D)
           calc zerosCard E D
               = ∑ _ : Fin (zerosCard E D), 1 := by
                 simp [Finset.sum_const, Finset.card_univ, Fintype.card_fin]
-            _ ≤ ∑ k : Fin (zerosCard E D), multAt E (betaConstructive E D) D k :=
+            _ ≤ ∑ k : Fin (zerosCard E D), multAt E (betaCanonical E D) D k :=
                 Finset.sum_le_sum (fun k _ => hβpos k)
-            _ = ∑ P ∈ E.points, betaConstructive E D P := hβeq
+            _ = ∑ P ∈ E.points, betaCanonical E D P := hβeq
             _ ≤ D.degE := hβsum
         unfold zerosCard at hZCle'; omega
       have hResLe := resultantX_polyGPoly_natDegree_le E Q_fn β_fn R_fn m_fn A₀
@@ -3434,19 +3445,19 @@ theorem polyG_zero_trace_formula
       --   > hLargeQ - (D.degE + stmt.k + 2) - 2 > 2*(5*(D.degE+stmt.k+2)+3)
       have : zerosCard E D + (1 + baseImageCount E stmt msg hkm) ≤ D.degE + stmt.k + 2 := by
         have hZC : zerosCard E D ≤ D.degE := by
-          have hβcov := betaConstructive_covers E D (by
+          have hβcov := betaCanonical_covers E D (by
             push_neg; intro ha; exact hDnz ha)
-          have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaConstructive E D) D k :=
-            fun k => multAt_pos E (betaConstructive E D) D hβcov k
-          have hβsum := betaConstructive_sum_le_degE E D
-          have hβeq := sum_multAt_eq_sum_βfun E (betaConstructive E D) D
-            (betaConstructive_support E D)
+          have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaCanonical E D) D k :=
+            fun k => multAt_pos E (betaCanonical E D) D hβcov k
+          have hβsum := betaCanonical_sum_le_degE E D
+          have hβeq := sum_multAt_eq_sum_βfun E (betaCanonical E D) D
+            (betaCanonical_support E D)
           calc zerosCard E D
               = ∑ _ : Fin (zerosCard E D), 1 := by
                 simp [Finset.sum_const, Finset.card_univ, Fintype.card_fin]
-            _ ≤ ∑ k : Fin (zerosCard E D), multAt E (betaConstructive E D) D k :=
+            _ ≤ ∑ k : Fin (zerosCard E D), multAt E (betaCanonical E D) D k :=
                 Finset.sum_le_sum (fun k _ => hβpos k)
-            _ = ∑ P ∈ E.points, betaConstructive E D P := hβeq
+            _ = ∑ P ∈ E.points, betaCanonical E D P := hβeq
             _ ≤ D.degE := hβsum
         have hBI : baseImageCount E stmt msg hkm ≤ stmt.k := by
           calc baseImageCount E stmt msg hkm

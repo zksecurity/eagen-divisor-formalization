@@ -63,8 +63,6 @@ theorem ma_extractable
     (hkm : stmt.k = msg.k)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
     (hSplit : normPoly_splits_over_Fq E msg.toD)
-    (hAccount : (∑ P ∈ E.points, betaConstructive E msg.toD P) =
-                  (normPoly E msg.toD).natDegree)
     (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
         (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
             distinctR E stmt msg hkm j ≠ A₀) →
@@ -112,7 +110,7 @@ theorem ma_extractable
     have hDegLt : msg.toD.degE < E.q := lt_of_le_of_lt hDeg hd
     have hBound :=
       log_deriv_sz_paper_tight msg.toD stmt.target stmt.bases
-        (fun i => msg.m (hkm ▸ i)) hDegLt hSplit hAccount hNV
+        (fun i => msg.m (hkm ▸ i)) hDegLt hSplit hNV
     have hMono : 18 * (msg.toD.degE + stmt.k) * E.q +
                    (3 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card
                  ≤ 18 * (d + stmt.k) * E.q +
@@ -133,10 +131,10 @@ theorem ma_extractable
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
           polyG E (zerosAt E msg.toD)
-            (fun k => ((multAt E (betaConstructive E msg.toD) msg.toD k : ℕ) : ZMod E.q))
+            (fun k => ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q))
             (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
             A₀ A₁ = 0 :=
-      polyG_zero_trace_formula stmt msg hkm hSmooth hSplit hAccount
+      polyG_zero_trace_formula stmt msg hkm hSmooth hSplit
         (fun A₀ A₁ hA₀ hA₁ hNVxy hDef => hNV A₀ A₁ hA₀ hA₁ hNVxy hDef)
         hDenomNZ hLargeQ
     -- Paper proof preamble: when (a, b) ∉ admSet the verifier rejects
@@ -178,18 +176,19 @@ theorem ma_extractable
         --   `target_eq_weightedSum_of_weightedSum`).
         -- =================================================================
         left
-        -- Setup: β_fun coefficients and their structural properties.
-        set β_fun := betaConstructive E msg.toD with hβ_def
+        -- Setup: β_fun coefficients and their structural properties,
+        -- using `betaCanonical` (the totalised existential β).
         have hD : ¬ msg.toD.isZero := admSet_implies_toD_nonzero stmt msg hAdm
+        set β_fun := betaCanonical E msg.toD with hβ_def
         have hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0 :=
-          fun P hP => betaConstructive_support E msg.toD P hP
+          betaCanonical_support E msg.toD
         have hβcov : ∀ P ∈ E.points, msg.toD.eval P.1 P.2 = 0 → β_fun P ≠ 0 :=
-          fun P hP hZ => betaConstructive_covers E msg.toD hD P hP hZ
+          betaCanonical_covers E msg.toD hD
         have hβsum : (∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE :=
-          betaConstructive_sum_le_degE E msg.toD
+          betaCanonical_sum_le_degE E msg.toD
         have hβgroup : ECPoint.weightedSum E E.points
             (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine E P.1 P.2)) = 0 :=
-          betaConstructive_group_sum_zero E msg.toD hD hSplit
+          betaCanonical_group_sum_zero E msg.toD hSplit
         -- Prepare injective/nonzero hypotheses for sigma_matching.
         have hQinj : Function.Injective (zerosAt E msg.toD) :=
           zerosAt_injective E msg.toD
@@ -430,8 +429,6 @@ theorem ip_knowledge_sound
     (hkm : stmt.k = msg1.k)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
     (hSplit : normPoly_splits_over_Fq E msg1.toD)
-    (hAccount : (∑ P ∈ E.points, betaConstructive E msg1.toD P) =
-                  (normPoly E msg1.toD).natDegree)
     (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg1.toD →
         (∀ j : Fin (1 + baseImageCount E stmt msg1 hkm),
             distinctR E stmt msg1 hkm j ≠ A₀) →
@@ -461,7 +458,7 @@ theorem ip_knowledge_sound
         ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
         msg3 = msg3' := by
   refine ⟨?_, ?_⟩
-  · exact ma_extractable E stmt hd hd2 msg1 hDeg hkm hSmooth hSplit hAccount hDenomNZ
+  · exact ma_extractable E stmt hd hd2 msg1 hDeg hkm hSmooth hSplit hDenomNZ
            hTargetOnE hBasesOnE hLargeQ
   · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
@@ -481,8 +478,6 @@ theorem ma_extractable_clean
     (hkm : stmt.k = msg.k)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
     (hSplit : normPoly_splits_over_Fq E msg.toD)
-    (hAccount : (∑ P ∈ E.points, betaConstructive E msg.toD P) =
-                  (normPoly E msg.toD).natDegree)
     (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
         (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
             distinctR E stmt msg hkm j ≠ A₀) →
@@ -501,7 +496,7 @@ theorem ma_extractable_clean
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q := by
-  rcases ma_extractable E stmt hd hd2 msg hDeg hkm hSmooth hSplit hAccount hDenomNZ
+  rcases ma_extractable E stmt hd hd2 msg hDeg hkm hSmooth hSplit hDenomNZ
           hTargetOnE hBasesOnE hLargeQ with hWit | hBound
   · left; exact hWit
   · right

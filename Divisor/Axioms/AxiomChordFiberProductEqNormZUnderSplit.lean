@@ -64,12 +64,33 @@ proportionality.
 > P₁, P₂ ∈ IP_{F′} be extensions of P ∈ IP_F. Then P₂ = σ(P₁) for
 > some σ ∈ Gal(F′/F). In other words, the Galois group acts
 > transitively on the set of extensions of P." -/
+/-- **Chord-fiber product as a constant multiple of `normZ` under
+    splitting + accounting.**
+
+    Parameterised over an arbitrary multiplicity function `β_fun`. The
+    proportionality holds when `β_fun` matches the *true* divisor
+    multiplicity of `D` on `E`; the support / coverage / accounting
+    hypotheses pin `β_fun` to that interpretation. The existential
+    witness from `CoordRingElt.exists_divisor_multiplicity` (consumed
+    via `CoordRingElt.has_principal_divisor`) is the canonical such
+    `β_fun`.
+
+    **Why `β_fun` is parameterised.** The previous formulation hard-
+    coded `β_fun = betaConstructive E D`, but `betaConstructive`'s
+    twin Nat-division surrogate is provably non-faithful to the true
+    ord_P (counterexample over F_5 documented at
+    `AxiomExistsDivisorMultiplicity.lean`), so the proportionality
+    against a `betaConstructive`-built `normZ` is in general false. -/
 axiom chord_fiber_product_eq_normZ_under_split
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (hSplit : normPoly_splits_over_Fq E D)
-    (hAccount : (∑ P ∈ E.points, betaConstructive E D P) =
+    (β_fun : ZMod E.q × ZMod E.q → ℕ)
+    (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
+    (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
+    (hAccount : (∑ P ∈ E.points, β_fun P) =
                   (normPoly E D).natDegree) :
-    ∃ c : ZMod E.q, c ≠ 0 ∧ chord_fiber_product E lam D = C c * normZ E lam D
+    ∃ c : ZMod E.q, c ≠ 0 ∧
+      chord_fiber_product E lam D = C c * normZ E lam D β_fun
 
 end Divisor

@@ -9,6 +9,6 @@
 import Divisor.Axioms.AxiomPrincipalDivisorIff
 import Divisor.Axioms.AxiomHasseWeil
 import Divisor.Axioms.AxiomWeilReciprocityHonest
-import Divisor.Axioms.AxiomCoordRingEltDivisorGroupSumZero
+import Divisor.Axioms.AxiomExistsDivisorMultiplicity
 import Divisor.Axioms.AxiomChordFiberProductEqNormZUnderSplit
 import Divisor.Axioms.AxiomChordSumEqChordFiberProductLogDeriv

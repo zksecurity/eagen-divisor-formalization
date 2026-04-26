@@ -9,17 +9,14 @@
   * `∑_{P ∈ E.points} β(P) ≤ D.degE`, and
   * the `β`-weighted group sum on `E.points` vanishes.
 
-  The witness is `β := betaConstructive E D`. The four properties come
-  from `betaConstructive_support`, `betaConstructive_covers`, the
-  unconditional bound `betaConstructive_sum_le_degE`, and the derived
-  `betaConstructive_group_sum_zero` (requires `normPoly_splits_over_Fq E D`
-  so it matches Silverman AEC III Cor 3.5 exactly — without splitting,
-  F_q-restricted sums miss Frobenius-conjugate orbit contributions, so
-  the F_q-sum identity is strictly weaker than Cor 3.5's F̄_q-sum).
+  The witness is supplied existentially by
+  `CoordRingElt.exists_divisor_multiplicity` (the true ord_P
+  divisor of `D`), not `betaConstructive` — the latter's twin-sheet
+  Nat-division surrogate is provably non-faithful to ord_P and
+  fails the group-sum-zero condition over F_5.
 -/
 import Divisor.Defs
-import Divisor.BetaConstructive
-import Divisor.Axioms.AxiomCoordRingEltDivisorGroupSumZero
+import Divisor.Axioms.AxiomExistsDivisorMultiplicity
 
 namespace Divisor
 
@@ -47,10 +44,8 @@ theorem CoordRingElt.has_principal_divisor
       (∑ P ∈ E.points, β P) ≤ D.degE ∧
       ECPoint.weightedSum E E.points
         (fun P => ECPoint.nsmul E (β P) (ECPoint.affine E P.1 P.2)) = 0 := by
-  refine ⟨betaConstructive E D, ?_, ?_, ?_, ?_⟩
-  · exact fun P hP => betaConstructive_support E D P hP
-  · exact fun P hP hZ => betaConstructive_covers E D hD P hP hZ
-  · exact betaConstructive_sum_le_degE E D
-  · exact betaConstructive_group_sum_zero E D hD hSplit
+  obtain ⟨β, hSupp, hCov, hBound, _hAcc, hGroup⟩ :=
+    CoordRingElt.exists_divisor_multiplicity E D hD
+  exact ⟨β, hSupp, hCov, hBound, hGroup hSplit⟩
 
 end Divisor

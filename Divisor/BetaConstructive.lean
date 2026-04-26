@@ -510,11 +510,17 @@ def normPoly_splits_over_Fq (D : CoordRingElt E.q) : Prop :=
     used downstream.
 -/
 
--- `CoordRingElt.divisor_group_sum_zero` axiom + derived
--- `betaConstructive_group_sum_zero` theorem are both declared in
--- `Divisor/Axioms/AxiomCoordRingEltDivisorGroupSumZero.lean`.
--- Downstream files should import that axiom file (or the `Axioms`
--- hub) directly.
+-- The previous `CoordRingElt.divisor_group_sum_zero` axiom (and its
+-- derived `betaConstructive_group_sum_zero` theorem) have been
+-- deleted. Both were unsound: `betaConstructive`'s twin Nat-division
+-- surrogate is provably non-faithful to the true ord_P, so the
+-- β-weighted group sum is not always zero (counterexample over
+-- `F_5`, see `Divisor/Axioms/AxiomExistsDivisorMultiplicity.lean`).
+-- Group-sum-zero now comes from `betaCanonical_group_sum_zero` in
+-- the new axiom file, with witness from the existential β.
+-- `betaConstructive` here is retained only for the unconditional
+-- bound `Σ β ≤ D.degE` and the support/coverage shape; it is NOT
+-- in the trust closure.
 
 /-! ## Split case — `betaConstructive` ↔ `rootMultiplicity` bridge
 
