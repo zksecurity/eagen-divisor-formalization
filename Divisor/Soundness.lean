@@ -302,11 +302,22 @@ theorem ma_completeness
   exact le_trans (Finset.card_le_card hSub)
     (support_disjointness E msg.toD (numZeros E msg.toD) (le_refl _))
 
-/-- **IP Completeness (off `event_deg`).** On every challenge where
-    `logDerivCheckFnDefined` holds (paper: `¬event_deg`; equivalently,
-    all 8 denominator factors of the verifier's field expression are
-    nonzero), the honest IP prover constructs a third-round message
-    that the IP verifier accepts:
+/-- The `event_deg` bad event from paper (`ip.tex \ref{thm:ma}`): some
+    denominator in the verifier's field expression vanishes
+    (`D(A_i) = 0` for `i = 0, 1, 2`, `L(-P) = 0`, `L(B_j) = 0`, or one
+    of the `dx/dz` denominators at `A_i`). Equivalently in Lean,
+    `¬ logDerivCheckFnDefined`: the product `logDerivCheckFnDenom`
+    vanishes, i.e. at least one of its 8 factors is zero. -/
+def eventDeg
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) : Prop :=
+  ¬ logDerivCheckFnDefined E D P B A₀ A₁
+
+/-- **IP Completeness (off `eventDeg`).** On every challenge where
+    `eventDeg` does **not** hold (paper: `¬event_deg`), the honest IP
+    prover constructs a third-round message that the IP verifier
+    accepts:
 
     * `h_i := D'(A_i) / D(A_i)` satisfies `h_i · D(A_i) = D'(A_i)`,
     * `g := -1 / L(-P)` satisfies `g · L(-P) = -1`,
@@ -321,13 +332,15 @@ theorem ma_completeness
 theorem ip_completeness
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (chal : MAChallenge E.q)
-    (hDef : logDerivCheckFnDefined E msg.toD stmt.target stmt.bases
-              chal.A₀ chal.A₁)
+    (hNotDeg : ¬ eventDeg E msg.toD stmt.target stmt.bases chal.A₀ chal.A₁)
     (hDegK : msg.toD.degE ≤ stmt.degBound) :
     ∃ msg3 : IPProverMsg3 E.q,
       ipVerifierAccepts E stmt msg chal (computeA₂ chal) msg3 := by
   let _ := hkm
-  -- Extract the four needed nondegen facts from logDerivCheckFnDefined.
+  -- Unfold ¬eventDeg = logDerivCheckFnDefined; extract the four nondegen
+  -- facts via logDerivCheckFnDenom_factors_ne_zero.
+  have hDef : logDerivCheckFnDefined E msg.toD stmt.target stmt.bases
+                chal.A₀ chal.A₁ := not_not.mp hNotDeg
   have hFactors := logDerivCheckFnDenom_factors_ne_zero E msg.toD stmt.target
                      stmt.bases chal.A₀ chal.A₁ hDef
   obtain ⟨hD₀_nz, hD₁_nz, hD₂_chord_nz, _, _, _, hLP_nz, _⟩ := hFactors
@@ -404,33 +417,41 @@ theorem ip_completeness_card_bound
   set rejectMA : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
     (E.points ×ˢ E.points).filter
       (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hRMAdef
-  set undefSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+  set eventDegSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
     (E.points ×ˢ E.points).filter
-      (fun p => ¬ logDerivCheckFnDefined E msg.toD stmt.target stmt.bases
-                  p.1 p.2) with hUdef
-  -- IP rejection ⊆ MA rejection ∪ undef.
-  have hSub : rejectIP ⊆ rejectMA ∪ undefSet := by
+      (fun p => eventDeg E msg.toD stmt.target stmt.bases p.1 p.2) with hUdef
+  -- IP rejection ⊆ MA rejection ∪ eventDeg.
+  have hSub : rejectIP ⊆ rejectMA ∪ eventDegSet := by
     intro p hp
     simp only [hRIPdef, Finset.mem_filter] at hp
     obtain ⟨hp_pts, hp_no_msg3⟩ := hp
     rw [Finset.mem_union]
-    by_cases hDef : logDerivCheckFnDefined E msg.toD stmt.target stmt.bases p.1 p.2
-    · -- Off undef-set: ip_completeness gives ∃ msg3, contradicting hp_no_msg3.
-      exfalso
-      apply hp_no_msg3
-      exact ip_completeness E stmt msg hkm ⟨p.1, p.2⟩ hDef hDegK
+    by_cases hDeg : eventDeg E msg.toD stmt.target stmt.bases p.1 p.2
     · right
       simp only [hUdef, Finset.mem_filter]
-      exact ⟨hp_pts, hDef⟩
+      exact ⟨hp_pts, hDeg⟩
+    · -- ¬eventDeg: ip_completeness gives ∃ msg3, contradicting hp_no_msg3.
+      exfalso
+      apply hp_no_msg3
+      exact ip_completeness E stmt msg hkm ⟨p.1, p.2⟩ hDeg hDegK
+  -- |eventDegSet| matches |¬logDerivCheckFnDefined-set| (definitional).
+  have hEventDegEq : eventDegSet =
+      (E.points ×ˢ E.points).filter
+        (fun p => ¬ logDerivCheckFnDefined E msg.toD stmt.target stmt.bases
+                    p.1 p.2) := by
+    apply Finset.ext
+    intro p
+    simp only [hUdef, Finset.mem_filter, eventDeg]
   calc rejectIP.card
-      ≤ (rejectMA ∪ undefSet).card := Finset.card_le_card hSub
-    _ ≤ rejectMA.card + undefSet.card := Finset.card_union_le _ _
+      ≤ (rejectMA ∪ eventDegSet).card := Finset.card_le_card hSub
+    _ ≤ rejectMA.card + eventDegSet.card := Finset.card_union_le _ _
     _ ≤ (3 * numZeros E msg.toD + 1) * E.numAffine
           + (6 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := by
         apply Nat.add_le_add
         · exact ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm
                   hHonestDivisor
-        · exact logDerivCheckFn_undefined_set_bound_tight E msg.toD stmt.target
+        · rw [hEventDegEq]
+          exact logDerivCheckFn_undefined_set_bound_tight E msg.toD stmt.target
                   stmt.k stmt.bases hD
 
 end Divisor
