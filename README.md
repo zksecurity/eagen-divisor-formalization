@@ -12,7 +12,7 @@ Requires elan + Lean 4 toolchain (see `lean-toolchain`).
 
 ## Theorem surface
 
-The headline theorems live in `Divisor/ExtractorBridge.lean` and `Divisor/Soundness.lean`:
+The headline theorems live in `Divisor/ExtractorBridgeTheorems.lean` and `Divisor/Soundness.lean`:
 
 - `Divisor.ma_extractable` — knowledge soundness of the MA protocol.
 - `Divisor.ip_knowledge_sound` — knowledge soundness of the IP protocol.
@@ -22,7 +22,7 @@ The headline theorems live in `Divisor/ExtractorBridge.lean` and `Divisor/Soundn
 
 Fix a statement `stmt` over the finite field `F_q`: bases `B_1, ..., B_k` in `E(F_q)`, a target `T` in `E(F_q)`, and a degree bound `d`. Fix a prover first-round message `msg` encoding a divisor representative `D = a(x) - b(x) y` in `F_q[E]` together with scalars `m_1, ..., m_k`, such that the `E`-degree of `D` is at most `d`.
 
-**Hypotheses** (`Divisor/ExtractorBridge.lean:3374`):
+**Hypotheses** (`Divisor/ExtractorBridgeTheorems.lean`):
 
 - smoothness of `E`: `4 a_E^3 + 27 b_E^2 ≠ 0`
 - `normPoly(D)` splits over `F_q` (every geometric zero of `D` is `F_q`-rational)
@@ -45,7 +45,7 @@ where `n_i = w.scalars(i)` in `Z` with `|n_i| < d`.
 
 2. *Small-accept-set branch.* The set of challenges `(A_0, A_1)` in `validPairs` on which the verifier accepts has cardinality at most `B(d, k, q)`, where
 
-$$B(d, k, q) = \bigl(72(d+k+6) + 4\bigr) \cdot |E(F_q)| + 6q \cdot \bigl((d+k+1) + (d+k+1)(d+k)\bigr).$$
+$$B(d, k, q) = 18(d+k)q + (6d+9k+71)|E(F_q)|.$$
 
 ### `Divisor.ip_knowledge_sound` (IP knowledge soundness)
 
@@ -65,39 +65,27 @@ where `N = numZeros(D)` and `E_aff` is the set of affine `F_q`-points of `E`. Pr
 
 ```
 propext, Classical.choice, Quot.sound,
-Divisor.ECPoint.add_comm, Divisor.ECPoint.add_assoc, Divisor.ECPoint.neg_add_cancel,
+Divisor.bivariate_poly_zeros_on_ExE_le,
 Divisor.CoordRingElt.divisor_group_sum_zero,
 Divisor.chord_fiber_product_eq_normZ_under_split,
-Divisor.chord_sum_eq_chord_fiber_product_logDeriv
+Divisor.chord_sum_eq_chord_fiber_product_logDeriv,
+Divisor.hasse_weil
 ```
 
 `#print axioms Divisor.ma_completeness`:
 
 ```
 propext, Classical.choice, Quot.sound,
-Divisor.ECPoint.add_comm, Divisor.ECPoint.add_assoc, Divisor.ECPoint.neg_add_cancel,
 Divisor.weil_reciprocity_honest
 ```
 
-### Textbook axioms — human-readable statements
+`#print axioms Divisor.ma_completeness_clean` adds:
 
-#### `ECPoint.add_comm` — Silverman AEC III Prop 2.2(c), p. 51
+```
+Divisor.hasse_weil
+```
 
-Commutativity of the chord-and-tangent group law on `E`:
-
-$$P \oplus Q = Q \oplus P \qquad \text{for all } P, Q \in E.$$
-
-#### `ECPoint.add_assoc` — Silverman AEC III Prop 2.2(e), p. 51
-
-Associativity:
-
-$$(P \oplus Q) \oplus R = P \oplus (Q \oplus R) \qquad \text{for all } P, Q, R \in E.$$
-
-#### `ECPoint.neg_add_cancel` — Silverman AEC III Prop 2.2(d), p. 51
-
-Existence of inverses (specialized to the concrete negation defined in `Divisor/Defs.lean`):
-
-$$P \oplus (\ominus P) = O \qquad \text{for all } P \in E.$$
+### Textbook Axioms
 
 #### `CoordRingElt.divisor_group_sum_zero` — Silverman AEC III Cor 3.5, p. 63 (forward direction)
 
@@ -157,10 +145,13 @@ which is equivalent to
 
 $$\bigl| |E(F_q)| - q - 1 \bigr| \le  2\sqrt{q}.$$
 
-## Outstanding work
+#### `bivariate_poly_zeros_on_ExE_le` — DKL'14 Claim 7.2 + Bezout
 
-- **Eliminate `chord_fiber_product_eq_normZ_under_split`**: prove the function-field norm identity in Lean, using conorm + Galois-transitive norm machinery.
-- **Eliminate `chord_sum_eq_chord_fiber_product_logDeriv`**: prove the trace-of-log-derivative identity `Tr(dg/g) = d(Ng)/Ng` in Lean, using norm multiplicativity + unique derivation extension.
-- **Downgrade `weil_reciprocity_honest`**: split into (i) a verbatim Weil reciprocity axiom matching Exercise II.2.11 and (ii) a proved residue/differential reduction to `logDerivCheckFn`.
-- **Mechanize `CoordRingElt.divisor_group_sum_zero`** (Silverman III Cor 3.5 forward direction) — requires function-field infrastructure.
+For a nonzero 4-variate polynomial `f` of total degree at most `D`, the
+number of pairs in `E(F_q) × E(F_q)` where `f` vanishes is bounded by
 
+$$|\{(A_0,A_1) \in E(F_q)^2 : f(A_0,A_1)=0\}| \le 9Dq.$$
+
+The point-count step is Dvir-Kollar-Lovett Claim 7.2. The geometric
+degree input is the standard Bezout/intersection-theory estimate
+`deg((E × E) ∩ {f = 0}) ≤ 9D`.
