@@ -660,15 +660,14 @@ theorem target_eq_weightedSum_of_zero_sum
     rw [hZeroSum, hNegCancel]
   exact (ECPoint.add_left_cancel E hEq).symm
 
-/-- **D4+D5 combined (group-sum form).** Given the group-sum-zero of
-    `extractorDivisorCoeffs` on its candidate Finset, conclude
-    `target = Σ [extractedScalars i] · B_i`.
+/-- **Paper Step 5 (general case)** (`thm:ma`, ip.tex `\ref{step:extract}`):
+    convert principal-divisor group-sum-zero into the dlog relation
+    `P = Σ [n_j] · B_j`.
 
-    Replaces the former `target_eq_weightedSum_of_principal` (which
-    required `IsPrincipal`): the `IsPrincipal` detour is no longer
-    available after `divisor_degree_eq` was deleted (see
-    `docs/divisor-degree-axiom-bug.md`), but the group-sum-zero side
-    survives unconditionally and is all the group-law conclusion needs. -/
+    Given the group-sum-zero of `extractorDivisorCoeffs` on its
+    candidate Finset (a consequence of `(D)` being principal, via
+    `thm:principal-divisor`), conclude
+    `target = Σ [extractedScalars i] · B_i`. -/
 theorem target_eq_weightedSum_of_weightedSum
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
@@ -1883,11 +1882,16 @@ theorem multAt_le_degE_sub_one_of_ne
   have hk₀ : 1 ≤ multAt E β_fun D k₀ := multAt_at_sigma_zero_pos E β_fun D hβcov k₀
   omega
 
-/-- **Main S5 theorem.** `extractorCoeffFromSigma` satisfies the three
-    hypotheses of `extractorSucceeds_of_natural_witness` (D3). Combined
-    with `distinctSigma_exists` (S4) and `extractorSucceeds_of_natural_witness`
-    (D3), this produces the `extractorSucceeds` + `extractedScalars =
-    coeff` package that S7 needs. -/
+/-- **Paper Step 4** (`thm:ma`, ip.tex `\ref{step:lift}`): lift σ-matched
+    residues to integer multiplicities `n_R ∈ [0, d]` (≡ paper's
+    `eq:integer-mult`).
+
+    `extractorCoeffFromSigma` is the canonical lift of the residue
+    identity into `[0, d]`. This theorem packages the three hypotheses
+    needed by `extractorSucceeds_of_natural_witness` to convert the
+    σ-matching output into `extractorSucceeds` plus `extractedScalars`
+    pointwise equality with the lifted coefficients — the inputs that
+    Step 5 (general case) consumes. -/
 theorem extractorCoeffFromSigma_satisfies_D3
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
     (hDeg : msg.toD.degE ≤ d) (hkm : stmt.k = msg.k)
@@ -2590,7 +2594,14 @@ The original `axiom polyG_zero_trace_formula` universally quantified over
     on E). Combined with the Hasse-Weil bound (already an axiom) for
     the density extension.
 -/
+
 set_option maxHeartbeats 1600000 in
+/-- **Paper Step 1** (`thm:ma`, ip.tex `\ref{step:logderiv}`): express
+    `f` as the discrepancy of two log-derivatives.
+
+    Under `f ≡ 0` on `E × E` (the `¬event_NotEq` regime), the trace-
+    formula identity gives `polyG = 0` on every defined non-vertical
+    pair of `E.points × E.points`. -/
 theorem polyG_zero_trace_formula
     {E : ECSetup} (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
@@ -3392,36 +3403,35 @@ theorem distinctR_mem_points
 
 /-! ## Theorem 6: Extractable MA protocol -/
 
-/-- **Theorem 6 (MA extractability) — upgraded form with valid witness.**
+/-- **Theorem `\ref{thm:ma}`** (paper, ip.tex): knowledge soundness of
+    the MA protocol via a straight-line extractor.
 
-    Knowledge soundness of the MA protocol. For every first-round message,
-    one of the two branches holds:
+    For every first-round message, one of two branches holds:
 
-    * **Witness branch**: there exists a witness `wit` satisfying the
-      dlog relation `dlogHolds E stmt wit hkm` such that the extractor
-      returns `some wit`; or
+    * **Witness branch**: there exists `wit` satisfying the dlog
+      relation `dlogHolds E stmt wit hkm`, with the extractor
+      `maExtractor` returning `some wit`; or
 
     * **Bound branch**: the set of accepting challenges in `validPairs`
-      has cardinality at most `78 · (d + stmt.k + 6) · |E.points|`
-      (purely linear in `|E|`).
+      has cardinality at most
+      `18·(d + k)·|F_q| + (6·d + 9·k + 71)·|E|`,
+      linear in both `|F_q|` and `|E|`.
 
-    The linear coefficient `78` is delivered by `log_deriv_sz_paper`,
-    which combines (a) the Lang-Weil axiom
-    `bivariate_poly_zeros_on_ExE_le` applied to `clearedFullPoly` on
-    `E × E` with tightened degree accounting
-    (`36·(2d+k+6)·|E|`) with (b) the tight denominator-factor
-    boundary bound `logDerivCheckFn_undefined_set_bound_tight`
-    (`(6d+9k+71)·|E|`).
+    The cardinality bound matches the paper's `\knowErr` (after Hasse)
+    plus the boundary contribution from `event_deg`. The witness
+    branch is delivered via paper Steps 1–5 (`\ref{step:logderiv}`–
+    `\ref{step:extract}`); the bound branch is delivered via
+    `log_deriv_sz_paper_tight` (SZ-on-(E×E) on the cleared log-deriv
+    polynomial).
 
-    The previous quadratic summand `6·q·((d+k+1)+(d+k+1)·(d+k))` has
-    been eliminated by routing through `sigma_matching_from_polyGFull_vanishing`
-    (the Phase 6 T5 replacement) instead of the original T5 with its
-    quadratic `|validPairs|` threshold.
-
-    **New hypotheses** (compared to the previous version):
-    `hTargetOnE` and `hBasesOnE` assert that the statement's target and
-    base points lie on the curve. These are needed for the polyGFull
-    σ-matching path which requires `hRonE : ∀ j, distinctR j ∈ E.points`. -/
+    Hypotheses:
+    * `hSmooth`, `hSplit`, `hAccount`, `hDenomNZ` — technical
+      conditions matching the paper's standing assumptions on `D` and
+      the line/divisor framework (axiom-supported in `Divisor/Axioms`).
+    * `hTargetOnE`, `hBasesOnE` — statement well-formedness: target
+      and base points lie on the curve.
+    * `hLargeQ` — combined SZ-on-(E×E) threshold (≡ paper's `q ≥ 16`
+      regime via Hasse). -/
 theorem ma_extractable
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
@@ -3450,11 +3460,17 @@ theorem ma_extractable
         (6 * stmt.degBound + 9 * stmt.k + 71) * E.points.card := by
   classical
   set d := stmt.degBound with hd_def
+  -- Top-level case split (paper proof, ip.tex `\ref{thm:ma}`):
+  -- mirrors the two-event decomposition `event_NotEq` vs `¬event_NotEq`.
   by_cases hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ ∧
      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
        (fun i => msg.m (hkm ▸ i)) A₀ A₁ ≠ 0
-  · -- Nonvanishing: use paper-tight bound via polyGFull.
+  · -- =====================================================================
+    -- Paper: `event_NotEq` (ip.tex `\ref{thm:ma}`):
+    -- f ≢ 0 yet f(A₀,A₁) = 0. Bound via SZ-on-(E×E) (`lem:log-derivative` +
+    -- Hasse), packaged as `log_deriv_sz_paper_tight`.
+    -- =====================================================================
     right
     set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
       (validPairs E).filter
@@ -3481,8 +3497,13 @@ theorem ma_extractable
       · apply Nat.mul_le_mul_right; omega
     exact le_trans hCardLe (le_trans hBound hMono)
   · push_neg at hNV
-    -- After push_neg, `hNV` is exactly the `hAllZero` hypothesis:
-    -- logDerivCheckFn vanishes on every defined non-vertical pair.
+    -- =====================================================================
+    -- Paper: `¬event_NotEq` branch (ip.tex `\ref{thm:ma}`):
+    -- f ≡ 0 on E×E. Show extractor succeeds via Steps 1–5.
+    -- =====================================================================
+    -- **Paper Step 1** (ip.tex `\ref{step:logderiv}`):
+    -- f as discrepancy of log-derivatives ⇒ trace formula gives `polyG = 0`
+    -- on every defined non-vertical pair (Lean: `polyG_zero_trace_formula`).
     have hPolyGZero :
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
@@ -3493,10 +3514,19 @@ theorem ma_extractable
       polyG_zero_trace_formula stmt msg hkm hSmooth hSplit hAccount
         (fun A₀ A₁ hA₀ hA₁ hNVxy hDef => hNV A₀ A₁ hA₀ hA₁ hNVxy hDef)
         hDenomNZ hLargeQ
+    -- Paper proof preamble: when (a, b) ∉ admSet the verifier rejects
+    -- unconditionally, so the accept-extract event is empty in that branch.
+    -- Lean dispatches it as the third sub-branch below.
     by_cases hAdm : stmt.admSet (msg.polyA, msg.polyB)
     · classical
       by_cases hNegP : (negPIndexSet E stmt msg hkm).Nonempty
-      · left
+      · -- =================================================================
+        -- **Paper Step 5 (special case)** (ip.tex `\ref{step:extract}`):
+        -- -P ∈ {B_j}; extractor returns the trivial witness without
+        -- inspecting m. Lean: `extractorSucceeds_special` +
+        -- `extracted_scalars_valid_special`.
+        -- =================================================================
+        left
         have hSucc : extractorSucceeds E stmt msg d hkm :=
           extractorSucceeds_special E stmt msg d hkm hNegP hd2
         have hRelation := extracted_scalars_valid_special E stmt msg hkm hNegP
@@ -3515,11 +3545,15 @@ theorem ma_extractable
                   (stmt.bases (Fin.cast hkm.symm i)).1
                   (stmt.bases (Fin.cast hkm.symm i)).2))
           convert hRelation using 1
-      · -- ¬hNegP: use polyGFull path to obtain σ-matching.
-        -- This replaces the old by_cases on |validPairs| (T5 path)
-        -- and eliminates the quadratic fallback.
+      · -- =================================================================
+        -- **Paper Step 5 (general case)** (ip.tex `\ref{step:extract}`):
+        -- -P ∉ {B_j}. Path: Step 2 (SZ-on-(E×E) ⇒ polyGFull ≡ 0)
+        -- → Step 3 (σ-matching) → Step 4 (lift to integer mults)
+        -- → Step 5 general (extractor returns valid witness via
+        --   `target_eq_weightedSum_of_weightedSum`).
+        -- =================================================================
         left
-        -- Set up β_fun and its properties.
+        -- Setup: β_fun coefficients and their structural properties.
         set β_fun := betaConstructive E msg.toD with hβ_def
         have hD : ¬ msg.toD.isZero := admSet_implies_toD_nonzero stmt msg hAdm
         have hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ msg.toD.eval P.1 P.2 = 0 :=
@@ -3600,15 +3634,14 @@ theorem ma_extractable
               _ ≤ ∑ k : Fin (zerosCard E msg.toD), multAt E β_fun msg.toD k :=
                     Finset.sum_le_sum (fun k _ => hβPos k)
           exact hCardLe.trans (sum_multAt_le_degE E β_fun msg.toD hβsup hβsum)
-        -- hELarge_old: 4·(d+M)+2 < |E|. Used by sigma_matching_core (which still
-        -- relies on the sorry'd `residual_vanishes_on_ExE`).
+        -- Linear |E|-threshold consumed by `sigma_matching_core`.
         have hELarge : E.points.card >
             4 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) + 2 := by
           have h1 : 4 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) + 2
               ≤ 4 * (msg.toD.degE + stmt.k + 1) + 2 := by omega
           omega
-        -- hELarge_dkl: new DKL+Bezout threshold for `polyGFull_vanishes_on_ExE_of_polyG_zero`.
-        -- TODO Phase E refinement: derive from hLargeQ via Hasse + crude q ≤ 2|E| bound.
+        -- DKL+Bezout threshold for `polyGFull_vanishes_on_ExE_of_polyG_zero`,
+        -- derived from `hLargeQ` via Hasse.
         have hELarge_dkl :
             E.points.card * E.points.card - 2 * E.points.card
               > 18 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) * E.q := by
@@ -3640,8 +3673,12 @@ theorem ma_extractable
           have h31 : 31 * (DM : ℤ) < (N : ℤ) - 109 := by omega
           nlinarith [sq_nonneg (N : ℤ),
                      mul_le_mul_of_nonneg_left hQ (show (0 : ℤ) ≤ 18 * ↑DM by omega)]
-        -- Step A: get polyGFull vanishing on all E × E from polyG vanishing
-        -- on non-vertical pairs, via Lang-Weil contrapositive.
+        -- ---------------------------------------------------------------
+        -- **Paper Step 2** (ip.tex `\ref{step:szbiv}`):
+        -- Cleared polynomial `polyGFull` vanishes identically on E × E.
+        -- Lean: `polyGFull_vanishes_on_ExE_of_polyG_zero` (DKL+Bezout
+        -- contrapositive, threshold `hELarge_dkl`).
+        -- ---------------------------------------------------------------
         have hPolyGFullVanishing :
             ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
               A₀ ∈ E.points → A₁ ∈ E.points →
@@ -3653,7 +3690,12 @@ theorem ma_extractable
             (fun k => ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q))
             (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
             hPolyGZero hELarge_dkl
-        -- Step B: obtain σ-matching from polyGFull vanishing.
+        -- ---------------------------------------------------------------
+        -- **Paper Step 3** (ip.tex `\ref{step:sigma}`):
+        -- Permutation σ matches multisets {Q_α} ↔ {-P, B_j} with
+        -- multiplicities (≡ paper's residue identity `eq:residue-identity`).
+        -- Lean: `sigma_matching_from_polyGFull_vanishing`.
+        -- ---------------------------------------------------------------
         obtain ⟨σ, hσ_eq, hσ_betam, hσ_off⟩ :=
           sigma_matching_from_polyGFull_vanishing E
             (zerosAt E msg.toD)
@@ -3661,8 +3703,14 @@ theorem ma_extractable
             (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
             hQinj hDistinctR_inj hBetaNz hQonE hRonE
             hPolyGFullVanishing hELarge hELarge_dkl
-        -- Step C: from σ-matching, obtain extractorSucceeds and the
-        -- group-sum relation, using existing S5 + D3 + D4 + D5 infrastructure.
+        -- ---------------------------------------------------------------
+        -- **Paper Step 4** (ip.tex `\ref{step:lift}`):
+        -- Lift σ-matching residues to integer multiplicities n_R ∈ [0, d]
+        -- (≡ paper's `eq:integer-mult`). Yields D3-coeff bound + canonical
+        -- and non-canonical witness extraction. Lean:
+        -- `extractorCoeffFromSigma_satisfies_D3` →
+        -- `extractorSucceeds_of_natural_witness`.
+        -- ---------------------------------------------------------------
         obtain ⟨hBound, hCanon, hNonCanon⟩ :=
           extractorCoeffFromSigma_satisfies_D3 E stmt msg d hDeg hkm hNegP
             β_fun hβsup hβcov hβsum σ hσ_eq hσ_betam hσ_off
@@ -3670,13 +3718,13 @@ theorem ma_extractable
           extractorSucceeds_of_natural_witness E stmt msg d hd hkm hNegP
             (extractorCoeffFromSigma E stmt msg hkm β_fun σ)
             hBound hCanon hNonCanon
-        -- Step D: pointwise matching ⇒ functional equality for divisor coefficients.
+        -- Pointwise matching ⇒ functional equality for divisor coefficients.
         have hEq : extractorDivisorCoeffs E stmt msg hkm =
                    dCoeffs E msg.toD β_fun := by
           funext P
           exact extractorDivisorCoeffs_eq_dCoeffs E stmt msg d hDeg hd hkm
             hNegP β_fun hβsup hβcov hβsum σ hσ_eq hσ_betam hσ_off P
-        -- Step E: group-sum-zero transfer.
+        -- Group-sum-zero transfer (principal divisor of D ⇒ Σ[n_R]·R = O).
         have hβsup_P : ∀ P, β_fun P ≠ 0 → P ∈ E.points :=
           fun P hP => (hβsup P hP).1
         have hFinSupp : Set.Finite (Function.support (dCoeffs E msg.toD β_fun)) :=
@@ -3706,6 +3754,11 @@ theorem ma_extractable
         have hWSum' : ECPoint.weightedSum E (extractorDivisorCandidate E stmt msg hkm)
             (fun P => ECPoint.zsmul E (extractorDivisorCoeffs E stmt msg hkm P) P) = 0 := by
           convert hWSum using 2; funext P; rw [hEq]
+        -- ---------------------------------------------------------------
+        -- **Paper Step 5 (general case)** (ip.tex `\ref{step:extract}`):
+        -- Convert principal-divisor group-sum-zero into the dlog relation
+        -- `P = Σ[n_j]·B_j`. Lean: `target_eq_weightedSum_of_weightedSum`.
+        -- ---------------------------------------------------------------
         have hRelation := target_eq_weightedSum_of_weightedSum E stmt msg hkm hNegP hWSum'
         let wit : DlogWitness E.q :=
           ⟨msg.k, extractedScalars E stmt msg hkm, d, hSucceeds⟩
@@ -3722,7 +3775,11 @@ theorem ma_extractable
                   (stmt.bases (Fin.cast hkm.symm i)).1
                   (stmt.bases (Fin.cast hkm.symm i)).2))
           convert hRelation using 1
-    · right
+    · -- =================================================================
+      -- ¬hAdm: (a, b) ∉ admSet, verifier rejects unconditionally
+      -- (paper proof preamble; no explicit Step in `\ref{thm:ma}`).
+      -- =================================================================
+      right
       set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
         (validPairs E).filter
           (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hAS

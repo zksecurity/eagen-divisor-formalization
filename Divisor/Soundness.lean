@@ -158,7 +158,9 @@ noncomputable def eventBadRange (stmt : DlogStatement E.q)
     III.3.5) and the D3 + D4 + D5 infrastructure. The special case
     `-P ∈ {B_j}` is handled here unconditionally below. -/
 
-/-- **Special-case extractor-range** (`-P ∈ {B_j}`, `d ≥ 2`).
+/-- **Paper Step 5 (special case)** (`thm:ma`, ip.tex `\ref{step:extract}`):
+    extractor-success guarantee in the special branch (`-P ∈ {B_j}`,
+    `d ≥ 2`).
 
     Direct proof: the special branch of `extractedScalars` returns
     `-1` at `j*` and `0` at all other indices. So `|scalars i|.natAbs`
@@ -179,13 +181,20 @@ theorem extractorSucceeds_special
   · rw [if_pos hi]; exact hd2
   · rw [if_neg hi]; omega
 
-/-! ## Step 4: special-case extractor validity (unconditional).
+/-! ## Special-case extractor validity (unconditional).
 
     When `-P ∈ {B_j}`, the `extractedScalars` definition returns
     `(-1)` at `j* := min{j : B_j = -P}` and `0` at all other indices,
     regardless of `msg.m`. We prove unconditionally that this satisfies
     the dlog relation `target = Σ [n_i] · bases i` = `-bases j*` =
     `-(-P)` = `P`. -/
+
+/-- **Paper Step 5 (special case)** (`thm:ma`, ip.tex `\ref{step:extract}`):
+    witness validity in the special branch (`-P ∈ {B_j}`).
+
+    The witness `(n_{j*}, 0, …, 0) = (-1, 0, …, 0)` satisfies
+    `Σ [n_i] · B_i = [-1] · B_{j*} = [-1](-P) = P` unconditionally,
+    without inspecting `msg.m`. -/
 theorem extracted_scalars_valid_special
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)

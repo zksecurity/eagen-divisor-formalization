@@ -2339,20 +2339,21 @@ theorem polyGFull_total_degree_le_tight
     have hM1 : 1 ≤ M := by have := j.isLt; omega
     rw [hEC, hDC]; omega
 
-/-- **T5-replacement vanishing lemma via DKL+Bezout.**
+/-- **Paper Step 2** (`thm:ma`, ip.tex `\ref{step:szbiv}`): cleared
+    polynomial `polyGFull` vanishes identically on `E × E`.
 
-    If `polyG` vanishes on every non-vertical pair of `E.points ×
-    E.points`, and `|E|² - 2|E| > 18·(d + M)·E.q` (Hasse-tractable
-    threshold from the new axiom), then `polyGFull` has no nonzero
-    witness on `E × E` — `bivEval₂ polyGFull A₀ A₁ = 0` for all
-    `(A₀, A₁) ∈ E.points × E.points`, including vertical pairs.
+    Lean realisation of "apply SZ-on-(E×E) (paper's `lem:log-derivative`
+    machinery, i.e. `thm:variety-bound` + Bezout) contrapositively to
+    the cleared polynomial `G`": if `polyG` vanishes on every defined
+    non-vertical pair of `E.points × E.points` and the threshold
+    `|E|² − 2|E| > 18·(d + M)·E.q` holds (derived from `hLargeQ` via
+    Hasse), then `polyGFull` has no nonzero witness on `E × E`.
 
-    Proof: apply the corrected `bivariate_poly_zeros_on_ExE_le` axiom
-    (DKL+Bezout) to `polyGFull` of total degree `≤ 2·(d+M)`. If it
-    were non-zero somewhere on `E×E`, its zero set would have
-    cardinality `≤ 9·2·(d+M)·q = 18·(d+M)·q`, but non-vertical pairs
-    (which it contains) number at least `|E|²-2|E|`. The threshold
-    creates a contradiction. -/
+    Proof uses the `bivariate_poly_zeros_on_ExE_le` axiom (DKL+Bezout)
+    on `polyGFull` of total degree `≤ 2·(d+M)`: were it nonzero
+    somewhere on `E × E`, its zero set would have cardinality
+    `≤ 9·2·(d+M)·q = 18·(d+M)·q`, contradicting the non-vertical-pair
+    count `|E|² − 2|E|` it must contain. -/
 theorem polyGFull_vanishes_on_ExE_of_polyG_zero
     {d M : ℕ}
     (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
@@ -3274,17 +3275,15 @@ private lemma sigma_matching_core
     exact (mul_eq_zero.mp hResVal).resolve_right hProdNz
   refine ⟨σ, fun k => (hσ_def k).symm, hBetaMsigma, hM_offrange⟩
 
-/-- **T5 replacement: σ-matching from polyGFull vanishing.**
+/-- **Paper Step 3** (`thm:ma`, ip.tex `\ref{step:sigma}`): permutation
+    `σ` matches multisets `{Q_α} ↔ {-P, B_j}` with multiplicities
+    (≡ paper's residue identity `eq:residue-identity`).
 
-    Given that `polyGFull` vanishes pointwise on all of `E × E` (a
-    strengthening of `polyG = 0` on non-vertical pairs), produce the
-    same σ-matching output as the original T5
-    (`log_deriv_nonvanishing_criterion`), without its quadratic
-    `|validPairs| ≥ 6·q·(d+M)²+…` precondition.
-
-    The linear `hELarge : |E| > 4·(d+M) + 2` is much milder than T5's
-    quadratic threshold.
-
+    Lean realisation of "equate the two factored norm forms
+    `∏_α (t - L(Q_α))^{n_α}` and `(t - L(-P)) · ∏_j (t - L(B_j))^{m_j}`
+    and take multisets of roots with multiplicities". Given `polyGFull`
+    vanishing pointwise on `E × E` (= Step 2's conclusion) plus
+    `hELarge : |E| > 4·(d+M) + 2`, produce the σ-matching output.
     Internally consolidated via `sigma_matching_core`. -/
 theorem sigma_matching_from_polyGFull_vanishing
     {d M : ℕ}

@@ -248,8 +248,17 @@ theorem log_deriv_sz_paper_core_tight
     _ ≤ 18 * (D.degE + k) * E.q := by
         apply Nat.mul_le_mul_right; apply Nat.mul_le_mul_left; omega
 
-/-! ### Step 7: Paper-tight outer bound -/
+/-! ### Paper-tight outer bound -/
 
+/-- **Paper `event_NotEq` bound** (`thm:ma`, ip.tex): given a witness
+    `(A₀, A₁) ∈ E.points²` where the log-derivative check is defined
+    and nonzero (i.e. `f ≢ 0` in the paper's notation), bound the
+    cardinality of the accepting challenge set by
+
+      `18·(d + k)·|F_q| + (6·d + 9·k + 71)·|E.points|`.
+
+    Realised via `lem:log-derivative` (SZ-on-(E×E) applied to the
+    cleared log-deriv polynomial) plus the Hasse bound. -/
 theorem log_deriv_sz_paper_tight
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
