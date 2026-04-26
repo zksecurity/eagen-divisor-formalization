@@ -382,9 +382,9 @@ def relDlogHonest (stmt : DlogStatement E.q) (wit : DlogWitness E.q) : Prop :=
 
     Mirrors paper Theorem `\ref{thm:ip}`'s claim `\compErr_{IP}` is
     bounded analogously to `\compErr_{MA}` once `event_deg` is
-    accounted for — see `ip_completeness_card_bound` below for the
+    accounted for — see `ip_completeness` below for the
     cardinality form. -/
-theorem ip_completeness
+theorem ip_accept_off_eventDeg
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (chal : MAChallenge E.q)
     (hNotDeg : ¬ eventDeg E msg.toD stmt.target stmt.bases chal.A₀ chal.A₁)
@@ -443,10 +443,10 @@ theorem ip_completeness
     cardinality bound `logDerivCheckFn_undefined_set_bound_tight`
     (DKL+Bezout on `E×E`, paper-exact).
 
-    This is the cardinality analogue of `ip_completeness` and mirrors
+    This is the cardinality analogue of `ip_accept_off_eventDeg` and mirrors
     the `ma_extractable` soundness bound shape (main term + boundary
     term). -/
-theorem ip_completeness_card_bound
+theorem ip_completeness
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
@@ -485,10 +485,10 @@ theorem ip_completeness_card_bound
     · right
       simp only [hUdef, Finset.mem_filter]
       exact ⟨hp_pts, hDeg⟩
-    · -- ¬eventDeg: ip_completeness gives ∃ msg3, contradicting hp_no_msg3.
+    · -- ¬eventDeg: ip_accept_off_eventDeg gives ∃ msg3, contradicting hp_no_msg3.
       exfalso
       apply hp_no_msg3
-      exact ip_completeness E stmt msg hkm ⟨p.1, p.2⟩ hDeg hDegK
+      exact ip_accept_off_eventDeg E stmt msg hkm ⟨p.1, p.2⟩ hDeg hDegK
   -- |eventDegSet| matches |¬logDerivCheckFnDefined-set| (definitional).
   have hEventDegEq : eventDegSet =
       (E.points ×ˢ E.points).filter
@@ -528,7 +528,7 @@ theorem ip_completeness_clean
                   ipVerifierAccepts E stmt msg ⟨p.1, p.2⟩
                        (computeA₂ ⟨p.1, p.2⟩) msg3)).card
       ≤ 30 * (stmt.degBound + stmt.k + 5) * E.q := by
-  have hIP := ip_completeness_card_bound E stmt wit hk hValid msg hkm hDeg hDegK
+  have hIP := ip_completeness E stmt wit hk hValid msg hkm hDeg hDegK
                 hAdm hHonestDivisor hD
   have hNZ : numZeros E msg.toD ≤ 2 * stmt.degBound := by
     have h1 := numZeros_le_two_degE E msg.toD hD
