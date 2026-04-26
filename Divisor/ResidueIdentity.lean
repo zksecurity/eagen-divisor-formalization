@@ -492,12 +492,10 @@ theorem polyG_eq_zero_iff_paperResidue
     Σᵢ logDerivTerm(Aᵢ, λ) = - Σ_k β_k / L_Q(Q_k)                  (Lemma 6)
     ```
 
-    and the axiom's global hypothesis `logDerivCheckFn = 0`, Session 40's
-    sign analysis identified a sign mismatch between `logDerivCheckFn`'s
+    and the axiom's global hypothesis `logDerivCheckFn = 0`,     sign analysis identified a sign mismatch between `logDerivCheckFn`'s
     RHS and `polyG`'s additive convention.
 
-    **Session 41 resolution**: the axiom
-    `polyG_zero_of_logDerivCheck_identically_zero` (in
+    **    `polyG_zero_of_logDerivCheck_identically_zero` (in
     `Divisor/ExtractorBridge.lean`) has been reformulated to use
     `Fin.cons (-1) (fun j => -m j)` instead of `Fin.cons (-1) m`
     for the polyG `m'` argument.
@@ -580,7 +578,7 @@ align with `logDerivCheckFn`'s RHS convention as derived above.) The classical p
 
 5. Matching against `polyG`'s second sum: clearing denominators on the
    `-1/L(-P) - Σ m_j/L(B_j) = Σ m'_j / L(R_j)` pocket (R = cons (-P) B,
-   m' = cons (-1) (fun j => -m j) post Session 41 sign fix), which is
+   m' = cons (-1) (fun j => -m j) fix), which is
    the `sum_div_iff_sum_mul_prod_erase` identity from `LogDeriv.lean`.
 
 Steps 1-2 are tractable but lengthy (~400 LOC). Step 3 is deep

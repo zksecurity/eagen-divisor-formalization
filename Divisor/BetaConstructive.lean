@@ -570,7 +570,7 @@ theorem sum_rootMultiplicity_eq_natDegree_of_splits
 `normPoly_natDegree_eq_degE_of_splits`, and `sum_betaConstructive_fst_eq_of_splits`
 lemmas were removed along with `betaConstructive_sum_eq_degE`. Their
 proofs relied on the equality `∑ β = D.degE`, which is unavailable after
-the Aristotle counterexample removed the `divisor_degree_eq` axiom. The
+the counterexample removed the `divisor_degree_eq` axiom. The
 split-case equalities remain true classically but are not required by
 any downstream consumer of `Divisor.ma_extractable`. -/
 

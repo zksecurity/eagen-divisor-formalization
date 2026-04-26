@@ -144,7 +144,7 @@ theorem lemma6_chord_residue
   classical
   set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
   set μ := zLambda E lam A₀
-  -- Phase 2 PFE: eval μ (deriv normZ) = -normZ(μ) · Σ β · L⁻¹.
+  -- PFE: eval μ (deriv normZ) = -normZ(μ) · Σ β · L⁻¹.
   have hPFE := normZ_logDeriv_at_chord_intercept E D A₀ A₁ hQline
   -- hPFE: eval μ (deriv (normZ E lam D)) =
   --    -(normZ(μ) · Σ β · L⁻¹)

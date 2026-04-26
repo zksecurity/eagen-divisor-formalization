@@ -186,7 +186,7 @@ noncomputable def lineEvalNumAtFull (pt : ZMod E.q × ZMod E.q) :
       (pt.2 - A₀.2) * (A₁.1 - A₀.1) - (pt.1 - A₀.1) * (A₁.2 - A₀.2) := by
   simp [lineEvalNumAtFull, bivEval₂_sub, bivEval₂_mul]
 
-/-! ## Phase 2: Full atoms — 4-variate mirror of `clearedFiberPoly`. -/
+/-! ## Full atoms — 4-variate mirror of `clearedFiberPoly`. -/
 
 /-- Scaled `x₂`-polynomial, 4-variate form. Equals `lamDen² · x₂` when
     `A₀.1 ≠ A₁.1`. Mirror of `x₂Scaled`. -/
@@ -856,7 +856,7 @@ theorem bivEval₂_clearedFullPoly_eq_bivEval
       bivEval₂_rhsTermNegPFull_eq_bivEval,
       bivEval₂_rhsSumFull_eq_bivEval]
 
-/-- **Phase 3 identity.** Follows from compat with `clearedFiberPoly`
+/-- **identity.** Follows from compat with `clearedFiberPoly`
     combined with the existing `clearedFiberPoly_identity`. -/
 theorem clearedFullPoly_identity
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
@@ -869,7 +869,7 @@ theorem clearedFullPoly_identity
   rw [bivEval₂_clearedFullPoly_eq_bivEval,
       clearedFiberPoly_identity E D P B m A₀ A₁ hNV hDef]
 
-/-! ### Phase 4: bi-x-degree bound — atomic helpers -/
+/-! ### bi-x-degree bound — atomic helpers -/
 
 private lemma varA₀y_bi : bi_x_degree_le E (varA₀y E) 0 0 := by
   unfold varA₀y; exact bi_x_degree_le.Y₀
@@ -1198,7 +1198,7 @@ private lemma linesProductSkipBjFull_bi (P : ZMod E.q × ZMod E.q)
   rw [hcard_eq] at h2
   exact (h1.mul h2).mono (by omega) (by omega)
 
-/-! ### Phase 4: bi-x-degree bound — summand helpers -/
+/-! ### bi-x-degree bound — summand helpers -/
 
 private lemma lhsTerm0Full_bi (D : CoordRingElt E.q)
     (P : ZMod E.q × ZMod E.q)
@@ -1307,7 +1307,7 @@ private lemma rhsSumFull_bi (D : CoordRingElt E.q)
     ((dxdzDenA₀Full_bi E).mul (dxdzDenA₁Full_bi E) |>.mul (dxdzDenA₂Full_bi E))).mul
     (linesProductSkipBjFull_bi E P B j)).mono (by omega) (by omega)
 
-/-- **Phase 4 bi-x-degree bound.** `clearedFullPoly` has bi-x-degree
+/-- **bi-x-degree bound.** `clearedFullPoly` has bi-x-degree
     bounded by `9·(D.degE + k + 6)` in both `X 0` and `X 2`. Each of
     the 8 summands is proven separately via private helpers above. -/
 theorem clearedFullPoly_bi_x_degree_le

@@ -923,7 +923,7 @@ theorem extractorGroupSum_congr_of_extractorBases_eq
     additive sign of `polyG`'s second sum (`Σ m'·prods`) with
     `logDerivCheckFn`'s RHS sum coefficient (`-m_j / L(B_j)`) and
     the Lemma 6 residue identity `Σ β_k/L(Q_k) = 1/L(-P) + Σ m_j/L(B_j)`.
-    See Session 41's sign-resolution note and ResidueIdentity.lean. -/
+    See sign-resolution note and ResidueIdentity.lean. -/
 noncomputable def distinctMCons
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k) :
@@ -950,7 +950,7 @@ noncomputable def distinctMCons
     `-extractorGroupSum` per distinct base. Length `1 + baseImageCount`,
     matching `distinctR`'s shape so the pair feeds T5's `Fin M` form.
 
-    Note: the tail is NEGATED (Session 41 sign resolution) to align
+    Note: the tail is NEGATED to align
     `polyG`'s additive convention with `logDerivCheckFn`'s RHS sign on
     the `m_j` coefficients. -/
 noncomputable def distinctM'
@@ -1007,7 +1007,7 @@ theorem distinctM'_tail_group_invariant
   exact extractorGroupSum_congr_of_extractorBases_eq E stmt msg hkm
     (hspec.trans hj.symm)
 
-/-! ## Narrow polyG-bridge (scalar level) — Phase 4 replacement
+/-! ## Narrow polyG-bridge (scalar level) — replacement
 
     The remaining classical content of the old composite
     T4 bridge that is NOT covered by
@@ -1018,7 +1018,7 @@ theorem distinctM'_tail_group_invariant
     `polyG` (formed with `D`'s divisor data `(Q, β)`) vanishes on the
     non-vertical subspace of `E × E`.
 
-    **Phase 4 status**: the former transient axiom
+    status: the former transient axiom
     `polyG_zero_of_logDerivCheck_identically_zero` has been converted
     to a theorem (by the narrowing strategy of Fallback C in
     `docs/continuation-plan.md`). The theorem takes one additional
@@ -1032,7 +1032,7 @@ theorem distinctM'_tail_group_invariant
     `ma_extractable` now takes `hPolyGZero` as an extra hypothesis,
     which a future phase can discharge by finishing Lemma 6
     (requires mechanizing `chordLogDerivMatchesNormZ` from
-    `Divisor/Lemma6.lean`; Phase 3 reduced Lemma 6 to that scalar
+    `Divisor/Lemma6.lean`; reduced Lemma 6 to that scalar
     equality) and the density argument.
 
     Paper context: (i) Lemma 6 (norm decomposition
@@ -1047,7 +1047,7 @@ theorem distinctM'_tail_group_invariant
     vanishing, p. 19-26) + Ch III §3 (elliptic curves, principal
     divisors, Cor 3.5 on p. 63). -/
 
-/-- **Phase 4 replacement theorem** for the old narrow axiom
+/-- **replacement theorem** for the old narrow axiom
     `polyG_zero_of_logDerivCheck_identically_zero`. The former
     axiom's premises plus the new hypothesis `hPolyGZero` entail the
     conclusion.
@@ -1063,15 +1063,15 @@ theorem distinctM'_tail_group_invariant
       coefficients with the sign convention needed to align with
       Lean's `logDerivCheckFn` (whose `rhs` has coefficient `-m_j` on
       `L(B_j)⁻¹`) against `polyG`'s additive sign convention
-      `Σβ·prods + Σm'·prods`. See Session 41's sign-resolution note.
+      `Σβ·prods + Σm'·prods`. See sign-resolution note.
 
     Conclusion: `polyG` vanishes on all non-vertical pairs of `E × E`.
 
     `hPolyGZero` is the consolidated "Lemma 6 + density" hypothesis:
     it asserts `polyG = 0` at every non-vertical E-pair for the
-    specific `(Q, β_fun, R, m')` data. Phase 4 narrows the axiom by
+    specific `(Q, β_fun, R, m')` data. narrows the axiom by
     taking this as a hypothesis; a future phase can discharge it by
-    completing Lemma 6 (Phase 3 infrastructure in
+    completing Lemma 6 (infrastructure in
     `Divisor/Lemma6.lean`) and the density argument (polynomial form
     `polyGPoly` from `Divisor/PolyGBridge.lean` + `card_zeros_on_E_le`
     from `Divisor/CubicIntersection.lean`). -/
@@ -1130,7 +1130,7 @@ theorem polyG_zero_of_logDerivCheck_identically_zero
       `polyG ... (Fin.cons (P.1,-P.2) baseAt)
                (Fin.cons (-1) (fun j => -distinctM'_tail j)) = 0`
       at index `Fin (baseImageCount + 1)`. The latter argument equals
-      `distinctMCons` definitionally (post Session 41 sign fix).
+      `distinctMCons` definitionally (fix).
       Reindexing by `finCongr (Nat.add_comm 1 _)` produces the
       `distinctR` / `distinctM'` form at index
       `Fin (1 + baseImageCount)`.
@@ -1338,7 +1338,7 @@ theorem logDerivCheckFn_eq_grouped
     in `Fin.cons`/`Fin (baseImageCount + 1)` form, matching `distinctRCons`
     and `distinctMCons`.
 
-    Phase 4 update: the old narrow axiom has become a theorem that
+    the old narrow axiom has become a theorem that
     takes a `hPolyGZero` hypothesis. That hypothesis is threaded here
     as `hPolyGZeroCons` (at the `distinctRCons` / `distinctMCons`
     instantiation). -/
@@ -1993,7 +1993,7 @@ theorem extractorCoeffFromSigma_satisfies_D3
         extractorGroupSum_congr_of_extractorBases_eq E stmt msg hkm hBases_eq
       rw [hGroupSum_eq] at hBetaM
       -- hBetaM : (multAt k : ZMod q) + (-extractorGroupSum i) = 0
-      -- (post Session 41 sign: distinctM'_baseImagePos is NEGATED).
+      -- (: distinctM'_baseImagePos is NEGATED).
       -- Goal: (multAt k : ZMod q) = extractorGroupSum i.
       linear_combination hBetaM
     · rw [extractorCoeffFromSigma_canonical_nohit
@@ -2023,7 +2023,7 @@ theorem extractorCoeffFromSigma_satisfies_D3
             = extractorGroupSum E stmt msg hkm i :=
         extractorGroupSum_congr_of_extractorBases_eq E stmt msg hkm hBases_eq
       rw [hGroupSum_eq] at hM
-      -- hM : -extractorGroupSum i = 0 (post Session 41 sign).
+      -- hM : -extractorGroupSum i = 0 ().
       -- Goal: 0 = extractorGroupSum i.
       have hZero : extractorGroupSum E stmt msg hkm i = 0 := by
         linear_combination -hM
@@ -2682,7 +2682,7 @@ theorem polyG_zero_trace_formula
     rw [hS1, hS2, add_zero]
   push_neg at hDnz
   -- From here, D is nonzero.
-  -- Phase A: polyG = 0 at fully defined pairs
+  -- polyG = 0 at fully defined pairs
   have hPhaseA : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E D stmt.target (baseAt E stmt msg hkm) A₀ A₁ →
@@ -2750,13 +2750,13 @@ theorem polyG_zero_trace_formula
       unfold distinctR distinctM'
       rw [polyG_reindex]
       exact hPolyGCons
-  -- Phase 1: For A₀ NOT a zero of D, polyG(A₀, ·) = 0 on all of E.
+  -- For A₀ NOT a zero of D, polyG(A₀, ·) = 0 on all of E.
   -- Requires counting bad A₁'s from logDerivCheckFnDenom factors.
   have hPhase1 : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E D →
       ∀ A₁ ∈ E.points, A₀.1 ≠ A₁.1 →
       polyG E Q_fn β_fn R_fn m_fn A₀ A₁ = 0 := by
     -- Two-step approach: Phase 1a for "non-special" A₀, Phase 1b via swap.
-    -- Phase 1a: A₀ not in zerosFinset and not in distinctR image
+    -- A₀ not in zerosFinset and not in distinctR image
     have hPhase1a : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E D →
         (∀ j, R_fn j ≠ A₀) →
         ∀ A₁ ∈ E.points, A₀.1 ≠ A₁.1 →
@@ -3134,7 +3134,7 @@ theorem polyG_zero_trace_formula
       intro A₁ hA₁ _
       rw [← bivEval_polyGPoly]
       exact hAllOnE A₁ hA₁
-    -- Phase 1b: A₀ in distinctR image (special), use swap from Phase 1a + density
+    -- A₀ in distinctR image (special), use swap from Phase 1a + density
     intro A₀ hA₀ hA₀nz
     by_cases hA₀r : ∀ j, R_fn j ≠ A₀
     · -- Non-special: use Phase 1a directly
@@ -3142,7 +3142,7 @@ theorem polyG_zero_trace_formula
     · -- Special A₀: some R_fn j = A₀
       push_neg at hA₀r
       -- For A₁ not in zerosFinset, not in R-image, different x:
-      -- Phase 1a (applied to A₁ as "A₀") gives polyG(A₁, A₀) = 0
+      -- (applied to A₁ as "A₀") gives polyG(A₁, A₀) = 0
       -- Swap gives polyG(A₀, A₁) = 0
       -- Then density extends to all A₁.
       have hSwapZeros : ∀ A₁ ∈ E.points, A₁ ∉ zerosFinset E D →
@@ -3243,7 +3243,7 @@ theorem polyG_zero_trace_formula
       intro A₁ hA₁ _
       rw [← bivEval_polyGPoly]
       exact hAllOnE A₁ hA₁
-  -- Phase 2: For A₀ IN zerosFinset E D, polyG(A₀, ·) = 0 on all of E.
+  -- For A₀ IN zerosFinset E D, polyG(A₀, ·) = 0 on all of E.
   -- Uses polyG_swap_zero + Phase 1 to get enough known zeros,
   -- then density (bivEval_zero_on_E_of_many_zeros) to extend.
   have hPhase2 : ∀ A₀ ∈ E.points, A₀ ∈ zerosFinset E D →

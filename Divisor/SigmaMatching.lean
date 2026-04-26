@@ -24,7 +24,7 @@ local notation:max "Cm" c => (MvPolynomial.C c : FourVarPoly _)
 
 variable (E : ECSetup)
 
-/-! ## Phase 6b: T5 replacement scaffolding
+/-! ## T5 replacement scaffolding
 
     To eliminate the quadratic `6·q·((d+k+1)+(d+k+1)·(d+k))` summand in
     `ma_extractable`'s bound, we need to close the `hAllZero` branch

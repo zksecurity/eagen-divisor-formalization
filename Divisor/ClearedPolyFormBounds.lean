@@ -14,7 +14,7 @@
     * Total bound `logDerivCheckFn_undefined_set_bound` (and tight
       version `logDerivCheckFn_undefined_set_bound_tight`).
 
-  Split from `ClearedPolyForm.lean` (Phase 2 file refactor).
+  Split from `ClearedPolyForm.lean` .
 -/
 import Divisor.ClearedPolyForm
 
@@ -1117,7 +1117,7 @@ theorem lineBj_zero_pairs_card_le
         rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul]
     _ = 9 * k * E.points.card := by ring
 
-/-! ## Phase 2: `logDerivCheckFn_zero_set_bound` as a theorem.
+/-! ## `logDerivCheckFn_zero_set_bound` as a theorem.
 
     Issue 2 fix: the count is split into two bounds, corresponding to
     the "defined" subset (where all `logDerivCheckFn` denominators are
@@ -1143,7 +1143,7 @@ noncomputable def logDerivCheckFnDefined
     (A₀ A₁ : ZMod E.q × ZMod E.q) : Prop :=
   logDerivCheckFnDenom E D P B A₀ A₁ ≠ 0
 
-/-! ## Phase B4: outer natDegree bounds for `clearedFiberPoly`
+/-! ## outer natDegree bounds for `clearedFiberPoly`
 
     The outer natDegree of `clearedFiberPoly E D P k B m A₀` (as a
     polynomial in the outer variable `A₁.2`) is bounded by `D.degE + k + 8`.
@@ -1771,7 +1771,7 @@ theorem clearedFiberPoly_natDegree_le
   · exact rhsTermNegPScaled_natDegree_le E D k B A₀
   · exact rhsSumScaled_natDegree_le E D P k B m A₀
 
-/-! ## Phase B5: non-vanishing of `clearedFiberPoly %ₘ curveEqPoly`
+/-! ## non-vanishing of `clearedFiberPoly %ₘ curveEqPoly`
 
     If there is at least one "good" `A₁` — non-vertical, with
     `logDerivCheckFn` defined and nonzero — then

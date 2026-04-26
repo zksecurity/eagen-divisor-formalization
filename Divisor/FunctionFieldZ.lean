@@ -1,7 +1,7 @@
 /-
   Divisor/FunctionFieldZ.lean
 
-  Queue-3 step (Phase 1a of the continuation plan). The chord-coordinate
+  Queue-3 step . The chord-coordinate
   norm polynomial `normZ E λ D` for `D = a(x) − y·b(x) ∈ F_q[E]` with
   respect to the chord coordinate `z = y − λ·x`.
 

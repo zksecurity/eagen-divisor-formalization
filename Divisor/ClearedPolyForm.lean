@@ -465,7 +465,7 @@ noncomputable def DDerivAtA₂Scaled (D : CoordRingElt E.q)
     (A₀ : ZMod E.q × ZMod E.q) : (ZMod E.q)[X][X] :=
   DDerivAPartAtA₂Scaled (E := E) D A₀ - DDerivBPartAtA₂Scaled (E := E) D A₀
 
-/-! ## Phase B1: Finset-sum bivEval identities
+/-! ## Finset-sum bivEval identities
 
     The `DAtA₂Scaled`, `DDerivAtA₂Scaled` polynomials are expressed as
     Finset sums indexed by monomial degrees. Their bivEval values, on
@@ -539,7 +539,7 @@ noncomputable def DAllScaled (D : CoordRingElt E.q)
   DAtA₀Poly (E := E) D A₀ * DAtA₁Poly (E := E) D
     * DAtA₂Scaled (E := E) D A₀
 
-/-! ## Paper-faithful numerator polynomials (Session 39)
+/-! ## Paper-faithful numerator polynomials
 
     The paper-faithful `logDerivTerm(A, λ)` has numerator
     `num_x(A) · (2·A.2) + num_y(A) · (3·A.1² + A_curve)` where
@@ -637,7 +637,7 @@ noncomputable def lhsTerm2Scaled (D : CoordRingElt E.q)
     * dxdzDenA₁Scaled (E := E) A₀
     * linesProductScaled (E := E) P k B A₀
 
-/-! ### Correction terms (Session 39 cascade)
+/-! ### Correction terms
 
     The paper-faithful `logDerivTerm` adds a `num_y · dydz_num =
     -b(x)·(3x² + A)` numerator to the old `num_x · 2y`. In polynomial
@@ -956,7 +956,7 @@ theorem lineThrough_symm (x₀ y₀ x₁ y₁ : ZMod E.q) (h : x₀ ≠ x₁) :
       ring
     linear_combination hcancel
 
-/-! ## Phase B1: Finset-sum bivEval identities for D@A₂ parts
+/-! ## Finset-sum bivEval identities for D@A₂ parts
 
     The `DAtA₂Scaled`, `DDerivAtA₂Scaled` polynomials are Finset sums
     indexed by monomial degrees. Their bivEval values, on the
@@ -1223,7 +1223,7 @@ theorem bivEval_dxdzDenA₂Scaled_eq (A₀ A₁ : ZMod E.q × ZMod E.q)
             ((A₁.2 - A₀.2) ^ 2 - (A₁.1 - A₀.1) ^ 2 * (2 * A₀.1 + A₁.1))
            + A₀.2 * (A₁.1 - A₀.1) ^ 3) * hlam
 
-/-! ## BivEval of paper-faithful correction polynomials (Session 39) -/
+/-! ## BivEval of paper-faithful correction polynomials -/
 
 @[simp] theorem bivEval_DBdydzAtA₀Poly (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q) :
@@ -1330,7 +1330,7 @@ theorem bivEval_correctionA₂ScaledCore_eq (D : CoordRingElt E.q)
         ((- D.b.eval (chordX₂ A₀ A₁)) * (3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA)) := by
         rw [hpow]
 
-/-! ## Phase B2 helpers: line-product bivEval extractions
+/-! ## helpers: line-product bivEval extractions
 
     On the non-vertical cone, each `lineEvalNumAt A₀ pt` evaluates to
     `(A₁.1 - A₀.1) · L.eval pt.1 pt.2` where `L := lineThrough A₀.1 A₀.2 A₁.1 A₁.2`.
@@ -1437,7 +1437,7 @@ theorem bivEval_linesProductSkipBjScaled_eq
         * ∏ j ∈ (Finset.univ (α := Fin k)).erase j₀,
             (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 := by rw [hpow]
 
-/-! ## Phase B2: combined factor-group identities
+/-! ## combined factor-group identities
 
     `DAllScaled` combines the three `D(A_i)` factors into a single
     polynomial scaled to `lamDen^D.degE`. `dxdzAllScaled` combines the
@@ -1476,7 +1476,7 @@ theorem bivEval_dxdzAllScaled_eq
   rw [hpow]
   ring
 
-/-! ### Per-term bivEval identities (Phase B2 main content)
+/-! ### Per-term bivEval identities 
 
     Each term of `clearedFiberPoly` evaluates on the non-vertical cone to
     `(A₁.1 - A₀.1)^N · [concrete factor product]` where `N = D.degE + k + 6`.
@@ -1754,7 +1754,7 @@ theorem bivEval_rhsSumScaled_eq
         pow_add, pow_add]
   rw [hpow]; ring
 
-/-! ## Phase B3: main `clearedFiberPoly_identity`
+/-! ## main `clearedFiberPoly_identity`
 
     Assembly of the five B2 per-term identities into the master identity
     `bivEval (clearedFiberPoly …) A₁ = (A₁.1 - A₀.1)^N · logDerivCheckFnCleared`

@@ -240,7 +240,7 @@ The non-vanishing criterion `log_deriv_nonvanishing_criterion` — if
 `polyG ≡ 0` on `F_q × F_q` with sufficient `q`, then `β_k + m_{σ(k)} = 0`
 and unmatched `m_j = 0` — is mechanized as a theorem in
 `Divisor/PolyFibK.lean` via the partial-fraction + slope-distribution
-infrastructure there (Phase A of the axiom elimination plan).
+infrastructure there .
 -/
 
 end Divisor

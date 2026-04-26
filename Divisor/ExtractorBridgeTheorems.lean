@@ -13,7 +13,7 @@
   trace formula, sigma matching) and combine with `Soundness.lean`'s
   `ma_completeness` / extractor definitions.
 
-  Split from `ExtractorBridge.lean` (Phase 2 file refactor) to keep
+  Split from `ExtractorBridge.lean`  to keep
   the user-facing theorem file under the project's size guideline.
 -/
 import Divisor.ExtractorBridge

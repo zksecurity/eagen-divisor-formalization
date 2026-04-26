@@ -362,7 +362,7 @@ theorem logDerivTermSum_denom_cleared_sumform
 
 /-! ## Historical note on paper-faithful integrand
 
-    `logDerivTerm` is now the paper-faithful form (Session 39 cascade).
+    `logDerivTerm` is now the paper-faithful form.
     The previous `logDerivTermPaper` / `logDerivTermPaper_sub_logDerivTerm`
     reference lemmas are obsolete and have been removed. The correction
     term `−(a + b·y) · b · (3x² + A)` now appears directly in the

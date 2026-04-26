@@ -95,7 +95,7 @@ noncomputable def negPIndexSet (stmt : DlogStatement E.q)
       recovered as `groupSum.val`, giving a value in `[0, q) ∩
       [0, degE(D)]`.
 
-      (Historical note: Session 41's polyG-bridge sign resolution
+      (Historical note: polyG-bridge sign resolution
       aligned `polyG`'s additive convention with `logDerivCheckFn`'s
       RHS sign by negating `distinctMCons`'s tail — propagating
       cleanly here so `groupSum.val` (no extra negation) is correct.) -/

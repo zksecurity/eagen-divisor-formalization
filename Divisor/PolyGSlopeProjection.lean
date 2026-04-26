@@ -405,7 +405,7 @@ theorem validPairs_le_six_sum_goodIntercepts :
   exact Finset.sum_le_sum
     (fun lam _ => pairsWithSlope_card_le_six_mul_goodIntercepts E lam)
 
-/-- **Phase A3 existence lemma.** Given a "reference point set" `S`
+/-- **existence lemma.** Given a "reference point set" `S`
     (in the T5 application: `S = range Q ∪ range R`) and a required
     lower bound `N` on realized chord-intercepts (in T5: `N = d + M`),
     there exists a slope `λ ∈ F_q` such that:

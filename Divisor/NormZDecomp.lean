@@ -1,7 +1,7 @@
 /-
   Divisor/NormZDecomp.lean
 
-  Queue-3 step (Phase 1b of the continuation plan). Derivative and
+  Queue-3 step . Derivative and
   partial-fraction-expansion identities for `normZ E λ D`, the
   chord-coordinate norm polynomial defined in Phase 1a.
 
