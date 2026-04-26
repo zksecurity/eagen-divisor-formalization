@@ -788,3 +788,32 @@ term and the 4·D.degE+2·k+12 total-degree bound on clearedFullPoly:
 
 `#print axioms Divisor.ma_extractable` — verified clean.
 `lake build` — verified passing.
+
+### 2026-04-26 — Session 3 (paper-bound matching)
+
+**Bound tightened to paper-exact form.**
+
+Commits:
+* `b83d8ae` — Aristotle 34a8d25b: incremental tightening 84→78
+  (preserved asymmetric d/k in clearedFullPoly's degree bound).
+* `32c72f7` — Aristotle 4487aff8: routed log_deriv_sz_paper_core
+  through polyGFull (paper §5's G). Reached exact paper bound:
+
+  `≤ 18·(stmt.degBound + stmt.k)·E.q
+   + (6·stmt.degBound + 9·stmt.k + 71)·E.points.card`
+
+**Key insight (chord failure is empty):**
+Chord-failure pairs (where some Q ∈ zerosFinset E D lies on the
+chord through (A₀, A₁)) are EMPTY when denominators are defined.
+The chord meets E in ≤ 3 affine points (Bezout), which are exactly
+A₀, A₁, A₂ — all D-nonvanishing by `logDerivCheckFnDenom`. So no
+zero of D on E can lie on the chord. This eliminates the
+chord-failure term that the original plan budgeted for.
+
+**Final state:**
+- Bound matches paper exactly (linear in d+k, in both q and |E|).
+- 0 sorries in dependency chain of ma_extractable.
+- 7 user axioms + hasse_weil + 3 standard, unchanged from prior session.
+- New file `Divisor/TightBound.lean` (~6 helper lemmas + tight versions).
+- The paper's argument is verified: implementing it in Lean reaches
+  the same bound, confirming proof correctness.
