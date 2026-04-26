@@ -39,7 +39,7 @@ variable (E : ECSetup)
 
     * **Bound branch**: the set of accepting challenges in `validPairs`
       has cardinality at most
-      `18·(d + k)·|F_q| + (6·d + 9·k + 71)·|E|`,
+      `18·(d + k)·|F_q| + (3·d + 9·k + 71)·|E|`,
       linear in both `|F_q|` and `|E|`.
 
     The cardinality bound matches the paper's `\knowErr` (after Hasse)
