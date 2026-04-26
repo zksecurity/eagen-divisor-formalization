@@ -302,6 +302,31 @@ theorem ma_completeness
   exact le_trans (Finset.card_le_card hSub)
     (support_disjointness E msg.toD (numZeros E msg.toD) (le_refl _))
 
+/-! ## Paper-Lean naming bridges
+
+    Aliases providing paper-aligned names for Lean predicates and
+    relations. The Lean side prefers descriptive names; these aliases
+    make `\ref{thm:ma}` / `\ref{thm:ip}` proofs read more directly
+    against the Lean theorem statements.
+
+    Paper ↔ Lean correspondence (current as of `\ref{thm:ma}`):
+
+    * `event_deg`           ↔ `eventDeg`
+    * `event_NotEq`         ↔ `eventNotEq` (= `badChallengesNotEq`)
+    * `\relation^{dlog}`    ↔ `relDlog` (= `dlogHolds`)
+    * `\relation^{dlog-honest}` ↔ `relDlogHonest`
+                              (= `MAProverMsg.isHonestFor` plus
+                                  `dlogHolds` for the underlying witness)
+    * `\protMA`             ↔ structure (`MAProverMsg`, `MAChallenge`,
+                                          `maVerifierAccepts`,
+                                          `MAProverMsg.isHonestFor`)
+    * `\protIP`             ↔ structure (`IPProverMsg3`,
+                                          `ipVerifierAccepts`,
+                                          `computeA₂`,
+                                          `ip_unique_third_round`)
+    * `f` (discrepancy)     ↔ `logDerivCheckFn`
+    * `\extractor`          ↔ `maExtractor` -/
+
 /-- The `event_deg` bad event from paper (`ip.tex \ref{thm:ma}`): some
     denominator in the verifier's field expression vanishes
     (`D(A_i) = 0` for `i = 0, 1, 2`, `L(-P) = 0`, `L(B_j) = 0`, or one
@@ -313,6 +338,30 @@ def eventDeg
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q) : Prop :=
   ¬ logDerivCheckFnDefined E D P B A₀ A₁
+
+/-- The `event_NotEq` bad event from paper (`ip.tex \ref{thm:ma}`):
+    `(A_0, A_1) ∈ validPairs` for which the verifier's log-derivative
+    check `f` vanishes. Used as the `\knowErr` main term in the
+    soundness analysis. Alias for `badChallengesNotEq`. -/
+noncomputable def eventNotEq
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q) :
+    Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+  badChallengesNotEq E D P B m
+
+/-- The `\relation^{dlog}` knowledge-soundness relation from paper
+    (`ip.tex \ref{thm:ma}`): `P = Σ [n_i] · B_i` in `E(F_q)`. Alias
+    for `dlogHolds`. -/
+def relDlog (stmt : DlogStatement E.q) (wit : DlogWitness E.q) : Prop :=
+  dlogHolds E stmt wit
+
+/-- The `\relation^{dlog-honest}` completeness relation from paper
+    (`ip.tex \ref{thm:ma}`): `(stmt, wit) ∈ relDlog` together with an
+    honest first-round message `msg` (whose divisor is principal and
+    encodes the claimed scalars). -/
+def relDlogHonest (stmt : DlogStatement E.q) (wit : DlogWitness E.q) : Prop :=
+  ∃ (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k),
+    relDlog E stmt wit ∧ msg.isHonestFor E stmt wit hk hkm
 
 /-- **IP Completeness (off `eventDeg`).** On every challenge where
     `eventDeg` does **not** hold (paper: `¬event_deg`), the honest IP
