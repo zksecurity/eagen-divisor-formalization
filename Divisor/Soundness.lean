@@ -302,6 +302,35 @@ theorem ma_completeness
   exact le_trans (Finset.card_le_card hSub)
     (support_disjointness E msg.toD (numZeros E msg.toD) (le_refl _))
 
+/-- **MA completeness, Hasse-clean form.** Applying Hasse (`|E| ≤ 2q`
+    for `q ≥ 5`) and `numZeros ≤ 2·degE ≤ 2·degBound`, the rejection-
+    set cardinality is bounded by `12 · (d + 1) · q`. Matches paper's
+    `\compErr ≤ 6(\degBound + 1)/q` after dividing by `|E|² ≥ q²/2`
+    (the 2× slack vs. paper accounts for Lean's
+    `numZeros ≤ 2·degE` versus paper's tighter `numZeros ≤ degE`). -/
+theorem ma_completeness_clean
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
+    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
+    (hQ : 5 ≤ E.q) :
+    ((E.points ×ˢ E.points).filter
+        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ 12 * (stmt.degBound + 1) * E.q := by
+  have hMA := ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm hHonestDivisor
+  have hNZ : numZeros E msg.toD ≤ 2 * stmt.degBound := by
+    have h1 := numZeros_le_two_degE E msg.toD hD
+    omega
+  have hHasse : E.numAffine ≤ 2 * E.q := points_card_le_two_q E hQ
+  calc _ ≤ (3 * numZeros E msg.toD + 1) * E.numAffine := hMA
+    _ ≤ (3 * (2 * stmt.degBound) + 1) * (2 * E.q) := by
+        apply Nat.mul_le_mul (by omega) hHasse
+    _ ≤ 12 * (stmt.degBound + 1) * E.q := by ring_nf; omega
+
 /-! ## Paper-Lean naming correspondence
 
     Paper ↔ Lean (post-rename, primary names):
@@ -479,5 +508,41 @@ theorem ip_completeness_card_bound
         · rw [hEventDegEq]
           exact logDerivCheckFn_undefined_set_bound_tight E msg.toD stmt.target
                   stmt.k stmt.bases hD
+
+/-- **IP completeness, Hasse-clean form.** Applying Hasse (`|E| ≤ 2q`
+    for `q ≥ 5`) and `numZeros ≤ 2·degBound`, the rejection-set
+    cardinality is bounded by `30 · (d + k + 5) · q`. Single-`q` form
+    matching the soundness pattern. -/
+theorem ip_completeness_clean
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
+    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
+    (hQ : 5 ≤ E.q) :
+    ((E.points ×ˢ E.points).filter
+        (fun p => ¬ ∃ msg3 : IPProverMsg3 E.q,
+                  ipVerifierAccepts E stmt msg ⟨p.1, p.2⟩
+                       (computeA₂ ⟨p.1, p.2⟩) msg3)).card
+      ≤ 30 * (stmt.degBound + stmt.k + 5) * E.q := by
+  have hIP := ip_completeness_card_bound E stmt wit hk hValid msg hkm hDeg hDegK
+                hAdm hHonestDivisor hD
+  have hNZ : numZeros E msg.toD ≤ 2 * stmt.degBound := by
+    have h1 := numZeros_le_two_degE E msg.toD hD
+    omega
+  have hHasse : E.numAffine ≤ 2 * E.q := points_card_le_two_q E hQ
+  have hHassePts : E.points.card ≤ 2 * E.q := hHasse
+  have hDegLe : msg.toD.degE ≤ stmt.degBound := hDegK
+  calc _ ≤ (3 * numZeros E msg.toD + 1) * E.numAffine
+            + (6 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := hIP
+    _ ≤ (3 * (2 * stmt.degBound) + 1) * (2 * E.q)
+          + (6 * stmt.degBound + 9 * stmt.k + 71) * (2 * E.q) := by
+        apply Nat.add_le_add
+        · exact Nat.mul_le_mul (by omega) hHasse
+        · exact Nat.mul_le_mul (by omega) hHassePts
+    _ ≤ 30 * (stmt.degBound + stmt.k + 5) * E.q := by ring_nf; omega
 
 end Divisor

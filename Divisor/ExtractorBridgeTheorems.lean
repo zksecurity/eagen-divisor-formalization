@@ -466,3 +466,50 @@ theorem ip_knowledge_sound
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
 
+/-- **MA extractability, Hasse-clean form.** Same disjunction as
+    `ma_extractable`, but with the cardinality bound consolidated to
+    a single `q`-term via Hasse (`|E| ≤ 2q` for `q ≥ 5`):
+
+      `≤ 36 · (d + k + 4) · q`.
+
+    Matches paper's `\knowErr ≤ 96(\degBound + k)/q` shape (with
+    constants matching after dividing by `|E|² ≥ q²/2` for `q ≥ 16`). -/
+theorem ma_extractable_clean
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
+    (hkm : stmt.k = msg.k)
+    (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
+    (hSplit : normPoly_splits_over_Fq E msg.toD)
+    (hAccount : (∑ P ∈ E.points, betaConstructive E msg.toD P) =
+                  (normPoly E msg.toD).natDegree)
+    (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
+        (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
+            distinctR E stmt msg hkm j ≠ A₀) →
+        denomScaledPoly (E := E) msg.toD stmt.target
+          (baseImageCount E stmt msg hkm)
+          (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E ≠ 0)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (hQ : 5 ≤ E.q) :
+    (∃ wit : DlogWitness E.q,
+        maExtractor E stmt msg stmt.degBound hd hkm = some wit
+        ∧ relDlog E stmt wit) ∨
+    ((validPairs E).filter
+        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q := by
+  rcases ma_extractable E stmt hd hd2 msg hDeg hkm hSmooth hSplit hAccount hDenomNZ
+          hTargetOnE hBasesOnE hLargeQ with hWit | hBound
+  · left; exact hWit
+  · right
+    have hHasse : E.points.card ≤ 2 * E.q := points_card_le_two_q E hQ
+    calc _ ≤ 18 * (stmt.degBound + stmt.k) * E.q
+              + (6 * stmt.degBound + 9 * stmt.k + 71) * E.points.card := hBound
+      _ ≤ 18 * (stmt.degBound + stmt.k) * E.q
+            + (6 * stmt.degBound + 9 * stmt.k + 71) * (2 * E.q) := by
+          apply Nat.add_le_add_left
+          exact Nat.mul_le_mul_left _ hHasse
+      _ ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q := by ring_nf; omega
+
