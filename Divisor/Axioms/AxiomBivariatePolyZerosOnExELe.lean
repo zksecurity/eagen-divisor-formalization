@@ -1,9 +1,17 @@
 /-
   Divisor/Axioms/AxiomBivariatePolyZerosOnExELe.lean
 
-  DKL'14 Claim 7.2 + Hartshorne (Bezout) corollary on `E × E`.
+  Bound on the number of `F_q`-zeros of a 4-variate polynomial on
+  `E × E`, used by `Divisor/ClearedFullPoly.lean` and downstream.
 
-  References:
+  Originally axiomatised under the DKL'14 Claim 7.2 + Hartshorne
+  (Bezout) provenance; now proven as a *theorem* from
+  `Divisor.hasse_weil` + Mathlib via the elementary fiber-counting
+  route in `Divisor/Route1AttemptLW.lean` and
+  `Divisor/CurveEvalZerosHelper.lean` (reduce mod `Y² = X³+AX+B` →
+  `α(X) + β(X)·Y` → univariate Schwartz–Zippel).
+
+  Provenance retained for documentation:
   * Dvir, Kollar, Lovett, "Variety Evasive Sets",
     Comput. Complex. 23 (2014) — Claim 7.2, p. 10.
     PDF: `axioms/papers/DvirKollarLovett14.pdf`.
@@ -14,10 +22,14 @@
     conjectures for algebraic varieties over finite fields",
     Mathematika 56 (2010) — Lemma A.3, p. 23 (alternative).
     PDF: `axioms/papers/EllenbergOberlinTao10.pdf`.
+  * Lang & Weil, "Number of Points of Varieties in Finite Fields",
+    Am. J. Math. 76 (1954), Theorem 1, p. 819.
+    PDF: `axioms/papers/lang-weil-1954.pdf`.
 
   Full provenance at `axioms/bivariate_poly_zeros_on_ExE_le.md`.
 -/
 import Divisor.FourVarPoly
+import Divisor.Route1AttemptLW
 
 namespace Divisor
 
@@ -71,14 +83,21 @@ variable (E : ECSetup)
     which was Sage-falsified by counterexamples such as
     `f = Y₀ + Y₁` over `y² = x³ + 1` over `F_5` (axiom predicted 0,
     actual count is 5). The cause is that the X-bi-degree alone
-    ignores the Y-degree contribution; total degree captures it. -/
-axiom bivariate_poly_zeros_on_ExE_le
+    ignores the Y-degree contribution; total degree captures it.
+
+    **Status: proven.** This declaration was previously an `axiom`;
+    it is now a `theorem` discharged by
+    `Divisor.Route1LW.bivariate_poly_zeros_on_ExE_le_thm_lw`. The
+    only project-level axiom in its dependency chain is
+    `Divisor.hasse_weil`. -/
+theorem bivariate_poly_zeros_on_ExE_le
     (f : FourVarPoly E.q) (D : ℕ)
     (hDeg : total_degree_le E f D)
     (hNonzero : ∃ A₀ A₁ : ZMod E.q × ZMod E.q,
         A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ bivEval₂ f A₀ A₁ ≠ 0) :
     ((E.points ×ˢ E.points).filter
       (fun p => bivEval₂ f p.1 p.2 = 0)).card
-      ≤ 9 * D * E.q
+      ≤ 9 * D * E.q :=
+  Divisor.Route1LW.bivariate_poly_zeros_on_ExE_le_thm_lw E f D hDeg hNonzero
 
 end Divisor
