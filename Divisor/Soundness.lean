@@ -332,11 +332,10 @@ theorem ma_completeness
     (support_disjointness E msg.toD (numZeros E msg.toD) (le_refl _))
 
 /-- **MA completeness, Hasse-clean form.** Applying Hasse (`|E| ≤ 2q`
-    for `q ≥ 5`) and `numZeros ≤ 2·degE ≤ 2·degBound`, the rejection-
-    set cardinality is bounded by `12 · (d + 1) · q`. Matches paper's
-    `\compErr ≤ 6(\degBound + 1)/q` after dividing by `|E|² ≥ q²/2`
-    (the 2× slack vs. paper accounts for Lean's
-    `numZeros ≤ 2·degE` versus paper's tighter `numZeros ≤ degE`). -/
+    for `q ≥ 5`) and the paper-tight `numZeros ≤ degE ≤ degBound`,
+    the rejection-set cardinality is bounded by `6 · (d + 1) · q`.
+    Matches paper's `\compErr ≤ 6(\degBound + 1)/q` after dividing by
+    `|E|² ≥ q²/2`. -/
 theorem ma_completeness_clean
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)
@@ -349,16 +348,16 @@ theorem ma_completeness_clean
     (hQ : 5 ≤ E.q) :
     ((E.points ×ˢ E.points).filter
         (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ 12 * (stmt.degBound + 1) * E.q := by
+      ≤ 6 * (stmt.degBound + 1) * E.q := by
   have hMA := ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm hHonestDivisor
-  have hNZ : numZeros E msg.toD ≤ 2 * stmt.degBound := by
-    have h1 := numZeros_le_two_degE E msg.toD hD
+  have hNZ : numZeros E msg.toD ≤ stmt.degBound := by
+    have h1 := numZeros_le_degE E msg.toD hD
     omega
   have hHasse : E.numAffine ≤ 2 * E.q := points_card_le_two_q E hQ
   calc _ ≤ (3 * numZeros E msg.toD + 1) * E.numAffine := hMA
-    _ ≤ (3 * (2 * stmt.degBound) + 1) * (2 * E.q) := by
+    _ ≤ (3 * stmt.degBound + 1) * (2 * E.q) := by
         apply Nat.mul_le_mul (by omega) hHasse
-    _ ≤ 12 * (stmt.degBound + 1) * E.q := by ring_nf; omega
+    _ ≤ 6 * (stmt.degBound + 1) * E.q := by ring_nf; omega
 
 /-! ## Paper-Lean naming correspondence
 
@@ -463,7 +462,7 @@ theorem ip_accept_off_eventDeg
     which no third-round message makes the IP verifier accept is
     bounded by
 
-      `(3·N + 1)·|E_aff| + (6·d + 9·k + 71)·|E.points|`,
+      `(3·N + 1)·|E_aff| + (3·d + 9·k + 71)·|E.points|`,
 
     where `N = numZeros E msg.toD`, `d = msg.toD.degE`, and
     `k = stmt.k`. Single-set bound:
@@ -480,7 +479,7 @@ theorem ip_completeness
         (fun p => ¬ ∃ msg3 : IPProverMsg3 E.q,
                   ipVerifierAccepts E stmt msg ⟨p.1, p.2⟩
                        (computeA₂ ⟨p.1, p.2⟩) msg3)).card
-      ≤ (6 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := by
+      ≤ (3 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := by
   classical
   let _ := hkm
   -- IP rejection ⊆ eventDeg via `ip_accept_off_eventDeg` contrapositive.
@@ -501,7 +500,7 @@ theorem ip_completeness
     by_contra hNotDeg
     apply hp_no_msg3
     exact ip_accept_off_eventDeg E stmt msg hkm ⟨p.1, p.2⟩ hNotDeg hDegK
-  -- |eventDegSet| ≤ (6d + 9k + 71)·|E| by Bezout-on-(E×E).
+  -- |eventDegSet| ≤ (3d + 9k + 71)·|E| by Bezout-on-(E×E).
   have hEventDegEq : eventDegSet =
       (E.points ×ˢ E.points).filter
         (fun p => ¬ logDerivCheckFnDefined E msg.toD stmt.target stmt.bases
@@ -511,7 +510,7 @@ theorem ip_completeness
     simp only [hUdef, Finset.mem_filter, eventDeg]
   calc rejectIP.card
       ≤ eventDegSet.card := Finset.card_le_card hSub
-    _ ≤ (6 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := by
+    _ ≤ (3 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := by
         rw [hEventDegEq]
         exact logDerivCheckFn_undefined_set_bound_tight E msg.toD stmt.target
                 stmt.k stmt.bases hD
@@ -531,8 +530,8 @@ theorem ip_completeness_clean
       ≤ 18 * (stmt.degBound + stmt.k + 12) * E.q := by
   have hIP := ip_completeness E stmt msg hkm hDegK hD
   have hHasse : E.points.card ≤ 2 * E.q := points_card_le_two_q E hQ
-  calc _ ≤ (6 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := hIP
-    _ ≤ (6 * stmt.degBound + 9 * stmt.k + 71) * (2 * E.q) :=
+  calc _ ≤ (3 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := hIP
+    _ ≤ (3 * stmt.degBound + 9 * stmt.k + 71) * (2 * E.q) :=
         Nat.mul_le_mul (by omega) hHasse
     _ ≤ 18 * (stmt.degBound + stmt.k + 12) * E.q := by ring_nf; omega
 

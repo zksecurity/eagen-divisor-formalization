@@ -297,7 +297,7 @@ theorem polyGFull_total_degree_le_tight
     `|E|² − 2|E| > 18·(d + M)·E.q` holds (derived from `hLargeQ` via
     Hasse), then `polyGFull` has no nonzero witness on `E × E`.
 
-    Proof uses the `bivariate_poly_zeros_on_ExE_le` axiom (DKL+Bezout)
+    Proof uses the `bivariate_poly_zeros_on_ExE_le` theorem
     on `polyGFull` of total degree `≤ 2·(d+M)`: were it nonzero
     somewhere on `E × E`, its zero set would have cardinality
     `≤ 9·2·(d+M)·q = 18·(d+M)·q`, contradicting the non-vertical-pair

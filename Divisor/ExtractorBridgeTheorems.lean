@@ -82,7 +82,7 @@ theorem ma_extractable
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ 18 * (stmt.degBound + stmt.k) * E.q +
-        (6 * stmt.degBound + 9 * stmt.k + 71) * E.points.card := by
+        (3 * stmt.degBound + 9 * stmt.k + 71) * E.points.card := by
   classical
   set d := stmt.degBound with hd_def
   -- Top-level case split (paper proof, ip.tex `\ref{thm:ma}`):
@@ -114,9 +114,9 @@ theorem ma_extractable
       log_deriv_sz_paper_tight msg.toD stmt.target stmt.bases
         (fun i => msg.m (hkm ▸ i)) hDegLt hSplit hAccount hNV
     have hMono : 18 * (msg.toD.degE + stmt.k) * E.q +
-                   (6 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card
+                   (3 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card
                  ≤ 18 * (d + stmt.k) * E.q +
-                   (6 * d + 9 * stmt.k + 71) * E.points.card := by
+                   (3 * d + 9 * stmt.k + 71) * E.points.card := by
       apply Nat.add_le_add
       · apply Nat.mul_le_mul_right; apply Nat.mul_le_mul_left; omega
       · apply Nat.mul_le_mul_right; omega
@@ -449,7 +449,7 @@ theorem ip_knowledge_sound
      ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
       ≤ 18 * (stmt.degBound + stmt.k) * E.q +
-        (6 * stmt.degBound + 9 * stmt.k + 71) * E.points.card)
+        (3 * stmt.degBound + 9 * stmt.k + 71) * E.points.card)
     ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
         (msg3 msg3' : IPProverMsg3 E.q),
         msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
@@ -507,9 +507,9 @@ theorem ma_extractable_clean
   · right
     have hHasse : E.points.card ≤ 2 * E.q := points_card_le_two_q E hQ
     calc _ ≤ 18 * (stmt.degBound + stmt.k) * E.q
-              + (6 * stmt.degBound + 9 * stmt.k + 71) * E.points.card := hBound
+              + (3 * stmt.degBound + 9 * stmt.k + 71) * E.points.card := hBound
       _ ≤ 18 * (stmt.degBound + stmt.k) * E.q
-            + (6 * stmt.degBound + 9 * stmt.k + 71) * (2 * E.q) := by
+            + (3 * stmt.degBound + 9 * stmt.k + 71) * (2 * E.q) := by
           apply Nat.add_le_add_left
           exact Nat.mul_le_mul_left _ hHasse
       _ ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q := by ring_nf; omega

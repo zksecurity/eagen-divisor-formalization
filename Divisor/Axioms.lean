@@ -12,4 +12,3 @@ import Divisor.Axioms.AxiomWeilReciprocityHonest
 import Divisor.Axioms.AxiomCoordRingEltDivisorGroupSumZero
 import Divisor.Axioms.AxiomChordFiberProductEqNormZUnderSplit
 import Divisor.Axioms.AxiomChordSumEqChordFiberProductLogDeriv
-import Divisor.Axioms.AxiomBivariatePolyZerosOnExELe

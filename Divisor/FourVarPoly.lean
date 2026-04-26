@@ -1,10 +1,10 @@
 /-
   Divisor/FourVarPoly.lean — 4-variate polynomial framework
 
-  Scaffolding for the Lang-Weil-on-E×E axiom
-  (`Divisor/Axioms/AxiomBivariatePolyZerosOnExELe.lean`). Models a
-  polynomial in `X₀, Y₀, X₁, Y₁` via `MvPolynomial (Fin 4) (ZMod q)`
-  with variable assignment `0 = X₀, 1 = Y₀, 2 = X₁, 3 = Y₁`.
+  Scaffolding for the bivariate-zeros-on-E×E theorem
+  (`Divisor/BivariateZerosOnExE.lean`). Models a polynomial in
+  `X₀, Y₀, X₁, Y₁` via `MvPolynomial (Fin 4) (ZMod q)` with variable
+  assignment `0 = X₀, 1 = Y₀, 2 = X₁, 3 = Y₁`.
 
   Defines the ring, `bivEval₂`, basic evaluation lemmas, X-bi-degree
   predicate, and convenience accessors. Extended by
@@ -260,11 +260,10 @@ theorem bi_y_linear.of_degreeOf {E : ECSetup} {f : FourVarPoly E.q}
 /-- **Total-degree bound.** `total_degree_le E f D` asserts that
     the total degree of the 4-variate polynomial `f` is at most `D`.
 
-    Used by the corrected `bivariate_poly_zeros_on_ExE_le` axiom
-    (DKL'14 Claim 7.2 + Hartshorne Bezout): a 4-variate polynomial
+    Used by `bivariate_poly_zeros_on_ExE_le`: a 4-variate polynomial
     of total degree `D` cuts a hypersurface of degree `D` in `A⁴`,
     intersecting `E × E` (degree 9 in `P⁸` via Segre) in a curve of
-    degree at most `9·D`, with `≤ 9·D·q` `F_q`-points by DKL Claim 7.2. -/
+    degree at most `9·D`, with `≤ 9·D·q` `F_q`-points. -/
 def total_degree_le (_E : ECSetup) (f : FourVarPoly _E.q) (D : ℕ) : Prop :=
   f.totalDegree ≤ D
 
