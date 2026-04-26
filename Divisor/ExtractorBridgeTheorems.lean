@@ -163,10 +163,10 @@ theorem ma_extractable
                 else none) = _
           rw [dif_pos hSucc]
         · refine ⟨hkm, ?_⟩
-          show (ECPoint.affine stmt.target.1 stmt.target.2 : ECPoint E.q) =
+          show (ECPoint.affine E stmt.target.1 stmt.target.2 : ECPoint E) =
             ECPoint.weightedSum E (Finset.univ : Finset (Fin wit.k))
               (fun i => ECPoint.zsmul E (wit.scalars i)
-                (ECPoint.affine
+                (ECPoint.affine E
                   (stmt.bases (Fin.cast hkm.symm i)).1
                   (stmt.bases (Fin.cast hkm.symm i)).2))
           convert hRelation using 1
@@ -188,7 +188,7 @@ theorem ma_extractable
         have hβsum : (∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE :=
           betaConstructive_sum_le_degE E msg.toD
         have hβgroup : ECPoint.weightedSum E E.points
-            (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0 :=
+            (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine E P.1 P.2)) = 0 :=
           betaConstructive_group_sum_zero E msg.toD hD hSplit
         -- Prepare injective/nonzero hypotheses for sigma_matching.
         have hQinj : Function.Injective (zerosAt E msg.toD) :=
@@ -384,7 +384,8 @@ theorem ma_extractable
         -- Convert principal-divisor group-sum-zero into the dlog relation
         -- `P = Σ[n_j]·B_j`. Lean: `target_eq_weightedSum_of_weightedSum`.
         -- ---------------------------------------------------------------
-        have hRelation := target_eq_weightedSum_of_weightedSum E stmt msg hkm hNegP hWSum'
+        have hRelation := target_eq_weightedSum_of_weightedSum E stmt msg hkm
+          hTargetOnE hBasesOnE hNegP hWSum'
         let wit : DlogWitness E.q :=
           ⟨msg.k, extractedScalars E stmt msg hkm, d, hSucceeds⟩
         refine ⟨wit, ?_, ?_⟩
@@ -393,10 +394,10 @@ theorem ma_extractable
                 else none) = _
           rw [dif_pos hSucceeds]
         · refine ⟨hkm, ?_⟩
-          show (ECPoint.affine stmt.target.1 stmt.target.2 : ECPoint E.q) =
+          show (ECPoint.affine E stmt.target.1 stmt.target.2 : ECPoint E) =
             ECPoint.weightedSum E (Finset.univ : Finset (Fin wit.k))
               (fun i => ECPoint.zsmul E (wit.scalars i)
-                (ECPoint.affine
+                (ECPoint.affine E
                   (stmt.bases (Fin.cast hkm.symm i)).1
                   (stmt.bases (Fin.cast hkm.symm i)).2))
           convert hRelation using 1
