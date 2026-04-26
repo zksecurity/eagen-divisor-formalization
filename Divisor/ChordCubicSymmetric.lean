@@ -27,7 +27,7 @@
   a cubic in `x_i` whose three roots are the `x_i`.
 -/
 import Divisor.Defs
-import Divisor.PolyFibK
+import Divisor.PolyGSlopeProjection
 import Mathlib
 
 open Polynomial Finset

@@ -23,7 +23,7 @@
 -/
 import Divisor.Soundness
 import Divisor.DivisorPrincipal
-import Divisor.PolyFibK
+import Divisor.PolyGSlopeProjection
 import Divisor.PolyGTraceFormula
 import Divisor.PolyGDensity
 import Divisor.TraceProof

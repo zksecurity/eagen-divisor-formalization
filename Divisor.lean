@@ -1,11 +1,11 @@
 import Divisor.Defs
 import Divisor.Axioms
 import Divisor.ChordCubicSymmetric
-import Divisor.PFHelper
+import Divisor.PartialFractionHelper
 import Divisor.ChordLogDerivHelper
 import Divisor.PartialFraction
 import Divisor.PartialFractionExpansion
-import Divisor.PolyFibK
+import Divisor.PolyGSlopeProjection
 import Divisor.SlopeDist
 import Divisor.SupportDisjoint
 import Divisor.NormVanish
@@ -20,7 +20,7 @@ import Divisor.NormLogDeriv
 import Divisor.BivariateLogDeriv
 import Divisor.FunctionFieldZ
 import Divisor.NormZDecomp
-import Divisor.Lemma6
+import Divisor.ChordSumResidue
 import Divisor.ChordLogDerivProof
 import Divisor.HasPrincipalDivisor
 import Divisor.PolyGBridge

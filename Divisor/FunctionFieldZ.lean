@@ -37,7 +37,7 @@
 -/
 import Divisor.BetaConstructive
 import Divisor.DivisorPrincipal
-import Divisor.PolyFibK
+import Divisor.PolyGSlopeProjection
 import Mathlib.Algebra.Polynomial.Roots
 import Mathlib.Algebra.Polynomial.BigOperators
 

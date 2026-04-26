@@ -17,7 +17,7 @@
   residue identity) is future work.
 -/
 import Divisor.ClearedPolyForm
-import Divisor.PolyFibK
+import Divisor.PolyGSlopeProjection
 
 open Polynomial Finset
 

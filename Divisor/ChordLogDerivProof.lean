@@ -55,11 +55,11 @@
   **DERIVED** (`chord_sum_eq_residue_sum`): theorem combining the two
   axioms with the existing `normZ_logDeriv_at_chord_intercept`.
 -/
-import Divisor.Lemma6
+import Divisor.ChordSumResidue
 import Divisor.NormZDecomp
 import Divisor.BivariateLogDeriv
 import Divisor.ChordCubicSymmetric
-import Divisor.PFHelper
+import Divisor.PartialFractionHelper
 import Divisor.Axioms.AxiomChordFiberProductEqNormZUnderSplit
 import Divisor.Axioms.AxiomChordSumEqChordFiberProductLogDeriv
 import Mathlib

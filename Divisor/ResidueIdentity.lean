@@ -38,7 +38,7 @@
 -/
 import Divisor.BivariateLogDeriv
 import Divisor.NormLogDeriv
-import Divisor.PolyFibK
+import Divisor.PolyGSlopeProjection
 import Divisor.DivisorPrincipal
 
 open Polynomial Finset
