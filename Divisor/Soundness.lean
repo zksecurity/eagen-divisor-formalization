@@ -199,12 +199,12 @@ theorem extracted_scalars_valid_special
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
     (hNegP : (negPIndexSet E stmt msg hkm).Nonempty) :
-    ECPoint.affine stmt.target.1 stmt.target.2 =
+    ECPoint.affine E stmt.target.1 stmt.target.2 =
       ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
         (fun i => ECPoint.zsmul E
                    (extractedScalars E stmt msg hkm i)
-                   (ECPoint.affine (extractorBases E stmt msg hkm i).1
-                                   (extractorBases E stmt msg hkm i).2)) := by
+                   (ECPoint.affine E (extractorBases E stmt msg hkm i).1
+                                     (extractorBases E stmt msg hkm i).2)) := by
   classical
   set j_star : Fin msg.k :=
     (negPIndexSet E stmt msg hkm).min' hNegP with hJStar_def
@@ -219,8 +219,8 @@ theorem extracted_scalars_valid_special
        (s := (Finset.univ : Finset (Fin msg.k)))
        (f := fun i => ECPoint.zsmul E
                         (extractedScalars E stmt msg hkm i)
-                        (ECPoint.affine (extractorBases E stmt msg hkm i).1
-                                        (extractorBases E stmt msg hkm i).2))
+                        (ECPoint.affine E (extractorBases E stmt msg hkm i).1
+                                          (extractorBases E stmt msg hkm i).2))
        (a := j_star) (Finset.mem_univ j_star)]
   · have hExtracted : extractedScalars E stmt msg hkm j_star = -1 := by
       show (if hne : (negPIndexSet E stmt msg hkm).Nonempty
@@ -229,9 +229,38 @@ theorem extracted_scalars_valid_special
       rw [dif_pos hNegP]
       simp [hJStar_def]
     simp only [hExtracted, ECPoint.zsmul_neg_one, hBase]
-    show (ECPoint.affine stmt.target.1 stmt.target.2 : ECPoint E.q) =
-         ECPoint.neg (ECPoint.affine stmt.target.1 (-stmt.target.2))
-    simp [ECPoint.neg]
+    show (ECPoint.affine E stmt.target.1 stmt.target.2 : ECPoint E) =
+         -(ECPoint.affine E stmt.target.1 (-stmt.target.2))
+    -- `affine E x (-y) = -(affine E x y)` since on our curve `negY x y = -y`.
+    have hNegYAff : ∀ y' : ZMod E.q, E.toW.toAffine.negY stmt.target.1 y' = -y' := by
+      intro y'; show -y' - E.toW.a₁ * stmt.target.1 - E.toW.a₃ = -y'
+      rw [E.toW_a₁, E.toW_a₃]; ring
+    by_cases hns : E.toW.toAffine.Nonsingular stmt.target.1 stmt.target.2
+    · have hns' : E.toW.toAffine.Nonsingular stmt.target.1 (-stmt.target.2) := by
+        have := (WeierstrassCurve.Affine.nonsingular_neg
+                  (W' := E.toW.toAffine) stmt.target.1 stmt.target.2).mpr hns
+        rwa [hNegYAff] at this
+      rw [ECPoint.affine_of_nonsingular E hns,
+          ECPoint.affine_of_nonsingular E hns']
+      show (WeierstrassCurve.Affine.Point.some hns : ECPoint E) =
+           -(WeierstrassCurve.Affine.Point.some hns')
+      rw [WeierstrassCurve.Affine.Point.neg_some,
+          WeierstrassCurve.Affine.Point.some.injEq]
+      refine ⟨rfl, ?_⟩
+      rw [hNegYAff]; ring
+    · -- Off-curve: both `affine` calls return 0.
+      have hns' : ¬ E.toW.toAffine.Nonsingular stmt.target.1 (-stmt.target.2) := by
+        intro h
+        apply hns
+        have := (WeierstrassCurve.Affine.nonsingular_neg
+                  (W' := E.toW.toAffine) stmt.target.1 (-stmt.target.2)).mpr h
+        rw [hNegYAff] at this
+        rwa [neg_neg] at this
+      have h0 : (ECPoint.affine E stmt.target.1 stmt.target.2 : ECPoint E) = 0 := by
+        unfold ECPoint.affine; rw [dif_neg hns]
+      have h0' : (ECPoint.affine E stmt.target.1 (-stmt.target.2) : ECPoint E) = 0 := by
+        unfold ECPoint.affine; rw [dif_neg hns']
+      rw [h0, h0', neg_zero]
   · intro i _ hi_ne
     have hExtracted : extractedScalars E stmt msg hkm i = 0 := by
       show (if hne : (negPIndexSet E stmt msg hkm).Nonempty
