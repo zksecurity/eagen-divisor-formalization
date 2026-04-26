@@ -1,7 +1,7 @@
 /-
   Divisor/SlopeDist.lean
 
-  Bezout's theorem for lines/cubics, and Lemma 1 (Slope Distribution).
+  Bezout's theorem for lines/cubics, and `\ref{lem:slope-dist}` (Slope Distribution).
 -/
 import Divisor.Defs
 import Mathlib.Algebra.Field.ZMod
@@ -104,7 +104,7 @@ theorem mem_pointsOnLine_self {lam : ZMod E.q}
     A₀ ∈ pointsOnLine E lam (interceptOf E lam A₀) := by
   simp [pointsOnLine, interceptOf, Finset.mem_filter, h]
 
-/-- **Lemma 1 (Slope Distribution).**
+/-- **`\ref{lem:slope-dist}` (Slope Distribution).**
     |pairsWithSlope lam| ≤ 2 * numAffine.
 
     Proof: use card_le_mul_card_image with Prod.fst.

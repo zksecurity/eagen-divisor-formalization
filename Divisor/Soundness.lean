@@ -1,12 +1,12 @@
 /-
   Divisor/Soundness.lean
 
-  Theorem 6: The MA protocol is extractable with knowledge error.
-  Theorem 7: The IP protocol is knowledge-sound with the same error.
+  `\ref{thm:ma}`: The MA protocol is extractable with knowledge error.
+  `\ref{thm:ip}`: The IP protocol is knowledge-sound with the same error.
 
   The witness is trivially extractable from the first-round message.
-  Soundness reduces to the log-derivative check (Corollary 1),
-  which in turn reduces to the norm check (Theorem 4/5) via
+  Soundness reduces to the log-derivative check (`\ref{lem:log-derivative}`),
+  which in turn reduces to the norm check (`\ref{thm:bassa-monic}`/`\ref{thm:bassa-soundness}`) via
   classical function field theory.
 -/
 import Divisor.Defs
@@ -264,7 +264,7 @@ theorem extracted_scalars_valid_special
 /-- **Completeness.** For the honest prover's first-round message `msg`
     (witnessed by `isHonestFor`), the set of challenges on which the MA
     verifier rejects is contained in `badChallengesCompleteness`, hence
-    bounded by `(3 N + 1) · |E_aff|` via Lemma 2 (`support_disjointness`),
+    bounded by `(3 N + 1) · |E_aff|` via `\ref{lem:support-disjoint}` (`support_disjointness`),
     where `N = numZeros E msg.toD`.
 
     The three verifier checks:

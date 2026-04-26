@@ -187,7 +187,7 @@ theorem sum_le_degE_of_principal_conditions
     trace-of-log-derivative argument:
 
     1. For any nonzero D ∈ F_q[E] and any principal-divisor
-       decomposition β_fun, the residue identity (Lemma 6 /
+       decomposition β_fun, the residue identity (`\ref{lem:log-derivative}` /
        `chord_sum_eq_residue_sum`) holds with β_fun's
        multiplicities — not just betaConstructive's. This follows
        from the fact that div(D) = Σ β(P)·(P) − deg·(∞) is the

@@ -922,7 +922,7 @@ theorem extractorGroupSum_congr_of_extractorBases_eq
     (`Fin.cons (-1) (fun j => -m j)`). The negation reconciles the
     additive sign of `polyG`'s second sum (`Σ m'·prods`) with
     `logDerivCheckFn`'s RHS sum coefficient (`-m_j / L(B_j)`) and
-    the Lemma 6 residue identity `Σ β_k/L(Q_k) = 1/L(-P) + Σ m_j/L(B_j)`.
+    the `\ref{lem:log-derivative}` residue identity `Σ β_k/L(Q_k) = 1/L(-P) + Σ m_j/L(B_j)`.
     See sign-resolution note and ResidueIdentity.lean. -/
 noncomputable def distinctMCons
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -1025,17 +1025,17 @@ theorem distinctM'_tail_group_invariant
     hypothesis — `hPolyGZero` — supplying the scalar conclusion
     (`polyG = 0` at every non-vertical pair) directly. This
     hypothesis packages the two remaining unmechanized pieces:
-    Lemma 6's function-field chord-residue identity and the density
+    `\ref{lem:log-derivative}`'s function-field chord-residue identity and the density
     argument transferring vanishing from defined pairs to all
     non-vertical pairs.
 
     `ma_extractable` now takes `hPolyGZero` as an extra hypothesis,
-    which a future phase can discharge by finishing Lemma 6
+    which a future phase can discharge by finishing `\ref{lem:log-derivative}`
     (requires mechanizing `chordLogDerivMatchesNormZ` from
-    `Divisor/Lemma6.lean`; reduced Lemma 6 to that scalar
+    `Divisor/Lemma6.lean`; reduced `\ref{lem:log-derivative}` to that scalar
     equality) and the density argument.
 
-    Paper context: (i) Lemma 6 (norm decomposition
+    Paper context: (i) `\ref{lem:log-derivative}` (norm decomposition
     `N(D) = ∏ (z − z(Q_k))^{β_k}`), (ii) the log-derivative formula
     `L(N(D)) = Σ β_k / (z − z(Q_k))`, (iii) the `ellP = L_Q · (X₁ − X₀)`
     denominator-clearing step (already mechanized via
@@ -1067,11 +1067,11 @@ theorem distinctM'_tail_group_invariant
 
     Conclusion: `polyG` vanishes on all non-vertical pairs of `E × E`.
 
-    `hPolyGZero` is the consolidated "Lemma 6 + density" hypothesis:
+    `hPolyGZero` is the consolidated "`\ref{lem:log-derivative}` + density" hypothesis:
     it asserts `polyG = 0` at every non-vertical E-pair for the
     specific `(Q, β_fun, R, m')` data. narrows the axiom by
     taking this as a hypothesis; a future phase can discharge it by
-    completing Lemma 6 (infrastructure in
+    completing `\ref{lem:log-derivative}` (infrastructure in
     `Divisor/Lemma6.lean`) and the density argument (polynomial form
     `polyGPoly` from `Divisor/PolyGBridge.lean` + `card_zeros_on_E_le`
     from `Divisor/CubicIntersection.lean`). -/
@@ -2573,7 +2573,7 @@ The original `axiom polyG_zero_trace_formula` universally quantified over
     in `E × E`.
 
     **All three hypotheses are essential**:
-    * Without `hSplit` + `hAccount`, Lemma 6
+    * Without `hSplit` + `hAccount`, `\ref{lem:log-derivative}`
       (`chord_sum_eq_residue_sum`) fails — see `docs/goal.md` §0 for
       the concrete counterexample over `F_7`.
     * Without `hAllZero`, a cheating prover's `msg.m` can make
@@ -2755,7 +2755,7 @@ theorem polyG_zero_trace_formula
   have hPhase1 : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E D →
       ∀ A₁ ∈ E.points, A₀.1 ≠ A₁.1 →
       polyG E Q_fn β_fn R_fn m_fn A₀ A₁ = 0 := by
-    -- Two-step approach: Phase 1a for "non-special" A₀, Phase 1b via swap.
+    -- Two-step approach: for "non-special" A₀, via swap.
     -- A₀ not in zerosFinset and not in distinctR image
     have hPhase1a : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E D →
         (∀ j, R_fn j ≠ A₀) →
@@ -3134,10 +3134,10 @@ theorem polyG_zero_trace_formula
       intro A₁ hA₁ _
       rw [← bivEval_polyGPoly]
       exact hAllOnE A₁ hA₁
-    -- A₀ in distinctR image (special), use swap from Phase 1a + density
+    -- A₀ in distinctR image (special), use swap from earlier branch + density
     intro A₀ hA₀ hA₀nz
     by_cases hA₀r : ∀ j, R_fn j ≠ A₀
-    · -- Non-special: use Phase 1a directly
+    · -- Non-special: use the lemma directly
       exact hPhase1a A₀ hA₀ hA₀nz hA₀r
     · -- Special A₀: some R_fn j = A₀
       push_neg at hA₀r
@@ -3244,7 +3244,7 @@ theorem polyG_zero_trace_formula
       rw [← bivEval_polyGPoly]
       exact hAllOnE A₁ hA₁
   -- For A₀ IN zerosFinset E D, polyG(A₀, ·) = 0 on all of E.
-  -- Uses polyG_swap_zero + Phase 1 to get enough known zeros,
+  -- Uses polyG_swap_zero + earlier branch to get enough known zeros,
   -- then density (bivEval_zero_on_E_of_many_zeros) to extend.
   have hPhase2 : ∀ A₀ ∈ E.points, A₀ ∈ zerosFinset E D →
       ∀ A₁ ∈ E.points, A₀.1 ≠ A₁.1 →
@@ -3360,7 +3360,7 @@ theorem polyG_zero_trace_formula
     intro A₁ hA₁ _hNV
     rw [← bivEval_polyGPoly]
     exact hAllOnE A₁ hA₁
-  -- Combine Phase 1 and Phase 2
+  -- Combine the two
   intro A₀ A₁ hA₀ hA₁ hNV
   by_cases hA₀z : A₀ ∈ zerosFinset E D
   · exact hPhase2 A₀ hA₀ hA₀z A₁ hA₁ hNV

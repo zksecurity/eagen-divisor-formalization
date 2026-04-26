@@ -26,7 +26,7 @@ namespace Divisor
 
 variable (E : ECSetup)
 
-/-! ## Theorem 6: Extractable MA protocol -/
+/-! ## `\ref{thm:ma}`: Extractable MA protocol -/
 
 /-- **Theorem `\ref{thm:ma}`** (paper, ip.tex): knowledge soundness of
     the MA protocol via a straight-line extractor.
@@ -416,9 +416,9 @@ theorem ma_extractable
       rw [hEmpty]
       simp
 
-/-! ## Theorem 7: Knowledge-Sound IP -/
+/-! ## `\ref{thm:ip}`: Knowledge-Sound IP -/
 
-/-- **Theorem 7 (IP knowledge soundness).**
+/-- **`\ref{thm:ip}` (IP knowledge soundness).**
 
     The IP has the same knowledge guarantee as the MA (extractor-or-
     small-accept-set disjunction), plus uniqueness of the third-round

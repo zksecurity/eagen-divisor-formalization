@@ -10,7 +10,7 @@
     * F4: `D(A_0) = 0` factor bound.
     * F5/F6: dx/dz denominator bounds at `A_0`, `A_1`, `A_2`.
     * F7/F8: line-through-`-P`/`B_j` factor bounds.
-    * Phase B5: non-vanishing of `clearedFiberPoly %ₘ curveEqPoly`.
+    * non-vanishing of `clearedFiberPoly %ₘ curveEqPoly`.
     * Total bound `logDerivCheckFn_undefined_set_bound` (and tight
       version `logDerivCheckFn_undefined_set_bound_tight`).
 
@@ -1748,7 +1748,7 @@ theorem rhsSumScaled_natDegree_le (D : CoordRingElt E.q)
     natDegree_mul_le.trans (Nat.add_le_add hmul2 hdx)
   exact (Nat.add_le_add hmul3 hL).trans (by omega)
 
-/-- **Phase B4 main**: `clearedFiberPoly` has outer natDegree ≤ `D.degE + k + 8`. -/
+/-- **main**: `clearedFiberPoly` has outer natDegree ≤ `D.degE + k + 8`. -/
 theorem clearedFiberPoly_natDegree_le
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
@@ -1819,7 +1819,7 @@ theorem clearedFiberPoly_modCurve_ne_zero
     · exact hne h'
     · exact hDef h'
 
-/-! ## Phase B4.5: inner natDegree bookkeeping
+/-! ## inner natDegree bookkeeping
 
     For `f : (ZMod E.q)[X][X]`, the "inner natDegree" is the maximum
     natDegree of its outer coefficients (each of which is a univariate
@@ -3210,7 +3210,7 @@ theorem logDerivCheckFn_undefined_set_bound_tight
             (Nat.add_le_add hS1 hS2) hS3) hS4) hS5) hS6) hS7) hS8
     _ = (6 * D.degE + 9 * k + 71) * E.points.card := by ring
 
-/-- **Phase 2 main theorem**: mechanized zero-set bound on `E × E`.
+/-- **main theorem**: mechanized zero-set bound on `E × E`.
     Derived from the defined-fiber + bad-A₀ + undefined-bad-event
     axioms via the set-union split.
 

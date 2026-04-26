@@ -3,15 +3,15 @@
 
   Queue-3 step . Derivative and
   partial-fraction-expansion identities for `normZ E λ D`, the
-  chord-coordinate norm polynomial defined in Phase 1a.
+  chord-coordinate norm polynomial 
 
-  Because Phase 1a chose to DEFINE `normZ E λ D` as the explicit
+  Because chose to DEFINE `normZ E λ D` as the explicit
   product form
 
     `normZ E λ D = C lc * ∏_{Q ∈ zerosFinset} (X - C (zLambda λ Q))^(β Q)`
 
   with `lc = (normPoly E D).leadingCoeff` and `β = betaConstructive E D`,
-  the "norm decomposition" (Phase 1b's nominal target) is already
+  the "norm decomposition" (nominal target) is already
   definitional. What downstream phases actually consume is the
   derivative / log-derivative data. This module provides:
 
@@ -27,7 +27,7 @@
     rewritten as `-L_Q(Q)` via `L_eval_eq_zLambda_sub`, specialised to
     μ = `zLambda λ A₀` (the chord intercept).
 
-  Phase 2 consumes `normZ_logDeriv_at_nonroot_L` (the chord-intercept
+  consumes `normZ_logDeriv_at_nonroot_L` (the chord-intercept
   form) directly; no further abstract PFE machinery is needed.
 
   No new axioms, no `sorry` / `admit`. This file only needs the Phase
@@ -46,7 +46,7 @@ variable (E : ECSetup)
 
 /-! ## Derivative of `normZ` via the product rule
 
-    The explicit product form of `normZ` (inherited from Phase 1a) makes
+    The explicit product form of `normZ` () makes
     the derivative fall out of the generic
     `derivative_C_mul_prod_X_sub_C_pow` lemma. -/
 
@@ -122,7 +122,7 @@ theorem normZ_eval_ne_zero_at_nonroot
       `(normZ)'(μ) / normZ(μ) = Σ_Q β(Q) / (μ - z(Q))`.
 
     This is the "partial-fraction expansion of the logarithmic
-    derivative" that Phase 2 consumes at the chord intercept. -/
+    derivative" consumes at the chord intercept. -/
 
 /-- **Algebraic identity for a single summand.** Under the non-root
 hypothesis `(μ - z(Q)) ≠ 0`, the Q-th summand of `normZ_derivative_eval`
@@ -212,7 +212,7 @@ theorem normZ_logDeriv_at_nonroot
     μ = `zLambda λ A₀` we have `L_Q(Q) = zLambda λ Q - μ = -(μ - z(Q))`,
     hence `μ - z(Q) = -L_Q(Q)` and `(μ - z(Q))⁻¹ = -(L_Q(Q))⁻¹`.
 
-    This section packages the bridge so Phase 2 can invoke the PFE
+    This section packages the bridge so we can invoke the PFE
     identity directly with `L_Q(Q)` on the RHS. -/
 
 /-- At μ = `zLambda λ A₀`, the difference `μ - zLambda λ Q` equals
@@ -233,7 +233,7 @@ and rewriting `μ - z(Q)` as `-L_Q(Q)`:
              ` = -normZ(μ) · Σ_Q β(Q) · L_Q(Q)⁻¹`.
 
 Hypothesis: `L_Q(Q) ≠ 0` for every `Q ∈ zerosFinset E D`. This is the
-exact form Phase 3's Lemma 6 RHS consumes. -/
+exact form `\ref{lem:log-derivative}` RHS consumes. -/
 theorem normZ_logDeriv_at_chord_intercept
     (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)

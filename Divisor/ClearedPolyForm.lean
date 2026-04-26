@@ -1,7 +1,7 @@
 /-
   Divisor/ClearedPolyForm.lean
 
-  Phase 1 of Steps 10'/11' (plan): polynomial form of `logDerivCheckFnCleared`.
+  polynomial form of `logDerivCheckFnCleared`.
 
   For fixed `A₀`, `logDerivCheckFnCleared E D P k B m A₀ A₁` is (up to a
   power of `A₁.1 - A₀.1`) a polynomial in the coordinates of `A₁`. This
@@ -10,14 +10,12 @@
   = `A₁.1`), and establishes the denominator-cleared identity and the
   natDegree bound.
 
-  The polynomial construction below is provided as documentation /
-  stepping stone for mechanizing the fiber-count and bad-A₀ axioms
-  (Phase 1.7-1.8 mechanical polynomial identities). Phase 2 currently
-  consumes the fiber-count and bad-A₀ axioms directly (without using
-  the polynomial form).
+  The polynomial construction below is provided as documentation;
+  the fiber-count and bad-A₀ axioms are consumed directly (without
+  using the polynomial form).
 
-  Paper reference: `sections/ec.tex:560-610` — the `G` polynomial in the
-  proof of `cor:log-derivative`.
+  Paper reference: `\ref{lem:log-derivative}` — the `G` polynomial in
+  the proof of the log-derivative bound.
 -/
 import Divisor.Defs
 import Divisor.LogDeriv
@@ -707,7 +705,7 @@ noncomputable def rhsSumScaled (D : CoordRingElt E.q)
       * dxdzAllScaled (E := E) A₀
       * linesProductSkipBjScaled (E := E) P k B A₀ j
 
-/-- **The full cleared-fiber polynomial** (Phase 1.7 assembly).
+/-- **The full cleared-fiber polynomial** (assembly).
 
     Satisfies (on the non-vertical cone):
     `bivEval (clearedFiberPoly ...) A₁ =
@@ -2162,7 +2160,7 @@ private lemma clearedFiberPoly_sumj_eq_Linv_mul_denom
   rw [hProdEq]
   field_simp
 
-/-- **Main Phase B3 theorem**: on the non-vertical cone with all denominator
+/-- **Main theorem**: on the non-vertical cone with all denominator
     factors nonzero, `bivEval (clearedFiberPoly …) A₁` equals
     `(A₁.1 - A₀.1)^(D.degE + k + 6) · logDerivCheckFnCleared E D P k B m A₀ A₁`.
 

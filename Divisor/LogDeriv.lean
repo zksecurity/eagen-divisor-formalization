@@ -1,11 +1,11 @@
 /-
   Divisor/LogDeriv.lean
 
-  Corollary 1 (Schwartz-Zippel for the Log-Derivative Check).
+  `\ref{lem:log-derivative}` (Schwartz-Zippel for the Log-Derivative Check).
 
   Proof structure (following the paper):
 
-  1. By Lemma 6 (norm decomposition), f(Q₀,Q₁) equals the log-derivative
+  1. By `\ref{lem:log-derivative}` (norm decomposition), f(Q₀,Q₁) equals the log-derivative
      of N(D) evaluated at (L_Q=0) minus the RHS sum.
 
   2. N(D) = lc(D)^3 * prod_k (z - z(Q_k))^{beta_k} in F_q(z), so
@@ -218,7 +218,7 @@ theorem logDerivCheckFn_eq_zero_iff_cleared
     · exact h1
     · exact absurd h2 hDenom
 
-/-! ## Corollary 1: the probability bound -/
+/-! ## `\ref{lem:log-derivative}`: the probability bound -/
 
 /-- The "NotEq" bad set: pairs `(A₀, A₁) ∈ validPairs` for which the
     verifier's log-derivative check vanishes. -/

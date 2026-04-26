@@ -1,9 +1,7 @@
 /-
-  Divisor/Lemma6.lean
+  Divisor/ChordSumResidue.lean
 
-  Phase 3 of the continuation plan (`docs/continuation-plan.md`). Paper's
-  Lemma 6 (`~/paper/divisor/sections/ec.tex:557-579`) mechanized as a
-  Lean theorem in the chord-sum form:
+  Paper's `\ref{lem:log-derivative}` (`ec.tex`) in chord-sum form:
 
     Σᵢ logDerivTerm(Aᵢ, λ)
       = -Σ_{Q ∈ zerosFinset E D} β(Q) · L_Q(Q)⁻¹
@@ -11,44 +9,15 @@
   where `λ = slopeOf A₀ A₁`, `L_Q = lineThrough A₀ A₁`, A_i range over
   the three chord intersections, and β = betaConstructive E D.
 
-  ## Strategy (Fallback C: scalar log-derivative match as hypothesis)
-
-  The paper's proof proceeds via the function-field norm identity
-
-    N(D)(z) = lc(D)^3 · ∏_k (z − z(Q_k))^(β_k)                    (*)
-
-  as an equality in `F_q[z]` (the function-field norm being the
-  determinant of multiplication by D on F_q(E) viewed as a rank-3
-  module over F_q(z)). Mechanising (*) requires nontrivial
-  function-field infrastructure (resultant computations, Sylvester
-  matrix over three sheets, relative trace pairing) that is out of
-  scope for Phase 3.
-
-  Our Phase 1a *definition* of `normZ` is already the RHS of (*). What
-  (*) provides — and what is the actual algebraic content of Lemma 6 —
-  is the identity
-
-    Σᵢ (dD/dz)(Aᵢ) / D(Aᵢ)  =  (normZ)'(μ) / normZ(μ)            (**)
-
-  at the chord intercept μ = zLambda λ A₀. (Equivalently: the
-  logarithmic derivatives of D(A₀(z))·D(A₁(z))·D(A₂(z)) and of
-  normZ(z) coincide, because they differ by a nonzero constant.)
-
-  Phase 3 takes (**) as a scalar *hypothesis* (paper-faithful
-  logarithmic-derivative equality) and DERIVES Lemma 6 in one step
-  from Phase 2's partial-fraction expansion
-  (`normZ_logDeriv_at_chord_intercept`, which asserts exactly that
-  the RHS of (**) equals `-Σ β · L⁻¹`). This turns Lemma 6 into a
-  short, pure-algebra consequence of Phase 2.
-
-  Phase 4's integration: the hypothesis (**) is narrower than the
-  full Lemma 6 statement but is still function-field content. Phase 4
-  either (a) discharges (**) via a new Mathlib-level resultant
-  computation, or (b) absorbs (**) as a precondition into the
-  narrowed form of `polyG_zero_of_logDerivCheck_identically_zero`.
-
-  No new axioms, no `sorry` / `admit`. This module only needs the
-  Phase 2 PFE and its neighbours.
+  The function-field norm identity
+    N(D)(z) = lc(D)^3 · ∏_k (z − z(Q_k))^(β_k)
+  induces the scalar log-derivative equality
+    Σᵢ (dD/dz)(Aᵢ) / D(Aᵢ)  =  (normZ)'(μ) / normZ(μ)
+  at the chord intercept μ = zLambda λ A₀. Combined with the
+  partial-fraction expansion `normZ_logDeriv_at_chord_intercept`
+  (which gives the RHS = `-Σ β · L⁻¹`), this yields `\ref{lem:log-derivative}`.
+  The scalar log-derivative equality is taken here as a hypothesis
+  (`chordLogDerivMatchesNormZ`).
 -/
 import Divisor.NormZDecomp
 import Divisor.BivariateLogDeriv
@@ -60,18 +29,16 @@ namespace Divisor
 
 variable (E : ECSetup)
 
-/-! ## Hypothesis form of Lemma 6's deep content
+/-! ## Hypothesis form of `\ref{lem:log-derivative}`'s deep content
 
-The paper's Lemma 6 proof uses the function-field norm identity
+The paper's `\ref{lem:log-derivative}` proof uses the function-field norm identity
 `N(D)(z) = lc(D)^3 · ∏ (z - z(Q))^β` (a *polynomial equality* in z).
 This induces the scalar *logarithmic-derivative* equality
 
   Σᵢ logDerivTerm(Aᵢ, λ)  =  (normZ)'(μ) / normZ(μ)
 
 at the chord intercept μ = zLambda λ A₀. We encapsulate that
-scalar equality as `chordLogDerivMatchesNormZ` below. Phase 4 is
-responsible for discharging (or narrowing the axiom scope around)
-this hypothesis.
+scalar equality as `chordLogDerivMatchesNormZ` below.
 -/
 
 /-- **Scalar log-derivative match.** At a chord (A₀, A₁) with
@@ -79,11 +46,10 @@ nonzero normZ(μ), the chord-sum Σᵢ logDerivTerm(Aᵢ) equals the
 logarithmic derivative of normZ at the chord intercept
 μ = zLambda λ A₀.
 
-This is the algebraic content of paper's Lemma 6 boiled down to a
-single scalar equality. Phase 2's
-`normZ_logDeriv_at_chord_intercept` gives the RHS's partial-fraction
-decomposition; combining the two yields Lemma 6 (see
-`lemma6_chord_residue` below). -/
+This is the algebraic content of paper's `\ref{lem:log-derivative}` boiled down to a
+single scalar equality. `normZ_logDeriv_at_chord_intercept` gives
+the RHS's partial-fraction decomposition; combining the two yields
+`\ref{lem:log-derivative}` (see `lemma6_chord_residue` below). -/
 def chordLogDerivMatchesNormZ
     (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q) : Prop :=
@@ -97,10 +63,10 @@ def chordLogDerivMatchesNormZ
     * (normZ E lam D).eval μ
   = eval μ (derivative (normZ E lam D))
 
-/-! ## Lemma 6, mechanized form
+/-! ## `\ref{lem:log-derivative}`, mechanized form
 
 Under the scalar log-derivative match (above) and with normZ(μ)
-nonzero (equivalently: every `L_Q(Q) ≠ 0`), Lemma 6 states
+nonzero (equivalently: every `L_Q(Q) ≠ 0`), `\ref{lem:log-derivative}` states
 
   Σᵢ logDerivTerm(Aᵢ, λ) = -Σ_Q β(Q) · L_Q(Q)⁻¹
 
@@ -108,21 +74,19 @@ with β = betaConstructive E D and the sum on the RHS indexed by
 Q ∈ zerosFinset E D.
 -/
 
-/-- **Lemma 6 (chord residue identity).** The chord-sum
+/-- **`\ref{lem:log-derivative}` (chord residue identity).** The chord-sum
 `Σᵢ logDerivTerm(Aᵢ, λ)` equals the partial-fraction expansion
 of normZ's logarithmic derivative at the chord intercept, in the
 line-evaluation basis.
 
 **Proof**: the hypothesis `hMatch` is the scalar log-derivative
-equality `Σᵢ logDerivTerm(Aᵢ) · normZ(μ) = (normZ)'(μ)`. Phase 2's
-`normZ_logDeriv_at_chord_intercept` expresses the RHS (normZ)'(μ)
+equality `Σᵢ logDerivTerm(Aᵢ) · normZ(μ) = (normZ)'(μ)`. `normZ_logDeriv_at_chord_intercept` expresses the RHS (normZ)'(μ)
 as `-normZ(μ) · Σ β · L⁻¹`. Dividing through by `normZ(μ) ≠ 0`
-gives Lemma 6.
+gives `\ref{lem:log-derivative}`.
 
 **Scope**: narrows the axiom
 `polyG_zero_of_logDerivCheck_identically_zero` to the case where
-the scalar log-derivative hypothesis holds. Phase 4 discharges (or
-absorbs) this precondition. -/
+the scalar log-derivative hypothesis holds. -/
 theorem lemma6_chord_residue
     (D : CoordRingElt E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
@@ -179,12 +143,12 @@ theorem lemma6_chord_residue
 
 /-! ## Corollary: the form consumed by ResidueIdentity.lean:644
 
-The Phase 3 target (the theorem `polyG_zero_of_Lemma6_and_logDerivCheck_zero`
+The target (the theorem `polyG_zero_of_Lemma6_and_logDerivCheck_zero`
 at `Divisor/ResidueIdentity.lean:644`) expects the chord-sum hypothesis
 exactly in the form above. `lemma6_chord_residue` produces it directly. -/
 
-/-- **Convenience corollary.** The form of Lemma 6 that matches the
-Phase 3 bridge theorem `polyG_zero_of_Lemma6_and_logDerivCheck_zero`
+/-- **Convenience corollary.** The form of `\ref{lem:log-derivative}` that matches the
+bridge theorem `polyG_zero_of_Lemma6_and_logDerivCheck_zero`
 verbatim. -/
 theorem lemma6_as_bridge_hypothesis
     (D : CoordRingElt E.q)
@@ -211,10 +175,10 @@ theorem lemma6_as_bridge_hypothesis
 The `polyG_zero_of_Lemma6_and_logDerivCheck_zero` bridge at
 `Divisor/ResidueIdentity.lean:644` indexes its `beta` and `Q` arrays
 by `Fin d`, not by the `zerosFinset E D` Finset. The next
-adaptation expresses Lemma 6 in that form when the Fin-indexed
+adaptation expresses `\ref{lem:log-derivative}` in that form when the Fin-indexed
 family enumerates `zerosFinset E D`. -/
 
-/-- **Fin-indexed form of Lemma 6.** When `Q : Fin d → ...`
+/-- **Fin-indexed form of `\ref{lem:log-derivative}`.** When `Q : Fin d → ...`
 enumerates distinct affine E-zeros of D with multiplicities
 `beta : Fin d → ℕ` matching `betaConstructive`, the chord-sum
 `Σᵢ logDerivTerm(Aᵢ, λ)` equals the negative Fin-sum
@@ -285,9 +249,8 @@ does not imply) the stronger polynomial identity
 
 where A_i(z) are the chord-point coordinates as symbolic functions
 of z, and C is a nonzero constant. Directly mechanising the
-polynomial form requires function-field infrastructure that Phase 3
-defers, but we provide below a direct scalar reduction: given the
-aggregate identity form (from `chord_aggregate_identity`), Lemma 6
+polynomial form requires function-field infrastructure defers, but we provide below a direct scalar reduction: given the
+aggregate identity form (from `chord_aggregate_identity`), `\ref{lem:log-derivative}`
 reduces to a polynomial equality between the aggregate RHS and
 `(normZ)'(μ) · chordDenomProd / normZ(μ)`.
 

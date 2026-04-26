@@ -115,7 +115,7 @@ theorem hQline_fin_of_finset
 
 /-! ## Step 3: polyG = 0 for betaConstructive at defined pairs
 
-    Combine `chord_sum_eq_residue_sum_fin` (Lemma 6 for betaConstructive)
+    Combine `chord_sum_eq_residue_sum_fin` (`\ref{lem:log-derivative}` for betaConstructive)
     with `polyG_zero_of_Lemma6_and_logDerivCheck_zero` to get polyG = 0
     at defined non-vertical pairs. -/
 
@@ -123,7 +123,7 @@ theorem hQline_fin_of_finset
     chord-sum hypotheses hold AND `logDerivCheckFn = 0`, the `polyG`
     formed from `betaConstructive` multiplicities vanishes.
 
-    This is the Lemma 6 → polyG bridge instantiated at
+    This is the `\ref{lem:log-derivative}` → polyG bridge instantiated at
     `β = betaConstructive`, `Q = zerosAt`, using
     `chord_sum_eq_residue_sum` for the `hLemma6` input. -/
 theorem polyG_zero_betaConstructive_at_defined
@@ -160,10 +160,10 @@ theorem polyG_zero_betaConstructive_at_defined
       (Fin.cons (P.1, -P.2) B)
       (Fin.cons (-1) (fun j => -m j))
       A₀ A₁ = 0 := by
-  -- Get Lemma 6 identity from chord_sum_eq_residue_sum
+  -- Get `\ref{lem:log-derivative}` identity from chord_sum_eq_residue_sum
   have hLemma6 := chord_sum_eq_residue_sum_fin E D A₀ A₁
     hA₀ hA₁ hNV hD hSplit hAccount hA₀def hA₁def hA₂def hQline hDen
-  -- The Lemma 6 identity uses betaConstructive, which equals
+  -- The `\ref{lem:log-derivative}` identity uses betaConstructive, which equals
   -- multAt E (betaConstructive E D) D k' at zerosAt E D k'.
   -- This is definitional: multAt E β D k = β (zerosAt E D k).
   have hLemma6' :

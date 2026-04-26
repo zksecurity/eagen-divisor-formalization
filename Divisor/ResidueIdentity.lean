@@ -485,11 +485,11 @@ theorem polyG_eq_zero_iff_paperResidue
 
 /-! ## High-level chord-residue bridge (analysis)
 
-    Combining Steps 1, 4, and 5 with a hypothesised "Lemma 6" chord-sum
+    Combining Steps 1, 4, and 5 with a hypothesised "`\ref{lem:log-derivative}`" chord-sum
     residue identity
 
     ```
-    Σᵢ logDerivTerm(Aᵢ, λ) = - Σ_k β_k / L_Q(Q_k)                  (Lemma 6)
+    Σᵢ logDerivTerm(Aᵢ, λ) = - Σ_k β_k / L_Q(Q_k)                  (`\ref{lem:log-derivative}`)
     ```
 
     and the axiom's global hypothesis `logDerivCheckFn = 0`,     sign analysis identified a sign mismatch between `logDerivCheckFn`'s
@@ -501,7 +501,7 @@ theorem polyG_eq_zero_iff_paperResidue
     for the polyG `m'` argument.
 
     Under the new axiom form, combining `logDerivCheckFn = 0` with
-    Lemma 6 (the full residue identity), the paperResidueDivided form
+    `\ref{lem:log-derivative}` (the full residue identity), the paperResidueDivided form
     evaluates to
 
     ```
@@ -511,7 +511,7 @@ theorem polyG_eq_zero_iff_paperResidue
     matching the derivation exactly:
     `Σ_k β_k/L_Q(Q_k) = L_Q(-P)⁻¹ + Σ_j m_j/L_Q(B_j)`.
 
-    This still requires mechanizing Lemma 6 itself (paper's
+    This still requires mechanizing `\ref{lem:log-derivative}` itself (paper's
     `lem:log-deriv-norm`) to close the axiom as a theorem, which
     remains deferred (requires function-field infrastructure per the
     axiom-elimination plan).
@@ -601,20 +601,20 @@ across multiple new modules (`ChordSum.lean`, `VietaCollapse.lean`,
 include the scalar residue identity as an assumption (deferring to a
 still-later session). -/
 
-/-! ## Chord-residue bridge from Lemma 6 hypothesis
+/-! ## Chord-residue bridge from `\ref{lem:log-derivative}` hypothesis
 
-    **Bridge theorem**: assuming the scalar Lemma 6 identity
+    **Bridge theorem**: assuming the scalar `\ref{lem:log-derivative}` identity
     `Σᵢ logDerivTerm(Aᵢ, λ) = -Σ_k β_k · L_Q(Q_k)⁻¹` at a defined
     non-vertical pair (`A₀, A₁`) with all line-evaluations nonzero at
     every Q_k and B_j, if furthermore `logDerivCheckFn = 0` at the pair,
     then `polyG = 0` at the pair.
 
-    This theorem isolates the Lemma 6 content as a single scalar
+    This theorem isolates the `\ref{lem:log-derivative}` content as a single scalar
     hypothesis. Its proof is pure scalar algebra (field arithmetic
     plus the Step-5 polyG ⇔ paperResidue equivalence) and requires
     no function-field infrastructure.
 
-    Consuming this lemma: any mechanization of Lemma 6 (as a theorem)
+    Consuming this lemma: any mechanization of `\ref{lem:log-derivative}` (as a theorem)
     closes `polyG_zero_of_logDerivCheck_identically_zero` at defined
     pairs. The full axiom also needs a density extension from defined
     to all non-vertical pairs (via `polyGPoly`'s polynomial form).
@@ -622,7 +622,7 @@ still-later session). -/
     The bridge theorem uses the sign convention of the current axiom:
     `m' = Fin.cons (-1) (fun j => -m j)` for `polyG`'s R/m' arguments. -/
 
-/-- **Chord-residue bridge (Lemma 6 hypothesis form)**. Under Lemma 6
+/-- **Chord-residue bridge (`\ref{lem:log-derivative}` hypothesis form)**. Under `\ref{lem:log-derivative}`
     at a defined non-vertical pair and `logDerivCheckFn = 0`, `polyG`
     vanishes at that pair.
 
@@ -664,7 +664,7 @@ theorem polyG_zero_of_Lemma6_and_logDerivCheck_zero
               (Fin.cons (-1) (fun j => -m j))
               A₀ A₁ = 0 := by
   classical
-  -- Step 1: derive paperResidueDivided = 0 from Lemma 6 + hCheck.
+  -- Step 1: derive paperResidueDivided = 0 from `\ref{lem:log-derivative}` + hCheck.
   -- Step 2: apply polyG_eq_zero_iff_paperResidue to conclude polyG = 0.
   set L := lineThrough A₀.1 A₀.2 A₁.1 A₁.2 with hL_def
   set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLam_def
@@ -701,7 +701,7 @@ theorem polyG_zero_of_Lemma6_and_logDerivCheck_zero
       rfl
     rw [hUnfold, sub_eq_zero] at hCheck
     exact hCheck
-  -- Combine with Lemma 6: -Σ β · L(Q)⁻¹ = -L(-P)⁻¹ + Σ -m · L(B)⁻¹.
+  -- Combine with `\ref{lem:log-derivative}`: -Σ β · L(Q)⁻¹ = -L(-P)⁻¹ + Σ -m · L(B)⁻¹.
   have hCombined :
       -(∑ k' : Fin d, beta k' * (L.eval (Q k').1 (Q k').2)⁻¹) =
         -((L.eval P.1 (-P.2))⁻¹)

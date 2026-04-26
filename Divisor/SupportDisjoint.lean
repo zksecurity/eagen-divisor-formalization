@@ -1,7 +1,7 @@
 /-
   Divisor/SupportDisjoint.lean
 
-  Lemma 2 (Support Disjointness): Bassa 2025, Lemma 5.
+  `\ref{lem:support-disjoint}` (Support Disjointness): Bassa 2025, Lemma 5.
 
   For D in F_q[E] with N zeros, and random A0, A1 in E(F_q) \ {O},
   A2 = -(A0 + A1):
@@ -59,9 +59,9 @@ theorem card_A2_is_infinity (A₀ : ZMod E.q × ZMod E.q) :
   simp only [Finset.mem_filter] at ha hb
   exact Prod.ext (ha.2.1.trans hb.2.1.symm) (ha.2.2.trans hb.2.2.symm)
 
-/-! ## Main result: Lemma 2 (structural)
+/-! ## Main result: `\ref{lem:support-disjoint}` (structural)
 
-The full Lemma 2 requires the group law to handle A2.
+The full `\ref{lem:support-disjoint}` requires the group law to handle A2.
 We state the bound structurally: the union bound over
 A0-hits-zero, A1-hits-zero, and A2-bad gives the result. -/
 
@@ -396,7 +396,7 @@ theorem card_thirdPoint_affine_D_zero_pairs_le (D : CoordRingElt E.q) :
         rw [Finset.sum_const, smul_eq_mul]
     _ = E.numAffine * numZeros E D := rfl
 
-/-- **Lemma 2 (Support Disjointness).**
+/-- **`\ref{lem:support-disjoint}` (Support Disjointness).**
 
     For `N` with `numZeros E D ≤ N`, the completeness bad set is bounded:
     `|badChallengesCompleteness E D| ≤ (3 * N + 1) * E.numAffine`.

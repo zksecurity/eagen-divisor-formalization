@@ -1,7 +1,7 @@
 /-
   Divisor/BassaMonic.lean
 
-  Theorem 4 (Schwartz-Zippel on E x E for monic D):
+  `\ref{thm:bassa-monic}` (Schwartz-Zippel on E x E for monic D):
 
   Contains the comparison function f, its non-vanishing proof
   (from Bezout + Hasse-Weil, not from Bassa), and the main

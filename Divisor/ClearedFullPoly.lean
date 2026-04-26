@@ -17,7 +17,7 @@
 
   on the non-vertical cone with nonzero denominator factors.
 
-  Phase 4 proves a bi-X-degree bound on `clearedFullPoly`; Phase 5
+  proves a bi-X-degree bound on `clearedFullPoly`; the next module
   combines the identity, the degree bound, and the Lang-Weil axiom
   (`bivariate_poly_zeros_on_ExE_le`) to bound the size of the
   `eventNotEq` set by a linear function of `(D.degE + k)·|E|`.
@@ -1324,9 +1324,9 @@ theorem clearedFullPoly_bi_x_degree_le
     |>.add (rhsTermNegPFull_bi E D B)
     |>.add (rhsSumFull_bi E D P B m)
 
-/-- **Phase 5 nonzero-witness on E × E.** Any non-degenerate log-deriv
+/-- **nonzero-witness on E × E.** Any non-degenerate log-deriv
     witness `(A₀, A₁)` yields `bivEval₂ clearedFullPoly A₀ A₁ ≠ 0` via
-    the Phase 3 identity: `bivEval₂ clearedFullPoly = (A₁.1 − A₀.1)^N ·
+    the identity: `bivEval₂ clearedFullPoly = (A₁.1 − A₀.1)^N ·
     logDerivCheckFn · logDerivCheckFnDenom`, all three factors nonzero. -/
 theorem clearedFullPoly_nonzero_witness
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
@@ -1407,7 +1407,7 @@ theorem bivEval₂_clearedFullPoly_eq_zero_of_bad
     For this session we deliver the **core inclusion bound**, which is
     the nondegenerate part of the argument. The boundary correction
     term is delegated to a follow-up alongside the `18·(d+k)` tightening
-    mentioned in the plan's Phase 5 "Open question".  -/
+    mentioned in the plan's "Open question".  -/
 
 
 /-! ### Total-degree bound on `liftPoly`. -/
@@ -1923,7 +1923,7 @@ theorem hasse_q_le_two_mul_card (hN : 8 ≤ E.points.card) :
   have hQ' : (E.q : ℤ) ≥ 2 * (E.points.card : ℤ) + 1 := by exact_mod_cast hlt
   nlinarith [sq_nonneg ((E.q : ℤ) - 2 * (E.points.card : ℤ) - 1)]
 
-/-- **Phase 5 `log_deriv_sz_paper` (core, non-degenerate part).**
+/-- **`log_deriv_sz_paper` (core, non-degenerate part).**
 
     The cardinality of the non-degenerate bad set —
     pairs `(A₀, A₁) ∈ E.points × E.points` where the verifier's
@@ -1992,7 +1992,7 @@ theorem log_deriv_sz_paper_core
               Nat.mul_le_mul_left _ hQle
           _ ≤ 36 * (2 * d + k + 6) * N := by nlinarith
 
-/-- **Phase 5 `log_deriv_sz_paper` (outer, with-boundary form).**
+/-- **`log_deriv_sz_paper` (outer, with-boundary form).**
 
     Combines the tightened core Lang-Weil bound
     (`36·(2d+k+6)·|E|`) on the denom-defined pairs with the tight
@@ -2062,15 +2062,6 @@ theorem log_deriv_sz_paper
           _ ≤ (78 * (D.degE + k + 6)) * E.points.card :=
                 Nat.mul_le_mul_right _ this
           _ = 78 * (D.degE + k + 6) * E.points.card := by ring
-
-/- (Deleted Phase 5 chord-symmetry block: swapA₀A₁, bivEval₂_swapA₀A₁,
-    clearedFullPoly_swap_signed, bivEval₂_clearedFullPoly_swap_zero,
-    log_deriv_sz_paper_core_symmetric — Aristotle project 754ff51a
-    determined chord symmetry alone doesn't halve the bound; replaced
-    by DKL+Bezout path. Section preserved as a one-line note.) -/
-
-/-! [DELETED] Phase 5 chord-symmetry block — see Phase F cleanup commit.
--/
 
 
 

@@ -9,9 +9,6 @@
   apply the Lang–Weil (DKL+Bezout) contrapositive to obtain
   identical vanishing on `E × E`; then extract the σ-matching
   permutation from the equality of factored norm forms.
-
-  Split out from `Divisor/ClearedFullPoly.lean` (Phase 2 file
-  refactor) for size and topical clarity.
 -/
 import Divisor.ClearedFullPoly
 

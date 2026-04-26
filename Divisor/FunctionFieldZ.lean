@@ -5,7 +5,7 @@
   norm polynomial `normZ E λ D` for `D = a(x) − y·b(x) ∈ F_q[E]` with
   respect to the chord coordinate `z = y − λ·x`.
 
-  Paper reference (Lemma 6, `sections/ec.tex:557-579`):
+  Paper reference (`\ref{lem:log-derivative}`, `sections/ec.tex:557-579`):
     `N(D) = lc(D)^3 · ∏_k (z − z(Q_k))^{β_k}`
   where `Q_k` ranges over the affine E-zeros of D, `β_k` are their
   multiplicities, and `z(Q) = y(Q) − λ·x(Q)` is the z-coordinate.
@@ -15,7 +15,7 @@
   `betaConstructive E D` and the projection `zLambda E λ`. This matches
   the behaviour of the function-field norm on the "split" locus
   (`normPoly_splits_over_Fq E D`); equivalence with the abstract norm
-  via a Sylvester resultant is deferred to Phase 1b. Downstream Phase 2
+  via a Sylvester resultant is deferred. Downstream
   only needs the explicit product form for the partial-fraction
   expansion of `(normZ)'(μ) / normZ(μ)` at the chord intercept, so this
   definition is the right compile target.
@@ -32,8 +32,8 @@
     * `normZ_eval_at_zLambda_of_mem` — vanishing at `z(Q_k)` for any
       zero `Q_k` with β(Q_k) > 0.
 
-  No new axioms, no `sorry` / `admit`. Preparatory for Lemma 6
-  mechanization (see `docs/continuation-plan.md` Phase 1a).
+  No new axioms, no `sorry` / `admit`. Preparatory for `\ref{lem:log-derivative}`
+  mechanization (deferred).
 -/
 import Divisor.BetaConstructive
 import Divisor.DivisorPrincipal
@@ -70,7 +70,7 @@ scalar, `betaConstructive E D` for the multiplicities, and
     E-zeros of D), with each factor raised to `betaConstructive E D Q`.
     On D-nonzeros this function is 0, and on D's affine E-zeros it is
     the multiplicity — so the product is well-defined and matches the
-    paper's Lemma 6 decomposition.
+    paper's `\ref{lem:log-derivative}` decomposition.
 
     Note: "X" is the z-variable here (the indeterminate of the resulting
     univariate polynomial in z). -/
@@ -266,7 +266,7 @@ theorem normZ_leadingCoeff (lam : ZMod E.q) (D : CoordRingElt E.q) :
 
 /-! ## Support: `normZ`'s roots come from `zerosFinset`
 
-A useful property for Phase 2: every root of `normZ` comes from
+A useful property: every root of `normZ` comes from
 `zerosFinset E D` via `zLambda λ`. The product structure makes this a
 direct consequence of the root of a product identity. -/
 

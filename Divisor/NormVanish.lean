@@ -1,5 +1,5 @@
 /-
-  Divisor/NormVanish.lean — Theorem 2 (Norm Vanishing)
+  Divisor/NormVanish.lean — `\ref{thm:norm-vanish}` (Norm Vanishing)
 -/
 import Divisor.Defs
 import Divisor.SlopeDist
@@ -32,11 +32,11 @@ def normVanishPairs (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q) :
     ∃ s ∈ badSlopes E D P,
       slopeOf pair.1.1 pair.1.2 pair.2.1 pair.2.2 = s)
 
-/-- **Theorem 2 (Norm Vanishing).**
+/-- **`\ref{thm:norm-vanish}` (Norm Vanishing).**
     |normVanishPairs| ≤ 2 * N * numAffine.
 
     Proof: normVanishPairs ⊆ ⋃_{s ∈ badSlopes} pairsWithSlope s.
-    By Lemma 1 each has ≤ 2*numAffine elements.
+    By `\ref{lem:slope-dist}` each has ≤ 2*numAffine elements.
     By card_biUnion_le and card_badSlopes_le. -/
 theorem norm_vanishing (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     (N : ℕ) (hN : (zeros D E.points).card ≤ N)

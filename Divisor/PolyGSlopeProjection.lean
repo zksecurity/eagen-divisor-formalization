@@ -12,9 +12,9 @@
      (-(A₁.1 - A₀.1))^(d+M-1) ·
        (polyFibK λ Q β R m).eval (zLambda λ A₀)`
   on the non-vertical cone (`A₀.1 ≠ A₁.1`, with `λ = slopeOf A₀ A₁`).
-  This is the "Phase A2" connection lemma in the plan.
+  This is the connection lemma.
 
-  The "Phase A4" generic-λ distinctness lemma bounds the number of
+  The generic-λ distinctness lemma bounds the number of
   slopes `λ` for which `zLambda λ` fails to separate two given
   distinct points. Each non-vertical pair of points gives at most one
   such bad slope; vertical pairs give none. Total: ≤ `binom(n, 2)`
@@ -151,7 +151,7 @@ private theorem polyG_secondSum_term_eq
   rw [show d + M - 1 = d + (M - 1) from by omega]
   ring
 
-/-- **Connection lemma (Phase A2).** On the non-vertical cone,
+/-- **Connection lemma .** On the non-vertical cone,
     `polyG E Q β R m A₀ A₁` factors as
     `(-(A₁.1-A₀.1))^(d+M-1) · polyFibK λ Q β R m .eval μ`,
     where `λ` is the chord's slope and `μ = zLambda λ A₀`. -/
@@ -178,7 +178,7 @@ theorem polyG_eq_polyFibK_eval
     intro j _
     exact polyG_secondSum_term_eq E Q R m A₀ A₁ hNV j
 
-/-! ## Generic-λ distinctness (Phase A4)
+/-! ## Generic-λ distinctness 
 
 For a Finset of points `S`, the set of slopes `λ` for which
 `zLambda λ` fails to separate two distinct points of `S` is bounded.
@@ -198,7 +198,7 @@ Total: bad-slope count ≤ `(distinctPairs S).card = S.card · (S.card - 1)`.
 noncomputable def pairBadLambda (P₁ P₂ : ZMod E.q × ZMod E.q) : ZMod E.q :=
   (P₁.2 - P₂.2) * (P₁.1 - P₂.1)⁻¹
 
-/-- **Generic-λ distinctness (Phase A4).**
+/-- **Generic-λ distinctness .**
     The set of slopes `λ` for which `zLambda λ` is not injective on
     `S` has cardinality at most `S.card · (S.card - 1)`, the number of
     ordered distinct pairs in `S`. -/
@@ -251,7 +251,7 @@ theorem badLambdaSet_card_le (S : Finset (ZMod E.q × ZMod E.q)) :
             rw [Nat.mul_sub_one]
           omega
 
-/-! ## Per-slope μ-count (Phase A3)
+/-! ## Per-slope μ-count 
 
 For a given slope `λ`, the set of intercepts `μ` realized by chords on
 `E` with slope `λ` (i.e., `μ` such that the line `y = λx + μ` meets
@@ -262,7 +262,7 @@ Combined with A4 (distinctness), we obtain a slope `λ ∈ F_q` that:
 (i) does not make `zLambda E λ` collide two points in a given set `S`,
 (ii) realizes ≥ `N` distinct intercepts via chords on `E`.
 
-This is the "Phase A3 alternative" path from the plan: existence of
+This is existence of
 ONE good slope (pigeonhole on the total), not "most slopes".
 -/
 
