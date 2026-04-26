@@ -42,6 +42,7 @@
 -/
 import Divisor.Defs
 import Divisor.ClearedPolyForm
+import Divisor.ClearedPolyFormBounds
 import Mathlib.Algebra.Polynomial.Roots
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Tactic.IntervalCases

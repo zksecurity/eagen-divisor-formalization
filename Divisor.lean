@@ -13,6 +13,7 @@ import Divisor.BassaMonic
 import Divisor.CubicIntersection
 import Divisor.LogDeriv
 import Divisor.ClearedPolyForm
+import Divisor.ClearedPolyFormBounds
 import Divisor.ClearedFullPoly
 import Divisor.SigmaMatching
 import Divisor.BetaConstructive

@@ -28,6 +28,7 @@
   `MvPolynomial` namespace is not.
 -/
 import Divisor.ClearedPolyForm
+import Divisor.ClearedPolyFormBounds
 import Divisor.FourVarPoly
 import Divisor.Axioms.AxiomBivariatePolyZerosOnExELe
 import Divisor.Axioms.AxiomHasseWeil
