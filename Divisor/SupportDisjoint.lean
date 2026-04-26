@@ -37,8 +37,8 @@ noncomputable def badPairCompletenessPred (D : CoordRingElt E.q)
   D.eval p.1.1 p.1.2 = 0
   ∨ D.eval p.2.1 p.2.2 = 0
   ∨ (match thirdPoint E p.1 p.2 with
-      | ECPoint.infinity => True
-      | ECPoint.affine x y => D.eval x y = 0)
+      | none => True
+      | some (x, y) => D.eval x y = 0)
 
 /-- The completeness bad set: pairs `(A₀, A₁)` where
     `D(A₀) = 0`, `D(A₁) = 0`, `A₂ = ∞`, or `A₂ = (x, y)` with `D(x, y) = 0`. -/
@@ -92,7 +92,7 @@ theorem third_point_on_curve
     (A₀ A₁ : ZMod E.q × ZMod E.q)
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
     {x y : ZMod E.q}
-    (hT : thirdPoint E A₀ A₁ = ECPoint.affine x y) :
+    (hT : thirdPoint E A₀ A₁ = some (x, y)) :
     (x, y) ∈ E.points := by
   have hC0 : A₀.2 ^ 2 = A₀.1 ^ 3 + E.curveA * A₀.1 + E.curveB := E.hOnCurve A₀ hA₀
   have hC1 : A₁.2 ^ 2 = A₁.1 ^ 3 + E.curveA * A₁.1 + E.curveB := E.hOnCurve A₁ hA₁
@@ -113,8 +113,8 @@ theorem third_point_on_curve
         set x₂ := lam ^ 2 - 2 * A₀.1 with hx2_def
         set y₂ := lam * x₂ + mu with hy2_def
         have hxy : x = x₂ ∧ y = y₂ := by
-          injection hT with hx_eq hy_eq
-          exact ⟨hx_eq.symm, hy_eq.symm⟩
+          rw [Option.some.injEq, Prod.mk.injEq] at hT
+          exact ⟨hT.1.symm, hT.2.symm⟩
         rw [hxy.1, hxy.2]
         have h2y_ne : (2 * A₀.2 : ZMod E.q) ≠ 0 := by
           intro hh
@@ -143,8 +143,8 @@ theorem third_point_on_curve
     set x₂ := lam ^ 2 - A₀.1 - A₁.1 with hx2_def
     set y₂ := lam * x₂ + mu with hy2_def
     have hxy : x = x₂ ∧ y = y₂ := by
-      injection hT with hx_eq hy_eq
-      exact ⟨hx_eq.symm, hy_eq.symm⟩
+      rw [Option.some.injEq, Prod.mk.injEq] at hT
+      exact ⟨hT.1.symm, hT.2.symm⟩
     rw [hxy.1, hxy.2]
     have hx_ne : (A₁.1 - A₀.1 : ZMod E.q) ≠ 0 := sub_ne_zero.mpr (Ne.symm hx)
     -- Slope relation after clearing denominator.
@@ -173,33 +173,195 @@ theorem third_point_on_curve
       rw [hGoal, hQ]; ring
     linear_combination this
 
+/-! ## Helper: relate `thirdPoint` to mathlib's group law
+
+When `thirdPoint E A₀ A₁ = some (x, y)` and `A₀, A₁ ∈ E.points`, the result
+is the negation of the mathlib group sum:
+    `affineOfMem A₀ + affineOfMem A₁ = -affineOfMem (x, y)`.
+The proof works case-by-case (chord vs. tangent) showing that our `thirdPoint`
+coordinates equal `(addX, negAddY)`, and invokes mathlib's
+`add_of_X_ne'` / `add_self_of_Y_ne'` lemmas. -/
+
+private theorem thirdPoint_some_eq_neg_add
+    {A₀ A₁ : ZMod E.q × ZMod E.q}
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
+    {x y : ZMod E.q}
+    (hT : thirdPoint E A₀ A₁ = some (x, y)) :
+    ECPoint.affineOfMem E hA₀ + ECPoint.affineOfMem E hA₁ =
+      -ECPoint.affineOfMem E (third_point_on_curve E A₀ A₁ hA₀ hA₁ hT) := by
+  classical
+  -- Extract the nonsingular witnesses.
+  have hxy_mem : (x, y) ∈ E.points := third_point_on_curve E A₀ A₁ hA₀ hA₁ hT
+  have hns0 : E.toW.toAffine.Nonsingular A₀.1 A₀.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff A₀.1 A₀.2).mpr (E.hOnCurve A₀ hA₀))
+  have hns1 : E.toW.toAffine.Nonsingular A₁.1 A₁.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff A₁.1 A₁.2).mpr (E.hOnCurve A₁ hA₁))
+  have hnsxy : E.toW.toAffine.Nonsingular x y :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff x y).mpr (E.hOnCurve _ hxy_mem))
+  -- Curve equations.
+  have hC0 : A₀.2 ^ 2 = A₀.1 ^ 3 + E.curveA * A₀.1 + E.curveB := E.hOnCurve A₀ hA₀
+  -- Show affineOfMem unfolds to .some (with these nonsingular witnesses).
+  have heq0 : ECPoint.affineOfMem E hA₀ =
+      (.some hns0 : ECPoint E) := rfl
+  have heq1 : ECPoint.affineOfMem E hA₁ =
+      (.some hns1 : ECPoint E) := rfl
+  have heqxy : ECPoint.affineOfMem E hxy_mem =
+      (.some hnsxy : ECPoint E) := rfl
+  rw [heq0, heq1, heqxy]
+  -- Case-split on the structure of `thirdPoint`.
+  unfold thirdPoint at hT
+  by_cases hxx : A₀.1 = A₁.1
+  · rw [if_pos hxx] at hT
+    by_cases hyy : A₀.2 = A₁.2
+    · rw [if_pos hyy] at hT
+      by_cases h2t : A₀.2 = 0
+      · rw [if_pos h2t] at hT
+        exact absurd hT (by simp)
+      · rw [if_neg h2t] at hT
+        -- Tangent case: x₀ = x₁, y₀ = y₁, y₀ ≠ 0.
+        rw [Option.some.injEq, Prod.mk.injEq] at hT
+        obtain ⟨hxe, hye⟩ := hT
+        -- Substitute A₁ = A₀ via hxx, hyy.
+        -- mathlib slope at (A₀, A₀): (3 x² + A) / (2y).
+        -- We need: P + P = -some(x, y) where (x, y) = thirdPoint coords.
+        -- Use `add_self_of_Y_ne'`.
+        -- First, hns0 vs hns1: since A₀.1 = A₁.1 and A₀.2 = A₁.2, these are
+        -- nonsingular witnesses for the same point.
+        have hyneg : A₀.2 ≠ E.toW.toAffine.negY A₀.1 A₀.2 := by
+          intro h
+          apply h2t
+          have heq : A₀.2 = -A₀.2 := by
+            have hnY : E.toW.toAffine.negY A₀.1 A₀.2 = -A₀.2 := by
+              show -A₀.2 - E.toW.a₁ * A₀.1 - E.toW.a₃ = -A₀.2
+              rw [E.toW_a₁, E.toW_a₃]; ring
+            rw [hnY] at h
+            exact h
+          have htwo : (2 : ZMod E.q) * A₀.2 = 0 := by linear_combination heq
+          have h2 : (2 : ZMod E.q) ≠ 0 := by
+            have hq5 : E.q ≥ 5 := E.hq_ge
+            have : (2 : ZMod E.q) = ((2 : ℕ) : ZMod E.q) := by norm_cast
+            rw [this, Ne, CharP.cast_eq_zero_iff (ZMod E.q) E.q]
+            intro hdvd
+            have : E.q ≤ 2 := Nat.le_of_dvd (by norm_num) hdvd
+            omega
+          exact (mul_eq_zero.mp htwo).resolve_left h2
+        -- Replace A₁'s nonsingular witness with A₀'s by congruence.
+        have hpts_eq : (.some hns1 : ECPoint E) = .some hns0 := by
+          congr 1 <;> [exact hxx.symm; exact hyy.symm]
+        rw [hpts_eq]
+        rw [WeierstrassCurve.Affine.Point.add_self_of_Y_ne' hyneg]
+        -- Goal: -some (point at (addX, negAddY)) = -some hnsxy.
+        -- Compute the slope.
+        have hnegY : E.toW.toAffine.negY A₀.1 A₀.2 = -A₀.2 := by
+          show -A₀.2 - E.toW.a₁ * A₀.1 - E.toW.a₃ = -A₀.2
+          rw [E.toW_a₁, E.toW_a₃]; ring
+        have hsl : E.toW.toAffine.slope A₀.1 A₀.1 A₀.2 A₀.2 =
+            (3 * A₀.1 ^ 2 + E.curveA) * (2 * A₀.2)⁻¹ := by
+          rw [WeierstrassCurve.Affine.slope_of_Y_ne rfl hyneg]
+          simp only [E.toW_a₁, E.toW_a₂, E.toW_a₄]
+          rw [hnegY]
+          field_simp
+          ring
+        -- Coordinate identities.
+        have hX_eq : E.toW.toAffine.addX A₀.1 A₀.1
+            (E.toW.toAffine.slope A₀.1 A₀.1 A₀.2 A₀.2) = x := by
+          simp only [WeierstrassCurve.Affine.addX, E.toW_a₁, E.toW_a₂, hsl]
+          linear_combination hxe
+        have hY_eq : E.toW.toAffine.negAddY A₀.1 A₀.1 A₀.2
+            (E.toW.toAffine.slope A₀.1 A₀.1 A₀.2 A₀.2) = y := by
+          simp only [WeierstrassCurve.Affine.negAddY, WeierstrassCurve.Affine.addX,
+                     E.toW_a₁, E.toW_a₂, hsl]
+          linear_combination hye
+        -- Equate the two `some` points by rewriting with hX_eq, hY_eq.
+        congr 1
+        rw [WeierstrassCurve.Affine.Point.some.injEq]
+        exact ⟨hX_eq, hY_eq⟩
+    · rw [if_neg hyy] at hT
+      exact absurd hT (by simp)
+  · rw [if_neg hxx] at hT
+    -- Chord case: x₀ ≠ x₁.
+    rw [Option.some.injEq, Prod.mk.injEq] at hT
+    obtain ⟨hxe, hye⟩ := hT
+    rw [WeierstrassCurve.Affine.Point.add_of_X_ne' hxx]
+    -- Show coordinates match.
+    have hsl : E.toW.toAffine.slope A₀.1 A₁.1 A₀.2 A₁.2 =
+        (A₁.2 - A₀.2) * (A₁.1 - A₀.1)⁻¹ := by
+      rw [WeierstrassCurve.Affine.slope_of_X_ne hxx]
+      have hxne : (A₀.1 - A₁.1 : ZMod E.q) ≠ 0 := sub_ne_zero.mpr hxx
+      have hxne' : (A₁.1 - A₀.1 : ZMod E.q) ≠ 0 := sub_ne_zero.mpr (Ne.symm hxx)
+      field_simp
+      ring
+    have hX_eq : E.toW.toAffine.addX A₀.1 A₁.1
+        (E.toW.toAffine.slope A₀.1 A₁.1 A₀.2 A₁.2) = x := by
+      simp only [WeierstrassCurve.Affine.addX, E.toW_a₁, E.toW_a₂, hsl]
+      linear_combination hxe
+    have hY_eq : E.toW.toAffine.negAddY A₀.1 A₁.1 A₀.2
+        (E.toW.toAffine.slope A₀.1 A₁.1 A₀.2 A₁.2) = y := by
+      simp only [WeierstrassCurve.Affine.negAddY, WeierstrassCurve.Affine.addX,
+                 E.toW_a₁, E.toW_a₂, hsl]
+      linear_combination hye
+    congr 1
+    rw [WeierstrassCurve.Affine.Point.some.injEq]
+    exact ⟨hX_eq, hY_eq⟩
+
 /-! ## Injectivity of A₁ ↦ thirdPoint E A₀ A₁ (group-law cancellation)
 
 Classical EC fact: for each A₀ on E, the map `A₁ ↦ thirdPoint E A₀ A₁`
 is injective on affine A₁ for which the third point is affine (i.e. not ∞).
 Equivalent to: if `A₀ + A₁ = A₀ + A₁'` (group law), then `A₁ = A₁'`.
 
-Proved directly from the axiomatized group-law cancellation on `ECPoint`,
-via the identity `thirdPoint = -(A₀ + A₁)` (`thirdPoint_eq_neg_add`). -/
+Proved directly from mathlib's group-law cancellation on `ECPoint E`,
+via the identity `thirdPoint = -(A₀ + A₁)` (`thirdPoint_some_eq_neg_add`). -/
 theorem thirdPoint_inj_on_A₁ (A₀ : ZMod E.q × ZMod E.q) (hA₀ : A₀ ∈ E.points) :
     Set.InjOn (fun A₁ => thirdPoint E A₀ A₁)
-      {A₁ | A₁ ∈ E.points ∧ thirdPoint E A₀ A₁ ≠ ECPoint.infinity} := by
+      {A₁ | A₁ ∈ E.points ∧ thirdPoint E A₀ A₁ ≠ none} := by
   intro a ha b hb hab
-  obtain ⟨_, ha_inf⟩ := ha
-  obtain ⟨_, hb_inf⟩ := hb
-  -- Beta-reduce and transport to the group law.
+  obtain ⟨ha_mem, ha_ninf⟩ := ha
+  obtain ⟨hb_mem, hb_ninf⟩ := hb
   simp only at hab
-  rw [thirdPoint_eq_neg_add E A₀ a ha_inf,
-      thirdPoint_eq_neg_add E A₀ b hb_inf] at hab
-  have hadd : ECPoint.add E (.affine A₀.1 A₀.2) (.affine a.1 a.2)
-            = ECPoint.add E (.affine A₀.1 A₀.2) (.affine b.1 b.2) :=
-    ECPoint.neg_inj hab
-  have hpt : (.affine a.1 a.2 : ECPoint E.q) = .affine b.1 b.2 :=
-    ECPoint.add_left_cancel E hadd
-  have h12 : a.1 = b.1 ∧ a.2 = b.2 := by
-    rw [ECPoint.affine.injEq] at hpt
-    exact hpt
-  exact Prod.ext h12.1 h12.2
+  -- Extract some-form of thirdPoint for both.
+  obtain ⟨pa, hTa'⟩ : ∃ p, thirdPoint E A₀ a = some p :=
+    Option.ne_none_iff_exists'.mp ha_ninf
+  obtain ⟨pb, hTb'⟩ : ∃ p, thirdPoint E A₀ b = some p :=
+    Option.ne_none_iff_exists'.mp hb_ninf
+  obtain ⟨xa, ya⟩ := pa
+  obtain ⟨xb, yb⟩ := pb
+  have hTa : thirdPoint E A₀ a = some (xa, ya) := hTa'
+  have hTb : thirdPoint E A₀ b = some (xb, yb) := hTb'
+  -- The third points are equal, so their coordinates are equal.
+  have heq_coord : (xa, ya) = (xb, yb) := by
+    have : (some (xa, ya) : Option (ZMod E.q × ZMod E.q)) = some (xb, yb) := by
+      rw [← hTa, ← hTb, hab]
+    rw [Option.some.injEq] at this
+    exact this
+  -- Apply the group-law identity.
+  have hGa := thirdPoint_some_eq_neg_add E hA₀ ha_mem hTa
+  have hGb := thirdPoint_some_eq_neg_add E hA₀ hb_mem hTb
+  -- The membership proofs for (xa, ya) and (xb, yb) coincide (after coord-eq).
+  have h_third_a : (xa, ya) ∈ E.points := third_point_on_curve E A₀ a hA₀ ha_mem hTa
+  have h_third_b : (xb, yb) ∈ E.points := third_point_on_curve E A₀ b hA₀ hb_mem hTb
+  -- After coord identification, the right sides agree, so the left sides do too.
+  have hadd_eq : ECPoint.affineOfMem E hA₀ + ECPoint.affineOfMem E ha_mem =
+                 ECPoint.affineOfMem E hA₀ + ECPoint.affineOfMem E hb_mem := by
+    rw [hGa, hGb]
+    -- Need: -affineOfMem (xa, ya) = -affineOfMem (xb, yb).
+    obtain ⟨hxx, hyy⟩ := Prod.mk.injEq _ _ _ _ |>.mp heq_coord
+    -- affineOfMem depends on the membership proof, but only uses the coords.
+    -- Since (xa, ya) = (xb, yb) as points, the affineOfMem values are equal.
+    subst hxx
+    subst hyy
+    rfl
+  -- Cancel A₀, then extract a = b from .some equality.
+  have hpt_eq : ECPoint.affineOfMem E ha_mem = ECPoint.affineOfMem E hb_mem :=
+    add_left_cancel hadd_eq
+  -- affineOfMem ha_mem = .some hns_a, affineOfMem hb_mem = .some hns_b;
+  -- equality forces a.1 = b.1 ∧ a.2 = b.2.
+  have h_some : (.some (E.equation_iff_nonsingular.mp ((E.equation_iff a.1 a.2).mpr
+                  (E.hOnCurve a ha_mem))) : ECPoint E)
+              = .some (E.equation_iff_nonsingular.mp ((E.equation_iff b.1 b.2).mpr
+                  (E.hOnCurve b hb_mem))) := hpt_eq
+  rw [WeierstrassCurve.Affine.Point.some.injEq] at h_some
+  exact Prod.ext h_some.1 h_some.2
 
 /-! ## Auxiliary: fiberwise decomposition -/
 
@@ -212,7 +374,7 @@ theorem thirdPoint_inj_on_A₁ (A₀ : ZMod E.q × ZMod E.q) (hA₀ : A₀ ∈ E
     these are the same element, yielding at most one A₁. -/
 theorem card_thirdPoint_infinity_fiber (A₀ : ZMod E.q × ZMod E.q)
     (hA₀ : A₀ ∈ E.points) :
-    (E.points.filter (fun A₁ => thirdPoint E A₀ A₁ = ECPoint.infinity)).card ≤ 1 := by
+    (E.points.filter (fun A₁ => thirdPoint E A₀ A₁ = none)).card ≤ 1 := by
   rw [Finset.card_le_one]
   intro a ha b hb
   simp only [Finset.mem_filter] at ha hb
@@ -314,56 +476,58 @@ theorem card_filter_product_fiber_eq
 theorem card_thirdPoint_affine_D_zero_pairs_le (D : CoordRingElt E.q) :
     ((E.points ×ˢ E.points).filter (fun p =>
        match thirdPoint E p.1 p.2 with
-       | ECPoint.infinity => False
-       | ECPoint.affine x y => D.eval x y = 0)).card
+       | none => False
+       | some (x, y) => D.eval x y = 0)).card
       ≤ E.numAffine * numZeros E D := by
   classical
   set S := (E.points ×ˢ E.points).filter (fun p =>
       match thirdPoint E p.1 p.2 with
-      | ECPoint.infinity => False
-      | ECPoint.affine x y => D.eval x y = 0)
+      | none => False
+      | some (x, y) => D.eval x y = 0)
   have hfib : S.card = ∑ A₀ ∈ E.points,
         (E.points.filter (fun A₁ =>
           match thirdPoint E A₀ A₁ with
-          | ECPoint.infinity => False
-          | ECPoint.affine x y => D.eval x y = 0)).card :=
+          | none => False
+          | some (x, y) => D.eval x y = 0)).card :=
     card_filter_product_fiber_eq E E.points E.points
       (fun a b =>
         match thirdPoint E a b with
-        | ECPoint.infinity => False
-        | ECPoint.affine x y => D.eval x y = 0)
+        | none => False
+        | some (x, y) => D.eval x y = 0)
   rw [hfib]
   have hper_A0 :
       ∀ A₀ ∈ E.points,
         (E.points.filter (fun A₁ =>
             match thirdPoint E A₀ A₁ with
-            | ECPoint.infinity => False
-            | ECPoint.affine x y => D.eval x y = 0)).card ≤ numZeros E D := by
+            | none => False
+            | some (x, y) => D.eval x y = 0)).card ≤ numZeros E D := by
     intro A₀ hA₀
     set fiber := E.points.filter (fun A₁ =>
         match thirdPoint E A₀ A₁ with
-        | ECPoint.infinity => False
-        | ECPoint.affine x y => D.eval x y = 0) with hfiberdef
+        | none => False
+        | some (x, y) => D.eval x y = 0) with hfiberdef
     have hfib_aff : ∀ A₁ ∈ fiber,
-        A₁ ∈ E.points ∧ thirdPoint E A₀ A₁ ≠ ECPoint.infinity ∧
-        ∃ x y, thirdPoint E A₀ A₁ = ECPoint.affine x y ∧ D.eval x y = 0 := by
+        A₁ ∈ E.points ∧ thirdPoint E A₀ A₁ ≠ none ∧
+        ∃ x y, thirdPoint E A₀ A₁ = some (x, y) ∧ D.eval x y = 0 := by
       intro A₁ hA₁
       simp only [hfiberdef, Finset.mem_filter] at hA₁
       obtain ⟨hmem, hcond⟩ := hA₁
-      have hT_eq : ∃ x y, thirdPoint E A₀ A₁ = ECPoint.affine x y := by
-        cases hT : thirdPoint E A₀ A₁ with
-        | infinity =>
-          rw [hT] at hcond
-          exact absurd hcond (by simp)
-        | affine x y => exact ⟨x, y, rfl⟩
+      have hT_ne : thirdPoint E A₀ A₁ ≠ none := by
+        intro h
+        rw [h] at hcond
+        exact hcond
+      have hT_eq : ∃ x y, thirdPoint E A₀ A₁ = some (x, y) := by
+        obtain ⟨p, hp⟩ := Option.ne_none_iff_exists'.mp hT_ne
+        obtain ⟨x, y⟩ := p
+        exact ⟨x, y, hp⟩
       obtain ⟨x, y, hT⟩ := hT_eq
       rw [hT] at hcond
       refine ⟨hmem, ?_, x, y, hT, hcond⟩
       rw [hT]; exact (by simp)
     let thirdAffine : (ZMod E.q × ZMod E.q) → (ZMod E.q × ZMod E.q) := fun A₁ =>
       match thirdPoint E A₀ A₁ with
-      | ECPoint.infinity => (0, 0)
-      | ECPoint.affine x y => (x, y)
+      | none => (0, 0)
+      | some (x, y) => (x, y)
     have hInj' : Set.InjOn thirdAffine ↑fiber := by
       intro a ha b hb hab
       obtain ⟨hamem, haninf, xa, ya, hTa, _⟩ := hfib_aff a ha
@@ -389,8 +553,8 @@ theorem card_thirdPoint_affine_D_zero_pairs_le (D : CoordRingElt E.q) :
   calc (∑ A₀ ∈ E.points,
           (E.points.filter (fun A₁ =>
             match thirdPoint E A₀ A₁ with
-            | ECPoint.infinity => False
-            | ECPoint.affine x y => D.eval x y = 0)).card)
+            | none => False
+            | some (x, y) => D.eval x y = 0)).card)
       ≤ ∑ A₀ ∈ E.points, numZeros E D :=
         Finset.sum_le_sum hper_A0
     _ = E.points.card * numZeros E D := by
@@ -418,12 +582,12 @@ theorem support_disjointness (D : CoordRingElt E.q)
     (E.points ×ˢ E.points).filter (fun p => D.eval p.2.1 p.2.2 = 0) with hS1def
   set S₂ : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
     (E.points ×ˢ E.points).filter
-      (fun p => thirdPoint E p.1 p.2 = ECPoint.infinity) with hS2def
+      (fun p => thirdPoint E p.1 p.2 = none) with hS2def
   set S₃ : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
     (E.points ×ˢ E.points).filter (fun p =>
       match thirdPoint E p.1 p.2 with
-      | ECPoint.infinity => False
-      | ECPoint.affine x y => D.eval x y = 0) with hS3def
+      | none => False
+      | some (x, y) => D.eval x y = 0) with hS3def
   -- Subset inclusion.
   have hsub : badChallengesCompleteness E D ⊆ S₀ ∪ S₁ ∪ S₂ ∪ S₃ := by
     intro p hp
@@ -440,11 +604,11 @@ theorem support_disjointness (D : CoordRingElt E.q)
       refine Finset.mem_union.mpr (Or.inr ?_)
       exact Finset.mem_filter.mpr ⟨hmem, h⟩
     · cases hT : thirdPoint E p.1 p.2 with
-      | infinity =>
+      | none =>
         refine Finset.mem_union.mpr (Or.inl ?_)
         refine Finset.mem_union.mpr (Or.inr ?_)
         exact Finset.mem_filter.mpr ⟨hmem, hT⟩
-      | affine x y =>
+      | some xy =>
         refine Finset.mem_union.mpr (Or.inr ?_)
         refine Finset.mem_filter.mpr ⟨hmem, ?_⟩
         rw [hT] at h
@@ -471,12 +635,12 @@ theorem support_disjointness (D : CoordRingElt E.q)
   have hS2_card : S₂.card ≤ E.numAffine := by
     have hfib : S₂.card = ∑ A₀ ∈ E.points,
           (E.points.filter (fun A₁ =>
-            thirdPoint E A₀ A₁ = ECPoint.infinity)).card :=
+            thirdPoint E A₀ A₁ = none)).card :=
       card_filter_product_fiber_eq E E.points E.points
-        (fun a b => thirdPoint E a b = ECPoint.infinity)
+        (fun a b => thirdPoint E a b = none)
     rw [hfib]
     calc ∑ A₀ ∈ E.points,
-            (E.points.filter (fun A₁ => thirdPoint E A₀ A₁ = ECPoint.infinity)).card
+            (E.points.filter (fun A₁ => thirdPoint E A₀ A₁ = none)).card
         ≤ ∑ A₀ ∈ E.points, 1 := by
           apply Finset.sum_le_sum
           intro A₀ hA₀

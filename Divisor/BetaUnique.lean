@@ -128,12 +128,12 @@ theorem group_sum_eq_of_principal_conditions
     (hSplit : normPoly_splits_over_Fq E D)
     (β_fun : ZMod E.q × ZMod E.q → ℕ)
     (hβgroup : ECPoint.weightedSum E E.points
-                 (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) :
+                 (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine E P.1 P.2)) = 0) :
     ECPoint.weightedSum E E.points
-      (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) =
+      (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine E P.1 P.2)) =
     ECPoint.weightedSum E E.points
       (fun P => ECPoint.nsmul E (betaConstructive E D P)
-                    (ECPoint.affine P.1 P.2)) := by
+                    (ECPoint.affine E P.1 P.2)) := by
   rw [hβgroup, betaConstructive_group_sum_zero E D hD hSplit]
 
 /-! ## Sum-bound agreement
@@ -174,7 +174,7 @@ theorem sum_le_degE_of_principal_conditions
 --     (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
 --     (hβsum : (∑ P ∈ E.points, β_fun P) ≤ D.degE)
 --     (hβgroup : ECPoint.weightedSum E E.points
---                  (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0) :
+--                  (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine E P.1 P.2)) = 0) :
 --     ∀ k : Fin (zerosCard E D),
 --       multAt E β_fun D k = multAt E (betaConstructive E D) D k
 -- -/

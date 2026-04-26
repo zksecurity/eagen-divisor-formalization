@@ -96,10 +96,10 @@ structure DlogWitness (q : ℕ) [Fact (Nat.Prime q)] where
 def relDlog (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q) :
     Prop :=
   ∃ (hk : stmt.k = wit.k),
-    (ECPoint.affine stmt.target.1 stmt.target.2 : ECPoint E.q) =
+    (ECPoint.affine E stmt.target.1 stmt.target.2 : ECPoint E) =
       ECPoint.weightedSum E (Finset.univ : Finset (Fin wit.k))
         (fun i => ECPoint.zsmul E (wit.scalars i)
-                    (ECPoint.affine
+                    (ECPoint.affine E
                       (stmt.bases (Fin.cast hk.symm i)).1
                       (stmt.bases (Fin.cast hk.symm i)).2))
 
@@ -156,14 +156,13 @@ subsumes the curve-side claim `P = Σ [n_i] · B_i`. -/
     `-degE(D)` at `∞`. All other points get `0`. -/
 noncomputable def honestDivisorCoeffs (E : ECSetup) (stmt : DlogStatement E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) : ECPoint E.q → ℤ :=
-  fun P => match P with
-    | .infinity => -(msg.toD.degE : ℤ)
-    | .affine x y =>
-        (if (x, y) = (stmt.target.1, -stmt.target.2) then 1 else 0) +
-        ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
-          (fun i => stmt.bases i = (x, y)),
-          (wit.scalars (hk ▸ i))
+    (msg : MAProverMsg E.q) : ECPoint E → ℤ
+  | 0 => -(msg.toD.degE : ℤ)
+  | @WeierstrassCurve.Affine.Point.some _ _ _ x y _ =>
+      (if (x, y) = (stmt.target.1, -stmt.target.2) then 1 else 0) +
+      ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
+        (fun i => stmt.bases i = (x, y)),
+        (wit.scalars (hk ▸ i))
 
 /-- Predicate: `msg` is the honest prover's first-round message for
     `(stmt, wit)`.

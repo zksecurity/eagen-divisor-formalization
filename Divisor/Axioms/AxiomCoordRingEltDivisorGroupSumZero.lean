@@ -42,7 +42,7 @@ axiom CoordRingElt.divisor_group_sum_zero
     (hSplit : normPoly_splits_over_Fq E D) :
     ECPoint.weightedSum E E.points
       (fun P => ECPoint.nsmul E (betaConstructive E D P)
-                    (ECPoint.affine P.1 P.2)) = 0
+                    (ECPoint.affine E P.1 P.2)) = 0
 
 /-- Direct restatement of the group-sum axiom as a convenience theorem
     under the chosen `β = betaConstructive E D` representative. Requires
@@ -52,7 +52,7 @@ theorem betaConstructive_group_sum_zero
     (hSplit : normPoly_splits_over_Fq E D) :
     ECPoint.weightedSum E E.points
       (fun P => ECPoint.nsmul E (betaConstructive E D P)
-                    (ECPoint.affine P.1 P.2)) = 0 :=
+                    (ECPoint.affine E P.1 P.2)) = 0 :=
   CoordRingElt.divisor_group_sum_zero E D hD hSplit
 
 end Divisor

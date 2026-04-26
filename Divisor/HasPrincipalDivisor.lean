@@ -65,7 +65,7 @@ theorem CoordRingElt.has_principal_divisor
       (∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β P ≠ 0) ∧
       (∑ P ∈ E.points, β P) ≤ D.degE ∧
       ECPoint.weightedSum E E.points
-        (fun P => ECPoint.nsmul E (β P) (ECPoint.affine P.1 P.2)) = 0 := by
+        (fun P => ECPoint.nsmul E (β P) (ECPoint.affine E P.1 P.2)) = 0 := by
   refine ⟨betaConstructive E D, ?_, ?_, ?_, ?_⟩
   · exact fun P hP => betaConstructive_support E D P hP
   · exact fun P hP hZ => betaConstructive_covers E D hD P hP hZ
