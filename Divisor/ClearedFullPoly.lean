@@ -20,7 +20,7 @@
   Phase 4 proves a bi-X-degree bound on `clearedFullPoly`; Phase 5
   combines the identity, the degree bound, and the Lang-Weil axiom
   (`bivariate_poly_zeros_on_ExE_le`) to bound the size of the
-  `badChallengesNotEq` set by a linear function of `(D.degE + k)·|E|`.
+  `eventNotEq` set by a linear function of `(D.degE + k)·|E|`.
 
   Notation convention: use `Xm` / `Cm` for the 4-variate (MvPolynomial)
   generator / constant embed to avoid clashing with `Polynomial.X` in
@@ -1398,7 +1398,7 @@ theorem bivEval₂_clearedFullPoly_eq_zero_of_bad
     Event_NotEq bound. The bound `36·(D.degE + k + 6)·|E|` comes from
     `2·(dX + dY) = 2·(9 + 9) = 36` at bi-x-degree `(9·(d+k+6), 9·(d+k+6))`.
 
-    A boundary correction accounts for pairs in `badChallengesNotEq`
+    A boundary correction accounts for pairs in `eventNotEq`
     where either the line is vertical (`A₀.1 = A₁.1`) or a denominator
     factor vanishes. These pairs lie outside the identity's scope but
     are bounded by existing F1-F6 bounds in `ClearedPolyForm.lean`.
@@ -2011,11 +2011,11 @@ theorem log_deriv_sz_paper
     (hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
         logDerivCheckFnDefined E D P B A₀ A₁ ∧
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
-    (badChallengesNotEq E D P B m).card ≤
+    (eventNotEq E D P B m).card ≤
       78 * (D.degE + k + 6) * E.points.card := by
   classical
-  -- badChallengesNotEq splits by `logDerivCheckFnDefined`.
-  set badNE := badChallengesNotEq E D P B m with hBNE_def
+  -- eventNotEq splits by `logDerivCheckFnDefined`.
+  set badNE := eventNotEq E D P B m with hBNE_def
   set defBad := (E.points ×ˢ E.points).filter
     (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
       A₀ne_A₁x_cleared_pair E D P B m p) with hDB_def
@@ -2024,7 +2024,7 @@ theorem log_deriv_sz_paper
       ¬ logDerivCheckFnDefined E D P B p.1 p.2) with hUA_def
   have hSub : badNE ⊆ defBad ∪ undefAll := by
     intro p hp
-    simp only [hBNE_def, badChallengesNotEq, Finset.mem_filter] at hp
+    simp only [hBNE_def, eventNotEq, Finset.mem_filter] at hp
     obtain ⟨hVP, hCheck⟩ := hp
     have hDP : p ∈ distinctPairs E.points := (Finset.mem_filter.mp hVP).1
     have hEE : p ∈ E.points ×ˢ E.points := (Finset.mem_filter.mp hDP).1

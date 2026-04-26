@@ -222,7 +222,7 @@ theorem logDerivCheckFn_eq_zero_iff_cleared
 
 /-- The "NotEq" bad set: pairs `(A₀, A₁) ∈ validPairs` for which the
     verifier's log-derivative check vanishes. -/
-noncomputable def badChallengesNotEq
+noncomputable def eventNotEq
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q) :
     Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=

@@ -269,19 +269,19 @@ theorem log_deriv_sz_paper_tight
     (hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
         logDerivCheckFnDefined E D P B A₀ A₁ ∧
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
-    (badChallengesNotEq E D P B (fun i => m i)).card
+    (eventNotEq E D P B (fun i => m i)).card
       ≤ 18 * (D.degE + k) * E.q +
         (6 * D.degE + 9 * k + 71) * E.points.card := by
   classical
   have hDnz := hDnz_from_hNV D P B m hNV
   -- Split: defined-bad + undefined
-  have hSub : badChallengesNotEq E D P B (fun i => m i) ⊆
+  have hSub : eventNotEq E D P B (fun i => m i) ⊆
       (E.points ×ˢ E.points).filter
         (fun p => A₀ne_A₁x_cleared_pair E D P B m p) ∪
       (E.points ×ˢ E.points).filter
         (fun p => ¬ logDerivCheckFnDefined E D P B p.1 p.2) := by
     intro p hp
-    simp only [badChallengesNotEq, Finset.mem_filter] at hp
+    simp only [eventNotEq, Finset.mem_filter] at hp
     obtain ⟨hVP, hCheck⟩ := hp
     have hDP : p ∈ distinctPairs E.points := (Finset.mem_filter.mp hVP).1
     have hEE : p ∈ E.points ×ˢ E.points := (Finset.mem_filter.mp hDP).1
@@ -294,7 +294,7 @@ theorem log_deriv_sz_paper_tight
   have hCoreBound := log_deriv_sz_paper_core_tight D P B m hDeg
     hSplit hAccount hNV
   have hUndefBound := logDerivCheckFn_undefined_set_bound_tight E D P k B hDnz
-  calc (badChallengesNotEq E D P B (fun i => m i)).card
+  calc (eventNotEq E D P B (fun i => m i)).card
       ≤ ((E.points ×ˢ E.points).filter
           (fun p => A₀ne_A₁x_cleared_pair E D P B m p)).card +
         ((E.points ×ˢ E.points).filter

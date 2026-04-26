@@ -276,7 +276,7 @@ theorem extracted_scalars_valid_special
     Hence rejection forces the challenge into the bad set. -/
 theorem ma_completeness
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (hValid : dlogHolds E stmt wit)
+    (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (hDeg : msg.toD.degE ≤ wit.degBound)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
@@ -302,30 +302,23 @@ theorem ma_completeness
   exact le_trans (Finset.card_le_card hSub)
     (support_disjointness E msg.toD (numZeros E msg.toD) (le_refl _))
 
-/-! ## Paper-Lean naming bridges
+/-! ## Paper-Lean naming correspondence
 
-    Aliases providing paper-aligned names for Lean predicates and
-    relations. The Lean side prefers descriptive names; these aliases
-    make `\ref{thm:ma}` / `\ref{thm:ip}` proofs read more directly
-    against the Lean theorem statements.
+    Paper ↔ Lean (post-rename, primary names):
 
-    Paper ↔ Lean correspondence (current as of `\ref{thm:ma}`):
-
-    * `event_deg`           ↔ `eventDeg`
-    * `event_NotEq`         ↔ `eventNotEq` (= `badChallengesNotEq`)
-    * `\relation^{dlog}`    ↔ `relDlog` (= `dlogHolds`)
+    * `event_deg`               ↔ `eventDeg` (= `¬ logDerivCheckFnDefined`)
+    * `event_NotEq`             ↔ `eventNotEq` (Finset of bad challenges)
+    * `\relation^{dlog}`        ↔ `relDlog`
     * `\relation^{dlog-honest}` ↔ `relDlogHonest`
-                              (= `MAProverMsg.isHonestFor` plus
-                                  `dlogHolds` for the underlying witness)
-    * `\protMA`             ↔ structure (`MAProverMsg`, `MAChallenge`,
-                                          `maVerifierAccepts`,
-                                          `MAProverMsg.isHonestFor`)
-    * `\protIP`             ↔ structure (`IPProverMsg3`,
-                                          `ipVerifierAccepts`,
-                                          `computeA₂`,
-                                          `ip_unique_third_round`)
-    * `f` (discrepancy)     ↔ `logDerivCheckFn`
-    * `\extractor`          ↔ `maExtractor` -/
+    * `\protMA`                 ↔ structure (`MAProverMsg`, `MAChallenge`,
+                                              `maVerifierAccepts`,
+                                              `MAProverMsg.isHonestFor`)
+    * `\protIP`                 ↔ structure (`IPProverMsg3`,
+                                              `ipVerifierAccepts`,
+                                              `computeA₂`,
+                                              `ip_unique_third_round`)
+    * `f` (discrepancy)         ↔ `logDerivCheckFn`
+    * `\extractor`              ↔ `maExtractor` -/
 
 /-- The `event_deg` bad event from paper (`ip.tex \ref{thm:ma}`): some
     denominator in the verifier's field expression vanishes
@@ -338,22 +331,6 @@ def eventDeg
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q) : Prop :=
   ¬ logDerivCheckFnDefined E D P B A₀ A₁
-
-/-- The `event_NotEq` bad event from paper (`ip.tex \ref{thm:ma}`):
-    `(A_0, A_1) ∈ validPairs` for which the verifier's log-derivative
-    check `f` vanishes. Used as the `\knowErr` main term in the
-    soundness analysis. Alias for `badChallengesNotEq`. -/
-noncomputable def eventNotEq
-    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
-    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q) :
-    Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
-  badChallengesNotEq E D P B m
-
-/-- The `\relation^{dlog}` knowledge-soundness relation from paper
-    (`ip.tex \ref{thm:ma}`): `P = Σ [n_i] · B_i` in `E(F_q)`. Alias
-    for `dlogHolds`. -/
-def relDlog (stmt : DlogStatement E.q) (wit : DlogWitness E.q) : Prop :=
-  dlogHolds E stmt wit
 
 /-- The `\relation^{dlog-honest}` completeness relation from paper
     (`ip.tex \ref{thm:ma}`): `(stmt, wit) ∈ relDlog` together with an
@@ -442,7 +419,7 @@ theorem ip_completeness
     term). -/
 theorem ip_completeness_card_bound
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (hValid : dlogHolds E stmt wit)
+    (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (hDeg : msg.toD.degE ≤ wit.degBound)
     (hDegK : msg.toD.degE ≤ stmt.degBound)

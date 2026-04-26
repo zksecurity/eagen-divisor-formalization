@@ -93,7 +93,7 @@ structure DlogWitness (q : ℕ) [Fact (Nat.Prime q)] where
     The equality `stmt.k = wit.k` is bundled existentially so the
     relation is a plain `Prop` on `(stmt, wit)`, avoiding type-mismatch
     issues when threading the equality through theorem statements. -/
-def dlogHolds (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q) :
+def relDlog (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q) :
     Prop :=
   ∃ (hk : stmt.k = wit.k),
     (ECPoint.affine stmt.target.1 stmt.target.2 : ECPoint E.q) =

@@ -2452,7 +2452,7 @@ theorem extractorSucceeds_of_logDerivCheck_identically_zero_general
 /-! ## Extractor validity (both cases) -/
 
 /-- **Extractor validity (both cases).** The extracted witness
-    satisfies the dlog relation `dlogHolds`:
+    satisfies the dlog relation `relDlog`:
     * Special case (`-P ∈ {B_j}`): `extracted_scalars_valid_special`.
     * General case (`-P ∉ {B_j}`): T4 theorem's second conjunct. -/
 theorem extracted_scalars_valid
@@ -3409,7 +3409,7 @@ theorem distinctR_mem_points
     For every first-round message, one of two branches holds:
 
     * **Witness branch**: there exists `wit` satisfying the dlog
-      relation `dlogHolds E stmt wit hkm`, with the extractor
+      relation `relDlog E stmt wit hkm`, with the extractor
       `maExtractor` returning `some wit`; or
 
     * **Bound branch**: the set of accepting challenges in `validPairs`
@@ -3453,7 +3453,7 @@ theorem ma_extractable
         21 * (msg.toD.degE + stmt.k + 2) + 72) :
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg stmt.degBound hd hkm = some wit
-        ∧ dlogHolds E stmt wit) ∨
+        ∧ relDlog E stmt wit) ∨
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ 18 * (stmt.degBound + stmt.k) * E.q +
@@ -3476,12 +3476,12 @@ theorem ma_extractable
       (validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hAS
     set badSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
-      badChallengesNotEq E msg.toD stmt.target stmt.bases
+      eventNotEq E msg.toD stmt.target stmt.bases
         (fun i => msg.m (hkm ▸ i)) with hBS
     have hSub : acceptSet ⊆ badSet := by
       intro p hp
       simp only [hAS, Finset.mem_filter] at hp
-      simp only [hBS, badChallengesNotEq, Finset.mem_filter]
+      simp only [hBS, eventNotEq, Finset.mem_filter]
       exact ⟨hp.1, hp.2.2.2⟩
     have hCardLe : acceptSet.card ≤ badSet.card := Finset.card_le_card hSub
     have hDegLt : msg.toD.degE < E.q := lt_of_le_of_lt hDeg hd
@@ -3819,7 +3819,7 @@ theorem ip_knowledge_sound
         21 * (msg1.toD.degE + stmt.k + 2) + 72) :
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
-         ∧ dlogHolds E stmt wit) ∨
+         ∧ relDlog E stmt wit) ∨
      ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
       ≤ 18 * (stmt.degBound + stmt.k) * E.q +
