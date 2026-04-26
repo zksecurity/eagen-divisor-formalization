@@ -3,7 +3,8 @@
 
   Bound on `|{(A₀, A₁) ∈ E × E : f(A₀, A₁) = 0}|` for a 4-variate `f`
   of total degree ≤ D, derived from `Divisor.hasse_weil` plus
-  elementary fiber counting. Replaces the prior DKL'14 / Bezout axiom.
+  elementary fiber counting. Same `≤ 9·D·q` bound as the
+  classical DKL'14 + Hartshorne (Bezout) corollary.
 -/
 import Divisor.FourVarPoly
 import Divisor.Axioms.AxiomHasseWeil
