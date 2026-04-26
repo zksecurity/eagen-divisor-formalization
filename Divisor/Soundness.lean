@@ -302,4 +302,59 @@ theorem ma_completeness
   exact le_trans (Finset.card_le_card hSub)
     (support_disjointness E msg.toD (numZeros E msg.toD) (le_refl _))
 
+/-- **IP Completeness reduction (off `event_deg`).** On every challenge
+    where the divisor `D = msg.toD` does not vanish at any of
+    `A_0, A_1, A_2` and the chord-line `L_{A_0,A_1}` does not pass
+    through `-P` (i.e. off paper's `event_deg`), the honest IP prover
+    constructs a third-round message `(h_0, h_1, h_2, g)` that the IP
+    verifier accepts. Specifically:
+
+    * `h_i := D'(A_i) / D(A_i)` satisfies `h_i · D(A_i) = D'(A_i)`,
+    * `g := -1 / L(-P)` satisfies `g · L(-P) = -1`.
+
+    Combined with `ma_completeness` (which bounds the `event_deg`
+    sub-cases `D(A_i) = 0` and `A_2 = ∞`), this realises paper Theorem
+    `\ref{thm:ip}`'s claim `\compErr_{IP} = \compErr_{MA}` without
+    introducing new axioms: any IP completeness rejection lies in
+    `event_deg` (the additional `L(-P) = 0` sub-case is paper-side
+    accounted for by the same `event_deg` framework). -/
+theorem ip_accept_of_off_event_deg
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
+    (hD₀_nz : msg.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0)
+    (hD₁_nz : msg.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0)
+    (hD₂_nz : msg.toD.eval A₂.1 A₂.2 ≠ 0)
+    (hLP_nz : (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
+                stmt.target.1 (-stmt.target.2) ≠ 0)
+    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    ∃ msg3 : IPProverMsg3 E.q,
+      ipVerifierAccepts E stmt msg chal A₂ msg3 := by
+  let _ := hkm
+  let D := msg.toD
+  let h0 := (D.a.derivative.eval chal.A₀.1 -
+              D.b.derivative.eval chal.A₀.1 * chal.A₀.2) /
+                D.eval chal.A₀.1 chal.A₀.2
+  let h1 := (D.a.derivative.eval chal.A₁.1 -
+              D.b.derivative.eval chal.A₁.1 * chal.A₁.2) /
+                D.eval chal.A₁.1 chal.A₁.2
+  let h2 := (D.a.derivative.eval A₂.1 -
+              D.b.derivative.eval A₂.1 * A₂.2) /
+                D.eval A₂.1 A₂.2
+  let g := -1 / (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
+                  stmt.target.1 (-stmt.target.2)
+  refine ⟨⟨fun i => match i with | 0 => h0 | 1 => h1 | 2 => h2, g⟩,
+          hDegK, ?_, ?_, ?_, ?_⟩
+  · show h0 * D.eval chal.A₀.1 chal.A₀.2 = _
+    simp only [h0]
+    exact div_mul_cancel₀ _ hD₀_nz
+  · show h1 * D.eval chal.A₁.1 chal.A₁.2 = _
+    simp only [h1]
+    exact div_mul_cancel₀ _ hD₁_nz
+  · show h2 * D.eval A₂.1 A₂.2 = _
+    simp only [h2]
+    exact div_mul_cancel₀ _ hD₂_nz
+  · show g * _ = -1
+    simp only [g]
+    exact div_mul_cancel₀ _ hLP_nz
+
 end Divisor
