@@ -65,8 +65,7 @@ where `N = numZeros(D)` and `E_aff` is the set of affine `F_q`-points of `E`. Pr
 
 ```
 propext, Classical.choice, Quot.sound,
-Divisor.bivariate_poly_zeros_on_ExE_le,
-Divisor.CoordRingElt.divisor_group_sum_zero,
+Divisor.CoordRingElt.exists_divisor_multiplicity,
 Divisor.chord_fiber_product_eq_normZ_under_split,
 Divisor.chord_sum_eq_chord_fiber_product_logDeriv,
 Divisor.hasse_weil
@@ -87,21 +86,23 @@ Divisor.hasse_weil
 
 ### Textbook Axioms
 
-#### `CoordRingElt.divisor_group_sum_zero` — Silverman AEC III Cor 3.5, p. 63 (forward direction)
+#### `CoordRingElt.exists_divisor_multiplicity` — Silverman AEC III Cor 3.5, p. 63 + II §1, p. 21–24
 
-Abel's theorem on `E`. For the nonzero rational function `D = a(x) - b(x) y` in `F_q[E]`, under the splitting hypothesis `normPoly(D)` splits over `F_q` — so every geometric zero of `D` is `F_q`-rational — the `beta`-weighted group sum vanishes:
+Existence of a "true" divisor multiplicity function (the local
+`ord_P(D)` of `D = a − b·y` viewed as a rational function on `E`)
+satisfying the four properties: support, coverage, the unconditional
+total-degree bound, and (under splitting) Abel's group-sum-zero
+identity. Replaces the previous `CoordRingElt.divisor_group_sum_zero`
+axiom (which was unsound — it asserted the group sum vanished for
+the constructive `betaConstructive`, but `betaConstructive` is
+provably non-faithful to ord_P at twin sheets with asymmetric orders;
+see `Divisor/Axioms/AxiomExistsDivisorMultiplicity.lean` for the
+F_5 counterexample).
 
-$$\sum_{P \in E(F_q)} [\beta(P)]\, P = O \qquad \text{in } (E, \oplus).$$
-
-Textbook statement: a divisor
-
-$$D = \sum_P n_P (P) \in  \mathrm{Div}(E)$$
-
-is principal iff
-
-$$\sum_P n_P = 0 \qquad \text{and} \qquad \sum_P [n_P] P = O.$$
-
-The axiom uses the forward direction.
+The axiom is intended to be discharged in Phase 1 of the trust-
+closure plan by mechanising `ord_P` from local uniformizers
+(Silverman II §1) and applying `principal_divisor_iff.mp` from
+Cor 3.5.
 
 #### `chord_fiber_product_eq_normZ_under_split` — Stichtenoth Prop 3.1.9, p. 73 + Thm 3.7.1, p. 121
 
@@ -145,12 +146,12 @@ which is equivalent to
 
 $$\bigl| |E(F_q)| - q - 1 \bigr| \le  2\sqrt{q}.$$
 
-#### `bivariate_poly_zeros_on_ExE_le` — DKL'14 Claim 7.2 + Bezout
+#### `bivariate_poly_zeros_on_ExE_le` — discharged
 
-For a nonzero 4-variate polynomial `f` of total degree at most `D`, the
-number of pairs in `E(F_q) × E(F_q)` where `f` vanishes is bounded by
-
-$$|\{(A_0,A_1) \in E(F_q)^2 : f(A_0,A_1)=0\}| \le 9Dq.$$
+Previously listed as an axiom; now a *theorem* (see
+`Divisor/BivariateZerosOnExE.lean`) whose only project-axiom
+dependency is `hasse_weil`. The DKL'14 Claim 7.2 + Bezout content
+has been mechanised. Removed from the headline axiom surface.
 
 The point-count step is Dvir-Kollar-Lovett Claim 7.2. The geometric
 degree input is the standard Bezout/intersection-theory estimate
