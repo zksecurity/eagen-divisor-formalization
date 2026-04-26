@@ -249,3 +249,44 @@ theorem bivariate_poly_zeros_on_ExE_le_thm
     · exact main_bound_large_points E f D hD hDeg hNonzero (by omega)
 
 end Divisor.BivariateZerosOnExE
+
+namespace Divisor
+
+variable (E : ECSetup)
+
+/-- **Bound on `|{(A₀, A₁) ∈ E × E : f(A₀, A₁) = 0}|`.**
+
+    For a 4-variate polynomial `f ∈ F_q[X₀, Y₀, X₁, Y₁]` of total
+    degree at most `D` that is **not identically zero on `E × E`**
+    (witnessed by the existence of a point where it evaluates
+    non-zero), the set of `F_q`-point pairs `(A₀, A₁) ∈ E × E` at
+    which `f(A₀, A₁) = 0` has cardinality at most `9 · D · q`.
+
+    Discharged by `BivariateZerosOnExE.bivariate_poly_zeros_on_ExE_le_thm`
+    above (reduce mod `Y² = X³+AX+B` → `α(X) + β(X)·Y` → univariate
+    norm-polynomial root count + Hasse-Weil's `2·|E| ≤ 3q+3`). The only
+    project-level axiom in its dependency chain is `Divisor.hasse_weil`.
+
+    Provenance retained for documentation:
+    * Dvir, Kollar, Lovett, "Variety Evasive Sets",
+      Comput. Complex. 23 (2014) — Claim 7.2, p. 10.
+      PDF: `axioms/papers/DvirKollarLovett14.pdf`.
+    * Hartshorne, *Algebraic Geometry*, GTM 52,
+      Theorem I.7.7 (Bezout; cited textbook, not archived in this repo).
+    * Ellenberg, Oberlin, Tao, "The Kakeya set and maximal
+      conjectures for algebraic varieties over finite fields",
+      Mathematika 56 (2010) — Lemma A.3, p. 23 (alternative).
+      PDF: `axioms/papers/EllenbergOberlinTao10.pdf`.
+
+    Full provenance at `axioms/bivariate_poly_zeros_on_ExE_le.md`. -/
+theorem bivariate_poly_zeros_on_ExE_le
+    (f : FourVarPoly E.q) (D : ℕ)
+    (hDeg : total_degree_le E f D)
+    (hNonzero : ∃ A₀ A₁ : ZMod E.q × ZMod E.q,
+        A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ bivEval₂ f A₀ A₁ ≠ 0) :
+    ((E.points ×ˢ E.points).filter
+      (fun p => bivEval₂ f p.1 p.2 = 0)).card
+      ≤ 9 * D * E.q :=
+  BivariateZerosOnExE.bivariate_poly_zeros_on_ExE_le_thm E f D hDeg hNonzero
+
+end Divisor

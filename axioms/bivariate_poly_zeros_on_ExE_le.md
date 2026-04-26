@@ -1,10 +1,11 @@
-# `bivariate_poly_zeros_on_ExE_le` (10th axiom — corrected)
+# `bivariate_poly_zeros_on_ExE_le`
 
-- **Lean source**: `Divisor/Axioms/AxiomBivariatePolyZerosOnExELe.lean`
-- **Support file**: `Divisor/FourVarPoly.lean` (`total_degree_le` predicate + helpers)
+- **Status**: theorem (no longer an axiom)
+- **Lean source**: `Divisor/BivariateZerosOnExE.lean`
+- **Support file**: `Divisor/CurveEvalZerosHelper.lean` (per-curve zero count via norm polynomial)
 
 ```lean
-axiom bivariate_poly_zeros_on_ExE_le
+theorem bivariate_poly_zeros_on_ExE_le
     (f : FourVarPoly E.q) (D : ℕ)
     (hDeg : total_degree_le E f D)
     (hNonzero : ∃ A₀ A₁ : ZMod E.q × ZMod E.q,
@@ -18,9 +19,18 @@ axiom bivariate_poly_zeros_on_ExE_le
 
 **Non-vanishing hypothesis**: stated as "∃ an F_q-point of E × E where `f` is non-zero" — equivalent to "f is not identically zero on the F_q-points of E × E".
 
-## Citations
+## Proof route (Lang–Weil-style, Hasse-only)
 
-### DKL'14 Claim 7.2 (primary)
+The Lean proof uses elementary fiber counting plus Hasse-Weil's `2·|E| ≤ 3q + 3` rather than DKL+Bezout intersection theory. The only project-level axiom in the dependency chain is `Divisor.hasse_weil`.
+
+1. **Per-curve reduction.** For a bivariate `g(X, Y)` of total degree `≤ d`, reduce mod `Y² = X³ + AX + B` to canonical form `g ≡ α(X) + β(X)·Y` with `max(2·deg α, 3 + 2·deg β) ≤ 3d`.
+2. **Per-curve count.** On `E(F_q)`, zeros of `α(X) − β(X)·Y` are bounded by `degE := max(2·deg α, 3 + 2·deg β)` via the norm polynomial `α² − β²·c(X)` plus a `rootMultiplicity ≥ 2` argument at common roots of `α, β`. Hence `≤ 3d` zeros per fiber.
+3. **4-variate lift.** Specialise one coordinate of `f`. Bad fibers (those where `f` vanishes identically on `E` for that fixed coord) are bounded by `3D` by symmetric application. Good fibers contribute `≤ 3D` each.
+4. **Hasse close-out.** Sum: `total ≤ bad·|E| + (|E| − bad)·3D ≤ 6D·|E| − 9D²`. With Hasse-Weil's `2·|E| ≤ 3q + 3` (valid for `q ≥ 5`), `total ≤ 9Dq + 9D − 9D² ≤ 9Dq` for `D ≥ 1`. Boundary cases (`D = 0`, `|E| ≤ 3D`) handled directly.
+
+## Citations (provenance, retained for documentation)
+
+### DKL'14 Claim 7.2
 
 Dvir, Kollar, Lovett, *"Variety Evasive Sets"*,
 Computational Complexity **23** (2014), pp. 1–32 — **Claim 7.2**, p. 10.
@@ -33,7 +43,7 @@ Verbatim:
 
 (`V_{n,d,k}` denotes varieties in `F̄^n` of dimension `k` and degree `d` defined over `F`.)
 
-### Hartshorne I.7.7 (Bezout, primary)
+### Hartshorne I.7.7 (Bezout)
 
 Hartshorne, *Algebraic Geometry*, GTM 52 — **Theorem I.7.7** (Bezout).
 
@@ -43,7 +53,7 @@ Verbatim:
 
 The hypersurface-meets-surface generalisation in `P^N` follows by standard intersection theory (Hartshorne I.7).
 
-### EOT'10 Lemma A.3 (alternative)
+### EOT'10 Lemma A.3
 
 Ellenberg, Oberlin, Tao, *"The Kakeya set and maximal conjectures for algebraic varieties over finite fields"*,
 Mathematika **56** (2010), pp. 1–25 — **Lemma A.3**, p. 23.
@@ -56,49 +66,8 @@ Verbatim:
 
 This is an alternative path to the same linear-in-`q` shape, with a weaker constant.
 
-## Derivation chain
+## Sanity checks
 
-Let `V := {f = 0} ∩ (E × E)`.
-
-1. **Hypersurface degree.** A 4-variate polynomial `f` of total degree `≤ D` defines a hypersurface `H_f ⊂ A⁴` of degree `≤ D` (Hartshorne I.7).
-2. **Surface degree.** `E × E ⊂ P² × P²` is a surface (dimension 2) of degree `9` under the Segre embedding into `P⁸` (each `E ⊂ P²` has degree 3 as a smooth Weierstrass cubic; degrees multiply for products).
-3. **Bezout intersection.** By Hartshorne I.7.7 (hypersurface-meets-surface form), the intersection `V = H_f ∩ (E × E)` has dimension `≤ 1` and degree at most `9 · D`.
-4. **DKL point count.** By DKL'14 Claim 7.2 with `(n, d, k) = (8, 9D, 1)`, `|V(F_q)| ≤ 9D · |F_q|^1 = 9D · q`.
-
-(Alternatively via EOT'10 Lemma A.3 with `n = 1`, `d ≤ 9D`: `|V(F_q)| ≤ 9D·(q+1)`, hence `≤ 18D·q` for `q ≥ 1`. This confirms the same linear-in-`q` shape with a weaker constant; the Lean axiom's `9D·q` constant is justified by the DKL route above.)
-
-## Old axiom (unsound — replaced)
-
-The previous axiom claimed `2·(dX + dY)·|E|` from `bi_x_degree_le`. This was **falsified** by Sage:
-
-| f | q | curve | bound (old axiom) | actual count |
-|---|---|---|---|---|
-| `Y₀ + Y₁` | 5 | y²=x³+1 | 0 (since dX = dY = 0) | 5 |
-| `Y₀ + Y₁` | 11 | y²=x³+x+3 | 0 | 41 |
-| `Y₀·Y₁` | 5 | y²=x³+1 | 0 | 9 |
-
-**Cause**: bi-x-degree `(0, 0)` predicts `2·(0+0)·|E| = 0` zeros, but the polynomial vanishes on a non-trivial subvariety because the `Y`-degree contribution was not bounded. Total degree captures both.
-
-## New axiom on the same counterexamples
-
-| f | totalDeg `D` | q | bound (new axiom) `9·D·q` | actual count | OK? |
-|---|---|---|---|---|---|
-| `Y₀ + Y₁` | 1 | 5 | 45 | 5 | ✓ |
-| `Y₀ + Y₁` | 1 | 11 | 99 | 41 | ✓ |
-| `Y₀·Y₁` | 2 | 5 | 90 | 9 | ✓ |
-
-All three counterexamples to the old axiom are within the new axiom's bound, with substantial slack — consistent with the claimed `9·D·q` upper bound.
-
-## Cross-check (Lean statement vs. derivation)
-
-**Sanity checks**:
-* `f = X₀ - X₀` (zero polynomial) — but excluded by `hNonzero`.
-* `f = X₀ - c` for some constant `c`: `D = 1`, hypersurface is the line `X₀ = c`. Intersection with `E × E` is `{(c, ±√(c³+Ac+B))} × E`, of size `≤ 2 · |E| ≤ 2 · (q + 2√q + 1) ≤ 9·1·q` for `q ≥ 5`. ✓
-* `f = Y₀ - Y₁`: `D = 1`, zeros are `{(A₀, A₀) : A₀ ∈ E} ∪ {(A, A') : A.2 = A'.2 ≠ 0, A.1 ≠ A'.1}`. Approximately `≤ 3·|E|` (at most 3 collisions in y-coordinate per point), well within `9 · 1 · q`. ✓
-* `f` of total degree `D`: hypersurface degree `D`, intersection degree `≤ 9D`, point count `≤ 9D·q`. ✓
-
-## Status
-
-Declared in Lean (`Divisor/Axioms/AxiomBivariatePolyZerosOnExELe.lean`). DKL'14 and EOT'10 PDFs archived (`axioms/papers/`). `#print axioms` for any downstream `ma_extractable` invocation lists `bivariate_poly_zeros_on_ExE_le` alongside the existing 9 axioms.
-
-This corrected axiom replaces an unsound prior version (which only bounded by `2·(dX + dY)·|E|`). The shift from bi-x-degree to total degree is the key correction; the multiplicative constant changes from `2·(dX + dY)` to `9·D` in line with the standard DKL+Bezout derivation.
+* `f = X₀ - c` for some constant `c`: `D = 1`, the hypersurface is the line `X₀ = c`. Intersection with `E × E` is `{(c, ±√(c³+Ac+B))} × E`, of size `≤ 2 · |E| ≤ 2 · (q + 2√q + 1) ≤ 9·1·q` for `q ≥ 5`. ✓
+* `f = Y₀ - Y₁`: `D = 1`, zeros are `{(A₀, A₀) : A₀ ∈ E} ∪ {(A, A') : A.2 = A'.2 ≠ 0, A.1 ≠ A'.1}`. At most `3·|E|` (at most 3 collisions per y-coordinate), well within `9 · 1 · q`. ✓
+* General `f` of total degree `D`: Bezout intersection-theoretic bound is `9D` on the surface degree; point count `≤ 9D·q` matches. ✓

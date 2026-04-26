@@ -30,7 +30,7 @@
 import Divisor.ClearedPolyForm
 import Divisor.ClearedPolyFormBounds
 import Divisor.FourVarPoly
-import Divisor.Axioms.AxiomBivariatePolyZerosOnExELe
+import Divisor.BivariateZerosOnExE
 import Divisor.Axioms.AxiomHasseWeil
 import Divisor.SlopeDist
 
@@ -1931,9 +1931,9 @@ theorem hasse_q_le_two_mul_card (hN : 8 ≤ E.points.card) :
     AND the line is non-vertical — is at most
     `36·(2·D.degE + k + 6)·|E|`.
 
-    This uses the DKL+Bezout axiom (`bivariate_poly_zeros_on_ExE_le`)
-    with total degree ≤ 4·D.degE + 2·k + 12 and Hasse `q ≤ 2·|E|`
-    (for |E| ≥ 8), combined with a small-|E| case split.
+    This uses the `bivariate_poly_zeros_on_ExE_le` theorem with total
+    degree ≤ 4·D.degE + 2·k + 12 and Hasse `q ≤ 2·|E|` (for |E| ≥ 8),
+    combined with a small-|E| case split.
 
     **Tightened**: previous bound `72·(D.degE+k+6)·|E|` lost precision
     by rounding `36·(2d+k+6)` up to `72·(d+k+6)`. The refined form
