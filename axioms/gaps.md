@@ -13,7 +13,7 @@ Axiom-by-axiom status of textbook coverage in `/Users/rot256/paper/crypto-books/
 | `chord_sum_eq_chord_fiber_product_logDeriv` | Covered — Lang *Algebra* §VI.5 Thm 5.1 + §VIII.5 Thm 5.1 Case 1 |
 | `weil_reciprocity_honest` | Covered — Stichtenoth Cor 4.3.3 (Residue Theorem) + Silverman AEC Ex II.2.11 |
 | `CoordRingElt.divisor_group_sum_zero` | Covered — Silverman AEC Cor III.3.5 (⇒ direction) |
-| `bivariate_poly_zeros_on_ExE_le` (planned) | Covered — Lang–Weil 1954 Thm 1 (`papers/lang-weil-1954.pdf`) |
+| `bivariate_poly_zeros_on_ExE_le` | **Proven** — derived from `hasse_weil` via fiber-counting (`Divisor/BivariateZerosOnExE.lean` + `Divisor/CurveEvalZerosHelper.lean`). No longer an axiom. |
 
 ## Status — all closed
 
@@ -25,4 +25,12 @@ Resolved by citing Stichtenoth **Corollary 4.3.3 (Residue Theorem)**, p. 171 —
 
 ### `bivariate_poly_zeros_on_ExE_le`
 
-Resolved by Lang & Weil 1954, *Number of Points of Varieties in Finite Fields*, Am. J. Math. 76, pp. 819–827 — archived in repo at `papers/lang-weil-1954.pdf`. Theorem 1 (p. 819) gives the compound bound directly.
+**Now proven** (no longer an axiom). Derived from `hasse_weil` plus elementary fiber-counting:
+
+1. Reduce a bivariate polynomial of total degree `d` modulo the Weierstrass relation `Y² = X³ + AX + B` to canonical form `α(X) + β(X)·Y` with `deg α, deg β ≤ ⌈3d/2⌉`.
+2. Bound zeros on `E(F_q)` via the norm polynomial `α² − β²·c(X)` and `rootMultiplicity ≥ 2` at common roots of α, β (paper-tight `≤ degE`, sharper than the previous `≤ 2·degE`).
+3. Lift to the 4-variate setting by specialising one coordinate, applying the per-curve bound to each fiber, and using Hasse–Weil's `2·|E(F_q)| ≤ 3q + 3` to absorb the bad-fiber contribution.
+
+Proof in `Divisor/BivariateZerosOnExE.lean` and `Divisor/CurveEvalZerosHelper.lean`; the `bivariate_poly_zeros_on_ExE_le` declaration in `Divisor/Axioms/AxiomBivariatePolyZerosOnExELe.lean` is now a `theorem` calling that proof.
+
+Provenance retained for documentation: Lang & Weil 1954 Thm 1 (`papers/lang-weil-1954.pdf`); DKL'14 Claim 7.2 (`papers/DvirKollarLovett14.pdf`); EOT'10 Lemma A.3 (`papers/EllenbergOberlinTao10.pdf`).
