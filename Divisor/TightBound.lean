@@ -2,6 +2,7 @@
   Divisor/TightBound.lean — Paper-tight bound via polyGFull
 -/
 import Divisor.ClearedFullPoly
+import Divisor.SigmaMatching
 import Divisor.TraceProof
 
 open Polynomial Finset Classical
