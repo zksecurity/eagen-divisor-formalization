@@ -318,7 +318,7 @@ theorem ma_completeness
     introducing new axioms: any IP completeness rejection lies in
     `event_deg` (the additional `L(-P) = 0` sub-case is paper-side
     accounted for by the same `event_deg` framework). -/
-theorem ip_accept_of_off_event_deg
+theorem ip_completeness
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
     (hD₀_nz : msg.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0)
