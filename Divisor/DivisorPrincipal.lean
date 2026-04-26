@@ -44,18 +44,30 @@ variable (E : ECSetup)
 
 /-- Coefficient function representing `D`'s formal divisor. -/
 noncomputable def dCoeffs (E : ECSetup) (D : CoordRingElt E.q)
-    (β : ZMod E.q × ZMod E.q → ℕ) : ECPoint E.q → ℤ :=
-  fun P => match P with
-    | .infinity => -(D.degE : ℤ)
-    | .affine x y => (β (x, y) : ℤ)
+    (β : ZMod E.q × ZMod E.q → ℕ) : ECPoint E → ℤ
+  | 0 => -(D.degE : ℤ)
+  | @WeierstrassCurve.Affine.Point.some _ _ _ x y _ => (β (x, y) : ℤ)
 
 @[simp] theorem dCoeffs_infinity (D : CoordRingElt E.q)
     (β : ZMod E.q × ZMod E.q → ℕ) :
-    dCoeffs E D β ECPoint.infinity = -(D.degE : ℤ) := rfl
+    dCoeffs E D β (0 : ECPoint E) = -(D.degE : ℤ) := rfl
+
+@[simp] theorem dCoeffs_some (D : CoordRingElt E.q)
+    (β : ZMod E.q × ZMod E.q → ℕ) {x y : ZMod E.q}
+    (h : E.toW.toAffine.Nonsingular x y) :
+    dCoeffs E D β (.some h) = (β (x, y) : ℤ) := rfl
 
 @[simp] theorem dCoeffs_affine (D : CoordRingElt E.q)
-    (β : ZMod E.q × ZMod E.q → ℕ) (x y : ZMod E.q) :
-    dCoeffs E D β (ECPoint.affine x y) = (β (x, y) : ℤ) := rfl
+    (β : ZMod E.q × ZMod E.q → ℕ) (P : ZMod E.q × ZMod E.q)
+    (hp : P ∈ E.points) :
+    dCoeffs E D β (ECPoint.affine E P.1 P.2) = (β P : ℤ) := by
+  classical
+  unfold ECPoint.affine
+  have hns : E.toW.toAffine.Nonsingular P.1 P.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hp))
+  rw [dif_pos hns]
+  rcases P with ⟨x, y⟩
+  rfl
 
 /-! ## Candidate finite support
 
@@ -64,9 +76,9 @@ noncomputable def dCoeffs (E : ECSetup) (D : CoordRingElt E.q)
     condition on `β`, this bounds the true support. -/
 
 /-- Candidate finite Finset: `{∞} ∪ image (affine) E.points`. -/
-noncomputable def dCoeffsCandidate (E : ECSetup) : Finset (ECPoint E.q) :=
-  insert (ECPoint.infinity : ECPoint E.q)
-    (E.points.image (fun P => ECPoint.affine P.1 P.2))
+noncomputable def dCoeffsCandidate (E : ECSetup) : Finset (ECPoint E) :=
+  insert (0 : ECPoint E)
+    (E.points.image (fun P => ECPoint.affine E P.1 P.2))
 
 theorem dCoeffs_support_subset_candidate (D : CoordRingElt E.q)
     (β : ZMod E.q × ZMod E.q → ℕ)
@@ -77,16 +89,18 @@ theorem dCoeffs_support_subset_candidate (D : CoordRingElt E.q)
   simp only [Function.mem_support] at hP
   rw [Finset.mem_coe]
   unfold dCoeffsCandidate
-  cases P with
-  | infinity => exact Finset.mem_insert_self _ _
-  | affine x y =>
+  match P, hP with
+  | 0, _ => exact Finset.mem_insert_self _ _
+  | @WeierstrassCurve.Affine.Point.some _ _ _ x y h, hP =>
       refine Finset.mem_insert_of_mem ?_
       -- From hP: β (x, y) ≠ 0, so (x, y) ∈ E.points.
       have hβ : (β (x, y) : ℤ) ≠ 0 := hP
       have hβn : β (x, y) ≠ 0 := by
-        intro h; rw [h, Nat.cast_zero] at hβ; exact hβ rfl
+        intro hz; rw [hz, Nat.cast_zero] at hβ; exact hβ rfl
       have hmem : (x, y) ∈ E.points := hβsup (x, y) hβn
-      exact Finset.mem_image.mpr ⟨(x, y), hmem, rfl⟩
+      refine Finset.mem_image.mpr ⟨(x, y), hmem, ?_⟩
+      -- ECPoint.affine E x y = .some h since (x, y) is nonsingular
+      exact ECPoint.affine_of_nonsingular E h
 
 theorem dCoeffs_finiteSupport (D : CoordRingElt E.q)
     (β : ZMod E.q × ZMod E.q → ℕ)
@@ -102,25 +116,31 @@ theorem dCoeffs_finiteSupport (D : CoordRingElt E.q)
     hypothesis `Σ_P β(P) = D.degE` (total multiplicity is `D.degE`),
     this is zero. -/
 
-theorem dCoeffs_affine_notin_image (P : ZMod E.q × ZMod E.q)
-    (hP : P ∉ E.points) :
-    (ECPoint.affine P.1 P.2 : ECPoint E.q) ∉
-    (E.points.image (fun Q => ECPoint.affine Q.1 Q.2)) := by
-  intro hContra
-  rw [Finset.mem_image] at hContra
-  obtain ⟨Q, hQin, heq⟩ := hContra
-  have : Q = P := by
-    have hxy := ECPoint.affine.injEq .. |>.mp heq
-    exact Prod.ext hxy.1 hxy.2
-  exact hP (this ▸ hQin)
+/-- Helper: on `E.points`, `ECPoint.affine E` is injective. -/
+private theorem ECPoint.affine_inj_on_points (E : ECSetup)
+    {P Q : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (h : ECPoint.affine E P.1 P.2 = ECPoint.affine E Q.1 Q.2) : P = Q := by
+  classical
+  have hPns : E.toW.toAffine.Nonsingular P.1 P.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP))
+  have hQns : E.toW.toAffine.Nonsingular Q.1 Q.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff Q.1 Q.2).mpr (E.hOnCurve _ hQ))
+  rw [ECPoint.affine_of_nonsingular E hPns,
+      ECPoint.affine_of_nonsingular E hQns] at h
+  rw [WeierstrassCurve.Affine.Point.some.injEq] at h
+  exact Prod.ext h.1 h.2
 
 theorem dCoeffs_infinity_notin_affine_image :
-    (ECPoint.infinity : ECPoint E.q) ∉
-    (E.points.image (fun Q => ECPoint.affine Q.1 Q.2)) := by
+    (0 : ECPoint E) ∉
+    (E.points.image (fun Q => ECPoint.affine E Q.1 Q.2)) := by
+  classical
   intro hContra
   rw [Finset.mem_image] at hContra
-  obtain ⟨_, _, heq⟩ := hContra
-  cases heq
+  obtain ⟨Q, hQ, heq⟩ := hContra
+  have hns : E.toW.toAffine.Nonsingular Q.1 Q.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff Q.1 Q.2).mpr (E.hOnCurve _ hQ))
+  rw [ECPoint.affine_of_nonsingular E hns] at heq
+  exact (WeierstrassCurve.Affine.Point.some_ne_zero hns) heq
 
 theorem sum_dCoeffs_candidate_eq (D : CoordRingElt E.q)
     (β : ZMod E.q × ZMod E.q → ℕ) :
@@ -132,14 +152,11 @@ theorem sum_dCoeffs_candidate_eq (D : CoordRingElt E.q)
       dCoeffs_infinity]
   congr 1
   -- Now: Σ_{affine P in image} = Σ_{P ∈ E.points} (β P : ℤ).
-  rw [Finset.sum_image]
-  · apply Finset.sum_congr rfl
-    intro P _
-    show (β (P.1, P.2) : ℤ) = (β P : ℤ)
-    rcases P with ⟨x, y⟩; rfl
-  · intro P₁ _ P₂ _ heq
-    have hxy := ECPoint.affine.injEq .. |>.mp heq
-    exact Prod.ext hxy.1 hxy.2
+  rw [Finset.sum_image (fun P₁ hP₁ P₂ hP₂ heq =>
+        ECPoint.affine_inj_on_points E hP₁ hP₂ heq)]
+  apply Finset.sum_congr rfl
+  intro P hP
+  exact dCoeffs_affine E D β P hP
 
 /-! ## Group-sum of `dCoeffs`
 
@@ -152,39 +169,24 @@ theorem weightedSum_dCoeffs_candidate_eq (D : CoordRingElt E.q)
     ECPoint.weightedSum E (dCoeffsCandidate E)
         (fun P => ECPoint.zsmul E (dCoeffs E D β P) P)
       = ECPoint.weightedSum E E.points
-          (fun P => ECPoint.nsmul E (β P) (ECPoint.affine P.1 P.2)) := by
+          (fun P => ECPoint.nsmul E (β P) (ECPoint.affine E P.1 P.2)) := by
   classical
   unfold dCoeffsCandidate
   rw [ECPoint.weightedSum_insert E (dCoeffs_infinity_notin_affine_image E)]
   -- The ∞ contribution is zsmul(-D.degE)(∞) = 0.
   have h_inf_zero :
-      ECPoint.zsmul E (dCoeffs E D β ECPoint.infinity)
-        (ECPoint.infinity : ECPoint E.q) = 0 := by
-    simp [ECPoint.zsmul_infinity]
+      ECPoint.zsmul E (dCoeffs E D β (0 : ECPoint E))
+        (0 : ECPoint E) = 0 :=
+    ECPoint.zsmul_infinity E _
   rw [h_inf_zero, ECPoint.zero_add_curve]
   -- The affine image sum = (∑ P ∈ E.points, nsmul (β P) (affine P)).
-  show ((E.points.image (fun Q => ECPoint.affine Q.1 Q.2)).fold
-            (ECPoint.add E) 0
-            (fun P => ECPoint.zsmul E (dCoeffs E D β P) P))
-       = _
-  have hInj : ∀ P₁ ∈ E.points, ∀ P₂ ∈ E.points,
-              (ECPoint.affine P₁.1 P₁.2 : ECPoint E.q)
-                = ECPoint.affine P₂.1 P₂.2 → P₁ = P₂ := by
-    intro P₁ _ P₂ _ heq
-    have hxy := ECPoint.affine.injEq .. |>.mp heq
-    exact Prod.ext hxy.1 hxy.2
-  rw [Finset.fold_image hInj]
-  show ECPoint.weightedSum E E.points
-       ((fun P => ECPoint.zsmul E (dCoeffs E D β P) P)
-         ∘ (fun Q => ECPoint.affine Q.1 Q.2))
-       = _
-  apply ECPoint.weightedSum_congr
-  intro P _
-  show ECPoint.zsmul E (dCoeffs E D β (ECPoint.affine P.1 P.2))
-                    (ECPoint.affine P.1 P.2)
-     = ECPoint.nsmul E (β P) (ECPoint.affine P.1 P.2)
-  rcases P with ⟨x, y⟩
-  rw [dCoeffs_affine, ECPoint.zsmul_natCast]
+  unfold ECPoint.weightedSum
+  rw [Finset.sum_image
+        (fun P₁ hP₁ P₂ hP₂ heq =>
+          ECPoint.affine_inj_on_points E hP₁ hP₂ heq)]
+  apply Finset.sum_congr rfl
+  intro P hP
+  rw [dCoeffs_affine E D β P hP, ECPoint.zsmul_natCast]
 
 /-! ## Group-sum surrogate for `dCoeffs`
 
@@ -207,7 +209,7 @@ theorem dCoeffs_groupSum_zero (D : CoordRingElt E.q)
     (β : ZMod E.q × ZMod E.q → ℕ)
     (hβsup : ∀ P, β P ≠ 0 → P ∈ E.points)
     (hβgroup : ECPoint.weightedSum E E.points
-        (fun P => ECPoint.nsmul E (β P) (ECPoint.affine P.1 P.2)) = 0)
+        (fun P => ECPoint.nsmul E (β P) (ECPoint.affine E P.1 P.2)) = 0)
     (hFinSupp : Set.Finite (Function.support (dCoeffs E D β))) :
     ECPoint.weightedSum E hFinSupp.toFinset
         (fun P => ECPoint.zsmul E (dCoeffs E D β P) P) = 0 := by
@@ -251,7 +253,7 @@ theorem CoordRingElt.exists_principal_dCoeffs
       (∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β P ≠ 0) ∧
       (∑ P ∈ E.points, β P) ≤ D.degE ∧
       ECPoint.weightedSum E E.points
-        (fun P => ECPoint.nsmul E (β P) (ECPoint.affine P.1 P.2)) = 0 := by
+        (fun P => ECPoint.nsmul E (β P) (ECPoint.affine E P.1 P.2)) = 0 := by
   have hD' : ¬ (D.a = 0 ∧ D.b = 0) := hD
   exact CoordRingElt.has_principal_divisor E D hD' hSplit
 

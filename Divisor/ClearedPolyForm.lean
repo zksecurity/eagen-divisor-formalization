@@ -899,7 +899,7 @@ noncomputable def chordY₂ {q : ℕ} [Fact (Nat.Prime q)]
 /-- On non-vertical pairs (`A₀.1 ≠ A₁.1`), `thirdPoint E A₀ A₁` is the
     affine point `(chordX₂ A₀ A₁, chordY₂ A₀ A₁)`. -/
 theorem thirdPoint_of_xne (A₀ A₁ : ZMod E.q × ZMod E.q) (h : A₀.1 ≠ A₁.1) :
-    thirdPoint E A₀ A₁ = ECPoint.affine (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) := by
+    thirdPoint E A₀ A₁ = some (chordX₂ A₀ A₁, chordY₂ A₀ A₁) := by
   simp only [thirdPoint, chordX₂, chordY₂, slopeOf, if_neg h]
 
 /-! ### Symmetry of slope, chord, and line under `A₀ ↔ A₁` swap
@@ -2292,8 +2292,8 @@ theorem DAtA₂_zero_pairs_card_le (D : CoordRingElt E.q)
   have hSnv_bd : Snv.card ≤ E.points.card * numZeros E D := by
     set T := (E.points ×ˢ E.points).filter (fun p =>
       match thirdPoint E p.1 p.2 with
-      | ECPoint.infinity => False
-      | ECPoint.affine x y => D.eval x y = 0) with hTdef
+      | none => False
+      | some (x, y) => D.eval x y = 0) with hTdef
     have hSub : Snv ⊆ T := by
       intro p hp
       simp only [hSnvdef, hSdef, Finset.mem_filter, Finset.mem_product] at hp
