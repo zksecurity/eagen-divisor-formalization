@@ -437,59 +437,42 @@ theorem ip_accept_off_eventDeg
       `(3·N + 1)·|E_aff| + (6·d + 9·k + 71)·|E.points|`,
 
     where `N = numZeros E msg.toD`, `d = msg.toD.degE`, and
-    `k = stmt.k`. The first summand reuses the `ma_completeness` bound
-    (covering `D(A_i) = 0` and `A_2 = ∞` cases via
-    `badChallengesCompleteness`); the second is the `event_deg`
-    cardinality bound `logDerivCheckFn_undefined_set_bound_tight`
-    (DKL+Bezout on `E×E`, paper-exact).
-
-    This is the cardinality analogue of `ip_accept_off_eventDeg` and mirrors
-    the `ma_extractable` soundness bound shape (main term + boundary
-    term). -/
+    `k = stmt.k`. Single-set bound:
+    `IP rejection ⊆ eventDeg`, so `|IP rejection| ≤ |eventDeg|`.
+    Both sub-events captured by `ma_completeness` (the
+    `D(A_i) = 0` / `A_2 = ∞` cases) and the IP-specific cases
+    (`L(-P) = 0`, `L(B_j) = 0`, `dx/dz = 0`) live inside `eventDeg`,
+    so a single bound on `|eventDeg|` covers both. -/
 theorem ip_completeness
-    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
     ((E.points ×ˢ E.points).filter
         (fun p => ¬ ∃ msg3 : IPProverMsg3 E.q,
                   ipVerifierAccepts E stmt msg ⟨p.1, p.2⟩
                        (computeA₂ ⟨p.1, p.2⟩) msg3)).card
-      ≤ (3 * numZeros E msg.toD + 1) * E.numAffine
-        + (6 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := by
+      ≤ (6 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := by
   classical
-  -- IP rejection set ⊆ MA rejection set ∪ ¬event_deg (undefined set).
-  -- Bound each summand separately.
+  let _ := hkm
+  -- IP rejection ⊆ eventDeg via `ip_accept_off_eventDeg` contrapositive.
   set rejectIP : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
     (E.points ×ˢ E.points).filter
       (fun p => ¬ ∃ msg3 : IPProverMsg3 E.q,
                 ipVerifierAccepts E stmt msg ⟨p.1, p.2⟩
                   (computeA₂ ⟨p.1, p.2⟩) msg3) with hRIPdef
-  set rejectMA : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
-    (E.points ×ˢ E.points).filter
-      (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hRMAdef
   set eventDegSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
     (E.points ×ˢ E.points).filter
       (fun p => eventDeg E msg.toD stmt.target stmt.bases p.1 p.2) with hUdef
-  -- IP rejection ⊆ MA rejection ∪ eventDeg.
-  have hSub : rejectIP ⊆ rejectMA ∪ eventDegSet := by
+  have hSub : rejectIP ⊆ eventDegSet := by
     intro p hp
     simp only [hRIPdef, Finset.mem_filter] at hp
     obtain ⟨hp_pts, hp_no_msg3⟩ := hp
-    rw [Finset.mem_union]
-    by_cases hDeg : eventDeg E msg.toD stmt.target stmt.bases p.1 p.2
-    · right
-      simp only [hUdef, Finset.mem_filter]
-      exact ⟨hp_pts, hDeg⟩
-    · -- ¬eventDeg: ip_accept_off_eventDeg gives ∃ msg3, contradicting hp_no_msg3.
-      exfalso
-      apply hp_no_msg3
-      exact ip_accept_off_eventDeg E stmt msg hkm ⟨p.1, p.2⟩ hDeg hDegK
-  -- |eventDegSet| matches |¬logDerivCheckFnDefined-set| (definitional).
+    simp only [hUdef, Finset.mem_filter]
+    refine ⟨hp_pts, ?_⟩
+    by_contra hNotDeg
+    apply hp_no_msg3
+    exact ip_accept_off_eventDeg E stmt msg hkm ⟨p.1, p.2⟩ hNotDeg hDegK
+  -- |eventDegSet| ≤ (6d + 9k + 71)·|E| by Bezout-on-(E×E).
   have hEventDegEq : eventDegSet =
       (E.points ×ˢ E.points).filter
         (fun p => ¬ logDerivCheckFnDefined E msg.toD stmt.target stmt.bases
@@ -498,51 +481,30 @@ theorem ip_completeness
     intro p
     simp only [hUdef, Finset.mem_filter, eventDeg]
   calc rejectIP.card
-      ≤ (rejectMA ∪ eventDegSet).card := Finset.card_le_card hSub
-    _ ≤ rejectMA.card + eventDegSet.card := Finset.card_union_le _ _
-    _ ≤ (3 * numZeros E msg.toD + 1) * E.numAffine
-          + (6 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := by
-        apply Nat.add_le_add
-        · exact ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm
-                  hHonestDivisor
-        · rw [hEventDegEq]
-          exact logDerivCheckFn_undefined_set_bound_tight E msg.toD stmt.target
-                  stmt.k stmt.bases hD
+      ≤ eventDegSet.card := Finset.card_le_card hSub
+    _ ≤ (6 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := by
+        rw [hEventDegEq]
+        exact logDerivCheckFn_undefined_set_bound_tight E msg.toD stmt.target
+                stmt.k stmt.bases hD
 
-/-- **IP completeness, Hasse-clean form.** Applying Hasse (`|E| ≤ 2q`
-    for `q ≥ 5`) and `numZeros ≤ 2·degBound`, the rejection-set
-    cardinality is bounded by `30 · (d + k + 5) · q`. Single-`q` form
-    matching the soundness pattern. -/
+/-- **IP completeness, Hasse-clean form.** Applying Hasse
+    (`|E| ≤ 2q` for `q ≥ 5`), the rejection-set cardinality is
+    bounded by `18 · (d + k + 12) · q`. Single-`q` form. -/
 theorem ip_completeness_clean
-    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
     (hQ : 5 ≤ E.q) :
     ((E.points ×ˢ E.points).filter
         (fun p => ¬ ∃ msg3 : IPProverMsg3 E.q,
                   ipVerifierAccepts E stmt msg ⟨p.1, p.2⟩
                        (computeA₂ ⟨p.1, p.2⟩) msg3)).card
-      ≤ 30 * (stmt.degBound + stmt.k + 5) * E.q := by
-  have hIP := ip_completeness E stmt wit hk hValid msg hkm hDeg hDegK
-                hAdm hHonestDivisor hD
-  have hNZ : numZeros E msg.toD ≤ 2 * stmt.degBound := by
-    have h1 := numZeros_le_two_degE E msg.toD hD
-    omega
-  have hHasse : E.numAffine ≤ 2 * E.q := points_card_le_two_q E hQ
-  have hHassePts : E.points.card ≤ 2 * E.q := hHasse
-  have hDegLe : msg.toD.degE ≤ stmt.degBound := hDegK
-  calc _ ≤ (3 * numZeros E msg.toD + 1) * E.numAffine
-            + (6 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := hIP
-    _ ≤ (3 * (2 * stmt.degBound) + 1) * (2 * E.q)
-          + (6 * stmt.degBound + 9 * stmt.k + 71) * (2 * E.q) := by
-        apply Nat.add_le_add
-        · exact Nat.mul_le_mul (by omega) hHasse
-        · exact Nat.mul_le_mul (by omega) hHassePts
-    _ ≤ 30 * (stmt.degBound + stmt.k + 5) * E.q := by ring_nf; omega
+      ≤ 18 * (stmt.degBound + stmt.k + 12) * E.q := by
+  have hIP := ip_completeness E stmt msg hkm hDegK hD
+  have hHasse : E.points.card ≤ 2 * E.q := points_card_le_two_q E hQ
+  calc _ ≤ (6 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := hIP
+    _ ≤ (6 * stmt.degBound + 9 * stmt.k + 71) * (2 * E.q) :=
+        Nat.mul_le_mul (by omega) hHasse
+    _ ≤ 18 * (stmt.degBound + stmt.k + 12) * E.q := by ring_nf; omega
 
 end Divisor
