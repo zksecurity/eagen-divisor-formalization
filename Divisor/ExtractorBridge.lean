@@ -29,6 +29,7 @@ import Divisor.PolyGDensity
 import Divisor.TraceProof
 import Divisor.DensityBound
 import Divisor.ClearedFullPoly
+import Divisor.TightBound
 
 namespace Divisor
 
@@ -3445,15 +3446,15 @@ theorem ma_extractable
         ∧ dlogHolds E stmt wit) ∨
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ 78 * (stmt.degBound + stmt.k + 6) * E.points.card := by
+      ≤ 18 * (stmt.degBound + stmt.k) * E.q +
+        (6 * stmt.degBound + 9 * stmt.k + 71) * E.points.card := by
   classical
   set d := stmt.degBound with hd_def
   by_cases hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ ∧
      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
        (fun i => msg.m (hkm ▸ i)) A₀ A₁ ≠ 0
-  · -- Nonvanishing on defined subset: `log_deriv_sz_paper` bounds NotEq
-    -- via Lang-Weil on E × E, yielding `48·(d + k + 6)·|E|`.
+  · -- Nonvanishing: use paper-tight bound via polyGFull.
     right
     set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
       (validPairs E).filter
@@ -3469,14 +3470,15 @@ theorem ma_extractable
     have hCardLe : acceptSet.card ≤ badSet.card := Finset.card_le_card hSub
     have hDegLt : msg.toD.degE < E.q := lt_of_le_of_lt hDeg hd
     have hBound :=
-      log_deriv_sz_paper E msg.toD stmt.target stmt.bases
-        (fun i => msg.m (hkm ▸ i)) hDegLt hNV
-    have hMono : 78 * (msg.toD.degE + stmt.k + 6) * E.points.card
-                 ≤ 78 * (d + stmt.k + 6) * E.points.card := by
-      apply Nat.mul_le_mul_right
-      have : msg.toD.degE + stmt.k + 6 ≤ d + stmt.k + 6 := by
-        exact Nat.add_le_add_right (Nat.add_le_add_right hDeg _) _
-      omega
+      log_deriv_sz_paper_tight msg.toD stmt.target stmt.bases
+        (fun i => msg.m (hkm ▸ i)) hDegLt hSplit hAccount hNV
+    have hMono : 18 * (msg.toD.degE + stmt.k) * E.q +
+                   (6 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card
+                 ≤ 18 * (d + stmt.k) * E.q +
+                   (6 * d + 9 * stmt.k + 71) * E.points.card := by
+      apply Nat.add_le_add
+      · apply Nat.mul_le_mul_right; apply Nat.mul_le_mul_left; omega
+      · apply Nat.mul_le_mul_right; omega
     exact le_trans hCardLe (le_trans hBound hMono)
   · push_neg at hNV
     -- After push_neg, `hNV` is exactly the `hAllZero` hypothesis:
@@ -3763,7 +3765,8 @@ theorem ip_knowledge_sound
          ∧ dlogHolds E stmt wit) ∨
      ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
-      ≤ 78 * (stmt.degBound + stmt.k + 6) * E.points.card)
+      ≤ 18 * (stmt.degBound + stmt.k) * E.q +
+        (6 * stmt.degBound + 9 * stmt.k + 71) * E.points.card)
     ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
         (msg3 msg3' : IPProverMsg3 E.q),
         msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →

@@ -32,3 +32,4 @@ import Divisor.ExtractorBridge
 import Divisor.PolyGTraceFormula
 import Divisor.TraceProof
 import Divisor.DensityBound
+import Divisor.TightBound
