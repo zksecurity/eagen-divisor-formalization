@@ -39,7 +39,7 @@ variable (E : ECSetup)
 
 /-! ## D4: extractor's divisor principality ⇒ zero-sum
 
-The extractor's divisor (as a coefficient function on `ECPoint E.q`)
+The extractor's divisor (as a coefficient function on `ECPoint E`)
 equals `+1` at `-P`, `extractedScalars i` at each base point
 `B_i` (aggregating duplicates), and `-D.degE` at `∞`. Mirror of
 `honestDivisorCoeffs` with `extractedScalars` in place of `wit.scalars`.
@@ -48,10 +48,10 @@ equals `+1` at `-P`, `extractedScalars i` at each base point
 /-- Extractor-side divisor coefficient function. -/
 noncomputable def extractorDivisorCoeffs
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k) : ECPoint E.q → ℤ :=
+    (hkm : stmt.k = msg.k) : ECPoint E → ℤ :=
   fun P => match P with
-    | .infinity => -(msg.toD.degE : ℤ)
-    | .affine x y =>
+    | 0 => -(msg.toD.degE : ℤ)
+    | @WeierstrassCurve.Affine.Point.some _ _ _ x y _ =>
         (if (x, y) = (stmt.target.1, -stmt.target.2) then 1 else 0) +
         ∑ j ∈ (Finset.univ : Finset (Fin msg.k)).filter
           (fun j => extractorBases E stmt msg hkm j = (x, y)),
@@ -60,26 +60,36 @@ noncomputable def extractorDivisorCoeffs
 /-- Candidate finite superset of the support: `{∞, -P, all base points}`. -/
 noncomputable def extractorDivisorCandidate
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k) : Finset (ECPoint E.q) :=
-  insert (ECPoint.infinity : ECPoint E.q)
-    (insert (ECPoint.affine stmt.target.1 (-stmt.target.2))
+    (hkm : stmt.k = msg.k) : Finset (ECPoint E) :=
+  insert (0 : ECPoint E)
+    (insert (ECPoint.affine E stmt.target.1 (-stmt.target.2))
       ((Finset.univ : Finset (Fin msg.k)).image
-        (fun j => ECPoint.affine (extractorBases E stmt msg hkm j).1
+        (fun j => ECPoint.affine E (extractorBases E stmt msg hkm j).1
                                  (extractorBases E stmt msg hkm j).2)))
 
 /-- Value of `extractorDivisorCoeffs` at `∞`. -/
 theorem extractorDivisorCoeffs_infinity
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
-    extractorDivisorCoeffs E stmt msg hkm ECPoint.infinity =
+    extractorDivisorCoeffs E stmt msg hkm (0 : ECPoint E) =
       -(msg.toD.degE : ℤ) := rfl
 
 /-- Value of `extractorDivisorCoeffs` at `-P` (general case). -/
 theorem extractorDivisorCoeffs_negP
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hTargetOnE : stmt.target ∈ E.points)
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty) :
     extractorDivisorCoeffs E stmt msg hkm
-        (ECPoint.affine stmt.target.1 (-stmt.target.2)) = 1 := by
+        (ECPoint.affine E stmt.target.1 (-stmt.target.2)) = 1 := by
   classical
+  -- `(target.1, -target.2)` is on the curve, so `affine` is `.some _`.
+  have hNegTargetOnE : (stmt.target.1, -stmt.target.2) ∈ E.points := by
+    apply E.hComplete
+    have hc := E.hOnCurve _ hTargetOnE
+    simp only at hc ⊢
+    rw [neg_sq]; exact hc
+  have hns : E.toW.toAffine.Nonsingular stmt.target.1 (-stmt.target.2) :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hNegTargetOnE))
+  rw [ECPoint.affine_of_nonsingular E hns]
   show (if (stmt.target.1, -stmt.target.2) = (stmt.target.1, -stmt.target.2)
         then (1 : ℤ) else 0) +
        ∑ j ∈ (Finset.univ : Finset (Fin msg.k)).filter
@@ -177,18 +187,21 @@ noncomputable def canonicalFinset
     Finset (Fin msg.k) :=
   (Finset.univ : Finset (Fin msg.k)).filter (extractorIsCanonical E stmt msg hkm)
 
-/-- `ECPoint.affine (extractorBases j)` as a function `Fin msg.k → ECPoint E.q`. -/
+/-- `ECPoint.affine (extractorBases j)` as a function `Fin msg.k → ECPoint E`. -/
 noncomputable def basesAffineEC
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (j : Fin msg.k) : ECPoint E.q :=
-  ECPoint.affine (extractorBases E stmt msg hkm j).1
+    (j : Fin msg.k) : ECPoint E :=
+  ECPoint.affine E (extractorBases E stmt msg hkm j).1
                  (extractorBases E stmt msg hkm j).2
 
 /-- Injectivity of `basesAffineEC` on the canonical Finset: two canonical
     indices with the same affine base point are equal (they're both the
-    min of the same group). -/
+    min of the same group). Requires `hBasesOnE` because the junk-tolerant
+    `ECPoint.affine` collapses off-curve pairs to `0`, which would prevent
+    extracting coordinate equality. -/
 theorem basesAffineEC_injOn_canonical
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points) :
     ∀ j₁ ∈ canonicalFinset E stmt msg hkm,
     ∀ j₂ ∈ canonicalFinset E stmt msg hkm,
     basesAffineEC E stmt msg hkm j₁ = basesAffineEC E stmt msg hkm j₂ →
@@ -199,8 +212,21 @@ theorem basesAffineEC_injOn_canonical
   -- From heq: extractorBases j₁ = extractorBases j₂ (after pair destructuring).
   have hb : extractorBases E stmt msg hkm j₁ = extractorBases E stmt msg hkm j₂ := by
     simp only [basesAffineEC] at heq
-    have h12 := ECPoint.affine.injEq .. |>.mp heq
-    exact Prod.ext h12.1 h12.2
+    -- The two extractorBases are both on E.points (via hBasesOnE).
+    have hP₁ : extractorBases E stmt msg hkm j₁ ∈ E.points := by
+      unfold extractorBases; exact hBasesOnE _
+    have hP₂ : extractorBases E stmt msg hkm j₂ ∈ E.points := by
+      unfold extractorBases; exact hBasesOnE _
+    have hns₁ : E.toW.toAffine.Nonsingular
+        (extractorBases E stmt msg hkm j₁).1 (extractorBases E stmt msg hkm j₁).2 :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hP₁))
+    have hns₂ : E.toW.toAffine.Nonsingular
+        (extractorBases E stmt msg hkm j₂).1 (extractorBases E stmt msg hkm j₂).2 :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hP₂))
+    rw [ECPoint.affine_of_nonsingular E hns₁,
+        ECPoint.affine_of_nonsingular E hns₂] at heq
+    rw [WeierstrassCurve.Affine.Point.some.injEq] at heq
+    exact Prod.ext heq.1 heq.2
   -- hb means j₁ ∈ extractorGroup j₂ and vice versa.
   have hj₁inG : j₁ ∈ extractorGroup E stmt msg hkm j₂ := by
     simp only [extractorGroup, Finset.mem_filter, Finset.mem_univ, true_and]
@@ -286,15 +312,23 @@ theorem zsmul_extractedScalars_basesAffineEC_zero_of_notCanonical
     `extractedScalars` at the canonical representative of that group. -/
 theorem extractorDivisorCoeffs_affine_bases
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
     (i : Fin msg.k) :
     extractorDivisorCoeffs E stmt msg hkm
-        (ECPoint.affine (extractorBases E stmt msg hkm i).1
+        (ECPoint.affine E (extractorBases E stmt msg hkm i).1
                         (extractorBases E stmt msg hkm i).2) =
       extractedScalars E stmt msg hkm
         ((extractorGroup E stmt msg hkm i).min'
           (extractorGroup_nonempty E stmt msg hkm i)) := by
   classical
+  -- The base point is on the curve, so `affine` is `.some _`.
+  have hBaseOnE : extractorBases E stmt msg hkm i ∈ E.points := by
+    unfold extractorBases; exact hBasesOnE _
+  have hns : E.toW.toAffine.Nonsingular
+      (extractorBases E stmt msg hkm i).1 (extractorBases E stmt msg hkm i).2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hBaseOnE))
+  rw [ECPoint.affine_of_nonsingular E hns]
   show (if ((extractorBases E stmt msg hkm i).1,
            (extractorBases E stmt msg hkm i).2) =
           (stmt.target.1, -stmt.target.2)
@@ -330,12 +364,13 @@ theorem extractorDivisorCoeffs_affine_bases
 /-- For canonical `j`, `extractorDivisorCoeffs (basesAffineEC j) = extractedScalars j`. -/
 theorem extractorDivisorCoeffs_basesAffineEC_of_canonical
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
     (j : Fin msg.k) (hCanon : extractorIsCanonical E stmt msg hkm j) :
     extractorDivisorCoeffs E stmt msg hkm (basesAffineEC E stmt msg hkm j) =
       extractedScalars E stmt msg hkm j := by
   unfold basesAffineEC
-  have h1 := extractorDivisorCoeffs_affine_bases E stmt msg hkm hNoNegP j
+  have h1 := extractorDivisorCoeffs_affine_bases E stmt msg hkm hBasesOnE hNoNegP j
   have hmin_j : (extractorGroup E stmt msg hkm j).min'
                   (extractorGroup_nonempty E stmt msg hkm j) = j := hCanon
   rw [h1, hmin_j]
@@ -350,6 +385,7 @@ theorem extractorDivisorCoeffs_basesAffineEC_of_canonical
     zero-pad from canonical to univ. -/
 theorem weightedSum_imageBases_eq_univ_zsmul_extractedScalars
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty) :
     ECPoint.weightedSum E
       ((Finset.univ : Finset (Fin msg.k)).image (basesAffineEC E stmt msg hkm))
@@ -364,30 +400,25 @@ theorem weightedSum_imageBases_eq_univ_zsmul_extractedScalars
   -- Step A: rewrite `univ.image = canonical.image`.
   rw [show (Finset.univ : Finset (Fin msg.k)).image bEC = canFs.image bEC from
         (canonicalFinset_image_eq_univ_image E stmt msg hkm).symm]
-  -- Step B: fold_image with injectivity on canonical.
+  -- Step B: sum_image with injectivity on canonical.
   have hInj : ∀ x ∈ canFs, ∀ y ∈ canFs, bEC x = bEC y → x = y :=
-    basesAffineEC_injOn_canonical E stmt msg hkm
-  have hInjOn : Set.InjOn bEC canFs := fun x hx y hy h => hInj x hx y hy h
-  show (canFs.image bEC).fold (ECPoint.add E) 0
-        (fun P => ECPoint.zsmul E (c P) P) = _
-  rw [Finset.fold_image hInjOn]
-  -- After fold_image: canFs.fold (ECPoint.add E) 0 ((fun P => zsmul (c P) P) ∘ bEC).
+    basesAffineEC_injOn_canonical E stmt msg hkm hBasesOnE
+  show ∑ P ∈ canFs.image bEC, ECPoint.zsmul E (c P) P = _
+  rw [Finset.sum_image (fun x hx y hy h => hInj x hx y hy h)]
+  -- After sum_image: ∑ j ∈ canFs, zsmul (c (bEC j)) (bEC j).
   -- Step C: rewrite summand at canonical positions.
-  have hFoldCongr :
-      canFs.fold (ECPoint.add E) 0
-        ((fun P => ECPoint.zsmul E (c P) P) ∘ bEC)
-      = canFs.fold (ECPoint.add E) 0
-        (fun j => ECPoint.zsmul E (extractedScalars E stmt msg hkm j) (bEC j)) := by
-    apply Finset.fold_congr
+  have hSumCongr :
+      ∑ j ∈ canFs, ECPoint.zsmul E (c (bEC j)) (bEC j)
+      = ∑ j ∈ canFs, ECPoint.zsmul E (extractedScalars E stmt msg hkm j) (bEC j) := by
+    apply Finset.sum_congr rfl
     intro j hj
     simp only [hcanFs_def, canonicalFinset, Finset.mem_filter,
       Finset.mem_univ, true_and] at hj
-    show ECPoint.zsmul E (c (bEC j)) (bEC j) = _
     rw [hc_def, hbEC_def,
-        extractorDivisorCoeffs_basesAffineEC_of_canonical E stmt msg hkm hNoNegP j hj]
-  rw [hFoldCongr]
+        extractorDivisorCoeffs_basesAffineEC_of_canonical E stmt msg hkm hBasesOnE hNoNegP j hj]
+  rw [hSumCongr]
   -- Step D: extend canonical sum to univ via zero-padding.
-  show canFs.fold (ECPoint.add E) 0 _ = ECPoint.weightedSum E _ _
+  show ∑ j ∈ canFs, _ = ECPoint.weightedSum E _ _
   apply (ECPoint.weightedSum_subset_of_zero_outside E (Finset.subset_univ canFs) ?_).symm
   intro j _ hjnotcanon
   simp only [hcanFs_def, canonicalFinset, Finset.mem_filter,
@@ -407,19 +438,22 @@ theorem extractorDivisorCoeffs_support_subset_candidate
   rw [Finset.mem_coe]
   unfold extractorDivisorCandidate
   cases P with
-  | infinity =>
+  | zero =>
       exact Finset.mem_insert_self _ _
-  | affine x y =>
+  | @some x y hns =>
       refine Finset.mem_insert_of_mem ?_
+      -- The `some` value equals `ECPoint.affine E x y` since it's nonsingular.
+      have hAffEq : (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+          = ECPoint.affine E x y := (ECPoint.affine_of_nonsingular E hns).symm
       by_cases hxy : (x, y) = (stmt.target.1, -stmt.target.2)
       · rw [Prod.mk.injEq] at hxy
         rcases hxy with ⟨hx, hy⟩
-        rw [hx, hy]
+        rw [hAffEq, hx, hy]
         exact Finset.mem_insert_self _ _
       · refine Finset.mem_insert_of_mem ?_
         -- Indicator = 0, so filter-sum ≠ 0, so filter is nonempty.
         have hEval : extractorDivisorCoeffs E stmt msg hkm
-                        (ECPoint.affine x y) =
+                        (WeierstrassCurve.Affine.Point.some hns) =
                       0 + ∑ j ∈ (Finset.univ : Finset (Fin msg.k)).filter
                         (fun j => extractorBases E stmt msg hkm j = (x, y)),
                         extractedScalars E stmt msg hkm j := by
@@ -430,6 +464,7 @@ theorem extractorDivisorCoeffs_support_subset_candidate
                  extractedScalars E stmt msg hkm j = _
           rw [if_neg hxy]
         rw [hEval, zero_add] at hP
+        rw [hAffEq]
         by_contra hNotInImage
         apply hP
         have hEmpty : ((Finset.univ : Finset (Fin msg.k)).filter
@@ -442,22 +477,35 @@ theorem extractorDivisorCoeffs_support_subset_candidate
           simp only [hj]
         rw [hEmpty, Finset.sum_empty]
 
-/-- `∞` is not an affine point, so not in the `basesAffineEC` image. -/
+/-- `∞` is not an affine point, so not in the `basesAffineEC` image
+    (assuming bases are on the curve, so `affine` is `.some`, not junk `0`). -/
 theorem infinity_notin_image_basesAffineEC
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
-    ECPoint.infinity ∉
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points) :
+    (0 : ECPoint E) ∉
     ((Finset.univ : Finset (Fin msg.k)).image (basesAffineEC E stmt msg hkm)) := by
   intro hContra
   rw [Finset.mem_image] at hContra
   obtain ⟨j, _, heq⟩ := hContra
   unfold basesAffineEC at heq
-  cases heq
+  have hBaseOnE : extractorBases E stmt msg hkm j ∈ E.points := by
+    unfold extractorBases; exact hBasesOnE _
+  have hns : E.toW.toAffine.Nonsingular
+      (extractorBases E stmt msg hkm j).1 (extractorBases E stmt msg hkm j).2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hBaseOnE))
+  rw [ECPoint.affine_of_nonsingular E hns] at heq
+  exact (WeierstrassCurve.Affine.Point.some_ne_zero hns) heq
 
-/-- Under general case, `-P_aff` is not in the image of base points. -/
+/-- Under general case, `-P_aff` is not in the image of base points.
+    Requires `hTargetOnE` and `hBasesOnE` because the junk-tolerant
+    `ECPoint.affine` collapses off-curve pairs to `0`, preventing
+    coordinate recovery. -/
 theorem negP_notin_image_basesAffineEC
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty) :
-    (ECPoint.affine stmt.target.1 (-stmt.target.2) : ECPoint E.q) ∉
+    (ECPoint.affine E stmt.target.1 (-stmt.target.2) : ECPoint E) ∉
     ((Finset.univ : Finset (Fin msg.k)).image (basesAffineEC E stmt msg hkm)) := by
   intro hContra
   rw [Finset.mem_image] at hContra
@@ -466,30 +514,55 @@ theorem negP_notin_image_basesAffineEC
   refine ⟨j, ?_⟩
   simp only [negPIndexSet, Finset.mem_filter, Finset.mem_univ, true_and]
   unfold basesAffineEC at heq
-  have hprod : (extractorBases E stmt msg hkm j).1 = stmt.target.1 ∧
-               (extractorBases E stmt msg hkm j).2 = -stmt.target.2 := by
-    have := ECPoint.affine.injEq .. |>.mp heq
-    exact this
-  exact Prod.ext hprod.1 hprod.2
+  -- Both are `.some` thanks to on-curve hypotheses.
+  have hNegTargetOnE : (stmt.target.1, -stmt.target.2) ∈ E.points := by
+    apply E.hComplete
+    have hc := E.hOnCurve _ hTargetOnE
+    simp only at hc ⊢
+    rw [neg_sq]; exact hc
+  have hBaseOnE : extractorBases E stmt msg hkm j ∈ E.points := by
+    unfold extractorBases; exact hBasesOnE _
+  have hns_neg : E.toW.toAffine.Nonsingular stmt.target.1 (-stmt.target.2) :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hNegTargetOnE))
+  have hns_base : E.toW.toAffine.Nonsingular
+      (extractorBases E stmt msg hkm j).1 (extractorBases E stmt msg hkm j).2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hBaseOnE))
+  rw [ECPoint.affine_of_nonsingular E hns_neg,
+      ECPoint.affine_of_nonsingular E hns_base] at heq
+  rw [WeierstrassCurve.Affine.Point.some.injEq] at heq
+  exact Prod.ext heq.1 heq.2
 
-/-- `∞ ≠ -P_aff`. -/
+/-- `∞ ≠ -P_aff`, given `-P_aff` lies on the curve (so `affine` returns
+    `.some`, not the junk `0`). -/
 theorem infinity_ne_negP_aff
-    (stmt : DlogStatement E.q) :
-    (ECPoint.infinity : ECPoint E.q) ≠
-    ECPoint.affine stmt.target.1 (-stmt.target.2) := by
-  intro h; cases h
+    (stmt : DlogStatement E.q)
+    (hTargetOnE : stmt.target ∈ E.points) :
+    (0 : ECPoint E) ≠
+    ECPoint.affine E stmt.target.1 (-stmt.target.2) := by
+  intro h
+  have hNegTargetOnE : (stmt.target.1, -stmt.target.2) ∈ E.points := by
+    apply E.hComplete
+    have hc := E.hOnCurve _ hTargetOnE
+    simp only at hc ⊢
+    rw [neg_sq]; exact hc
+  have hns : E.toW.toAffine.Nonsingular stmt.target.1 (-stmt.target.2) :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hNegTargetOnE))
+  rw [ECPoint.affine_of_nonsingular E hns] at h
+  exact (WeierstrassCurve.Affine.Point.some_ne_zero hns) h.symm
 
 /-- `∞` is not in `insert (-P_aff) (image basesAffineEC)`. -/
 theorem infinity_notin_insert_negP_image
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
-    (ECPoint.infinity : ECPoint E.q) ∉
-    insert (ECPoint.affine stmt.target.1 (-stmt.target.2))
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points) :
+    (0 : ECPoint E) ∉
+    insert (ECPoint.affine E stmt.target.1 (-stmt.target.2))
       ((Finset.univ : Finset (Fin msg.k)).image (basesAffineEC E stmt msg hkm)) := by
   intro hContra
   rw [Finset.mem_insert] at hContra
   rcases hContra with h | h
-  · exact infinity_ne_negP_aff E stmt h
-  · exact infinity_notin_image_basesAffineEC E stmt msg hkm h
+  · exact infinity_ne_negP_aff E stmt hTargetOnE h
+  · exact infinity_notin_image_basesAffineEC E stmt msg hkm hBasesOnE h
 
 /-- **D4 main theorem (group-sum form).** Given that the group-weighted
     sum of `extractorDivisorCoeffs` over its finite support vanishes,
@@ -502,12 +575,13 @@ theorem infinity_notin_insert_negP_image
     conclusion `target = Σ [extractedScalars i] · B_i`. -/
 theorem extractor_zeroSum_of_weightedSum
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
     (hWSum :
       ECPoint.weightedSum E (extractorDivisorCandidate E stmt msg hkm)
         (fun P => ECPoint.zsmul E (extractorDivisorCoeffs E stmt msg hkm P) P) = 0) :
-    ECPoint.add E
-      (ECPoint.affine stmt.target.1 (-stmt.target.2))
+    (ECPoint.affine E stmt.target.1 (-stmt.target.2)) +
       (ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
         (fun i => ECPoint.zsmul E (extractedScalars E stmt msg hkm i)
           (basesAffineEC E stmt msg hkm i)))
@@ -521,32 +595,33 @@ theorem extractor_zeroSum_of_weightedSum
   -- Step 5: expand weightedSum over candidate Finset.
   have hCandExpand :
       ECPoint.weightedSum E candFs (fun P => ECPoint.zsmul E (c P) P) =
-      ECPoint.add E
-        (ECPoint.affine stmt.target.1 (-stmt.target.2))
+      (ECPoint.affine E stmt.target.1 (-stmt.target.2)) +
         (ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
           (fun i => ECPoint.zsmul E (extractedScalars E stmt msg hkm i)
             (basesAffineEC E stmt msg hkm i))) := by
     show ECPoint.weightedSum E
-      (insert (ECPoint.infinity : ECPoint E.q)
-        (insert (ECPoint.affine stmt.target.1 (-stmt.target.2))
+      (insert (0 : ECPoint E)
+        (insert (ECPoint.affine E stmt.target.1 (-stmt.target.2))
           ((Finset.univ : Finset (Fin msg.k)).image (basesAffineEC E stmt msg hkm))))
       (fun P => ECPoint.zsmul E (c P) P) = _
-    rw [ECPoint.weightedSum_insert E (infinity_notin_insert_negP_image E stmt msg hkm)]
-    have h_f_inf : ECPoint.zsmul E (c ECPoint.infinity) ECPoint.infinity = 0 := by
+    rw [ECPoint.weightedSum_insert E
+          (infinity_notin_insert_negP_image E stmt msg hkm hTargetOnE hBasesOnE)]
+    have h_f_inf : ECPoint.zsmul E (c (0 : ECPoint E)) (0 : ECPoint E) = 0 := by
       rw [hc_def]
       rw [extractorDivisorCoeffs_infinity]
       exact ECPoint.zsmul_infinity E _
     rw [h_f_inf, ECPoint.zero_add_curve]
-    rw [ECPoint.weightedSum_insert E (negP_notin_image_basesAffineEC E stmt msg hkm hNoNegP)]
+    rw [ECPoint.weightedSum_insert E
+          (negP_notin_image_basesAffineEC E stmt msg hkm hTargetOnE hBasesOnE hNoNegP)]
     have h_f_negP :
-        ECPoint.zsmul E (c (ECPoint.affine stmt.target.1 (-stmt.target.2)))
-          (ECPoint.affine stmt.target.1 (-stmt.target.2))
-        = ECPoint.affine stmt.target.1 (-stmt.target.2) := by
-      rw [hc_def, extractorDivisorCoeffs_negP E stmt msg hkm hNoNegP]
+        ECPoint.zsmul E (c (ECPoint.affine E stmt.target.1 (-stmt.target.2)))
+          (ECPoint.affine E stmt.target.1 (-stmt.target.2))
+        = ECPoint.affine E stmt.target.1 (-stmt.target.2) := by
+      rw [hc_def, extractorDivisorCoeffs_negP E stmt msg hkm hTargetOnE hNoNegP]
       exact ECPoint.zsmul_one E _
     rw [h_f_negP]
     congr 1
-    exact weightedSum_imageBases_eq_univ_zsmul_extractedScalars E stmt msg hkm hNoNegP
+    exact weightedSum_imageBases_eq_univ_zsmul_extractedScalars E stmt msg hkm hBasesOnE hNoNegP
   rw [← hCandExpand]
   exact hCandSum
 
@@ -631,34 +706,63 @@ theorem takes the zero-sum as hypothesis and derives
 theorem target_eq_weightedSum_of_zero_sum
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (hZeroSum :
-      ECPoint.add E
-        (ECPoint.affine stmt.target.1 (-stmt.target.2))
+      (ECPoint.affine E stmt.target.1 (-stmt.target.2)) +
         (ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
           (fun i => ECPoint.zsmul E (extractedScalars E stmt msg hkm i)
-            (ECPoint.affine (extractorBases E stmt msg hkm i).1
+            (ECPoint.affine E (extractorBases E stmt msg hkm i).1
                             (extractorBases E stmt msg hkm i).2)))
       = 0) :
-    ECPoint.affine stmt.target.1 stmt.target.2 =
+    ECPoint.affine E stmt.target.1 stmt.target.2 =
       ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
         (fun i => ECPoint.zsmul E (extractedScalars E stmt msg hkm i)
-          (ECPoint.affine (extractorBases E stmt msg hkm i).1
+          (ECPoint.affine E (extractorBases E stmt msg hkm i).1
                           (extractorBases E stmt msg hkm i).2)) := by
-  set P_aff := (ECPoint.affine stmt.target.1 stmt.target.2 : ECPoint E.q)
+  set P_aff := (ECPoint.affine E stmt.target.1 stmt.target.2 : ECPoint E)
   set X := ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
     (fun i => ECPoint.zsmul E (extractedScalars E stmt msg hkm i)
-      (ECPoint.affine (extractorBases E stmt msg hkm i).1
+      (ECPoint.affine E (extractorBases E stmt msg hkm i).1
                       (extractorBases E stmt msg hkm i).2)) with hX_def
   -- The `-P` affine point is the ECPoint negation of `P_aff`.
-  have hPneg : (ECPoint.affine stmt.target.1 (-stmt.target.2) : ECPoint E.q) =
-               -P_aff := rfl
+  have hPneg : (ECPoint.affine E stmt.target.1 (-stmt.target.2) : ECPoint E) =
+               -P_aff := by
+    show ECPoint.affine E stmt.target.1 (-stmt.target.2) =
+         -(ECPoint.affine E stmt.target.1 stmt.target.2)
+    -- `affine E x (-y) = -(affine E x y)` since on our curve `negY x y = -y`.
+    have hNegYAff : ∀ y' : ZMod E.q, E.toW.toAffine.negY stmt.target.1 y' = -y' := by
+      intro y'; show -y' - E.toW.a₁ * stmt.target.1 - E.toW.a₃ = -y'
+      rw [E.toW_a₁, E.toW_a₃]; ring
+    by_cases hns : E.toW.toAffine.Nonsingular stmt.target.1 stmt.target.2
+    · have hns' : E.toW.toAffine.Nonsingular stmt.target.1 (-stmt.target.2) := by
+        have := (WeierstrassCurve.Affine.nonsingular_neg
+                  (W' := E.toW.toAffine) stmt.target.1 stmt.target.2).mpr hns
+        rwa [hNegYAff] at this
+      rw [ECPoint.affine_of_nonsingular E hns,
+          ECPoint.affine_of_nonsingular E hns']
+      show (WeierstrassCurve.Affine.Point.some hns' : ECPoint E) =
+           -(WeierstrassCurve.Affine.Point.some hns)
+      rw [WeierstrassCurve.Affine.Point.neg_some,
+          WeierstrassCurve.Affine.Point.some.injEq]
+      refine ⟨rfl, ?_⟩
+      rw [hNegYAff]
+    · have hns' : ¬ E.toW.toAffine.Nonsingular stmt.target.1 (-stmt.target.2) := by
+        intro h
+        apply hns
+        have := (WeierstrassCurve.Affine.nonsingular_neg
+                  (W' := E.toW.toAffine) stmt.target.1 (-stmt.target.2)).mpr h
+        rw [hNegYAff] at this
+        rwa [neg_neg] at this
+      have h0 : (ECPoint.affine E stmt.target.1 stmt.target.2 : ECPoint E) = 0 := by
+        unfold ECPoint.affine; rw [dif_neg hns]
+      have h0' : (ECPoint.affine E stmt.target.1 (-stmt.target.2) : ECPoint E) = 0 := by
+        unfold ECPoint.affine; rw [dif_neg hns']
+      rw [h0, h0', neg_zero]
   rw [hPneg] at hZeroSum
-  -- `add (-P_aff) P_aff = 0` by `neg_add_cancel`.
-  have hNegCancel : ECPoint.add E (-P_aff) P_aff = 0 :=
-    ECPoint.neg_add_cancel E P_aff
+  -- `(-P_aff) + P_aff = 0` by `neg_add_cancel`.
+  have hNegCancel : (-P_aff) + P_aff = 0 := neg_add_cancel P_aff
   -- Conclude `X = P_aff` by left cancellation.
-  have hEq : ECPoint.add E (-P_aff) X = ECPoint.add E (-P_aff) P_aff := by
+  have hEq : (-P_aff) + X = (-P_aff) + P_aff := by
     rw [hZeroSum, hNegCancel]
-  exact (ECPoint.add_left_cancel E hEq).symm
+  exact (add_left_cancel hEq).symm
 
 /-- **Paper Step 5 (general case)** (`thm:ma`, ip.tex `\ref{step:extract}`):
     convert principal-divisor group-sum-zero into the dlog relation
@@ -670,17 +774,19 @@ theorem target_eq_weightedSum_of_zero_sum
     `target = Σ [extractedScalars i] · B_i`. -/
 theorem target_eq_weightedSum_of_weightedSum
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
     (hWSum :
       ECPoint.weightedSum E (extractorDivisorCandidate E stmt msg hkm)
         (fun P => ECPoint.zsmul E (extractorDivisorCoeffs E stmt msg hkm P) P) = 0) :
-    ECPoint.affine stmt.target.1 stmt.target.2 =
+    ECPoint.affine E stmt.target.1 stmt.target.2 =
       ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
         (fun i => ECPoint.zsmul E (extractedScalars E stmt msg hkm i)
-          (ECPoint.affine (extractorBases E stmt msg hkm i).1
+          (ECPoint.affine E (extractorBases E stmt msg hkm i).1
                           (extractorBases E stmt msg hkm i).2)) := by
   exact target_eq_weightedSum_of_zero_sum E stmt msg hkm
-    (extractor_zeroSum_of_weightedSum E stmt msg hkm hNoNegP hWSum)
+    (extractor_zeroSum_of_weightedSum E stmt msg hkm hTargetOnE hBasesOnE hNoNegP hWSum)
 
 /-! ## Distinct-base-point enumeration
 
@@ -1603,7 +1709,7 @@ theorem distinctSigma_exists
   have hβsum : (∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE :=
     betaConstructive_sum_le_degE E msg.toD
   have hβgroup : ECPoint.weightedSum E E.points
-      (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0 :=
+      (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine E P.1 P.2)) = 0 :=
     betaConstructive_group_sum_zero E msg.toD hD hSplit
   -- Step 3: build the `Q` / `beta_nat` pair for the distinct-polyG bridge.
   have hQinj : Function.Injective (zerosAt E msg.toD) :=
@@ -2035,7 +2141,7 @@ theorem extractorCoeffFromSigma_satisfies_D3
 /-! ## S6: extractorDivisorCoeffs ↔ dCoeffs matching
 
     Pointwise equality `extractorDivisorCoeffs = dCoeffs E msg.toD β_fun`
-    on `ECPoint E.q` under the σ-matching output of `distinctSigma_exists`.
+    on `ECPoint E` under the σ-matching output of `distinctSigma_exists`.
     Combined with `distinctSigma_exists`'s `IsPrincipal (dCoeffs ...)`
     conclusion and `funext`, this yields
     `IsPrincipal E (extractorDivisorCoeffs E stmt msg hkm)`.
@@ -2079,7 +2185,7 @@ theorem extractorDivisorCoeffs_affine_not_in_baseImage
 /-- **S6 — pointwise matching.** Under the σ-matching hypotheses
     produced by `distinctSigma_exists`, the extractor's divisor
     coefficient function equals `dCoeffs E msg.toD β_fun` at every
-    point of `ECPoint E.q`.
+    point of `ECPoint E`.
 
     Combined with `IsPrincipal (dCoeffs ...)` from S4 and `funext`,
     this gives `IsPrincipal (extractorDivisorCoeffs ...)`. -/
@@ -2098,7 +2204,7 @@ theorem extractorDivisorCoeffs_eq_dCoeffs
       ((multAt E β_fun msg.toD k : ℕ) : ZMod E.q)
         + distinctM' E stmt msg hkm (σ k) = 0)
     (hσ_off : ∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0)
-    (P : ECPoint E.q) :
+    (P : ECPoint E) :
     extractorDivisorCoeffs E stmt msg hkm P = dCoeffs E msg.toD β_fun P := by
   classical
   -- D3 data for the σ-matching (S5).
@@ -2150,9 +2256,9 @@ theorem extractorDivisorCoeffs_eq_dCoeffs
     rw [← hk₀_aff, this, hMult_k₀_one_nat]
   -- Case on P.
   cases P with
-  | infinity =>
+  | zero =>
       show -(msg.toD.degE : ℤ) = -(msg.toD.degE : ℤ); rfl
-  | affine x y =>
+  | @some x y _ =>
       -- LHS = indicator + filter-sum extractedScalars.
       -- RHS = (β_fun (x, y) : ℤ).
       show (if (x, y) = (stmt.target.1, -stmt.target.2)
@@ -2337,7 +2443,7 @@ theorem extractor_succeeds_and_groupSumZero
   have hβsum : (∑ P ∈ E.points, β_fun P) ≤ msg.toD.degE :=
     betaConstructive_sum_le_degE E msg.toD
   have hβgroup : ECPoint.weightedSum E E.points
-      (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine P.1 P.2)) = 0 :=
+      (fun P => ECPoint.nsmul E (β_fun P) (ECPoint.affine E P.1 P.2)) = 0 :=
     betaConstructive_group_sum_zero E msg.toD hD hSplit
   obtain ⟨σ, hσ_eq, hσ_betam, hσ_off⟩ :=
     distinctSigma_exists E stmt msg d hDeg hd hkm hAdm hNoNegP hSplit
@@ -2419,6 +2525,8 @@ theorem extractorSucceeds_of_logDerivCheck_identically_zero_general
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
     (hSplit : normPoly_splits_over_Fq E msg.toD)
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
@@ -2437,17 +2545,17 @@ theorem extractorSucceeds_of_logDerivCheck_identically_zero_general
       6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) + 1
         ≤ (validPairs E).card) :
     extractorSucceeds E stmt msg d hkm ∧
-    ECPoint.affine stmt.target.1 stmt.target.2 =
+    ECPoint.affine E stmt.target.1 stmt.target.2 =
       ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
         (fun i => ECPoint.zsmul E
                    (extractedScalars E stmt msg hkm i)
-                   (ECPoint.affine (extractorBases E stmt msg hkm i).1
+                   (ECPoint.affine E (extractorBases E stmt msg hkm i).1
                                    (extractorBases E stmt msg hkm i).2)) := by
   obtain ⟨hSucc, hWSum⟩ :=
     extractor_succeeds_and_groupSumZero E stmt msg d hDeg hd hkm hAdm hNoNegP
       hSplit hAllZero hPolyGZero hValidPairsLarge
   exact ⟨hSucc,
-    target_eq_weightedSum_of_weightedSum E stmt msg hkm hNoNegP hWSum⟩
+    target_eq_weightedSum_of_weightedSum E stmt msg hkm hTargetOnE hBasesOnE hNoNegP hWSum⟩
 
 /-! ## Extractor validity (both cases) -/
 
@@ -2459,6 +2567,8 @@ theorem extracted_scalars_valid
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hSplit : normPoly_splits_over_Fq E msg.toD)
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
@@ -2475,18 +2585,18 @@ theorem extracted_scalars_valid
     (hValidPairsLarge :
       6 * E.q * ((d + stmt.k + 1) + (d + stmt.k + 1) * (d + stmt.k)) + 1
         ≤ (validPairs E).card) :
-    ECPoint.affine stmt.target.1 stmt.target.2 =
+    ECPoint.affine E stmt.target.1 stmt.target.2 =
       ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
         (fun i => ECPoint.zsmul E
                    (extractedScalars E stmt msg hkm i)
-                   (ECPoint.affine (extractorBases E stmt msg hkm i).1
+                   (ECPoint.affine E (extractorBases E stmt msg hkm i).1
                                    (extractorBases E stmt msg hkm i).2)) := by
   classical
   by_cases hNegP : (negPIndexSet E stmt msg hkm).Nonempty
   · exact extracted_scalars_valid_special E stmt msg hkm hNegP
   · exact (extractorSucceeds_of_logDerivCheck_identically_zero_general
-            E stmt msg d hDeg hd hkm hAdm hNegP hSplit hAllZero hPolyGZero
-            hValidPairsLarge).2
+            E stmt msg d hDeg hd hkm hAdm hTargetOnE hBasesOnE hNegP hSplit
+            hAllZero hPolyGZero hValidPairsLarge).2
 
 /-! ## Classical axiom: polyG vanishing on E × E
 
