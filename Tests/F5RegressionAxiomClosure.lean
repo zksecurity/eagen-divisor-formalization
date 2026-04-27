@@ -4,7 +4,9 @@
   Regression sanity-check for the soundness restoration:
   * The headline theorems no longer depend on the false
     `CoordRingElt.divisor_group_sum_zero` axiom.
-  * The closure now contains the sound replacements.
+  * On the geometric-zero skeleton branch, the closure is intentionally
+    `sorryAx` plus Lean foundations while the named geometric obligations
+    are discharged.
 
   Run via `lake env lean Tests/F5RegressionAxiomClosure.lean` (the
   `#print axioms` outputs land in the build log).
@@ -17,7 +19,7 @@ open Divisor
 -- Axiom closure of the headline soundness theorems.
 -- Confirms the soundness restoration: the previous unsound axiom
 -- `Divisor.CoordRingElt.divisor_group_sum_zero` is no longer in the
--- closure; replaced by `Divisor.CoordRingElt.exists_divisor_multiplicity`.
+-- closure of the headline theorem.
 
 #print axioms Divisor.ma_extractable
 

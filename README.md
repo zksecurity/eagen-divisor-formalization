@@ -25,8 +25,6 @@ Fix a statement `stmt` over the finite field `F_q`: bases `B_1, ..., B_k` in `E(
 **Hypotheses** (`Divisor/ExtractorBridgeTheorems.lean`):
 
 - smoothness of `E`: `4 a_E^3 + 27 b_E^2 ≠ 0`
-- `splitsOnE E D`: `normPoly(D)` splits over `F_q` and every root
-  lifts to an `F_q`-rational point of `E`
 - denominator non-vanishing on `A_0` outside `zerosFinset(D)` and avoiding `distinctR`
 - size condition on the number of points of `E`:
 
@@ -42,7 +40,12 @@ where `n_i = w.scalars(i)` in `Z` with `|n_i| < d`.
 
 2. *Small-accept-set branch.* The set of challenges `(A_0, A_1)` in `validPairs` on which the verifier accepts has cardinality at most `B(d, k, q)`, where
 
-$$B(d, k, q) = 78(d+k+6)|E(F_q)|.$$
+$$B(d, k, q) = 18(d+k)q + (3d+9k+71)|E(F_q)|.$$
+
+The active soundness path uses the geometric-zero skeleton in
+`Divisor/GeometricSoundness.lean`: zeros of `D` are represented over
+`F_qbar`, the cleared numerator is required to descend to `F_q`, and
+the headline theorem no longer assumes `splitsOnE E D`.
 
 ### `Divisor.ip_knowledge_sound` (IP knowledge soundness)
 
@@ -61,12 +64,12 @@ where `N = numZeros(D)` and `E_aff` is the set of affine `F_q`-points of `E`. Pr
 `#print axioms Divisor.ma_extractable` (same for `Divisor.ip_knowledge_sound`):
 
 ```
-propext, Classical.choice, Quot.sound,
-Divisor.CoordRingElt.exists_divisor_multiplicity,
-Divisor.chord_fiber_product_eq_normZ_under_split,
-Divisor.chord_sum_eq_chord_fiber_product_logDeriv,
-Divisor.hasse_weil
+propext, sorryAx, Classical.choice, Divisor.hasse_weil, Quot.sound
 ```
+
+`sorryAx` is intentional on the `geom-polyG-skeleton` branch. The named
+obligations are isolated in `Divisor/GeometricSoundness.lean`; discharging
+them replaces the older split-gated rational-zero path.
 
 `#print axioms Divisor.ma_completeness`:
 

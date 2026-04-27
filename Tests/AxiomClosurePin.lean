@@ -5,14 +5,15 @@
   the build log lets a reviewer confirm the closure is exactly what's
   expected (and catch any drift early).
 
-  Expected closures (post-soundness-restoration):
+  Expected closures on the geometric-zero skeleton branch:
 
   * `ma_extractable`, `ip_knowledge_sound`:
-      propext, Classical.choice, Quot.sound,
-      Divisor.CoordRingElt.exists_divisor_multiplicity,
-      Divisor.chord_fiber_product_eq_normZ_under_split,
-      Divisor.chord_sum_eq_chord_fiber_product_logDeriv,
-      Divisor.hasse_weil
+      propext, sorryAx, Classical.choice, Divisor.hasse_weil, Quot.sound
+
+    The `sorryAx` comes only from the named geometric obligations in
+    `Divisor/GeometricSoundness.lean`. In particular, the headline theorem
+    signatures no longer carry `hSplit : splitsOnE E D`. The `hasse_weil`
+    dependency comes from the geometric SZ bound on `E(F_q) × E(F_q)`.
 
   * `ma_completeness`:
       propext, Classical.choice, Quot.sound,
