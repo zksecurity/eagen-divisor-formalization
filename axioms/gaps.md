@@ -11,8 +11,8 @@ Axiom-by-axiom status of textbook coverage in `/Users/rot256/paper/crypto-books/
 | `ECPoint.neg_add_cancel` | Covered — Silverman AEC Prop III.2.2(d) |
 | `chord_fiber_product_eq_normZ_under_split` | Covered — Stichtenoth Prop 3.1.9 + Thm 3.7.1 |
 | `chord_sum_eq_chord_fiber_product_logDeriv` | Covered — Lang *Algebra* §VI.5 Thm 5.1 + §VIII.5 Thm 5.1 Case 1 |
-| `weil_reciprocity_honest` | Covered — Stichtenoth Cor 4.3.3 (Residue Theorem) + Silverman AEC Ex II.2.11 |
-| `CoordRingElt.divisor_group_sum_zero` | Covered — Silverman AEC Cor III.3.5 (⇒ direction) |
+| `weil_reciprocity_honest` | Covered — Stichtenoth Cor 4.3.3 (Residue Theorem) + Silverman AEC Ex II.2.11. Descent skeleton in `Divisor/WeilReciprocityDescent.lean` (sorry'd; in-flight, see P3 of soundness plan). |
+| `CoordRingElt.exists_divisor_multiplicity` | Covered — Silverman AEC Cor III.3.5 + II §1 (local order ord_P at smooth points). Replaces the previously-listed `CoordRingElt.divisor_group_sum_zero`, which was provably unsound (counterexample over `F_5`; see file header in `Divisor/Axioms/AxiomExistsDivisorMultiplicity.lean`). |
 | `bivariate_poly_zeros_on_ExE_le` | **Proven** — derived from `hasse_weil` via fiber-counting (`Divisor/BivariateZerosOnExE.lean` + `Divisor/CurveEvalZerosHelper.lean`). No longer an axiom. |
 
 ## Status — all closed
