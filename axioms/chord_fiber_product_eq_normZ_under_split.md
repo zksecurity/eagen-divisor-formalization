@@ -1,18 +1,22 @@
 # `chord_fiber_product_eq_normZ_under_split`
 
-- **Lean source**: `Divisor/ChordLogDerivProof.lean:149`
+- **Lean source**: `Divisor/Axioms/AxiomChordFiberProductEqNormZUnderSplit.lean`
 
 ```lean
 axiom chord_fiber_product_eq_normZ_under_split
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplit : normPoly_splits_over_Fq E D)
-    (hAccount : (∑ P ∈ E.points, betaConstructive E D P) =
+    (hSplitOnE : splitsOnE E D)
+    (β_fun : ZMod E.q × ZMod E.q → ℕ)
+    (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
+    (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
+    (hAccount : (∑ P ∈ E.points, β_fun P) =
                   (normPoly E D).natDegree) :
-    ∃ c : ZMod E.q, c ≠ 0 ∧ chord_fiber_product E lam D = C c * normZ E lam D
+    ∃ c : ZMod E.q, c ≠ 0 ∧
+      chord_fiber_product E lam D = C c * normZ E lam D β_fun
 ```
 
-Identifies the function-field norm `N_{F_q(E)/F_q(z)}(D)` (the chord-fiber product) with a nonzero constant multiple of `normZ` under the splitting hypothesis.
+Identifies the function-field norm `N_{F_q(E)/F_q(z)}(D)` (the chord-fiber product) with a nonzero constant multiple of `normZ` under `splitsOnE` and faithful multiplicity accounting.
 
 ## Citation
 

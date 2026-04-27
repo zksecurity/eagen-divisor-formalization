@@ -25,11 +25,8 @@ Fix a statement `stmt` over the finite field `F_q`: bases `B_1, ..., B_k` in `E(
 **Hypotheses** (`Divisor/ExtractorBridgeTheorems.lean`):
 
 - smoothness of `E`: `4 a_E^3 + 27 b_E^2 ≠ 0`
-- `normPoly(D)` splits over `F_q` (every geometric zero of `D` is `F_q`-rational)
-- accounting: the `beta`-weights add up to the degree of `normPoly(D)`:
-
-$$\sum_{P \in E(F_q)} \beta(P) = \deg(\mathrm{normPoly}(D))$$
-
+- `splitsOnE E D`: `normPoly(D)` splits over `F_q` and every root
+  lifts to an `F_q`-rational point of `E`
 - denominator non-vanishing on `A_0` outside `zerosFinset(D)` and avoiding `distinctR`
 - size condition on the number of points of `E`:
 
@@ -45,7 +42,7 @@ where `n_i = w.scalars(i)` in `Z` with `|n_i| < d`.
 
 2. *Small-accept-set branch.* The set of challenges `(A_0, A_1)` in `validPairs` on which the verifier accepts has cardinality at most `B(d, k, q)`, where
 
-$$B(d, k, q) = 18(d+k)q + (6d+9k+71)|E(F_q)|.$$
+$$B(d, k, q) = 78(d+k+6)|E(F_q)|.$$
 
 ### `Divisor.ip_knowledge_sound` (IP knowledge soundness)
 

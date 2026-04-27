@@ -39,18 +39,17 @@ variable (E : ECSetup)
 
     * **Bound branch**: the set of accepting challenges in `validPairs`
       has cardinality at most
-      `18·(d + k)·|F_q| + (3·d + 9·k + 71)·|E|`,
-      linear in both `|F_q|` and `|E|`.
+      `78·(d + k + 6)·|E|`, linear in `|E|`.
 
-    The cardinality bound matches the paper's `\knowErr` (after Hasse)
-    plus the boundary contribution from `event_deg`. The witness
-    branch is delivered via paper Steps 1–5 (`\ref{step:logderiv}`–
-    `\ref{step:extract}`); the bound branch is delivered via
-    `log_deriv_sz_paper_tight` (SZ-on-(E×E) on the cleared log-deriv
-    polynomial).
+    The cardinality bound is the unconditional cleared-polynomial
+    SZ bound, including the denominator-boundary contribution. The
+    witness branch is delivered via paper Steps 1–5
+    (`\ref{step:logderiv}`–`\ref{step:extract}`); the bound branch is
+    delivered via `log_deriv_sz_paper` (SZ-on-(E×E) on the literal
+    cleared log-deriv polynomial).
 
     Hypotheses:
-    * `hSmooth`, `hSplit`, `hAccount`, `hDenomNZ` — technical
+    * `hSmooth`, `hSplit`, `hDenomNZ` — technical
       conditions matching the paper's standing assumptions on `D` and
       the line/divisor framework (axiom-supported in `Divisor/Axioms`).
     * `hTargetOnE`, `hBasesOnE` — statement well-formedness: target
@@ -79,8 +78,7 @@ theorem ma_extractable
         ∧ relDlog E stmt wit) ∨
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ 18 * (stmt.degBound + stmt.k) * E.q +
-        (3 * stmt.degBound + 9 * stmt.k + 71) * E.points.card := by
+      ≤ 78 * (stmt.degBound + stmt.k + 6) * E.points.card := by
   classical
   set d := stmt.degBound with hd_def
   -- Top-level case split (paper proof, ip.tex `\ref{thm:ma}`):
@@ -92,7 +90,7 @@ theorem ma_extractable
   · -- =====================================================================
     -- Paper: `event_NotEq` (ip.tex `\ref{thm:ma}`):
     -- f ≢ 0 yet f(A₀,A₁) = 0. Bound via SZ-on-(E×E) (`lem:log-derivative` +
-    -- Hasse), packaged as `log_deriv_sz_paper_tight`.
+    -- Hasse), packaged as `log_deriv_sz_paper`.
     -- =====================================================================
     right
     set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
@@ -109,15 +107,13 @@ theorem ma_extractable
     have hCardLe : acceptSet.card ≤ badSet.card := Finset.card_le_card hSub
     have hDegLt : msg.toD.degE < E.q := lt_of_le_of_lt hDeg hd
     have hBound :=
-      log_deriv_sz_paper_tight msg.toD stmt.target stmt.bases
-        (fun i => msg.m (hkm ▸ i)) hDegLt hSplit hNV
-    have hMono : 18 * (msg.toD.degE + stmt.k) * E.q +
-                   (3 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card
-                 ≤ 18 * (d + stmt.k) * E.q +
-                   (3 * d + 9 * stmt.k + 71) * E.points.card := by
-      apply Nat.add_le_add
-      · apply Nat.mul_le_mul_right; apply Nat.mul_le_mul_left; omega
-      · apply Nat.mul_le_mul_right; omega
+      log_deriv_sz_paper E msg.toD stmt.target stmt.bases
+        (fun i => msg.m (hkm ▸ i)) hDegLt hNV
+    have hMono : 78 * (msg.toD.degE + stmt.k + 6) * E.points.card
+                 ≤ 78 * (d + stmt.k + 6) * E.points.card := by
+      apply Nat.mul_le_mul_right
+      apply Nat.mul_le_mul_left
+      omega
     exact le_trans hCardLe (le_trans hBound hMono)
   · push_neg at hNV
     -- =====================================================================
@@ -445,8 +441,7 @@ theorem ip_knowledge_sound
          ∧ relDlog E stmt wit) ∨
      ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
-      ≤ 18 * (stmt.degBound + stmt.k) * E.q +
-        (3 * stmt.degBound + 9 * stmt.k + 71) * E.points.card)
+      ≤ 78 * (stmt.degBound + stmt.k + 6) * E.points.card)
     ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
         (msg3 msg3' : IPProverMsg3 E.q),
         msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
@@ -468,10 +463,10 @@ theorem ip_knowledge_sound
     `ma_extractable`, but with the cardinality bound consolidated to
     a single `q`-term via Hasse (`|E| ≤ 2q` for `q ≥ 5`):
 
-      `≤ 36 · (d + k + 4) · q`.
+      `≤ 156 · (d + k + 6) · q`.
 
-    Matches paper's `\knowErr ≤ 96(\degBound + k)/q` shape (with
-    constants matching after dividing by `|E|² ≥ q²/2` for `q ≥ 16`). -/
+    This is the Hasse-clean form of the unconditional cleared-polynomial
+    SZ branch. -/
 theorem ma_extractable_clean
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
@@ -495,17 +490,13 @@ theorem ma_extractable_clean
         ∧ relDlog E stmt wit) ∨
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q := by
+      ≤ 156 * (stmt.degBound + stmt.k + 6) * E.q := by
   rcases ma_extractable E stmt hd hd2 msg hDeg hkm hSmooth hSplit hDenomNZ
           hTargetOnE hBasesOnE hLargeQ with hWit | hBound
   · left; exact hWit
   · right
     have hHasse : E.points.card ≤ 2 * E.q := points_card_le_two_q E hQ
-    calc _ ≤ 18 * (stmt.degBound + stmt.k) * E.q
-              + (3 * stmt.degBound + 9 * stmt.k + 71) * E.points.card := hBound
-      _ ≤ 18 * (stmt.degBound + stmt.k) * E.q
-            + (3 * stmt.degBound + 9 * stmt.k + 71) * (2 * E.q) := by
-          apply Nat.add_le_add_left
+    calc _ ≤ 78 * (stmt.degBound + stmt.k + 6) * E.points.card := hBound
+      _ ≤ 78 * (stmt.degBound + stmt.k + 6) * (2 * E.q) := by
           exact Nat.mul_le_mul_left _ hHasse
-      _ ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q := by ring_nf; omega
-
+      _ = 156 * (stmt.degBound + stmt.k + 6) * E.q := by ring

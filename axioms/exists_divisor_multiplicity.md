@@ -27,7 +27,7 @@ properties:
 1. **Support**: `β` is supported only on F_q-rational affine zeros of `D` on `E`.
 2. **Coverage**: every F_q-rational affine zero of `D` is in `β`'s support.
 3. **Total-degree bound** (unconditional): `Σ β ≤ D.degE`.
-4. Under `normPoly_splits_over_Fq E D`:
+4. Under `splitsOnE E D`:
    - **Pole-at-∞ accounting**: `Σ β = natDegree (normPoly E D)`.
    - **Abel's group-sum-zero**: `Σ [β(P)]·P = O` in the group law.
 
