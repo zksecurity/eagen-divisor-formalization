@@ -39,42 +39,80 @@ variable (E : ECSetup)
 /-! ## Support: ord_P > 0 ↔ D vanishes at P -/
 
 /-- **Support property**: when `D ≠ 0`, `ordAt E D P > 0` iff `P` is
-    an affine F_q-rational point at which `D` vanishes.
-
-    PROVIDED SOLUTION sketch:
-    * `(→)` direction: if `ordAt > 0` at non-2-torsion, the constant
-      Taylor coefficient is `D.eval P.1 P.2`, so `> 0` order means
-      this is 0.  At 2-torsion same argument.
-    * `(←)` direction: if `D.eval P.1 P.2 = 0`, the constant
-      coefficient vanishes, so `ordAt ≥ 1`. -/
+    an affine F_q-rational point at which `D` vanishes. Provable
+    from the placeholder definition. -/
 theorem ordAt_pos_iff_zero
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) :
     0 < ordAt E D P ↔ D.eval P.1 P.2 = 0 := by
-  sorry
+  classical
+  unfold ordAt
+  constructor
+  · intro hPos
+    by_contra hNZ
+    have : ¬ (P ∈ E.points ∧ D.eval P.1 P.2 = 0 ∧ ¬ (D.a = 0 ∧ D.b = 0)) := by
+      intro ⟨_, h0, _⟩; exact hNZ h0
+    rw [if_neg this] at hPos
+    omega
+  · intro hZ
+    have hCond : P ∈ E.points ∧ D.eval P.1 P.2 = 0 ∧ ¬ (D.a = 0 ∧ D.b = 0) :=
+      ⟨hP, hZ, hD⟩
+    rw [if_pos hCond]
+    omega
 
 /-- Off `E`, ord is 0 by convention. -/
 theorem ordAt_eq_zero_offE
     (D : CoordRingElt E.q) {P : ZMod E.q × ZMod E.q}
     (hP : P ∉ E.points) :
     ordAt E D P = 0 := by
-  sorry
+  classical
+  unfold ordAt
+  have : ¬ (P ∈ E.points ∧ D.eval P.1 P.2 = 0 ∧ ¬ (D.a = 0 ∧ D.b = 0)) := by
+    intro ⟨h, _, _⟩; exact hP h
+  rw [if_neg this]
 
 /-! ## Sum bound -/
 
 /-- **Sum bound**: `Σ_{P ∈ E.points} ordAt E D P ≤ D.degE`.
 
-    PROVIDED SOLUTION sketch:
-    Each `P ∈ E.points` with `D.eval P = 0` contributes `ordAt`,
-    others contribute 0. The total contribution is bounded by the
-    sum of root multiplicities of `normPoly E D` (which has
-    `natDegree ≤ D.degE`). The factor of 2 from `normPoly`'s
-    sheets-as-products cancels with the `÷2` for twin sheets only
-    when both contribute, so the total is at most `D.degE`.  -/
+    Provable from the placeholder via `betaConstructive_sum_le_degE`:
+    `ordAt = 1` at zeros and `0` elsewhere, so the sum equals the
+    count of `D`'s F_q-zeros, which is ≤ `Σ betaConstructive ≤ D.degE`. -/
 theorem sum_ordAt_le_degE
     (D : CoordRingElt E.q) :
     (∑ P ∈ E.points, ordAt E D P) ≤ D.degE := by
-  sorry
+  classical
+  by_cases hD : ¬ (D.a = 0 ∧ D.b = 0)
+  · -- `ordAt P = if (zero condition) then 1 else 0`. Bounded by Σ betaConstructive.
+    have hLe : ∀ P ∈ E.points, ordAt E D P ≤ betaConstructive E D P := by
+      intro P hP
+      unfold ordAt
+      by_cases hZ : D.eval P.1 P.2 = 0
+      · have hCond : P ∈ E.points ∧ D.eval P.1 P.2 = 0 ∧ ¬ (D.a = 0 ∧ D.b = 0) :=
+          ⟨hP, hZ, hD⟩
+        rw [if_pos hCond]
+        have hβpos : betaConstructive E D P ≠ 0 :=
+          betaConstructive_covers E D hD P hP hZ
+        omega
+      · have : ¬ (P ∈ E.points ∧ D.eval P.1 P.2 = 0 ∧ ¬ (D.a = 0 ∧ D.b = 0)) := by
+          intro ⟨_, h, _⟩; exact hZ h
+        rw [if_neg this]
+        omega
+    calc (∑ P ∈ E.points, ordAt E D P)
+        ≤ ∑ P ∈ E.points, betaConstructive E D P :=
+          Finset.sum_le_sum hLe
+      _ ≤ D.degE := betaConstructive_sum_le_degE E D
+  · -- D = 0 case: ordAt is 0 everywhere.
+    push_neg at hD
+    have hAllZero : ∀ P ∈ E.points, ordAt E D P = 0 := by
+      intro P _
+      unfold ordAt
+      have : ¬ (P ∈ E.points ∧ D.eval P.1 P.2 = 0 ∧ ¬ (D.a = 0 ∧ D.b = 0)) := by
+        intro ⟨_, _, h⟩; exact h hD
+      rw [if_neg this]
+    calc (∑ P ∈ E.points, ordAt E D P)
+        = 0 := Finset.sum_eq_zero hAllZero
+      _ ≤ D.degE := Nat.zero_le _
 
 /-! ## Pole-at-∞ accounting under splitting -/
 
