@@ -9,11 +9,15 @@ axiom CoordRingElt.exists_divisor_multiplicity
       (∀ P, β P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0) ∧
       (∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β P ≠ 0) ∧
       (∑ P ∈ E.points, β P) ≤ D.degE ∧
-      (normPoly_splits_over_Fq E D →
+      (splitsOnE E D →
         (∑ P ∈ E.points, β P) = (normPoly E D).natDegree) ∧
-      (normPoly_splits_over_Fq E D →
+      (splitsOnE E D →
         ECPoint.weightedSum E E.points
           (fun P => ECPoint.nsmul E (β P) (ECPoint.affine E P.1 P.2)) = 0)
+
+def splitsOnE (D : CoordRingElt E.q) : Prop :=
+  normPoly_splits_over_Fq E D ∧
+  (∀ α ∈ (normPoly E D).roots, ∃ y : ZMod E.q, (α, y) ∈ E.points)
 ```
 
 Existence of the canonical "true divisor multiplicity" function
@@ -39,6 +43,27 @@ The fix: existential rather than constructive. The witness is the
 true local order `ord_P(D)`, which lives in Silverman AEC II §1
 (local discrete valuation at a smooth point) and gives the full
 group-sum content of Cor III.3.5 (specialised under splitting).
+
+## A second falsity (caught after v2; fixed in v3)
+
+The first existential form gated accounting / group-sum-zero on
+`normPoly_splits_over_Fq E D` alone — i.e. just polynomial-in-X
+splitting. That was not enough: a root `α` of `normPoly` might have
+no F_q-rational `(α, y)` on `E` if `α³ + Aα + B` isn't a square in
+F_q.
+
+Counterexample (auditor): `E : y² = x³ + 1 / F_5`, `D = X − 1`.
+`normPoly D = (X − 1)²` splits over F_5 with `natDeg = 2`, but
+`1³ + 1 = 2` isn't a QR mod 5, so no F_5-points have `x = 1`. The
+F_q-restricted β was therefore forced to vanish above `x = 1`, but
+the axiom claimed the multiplicity sum equals 2.
+
+Fix (v3): replaced `normPoly_splits_over_Fq` by the strictly
+stronger predicate `splitsOnE` (defined above), which adds the
+fiber-rationality clause: *every root of `normPoly E D` lifts to
+at least one F_q-rational point of E*. Under `splitsOnE`, every
+geometric zero of `D` on `E` IS F_q-rational, so the F_q-sum
+captures the full Cor III.3.5 content.
 
 ## Citation
 

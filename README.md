@@ -90,14 +90,24 @@ Divisor.hasse_weil
 
 Existence of a "true" divisor multiplicity function (the local
 `ord_P(D)` of `D = a − b·y` viewed as a rational function on `E`)
-satisfying the four properties: support, coverage, the unconditional
-total-degree bound, and (under splitting) Abel's group-sum-zero
-identity. Replaces the previous `CoordRingElt.divisor_group_sum_zero`
-axiom (which was unsound — it asserted the group sum vanished for
-the constructive `betaConstructive`, but `betaConstructive` is
-provably non-faithful to ord_P at twin sheets with asymmetric orders;
-see `Divisor/Axioms/AxiomExistsDivisorMultiplicity.lean` for the
-F_5 counterexample).
+satisfying: support, coverage, the unconditional total-degree
+bound, and — under the **`splitsOnE`** predicate (univariate
+splitting of `normPoly E D` AND fiber-rationality of every root)
+— pole-at-∞ accounting and Abel's group-sum-zero.
+
+The fiber-rationality clause is essential: `normPoly_splits_over_Fq`
+(splitting in `X` alone) is *not* sufficient for the F_q-restricted
+sum to track `natDeg N(D)`. Counterexample: `E : y² = x³ + 1 / F_5`
+with `D = X − 1`. `normPoly D = (X − 1)²` splits over F_5 with
+`natDeg = 2`, but `1³ + 1 = 2` is not a quadratic residue mod 5,
+so no F_5-points lie above `x = 1` and the F_q-restricted β must
+vanish there. Strengthening the precondition to `splitsOnE` (the
+auditor's recommendation) restores soundness.
+
+The axiom replaces the retired (and provably false) `CoordRingElt.divisor_group_sum_zero`
+axiom (which had hard-coded `betaConstructive` as the multiplicity
+function — non-faithful to `ord_P` at twin sheets; see the F_5
+counterexample at `Divisor/Axioms/AxiomExistsDivisorMultiplicity.lean`).
 
 The axiom is intended to be discharged in Phase 1 of the trust-
 closure plan by mechanising `ord_P` from local uniformizers
