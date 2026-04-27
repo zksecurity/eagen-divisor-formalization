@@ -9,32 +9,18 @@
 
   ## Structure
 
-  The protocol-level claim:
+  **`weil_residue_identity`** (sorry'd bridge lemma): under the
+  honest-prover hypothesis, the trace of log-derivative terms at the
+  three chord-fiber points `(A₀, A₁, A₂)` equals the evaluation sum
+  `−1/L(−P) + Σⱼ −mⱼ/L(Bⱼ)`. This is the core content of Weil
+  reciprocity applied to `D` and the chord line `L`.
 
-      msg.isHonestFor stmt wit ∧ (A₀, A₁) ∉ badChallengesCompleteness msg.toD
-      → logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases (...) A₀ A₁ = 0
+  **`weil_pairing_zero_under_honest`**: proved from
+  `weil_residue_identity` by observing that `logDerivCheckFn` is
+  exactly `lhs − rhs` where `lhs = rhs` by the residue identity.
 
-  We decompose into:
-
-  **Lemma 1** (`logDerivCheckFn_eq_weil_pairing_form`): rewrite
-  `logDerivCheckFn` at a non-bad challenge as a residue/pairing sum:
-      logDerivCheckFn = Σ_{P ∈ supp(div(D))} ord_P(D) · (chord-line-eval at P)⁻¹.
-  Pure protocol algebra (no textbook content).
-
-  **Lemma 2** (`weil_pairing_form_eq_zero_under_honest`): under
-  `msg.isHonestFor`, the divisor of `D` is the prescribed
-  `(-P) + Σ n_i (B_i) − degE(D)(∞)`. Combined with disjointness from
-  `{A₀, A₁, A₂}` (the `¬ bad` premise) and Weil reciprocity applied
-  to `D` and the chord polynomial `L`, the residue sum vanishes.
-
-  **Theorem** (`weil_reciprocity_honest_descent`): chains the two
-  lemmas to prove `weil_reciprocity_honest` as a theorem.
-
-  ## Status
-
-  This file currently contains the skeleton and `sorry` statements.
-  The actual proofs are dispatched to Aristotle in a follow-up batch
-  (P3.2 of the master plan).
+  **`weil_reciprocity_honest_descent`**: re-exports
+  `weil_pairing_zero_under_honest`.
 -/
 import Divisor.Defs
 import Divisor.LogDeriv
@@ -48,22 +34,8 @@ namespace Divisor
 
 variable (E : ECSetup)
 
-/-! ## Lemma 1: protocol algebra rewrite of `logDerivCheckFn`
+/-! ## Lemma 1: protocol algebra rewrite of `logDerivCheckFn` -/
 
-    The log-derivative check sum can be expressed (after clearing
-    denominators) as a sum over `D`'s zeros on `E` of
-    `ord_P(D) · (L_chord(P))⁻¹`, where `L_chord` is the chord line
-    through `A₀, A₁`. This is a pure rewrite — no Weil reciprocity
-    invoked yet.
-
-    **PROVIDED SOLUTION sketch** (for Aristotle):
-    Unfold `logDerivCheckFn` by definition and group the three
-    chord-fiber log-deriv terms with the `−Σ −m_j / L(B_j)` term.
-    Apply `chord_sum_eq_chord_fiber_product_logDeriv` (axiom 2 of
-    the chord-fiber pair) and the partial-fraction expansion of
-    `(normZ)'/normZ` from `normZ_logDeriv_at_chord_intercept`. The
-    result expresses `logDerivCheckFn` as a Σ of residues at D's
-    affine zeros plus a pole-at-(-P)/B_j contribution. -/
 theorem logDerivCheckFn_eq_residue_sum_form
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
@@ -73,21 +45,64 @@ theorem logDerivCheckFn_eq_residue_sum_form
       logDerivCheckFnCleared E D P k B m A₀ A₁ = 0 :=
   logDerivCheckFn_eq_zero_iff_cleared E D P B m A₀ A₁ hDenomNZ
 
-/-! ## Lemma 2: Weil reciprocity descent for the honest divisor
+/-! ## Bridge lemma: the Weil residue identity
 
-    Under `msg.isHonestFor`, the divisor of `D` is the explicit
-    formal sum `(-P) + Σ_i n_i · (B_i) − degE(D) · (∞)`. By textbook
-    Weil reciprocity applied to `D` and the chord polynomial `L`:
+This is the mathematical heart of the descent. Under the honest-prover
+hypothesis, the trace of `logDerivTerm`s at the three chord-fiber
+points equals the evaluation-sum RHS:
 
-      ∏_{Q ∈ supp(div(D)) ∩ E.points} L(Q)^{ord_Q(D)} =
-        ∏_{R ∈ supp(div(L)) ∩ E.points} D(R)^{ord_R(L)}.
+    logDerivTerm(D, λ, A₀) + logDerivTerm(D, λ, A₁) + logDerivTerm(D, λ, A₂)
+    = −(L(−P))⁻¹ + Σⱼ −mⱼ · (L(Bⱼ))⁻¹
 
-    The RHS is `D(A₀)·D(A₁)·D(A₂)` (the chord meets `E` at
-    `{A₀, A₁, A₂}` with multiplicity 1 each). Under `¬ bad`, this is
-    nonzero (none of the three Aᵢ are zeros of D). Taking
-    log-derivatives matches the LHS to `logDerivCheckFn`, which
-    therefore equals zero (since the LHS is essentially a residue
-    sum that telescopes). -/
+i.e. `logDerivCheckFn E D P k B m A₀ A₁ = 0`.
+
+Proof sketch (to be mechanized):
+1. By `chord_sum_eq_chord_fiber_product_logDeriv`, the LHS equals
+   `(N(D))'(μ) / N(D)(μ)` where `N = chord_fiber_product` and
+   `μ = zLambda λ A₀`.
+2. By `chord_fiber_product_eq_normZ_under_split`, `N(D) = c · normZ`
+   for some nonzero `c`, so the log-derivative simplifies to
+   `(normZ)'(μ) / normZ(μ)`.
+3. `normZ = ∏ (z − zₖ)^{βₖ}`, so by the partial-fraction expansion
+   of its log-derivative:
+     `(normZ)'(μ)/normZ(μ) = Σₖ βₖ / (μ − zₖ)`.
+4. Converting `μ − zₖ` to `L(Qₖ) · (x₁ − x₀)` and using the
+   honest-prover divisor coefficients (`β(-P) = 1` and `β(Bⱼ) = nⱼ`
+   with `mⱼ = nⱼ mod q`) yields exactly the RHS.
+5. Textbook Weil reciprocity (`weil_reciprocity_textbook`) justifies
+   the product-to-sum conversion and ensures the identity holds
+   when the supports are disjoint (guaranteed by `¬ bad`).
+
+This lemma requires importing and chaining several axioms
+(`weil_reciprocity_textbook`, `chord_sum_eq_chord_fiber_product_logDeriv`,
+`chord_fiber_product_eq_normZ_under_split`, `principal_divisor_iff`).
+The sorry records the gap between these axioms and the protocol-level
+statement. -/
+theorem weil_residue_identity
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hGood : (A₀, A₁) ∉ badChallengesCompleteness E msg.toD) :
+    let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
+    let x₂ := lam ^ 2 - A₀.1 - A₁.1
+    let y₂ := lam * x₂ + (A₀.2 - lam * A₀.1)
+    let L := lineThrough A₀.1 A₀.2 A₁.1 A₁.2
+    let negP := (stmt.target.1, -stmt.target.2)
+    logDerivTerm E msg.toD E.curveA lam A₀ +
+    logDerivTerm E msg.toD E.curveA lam A₁ +
+    logDerivTerm E msg.toD E.curveA lam (x₂, y₂) =
+    -(L.eval negP.1 negP.2)⁻¹ +
+    (Finset.univ (α := Fin stmt.k)).sum
+      (fun j => -(msg.m (hkm ▸ j)) * (L.eval (stmt.bases j).1 (stmt.bases j).2)⁻¹) := by
+  sorry
+
+/-! ## Main theorem: `weil_pairing_zero_under_honest`
+
+Proved by observing that `logDerivCheckFn` is defined as exactly
+`lhs − rhs` where `lhs = rhs` is established by `weil_residue_identity`. -/
+
 theorem weil_pairing_zero_under_honest
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k)
@@ -97,22 +112,17 @@ theorem weil_pairing_zero_under_honest
     (hGood : (A₀, A₁) ∉ badChallengesCompleteness E msg.toD) :
     logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
       (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0 := by
-  -- Skeleton: combine Lemma 1 with textbook Weil reciprocity.
-  -- PROVIDED SOLUTION (for Aristotle):
-  -- 1. Use `weil_reciprocity_textbook` with f = msg.toD, g = (chord polynomial L).
-  -- 2. The disjointness premise comes from hGood (¬ bad set).
-  -- 3. The honesty premise pins div(msg.toD) to the prescribed (−P + Σ n_i B_i − degE ∞).
-  -- 4. Take logarithmic derivatives of both sides; the result is exactly
-  --    `logDerivCheckFn = 0`.
-  sorry
+  -- logDerivCheckFn is defined as lhs - rhs; show lhs = rhs.
+  have hId := weil_residue_identity E stmt wit hk msg hkm hHonestDivisor A₀ A₁ hGood
+  simp only [] at hId
+  -- logDerivCheckFn = lhs - rhs, so logDerivCheckFn = 0 ↔ lhs = rhs
+  show logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+    (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0
+  unfold logDerivCheckFn
+  simp only []
+  exact sub_eq_zero.mpr hId
 
-/-! ## Top-level: the honest-prover Weil-reciprocity theorem
-
-    Replaces the project-specific `weil_reciprocity_honest` axiom
-    with a derived theorem.  Once this `sorry` is discharged, the
-    original axiom statement (in `AxiomWeilReciprocityHonest.lean`)
-    can be retired and replaced with a `theorem` that just re-exports
-    `weil_pairing_zero_under_honest`. -/
+/-! ## Top-level: the honest-prover Weil-reciprocity theorem -/
 theorem weil_reciprocity_honest_descent
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k)
