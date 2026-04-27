@@ -56,7 +56,7 @@ theorem chord_sum_eq_residue_sum_fin
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
     (hNV : A₀.1 ≠ A₁.1)
     (hD  : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplit : normPoly_splits_over_Fq E D)
+    (hSplit : splitsOnE E D)
     (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
     (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
     (hAccount : (∑ P ∈ E.points, β_fun P) = (normPoly E D).natDegree)
@@ -113,7 +113,7 @@ theorem polyG_zero_at_defined
     (β_fun : ZMod E.q × ZMod E.q → ℕ)
     (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
     (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
-    (hSplit : normPoly_splits_over_Fq E D)
+    (hSplit : splitsOnE E D)
     (hAccount : (∑ P ∈ E.points, β_fun P) = (normPoly E D).natDegree)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
     (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)

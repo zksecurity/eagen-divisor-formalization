@@ -62,7 +62,7 @@ theorem ma_extractable
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
-    (hSplit : normPoly_splits_over_Fq E msg.toD)
+    (hSplit : splitsOnE E msg.toD)
     (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
         (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
             distinctR E stmt msg hkm j ≠ A₀) →
@@ -428,7 +428,7 @@ theorem ip_knowledge_sound
     (msg1 : MAProverMsg E.q) (hDeg : msg1.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg1.k)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
-    (hSplit : normPoly_splits_over_Fq E msg1.toD)
+    (hSplit : splitsOnE E msg1.toD)
     (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg1.toD →
         (∀ j : Fin (1 + baseImageCount E stmt msg1 hkm),
             distinctR E stmt msg1 hkm j ≠ A₀) →
@@ -477,7 +477,7 @@ theorem ma_extractable_clean
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
-    (hSplit : normPoly_splits_over_Fq E msg.toD)
+    (hSplit : splitsOnE E msg.toD)
     (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
         (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
             distinctR E stmt msg hkm j ≠ A₀) →

@@ -42,15 +42,18 @@ import Divisor.Soundness
     below would compile only if an inconsistency were introduced. -/
 
 -- Sanity: the new sound axiom exists and has the expected shape.
+-- Accounting and group-sum-zero are gated on the *stronger* `splitsOnE`
+-- predicate (polynomial splitting + fiber-rationality of every root),
+-- not just univariate `normPoly_splits_over_Fq`.
 example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     ∃ β : ZMod E.q × ZMod E.q → ℕ,
       (∀ P, β P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0) ∧
       (∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β P ≠ 0) ∧
       (∑ P ∈ E.points, β P) ≤ D.degE ∧
-      (Divisor.normPoly_splits_over_Fq E D →
+      (Divisor.splitsOnE E D →
         (∑ P ∈ E.points, β P) = (Divisor.normPoly E D).natDegree) ∧
-      (Divisor.normPoly_splits_over_Fq E D →
+      (Divisor.splitsOnE E D →
         Divisor.ECPoint.weightedSum E E.points
           (fun P => Divisor.ECPoint.nsmul E (β P)
                       (Divisor.ECPoint.affine E P.1 P.2)) = 0) :=

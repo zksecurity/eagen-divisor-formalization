@@ -242,7 +242,7 @@ theorem dCoeffs_groupSum_zero (D : CoordRingElt E.q)
     `dCoeffs`. -/
 theorem CoordRingElt.exists_principal_dCoeffs
     (D : CoordRingElt E.q) (hD : ¬ D.isZero)
-    (hSplit : normPoly_splits_over_Fq E D) :
+    (hSplitOnE : splitsOnE E D) :
     ∃ (β : ZMod E.q × ZMod E.q → ℕ),
       (∀ P, β P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0) ∧
       (∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β P ≠ 0) ∧
@@ -250,7 +250,7 @@ theorem CoordRingElt.exists_principal_dCoeffs
       ECPoint.weightedSum E E.points
         (fun P => ECPoint.nsmul E (β P) (ECPoint.affine E P.1 P.2)) = 0 := by
   have hD' : ¬ (D.a = 0 ∧ D.b = 0) := hD
-  exact CoordRingElt.has_principal_divisor E D hD' hSplit
+  exact CoordRingElt.has_principal_divisor E D hD' hSplitOnE
 
 /-! ## Fin-enumeration of `D`'s affine zeros on `E`
 

@@ -25,7 +25,7 @@ theorem polyG_zero_at_defined_fincons
     (β_fun : ZMod E.q × ZMod E.q → ℕ)
     (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
     (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
-    (hSplit : normPoly_splits_over_Fq E D)
+    (hSplit : splitsOnE E D)
     (hAccount : (∑ P ∈ E.points, β_fun P) =
                   (normPoly E D).natDegree)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}

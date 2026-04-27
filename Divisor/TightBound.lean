@@ -66,7 +66,7 @@ theorem chord_avoids_D_zeros_of_denom_defined
 theorem logDerivCheckFn_zero_of_polyG_zero
     (D : CoordRingElt E.q)
     (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplit : normPoly_splits_over_Fq E D)
+    (hSplit : splitsOnE E D)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
     (B : Fin k → ZMod E.q × ZMod E.q)
     (m : Fin k → ZMod E.q)
@@ -162,7 +162,7 @@ theorem logDerivCheckFn_zero_of_polyG_zero
 theorem bad_pair_implies_polyGFull_zero
     (D : CoordRingElt E.q)
     (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplit : normPoly_splits_over_Fq E D)
+    (hSplit : splitsOnE E D)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
     (B : Fin k → ZMod E.q × ZMod E.q)
     (m : Fin k → ZMod E.q)
@@ -188,7 +188,7 @@ theorem bad_pair_implies_polyGFull_zero
 theorem polyGFull_nonzero_at_witness
     (D : CoordRingElt E.q)
     (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplit : normPoly_splits_over_Fq E D)
+    (hSplit : splitsOnE E D)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
     (B : Fin k → ZMod E.q × ZMod E.q)
     (m : Fin k → ZMod E.q)
@@ -245,7 +245,7 @@ theorem log_deriv_sz_paper_core_tight
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (_hDeg : D.degE < E.q)
-    (hSplit : normPoly_splits_over_Fq E D)
+    (hSplit : splitsOnE E D)
     (hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
         logDerivCheckFnDefined E D P B A₀ A₁ ∧
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
@@ -313,7 +313,7 @@ theorem log_deriv_sz_paper_tight
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (hDeg : D.degE < E.q)
-    (hSplit : normPoly_splits_over_Fq E D)
+    (hSplit : splitsOnE E D)
     (hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
         logDerivCheckFnDefined E D P B A₀ A₁ ∧
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :

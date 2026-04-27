@@ -11,6 +11,7 @@
 import Divisor.Defs
 import Divisor.BetaConstructive
 import Divisor.FunctionFieldZ
+import Divisor.Axioms.AxiomExistsDivisorMultiplicity
 
 open Polynomial
 
@@ -84,7 +85,7 @@ proportionality.
 axiom chord_fiber_product_eq_normZ_under_split
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplit : normPoly_splits_over_Fq E D)
+    (hSplitOnE : splitsOnE E D)
     (β_fun : ZMod E.q × ZMod E.q → ℕ)
     (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
     (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)

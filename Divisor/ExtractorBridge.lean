@@ -1673,7 +1673,7 @@ theorem distinctSigma_exists
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
-    (hSplit : normPoly_splits_over_Fq E msg.toD)
+    (hSplit : splitsOnE E msg.toD)
     (_hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
@@ -2410,7 +2410,7 @@ theorem extractor_succeeds_and_groupSumZero
     (hDeg : msg.toD.degE ≤ d) (hd : d < E.q) (hkm : stmt.k = msg.k)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
-    (hSplit : normPoly_splits_over_Fq E msg.toD)
+    (hSplit : splitsOnE E msg.toD)
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
@@ -2525,7 +2525,7 @@ theorem extractorSucceeds_of_logDerivCheck_identically_zero_general
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
-    (hSplit : normPoly_splits_over_Fq E msg.toD)
+    (hSplit : splitsOnE E msg.toD)
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
@@ -2566,7 +2566,7 @@ theorem extracted_scalars_valid
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hSplit : normPoly_splits_over_Fq E msg.toD)
+    (hSplit : splitsOnE E msg.toD)
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
@@ -2713,7 +2713,7 @@ theorem polyG_zero_trace_formula
     {E : ECSetup} (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
-    (hSplit : normPoly_splits_over_Fq E msg.toD)
+    (hSplit : splitsOnE E msg.toD)
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →

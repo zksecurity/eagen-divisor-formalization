@@ -116,7 +116,7 @@ theorem sum_ordAt_le_degE
 
 /-! ## Pole-at-∞ accounting under splitting -/
 
-/-- **Accounting under splitting**: under `normPoly_splits_over_Fq E D`,
+/-- **Accounting under splitting**: under `splitsOnE E D`,
     the sum of orders equals `natDegree (normPoly E D)`. This is the
     "every geometric zero is F_q-rational" content of splitting.
 
@@ -127,7 +127,7 @@ theorem sum_ordAt_le_degE
     sheet (lone, including 2-torsion). Sum agrees by construction. -/
 theorem sum_ordAt_eq_natDegree_under_split
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplit : normPoly_splits_over_Fq E D) :
+    (hSplit : splitsOnE E D) :
     (∑ P ∈ E.points, ordAt E D P) = (normPoly E D).natDegree := by
   sorry
 
@@ -145,7 +145,7 @@ theorem sum_ordAt_eq_natDegree_under_split
     so the remaining F_q-affine sum is also zero. -/
 theorem ordAt_group_sum_zero_under_split
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplit : normPoly_splits_over_Fq E D) :
+    (hSplit : splitsOnE E D) :
     ECPoint.weightedSum E E.points
       (fun P => ECPoint.nsmul E (ordAt E D P)
                     (ECPoint.affine E P.1 P.2)) = 0 := by
@@ -163,9 +163,9 @@ theorem exists_divisor_multiplicity_proved
       (∀ P, β P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0) ∧
       (∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β P ≠ 0) ∧
       (∑ P ∈ E.points, β P) ≤ D.degE ∧
-      (normPoly_splits_over_Fq E D →
+      (splitsOnE E D →
         (∑ P ∈ E.points, β P) = (normPoly E D).natDegree) ∧
-      (normPoly_splits_over_Fq E D →
+      (splitsOnE E D →
         ECPoint.weightedSum E E.points
           (fun P => ECPoint.nsmul E (β P) (ECPoint.affine E P.1 P.2)) = 0) := by
   refine ⟨ordAt E D, ?_, ?_, ?_, ?_, ?_⟩
