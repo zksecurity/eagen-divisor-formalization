@@ -562,6 +562,37 @@ private lemma fqToBar_bivEval₂_eq_eval_baseChange
   exact hEval.symm
 
 /--
+Geometric trace/log-derivative identity on one nonvertical chord.
+
+This is the geometric replacement for the split-only
+`chord_sum_eq_residue_sum`: the three `logDerivTerm`s on the rational
+chord fiber equal the residue sum over the full geometric zero divisor
+of `D` in `F_qbar`, with multiplicities supplied by `GeometricDivisorData`.
+
+The theorem is intentionally separated from the denominator-clearing
+algebra in `geomPolyGFullBar_eval_zero_iff_logDerivCheckFn`. It is the
+function-field trace step Aristotle should attack directly.
+-/
+theorem geometric_chord_sum_eq_residue_sum
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (P : ZMod E.q × ZMod E.q) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1)
+    (hDef : logDerivCheckFnDefined E D P B A₀ A₁) :
+    fqToBar E
+        (logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀
+          + logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₁
+          + logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2)
+              (chordX₂ A₀ A₁, chordY₂ A₀ A₁))
+      =
+        -∑ Q ∈ gd.support,
+          ((gd.mult Q : ℕ) : Fqbar E) *
+            (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+              (lineEvalNumAtFullBar E Q))⁻¹ := by
+  sorry
+
+/--
 Core geometric chord-sum identity at rational challenge points.
 
 This is the real function-field obligation behind the geometric rewrite:
