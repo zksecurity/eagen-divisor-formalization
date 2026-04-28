@@ -16,6 +16,7 @@
 import Divisor.ExtractorBridge
 import Divisor.TightBound
 import Divisor.GeomLocalOrder
+import Divisor.CoeffDescent
 
 open Polynomial Finset Classical
 
@@ -257,6 +258,210 @@ private theorem total_degree_le_of_baseChange_eq
   rw [← totalDegree_baseChangeFourVar E G, hG]
   exact hF
 
+/-! ### Auxiliary lemmas for the Frobenius proof -/
+
+private theorem geomPoint_ext (Q Q' : GeomPoint E)
+    (hx : Q.x = Q'.x) (hy : Q.y = Q'.y) : Q = Q' := by
+  cases Q
+  cases Q'
+  simp only at hx hy
+  subst hx
+  subst hy
+  rfl
+
+private theorem pow_q_injective_fqbar :
+    Function.Injective (fun (x : Fqbar E) => x ^ E.q) := by
+  intro a b hab
+  exact (frobenius (Fqbar E) E.q).injective (by
+    simp only [frobenius_def]
+    exact hab)
+
+private theorem finset_surjOn_of_injOn_self {α : Type*} [DecidableEq α]
+    {S : Finset α} (f : (a : α) → a ∈ S → α)
+    (hf : ∀ a (ha : a ∈ S), f a ha ∈ S)
+    (hinj : ∀ a₁ (ha₁ : a₁ ∈ S) a₂ (ha₂ : a₂ ∈ S),
+      f a₁ ha₁ = f a₂ ha₂ → a₁ = a₂) :
+    ∀ b ∈ S, ∃ a, ∃ (ha : a ∈ S), f a ha = b := by
+  intro b hb
+  let g : { x // x ∈ S } → { x // x ∈ S } :=
+    fun ⟨a, ha⟩ => ⟨f a ha, hf a ha⟩
+  have hinj' : Function.Injective g := by
+    intro ⟨a₁, ha₁⟩ ⟨a₂, ha₂⟩ h
+    simp [g] at h
+    exact Subtype.ext (hinj a₁ ha₁ a₂ ha₂ h)
+  obtain ⟨⟨a, ha⟩, hab⟩ := Finite.surjective_of_injective hinj' ⟨b, hb⟩
+  exact ⟨a, ha, by simpa [g] using hab⟩
+
+private theorem frob_support_injective
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (Q1 : GeomPoint E) (hQ1 : Q1 ∈ gd.support)
+    (Q2 : GeomPoint E) (hQ2 : Q2 ∈ gd.support)
+    (heq : (gd.frobenius_stable Q1 hQ1).choose =
+           (gd.frobenius_stable Q2 hQ2).choose) :
+    Q1 = Q2 := by
+  have hx1 := (gd.frobenius_stable Q1 hQ1).choose_spec.2.1
+  have hy1 := (gd.frobenius_stable Q1 hQ1).choose_spec.2.2.1
+  have hx2 := (gd.frobenius_stable Q2 hQ2).choose_spec.2.1
+  have hy2 := (gd.frobenius_stable Q2 hQ2).choose_spec.2.2.1
+  have hxeq : Q1.x ^ E.q = Q2.x ^ E.q := by
+    calc Q1.x ^ E.q
+        = (gd.frobenius_stable Q1 hQ1).choose.x := hx1.symm
+      _ = (gd.frobenius_stable Q2 hQ2).choose.x := by rw [heq]
+      _ = Q2.x ^ E.q := hx2
+  have hyeq : Q1.y ^ E.q = Q2.y ^ E.q := by
+    calc Q1.y ^ E.q
+        = (gd.frobenius_stable Q1 hQ1).choose.y := hy1.symm
+      _ = (gd.frobenius_stable Q2 hQ2).choose.y := by rw [heq]
+      _ = Q2.y ^ E.q := hy2
+  exact geomPoint_ext E Q1 Q2
+    (pow_q_injective_fqbar E hxeq) (pow_q_injective_fqbar E hyeq)
+
+/-! ### Frobenius-fixedness of line factors -/
+
+/-- Frobenius on coefficients sends `lineEvalNumAtFullBar E Q` to
+`lineEvalNumAtFullBar E (frobGeomPoint E Q)`. -/
+private theorem frobMvPoly_lineEvalNumAtFullBar (Q : GeomPoint E) :
+    frobMvPoly E (lineEvalNumAtFullBar E Q) =
+      lineEvalNumAtFullBar E (frobGeomPoint E Q) := by
+  unfold lineEvalNumAtFullBar frobGeomPoint
+  simp only [frobMvPoly, map_sub, map_mul, MvPolynomial.map_C,
+    MvPolynomial.map_X, frobEnd_apply]
+
+/-- Frobenius on coefficients fixes `lineEvalNumAtFullBarOfFq`. -/
+private theorem frobMvPoly_lineEvalNumAtFullBarOfFq
+    (P : ZMod E.q × ZMod E.q) :
+    frobMvPoly E (lineEvalNumAtFullBarOfFq E P) =
+      lineEvalNumAtFullBarOfFq E P := by
+  unfold lineEvalNumAtFullBarOfFq
+  simp only [frobMvPoly, map_sub, map_mul, MvPolynomial.map_C,
+    MvPolynomial.map_X, frobEnd_apply, fqToBar_frob_fixed]
+
+/-- Frobenius on coefficients fixes the product of base-field line factors. -/
+private theorem frobMvPoly_prod_R
+    {M : ℕ} (R : Fin M → ZMod E.q × ZMod E.q)
+    (s : Finset (Fin M)) :
+    frobMvPoly E (∏ j ∈ s, lineEvalNumAtFullBarOfFq E (R j)) =
+      ∏ j ∈ s, lineEvalNumAtFullBarOfFq E (R j) := by
+  simp_rw [map_prod, frobMvPoly_lineEvalNumAtFullBarOfFq]
+
+/-- Frobenius permutes the product of line factors over the geometric support. -/
+private theorem frobMvPoly_prod_support
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D) :
+    frobMvPoly E (∏ Q ∈ gd.support, lineEvalNumAtFullBar E Q) =
+      ∏ Q ∈ gd.support, lineEvalNumAtFullBar E Q := by
+  rw [map_prod]
+  simp_rw [frobMvPoly_lineEvalNumAtFullBar]
+  let fs := gd.frobenius_stable
+  apply Finset.prod_bij (fun Q hQ => (fs Q hQ).choose)
+  · intro Q hQ
+    exact (fs Q hQ).choose_spec.1
+  · exact fun Q1 hQ1 Q2 hQ2 heq =>
+      frob_support_injective E D gd Q1 hQ1 Q2 hQ2 heq
+  · exact finset_surjOn_of_injOn_self
+      (fun Q hQ => (fs Q hQ).choose)
+      (fun Q hQ => (fs Q hQ).choose_spec.1)
+      (fun Q1 hQ1 Q2 hQ2 heq =>
+        frob_support_injective E D gd Q1 hQ1 Q2 hQ2 heq)
+  · intro Q hQ
+    unfold lineEvalNumAtFullBar frobGeomPoint
+    simp only
+    rw [(fs Q hQ).choose_spec.2.1, (fs Q hQ).choose_spec.2.2.1]
+
+/-- Frobenius maps the erased support product to the erased product at the image point. -/
+private theorem frobMvPoly_prod_erase_support
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (Q : GeomPoint E) (hQ : Q ∈ gd.support) :
+    (∏ Q' ∈ gd.support.erase Q,
+      lineEvalNumAtFullBar E (frobGeomPoint E Q')) =
+    (∏ Q' ∈ gd.support.erase (gd.frobenius_stable Q hQ).choose,
+      lineEvalNumAtFullBar E Q') := by
+  let fs := gd.frobenius_stable
+  apply Finset.prod_bij (fun Q' hQ' => (fs Q' (Finset.mem_of_mem_erase hQ')).choose)
+  · intro Q' hQ'
+    have hmem := (fs Q' (Finset.mem_of_mem_erase hQ')).choose_spec.1
+    rw [Finset.mem_erase]
+    refine ⟨?_, hmem⟩
+    intro heq
+    have := Finset.ne_of_mem_erase hQ'
+    apply this
+    exact frob_support_injective E D gd Q' (Finset.mem_of_mem_erase hQ') Q hQ (by
+      rw [heq])
+  · intro Q1 hQ1 Q2 hQ2 heq
+    exact frob_support_injective E D gd
+      Q1 (Finset.mem_of_mem_erase hQ1)
+      Q2 (Finset.mem_of_mem_erase hQ2) heq
+  · intro b hb
+    have hb_mem := Finset.mem_of_mem_erase hb
+    have hb_ne := Finset.ne_of_mem_erase hb
+    obtain ⟨a, ha, hab⟩ := finset_surjOn_of_injOn_self
+      (fun Q' hQ' => (fs Q' hQ').choose)
+      (fun Q' hQ' => (fs Q' hQ').choose_spec.1)
+      (fun Q1 hQ1 Q2 hQ2 heq =>
+        frob_support_injective E D gd Q1 hQ1 Q2 hQ2 heq)
+      b hb_mem
+    refine ⟨a, ?_, hab⟩
+    rw [Finset.mem_erase]
+    refine ⟨fun haq => ?_, ha⟩
+    subst haq
+    exact hb_ne hab.symm
+  · intro Q' hQ'
+    unfold lineEvalNumAtFullBar frobGeomPoint
+    simp only
+    rw [(fs Q' (Finset.mem_of_mem_erase hQ')).choose_spec.2.1,
+      (fs Q' (Finset.mem_of_mem_erase hQ')).choose_spec.2.2.1]
+
+set_option maxHeartbeats 800000 in
+/-- Frobenius on coefficients fixes `geomPolyGFullBar`. -/
+theorem frobMvPoly_geomPolyGFullBar
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    {M : ℕ} (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q) :
+    frobMvPoly E (geomPolyGFullBar E D gd R m) =
+      geomPolyGFullBar E D gd R m := by
+  classical
+  unfold geomPolyGFullBar
+  simp only [map_add, map_sum, map_mul, map_prod,
+    frobMvPoly_lineEvalNumAtFullBar,
+    frobMvPoly_lineEvalNumAtFullBarOfFq,
+    frobMvPoly_C_natCast, frobMvPoly_C_fqToBar]
+  congr 1
+  · let fs := gd.frobenius_stable
+    apply Finset.sum_bij (fun Q hQ => (fs Q hQ).choose)
+    · intro Q hQ
+      exact (fs Q hQ).choose_spec.1
+    · exact fun Q1 hQ1 Q2 hQ2 heq =>
+        frob_support_injective E D gd Q1 hQ1 Q2 hQ2 heq
+    · exact finset_surjOn_of_injOn_self
+        (fun Q hQ => (fs Q hQ).choose)
+        (fun Q hQ => (fs Q hQ).choose_spec.1)
+        (fun Q1 hQ1 Q2 hQ2 heq =>
+          frob_support_injective E D gd Q1 hQ1 Q2 hQ2 heq)
+    · intro Q hQ
+      congr 1
+      congr 1
+      · congr 1
+        congr 1
+        exact (fs Q hQ).choose_spec.2.2.2.symm
+      · exact frobMvPoly_prod_erase_support E D gd Q hQ
+  · apply Finset.sum_congr rfl
+    intro _j _
+    congr 1
+    congr 1
+    · let fs := gd.frobenius_stable
+      apply Finset.prod_bij (fun Q hQ => (fs Q hQ).choose)
+      · intro Q hQ
+        exact (fs Q hQ).choose_spec.1
+      · exact fun Q1 hQ1 Q2 hQ2 heq =>
+          frob_support_injective E D gd Q1 hQ1 Q2 hQ2 heq
+      · exact finset_surjOn_of_injOn_self
+          (fun Q hQ => (fs Q hQ).choose)
+          (fun Q hQ => (fs Q hQ).choose_spec.1)
+          (fun Q1 hQ1 Q2 hQ2 heq =>
+            frob_support_injective E D gd Q1 hQ1 Q2 hQ2 heq)
+      · intro Q hQ
+        unfold lineEvalNumAtFullBar frobGeomPoint
+        simp only
+        rw [(fs Q hQ).choose_spec.2.1, (fs Q hQ).choose_spec.2.2.1]
+
 /--
 Coefficient descent of the geometric numerator.
 
@@ -273,7 +478,11 @@ theorem geomPolyGFull_descends_coefficients
     {M : ℕ} (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q) :
     ∃ G : FourVarPoly E.q,
       baseChangeFourVar E G = geomPolyGFullBar E D gd R m := by
-  sorry
+  have hfix := frobMvPoly_geomPolyGFullBar E D gd R m
+  have hcoeffs := coeffs_descend_of_frob_fixed E _ hfix
+  have ⟨G, hG⟩ := mvpoly_in_range_of_coeffs_in_range
+    (algebraMap (ZMod E.q) (Fqbar E)) _ hcoeffs
+  exact ⟨G, hG⟩
 
 /--
 Galois descent of the geometric numerator.
@@ -372,6 +581,194 @@ private theorem geomPolyGFullBar_eval_zero_iff_logDerivCheckFn
           (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j))) = 0
       ↔ logDerivCheckFn E D P k B m A₀ A₁ = 0 := by
   sorry
+
+/-! ## Geometric residue-matching via specialization over `F_qbar`
+
+Inspired by the paper's `residue-matching-cleared` lemma: from
+identical vanishing of the cleared numerator `geomPolyGFullBar`, fix a
+geometric support point `R₀`, choose `A₁` avoiding the finite set of other
+line factors, evaluate at `A₀ = R₀`, and observe that only the
+`R₀`-summand survives. This does not require support points to be
+`F_q`-rational or `splitsOnE`.
+-/
+
+/-- Four-variable evaluation at a geometric point pair `(A₀, A₁)` over `F_qbar`. -/
+noncomputable def geomBarEvalFun
+    (A₀ : GeomPoint E) (a₁x a₁y : Fqbar E) : Fin 4 → Fqbar E :=
+  ![A₀.x, A₀.y, a₁x, a₁y]
+
+/-- `lineEvalNumAtFullBar Q` evaluates to zero when `A₀ = Q`. -/
+theorem lineEvalNumAtFullBar_self_zero
+    (Q : GeomPoint E) (a₁x a₁y : Fqbar E) :
+    MvPolynomial.eval (geomBarEvalFun E Q a₁x a₁y)
+      (lineEvalNumAtFullBar E Q) = 0 := by
+  unfold lineEvalNumAtFullBar geomBarEvalFun
+  simp [MvPolynomial.eval_sub, MvPolynomial.eval_mul, MvPolynomial.eval_C,
+    MvPolynomial.eval_X, Matrix.cons_val_zero, Matrix.cons_val_one]
+
+/-- `lineEvalNumAtFullBarOfFq P` self-vanishes at the `F_qbar`-embedding of `P`. -/
+theorem lineEvalNumAtFullBarOfFq_self_zero
+    (P : ZMod E.q × ZMod E.q) (a₁x a₁y : Fqbar E)
+    (Q : GeomPoint E) (hx : Q.x = fqToBar E P.1) (hy : Q.y = fqToBar E P.2) :
+    MvPolynomial.eval (geomBarEvalFun E Q a₁x a₁y)
+      (lineEvalNumAtFullBarOfFq E P) = 0 := by
+  unfold lineEvalNumAtFullBarOfFq geomBarEvalFun
+  simp [MvPolynomial.eval_sub, MvPolynomial.eval_mul, MvPolynomial.eval_C,
+    MvPolynomial.eval_X, Matrix.cons_val_zero, Matrix.cons_val_one]
+  rw [hx, hy]
+  ring
+
+/--
+When `geomPolyGFullBar` is evaluated at `A₀ = Q₀` for `Q₀ ∈ gd.support`,
+all terms vanish except the `Q₀` summand in the geometric-support sum.
+-/
+theorem geomPolyGFullBar_eval_at_support_point
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    {M : ℕ} (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (Q₀ : GeomPoint E) (hQ₀ : Q₀ ∈ gd.support)
+    (a₁x a₁y : Fqbar E) :
+    MvPolynomial.eval (geomBarEvalFun E Q₀ a₁x a₁y)
+        (geomPolyGFullBar E D gd R m) =
+      ((gd.mult Q₀ : ℕ) : Fqbar E) *
+        (∏ Q' ∈ gd.support.erase Q₀,
+          MvPolynomial.eval (geomBarEvalFun E Q₀ a₁x a₁y)
+            (lineEvalNumAtFullBar E Q')) *
+        (∏ j : Fin M,
+          MvPolynomial.eval (geomBarEvalFun E Q₀ a₁x a₁y)
+            (lineEvalNumAtFullBarOfFq E (R j))) := by
+  classical
+  unfold geomPolyGFullBar
+  simp only [map_add, map_sum, map_mul, map_prod, MvPolynomial.eval_C]
+  have hSelfZero := lineEvalNumAtFullBar_self_zero E Q₀ a₁x a₁y
+  have hFirstOther : ∀ Q ∈ gd.support, Q ≠ Q₀ →
+      ((gd.mult Q : ℕ) : Fqbar E) *
+        (∏ Q' ∈ gd.support.erase Q,
+          MvPolynomial.eval (geomBarEvalFun E Q₀ a₁x a₁y)
+            (lineEvalNumAtFullBar E Q')) *
+      (∏ j : Fin M,
+        MvPolynomial.eval (geomBarEvalFun E Q₀ a₁x a₁y)
+          (lineEvalNumAtFullBarOfFq E (R j))) = 0 := by
+    intro Q _hQ hne
+    have hQ₀mem : Q₀ ∈ gd.support.erase Q :=
+      Finset.mem_erase.mpr ⟨Ne.symm hne, hQ₀⟩
+    have hp : ∏ Q' ∈ gd.support.erase Q,
+        MvPolynomial.eval (geomBarEvalFun E Q₀ a₁x a₁y)
+          (lineEvalNumAtFullBar E Q') = 0 :=
+      Finset.prod_eq_zero hQ₀mem hSelfZero
+    simp [hp]
+  have hSecondAll : ∀ j : Fin M,
+      fqToBar E (m j) *
+        (∏ Q ∈ gd.support,
+          MvPolynomial.eval (geomBarEvalFun E Q₀ a₁x a₁y)
+            (lineEvalNumAtFullBar E Q)) *
+      (∏ j' ∈ Finset.univ.erase j,
+        MvPolynomial.eval (geomBarEvalFun E Q₀ a₁x a₁y)
+          (lineEvalNumAtFullBarOfFq E (R j'))) = 0 := by
+    intro j
+    have hp : ∏ Q ∈ gd.support,
+        MvPolynomial.eval (geomBarEvalFun E Q₀ a₁x a₁y)
+          (lineEvalNumAtFullBar E Q) = 0 :=
+      Finset.prod_eq_zero hQ₀ hSelfZero
+    simp [hp]
+  rw [Finset.sum_eq_single Q₀
+    (fun Q hQ hne => hFirstOther Q hQ hne)
+    (fun h => absurd hQ₀ h)]
+  rw [Finset.sum_eq_zero (fun j _ => hSecondAll j)]
+  ring
+
+/--
+If `geomPolyGFullBar = 0` and the product of remaining line factors is
+nonzero at `(Q₀, A₁)`, then the geometric residue coefficient at `Q₀`
+vanishes in `F_qbar`.
+-/
+theorem geom_residue_coeff_zero_of_poly_vanishing
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    {M : ℕ} (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (hVanish : geomPolyGFullBar E D gd R m = 0)
+    (Q₀ : GeomPoint E) (hQ₀ : Q₀ ∈ gd.support)
+    (a₁x a₁y : Fqbar E)
+    (hProd :
+      (∏ Q' ∈ gd.support.erase Q₀,
+        MvPolynomial.eval (geomBarEvalFun E Q₀ a₁x a₁y)
+          (lineEvalNumAtFullBar E Q')) *
+      (∏ j : Fin M,
+        MvPolynomial.eval (geomBarEvalFun E Q₀ a₁x a₁y)
+          (lineEvalNumAtFullBarOfFq E (R j))) ≠ 0) :
+    ((gd.mult Q₀ : ℕ) : Fqbar E) = 0 := by
+  have hEval := geomPolyGFullBar_eval_at_support_point E D gd R m Q₀ hQ₀ a₁x a₁y
+  rw [hVanish, map_zero] at hEval
+  rw [eq_comm, mul_assoc] at hEval
+  exact (mul_eq_zero.mp hEval).resolve_right hProd
+
+/--
+If `geomPolyGFullBar = 0`, a rational residue point outside the geometric
+support has zero coefficient, provided the remaining line-factor product
+is nonzero at the specialization point.
+-/
+theorem geom_residue_rational_coeff_zero_of_poly_vanishing
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    {M : ℕ} (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (hVanish : geomPolyGFullBar E D gd R m = 0)
+    (j₀ : Fin M)
+    (Q_Rj₀ : GeomPoint E)
+    (hx : Q_Rj₀.x = fqToBar E (R j₀).1)
+    (hy : Q_Rj₀.y = fqToBar E (R j₀).2)
+    (_hNotSupport : Q_Rj₀ ∉ gd.support)
+    (a₁x a₁y : Fqbar E)
+    (hProd :
+      (∏ Q ∈ gd.support,
+        MvPolynomial.eval (geomBarEvalFun E Q_Rj₀ a₁x a₁y)
+          (lineEvalNumAtFullBar E Q)) *
+      (∏ j' ∈ (Finset.univ (α := Fin M)).erase j₀,
+        MvPolynomial.eval (geomBarEvalFun E Q_Rj₀ a₁x a₁y)
+          (lineEvalNumAtFullBarOfFq E (R j'))) ≠ 0) :
+    fqToBar E (m j₀) = 0 := by
+  classical
+  have hEval : MvPolynomial.eval (geomBarEvalFun E Q_Rj₀ a₁x a₁y)
+      (geomPolyGFullBar E D gd R m) = 0 := by
+    rw [hVanish]
+    exact map_zero _
+  unfold geomPolyGFullBar at hEval
+  simp only [map_add, map_sum, map_mul, map_prod, MvPolynomial.eval_C] at hEval
+  have hFqSelf : MvPolynomial.eval (geomBarEvalFun E Q_Rj₀ a₁x a₁y)
+      (lineEvalNumAtFullBarOfFq E (R j₀)) = 0 :=
+    lineEvalNumAtFullBarOfFq_self_zero E (R j₀) a₁x a₁y Q_Rj₀ hx hy
+  have hFirstAll : ∀ Q ∈ gd.support,
+      ((gd.mult Q : ℕ) : Fqbar E) *
+        (∏ Q' ∈ gd.support.erase Q,
+          MvPolynomial.eval (geomBarEvalFun E Q_Rj₀ a₁x a₁y)
+            (lineEvalNumAtFullBar E Q')) *
+      (∏ j : Fin M,
+        MvPolynomial.eval (geomBarEvalFun E Q_Rj₀ a₁x a₁y)
+          (lineEvalNumAtFullBarOfFq E (R j))) = 0 := by
+    intro Q _
+    have hp : ∏ j : Fin M,
+        MvPolynomial.eval (geomBarEvalFun E Q_Rj₀ a₁x a₁y)
+          (lineEvalNumAtFullBarOfFq E (R j)) = 0 :=
+      Finset.prod_eq_zero (Finset.mem_univ j₀) hFqSelf
+    simp [hp]
+  have hSecondOther : ∀ j : Fin M, j ≠ j₀ →
+      fqToBar E (m j) *
+        (∏ Q ∈ gd.support,
+          MvPolynomial.eval (geomBarEvalFun E Q_Rj₀ a₁x a₁y)
+            (lineEvalNumAtFullBar E Q)) *
+      (∏ j' ∈ Finset.univ.erase j,
+        MvPolynomial.eval (geomBarEvalFun E Q_Rj₀ a₁x a₁y)
+          (lineEvalNumAtFullBarOfFq E (R j'))) = 0 := by
+    intro j hne
+    have hj₀mem : j₀ ∈ Finset.univ.erase j :=
+      Finset.mem_erase.mpr ⟨Ne.symm hne, Finset.mem_univ _⟩
+    have hp : ∏ j' ∈ Finset.univ.erase j,
+        MvPolynomial.eval (geomBarEvalFun E Q_Rj₀ a₁x a₁y)
+          (lineEvalNumAtFullBarOfFq E (R j')) = 0 :=
+      Finset.prod_eq_zero hj₀mem hFqSelf
+    simp [hp]
+  rw [Finset.sum_eq_zero hFirstAll, zero_add] at hEval
+  rw [Finset.sum_eq_single j₀
+    (fun j _ hne => hSecondOther j hne)
+    (fun h => absurd (Finset.mem_univ j₀) h)] at hEval
+  rw [mul_assoc] at hEval
+  exact (mul_eq_zero.mp hEval).resolve_right hProd
 
 /-! ## Geometric branch theorems -/
 
