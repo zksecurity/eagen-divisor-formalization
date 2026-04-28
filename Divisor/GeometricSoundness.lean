@@ -946,6 +946,39 @@ support to be rational where it contributes to the extractor. Then reuse
 the existing grouped extractor algebra, but with multiplicities supplied
 by the geometric divisor data rather than `zerosAt`/`β_fun`.
 -/
+theorem extractor_of_logDerivCheck_all_zero_geometric_general
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
+    (hkm : stmt.k = msg.k)
+    (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
+    (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
+        (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
+            distinctR E stmt msg hkm j ≠ A₀) →
+        denomScaledPoly (E := E) msg.toD stmt.target
+          (baseImageCount E stmt msg hkm)
+          (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E ≠ 0)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hAllZero :
+      ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+        A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+        logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
+        logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+          (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
+    ∃ wit : DlogWitness E.q,
+      maExtractor E stmt msg stmt.degBound hd hkm = some wit
+      ∧ relDlog E stmt wit := by
+  sorry
+
+/--
+Geometric all-zero branch, including the degenerate case where `-P` is
+already one of the advertised bases.
+-/
 theorem extractor_of_logDerivCheck_all_zero_geometric
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
@@ -972,6 +1005,16 @@ theorem extractor_of_logDerivCheck_all_zero_geometric
     ∃ wit : DlogWitness E.q,
       maExtractor E stmt msg stmt.degBound hd hkm = some wit
       ∧ relDlog E stmt wit := by
-  sorry
+  classical
+  by_cases hNegP : (negPIndexSet E stmt msg hkm).Nonempty
+  · have hSucc : extractorSucceeds E stmt msg stmt.degBound hkm :=
+      extractorSucceeds_special E stmt msg stmt.degBound hkm hNegP hd2
+    refine ⟨⟨msg.k, extractedScalars E stmt msg hkm, stmt.degBound, hSucc⟩,
+      ?_, ⟨hkm, ?_⟩⟩
+    · unfold maExtractor
+      rw [dif_pos hSucc]
+    · exact extracted_scalars_valid_special E stmt msg hkm hNegP
+  · exact extractor_of_logDerivCheck_all_zero_geometric_general E stmt hd hd2
+      msg hDeg hkm hSmooth hDenomNZ hTargetOnE hBasesOnE hLargeQ hAdm hNegP hAllZero
 
 end Divisor
