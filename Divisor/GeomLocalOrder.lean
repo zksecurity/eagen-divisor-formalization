@@ -10,6 +10,10 @@
   `GeometricDivisorData` is routine and proved below.
 -/
 import Divisor.GeomBase
+import Divisor.BetaConstructive
+import Mathlib.Algebra.CharP.Lemmas
+import Mathlib.FieldTheory.Perfect
+import Mathlib.RingTheory.Polynomial.Basic
 
 open Polynomial Finset Classical
 
@@ -210,6 +214,110 @@ structure GeomLocalOrderOnSupport
       ∃ Q' ∈ support,
         Q'.x = Q.x ^ E.q ∧ Q'.y = Q.y ^ E.q ∧ ord Q' = ord Q
 
+/-! ## Helper lemmas for the explicit local-order proofs -/
+
+/-- The base-changed norm polynomial is nonzero when `D` is nonzero. -/
+theorem normPolyBar_ne_zero (D : CoordRingElt E.q)
+    (hDnz : ¬ (D.a = 0 ∧ D.b = 0)) :
+    normPolyBar E D ≠ 0 := by
+  exact Polynomial.map_ne_zero (normPoly_ne_zero E D hDnz)
+
+/-- Root multiplicity of `normPolyBar` at `Q.x` is positive when `geomEval = 0`. -/
+theorem rootMultiplicity_normPolyBar_pos_of_geomEval_zero
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (Q : GeomPoint E) (hQ : D.geomEval E Q = 0) :
+    0 < (normPolyBar E D).rootMultiplicity Q.x := by
+  rw [rootMultiplicity_pos (normPolyBar_ne_zero E D hDnz)]
+  exact normPolyBar_eval_zero_of_geomEval_zero E D Q hQ
+
+/-- `geomEval` equals the evaluation of `a(x) - b(x)y` after base change. -/
+theorem geomEval_eq_geomAPoly_sub_geomBPoly_mul_y
+    (D : CoordRingElt E.q) (Q : GeomPoint E) :
+    D.geomEval E Q =
+      (geomAPoly E D).eval Q.x - (geomBPoly E D).eval Q.x * Q.y := by
+  unfold CoordRingElt.geomEval geomAPoly geomBPoly
+  simp [eval_map]
+
+/-- When the common factor is trivial, the residual branch condition is `geomEval`. -/
+theorem geomATilde_sub_geomBTilde_eq_geomEval_when_k_zero
+    (D : CoordRingElt E.q) (Q : GeomPoint E)
+    (hk : commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) Q.x = 0) :
+    (geomATilde E D Q.x).eval Q.x - (geomBTilde E D Q.x).eval Q.x * Q.y
+      = D.geomEval E Q := by
+  unfold geomATilde geomBTilde
+  rw [hk]
+  simp [geomEval_eq_geomAPoly_sub_geomBPoly_mul_y]
+
+/-- If `Q` is not a zero and `Q.y ≠ 0`, the common root factor at `Q.x` is trivial. -/
+theorem commonRootMultiplicity_eq_zero_of_geomEval_ne_zero
+    (D : CoordRingElt E.q)
+    (Q : GeomPoint E) (_hy : Q.y ≠ 0) (hQ : D.geomEval E Q ≠ 0) :
+    commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) Q.x = 0 := by
+  contrapose! hQ
+  simp_all +decide [commonRootMultiplicity]
+  rw [geomEval_eq_geomAPoly_sub_geomBPoly_mul_y]
+  aesop
+
+/--
+The norm polynomial is divisible by the square of the common coefficient
+factor at `α`.
+-/
+theorem normPolyBar_dvd_pow_twice_commonRootMultiplicity
+    (D : CoordRingElt E.q) (α : Fqbar E) :
+    let k := commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α
+    (X - C α) ^ (2 * k) ∣ normPolyBar E D := by
+  set k := commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α
+  have h_div_a : (X - C α) ^ k ∣ geomAPoly E D :=
+    commonRootFactor_dvd_left E (geomAPoly E D) (geomBPoly E D) α
+  have h_div_b : (X - C α) ^ k ∣ geomBPoly E D :=
+    commonRootFactor_dvd_right E (geomAPoly E D) (geomBPoly E D) α
+  convert mul_dvd_mul h_div_a h_div_a |> fun h =>
+    h.sub
+      (dvd_mul_of_dvd_left
+        (mul_dvd_mul h_div_b h_div_b)
+        (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+          (Polynomial.X ^ 3 + Polynomial.C E.curveA * Polynomial.X +
+            Polynomial.C E.curveB))) using 1; ring_nf
+  convert congr_arg
+    (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))) (normPoly_eq E D) using 1;
+    norm_num [normPolyBar]; ring_nf
+  unfold curveX
+  norm_num [geomAPoly, geomBPoly]
+  ring_nf
+
+/-- The norm root multiplicity is at least twice the common coefficient order. -/
+theorem rootMultiplicity_normPolyBar_ge_twice_common
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0)) (α : Fqbar E) :
+    let k := commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α
+    2 * k ≤ (normPolyBar E D).rootMultiplicity α := by
+  convert Polynomial.le_rootMultiplicity_iff _ |>.2
+    (normPolyBar_dvd_pow_twice_commonRootMultiplicity E D α) using 1
+  exact normPolyBar_ne_zero E D hDnz
+
+/-- In the ramified case `Q.y = 0`, norm vanishing is equivalent to `geomEval = 0`. -/
+theorem normPolyBar_eval_eq_zero_iff_geomEval_zero_of_y_eq_zero
+    (D : CoordRingElt E.q) (Q : GeomPoint E) (hy : Q.y = 0) :
+    (normPolyBar E D).eval Q.x = 0 ↔ D.geomEval E Q = 0 := by
+  have h_normPoly_def :
+      normPolyBar E D =
+        (geomAPoly E D)^2 -
+          (geomBPoly E D)^2 *
+            (Polynomial.X^3 + Polynomial.C (fqToBar E E.curveA) * Polynomial.X +
+              Polynomial.C (fqToBar E E.curveB)) := by
+    have h_normPoly_def :
+        normPoly E D =
+          D.a^2 - D.b^2 *
+            (Polynomial.X^3 + Polynomial.C E.curveA * Polynomial.X +
+              Polynomial.C E.curveB) := by
+      convert normPoly_eq E D
+    unfold normPolyBar geomAPoly geomBPoly
+    simp +decide [h_normPoly_def]
+    exact Or.inl rfl
+  rw [h_normPoly_def, geomEval_eq_geomAPoly_sub_geomBPoly_mul_y]
+  simp +decide [hy, sub_eq_iff_eq_add]
+  rw [← Q.onCurve, hy, zero_pow two_ne_zero]
+  aesop
+
 /-! ## Proof targets for the explicit local-order candidate -/
 
 /--
@@ -228,7 +336,24 @@ theorem geomLocalOrder_pos_of_geomEval_zero
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (Q : GeomPoint E) (hQ : D.geomEval E Q = 0) :
     0 < geomLocalOrder E D Q := by
-  sorry
+  unfold geomLocalOrder
+  have h_root_pos : 0 < rootMultiplicity Q.x (normPolyBar E D) :=
+    rootMultiplicity_normPolyBar_pos_of_geomEval_zero E D hDnz Q hQ
+  by_cases hy : Q.y = 0 <;> simp_all +decide
+  split_ifs
+  · refine' Nat.sub_pos_of_lt _
+    have h_common :
+        2 * commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) Q.x
+          ≤ rootMultiplicity Q.x (normPolyBar E D) := by
+      apply rootMultiplicity_normPolyBar_ge_twice_common
+      aesop
+    linarith [
+      show 0 < rootMultiplicity Q.x (normPolyBar E D) from
+        Nat.pos_of_ne_zero (by aesop)]
+  · contrapose! hQ
+    rw [← geomATilde_sub_geomBTilde_eq_geomEval_when_k_zero]
+    · aesop
+    · aesop
 
 /--
 The explicit local-order candidate vanishes away from the geometric zero
@@ -241,10 +366,14 @@ fiber. If `Q.y ≠ 0`, a positive common factor or residual sheet factor
 forces `a(Q.x) - b(Q.x)Q.y = 0`, contradicting the hypothesis.
 -/
 theorem geomLocalOrder_eq_zero_of_geomEval_ne_zero
-    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (D : CoordRingElt E.q) (_hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (Q : GeomPoint E) (hQ : D.geomEval E Q ≠ 0) :
     geomLocalOrder E D Q = 0 := by
-  sorry
+  by_cases hy : Q.y = 0 <;> simp_all +decide [geomLocalOrder]
+  · exact fun h => False.elim <| hQ <| by
+      simpa [hy] using
+        normPolyBar_eval_eq_zero_iff_geomEval_zero_of_y_eq_zero E D Q hy |>.1 h
+  · grind +suggestions
 
 /--
 The explicit local-order candidate satisfies the pointwise multiplicity
@@ -260,7 +389,13 @@ theorem geomLocalOrder_multiplicity_spec
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (Q : GeomPoint E) (hQ : D.geomEval E Q = 0) :
     IsGeometricZeroMultiplicity E D Q (geomLocalOrder E D Q) := by
-  sorry
+  refine' ⟨hQ, geomLocalOrder_pos_of_geomEval_zero E D hDnz Q hQ, _⟩
+  unfold geomLocalOrder
+  by_cases hy : Q.y = 0 <;> simp +decide [hy]
+  split_ifs
+  · exact Nat.sub_le _ _
+  · exact Nat.le_of_lt_succ (by
+      linarith [rootMultiplicity_normPolyBar_ge_twice_common E D hDnz Q.x])
 
 /--
 Fiber accounting for the explicit local-order candidate.
@@ -284,6 +419,227 @@ theorem geomLocalOrder_fiber_accounting
         = (normPolyBar E D).rootMultiplicity α := by
   sorry
 
+/-! ## Frobenius helpers -/
+
+/-- Frobenius fixes the image of the base field in the algebraic closure. -/
+private lemma frob_alg_eq (c : ZMod E.q) :
+    (algebraMap (ZMod E.q) (Fqbar E) c) ^ E.q =
+      algebraMap (ZMod E.q) (Fqbar E) c := by
+  rw [← map_pow, ZMod.pow_card]
+
+/-- Evaluating a base-changed polynomial at `α^q` gives the `q`-th power
+of its evaluation at `α`. -/
+private theorem eval₂_pow_q (g : Polynomial (ZMod E.q)) (α : Fqbar E) :
+    g.eval₂ (algebraMap (ZMod E.q) (Fqbar E)) (α ^ E.q) =
+    (g.eval₂ (algebraMap (ZMod E.q) (Fqbar E)) α) ^ E.q := by
+  simp only [← eval_map]
+  induction g using Polynomial.induction_on' with
+  | add p q hp hq =>
+    simp only [Polynomial.map_add, eval_add]
+    rw [hp, hq, add_pow_char _ _ E.q]
+  | monomial n c =>
+    simp only [Polynomial.map_monomial, eval_monomial]
+    rw [mul_pow, ← map_pow, ZMod.pow_card]
+    congr 1
+    rw [← pow_mul, mul_comm, pow_mul]
+
+/-- Evaluating a mapped polynomial at `α^q` gives the `q`-th power of evaluation at `α`. -/
+private theorem eval_map_pow_q (g : Polynomial (ZMod E.q)) (α : Fqbar E) :
+    (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E)) g).eval (α ^ E.q) =
+    ((Polynomial.map (algebraMap (ZMod E.q) (Fqbar E)) g).eval α) ^ E.q := by
+  simp only [eval_map]
+  exact eval₂_pow_q E g α
+
+/-- Frobenius on coefficients fixes a polynomial base-changed from `F_q`. -/
+private theorem map_frob_eq_self (g : Polynomial (ZMod E.q)) :
+    Polynomial.map (frobeniusEquiv (Fqbar E) E.q).toRingHom
+      (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E)) g) =
+    Polynomial.map (algebraMap (ZMod E.q) (Fqbar E)) g := by
+  rw [Polynomial.map_map]
+  congr 1
+  ext c
+  show (frobeniusEquiv (Fqbar E) E.q) (algebraMap (ZMod E.q) (Fqbar E) c) = _
+  rw [frobeniusEquiv_def, frob_alg_eq E c]
+
+/-- Evaluating `map σ h` at `σ(α)` equals `σ(h.eval α)`. -/
+private lemma map_frob_eval (h : Polynomial (Fqbar E)) (α : Fqbar E) :
+    (Polynomial.map (frobeniusEquiv (Fqbar E) E.q).toRingHom h).eval
+      ((frobeniusEquiv (Fqbar E) E.q) α) =
+    (frobeniusEquiv (Fqbar E) E.q) (h.eval α) := by
+  set σ := frobeniusEquiv (Fqbar E) E.q
+  rw [eval_map]
+  have key := hom_eval₂ h (RingHom.id (Fqbar E)) σ.toRingHom α
+  simp at key
+  exact key.symm
+
+/-- Frobenius sends `(X - C α)^k` to `(X - C (α^q))^k`. -/
+private lemma map_frob_X_sub_C_pow (α : Fqbar E) (k : ℕ) :
+    Polynomial.map (frobeniusEquiv (Fqbar E) E.q).toRingHom ((X - C α) ^ k) =
+    (X - C (α ^ E.q)) ^ k := by
+  rw [Polynomial.map_pow, Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C]
+  congr 1
+
+/-- Root multiplicity of a base-changed polynomial is Frobenius-invariant. -/
+private theorem rootMultiplicity_map_pow_q
+    (g : Polynomial (ZMod E.q)) (α : Fqbar E) :
+    (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E)) g).rootMultiplicity (α ^ E.q) =
+    (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E)) g).rootMultiplicity α := by
+  by_cases hg : g = 0
+  · subst hg
+    simp [Polynomial.map_zero, rootMultiplicity_zero]
+  · set f := Polynomial.map (algebraMap (ZMod E.q) (Fqbar E)) g
+    set σ := frobeniusEquiv (Fqbar E) E.q
+    have hf : f ≠ 0 := Polynomial.map_ne_zero hg
+    have h_map_σ : Polynomial.map σ.toRingHom f = f := map_frob_eq_self E g
+    have h_map_σ_inv : Polynomial.map σ.symm.toRingHom f = f := by
+      rw [show f = Polynomial.map (algebraMap (ZMod E.q) (Fqbar E)) g from rfl,
+        Polynomial.map_map]
+      congr 1
+      ext c
+      simp only [RingHom.comp_apply, RingEquiv.toRingHom_eq_coe, RingHom.coe_coe]
+      have hfix :
+          σ (algebraMap (ZMod E.q) (Fqbar E) c) =
+            algebraMap (ZMod E.q) (Fqbar E) c := by
+        rw [frobeniusEquiv_def, frob_alg_eq E c]
+      exact σ.symm_apply_eq.mpr hfix.symm
+    have hσα : σ α = α ^ E.q := frobeniusEquiv_def _ _ _
+    have hσ_inv : σ.symm (α ^ E.q) = α := by
+      rw [← hσα, σ.symm_apply_apply]
+    apply le_antisymm
+    · calc
+        f.rootMultiplicity (α ^ E.q)
+            ≤ (Polynomial.map σ.symm.toRingHom f).rootMultiplicity (σ.symm (α ^ E.q)) :=
+              Polynomial.le_rootMultiplicity_map (by rw [h_map_σ_inv]; exact hf) _
+        _ = f.rootMultiplicity α := by rw [h_map_σ_inv, hσ_inv]
+    · calc
+        f.rootMultiplicity α
+            ≤ (Polynomial.map σ.toRingHom f).rootMultiplicity (σ α) :=
+              Polynomial.le_rootMultiplicity_map (by rw [h_map_σ]; exact hf) _
+        _ = f.rootMultiplicity (α ^ E.q) := by rw [h_map_σ, hσα]
+
+/-- Root multiplicity of a nonzero base-changed polynomial is Frobenius-invariant. -/
+private theorem rootMultiplicity_pow_q
+    (g : Polynomial (ZMod E.q)) (_hg : g ≠ 0) (α : Fqbar E) :
+    (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E)) g).rootMultiplicity (α ^ E.q) =
+    (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E)) g).rootMultiplicity α :=
+  rootMultiplicity_map_pow_q E g α
+
+/-- The curve equation is preserved by Frobenius. -/
+private theorem onCurve_pow_q (x y : Fqbar E)
+    (h : y ^ 2 = x ^ 3 + fqToBar E E.curveA * x + fqToBar E E.curveB) :
+    (y ^ E.q) ^ 2 = (x ^ E.q) ^ 3 + fqToBar E E.curveA * (x ^ E.q) +
+      fqToBar E E.curveB := by
+  rw [← pow_mul, show E.q * 2 = 2 * E.q from by ring, pow_mul, h]
+  rw [show x ^ 3 + fqToBar E E.curveA * x + fqToBar E E.curveB =
+      x ^ 3 + (fqToBar E E.curveA * x + fqToBar E E.curveB) from by ring]
+  rw [add_pow_char _ _ E.q, add_pow_char _ _ E.q, mul_pow]
+  rw [← pow_mul, show 3 * E.q = E.q * 3 from by ring, pow_mul]
+  unfold fqToBar
+  rw [← map_pow, ZMod.pow_card, ← map_pow, ZMod.pow_card]
+  ring
+
+/-- Geometric evaluation at the Frobenius image is zero when the original is. -/
+private theorem geomEval_zero_pow_q (D : CoordRingElt E.q) (Q : GeomPoint E)
+    (hQ : D.geomEval E Q = 0) :
+    D.geomEval E ⟨Q.x ^ E.q, Q.y ^ E.q, onCurve_pow_q E Q.x Q.y Q.onCurve⟩ = 0 := by
+  unfold CoordRingElt.geomEval at *
+  simp only at *
+  rw [eval₂_pow_q E D.a Q.x, eval₂_pow_q E D.b Q.x, ← mul_pow,
+    ← sub_pow_char, hQ, zero_pow (Nat.Prime.pos E.hq_prime).ne']
+
+/-- The common root multiplicity is preserved by Frobenius. -/
+private theorem commonRootMultiplicity_pow_q (D : CoordRingElt E.q)
+    (_hDnz : ¬ (D.a = 0 ∧ D.b = 0)) (α : Fqbar E) :
+    commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) (α ^ E.q) =
+    commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α := by
+  unfold commonRootMultiplicity geomAPoly geomBPoly
+  split_ifs <;> simp_all [rootMultiplicity_map_pow_q E]
+
+/-- Frobenius fixes `geomAPoly`. -/
+private lemma map_frob_geomAPoly (D : CoordRingElt E.q) :
+    Polynomial.map (frobeniusEquiv (Fqbar E) E.q).toRingHom (geomAPoly E D) =
+      geomAPoly E D := by
+  unfold geomAPoly
+  exact map_frob_eq_self E D.a
+
+/-- Frobenius fixes `geomBPoly`. -/
+private lemma map_frob_geomBPoly (D : CoordRingElt E.q) :
+    Polynomial.map (frobeniusEquiv (Fqbar E) E.q).toRingHom (geomBPoly E D) =
+      geomBPoly E D := by
+  unfold geomBPoly
+  exact map_frob_eq_self E D.b
+
+/-- `map σ` commutes with `/ₘ` for the common root factor in `geomAPoly`. -/
+private lemma geomATilde_frob (D : CoordRingElt E.q)
+    (_hDnz : ¬ (D.a = 0 ∧ D.b = 0)) (α : Fqbar E) :
+    Polynomial.map (frobeniusEquiv (Fqbar E) E.q).toRingHom (geomATilde E D α) =
+    geomATilde E D (α ^ E.q) := by
+  show Polynomial.map _ (geomAPoly E D /ₘ _) = geomAPoly E D /ₘ _
+  have hm :
+      ((X - C α) ^
+        commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α).Monic :=
+    (monic_X_sub_C α).pow _
+  rw [Polynomial.map_divByMonic _ hm, map_frob_geomAPoly E D,
+    map_frob_X_sub_C_pow E α, commonRootMultiplicity_pow_q E D _hDnz α]
+
+/-- `map σ` commutes with `/ₘ` for the common root factor in `geomBPoly`. -/
+private lemma geomBTilde_frob (D : CoordRingElt E.q)
+    (_hDnz : ¬ (D.a = 0 ∧ D.b = 0)) (α : Fqbar E) :
+    Polynomial.map (frobeniusEquiv (Fqbar E) E.q).toRingHom (geomBTilde E D α) =
+    geomBTilde E D (α ^ E.q) := by
+  show Polynomial.map _ (geomBPoly E D /ₘ _) = geomBPoly E D /ₘ _
+  have hm :
+      ((X - C α) ^
+        commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α).Monic :=
+    (monic_X_sub_C α).pow _
+  rw [Polynomial.map_divByMonic _ hm, map_frob_geomBPoly E D,
+    map_frob_X_sub_C_pow E α, commonRootMultiplicity_pow_q E D _hDnz α]
+
+/-- The residual branch condition at the Frobenius image is the `q`-th power
+of the original branch condition. -/
+private theorem branch_value_pow_q (D : CoordRingElt E.q)
+    (hDnz : ¬ (D.a = 0 ∧ D.b = 0)) (Q : GeomPoint E) :
+    (geomATilde E D (Q.x ^ E.q)).eval (Q.x ^ E.q) -
+      (geomBTilde E D (Q.x ^ E.q)).eval (Q.x ^ E.q) * (Q.y ^ E.q) =
+    ((geomATilde E D Q.x).eval Q.x -
+      (geomBTilde E D Q.x).eval Q.x * Q.y) ^ E.q := by
+  set σ := frobeniusEquiv (Fqbar E) E.q
+  rw [← geomATilde_frob E D hDnz Q.x, ← geomBTilde_frob E D hDnz Q.x]
+  rw [show Q.x ^ E.q = σ Q.x from (frobeniusEquiv_def _ _ _).symm]
+  rw [map_frob_eval E (geomATilde E D Q.x) Q.x]
+  rw [map_frob_eval E (geomBTilde E D Q.x) Q.x]
+  rw [show Q.y ^ E.q = σ Q.y from (frobeniusEquiv_def _ _ _).symm]
+  rw [← σ.map_mul, ← σ.map_sub]
+  rw [show σ _ = _ ^ E.q from frobeniusEquiv_def _ _ _]
+
+/-- The explicit local-order candidate is Frobenius-invariant. -/
+private theorem geomLocalOrder_eq_frob (D : CoordRingElt E.q)
+    (hDnz : ¬ (D.a = 0 ∧ D.b = 0)) (Q : GeomPoint E)
+    (_hQ : D.geomEval E Q = 0) :
+    geomLocalOrder E D ⟨Q.x ^ E.q, Q.y ^ E.q, onCurve_pow_q E Q.x Q.y Q.onCurve⟩ =
+    geomLocalOrder E D Q := by
+  unfold geomLocalOrder
+  simp only
+  have hm : (normPolyBar E D).rootMultiplicity (Q.x ^ E.q) =
+      (normPolyBar E D).rootMultiplicity Q.x := by
+    unfold normPolyBar
+    exact rootMultiplicity_map_pow_q E (normPoly E D) Q.x
+  rw [hm]
+  by_cases hy : Q.y = 0
+  · have hy' : Q.y ^ E.q = 0 := by
+      rw [hy, zero_pow (Nat.Prime.pos E.hq_prime).ne']
+    rw [if_pos hy', if_pos hy]
+  · have hy' : Q.y ^ E.q ≠ 0 := pow_ne_zero _ hy
+    simp only [hy, hy', ite_false]
+    have hk :
+        commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) (Q.x ^ E.q) =
+          commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) Q.x :=
+      commonRootMultiplicity_pow_q E D hDnz Q.x
+    rw [hk]
+    have hbranch := branch_value_pow_q E D hDnz Q
+    rw [hbranch]
+    simp only [pow_eq_zero_iff (Nat.Prime.pos E.hq_prime).ne']
+
 /--
 Frobenius stability for the explicit local-order candidate.
 
@@ -303,7 +659,12 @@ theorem geomLocalOrder_frobenius_stable
       ∃ Q' ∈ support,
         Q'.x = Q.x ^ E.q ∧ Q'.y = Q.y ^ E.q ∧
           geomLocalOrder E D Q' = geomLocalOrder E D Q := by
-  sorry
+  intro Q hQ
+  have hQzero := hSupportZero Q hQ
+  set Q' : GeomPoint E := ⟨Q.x ^ E.q, Q.y ^ E.q, onCurve_pow_q E Q.x Q.y Q.onCurve⟩
+  have hQ'zero : D.geomEval E Q' = 0 := geomEval_zero_pow_q E D Q hQzero
+  have hQ'mem : Q' ∈ support := hZeroSupport Q' hQ'zero
+  exact ⟨Q', hQ'mem, rfl, rfl, geomLocalOrder_eq_frob E D hDnz Q hQzero⟩
 
 /--
 Existence of core local orders on a fixed finite geometric zero support.
