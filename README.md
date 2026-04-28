@@ -45,7 +45,10 @@ $$B(d, k, q) = 18(d+k)q + (3d+9k+71)|E(F_q)|.$$
 The active soundness path uses the geometric-zero skeleton in
 `Divisor/GeometricSoundness.lean`: zeros of `D` are represented over
 `F_qbar`, the cleared numerator is required to descend to `F_q`, and
-the headline theorem no longer assumes `splitsOnE E D`.
+the headline theorem no longer assumes `splitsOnE E D`. The shared
+base-change model is factored into `Divisor/GeomBase.lean`; the true
+local-order/fiber-accounting obligation is isolated in
+`Divisor/GeomLocalOrder.lean`.
 
 ### `Divisor.ip_knowledge_sound` (IP knowledge soundness)
 
@@ -68,8 +71,9 @@ propext, sorryAx, Classical.choice, Divisor.hasse_weil, Quot.sound
 ```
 
 `sorryAx` is intentional on the `geom-polyG-skeleton` branch. The named
-obligations are isolated in `Divisor/GeometricSoundness.lean`; discharging
-them replaces the older split-gated rational-zero path.
+obligations are isolated in `Divisor/GeomLocalOrder.lean` and
+`Divisor/GeometricSoundness.lean`; discharging them replaces the older
+split-gated rational-zero path.
 
 `#print axioms Divisor.ma_completeness`:
 

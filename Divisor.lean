@@ -36,4 +36,6 @@ import Divisor.PolyGTraceFormula
 import Divisor.TraceProof
 import Divisor.DensityBound
 import Divisor.TightBound
+import Divisor.GeomBase
+import Divisor.GeomLocalOrder
 import Divisor.GeometricSoundness
