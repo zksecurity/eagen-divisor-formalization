@@ -2584,6 +2584,64 @@ private theorem geom_residue_sum_zero_of_hAllZero
     · exact absurd hPR hProdR_ne
   · exact hRes
 
+/-- A rational scalar-weighted summand of the bar-level residue identity
+descends to `fqToBar` of a rational expression, when the line factor is
+nonzero. -/
+private theorem bar_residue_summand_descends_fq
+    (P A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1)
+    (c : ZMod E.q) (hLine : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 P.2 ≠ 0) :
+    fqToBar E c *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E P))⁻¹
+      = fqToBar E (c *
+          ((A₁.1 - A₀.1) *
+            (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 P.2)⁻¹) := by
+  rw [lineEvalNumAtFullBarOfFq_eval_eq_lineThrough_mul E P A₀ A₁ hNV]
+  have hX : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm hNV)
+  have hPow : (fqToBar E (A₁.1 - A₀.1) *
+      fqToBar E ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 P.2))⁻¹
+        = fqToBar E (((A₁.1 - A₀.1) *
+              (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 P.2)⁻¹) := by
+    unfold fqToBar
+    rw [← map_mul, map_inv₀]
+  rw [hPow]
+  unfold fqToBar
+  rw [← map_mul]
+
+/-- A rational `ℕ`-weighted summand (e.g. with `rationalMultAt`) of the
+bar-level residue identity descends to `fqToBar` of a rational expression. -/
+private theorem bar_residue_summand_descends
+    (P A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1)
+    (n : ℕ) (hLine : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 P.2 ≠ 0) :
+    ((n : ℕ) : Fqbar E) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E P))⁻¹
+      = fqToBar E ((n : ZMod E.q) *
+          ((A₁.1 - A₀.1) *
+            (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 P.2)⁻¹) := by
+  rw [lineEvalNumAtFullBarOfFq_eval_eq_lineThrough_mul E P A₀ A₁ hNV]
+  have hX : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm hNV)
+  have hXBar : fqToBar E (A₁.1 - A₀.1) ≠ 0 :=
+    (fqToBar_eq_zero_iff E _).not.mpr hX
+  have hLineBar : fqToBar E ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 P.2) ≠ 0 :=
+    (fqToBar_eq_zero_iff E _).not.mpr hLine
+  -- (fqToBar Δx · fqToBar L.eval P)⁻¹ = fqToBar((Δx · L.eval P)⁻¹).
+  have hPow : (fqToBar E (A₁.1 - A₀.1) *
+      fqToBar E ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 P.2))⁻¹
+        = fqToBar E (((A₁.1 - A₀.1) *
+              (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 P.2)⁻¹) := by
+    have hProdFq : (A₁.1 - A₀.1) *
+        (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 P.2 ≠ 0 :=
+      mul_ne_zero hX hLine
+    unfold fqToBar
+    rw [← map_mul, map_inv₀]
+  rw [hPow]
+  -- (n : Fqbar) = fqToBar (n : ZMod q).
+  have hNat : ((n : ℕ) : Fqbar E) = fqToBar E ((n : ZMod E.q)) := by
+    unfold fqToBar
+    rw [map_natCast]
+  rw [hNat]
+  unfold fqToBar
+  rw [← map_mul]
+
 /-- **Re-indexed rational residue identity at defined non-vertical chords.**
 Under `hAllZero` + `gd_support_rational`, the bar-level residue sum re-indexes
 to a sum over `zerosFinset E D` with `rationalMultAt` weights, plus the
