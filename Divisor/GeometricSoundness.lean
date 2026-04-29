@@ -1223,6 +1223,78 @@ theorem geometric_chord_sum_eq_residue_sum
   --     = -fqToBar(A₁.1-A₀.1) · ((mult Q) · (-(fqToBar(A₁.1-A₀.1))⁻¹ · (μ_bar - zLambdaBar Q)⁻¹))
   field_simp
 
+/-- **Bar-eval factorisation of `geomPolyGFullBar`.** When every line factor
+is nonzero at the bar-evaluation point, `geomPolyGFullBar` evaluated equals
+the product of all line factors times the residue-divided form. -/
+private theorem geomPolyGFullBar_eval_eq_residue_clear
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    {M : ℕ} (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hQline : ∀ Q ∈ gd.support,
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q) ≠ 0)
+    (hRline : ∀ j,
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E (R j)) ≠ 0) :
+    MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (geomPolyGFullBar E D gd R m)
+      = (∏ Q ∈ gd.support,
+          MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q))
+        * (∏ j,
+          MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E (R j)))
+        * ((∑ Q ∈ gd.support, ((gd.mult Q : ℕ) : Fqbar E) *
+              (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q))⁻¹)
+            + (∑ j, fqToBar E (m j) *
+              (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+                (lineEvalNumAtFullBarOfFq E (R j)))⁻¹)) := by
+  classical
+  set evalQ : GeomPoint E → Fqbar E := fun Q =>
+    MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q) with hevalQ
+  set evalR : Fin M → Fqbar E := fun j =>
+    MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E (R j)) with hevalR
+  -- Per-Q rewrite: ∏_{Q'≠Q} evalQ Q' = ProdQ · (evalQ Q)⁻¹ when evalQ Q ≠ 0.
+  have hEraseQ : ∀ Q ∈ gd.support,
+      (∏ Q' ∈ gd.support.erase Q, evalQ Q')
+        = (∏ Q' ∈ gd.support, evalQ Q') * (evalQ Q)⁻¹ := by
+    intro Q hQ
+    have h : evalQ Q * (∏ Q' ∈ gd.support.erase Q, evalQ Q')
+        = (∏ Q' ∈ gd.support, evalQ Q') :=
+      Finset.mul_prod_erase gd.support evalQ hQ
+    rw [← h]
+    rw [mul_comm (evalQ Q), mul_assoc, mul_inv_cancel₀ (hQline Q hQ), mul_one]
+  -- Per-j rewrite analogously.
+  have hEraseR : ∀ j : Fin M,
+      (∏ j' ∈ (Finset.univ (α := Fin M)).erase j, evalR j')
+        = (∏ j', evalR j') * (evalR j)⁻¹ := by
+    intro j
+    have h : evalR j * (∏ j' ∈ (Finset.univ (α := Fin M)).erase j, evalR j')
+        = (∏ j', evalR j') :=
+      Finset.mul_prod_erase (Finset.univ : Finset (Fin M)) evalR (Finset.mem_univ j)
+    rw [← h]
+    rw [mul_comm (evalR j), mul_assoc, mul_inv_cancel₀ (hRline j), mul_one]
+  unfold geomPolyGFullBar
+  simp only [map_add, map_sum, map_mul, map_prod, MvPolynomial.eval_C]
+  rw [show (∑ Q ∈ gd.support,
+        ((gd.mult Q : ℕ) : Fqbar E)
+          * (∏ Q' ∈ gd.support.erase Q, evalQ Q')
+          * (∏ j, evalR j))
+      = ((∏ Q ∈ gd.support, evalQ Q) * (∏ j, evalR j)) *
+          ∑ Q ∈ gd.support,
+            ((gd.mult Q : ℕ) : Fqbar E) * (evalQ Q)⁻¹ from by
+    rw [Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intro Q hQ
+    rw [hEraseQ Q hQ]
+    ring]
+  rw [show (∑ j, fqToBar E (m j)
+          * (∏ Q ∈ gd.support, evalQ Q)
+          * (∏ j' ∈ (Finset.univ (α := Fin M)).erase j, evalR j'))
+      = ((∏ Q ∈ gd.support, evalQ Q) * (∏ j, evalR j)) *
+          ∑ j, fqToBar E (m j) * (evalR j)⁻¹ from by
+    rw [Finset.mul_sum]
+    apply Finset.sum_congr rfl
+    intro j _
+    rw [hEraseR j]
+    ring]
+  ring
+
 /--
 Core geometric chord-sum identity at rational challenge points.
 
