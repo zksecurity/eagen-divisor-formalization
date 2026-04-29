@@ -1549,9 +1549,16 @@ private theorem splitsOnE_of_gd_support_rational
   --    (from the rational point P with P.1 = α derived from hRat).
   refine ⟨?_, ?_⟩
   · -- normPoly_splits_over_Fq E D: card roots = natDegree.
-    -- Strategy: base-change identifies F_q-roots with Fqbar-roots (via injectivity);
-    -- normPolyBar splits over Fqbar (algebraic closure); when gd.support is
-    -- rational, every Fqbar-root is in fqToBar(F_q) (via gd.fiber_accounting).
+    -- Strategy:
+    -- (1) Show normPolyBar.roots = normPoly.roots.map fqToBar via Multiset.ext +
+    --     count = rootMultiplicity (Polynomial.count_roots) +
+    --     eq_rootMultiplicity_map for in-image-fqToBar elements;
+    --     hRootInImage rules out non-image-fqToBar elements.
+    -- (2) From (1): card normPolyBar.roots = card normPoly.roots (via map_card +
+    --     fqToBar injective).
+    -- (3) From IsAlgClosed (Fqbar E): card normPolyBar.roots = natDegree normPolyBar.
+    -- (4) natDegree normPolyBar = natDegree normPoly (base-change).
+    -- Combine (2)-(4) to get card normPoly.roots = natDegree normPoly.
     sorry
   · intro α hα
     -- α is an F_q-root of normPoly E D. Want: ∃ y ∈ ZMod E.q, (α, y) ∈ E.points.
