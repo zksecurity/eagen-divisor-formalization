@@ -683,6 +683,16 @@ theorem lineEvalNumAtFullBarOfFq_eval_ne_zero_iff
   · intro hline
     exact ⟨hx, (fqToBar_eq_zero_iff E _).not.mpr hline⟩
 
+/-- At a rational lift `Q` of `P` (i.e., `Q.x = fqToBar P.1` and
+`Q.y = fqToBar P.2`), the geometric line factor coincides with the
+rational line factor. -/
+theorem lineEvalNumAtFullBar_eq_lineEvalNumAtFullBarOfFq_of_rational
+    (Q : GeomPoint E) (P : ZMod E.q × ZMod E.q)
+    (hPx : Q.x = fqToBar E P.1) (hPy : Q.y = fqToBar E P.2) :
+    lineEvalNumAtFullBar E Q = lineEvalNumAtFullBarOfFq E P := by
+  unfold lineEvalNumAtFullBar lineEvalNumAtFullBarOfFq
+  rw [hPx, hPy]
+
 /-! ### Geometric μ-coordinate (Step C of the chord-sum sub-plan)
 
 The level sets of `zLambdaBar lam` over `F_qbar` are the projective
