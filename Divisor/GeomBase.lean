@@ -60,6 +60,12 @@ noncomputable def conjugate (Q : GeomPoint E) : GeomPoint E :=
 
 end GeomPoint
 
+/-- Geometric chord projection over `Fqbar`: a `GeomPoint` on a chord
+of slope `lam` shares its `zLambdaBar lam` value with the chord's
+intercept. Mirror of `zLambda`, lifted to the algebraic closure. -/
+noncomputable def zLambdaBar (lam : ZMod E.q) (Q : GeomPoint E) : Fqbar E :=
+  Q.y - fqToBar E lam * Q.x
+
 namespace CoordRingElt
 
 /-- Evaluation of a coordinate-ring element at a geometric point. -/

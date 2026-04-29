@@ -12,3 +12,4 @@ import Divisor.Axioms.AxiomWeilReciprocityHonest
 import Divisor.Axioms.AxiomExistsDivisorMultiplicity
 import Divisor.Axioms.AxiomChordFiberProductEqNormZUnderSplit
 import Divisor.Axioms.AxiomChordSumEqChordFiberProductLogDeriv
+import Divisor.Axioms.AxiomChordFiberProductBarFactorisation

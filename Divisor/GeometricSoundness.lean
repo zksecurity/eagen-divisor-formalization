@@ -627,6 +627,181 @@ theorem lineEvalNumAtFullBarOfFq_eval_ne_zero_iff
   · intro hline
     exact ⟨hx, (fqToBar_eq_zero_iff E _).not.mpr hline⟩
 
+/-! ### Geometric μ-coordinate (Step C of the chord-sum sub-plan)
+
+The level sets of `zLambdaBar lam` over `F_qbar` are the projective
+chords of slope `lam`. The bridge lemma below recasts the geometric
+line factor `lineEvalNumAtFullBar` as `-(A₁.1 − A₀.1) · (μ −
+zLambdaBar lam Q)`, the geometric analogue of the rational identity
+for `ellP`. This is the substitution that lets the residue sum from
+the chord-fiber-product log-derivative match the geometric-line-factor
+sum that appears in `geometric_chord_sum_eq_residue_sum`.
+-/
+
+/-- On a non-vertical chord, the geometric line factor evaluation at
+`(Q, A₀, A₁)` equals `-(A₁.1 − A₀.1) · (μ − zLambdaBar lam Q)`, where
+`lam` is the chord slope and `μ = fqToBar (zLambda lam A₀)` is the
+chord intercept embedded in `Fqbar`.
+
+This is the geometric counterpart of the rational identity expressing
+`ellP P A₀ A₁` as `-(A₁.1 − A₀.1) · (μ − zLambda lam P)`. -/
+theorem lineEvalNumAtFullBar_eval_eq_zLambdaBar_diff
+    (Q : GeomPoint E) (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q)
+      = -(fqToBar E (A₁.1 - A₀.1)) *
+          (fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀)
+            - zLambdaBar E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) Q) := by
+  rw [lineEvalNumAtFullBar_eval]
+  set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLam
+  have hX : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm hNV)
+  -- Slope identity in `ZMod E.q`.
+  have hSlope : lam * (A₁.1 - A₀.1) = A₁.2 - A₀.2 := by
+    rw [hLam, slopeOf]
+    rw [mul_assoc, inv_mul_cancel₀ hX, mul_one]
+  -- Lift the slope identity to `Fqbar`.
+  have hSlopeBar : fqToBar E (A₁.2 - A₀.2)
+      = fqToBar E lam * fqToBar E (A₁.1 - A₀.1) := by
+    rw [← hSlope]; simp [fqToBar]
+  rw [hSlopeBar]
+  -- Expand `zLambdaBar` and `zLambda` to scalars in `Fqbar`.
+  unfold zLambdaBar zLambda
+  have hZL : fqToBar E (A₀.2 - lam * A₀.1)
+      = fqToBar E A₀.2 - fqToBar E lam * fqToBar E A₀.1 := by
+    simp [fqToBar]
+  rw [hZL]
+  ring
+
+/-! ### Geometric partial-fraction expansion (Step B of the chord-sum sub-plan)
+
+Logarithmic derivative of the `Fqbar`-product
+`∏ Q ∈ gd.support, (X − C (zLambdaBar lam Q))^(gd.mult Q)` at any
+`μ ∈ Fqbar` not in the image of `zLambdaBar lam` on the support. The
+identity is a clean partial-fraction expansion:
+
+  `eval μ (derivative ∏) = (eval μ ∏) · ∑ Q ∈ gd.support, (mult Q) ·
+                                       (μ − zLambdaBar lam Q)⁻¹`.
+
+This is the geometric analogue of `normZ_logDeriv_at_nonroot` in
+`Divisor/NormZDecomp.lean`, lifted from `(ZMod E.q)[X]` to
+`(Fqbar E)[X]` and indexed by `gd.support` instead of `zerosFinset`.
+-/
+
+/-- Per-`Q` summand identity inside the PFE: at non-root `μ`, the
+`Q`-summand of the derivative of `∏ Q', (X − C (zLambdaBar lam Q'))^(mult Q')`
+equals `(mult Q : Fqbar) · (full product evaluated) · (μ − zLambdaBar lam Q)⁻¹`.
+Mirror of `summand_eq_full_prod_div`. -/
+private theorem geom_summand_eq_full_prod_div
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D) (lam : ZMod E.q)
+    (μ : Fqbar E) {Q : GeomPoint E} (hQ : Q ∈ gd.support)
+    (hDiffQ : μ - zLambdaBar E lam Q ≠ 0) :
+    ((gd.mult Q : ℕ) : Fqbar E) *
+        (μ - zLambdaBar E lam Q) ^ ((gd.mult Q) - 1) *
+        ∏ Q' ∈ gd.support.erase Q,
+          (μ - zLambdaBar E lam Q') ^ (gd.mult Q') =
+      ((gd.mult Q : ℕ) : Fqbar E) *
+        (∏ Q' ∈ gd.support,
+          (μ - zLambdaBar E lam Q') ^ (gd.mult Q'))
+        * (μ - zLambdaBar E lam Q)⁻¹ := by
+  classical
+  set y := μ - zLambdaBar E lam Q with hy_def
+  set m := gd.mult Q with hm_def
+  set Pol := ∏ Q' ∈ gd.support.erase Q,
+      (μ - zLambdaBar E lam Q') ^ (gd.mult Q') with hPol_def
+  have hFull :
+      (∏ Q' ∈ gd.support,
+        (μ - zLambdaBar E lam Q') ^ (gd.mult Q'))
+        = y ^ m * Pol := by
+    rw [hy_def, hm_def, hPol_def]
+    exact (Finset.mul_prod_erase gd.support
+          (fun Q' => (μ - zLambdaBar E lam Q') ^ (gd.mult Q')) hQ).symm
+  rw [hFull]
+  by_cases hM : m = 0
+  · rw [hM]; simp
+  · have hMpos : 1 ≤ m := Nat.one_le_iff_ne_zero.mpr hM
+    have hPow : y ^ (m - 1) = y ^ m * y⁻¹ := by
+      have hy : y ≠ 0 := hDiffQ
+      have := pow_succ y (m - 1)
+      rw [Nat.sub_add_cancel hMpos] at this
+      field_simp
+      rw [this]
+    calc ((m : ℕ) : Fqbar E) * y ^ (m - 1) * Pol
+        = ((m : ℕ) : Fqbar E) * (y ^ m * y⁻¹) * Pol := by rw [hPow]
+      _ = ((m : ℕ) : Fqbar E) * (y ^ m * Pol) * y⁻¹ := by ring
+
+/-- **Partial-fraction expansion of the geometric product log-derivative
+at a non-root `μ`** (Step B). -/
+theorem prod_X_sub_C_zLambdaBar_logDeriv_at_nonroot
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D) (lam : ZMod E.q)
+    (μ : Fqbar E)
+    (hNonRoot : ∀ Q ∈ gd.support, μ - zLambdaBar E lam Q ≠ 0) :
+    eval μ (derivative
+        (∏ Q ∈ gd.support,
+          (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q)))
+      = eval μ (∏ Q ∈ gd.support,
+          (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q)) *
+          ∑ Q ∈ gd.support,
+            ((gd.mult Q : ℕ) : Fqbar E) *
+              (μ - zLambdaBar E lam Q)⁻¹ := by
+  classical
+  rw [derivative_prod_X_sub_C_pow_indexed gd.support
+        (fun Q => zLambdaBar E lam Q) gd.mult]
+  rw [eval_finset_sum]
+  have hProdEval :
+      eval μ (∏ Q ∈ gd.support,
+          (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q))
+        = ∏ Q ∈ gd.support, (μ - zLambdaBar E lam Q) ^ (gd.mult Q) := by
+    rw [eval_prod]
+    apply Finset.prod_congr rfl
+    intro Q _
+    rw [eval_pow, eval_sub, eval_X, eval_C]
+  rw [hProdEval, Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro Q hQ
+  -- Evaluate per-summand on the LHS (after derivative_prod_X_sub_C_pow_indexed).
+  rw [eval_mul, eval_mul, eval_C]
+  rw [show eval μ ((X - C (zLambdaBar E lam Q)) ^ (gd.mult Q - 1))
+      = (μ - zLambdaBar E lam Q) ^ (gd.mult Q - 1) from by
+    rw [eval_pow, eval_sub, eval_X, eval_C]]
+  rw [show eval μ (∏ Q' ∈ gd.support.erase Q,
+        (X - C (zLambdaBar E lam Q')) ^ (gd.mult Q'))
+      = ∏ Q' ∈ gd.support.erase Q, (μ - zLambdaBar E lam Q') ^ (gd.mult Q')
+      from by
+    rw [eval_prod]
+    apply Finset.prod_congr rfl
+    intro Q' _
+    rw [eval_pow, eval_sub, eval_X, eval_C]]
+  have hSum := geom_summand_eq_full_prod_div E D gd lam μ hQ (hNonRoot Q hQ)
+  linear_combination hSum
+
+/--
+Bezout-style helper: under the rational `logDerivCheckFnDefined`
+hypothesis, no `Q ∈ gd.support` lies on the chord through `(A₀, A₁)`.
+
+PROVIDED SOLUTION
+The rational chord meets `E` over `F_qbar` in at most 3 points
+(Bezout: line · cubic = 3); the chord-cubic in `x` factors as
+`(x − A₀.1)(x − A₁.1)(x − x₂)` by Vieta. Base-changing to `Fqbar`
+preserves this factorisation, so the geometric chord-fiber consists
+precisely of the lifts of `A₀, A₁, (x₂, y₂)`. By `hDef`, `D.eval`
+at each of these three rational points is nonzero, hence (by
+`geomEval_lift_eq_fqToBar`) `D.geomEval` at each lifted point is
+nonzero, so no lifted point lies in `gd.support`. Therefore no
+`Q ∈ gd.support` is on the chord, which by Step C
+(`lineEvalNumAtFullBar_eval_eq_zLambdaBar_diff`) is equivalent to
+`fqToBar (zLambda lam A₀) − zLambdaBar lam Q ≠ 0`.
+-/
+private theorem geom_support_avoids_chord
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (P : ZMod E.q × ZMod E.q) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (_hA₀ : A₀ ∈ E.points) (_hA₁ : A₁ ∈ E.points) (_hNV : A₀.1 ≠ A₁.1)
+    (_hDef : logDerivCheckFnDefined E D P B A₀ A₁) :
+    ∀ Q ∈ gd.support,
+      fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀)
+        - zLambdaBar E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) Q ≠ 0 := by
+  sorry
+
 /--
 Geometric trace/log-derivative identity on one nonvertical chord.
 
@@ -661,6 +836,101 @@ theorem geometric_chord_sum_eq_residue_sum
           ((gd.mult Q : ℕ) : Fqbar E) *
             (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
               (lineEvalNumAtFullBar E Q))⁻¹ := by
+  classical
+  -- Step D: assembly of the chord-sum identity.
+  -- Setup: chord slope and intercept.
+  set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLam
+  set μ := zLambda E lam A₀ with hMu
+  have hX : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm hNV)
+  have hXBar : fqToBar E (A₁.1 - A₀.1) ≠ 0 :=
+    (fqToBar_eq_zero_iff E _).not.mpr hX
+  -- Bezout: no Q ∈ gd.support is on the chord.
+  have hAvoid := geom_support_avoids_chord E D gd P B A₀ A₁ hA₀ hA₁ hNV hDef
+  -- Rewrite each (line factor)⁻¹ as -(fqToBar(A₁.1-A₀.1))⁻¹ · (μ_bar - zLambdaBar Q)⁻¹.
+  have hLineRewrite : ∀ Q ∈ gd.support,
+      (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q))⁻¹
+        = -(fqToBar E (A₁.1 - A₀.1))⁻¹ *
+            (fqToBar E μ - zLambdaBar E lam Q)⁻¹ := by
+    intro Q _hQ
+    rw [lineEvalNumAtFullBar_eval_eq_zLambdaBar_diff E Q A₀ A₁ hNV]
+    show (-(fqToBar E (A₁.1 - A₀.1)) * (fqToBar E μ - zLambdaBar E lam Q))⁻¹
+        = -(fqToBar E (A₁.1 - A₀.1))⁻¹ * (fqToBar E μ - zLambdaBar E lam Q)⁻¹
+    rw [neg_mul, inv_neg, mul_inv]
+    ring
+  -- Extract D-nonzero and individual chord-fiber non-vanishing conditions from `hDef`.
+  unfold logDerivCheckFnDefined logDerivCheckFnDenom at hDef
+  have hProdNZ := hDef
+  have hBlineProd : (Finset.univ : Finset (Fin k)).prod
+        (fun j => (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2) ≠ 0 :=
+    right_ne_zero_of_mul hProdNZ
+  have h7 : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2) ≠ 0 :=
+    right_ne_zero_of_mul (left_ne_zero_of_mul hProdNZ)
+  have hLeftOf7 := left_ne_zero_of_mul (left_ne_zero_of_mul hProdNZ)
+  have h6 : 3 * (lam ^ 2 - A₀.1 - A₁.1) ^ 2 + E.curveA -
+        2 * lam * (lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1)) ≠ 0 :=
+    right_ne_zero_of_mul hLeftOf7
+  have hLeftOf6 := left_ne_zero_of_mul hLeftOf7
+  have h5 : 3 * A₁.1 ^ 2 + E.curveA - 2 * lam * A₁.2 ≠ 0 :=
+    right_ne_zero_of_mul hLeftOf6
+  have hLeftOf5 := left_ne_zero_of_mul hLeftOf6
+  have h4 : 3 * A₀.1 ^ 2 + E.curveA - 2 * lam * A₀.2 ≠ 0 :=
+    right_ne_zero_of_mul hLeftOf5
+  have hLeftOf4 := left_ne_zero_of_mul hLeftOf5
+  have h3 : D.eval (lam ^ 2 - A₀.1 - A₁.1)
+              (lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1)) ≠ 0 :=
+    right_ne_zero_of_mul hLeftOf4
+  have hLeftOf3 := left_ne_zero_of_mul hLeftOf4
+  have h2 : D.eval A₁.1 A₁.2 ≠ 0 := right_ne_zero_of_mul hLeftOf3
+  have h1 : D.eval A₀.1 A₀.2 ≠ 0 := left_ne_zero_of_mul hLeftOf3
+  have hDnz : ¬ (D.a = 0 ∧ D.b = 0) := by
+    intro ⟨ha, hb⟩
+    apply h1
+    unfold CoordRingElt.eval
+    simp [ha, hb]
+  have hDen : ∀ pt : ZMod E.q × ZMod E.q,
+      pt = A₀ ∨ pt = A₁ ∨
+      pt = (lam ^ 2 - A₀.1 - A₁.1,
+            lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
+      → 3 * pt.1 ^ 2 + E.curveA - 2 * lam * pt.2 ≠ 0 := by
+    rintro pt (rfl | rfl | rfl) <;> assumption
+  -- Geometric factorisation of `chord_fiber_product` over `Fqbar`.
+  obtain ⟨c, hc_ne, hcfp_eq⟩ :=
+    chord_fiber_product_bar_factorisation E D lam hDnz gd
+  -- Non-vanishing: `eval μ_bar (∏ Q (X − C zLambdaBar Q)^(mult Q)) ≠ 0` from `hAvoid`.
+  set Pol : Polynomial (Fqbar E) :=
+      ∏ Q ∈ gd.support, (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q) with hPol_def
+  have hPolEval : eval (fqToBar E μ) Pol =
+      ∏ Q ∈ gd.support, (fqToBar E μ - zLambdaBar E lam Q) ^ (gd.mult Q) := by
+    rw [hPol_def, eval_prod]
+    apply Finset.prod_congr rfl
+    intro Q _
+    rw [eval_pow, eval_sub, eval_X, eval_C]
+  have hPolNe : eval (fqToBar E μ) Pol ≠ 0 := by
+    rw [hPolEval]
+    refine Finset.prod_ne_zero_iff.mpr (fun Q hQ => ?_)
+    exact pow_ne_zero _ (hAvoid Q hQ)
+  have hCfpBarEval : eval (fqToBar E μ)
+        (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+          (chord_fiber_product E lam D)) = c * eval (fqToBar E μ) Pol := by
+    rw [hcfp_eq]; rw [eval_mul, eval_C]
+  have hCfpBarNe : eval (fqToBar E μ)
+      (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+        (chord_fiber_product E lam D)) ≠ 0 := by
+    rw [hCfpBarEval]; exact mul_ne_zero hc_ne hPolNe
+  -- The rational chord_fiber_product also has nonzero value at μ (via fqToBar injectivity).
+  have hCfpRatNe : (chord_fiber_product E lam D).eval μ ≠ 0 := by
+    intro hZero
+    apply hCfpBarNe
+    rw [show (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+          (chord_fiber_product E lam D)).eval (fqToBar E μ)
+        = fqToBar E ((chord_fiber_product E lam D).eval μ) from by
+      simp [fqToBar, Polynomial.eval_map, Polynomial.eval₂_at_apply]]
+    rw [hZero]; simp [fqToBar]
+  -- Rational chord-sum identity (axiom).
+  have hRatLHS := chord_sum_eq_chord_fiber_product_logDeriv E D A₀ A₁ hA₀ hA₁ hNV
+    hDnz h1 h2 h3 hDen hCfpRatNe
+  -- Apply fqToBar to both sides; lift LHS rational division to Fqbar.
+  -- Strategy: rewrite using rational identity, then transport to Fqbar via algebra map.
   sorry
 
 /--
