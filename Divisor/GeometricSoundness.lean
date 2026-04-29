@@ -3044,6 +3044,69 @@ private theorem polyG_zero_at_defined_betaCanonical_of_hAllZero_and_hRat
     P B m A₀ A₁ hA₀ hA₁ hNV hA₀def hA₁def hA₂def h_chord_avoid hDen
     h_negP_line h_B_line hCheck
 
+/-- **Layer A bridge**: raw `hAllZero` (on `stmt.bases`, `msg.m`) implies
+the distinct-form `hAllZero` (on `baseAt`, `distinctM'_tail`). -/
+private theorem hAllZero_baseAt_of_hAllZero_raw
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hAllZeroRaw : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
+      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
+    ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E msg.toD stmt.target
+        (baseAt E stmt msg hkm) A₀ A₁ →
+      logDerivCheckFn E msg.toD stmt.target
+        (baseImageCount E stmt msg hkm)
+        (baseAt E stmt msg hkm)
+        (distinctM'_tail E stmt msg hkm) A₀ A₁ = 0 := by
+  intro A₀ A₁ hA₀ hA₁ hNV hDefDistinct
+  -- Translate `defined`-distinct to `defined`-raw at `stmt.bases`.
+  have hDefRaw : logDerivCheckFnDefined E msg.toD stmt.target
+      stmt.bases A₀ A₁ := by
+    unfold logDerivCheckFnDefined logDerivCheckFnDenom at hDefDistinct ⊢
+    intro hRawEqZero
+    apply hDefDistinct
+    set common := msg.toD.eval A₀.1 A₀.2 * msg.toD.eval A₁.1 A₁.2 *
+      msg.toD.eval (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1)
+        (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 *
+          (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1) +
+            (A₀.2 - slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.1)) *
+      (3 * A₀.1 ^ 2 + E.curveA - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2) *
+      (3 * A₁.1 ^ 2 + E.curveA -
+        2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2) *
+      (3 * (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1) ^ 2 + E.curveA -
+        2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 *
+          (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 *
+            (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1) +
+            (A₀.2 - slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.1))) *
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval stmt.target.1 (-stmt.target.2)
+    change common * ∏ j : Fin stmt.k,
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
+        (stmt.bases j).1 (stmt.bases j).2 = 0 at hRawEqZero
+    change common * ∏ i : Fin (baseImageCount E stmt msg hkm),
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
+        (baseAt E stmt msg hkm i).1 (baseAt E stmt msg hkm i).2 = 0
+    rcases mul_eq_zero.mp hRawEqZero with hCommon | hProd
+    · exact mul_eq_zero.mpr (Or.inl hCommon)
+    · rw [Finset.prod_eq_zero_iff] at hProd
+      obtain ⟨j, _, hj⟩ := hProd
+      apply mul_eq_zero.mpr; right
+      rw [Finset.prod_eq_zero_iff]
+      refine ⟨baseIndexOf E stmt msg hkm (finCongr hkm j),
+              Finset.mem_univ _, ?_⟩
+      rw [baseAt_baseIndexOf]
+      have hEq : extractorBases E stmt msg hkm (finCongr hkm j) = stmt.bases j := by
+        unfold extractorBases
+        congr 1
+      rw [hEq]
+      exact hj
+  have hRaw := hAllZeroRaw A₀ A₁ hA₀ hA₁ hNV hDefRaw
+  rw [logDerivCheckFn_eq_grouped] at hRaw
+  exact hRaw
+
 /-! ### Residue-matching extraction of `splitsOnE` and σ-data
 
 Two private helpers compose into `geometric_residue_match`:
