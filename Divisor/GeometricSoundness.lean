@@ -316,6 +316,62 @@ private theorem frob_support_injective
   exact geomPoint_ext E Q1 Q2
     (pow_q_injective_fqbar E hxeq) (pow_q_injective_fqbar E hyeq)
 
+/-! ### Frobenius action on geometric support -/
+
+/-- The Frobenius image chosen by `gd.frobenius_stable` is the canonical
+`frobGeomPoint E Q` (componentwise `q`-power). -/
+private theorem frobenius_stable_choose_eq_frobGeomPoint
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (Q : GeomPoint E) (hQ : Q ∈ gd.support) :
+    (gd.frobenius_stable Q hQ).choose = frobGeomPoint E Q := by
+  apply geomPoint_ext
+  · show (gd.frobenius_stable Q hQ).choose.x = Q.x ^ E.q
+    exact (gd.frobenius_stable Q hQ).choose_spec.2.1
+  · show (gd.frobenius_stable Q hQ).choose.y = Q.y ^ E.q
+    exact (gd.frobenius_stable Q hQ).choose_spec.2.2.1
+
+/-- `frobGeomPoint Q ∈ gd.support` for every `Q ∈ gd.support`. -/
+private theorem frobGeomPoint_mem_support
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (Q : GeomPoint E) (hQ : Q ∈ gd.support) :
+    frobGeomPoint E Q ∈ gd.support := by
+  rw [← frobenius_stable_choose_eq_frobGeomPoint E D gd Q hQ]
+  exact (gd.frobenius_stable Q hQ).choose_spec.1
+
+/-- Multiplicity is preserved under Frobenius on geometric support. -/
+private theorem mult_frobGeomPoint_eq
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (Q : GeomPoint E) (hQ : Q ∈ gd.support) :
+    gd.mult (frobGeomPoint E Q) = gd.mult Q := by
+  rw [← frobenius_stable_choose_eq_frobGeomPoint E D gd Q hQ]
+  exact (gd.frobenius_stable Q hQ).choose_spec.2.2.2
+
+/-- A geometric point with rational coordinates is fixed by Frobenius. -/
+private theorem frobGeomPoint_of_rational
+    (Q : GeomPoint E) (P : ZMod E.q × ZMod E.q)
+    (hPx : Q.x = fqToBar E P.1) (hPy : Q.y = fqToBar E P.2) :
+    frobGeomPoint E Q = Q := by
+  apply geomPoint_ext
+  · show Q.x ^ E.q = Q.x
+    rw [hPx]; exact fqToBar_frob_fixed E P.1
+  · show Q.y ^ E.q = Q.y
+    rw [hPy]; exact fqToBar_frob_fixed E P.2
+
+/-- A Frobenius-fixed geometric point has rational coordinates. -/
+private theorem rational_of_frobGeomPoint_fixed
+    (Q : GeomPoint E) (hFix : frobGeomPoint E Q = Q) :
+    ∃ P : ZMod E.q × ZMod E.q,
+      Q.x = fqToBar E P.1 ∧ Q.y = fqToBar E P.2 := by
+  have hx : Q.x ^ E.q = Q.x := by
+    have := congr_arg GeomPoint.x hFix
+    exact this
+  have hy : Q.y ^ E.q = Q.y := by
+    have := congr_arg GeomPoint.y hFix
+    exact this
+  obtain ⟨a, ha⟩ := fqbar_fixed_by_frob_in_range E Q.x hx
+  obtain ⟨b, hb⟩ := fqbar_fixed_by_frob_in_range E Q.y hy
+  exact ⟨(a, b), ha.symm, hb.symm⟩
+
 /-! ### Frobenius-fixedness of line factors -/
 
 /-- Frobenius on coefficients sends `lineEvalNumAtFullBar E Q` to
@@ -1530,6 +1586,33 @@ def gd_support_rational (D : CoordRingElt E.q) (gd : GeometricDivisorData E D) :
   ∀ Q ∈ gd.support, ∃ P : ZMod E.q × ZMod E.q,
     P ∈ E.points ∧ Q.x = fqToBar E P.1 ∧ Q.y = fqToBar E P.2
 
+/-- Rationality of `gd.support` is equivalent to every support point being
+fixed by Frobenius. -/
+private theorem gd_support_rational_iff_frob_fixed
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D) :
+    gd_support_rational E D gd ↔
+      (∀ Q ∈ gd.support, frobGeomPoint E Q = Q) := by
+  constructor
+  · intro hRat Q hQ
+    obtain ⟨P, _, hPx, hPy⟩ := hRat Q hQ
+    exact frobGeomPoint_of_rational E Q P hPx hPy
+  · intro hFix Q hQ
+    obtain ⟨P, hPx, hPy⟩ := rational_of_frobGeomPoint_fixed E Q (hFix Q hQ)
+    refine ⟨P, ?_, hPx, hPy⟩
+    -- P ∈ E.points: deduce from Q.onCurve via fqToBar injectivity.
+    apply E.hComplete
+    have hCurve : Q.y ^ 2 = Q.x ^ 3 + fqToBar E E.curveA * Q.x + fqToBar E E.curveB :=
+      Q.onCurve
+    rw [hPx, hPy] at hCurve
+    have hLhs : (fqToBar E P.2) ^ 2 = fqToBar E (P.2 ^ 2) := by
+      unfold fqToBar; rw [map_pow]
+    have hRhs : (fqToBar E P.1) ^ 3 + fqToBar E E.curveA * fqToBar E P.1 +
+        fqToBar E E.curveB =
+          fqToBar E (P.1 ^ 3 + E.curveA * P.1 + E.curveB) := by
+      unfold fqToBar; rw [map_add, map_add, map_pow, map_mul]
+    rw [hLhs, hRhs] at hCurve
+    exact (FaithfulSMul.algebraMap_injective (ZMod E.q) (Fqbar E)) hCurve
+
 /-- If every geometric support point has rational coordinates, then `D`'s
 norm polynomial splits over `F_q` and every root has a rational lift —
 i.e., `splitsOnE E D`. -/
@@ -2271,6 +2354,50 @@ private theorem geom_residue_sum_zero_of_hAllZero
     · exact absurd hPQ hProdQ_ne
     · exact absurd hPR hProdR_ne
   · exact hRes
+
+/-- The sum of geometric multiplicities equals the natDegree of `normPoly`. -/
+private theorem gd_mult_sum_eq_natDegree
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) :
+    (∑ Q ∈ gd.support, gd.mult Q) = (normPoly E D).natDegree := by
+  classical
+  have hNormBar_ne : normPolyBar E D ≠ 0 := normPolyBar_ne_zero E D hDnz
+  have hSplits : (normPolyBar E D).Splits := IsAlgClosed.splits _
+  have hCardBar : (normPolyBar E D).natDegree = (normPolyBar E D).roots.card :=
+    hSplits.natDegree_eq_card_roots
+  have hNatBar : (normPolyBar E D).natDegree = (normPoly E D).natDegree := by
+    unfold normPolyBar; exact Polynomial.natDegree_map _
+  -- Re-index: ∑_Q mult Q = ∑_α (∑_{Q : Q.x = α} mult Q) = ∑_α rootMultiplicityBar α.
+  -- The sum over α ranges over (normPolyBar.roots).toFinset.
+  have hSumOverRoots :
+      (∑ Q ∈ gd.support, gd.mult Q)
+        = ∑ α ∈ (normPolyBar E D).roots.toFinset,
+            ∑ Q ∈ gd.support.filter (fun Q => Q.x = α), gd.mult Q := by
+    rw [← Finset.sum_biUnion]
+    · congr 1
+      ext Q
+      simp only [Finset.mem_biUnion, Finset.mem_filter, Multiset.mem_toFinset]
+      constructor
+      · intro hQ
+        refine ⟨Q.x, ?_, hQ, rfl⟩
+        rw [Polynomial.mem_roots hNormBar_ne]
+        exact normPolyBar_eval_zero_of_geomEval_zero E D Q (gd.support_eval_zero Q hQ)
+      · rintro ⟨_, _, hQ, _⟩; exact hQ
+    · intro α _ β _ hαβ
+      refine Finset.disjoint_left.mpr (fun Q hQ₁ hQ₂ => ?_)
+      simp only [Finset.mem_filter] at hQ₁ hQ₂
+      exact hαβ (hQ₁.2 ▸ hQ₂.2)
+  rw [hSumOverRoots]
+  -- Apply fiber_accounting per α.
+  rw [Finset.sum_congr rfl (fun α _ => gd.fiber_accounting α)]
+  -- Now LHS = ∑_α rootMultiplicityBar α = card normPolyBar.roots.
+  rw [show (∑ α ∈ (normPolyBar E D).roots.toFinset, (normPolyBar E D).rootMultiplicity α)
+      = (normPolyBar E D).roots.card from by
+    rw [← Multiset.toFinset_sum_count_eq]
+    apply Finset.sum_congr rfl
+    intro α _
+    rw [Polynomial.count_roots]]
+  rw [← hCardBar, hNatBar]
 
 /-! ### Residue-matching extraction of `splitsOnE` and σ-data
 
