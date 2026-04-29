@@ -6,7 +6,15 @@ this repository. The Aristotle queue is shared, so jobs observed via
 
 ## Active Jobs
 
-None submitted by this Codex session as of 2026-04-29.
+- `edf1eaa2-0cd8-4bec-be91-ba8e5c1e7c82`
+  - Submitted: 2026-04-29
+  - Target: `Divisor.GeometricSoundness.chord_fiber_product_bar_factorisation`
+  - Prompt summary: prove the geometric divisor-of-norm factorisation over
+    `F_qbar` without adding axioms; if blocked, isolate the smallest missing
+    function-field/local-algebra lemma.
+  - Expected useful output: either a proof replacing the theorem's `sorry`, or
+    a precise missing lemma statement for the divisor-of-norm bridge.
+  - Status: submitted, not yet checked.
 
 ## Historical Context
 
