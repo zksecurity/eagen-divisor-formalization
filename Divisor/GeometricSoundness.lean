@@ -1549,10 +1549,47 @@ private theorem splitsOnE_of_gd_support_rational
   --    (from the rational point P with P.1 = α derived from hRat).
   refine ⟨?_, ?_⟩
   · -- normPoly_splits_over_Fq E D: card roots = natDegree.
+    -- Strategy: base-change identifies F_q-roots with Fqbar-roots (via injectivity);
+    -- normPolyBar splits over Fqbar (algebraic closure); when gd.support is
+    -- rational, every Fqbar-root is in fqToBar(F_q) (via gd.fiber_accounting).
     sorry
   · intro α hα
-    -- α is an F_q-root of normPoly E D. Lift to Fqbar.
-    sorry
+    -- α is an F_q-root of normPoly E D. Want: ∃ y ∈ ZMod E.q, (α, y) ∈ E.points.
+    -- Step 1: lift α to fqToBar α, a Fqbar-root of normPolyBar E D.
+    have hNormBar_ne : normPolyBar E D ≠ 0 := normPolyBar_ne_zero E D hDnz
+    have hNorm_ne : normPoly E D ≠ 0 := normPoly_ne_zero E D hDnz
+    have hRootBar_isRoot : (normPolyBar E D).IsRoot (fqToBar E α) := by
+      unfold normPolyBar fqToBar Polynomial.IsRoot
+      rw [Polynomial.eval_map, Polynomial.eval₂_at_apply]
+      have hEval0 : (normPoly E D).eval α = 0 := by
+        rw [← Polynomial.IsRoot]
+        exact (Polynomial.mem_roots hNorm_ne).mp hα
+      rw [hEval0]
+      simp
+    have hRootBar : (normPolyBar E D).rootMultiplicity (fqToBar E α) > 0 :=
+      (Polynomial.rootMultiplicity_pos hNormBar_ne).mpr hRootBar_isRoot
+    -- Step 2: by gd.fiber_accounting, ∃ Q ∈ support with Q.x = fqToBar α and mult Q > 0.
+    have hSum := gd.fiber_accounting (fqToBar E α)
+    have hSum_pos : 0 <
+        (∑ Q ∈ gd.support.filter (fun Q => Q.x = fqToBar E α), gd.mult Q) := by
+      rw [hSum]; exact hRootBar
+    have hNonempty :
+        (gd.support.filter (fun Q => Q.x = fqToBar E α)).Nonempty := by
+      by_contra h
+      rw [Finset.not_nonempty_iff_eq_empty] at h
+      rw [h, Finset.sum_empty] at hSum_pos
+      exact lt_irrefl _ hSum_pos
+    obtain ⟨Q, hQfilter⟩ := hNonempty
+    have hQmem : Q ∈ gd.support := (Finset.mem_filter.mp hQfilter).1
+    have hQx_eq : Q.x = fqToBar E α := (Finset.mem_filter.mp hQfilter).2
+    -- Step 3: Q is rational by hRat; the rational lift gives the y-coordinate.
+    obtain ⟨P, hPpts, hPx, hPy⟩ := hRat Q hQmem
+    -- P.1 = α by injectivity.
+    have hP1 : P.1 = α := by
+      have : fqToBar E P.1 = fqToBar E α := hPx ▸ hQx_eq
+      exact (FaithfulSMul.algebraMap_injective (ZMod E.q) (Fqbar E)) this
+    refine ⟨P.2, ?_⟩
+    rw [← hP1]; exact hPpts
 
 /-! ## Geometric residue-matching via specialization over `F_qbar`
 
