@@ -2320,6 +2320,22 @@ private noncomputable def rationalLift
     (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) :
     (rationalLift E P hP).y = fqToBar E P.2 := rfl
 
+/-- The geometric multiplicity at the rational lift of `P`, when `P` is
+a rational zero of `D`; otherwise zero. -/
+private noncomputable def rationalMultAt
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (P : ZMod E.q × ZMod E.q) : ℕ :=
+  if hP : P ∈ E.points ∧ D.eval P.1 P.2 = 0 then
+    gd.mult (rationalLift E P hP.1)
+  else 0
+
+theorem rationalMultAt_eq_gd_mult_at_lift
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hZero : D.eval P.1 P.2 = 0) :
+    rationalMultAt E D gd P = gd.mult (rationalLift E P hP) := by
+  unfold rationalMultAt
+  rw [dif_pos ⟨hP, hZero⟩]
+
 /-- Under `gd_support_rational`, any `Fqbar`-valued sum over `gd.support`
 that depends on `Q` only through `(Q.x, Q.y)` re-indexes to a sum over
 `zerosFinset E D` over the rational lifts. -/
