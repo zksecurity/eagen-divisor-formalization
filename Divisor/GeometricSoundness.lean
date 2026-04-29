@@ -588,6 +588,19 @@ theorem lineEvalNumAtFullBar_eval_factored
   field_simp
   ring
 
+/-- On a nonvertical chord, the geometric line factor is
+`-(A₁.x - A₀.x) * (μ - zLambdaBar Q)`, where `μ` is the chord intercept. -/
+theorem lineEvalNumAtFullBar_eval_eq_zLambdaBar_diff
+    (Q : GeomPoint E) (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q)
+      = -(fqToBar E (A₁.1 - A₀.1)) *
+          (fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀)
+            - zLambdaBar E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) Q) := by
+  rw [lineEvalNumAtFullBar_eval_factored E Q A₀ A₁ hNV]
+  unfold zLambdaBar zLambda
+  simp [fqToBar]
+  ring
+
 /-- Direct evaluation formula for a base-field line factor after embedding into `F_qbar`. -/
 @[simp] theorem lineEvalNumAtFullBarOfFq_eval
     (P A₀ A₁ : ZMod E.q × ZMod E.q) :
@@ -644,6 +657,93 @@ theorem lineEvalNumAtFullBarOfFq_eval_ne_zero_iff
     exact (fqToBar_eq_zero_iff E _).not.mp hline
   · intro hline
     exact ⟨hx, (fqToBar_eq_zero_iff E _).not.mpr hline⟩
+
+/-! ### Geometric partial-fraction expansion -/
+
+/-- Per-`Q` summand identity inside the geometric partial-fraction
+expansion. -/
+private theorem geom_summand_eq_full_prod_div
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D) (lam : ZMod E.q)
+    (μ : Fqbar E) {Q : GeomPoint E} (hQ : Q ∈ gd.support)
+    (hDiffQ : μ - zLambdaBar E lam Q ≠ 0) :
+    ((gd.mult Q : ℕ) : Fqbar E) *
+        (μ - zLambdaBar E lam Q) ^ ((gd.mult Q) - 1) *
+        ∏ Q' ∈ gd.support.erase Q,
+          (μ - zLambdaBar E lam Q') ^ (gd.mult Q') =
+      ((gd.mult Q : ℕ) : Fqbar E) *
+        (∏ Q' ∈ gd.support,
+          (μ - zLambdaBar E lam Q') ^ (gd.mult Q'))
+        * (μ - zLambdaBar E lam Q)⁻¹ := by
+  classical
+  set y := μ - zLambdaBar E lam Q with hy_def
+  set m := gd.mult Q with hm_def
+  set Pol := ∏ Q' ∈ gd.support.erase Q,
+      (μ - zLambdaBar E lam Q') ^ (gd.mult Q') with hPol_def
+  have hFull :
+      (∏ Q' ∈ gd.support,
+        (μ - zLambdaBar E lam Q') ^ (gd.mult Q'))
+        = y ^ m * Pol := by
+    rw [hy_def, hm_def, hPol_def]
+    exact (Finset.mul_prod_erase gd.support
+      (fun Q' => (μ - zLambdaBar E lam Q') ^ (gd.mult Q')) hQ).symm
+  rw [hFull]
+  by_cases hM : m = 0
+  · rw [hM]
+    simp
+  · have hMpos : 1 ≤ m := Nat.one_le_iff_ne_zero.mpr hM
+    have hPow : y ^ (m - 1) = y ^ m * y⁻¹ := by
+      have hy : y ≠ 0 := hDiffQ
+      have hsucc := pow_succ y (m - 1)
+      rw [Nat.sub_add_cancel hMpos] at hsucc
+      field_simp
+      rw [hsucc]
+    calc ((m : ℕ) : Fqbar E) * y ^ (m - 1) * Pol
+        = ((m : ℕ) : Fqbar E) * (y ^ m * y⁻¹) * Pol := by rw [hPow]
+      _ = ((m : ℕ) : Fqbar E) * (y ^ m * Pol) * y⁻¹ := by ring
+
+/-- Partial-fraction expansion for the geometric product logarithmic
+derivative at a non-root `μ`. -/
+theorem prod_X_sub_C_zLambdaBar_logDeriv_at_nonroot
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D) (lam : ZMod E.q)
+    (μ : Fqbar E)
+    (hNonRoot : ∀ Q ∈ gd.support, μ - zLambdaBar E lam Q ≠ 0) :
+    eval μ (derivative
+        (∏ Q ∈ gd.support,
+          (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q)))
+      = eval μ (∏ Q ∈ gd.support,
+          (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q)) *
+          ∑ Q ∈ gd.support,
+            ((gd.mult Q : ℕ) : Fqbar E) *
+              (μ - zLambdaBar E lam Q)⁻¹ := by
+  classical
+  rw [derivative_prod_X_sub_C_pow_indexed gd.support
+        (fun Q => zLambdaBar E lam Q) gd.mult]
+  rw [eval_finset_sum]
+  have hProdEval :
+      eval μ (∏ Q ∈ gd.support,
+          (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q))
+        = ∏ Q ∈ gd.support, (μ - zLambdaBar E lam Q) ^ (gd.mult Q) := by
+    rw [eval_prod]
+    apply Finset.prod_congr rfl
+    intro Q _
+    rw [eval_pow, eval_sub, eval_X, eval_C]
+  rw [hProdEval, Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro Q hQ
+  rw [eval_mul, eval_mul, eval_C]
+  rw [show eval μ ((X - C (zLambdaBar E lam Q)) ^ (gd.mult Q - 1))
+      = (μ - zLambdaBar E lam Q) ^ (gd.mult Q - 1) from by
+    rw [eval_pow, eval_sub, eval_X, eval_C]]
+  rw [show eval μ (∏ Q' ∈ gd.support.erase Q,
+        (X - C (zLambdaBar E lam Q')) ^ (gd.mult Q'))
+      = ∏ Q' ∈ gd.support.erase Q, (μ - zLambdaBar E lam Q') ^ (gd.mult Q')
+      from by
+    rw [eval_prod]
+    apply Finset.prod_congr rfl
+    intro Q' _
+    rw [eval_pow, eval_sub, eval_X, eval_C]]
+  have hSum := geom_summand_eq_full_prod_div E D gd lam μ hQ (hNonRoot Q hQ)
+  linear_combination hSum
 
 /--
 Geometric trace/log-derivative identity on one nonvertical chord.
