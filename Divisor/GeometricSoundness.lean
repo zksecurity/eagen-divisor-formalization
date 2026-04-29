@@ -2961,6 +2961,89 @@ private theorem gd_mult_sum_eq_natDegree
     rw [Polynomial.count_roots]]
   rw [← hCardBar, hNatBar]
 
+/-- **polyG vanishes at every defined non-vertical rational pair under
+hAllZero + hRat, with `multAt(betaCanonical)` coefficients** (using
+existing `polyG_zero_at_defined`). -/
+private theorem polyG_zero_at_defined_betaCanonical_of_hAllZero_and_hRat
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) (hRat : gd_support_rational E D gd)
+    (P : ZMod E.q × ZMod E.q) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E D P B A₀ A₁ →
+      logDerivCheckFn E D P k B m A₀ A₁ = 0)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1)
+    (hDef : logDerivCheckFnDefined E D P B A₀ A₁) :
+    polyG E (zerosAt E D)
+      (fun k' => ((multAt E (betaCanonical E D) D k' : ℕ) : ZMod E.q))
+      (Fin.cons (P.1, -P.2) B)
+      (Fin.cons (-1) (fun j => -m j))
+      A₀ A₁ = 0 := by
+  classical
+  -- Step 1: derive splitsOnE from hRat.
+  have hSplit : splitsOnE E D :=
+    splitsOnE_of_gd_support_rational E D hDnz gd hRat
+  -- Step 2: betaCanonical's properties.
+  have hβsup : ∀ P', betaCanonical E D P' ≠ 0 → P' ∈ E.points ∧ D.eval P'.1 P'.2 = 0 :=
+    betaCanonical_support E D
+  have hβcov : ∀ P' ∈ E.points, D.eval P'.1 P'.2 = 0 → betaCanonical E D P' ≠ 0 :=
+    betaCanonical_covers E D hDnz
+  have hβaccount : (∑ P' ∈ E.points, betaCanonical E D P') = (normPoly E D).natDegree :=
+    betaCanonical_account E D hSplit
+  -- Step 3: extract chord-fiber non-vanishing conditions from hDef.
+  have hDenom : logDerivCheckFnDenom E D P B A₀ A₁ ≠ 0 := hDef
+  have h_chord_avoid : ∀ P' ∈ zerosFinset E D,
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P'.1 P'.2 ≠ 0 :=
+    chord_avoids_D_zeros_of_denom_defined D P B A₀ A₁ hA₀ hA₁ hNV hDenom
+  unfold logDerivCheckFnDefined logDerivCheckFnDenom at hDef
+  set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLam_def
+  set x₂ := lam ^ 2 - A₀.1 - A₁.1 with hX₂_def
+  set y₂ := lam * x₂ + (A₀.2 - lam * A₀.1) with hY₂_def
+  -- Extract individual factors from hDef. hDef =
+  --   D.eval A₀ * D.eval A₁ * D.eval A₂
+  --     * (3A₀²+A-2λA₀.y) * (3A₁²+A-2λA₁.y) * (3A₂²+A-2λA₂.y)
+  --     * L.eval(-P) * ∏_j L.eval(B_j) ≠ 0
+  -- left-nested as (((((((D₀*D₁)*D₂)*S₀)*S₁)*S₂)*Lp)*Lbp.
+  have h1 := left_ne_zero_of_mul hDef                       -- (D₀*D₁*D₂*S₀*S₁*S₂*Lp)
+  have h2 := left_ne_zero_of_mul h1                         -- (D₀*D₁*D₂*S₀*S₁*S₂)
+  have h3 := left_ne_zero_of_mul h2                         -- (D₀*D₁*D₂*S₀*S₁)
+  have h4 := left_ne_zero_of_mul h3                         -- (D₀*D₁*D₂*S₀)
+  have h5 := left_ne_zero_of_mul h4                         -- (D₀*D₁*D₂)
+  have h6 := left_ne_zero_of_mul h5                         -- (D₀*D₁)
+  have hA₀def : D.eval A₀.1 A₀.2 ≠ 0 := left_ne_zero_of_mul h6
+  have hA₁def : D.eval A₁.1 A₁.2 ≠ 0 := right_ne_zero_of_mul h6
+  have hA₂def : D.eval x₂ y₂ ≠ 0 := right_ne_zero_of_mul h5
+  have hDen0 : 3 * A₀.1 ^ 2 + E.curveA - 2 * lam * A₀.2 ≠ 0 :=
+    right_ne_zero_of_mul h4
+  have hDen1 : 3 * A₁.1 ^ 2 + E.curveA - 2 * lam * A₁.2 ≠ 0 :=
+    right_ne_zero_of_mul h3
+  have hDen2 : 3 * x₂ ^ 2 + E.curveA - 2 * lam * y₂ ≠ 0 :=
+    right_ne_zero_of_mul h2
+  have hDen : ∀ pt : ZMod E.q × ZMod E.q,
+      pt = A₀ ∨ pt = A₁ ∨ pt = (x₂, y₂) →
+      3 * pt.1 ^ 2 + E.curveA - 2 * lam * pt.2 ≠ 0 := by
+    intro pt hpt
+    rcases hpt with rfl | rfl | rfl
+    · exact hDen0
+    · exact hDen1
+    · exact hDen2
+  have h_negP_line : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2) ≠ 0 :=
+    right_ne_zero_of_mul (left_ne_zero_of_mul hDef)
+  have h_B_lineProd : (Finset.univ : Finset (Fin k)).prod
+        (fun j => (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2) ≠ 0 :=
+    right_ne_zero_of_mul hDef
+  have h_B_line : ∀ j : Fin k,
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 ≠ 0 := by
+    intro j
+    exact fun hj => h_B_lineProd (Finset.prod_eq_zero (Finset.mem_univ j) hj)
+  have hCheck : logDerivCheckFn E D P k B m A₀ A₁ = 0 :=
+    hAllZero A₀ A₁ hA₀ hA₁ hNV hDef
+  exact polyG_zero_at_defined E D hDnz (betaCanonical E D) hβsup hβcov hSplit hβaccount
+    P B m A₀ A₁ hA₀ hA₁ hNV hA₀def hA₁def hA₂def h_chord_avoid hDen
+    h_negP_line h_B_line hCheck
+
 /-! ### Residue-matching extraction of `splitsOnE` and σ-data
 
 Two private helpers compose into `geometric_residue_match`:
