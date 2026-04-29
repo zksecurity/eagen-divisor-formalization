@@ -2303,6 +2303,23 @@ private theorem gd_support_card_eq_zerosCard
       exact ⟨hPpts, hPzero⟩
     exact (hUniq Q hQmem P ⟨hPmem, rfl, rfl⟩).symm
 
+/-- The canonical rational lift of `P` as a `GeomPoint`, given that
+`P ∈ E.points`. -/
+private noncomputable def rationalLift
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) : GeomPoint E :=
+  ⟨fqToBar E P.1, fqToBar E P.2, by
+    unfold fqToBar
+    rw [← map_pow, ← map_pow, ← map_mul, ← map_add, ← map_add]
+    exact congrArg _ (E.hOnCurve P hP)⟩
+
+@[simp] theorem rationalLift_x
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) :
+    (rationalLift E P hP).x = fqToBar E P.1 := rfl
+
+@[simp] theorem rationalLift_y
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) :
+    (rationalLift E P hP).y = fqToBar E P.2 := rfl
+
 /-- Under `gd_support_rational`, any `Fqbar`-valued sum over `gd.support`
 that depends on `Q` only through `(Q.x, Q.y)` re-indexes to a sum over
 `zerosFinset E D` over the rational lifts. -/
