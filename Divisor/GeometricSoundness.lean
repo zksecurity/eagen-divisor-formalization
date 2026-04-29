@@ -1295,6 +1295,7 @@ private theorem geomPolyGFullBar_eval_eq_residue_clear
     ring]
   ring
 
+set_option maxHeartbeats 800000 in
 /--
 Core geometric chord-sum identity at rational challenge points.
 
@@ -1314,6 +1315,55 @@ private theorem geomPolyGFullBar_eval_zero_iff_logDerivCheckFn
         (geomPolyGFullBar E D gd
           (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j))) = 0
       ↔ logDerivCheckFn E D P k B m A₀ A₁ = 0 := by
+  classical
+  set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLam
+  set μ := zLambda E lam A₀ with hMu_def
+  set R : Fin (k + 1) → ZMod E.q × ZMod E.q := Fin.cons (P.1, -P.2) B with hR
+  set m' : Fin (k + 1) → ZMod E.q := Fin.cons (-1) (fun j => -m j) with hM'
+  have hX : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm hNV)
+  have hXBar : fqToBar E (A₁.1 - A₀.1) ≠ 0 :=
+    (fqToBar_eq_zero_iff E _).not.mpr hX
+  -- Extract individual non-vanishing from hDef.
+  have hAvoid := geom_support_avoids_chord E D gd P B A₀ A₁ hA₀ hA₁ hNV hDef
+  unfold logDerivCheckFnDefined logDerivCheckFnDenom at hDef
+  have hProdNZ := hDef
+  have hBlineProd : (Finset.univ : Finset (Fin k)).prod
+        (fun j => (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2) ≠ 0 :=
+    right_ne_zero_of_mul hProdNZ
+  have h7 : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2) ≠ 0 :=
+    right_ne_zero_of_mul (left_ne_zero_of_mul hProdNZ)
+  have hBline : ∀ j : Fin k,
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 ≠ 0 := by
+    intro j hj
+    exact hBlineProd (Finset.prod_eq_zero (Finset.mem_univ j) hj)
+  -- ℓ_Q non-vanishing for Q ∈ gd.support: via Step C + geom_support_avoids_chord.
+  have hLineQ : ∀ Q ∈ gd.support,
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q) ≠ 0 := by
+    intro Q hQ
+    rw [lineEvalNumAtFullBar_eval_eq_zLambdaBar_diff E Q A₀ A₁ hNV]
+    apply mul_ne_zero
+    · exact neg_ne_zero.mpr hXBar
+    · exact hAvoid Q hQ
+  -- ℓ_R_j non-vanishing for j ∈ Fin (k+1).
+  have hLineR : ∀ j : Fin (k + 1),
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E (R j)) ≠ 0 := by
+    intro j
+    rw [lineEvalNumAtFullBarOfFq_eval_ne_zero_iff E _ A₀ A₁ hNV]
+    refine Fin.cases ?_ ?_ j
+    · -- j = 0: R 0 = (P.1, -P.2). lineThrough doesn't vanish at -P (h7).
+      show (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R 0).1 (R 0).2 ≠ 0
+      rw [hR]; simp [Fin.cons_zero]; exact h7
+    · -- j = i.succ: R i.succ = B i. lineThrough doesn't vanish at B_i (hBline i).
+      intro i
+      show (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R i.succ).1 (R i.succ).2 ≠ 0
+      rw [hR]; simp [Fin.cons_succ]; exact hBline i
+  -- Apply bar-eval factorisation.
+  rw [geomPolyGFullBar_eval_eq_residue_clear E D gd R m' A₀ A₁ hLineQ hLineR]
+  -- Goal now: (∏_Q ℓ_Q) · (∏_j ℓ_R_j) · S = 0 ↔ logDerivCheckFn = 0
+  -- where S = Σ_Q (mult Q : Fqbar) · ℓ_Q⁻¹ + Σ_j fqToBar(m'_j) · ℓ_R_j⁻¹.
+  -- We will show S = -fqToBar(logDerivCheckFn) / fqToBar(Δx).
+  -- The residue identity requires combining chord-sum identity +
+  -- slope substitution + Fin.cons unfolding.
   sorry
 
 /-! ## Geometric residue-matching via specialization over `F_qbar`
