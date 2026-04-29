@@ -3223,12 +3223,73 @@ private theorem sigma_data_of_gd_support_rational
         (hSingleLe.trans (hMultSum ▸ hBetaSum))
         (lt_of_le_of_lt _hDeg _hd)
     exact absurd (Nat.le_of_dvd hPos hDvd) (Nat.not_le.mpr hLt)
+  have hELargeDkl : E.points.card * E.points.card - 2 * E.points.card >
+        18 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) * E.q := by
+    sorry
   have hVanishing : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
       bivEval₂ (polyGFull E (zerosAt E msg.toD)
         (fun k => ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q))
         (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)) A₀ A₁ = 0 := by
-    sorry
+    -- Step A: polyG = 0 at defined non-vertical pairs (distinct form), via
+    -- polyG_zero_at_defined_distinctRCons_betaCanonical + finCongr to convert
+    -- distinctRCons / distinctMCons to distinctR / distinctM'.
+    have hAt_def_distinct :
+        ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+          A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+          logDerivCheckFnDefined E msg.toD stmt.target
+            (baseAt E stmt msg hkm) A₀ A₁ →
+          polyG E (zerosAt E msg.toD)
+            (fun k' => ((multAt E (betaCanonical E msg.toD) msg.toD k' : ℕ) : ZMod E.q))
+            (distinctRCons E stmt msg hkm) (distinctMCons E stmt msg hkm)
+            A₀ A₁ = 0 :=
+      fun A₀ A₁ hA₀ hA₁ hNV hDef =>
+        polyG_zero_at_defined_distinctRCons_betaCanonical_of_hAllZero_and_hRat E
+          stmt msg hkm _hDnz gd _hRat _hAllZero A₀ A₁ hA₀ hA₁ hNV hDef
+    -- Step B: convert distinctRCons / distinctMCons to distinctR / distinctM'
+    -- via polyG_reindex (composes with finCongr).
+    -- polyG_reindex says: polyG over R∘e = polyG over R, for any equiv e on Fin.
+    -- distinctR = distinctRCons ∘ finCongr (Nat.add_comm 1 _).
+    have hAt_def :
+        ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+          A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+          logDerivCheckFnDefined E msg.toD stmt.target
+            (baseAt E stmt msg hkm) A₀ A₁ →
+          polyG E (zerosAt E msg.toD)
+            (fun k' => ((multAt E (betaCanonical E msg.toD) msg.toD k' : ℕ) : ZMod E.q))
+            (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
+            A₀ A₁ = 0 := by
+      intro A₀ A₁ hA₀ hA₁ hNV hDef
+      have h := hAt_def_distinct A₀ A₁ hA₀ hA₁ hNV hDef
+      unfold distinctR distinctM'
+      rw [polyG_reindex]
+      exact h
+    -- Step C: density extension via polyG_zero_on_nonvertical_of_defined.
+    -- Per-A₀ density: # defined non-vert A₁ > 2 * resultantX_polyGPoly.natDegree.
+    -- Bound on bad A₁'s: from internal proof in ExtractorBridge.lean (line 2972),
+    -- # non-defined ≤ 18 * D.degE + 10 * stmt.k + 112.
+    have hDensity : ∀ A₀ ∈ E.points,
+        (E.points.filter (fun A₁ => A₀.1 ≠ A₁.1 ∧
+          logDerivCheckFnDefined E msg.toD stmt.target
+            (baseAt E stmt msg hkm) A₀ A₁)).card
+          > 2 * (resultantX E (polyGPoly (E := E) (zerosAt E msg.toD)
+              (fun k' => ((multAt E (betaCanonical E msg.toD) msg.toD k' : ℕ) : ZMod E.q))
+              (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm) A₀)).natDegree := by
+      sorry
+    have hAt_nonvert :
+        ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+          A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+          polyG E (zerosAt E msg.toD)
+            (fun k' => ((multAt E (betaCanonical E msg.toD) msg.toD k' : ℕ) : ZMod E.q))
+            (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
+            A₀ A₁ = 0 :=
+      polyG_zero_on_nonvertical_of_defined E (zerosAt E msg.toD) _ _ _
+        (fun A₀ A₁ => logDerivCheckFnDefined E msg.toD stmt.target
+          (baseAt E stmt msg hkm) A₀ A₁)
+        hAt_def hDensity
+    -- Step D: extend to all E × E via polyGFull_vanishes_on_ExE_of_polyG_zero.
+    exact polyGFull_vanishes_on_ExE_of_polyG_zero E _ _ _ _
+      hAt_nonvert hELargeDkl
   have hELargeThr : E.points.card > 4 * (zerosCard E msg.toD +
         (1 + baseImageCount E stmt msg hkm)) + 2 := by
     -- zerosCard ≤ msg.toD.degE ≤ stmt.degBound, baseImageCount ≤ stmt.k.
@@ -3265,9 +3326,6 @@ private theorem sigma_data_of_gd_support_rational
       apply Nat.mul_le_mul_left
       exact Nat.add_le_add_right _hDeg _
     linarith [_hLargeQ]
-  have hELargeDkl : E.points.card * E.points.card - 2 * E.points.card >
-        18 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) * E.q := by
-    sorry
   exact sigma_matching_from_polyGFull_vanishing E
     (zerosAt E msg.toD)
     (fun k => ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q))
