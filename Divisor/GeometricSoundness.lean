@@ -2561,8 +2561,24 @@ private theorem gd_support_rational_of_hAllZero
         logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
           (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
     gd_support_rational E msg.toD gd := by
+  classical
   let _ := hDnz
-  let _ := gd
+  -- Reduction via Frobenius-fixedness: gd_support_rational ↔ every Q
+  -- in gd.support is fixed by frobGeomPoint (componentwise q-power Frobenius).
+  rw [gd_support_rational_iff_frob_fixed]
+  intro Q hQ
+  -- Suppose for contradiction Q is not Frobenius-fixed: then its
+  -- Frobenius orbit has size ≥ 2 inside gd.support, with constant
+  -- multiplicity (by `mult_frobGeomPoint_eq`). The pooled orbital
+  -- residue contribution to the bar-level chord-sum identity must
+  -- vanish (Galois descent — non-rational orbit summands have no
+  -- rational counterpart on the RHS). Combined with `gd_mult_natCast_ne_zero`
+  -- and the orbit size bound (each |orbit| < q), the pooled multiplicity
+  -- mod q is non-zero, contradicting forced vanishing.
+  --
+  -- Mechanizing this requires the residue specialisation argument from
+  -- Stichtenoth GTM 254 §3 (function-field Galois descent at algebraic
+  -- closure) — see `plan_remaining_residue_match.md`.
   sorry
 
 private theorem geometric_residue_match
