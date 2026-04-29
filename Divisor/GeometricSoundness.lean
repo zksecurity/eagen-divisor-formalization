@@ -880,6 +880,36 @@ private theorem gd_mult_lt_q
     Finset.single_le_sum (f := gd.mult) (fun _ _ => Nat.zero_le _) hQ
   exact lt_of_le_of_lt (hSingle.trans gd.accounting_le_degE) hDeg
 
+/-- For `Q ∈ gd.support` and `D.degE < E.q`, the multiplicity cast to
+`ZMod E.q` is non-zero. Combines `mult_pos_on_support` with `gd_mult_lt_q`. -/
+private theorem gd_mult_natCast_ne_zero
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (hDeg : D.degE < E.q)
+    (Q : GeomPoint E) (hQ : Q ∈ gd.support) :
+    ((gd.mult Q : ℕ) : ZMod E.q) ≠ 0 := by
+  haveI : NeZero E.q := ⟨E.hq_prime.ne_zero⟩
+  rw [Ne, ZMod.natCast_eq_zero_iff]
+  intro hDvd
+  have hPos : 0 < gd.mult Q := gd.mult_pos_on_support Q hQ
+  have hLt : gd.mult Q < E.q := gd_mult_lt_q E D gd hDeg Q hQ
+  exact absurd (Nat.le_of_dvd hPos hDvd) (Nat.not_le.mpr hLt)
+
+/-- The same in `Fqbar E`: `(gd.mult Q : Fqbar E) ≠ 0` when `Q ∈ gd.support`
+and `D.degE < E.q`. -/
+private theorem gd_mult_fqbar_ne_zero
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (hDeg : D.degE < E.q)
+    (Q : GeomPoint E) (hQ : Q ∈ gd.support) :
+    ((gd.mult Q : ℕ) : Fqbar E) ≠ 0 := by
+  haveI : NeZero E.q := ⟨E.hq_prime.ne_zero⟩
+  intro h
+  have h' : ((gd.mult Q : ℕ) : ZMod E.q) ≠ 0 :=
+    gd_mult_natCast_ne_zero E D gd hDeg Q hQ
+  apply h'
+  apply (FaithfulSMul.algebraMap_injective (ZMod E.q) (Fqbar E))
+  rw [map_zero, map_natCast]
+  exact h
+
 /-- **Vieta factorisation of the chord-fiber cubic.** Given two distinct
 chord-fiber points `A₀, A₁ ∈ E.points`, the chord-fiber cubic
 `intersectionPoly E lam (zLambda lam A₀)` factors as
