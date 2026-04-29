@@ -3225,10 +3225,11 @@ private theorem sigma_data_of_gd_support_rational
     exact absurd (Nat.le_of_dvd hPos hDvd) (Nat.not_le.mpr hLt)
   have hELargeDkl : E.points.card * E.points.card - 2 * E.points.card >
         18 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) * E.q := by
-    -- Hasse-Weil + hLargeQ arithmetic. With q ≤ 2n+3 (loose Hasse bound),
-    -- threshold holds for D+K ≤ 20 but fails asymptotically. Tighter
-    -- closure requires q ≤ n + 2*sqrt(q) (sharp Hasse), which is awkward
-    -- in Nat. Mechanizing this is the remaining open arithmetic piece.
+    -- Hasse-Weil + hLargeQ arithmetic. The threshold n²-2n > 18(d+M)q
+    -- requires careful interplay between (n-q)² ≤ 4q (Hasse) and
+    -- the linear hLargeQ. With loose Hasse q ≤ 2n+3, fails for D+K ≥ 21;
+    -- sharp Hasse q ≤ n + 2 + 2*sqrt(n+1) closes it for any D+K but
+    -- the Nat.sqrt mechanization is non-trivial. Open piece.
     sorry
   have hVanishing : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
