@@ -3136,6 +3136,130 @@ private theorem polyG_zero_at_defined_distinctRCons_betaCanonical_of_hAllZero_an
     stmt.target (baseAt E stmt msg hkm) (distinctM'_tail E stmt msg hkm)
     hAllZeroDistinct A₀ A₁ hA₀ hA₁ hNV hDef
 
+/-- **Per-A₀ count of non-defined A₁ pairs.** For A₀ ∈ E.points outside
+zerosFinset and the distinctR positions, the number of A₁ ∈ E.points
+with `¬logDerivCheckFnDefined E D stmt.target baseAt A₀ A₁` is bounded
+linearly in `D.degE + stmt.k`. Extracted from the internal proof in
+`ExtractorBridge.lean`. -/
+private theorem card_logDerivCheckFnDefined_complement_le
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hLargeQ : E.points.card >
+        2 * (5 * (D.degE + stmt.k + 2) + 3) +
+        21 * (D.degE + stmt.k + 2) + 72)
+    (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E D →
+        (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
+            distinctR E stmt msg hkm j ≠ A₀) →
+        denomScaledPoly (E := E) D stmt.target
+          (baseImageCount E stmt msg hkm)
+          (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E ≠ 0)
+    (A₀ : ZMod E.q × ZMod E.q) (hA₀ : A₀ ∈ E.points)
+    (hA₀nz : A₀ ∉ zerosFinset E D)
+    (hA₀nr : ∀ j : Fin (1 + baseImageCount E stmt msg hkm),
+        distinctR E stmt msg hkm j ≠ A₀) :
+    (E.points.filter (fun A₁ =>
+        ¬logDerivCheckFnDefined E D stmt.target
+          (baseAt E stmt msg hkm) A₀ A₁)).card
+      ≤ 18 * D.degE + 10 * stmt.k + 112 := by
+  classical
+  let _ := hDnz
+  set k₀ := baseImageCount E stmt msg hkm with hk₀_def
+  set B₀ := baseAt E stmt msg hkm
+  set P₀ := stmt.target
+  have hBI : baseImageCount E stmt msg hkm ≤ stmt.k := by
+    calc baseImageCount E stmt msg hkm
+        ≤ msg.k := by
+          unfold baseImageCount baseImage
+          exact (Finset.card_image_le).trans
+            (by rw [Finset.card_univ, Fintype.card_fin])
+      _ = stmt.k := hkm.symm
+  by_cases hWit : ∃ A₁ ∈ E.points, A₀.1 ≠ A₁.1 ∧
+      logDerivCheckFnDefined E D P₀ B₀ A₀ A₁
+  · -- Witness exists: use denomScaledPoly + card_zeros_on_E_le.
+    have hNZ := denomScaledPoly_modCurve_ne_zero E D P₀ k₀ B₀ A₀ hWit
+    have hCardBound := card_zeros_on_E_le E
+      (denomScaledPoly (E := E) D P₀ k₀ B₀ A₀) hNZ
+    have hResBound := resultantX_denomScaledPoly_natDegree_le E D P₀ k₀ B₀ A₀
+    have hFilterSubNV : E.points.filter (fun A₁ =>
+          ¬logDerivCheckFnDefined E D P₀ B₀ A₀ A₁ ∧ A₀.1 ≠ A₁.1)
+        ⊆ E.points.filter (fun p =>
+          bivEval (denomScaledPoly (E := E) D P₀ k₀ B₀ A₀) p = 0) := by
+      intro A₁ hA₁
+      simp only [Finset.mem_filter] at hA₁ ⊢
+      refine ⟨hA₁.1, ?_⟩
+      unfold logDerivCheckFnDefined at hA₁
+      push_neg at hA₁
+      rw [bivEval_denomScaledPoly_eq E D P₀ k₀ B₀ A₀ A₁ hA₁.2.2, hA₁.2.1, mul_zero]
+    have hFilterSplit : E.points.filter (fun A₁ =>
+          ¬logDerivCheckFnDefined E D P₀ B₀ A₀ A₁)
+        ⊆ E.points.filter (fun A₁ => A₁.1 = A₀.1) ∪
+          E.points.filter (fun A₁ =>
+            ¬logDerivCheckFnDefined E D P₀ B₀ A₀ A₁ ∧ A₀.1 ≠ A₁.1) := by
+      intro A₁ hA₁
+      simp only [Finset.mem_filter, Finset.mem_union] at hA₁ ⊢
+      by_cases h : A₀.1 = A₁.1
+      · left; exact ⟨hA₁.1, h.symm⟩
+      · right; exact ⟨hA₁.1, hA₁.2, h⟩
+    calc (E.points.filter (fun A₁ =>
+            ¬logDerivCheckFnDefined E D P₀ B₀ A₀ A₁)).card
+        ≤ _ := Finset.card_le_card hFilterSplit
+      _ ≤ (E.points.filter (fun A₁ => A₁.1 = A₀.1)).card +
+          (E.points.filter (fun A₁ =>
+            ¬logDerivCheckFnDefined E D P₀ B₀ A₀ A₁ ∧ A₀.1 ≠ A₁.1)).card :=
+          Finset.card_union_le _ _
+      _ ≤ 2 + (E.points.filter (fun p =>
+            bivEval (denomScaledPoly (E := E) D P₀ k₀ B₀ A₀) p = 0)).card :=
+          Nat.add_le_add (card_points_with_fst_eq_le E A₀.1)
+            (Finset.card_le_card hFilterSubNV)
+      _ ≤ 2 + 2 * (resultantX E
+            (denomScaledPoly (E := E) D P₀ k₀ B₀ A₀)).natDegree :=
+          Nat.add_le_add_left hCardBound 2
+      _ ≤ 2 + 2 * (9 * D.degE + 5 * k₀ + 55) :=
+          Nat.add_le_add_left (Nat.mul_le_mul_left 2 hResBound) 2
+      _ ≤ 18 * D.degE + 10 * stmt.k + 112 := by
+          have := hBI; omega
+  · -- No defined witness: derive contradiction from hLargeQ.
+    push_neg at hWit
+    exfalso
+    have hAllZeroBiv : ∀ A₁ ∈ E.points, A₀.1 ≠ A₁.1 →
+        bivEval (denomScaledPoly (E := E) D P₀ k₀ B₀ A₀) A₁ = 0 := by
+      intro A₁ hA₁mem hNV
+      rw [bivEval_denomScaledPoly_eq E D P₀ k₀ B₀ A₀ A₁ hNV]
+      have hND := hWit A₁ hA₁mem hNV
+      unfold logDerivCheckFnDefined at hND
+      push_neg at hND
+      rw [hND]; ring
+    have hNZ : denomScaledPoly (E := E) D P₀ k₀ B₀ A₀ %ₘ curveEqPoly E ≠ 0 :=
+      hDenomNZ A₀ hA₀ hA₀nz hA₀nr
+    have hCardBound := card_zeros_on_E_le E
+      (denomScaledPoly (E := E) D P₀ k₀ B₀ A₀) hNZ
+    have hResBound := resultantX_denomScaledPoly_natDegree_le E D P₀ k₀ B₀ A₀
+    have hNVsub : E.points.filter (fun A₁ => A₀.1 ≠ A₁.1)
+        ⊆ E.points.filter (fun p =>
+          bivEval (denomScaledPoly (E := E) D P₀ k₀ B₀ A₀) p = 0) := by
+      intro A₁ hA₁
+      simp only [Finset.mem_filter] at hA₁ ⊢
+      exact ⟨hA₁.1, hAllZeroBiv A₁ hA₁.1 hA₁.2⟩
+    have hNVcard : E.points.card - 2 ≤
+        (E.points.filter (fun A₁ => A₀.1 ≠ A₁.1)).card := by
+      have hCompl : (E.points.filter (fun A₁ => A₁.1 = A₀.1)).card +
+          (E.points.filter (fun A₁ => ¬A₁.1 = A₀.1)).card =
+          E.points.card :=
+        Finset.filter_card_add_filter_neg_card_eq_card (s := E.points)
+          (p := fun A₁ => A₁.1 = A₀.1)
+      have hVertCard := card_points_with_fst_eq_le E A₀.1
+      have hEq : E.points.filter (fun A₁ => A₀.1 ≠ A₁.1) =
+          E.points.filter (fun A₁ => ¬A₁.1 = A₀.1) := by
+        ext x; simp [ne_comm]
+      rw [hEq]; omega
+    have hUB : (E.points.filter (fun A₁ => A₀.1 ≠ A₁.1)).card
+        ≤ 2 * (9 * D.degE + 5 * k₀ + 55) :=
+      le_trans (Finset.card_le_card hNVsub)
+        (le_trans hCardBound (Nat.mul_le_mul_left 2 hResBound))
+    have hSizeBound : E.points.card ≤ 2 * (9 * D.degE + 5 * k₀ + 55) + 2 := by omega
+    have := hBI; omega
+
 /-! ### Residue-matching extraction of `splitsOnE` and σ-data
 
 Two private helpers compose into `geometric_residue_match`:
