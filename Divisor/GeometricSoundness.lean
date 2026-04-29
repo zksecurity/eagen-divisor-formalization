@@ -773,6 +773,46 @@ theorem prod_X_sub_C_zLambdaBar_logDeriv_at_nonroot
   have hSum := geom_summand_eq_full_prod_div E D gd lam μ hQ (hNonRoot Q hQ)
   linear_combination hSum
 
+/-- **Vieta factorisation of the chord-fiber cubic.** Given two distinct
+chord-fiber points `A₀, A₁ ∈ E.points`, the chord-fiber cubic
+`intersectionPoly E lam (zLambda lam A₀)` factors as
+`(X − A₀.1)(X − A₁.1)(X − chordX₂ A₀ A₁)` over `(ZMod E.q)[X]`. Direct
+consequence of Vieta + the existing `chord_x_pairwise_sum` and
+`chord_x_triple_product` identities. -/
+private theorem intersectionPoly_factorisation
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1) :
+    intersectionPoly E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2)
+        (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀)
+      = (X - C A₀.1) * (X - C A₁.1) * (X - C (chordX₂ A₀ A₁)) := by
+  have he₂ := chord_x_pairwise_sum E A₀ A₁ hA₀ hA₁ hNV
+  have he₃ := chord_x_triple_product E A₀ A₁ hA₀ hA₁ hNV
+  simp only [] at he₂ he₃
+  -- Expand `(X − C α)(X − C β)(X − C γ)` symbolically.
+  set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
+  set mu : ZMod E.q := A₀.2 - lam * A₀.1
+  set x₂ : ZMod E.q := lam ^ 2 - A₀.1 - A₁.1
+  have hChordX₂_eq : chordX₂ A₀ A₁ = x₂ := rfl
+  have hMu_eq : zLambda E lam A₀ = mu := rfl
+  rw [hChordX₂_eq, hMu_eq]
+  unfold intersectionPoly
+  have hKey :
+      (X - C A₀.1) * (X - C A₁.1) * (X - C x₂)
+        = X ^ 3 - C (A₀.1 + A₁.1 + x₂) * X ^ 2
+            + C (A₀.1 * A₁.1 + A₀.1 * x₂ + A₁.1 * x₂) * X
+            - C (A₀.1 * A₁.1 * x₂) := by
+    simp only [Polynomial.C_add, Polynomial.C_mul]
+    ring
+  rw [hKey]
+  -- Substitute Vieta identities.
+  have hSum : A₀.1 + A₁.1 + x₂ = lam ^ 2 := by show A₀.1 + A₁.1 + (lam^2 - A₀.1 - A₁.1) = _; ring
+  rw [hSum]
+  rw [show A₀.1 * A₁.1 + A₀.1 * x₂ + A₁.1 * x₂ = E.curveA - 2 * lam * mu from he₂]
+  rw [show A₀.1 * A₁.1 * x₂ = mu ^ 2 - E.curveB from he₃]
+  -- Match: X³ - C lam² X² + C(A - 2λμ) X − C(μ² − B) = X³ - C lam² X² + C(A - 2λμ) X + C(B − μ²)
+  rw [show E.curveB - mu ^ 2 = -(mu ^ 2 - E.curveB) from by ring, Polynomial.C_neg]
+  ring
+
 /--
 Bezout-style helper: under the rational `logDerivCheckFnDefined`
 hypothesis, no `Q ∈ gd.support` lies on the chord through `(A₀, A₁)`.
