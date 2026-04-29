@@ -2584,6 +2584,34 @@ private theorem geom_residue_sum_zero_of_hAllZero
     · exact absurd hPR hProdR_ne
   · exact hRes
 
+/-- **Re-indexed rational residue identity at defined non-vertical chords.**
+Under `hAllZero` + `gd_support_rational`, the bar-level residue sum re-indexes
+to a sum over `zerosFinset E D` with `rationalMultAt` weights, plus the
+existing rational sum, and vanishes at every defined non-vertical rational
+pair. -/
+private theorem geom_residue_sum_zero_re_indexed_of_hAllZero
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) (hRat : gd_support_rational E D gd)
+    (P : ZMod E.q × ZMod E.q) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E D P B A₀ A₁ →
+      logDerivCheckFn E D P k B m A₀ A₁ = 0)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1)
+    (hDef : logDerivCheckFnDefined E D P B A₀ A₁) :
+    (∑ P' ∈ zerosFinset E D, ((rationalMultAt E D gd P' : ℕ) : Fqbar E) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+          (lineEvalNumAtFullBarOfFq E P'))⁻¹)
+    + (∑ j : Fin (k + 1),
+        fqToBar E ((Fin.cons (-1) (fun j => -m j) : Fin (k + 1) → ZMod E.q) j) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+          (lineEvalNumAtFullBarOfFq E
+            ((Fin.cons (P.1, -P.2) B : Fin (k + 1) → ZMod E.q × ZMod E.q) j)))⁻¹) = 0 := by
+  rw [← geom_residue_sum_re_index_under_rational E D hDnz gd hRat A₀ A₁]
+  exact geom_residue_sum_zero_of_hAllZero E D gd P B m hAllZero A₀ A₁ hA₀ hA₁ hNV hDef
+
 /-- The sum of geometric multiplicities equals the natDegree of `normPoly`. -/
 private theorem gd_mult_sum_eq_natDegree
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
