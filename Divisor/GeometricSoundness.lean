@@ -805,6 +805,7 @@ theorem chord_fiber_product_bar_factorisation
             (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q) := by
   sorry
 
+set_option maxHeartbeats 800000 in
 /--
 Bezout-style helper: under the rational `logDerivCheckFnDefined`
 hypothesis, no `Q ∈ gd.support` lies on the chord through `(A₀, A₁)`.
@@ -826,12 +827,148 @@ private theorem geom_support_avoids_chord
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
     (B : Fin k → ZMod E.q × ZMod E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
-    (_hA₀ : A₀ ∈ E.points) (_hA₁ : A₁ ∈ E.points) (_hNV : A₀.1 ≠ A₁.1)
-    (_hDef : logDerivCheckFnDefined E D P B A₀ A₁) :
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1)
+    (hDef : logDerivCheckFnDefined E D P B A₀ A₁) :
     ∀ Q ∈ gd.support,
       fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀)
         - zLambdaBar E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) Q ≠ 0 := by
-  sorry
+  classical
+  intro Q hQ hZero
+  set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLam
+  set μ := zLambda E lam A₀ with hMu_def
+  unfold logDerivCheckFnDefined logDerivCheckFnDenom at hDef
+  have hProdNZ := hDef
+  have hLeftOf7 := left_ne_zero_of_mul (left_ne_zero_of_mul hProdNZ)
+  have hLeftOf6 := left_ne_zero_of_mul hLeftOf7
+  have hLeftOf5 := left_ne_zero_of_mul hLeftOf6
+  have hLeftOf4 := left_ne_zero_of_mul hLeftOf5
+  have hLeftOf3 := left_ne_zero_of_mul hLeftOf4
+  have h3 : D.eval (lam ^ 2 - A₀.1 - A₁.1)
+              (lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1)) ≠ 0 :=
+    right_ne_zero_of_mul hLeftOf4
+  have h2 : D.eval A₁.1 A₁.2 ≠ 0 := right_ne_zero_of_mul hLeftOf3
+  have h1 : D.eval A₀.1 A₀.2 ≠ 0 := left_ne_zero_of_mul hLeftOf3
+  have hChord : Q.y = fqToBar E lam * Q.x + fqToBar E μ := by
+    have h : zLambdaBar E lam Q = fqToBar E μ := by
+      linear_combination -hZero
+    unfold zLambdaBar at h
+    linear_combination h
+  have hOn := Q.onCurve
+  have hRoot : eval Q.x
+        (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+          (intersectionPoly E lam μ)) = 0 := by
+    rw [show (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+          (intersectionPoly E lam μ))
+        = X ^ 3 - C (fqToBar E (lam ^ 2)) * X ^ 2
+            + C (fqToBar E (E.curveA - 2 * lam * μ)) * X
+            + C (fqToBar E (E.curveB - μ ^ 2)) from by
+      unfold intersectionPoly fqToBar
+      simp [Polynomial.map_sub, Polynomial.map_add, Polynomial.map_mul,
+            Polynomial.map_pow, Polynomial.map_X, Polynomial.map_C]]
+    rw [eval_add, eval_add, eval_sub, eval_pow, eval_X, eval_mul, eval_C, eval_C,
+      eval_pow, eval_X, eval_mul, eval_C, eval_X]
+    have hOn' : Q.y ^ 2 = Q.x ^ 3 + fqToBar E E.curveA * Q.x + fqToBar E E.curveB := hOn
+    rw [hChord] at hOn'
+    have hfqLam : fqToBar E (lam ^ 2) = (fqToBar E lam) ^ 2 := by
+      unfold fqToBar
+      rw [map_pow]
+    have hfqMu : fqToBar E (μ ^ 2) = (fqToBar E μ) ^ 2 := by
+      unfold fqToBar
+      rw [map_pow]
+    have hfqAm : fqToBar E (E.curveA - 2 * lam * μ)
+        = fqToBar E E.curveA - 2 * fqToBar E lam * fqToBar E μ := by
+      unfold fqToBar
+      rw [map_sub, map_mul, map_mul]
+      have : (algebraMap (ZMod E.q) (Fqbar E)) 2 = 2 := by
+        show (algebraMap (ZMod E.q) (Fqbar E)) (2 : ZMod E.q) = (2 : Fqbar E)
+        rw [show (2 : ZMod E.q) = ((2 : ℕ) : ZMod E.q) from by norm_cast]
+        rw [map_natCast]
+        rfl
+      rw [this]
+    have hfqBm : fqToBar E (E.curveB - μ ^ 2)
+        = fqToBar E E.curveB - (fqToBar E μ) ^ 2 := by
+      unfold fqToBar
+      rw [map_sub, map_pow]
+    rw [hfqLam, hfqAm, hfqBm]
+    linear_combination -hOn'
+  have hFact := intersectionPoly_factorisation E A₀ A₁ hA₀ hA₁ hNV
+  rw [show μ = zLambda E lam A₀ from rfl] at hRoot
+  rw [hFact] at hRoot
+  rw [show Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+        ((X - C A₀.1) * (X - C A₁.1) * (X - C (chordX₂ A₀ A₁)))
+      = (X - C (fqToBar E A₀.1)) * (X - C (fqToBar E A₁.1)) *
+          (X - C (fqToBar E (chordX₂ A₀ A₁))) from by
+    simp [Polynomial.map_mul, Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C, fqToBar]]
+    at hRoot
+  rw [eval_mul, eval_mul, eval_sub, eval_X, eval_C,
+      eval_sub, eval_X, eval_C, eval_sub, eval_X, eval_C] at hRoot
+  have geomEvalRewrite : ∀ p₁ p₂ : ZMod E.q, Q.x = fqToBar E p₁ → Q.y = fqToBar E p₂ →
+      D.geomEval E Q = fqToBar E (D.eval p₁ p₂) := by
+    intro p₁ p₂ hx hy
+    show D.a.eval₂ (algebraMap (ZMod E.q) (Fqbar E)) Q.x
+        - D.b.eval₂ (algebraMap (ZMod E.q) (Fqbar E)) Q.x * Q.y
+        = algebraMap (ZMod E.q) (Fqbar E) (D.eval p₁ p₂)
+    rw [hx, hy]
+    show D.a.eval₂ (algebraMap (ZMod E.q) (Fqbar E))
+            (algebraMap (ZMod E.q) (Fqbar E) p₁)
+        - D.b.eval₂ (algebraMap (ZMod E.q) (Fqbar E))
+            (algebraMap (ZMod E.q) (Fqbar E) p₁) *
+              algebraMap (ZMod E.q) (Fqbar E) p₂
+        = algebraMap (ZMod E.q) (Fqbar E) (D.eval p₁ p₂)
+    rw [Polynomial.eval₂_at_apply, Polynomial.eval₂_at_apply]
+    unfold CoordRingElt.eval
+    rw [map_sub, map_mul]
+  have hZeroQ : D.geomEval E Q = 0 := gd.support_eval_zero Q hQ
+  rcases mul_eq_zero.mp hRoot with hL | hR
+  rcases mul_eq_zero.mp hL with h₀ | h₁
+  · have hQx : Q.x = fqToBar E A₀.1 := by linear_combination h₀
+    have hQy : Q.y = fqToBar E A₀.2 := by
+      rw [hChord, hQx]
+      show fqToBar E lam * fqToBar E A₀.1 + fqToBar E μ = fqToBar E A₀.2
+      have hRing : lam * A₀.1 + (A₀.2 - lam * A₀.1) = A₀.2 := by ring
+      have h1' : fqToBar E lam * fqToBar E A₀.1 + fqToBar E μ
+          = fqToBar E (lam * A₀.1 + μ) := by
+        unfold fqToBar
+        rw [map_add, map_mul]
+      rw [h1', show μ = A₀.2 - lam * A₀.1 from rfl, hRing]
+    have hGeomQ := geomEvalRewrite A₀.1 A₀.2 hQx hQy
+    rw [hGeomQ] at hZeroQ
+    exact h1 ((fqToBar_eq_zero_iff E _).mp hZeroQ)
+  · have hQx : Q.x = fqToBar E A₁.1 := by linear_combination h₁
+    have hSlope : lam * (A₁.1 - A₀.1) = A₁.2 - A₀.2 := by
+      rw [hLam, slopeOf]
+      rw [mul_assoc, inv_mul_cancel₀ (sub_ne_zero.mpr (Ne.symm hNV)), mul_one]
+    have hQy : Q.y = fqToBar E A₁.2 := by
+      rw [hChord, hQx]
+      have h1' : fqToBar E lam * fqToBar E A₁.1 + fqToBar E μ
+          = fqToBar E (lam * A₁.1 + μ) := by
+        unfold fqToBar
+        rw [map_add, map_mul]
+      have hRing : lam * A₁.1 + (A₀.2 - lam * A₀.1) = A₁.2 := by
+        linear_combination hSlope
+      rw [h1', show μ = A₀.2 - lam * A₀.1 from rfl, hRing]
+    have hGeomQ := geomEvalRewrite A₁.1 A₁.2 hQx hQy
+    rw [hGeomQ] at hZeroQ
+    exact h2 ((fqToBar_eq_zero_iff E _).mp hZeroQ)
+  · have hQx : Q.x = fqToBar E (lam ^ 2 - A₀.1 - A₁.1) := by
+      have h := hR
+      have hChordX₂eq : chordX₂ A₀ A₁ = lam ^ 2 - A₀.1 - A₁.1 := rfl
+      rw [hChordX₂eq] at h
+      linear_combination h
+    have hQy : Q.y = fqToBar E
+        (lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1)) := by
+      rw [hChord, hQx]
+      have h1' : fqToBar E lam * fqToBar E (lam ^ 2 - A₀.1 - A₁.1) + fqToBar E μ
+          = fqToBar E (lam * (lam ^ 2 - A₀.1 - A₁.1) + μ) := by
+        unfold fqToBar
+        rw [map_add, map_mul]
+      rw [h1', show μ = A₀.2 - lam * A₀.1 from rfl]
+    have hGeomQ := geomEvalRewrite
+      (lam ^ 2 - A₀.1 - A₁.1)
+      (lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
+      hQx hQy
+    rw [hGeomQ] at hZeroQ
+    exact h3 ((fqToBar_eq_zero_iff E _).mp hZeroQ)
 
 /--
 Geometric trace/log-derivative identity on one nonvertical chord.
