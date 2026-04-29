@@ -929,9 +929,71 @@ theorem geometric_chord_sum_eq_residue_sum
   -- Rational chord-sum identity (axiom).
   have hRatLHS := chord_sum_eq_chord_fiber_product_logDeriv E D A₀ A₁ hA₀ hA₁ hNV
     hDnz h1 h2 h3 hDen hCfpRatNe
-  -- Apply fqToBar to both sides; lift LHS rational division to Fqbar.
-  -- Strategy: rewrite using rational identity, then transport to Fqbar via algebra map.
-  sorry
+  -- Lift `eval μ p = ...` to Fqbar via the algebra map.
+  have hEvalMap : ∀ p : (ZMod E.q)[X],
+      eval (fqToBar E μ) (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E)) p)
+        = fqToBar E (eval μ p) := by
+    intro p
+    simp [fqToBar, Polynomial.eval_map, Polynomial.eval₂_at_apply]
+  have hDerivMap : Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+        (derivative (chord_fiber_product E lam D))
+      = derivative (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+          (chord_fiber_product E lam D)) := by
+    rw [Polynomial.derivative_map]
+  -- LHS_rat = N_rat / D_rat with N_rat = eval μ (derivative cfp), D_rat = eval μ cfp.
+  -- Apply fqToBar to the rational identity.
+  have hRatLHSBar : fqToBar E
+        (logDerivTerm E D E.curveA lam A₀
+          + logDerivTerm E D E.curveA lam A₁
+          + logDerivTerm E D E.curveA lam
+              (lam ^ 2 - A₀.1 - A₁.1,
+               lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1)))
+      = fqToBar E (eval μ (derivative (chord_fiber_product E lam D)))
+          / fqToBar E ((chord_fiber_product E lam D).eval μ) := by
+    rw [hRatLHS]
+    rw [show fqToBar E
+        (eval μ (derivative (chord_fiber_product E lam D))
+          / (chord_fiber_product E lam D).eval μ)
+        = fqToBar E (eval μ (derivative (chord_fiber_product E lam D)))
+            / fqToBar E ((chord_fiber_product E lam D).eval μ) from ?_]
+    show fqToBar E (eval μ (derivative (chord_fiber_product E lam D))
+        / (chord_fiber_product E lam D).eval μ) = _
+    rw [show fqToBar E = (algebraMap (ZMod E.q) (Fqbar E) :
+            ZMod E.q →+* Fqbar E) from rfl, map_div₀]
+  -- Unfold chordX₂/chordY₂ in the goal and re-fold lam to match hRatLHSBar.
+  show fqToBar E
+        (logDerivTerm E D E.curveA lam A₀
+          + logDerivTerm E D E.curveA lam A₁
+          + logDerivTerm E D E.curveA lam
+              (lam ^ 2 - A₀.1 - A₁.1,
+               lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1)))
+      = -(fqToBar E (A₁.1 - A₀.1)) * ∑ Q ∈ gd.support,
+          ((gd.mult Q : ℕ) : Fqbar E) *
+            (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+              (lineEvalNumAtFullBar E Q))⁻¹
+  -- Express the Fqbar-side via Polynomial.map + factorisation.
+  rw [hRatLHSBar]
+  rw [← hEvalMap, ← hEvalMap, hDerivMap]
+  -- Substitute the factorisation `Polynomial.map _ cfp = C c * Pol`.
+  rw [hcfp_eq]
+  -- Distribute derivative: `derivative (C c * Pol) = C c * derivative Pol`.
+  rw [Polynomial.derivative_C_mul]
+  -- Evaluate `eval μ_bar (C c * derivative Pol)` and `eval μ_bar (C c * Pol)`.
+  rw [eval_mul, eval_mul, eval_C]
+  -- Cancel the `c` constant from numerator and denominator.
+  rw [mul_div_mul_left _ _ hc_ne]
+  -- Use Step B (PFE).
+  rw [prod_X_sub_C_zLambdaBar_logDeriv_at_nonroot E D gd lam (fqToBar E μ) hAvoid]
+  -- (Pol_eval * S) / Pol_eval = S, since Pol_eval ≠ 0.
+  rw [mul_comm (eval (fqToBar E μ) Pol) _, mul_div_assoc, div_self hPolNe, mul_one]
+  -- Convert (μ_bar - zLambdaBar Q)⁻¹ to (line factor)⁻¹ form via hLineRewrite.
+  rw [Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro Q hQ
+  rw [hLineRewrite Q hQ]
+  -- Goal: (mult Q) · (μ_bar - zLambdaBar Q)⁻¹
+  --     = -fqToBar(A₁.1-A₀.1) · ((mult Q) · (-(fqToBar(A₁.1-A₀.1))⁻¹ · (μ_bar - zLambdaBar Q)⁻¹))
+  field_simp
 
 /--
 Core geometric chord-sum identity at rational challenge points.
