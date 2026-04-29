@@ -1050,32 +1050,142 @@ theorem log_deriv_sz_paper_tight_geometric
           (3 * D.degE + 9 * k + 71) * E.points.card :=
         Nat.add_le_add hCoreBound hUndefBound
 
-/-
-Geometric all-zero branch: if the verifier discrepancy vanishes on every
-defined nonvertical rational challenge, then the extractor succeeds and
-returns a valid dlog witness.
+/-! ### Geometric residue matching
+
+The all-zero branch of the soundness proof follows the geometric residue
+path. The key intermediate object is the descended polynomial
+`geomPolyGFull` over `F_q`: by `geomPolyGFull_eval_eq_logDerivCheckFn`,
+it vanishes on every defined nonvertical rational pair where
+`logDerivCheckFn` vanishes.
+
+For each rational zero `P` of `D`, the lifted geometric point
+`Q_P = (fqToBar P.1, fqToBar P.2)` lies in `gd.support` because the
+geometric support contains every geometric zero. Specializing
+`geomPolyGFullBar` at `A₀ := P` with a carefully chosen rational `A₁`
+isolates the `Q_P` summand, and residue matching should match `Q_P`
+against one of the distinguished `distinctR` indices. Frobenius stability
+and rationality of the prescribed divisor then rule out non-rational
+support, giving `splitsOnE E D`.
+-/
+
+/-! #### Phase 1 helpers -/
+
+/-- For each rational zero `P` of `D`, the lifted geometric point is a
+geometric zero of `D`. -/
+private theorem geomEval_lift_eq_fqToBar
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (hOn : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB) :
+    D.geomEval E (⟨fqToBar E P.1, fqToBar E P.2, by
+        unfold fqToBar
+        rw [← map_pow, ← map_pow, ← map_mul, ← map_add, ← map_add]
+        exact congrArg _ hOn⟩ : GeomPoint E) =
+      fqToBar E (D.eval P.1 P.2) := by
+  unfold CoordRingElt.geomEval CoordRingElt.eval fqToBar
+  simp only [Polynomial.eval₂_at_apply]
+  rw [map_sub, map_mul]
+
+/-- For each rational zero `P` of `D`, the corresponding geometric point
+lies in `gd.support`. -/
+private theorem support_lift_of_rational_zero
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (P : ZMod E.q × ZMod E.q) (hPpts : P ∈ E.points)
+    (hPzero : D.eval P.1 P.2 = 0) :
+    (⟨fqToBar E P.1, fqToBar E P.2, by
+        unfold fqToBar
+        rw [← map_pow, ← map_pow, ← map_mul, ← map_add, ← map_add]
+        exact congrArg _ (E.hOnCurve P hPpts)⟩ : GeomPoint E) ∈ gd.support := by
+  apply gd.eval_zero_mem_support
+  rw [geomEval_lift_eq_fqToBar E D P (E.hOnCurve P hPpts), hPzero]
+  simp [fqToBar]
+
+/-- Every multiplicity in the geometric divisor is strictly less than `E.q`
+when `D.degE < E.q`. -/
+private theorem gd_mult_lt_q
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (hDeg : D.degE < E.q)
+    (Q : GeomPoint E) (hQ : Q ∈ gd.support) :
+    gd.mult Q < E.q := by
+  have hSingle : gd.mult Q ≤ ∑ Q' ∈ gd.support, gd.mult Q' :=
+    Finset.single_le_sum (f := gd.mult) (fun _ _ => Nat.zero_le _) hQ
+  exact lt_of_le_of_lt (hSingle.trans gd.accounting_le_degE) hDeg
+
+/-- The descended geometric numerator vanishes at every defined nonvertical
+rational pair on which `logDerivCheckFn` vanishes. -/
+private theorem geomPolyGFull_zero_at_defined_pair
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (P : ZMod E.q × ZMod E.q) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1)
+    (hDef : logDerivCheckFnDefined E D P B A₀ A₁)
+    (hCheck : logDerivCheckFn E D P k B m A₀ A₁ = 0) :
+    bivEval₂ (geomPolyGFull E D gd
+        (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)))
+        A₀ A₁ = 0 :=
+  (geomPolyGFull_eval_eq_logDerivCheckFn E D gd P B m A₀ A₁ hA₀ hA₁ hNV hDef).mpr
+    hCheck
+
+/--
+Residue matching extraction of `splitsOnE` together with the σ-matching
+output, given the verifier's `logDerivCheckFn` vanishes on every defined
+nonvertical pair.
 
 PROVIDED SOLUTION
-Use geometric divisor data for `msg.toD`. The all-zero hypothesis implies
-the descended geometric numerator vanishes on all rational nonvertical
-pairs. The DKL/Lang-Weil threshold promotes this to the polynomial
-identity needed for residue matching. Match the geometric divisor support
-against the prescribed rational divisor `(-P) + Σ m_j B_j`; Frobenius
-stability and the fact that the right side is rational force the matched
-support to be rational where it contributes to the extractor. Then reuse
-the existing grouped extractor algebra, but with multiplicities supplied
-by the geometric divisor data rather than `zerosAt`/`β_fun`.
+Form the descended geometric numerator
+`G = geomPolyGFull E msg.toD gd (Fin.cons (-P_aff) baseAt) ...`.
+By `geomPolyGFull_eval_eq_logDerivCheckFn` and `hAllZero`,
+`bivEval₂ G A₀ A₁ = 0` on every defined nonvertical rational pair.
+Combine this with the undefined-pair count bound and the bivariate-zero
+bound to force the residue-matching identity. Then specialize at lifted
+rational zeros, use `support_lift_of_rational_zero` and `gd_mult_lt_q`,
+construct the σ map, and use Frobenius stability to rule out non-rational
+geometric support.
 -/
-/--
-Helper: derive the `distinctSigma_exists` output from geometric residue
-specialisation, without the old `hValidPairsLarge`/`splitsOnE` route.
+private theorem geometric_residue_match
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)
+    (_hd2 : 2 ≤ stmt.degBound)
+    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
+    (hkm : stmt.k = msg.k)
+    (_hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
+    (_hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
+        (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
+            distinctR E stmt msg hkm j ≠ A₀) →
+        denomScaledPoly (E := E) msg.toD stmt.target
+          (baseImageCount E stmt msg hkm)
+          (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E ≠ 0)
+    (_hTargetOnE : stmt.target ∈ E.points)
+    (_hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (_hLargeQ : E.points.card >
+        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (_hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (_hAllZero :
+      ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+        A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+        logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
+        logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+          (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
+    splitsOnE E msg.toD ∧
+    ∃ (σ : Fin (zerosCard E msg.toD) ↪
+            Fin (1 + baseImageCount E stmt msg hkm)),
+      (∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ k)) ∧
+      (∀ k, ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q)
+            + distinctM' E stmt msg hkm (σ k) = 0) ∧
+      (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) := by
+  classical
+  have hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
+    admSet_implies_toD_nonzero stmt msg hAdm
+  have _hDegLt : msg.toD.degE < E.q := lt_of_le_of_lt hDeg hd
+  obtain ⟨_gd, _⟩ := exists_geometricDivisorData E msg.toD hDnz
+  sorry
 
-The descended geometric numerator `geomPolyGFull` has bounded total
-degree. The all-zero hypothesis, combined with the undefined-pair bound,
-should force this numerator to be identically zero by the DKL/Lang-Weil
-zero bound. Residue specialisation over `F_qbar` then matches the
-geometric zero divisor against the prescribed rational divisor
-`(-P) + Σ m_j B_j`.
+/--
+Geometric σ-matching theorem used by
+`extractor_of_logDerivCheck_all_zero_geometric_general`.
+
+The proof is a thin wrapper around `geometric_residue_match`; the
+mathematical residue-specialization work is isolated there.
 -/
 private theorem geometric_sigma_matching
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
@@ -1107,8 +1217,9 @@ private theorem geometric_sigma_matching
       (∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ k)) ∧
       (∀ k, ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q)
             + distinctM' E stmt msg hkm (σ k) = 0) ∧
-      (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) := by
-  sorry
+      (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) :=
+  geometric_residue_match E stmt hd hd2 msg hDeg hkm hSmooth hDenomNZ
+    hTargetOnE hBasesOnE hLargeQ hAdm hNoNegP hAllZero
 
 set_option maxHeartbeats 800000 in
 theorem extractor_of_logDerivCheck_all_zero_geometric_general
