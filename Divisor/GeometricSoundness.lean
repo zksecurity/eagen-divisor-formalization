@@ -2123,6 +2123,63 @@ private theorem gd_support_eq_zerosFinset_image
       (FaithfulSMul.algebraMap_injective (ZMod E.q) (Fqbar E)) h2
     exact Prod.ext e1 e2
 
+/-- Under `gd_support_rational`, the rationalize map sends each
+`Q ∈ gd.support` to a rational zero of `D`. Used for the bijection
+between `gd.support` and `zerosFinset E D`. -/
+private noncomputable def gd_support_rationalize
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) (hRat : gd_support_rational E D gd)
+    {Q : GeomPoint E} (hQ : Q ∈ gd.support) :
+    {P // P ∈ zerosFinset E D ∧ Q.x = fqToBar E P.1 ∧ Q.y = fqToBar E P.2} :=
+  ⟨(gd_support_eq_zerosFinset_image E D hDnz gd hRat Q hQ).choose,
+    (gd_support_eq_zerosFinset_image E D hDnz gd hRat Q hQ).choose_spec.1⟩
+
+/-- Under `gd_support_rational`, the cardinality of `gd.support`
+equals the number of rational zeros of `D`. -/
+private theorem gd_support_card_eq_zerosCard
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) (hRat : gd_support_rational E D gd) :
+    gd.support.card = zerosCard E D := by
+  classical
+  unfold zerosCard
+  let f : (Q : GeomPoint E) → Q ∈ gd.support → ZMod E.q × ZMod E.q :=
+    fun Q hQ => (gd_support_eq_zerosFinset_image E D hDnz gd hRat Q hQ).choose
+  have hSpec : ∀ Q (hQ : Q ∈ gd.support),
+      f Q hQ ∈ zerosFinset E D ∧ Q.x = fqToBar E (f Q hQ).1 ∧ Q.y = fqToBar E (f Q hQ).2 :=
+    fun Q hQ => (gd_support_eq_zerosFinset_image E D hDnz gd hRat Q hQ).choose_spec.1
+  have hUniq : ∀ Q (hQ : Q ∈ gd.support) P,
+      P ∈ zerosFinset E D ∧ Q.x = fqToBar E P.1 ∧ Q.y = fqToBar E P.2 →
+      P = f Q hQ :=
+    fun Q hQ P hP =>
+      (gd_support_eq_zerosFinset_image E D hDnz gd hRat Q hQ).choose_spec.2 P hP
+  refine Finset.card_bij f ?_ ?_ ?_
+  · -- Maps to zerosFinset.
+    intro Q hQ
+    exact (hSpec Q hQ).1
+  · -- Injective.
+    intro Q₁ hQ₁ Q₂ hQ₂ heq
+    have hP₁ := hSpec Q₁ hQ₁
+    have hP₂ := hSpec Q₂ hQ₂
+    have hx : Q₁.x = Q₂.x := by rw [hP₁.2.1, heq, ← hP₂.2.1]
+    have hy : Q₁.y = Q₂.y := by rw [hP₁.2.2, heq, ← hP₂.2.2]
+    exact GeomPoint.mk.injEq .. |>.mpr ⟨hx, hy⟩
+  · -- Surjective onto zerosFinset.
+    intro P hP
+    rw [zerosFinset, zeros, Finset.mem_filter] at hP
+    obtain ⟨hPpts, hPzero⟩ := hP
+    set Q : GeomPoint E := ⟨fqToBar E P.1, fqToBar E P.2, by
+      unfold fqToBar
+      rw [← map_pow, ← map_pow, ← map_mul, ← map_add, ← map_add]
+      exact congrArg _ (E.hOnCurve P hPpts)⟩
+    have hQmem : Q ∈ gd.support :=
+      support_lift_of_rational_zero E D gd P hPpts hPzero
+    refine ⟨Q, hQmem, ?_⟩
+    -- f Q hQmem = P (by uniqueness clause).
+    have hPmem : P ∈ zerosFinset E D := by
+      rw [zerosFinset, zeros, Finset.mem_filter]
+      exact ⟨hPpts, hPzero⟩
+    exact (hUniq Q hQmem P ⟨hPmem, rfl, rfl⟩).symm
+
 /-! ### Residue-matching extraction of `splitsOnE` and σ-data
 
 Two private helpers compose into `geometric_residue_match`:
