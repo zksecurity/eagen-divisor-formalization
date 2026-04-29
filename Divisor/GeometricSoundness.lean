@@ -561,6 +561,24 @@ private lemma fqToBar_bivEval₂_eq_eval_baseChange
   simp at hEval
   exact hEval.symm
 
+/-- Direct evaluation formula for the geometric line factor. -/
+@[simp] theorem lineEvalNumAtFullBar_eval
+    (Q : GeomPoint E) (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q) =
+      (Q.y - fqToBar E A₀.2) * fqToBar E (A₁.1 - A₀.1)
+        - (Q.x - fqToBar E A₀.1) * fqToBar E (A₁.2 - A₀.2) := by
+  unfold lineEvalNumAtFullBar barBivEval₂Fun bivEval₂Fun fqToBar
+  simp
+
+/-- Direct evaluation formula for a base-field line factor after embedding into `F_qbar`. -/
+@[simp] theorem lineEvalNumAtFullBarOfFq_eval
+    (P A₀ A₁ : ZMod E.q × ZMod E.q) :
+    MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E P) =
+      fqToBar E ((P.2 - A₀.2) * (A₁.1 - A₀.1)
+        - (P.1 - A₀.1) * (A₁.2 - A₀.2)) := by
+  unfold lineEvalNumAtFullBarOfFq barBivEval₂Fun bivEval₂Fun fqToBar
+  simp
+
 /--
 Geometric trace/log-derivative identity on one nonvertical chord.
 
