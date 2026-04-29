@@ -397,6 +397,199 @@ theorem geomLocalOrder_multiplicity_spec
   · exact Nat.le_of_lt_succ (by
       linarith [rootMultiplicity_normPolyBar_ge_twice_common E D hDnz Q.x])
 
+/-! ### Helper lemmas for the fiber accounting proof -/
+
+private theorem normPolyBar_decomp (D : CoordRingElt E.q) :
+    normPolyBar E D =
+      (geomAPoly E D)^2 -
+        (geomBPoly E D)^2 *
+          (Polynomial.X^3 + Polynomial.C (fqToBar E E.curveA) * Polynomial.X +
+            Polynomial.C (fqToBar E E.curveB)) := by
+  have h_normPoly_def :
+      normPoly E D =
+        D.a^2 - D.b^2 *
+          (Polynomial.X^3 + Polynomial.C E.curveA * Polynomial.X +
+            Polynomial.C E.curveB) := by
+    convert normPoly_eq E D
+  unfold normPolyBar geomAPoly geomBPoly
+  simp +decide [h_normPoly_def]
+  exact Or.inl rfl
+
+private theorem normPolyBar_eval_explicit (D : CoordRingElt E.q) (α : Fqbar E) :
+    (normPolyBar E D).eval α =
+      ((geomAPoly E D).eval α)^2 -
+        ((geomBPoly E D).eval α)^2 *
+          (α^3 + fqToBar E E.curveA * α + fqToBar E E.curveB) := by
+  rw [normPolyBar_decomp]
+  simp [eval_sub, eval_pow, eval_mul, eval_add, eval_X, eval_C]
+
+private theorem geomAPoly_factored (D : CoordRingElt E.q) (α : Fqbar E) :
+    geomAPoly E D =
+      (X - C α) ^ commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α
+        * geomATilde E D α := by
+  set k := commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α
+  have hm : ((X - C α : Polynomial (Fqbar E))^k).Monic :=
+    (monic_X_sub_C α).pow _
+  have hdvd : (X - C α)^k ∣ geomAPoly E D :=
+    commonRootFactor_dvd_left E (geomAPoly E D) (geomBPoly E D) α
+  have hmod : geomAPoly E D %ₘ ((X - C α)^k) = 0 :=
+    (Polynomial.modByMonic_eq_zero_iff_dvd hm).mpr hdvd
+  have h := Polynomial.modByMonic_add_div (geomAPoly E D) hm
+  rw [hmod, zero_add] at h
+  show geomAPoly E D = _ * (geomAPoly E D /ₘ ((X - C α)^k))
+  exact h.symm
+
+private theorem geomBPoly_factored (D : CoordRingElt E.q) (α : Fqbar E) :
+    geomBPoly E D =
+      (X - C α) ^ commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α
+        * geomBTilde E D α := by
+  set k := commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α
+  have hm : ((X - C α : Polynomial (Fqbar E))^k).Monic :=
+    (monic_X_sub_C α).pow _
+  have hdvd : (X - C α)^k ∣ geomBPoly E D :=
+    commonRootFactor_dvd_right E (geomAPoly E D) (geomBPoly E D) α
+  have hmod : geomBPoly E D %ₘ ((X - C α)^k) = 0 :=
+    (Polynomial.modByMonic_eq_zero_iff_dvd hm).mpr hdvd
+  have h := Polynomial.modByMonic_add_div (geomBPoly E D) hm
+  rw [hmod, zero_add] at h
+  show geomBPoly E D = _ * (geomBPoly E D /ₘ ((X - C α)^k))
+  exact h.symm
+
+private theorem normPolyBar_factored (D : CoordRingElt E.q) (α : Fqbar E) :
+    normPolyBar E D =
+      (X - C α) ^ (2 * commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α)
+        * ((geomATilde E D α)^2 -
+            (geomBTilde E D α)^2 *
+              (X^3 + C (fqToBar E E.curveA) * X + C (fqToBar E E.curveB))) := by
+  set k := commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α with hk_def
+  have ha : geomAPoly E D = (X - C α)^k * geomATilde E D α := geomAPoly_factored E D α
+  have hb : geomBPoly E D = (X - C α)^k * geomBTilde E D α := geomBPoly_factored E D α
+  rw [normPolyBar_decomp, ha, hb]
+  ring
+
+private theorem rootMultiplicity_normPolyBar_eq_two_k_of_residual_ne_zero
+    (D : CoordRingElt E.q) (_hDnz : ¬ (D.a = 0 ∧ D.b = 0)) (α : Fqbar E)
+    (h_res : ((geomATilde E D α).eval α)^2 -
+              ((geomBTilde E D α).eval α)^2 *
+                (α^3 + fqToBar E E.curveA * α + fqToBar E E.curveB) ≠ 0) :
+    (normPolyBar E D).rootMultiplicity α =
+      2 * commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α := by
+  set k := commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α
+  set R : Polynomial (Fqbar E) := (geomATilde E D α)^2 -
+          (geomBTilde E D α)^2 *
+            (X^3 + C (fqToBar E E.curveA) * X + C (fqToBar E E.curveB))
+  have hR_eval : R.eval α =
+      ((geomATilde E D α).eval α)^2 -
+        ((geomBTilde E D α).eval α)^2 *
+          (α^3 + fqToBar E E.curveA * α + fqToBar E E.curveB) := by
+    simp [R, eval_sub, eval_pow, eval_mul, eval_add, eval_X, eval_C]
+  have hR_ne : R ≠ 0 := by
+    intro hR0
+    apply h_res
+    rw [← hR_eval, hR0, eval_zero]
+  have hR_root_zero : R.rootMultiplicity α = 0 :=
+    Polynomial.rootMultiplicity_eq_zero (by
+      intro h_isRoot
+      apply h_res
+      rw [← hR_eval]
+      exact h_isRoot)
+  have hpow_ne : (X - C α : Polynomial (Fqbar E))^(2 * k) ≠ 0 :=
+    pow_ne_zero _ (X_sub_C_ne_zero α)
+  have hprod_ne : (X - C α : Polynomial (Fqbar E))^(2 * k) * R ≠ 0 :=
+    mul_ne_zero hpow_ne hR_ne
+  rw [normPolyBar_factored E D α]
+  rw [Polynomial.rootMultiplicity_mul hprod_ne]
+  rw [Polynomial.rootMultiplicity_X_sub_C_pow]
+  rw [hR_root_zero, add_zero]
+
+private theorem geomPoint_eq_of_xy_eq {Q1 Q2 : GeomPoint E}
+    (hx : Q1.x = Q2.x) (hy : Q1.y = Q2.y) : Q1 = Q2 := by
+  obtain ⟨x1, y1, h1⟩ := Q1
+  obtain ⟨x2, y2, h2⟩ := Q2
+  cases hx
+  cases hy
+  rfl
+
+/-- At least one of `aT(α)`, `bT(α)` is nonzero. -/
+private theorem geomTilde_eval_not_both_zero (D : CoordRingElt E.q)
+    (hDnz : ¬ (D.a = 0 ∧ D.b = 0)) (α : Fqbar E) :
+    (geomATilde E D α).eval α ≠ 0 ∨ (geomBTilde E D α).eval α ≠ 0 := by
+  classical
+  set a := geomAPoly E D with ha_def
+  set b := geomBPoly E D with hb_def
+  set k := commonRootMultiplicity E a b α with hk_def
+  have hinj : Function.Injective (algebraMap (ZMod E.q) (Fqbar E)) :=
+    (algebraMap (ZMod E.q) (Fqbar E)).injective
+  by_cases ha : a = 0
+  · right
+    have hb_ne : b ≠ 0 := by
+      intro hb0
+      apply hDnz
+      have ha' : D.a = 0 := (Polynomial.map_eq_zero_iff hinj).mp ha
+      have hb' : D.b = 0 := (Polynomial.map_eq_zero_iff hinj).mp hb0
+      exact ⟨ha', hb'⟩
+    have hk_eq : k = b.rootMultiplicity α := by
+      show commonRootMultiplicity E a b α = b.rootMultiplicity α
+      unfold commonRootMultiplicity
+      rw [if_pos ha]
+    show (b /ₘ (X - C α)^k).eval α ≠ 0
+    rw [hk_eq]
+    exact Polynomial.eval_divByMonic_pow_rootMultiplicity_ne_zero α hb_ne
+  · by_cases hb : b = 0
+    · left
+      have hk_eq : k = a.rootMultiplicity α := by
+        show commonRootMultiplicity E a b α = a.rootMultiplicity α
+        unfold commonRootMultiplicity
+        rw [if_neg ha, if_pos hb]
+      show (a /ₘ (X - C α)^k).eval α ≠ 0
+      rw [hk_eq]
+      exact Polynomial.eval_divByMonic_pow_rootMultiplicity_ne_zero α ha
+    · have hk_eq : k = min (a.rootMultiplicity α) (b.rootMultiplicity α) := by
+        show commonRootMultiplicity E a b α = min _ _
+        unfold commonRootMultiplicity
+        rw [if_neg ha, if_neg hb]
+      by_cases h_le : a.rootMultiplicity α ≤ b.rootMultiplicity α
+      · left
+        have hk_eq' : k = a.rootMultiplicity α := by rw [hk_eq, min_eq_left h_le]
+        show (a /ₘ (X - C α)^k).eval α ≠ 0
+        rw [hk_eq']
+        exact Polynomial.eval_divByMonic_pow_rootMultiplicity_ne_zero α ha
+      · right
+        push_neg at h_le
+        have hk_eq' : k = b.rootMultiplicity α := by rw [hk_eq, min_eq_right h_le.le]
+        show (b /ₘ (X - C α)^k).eval α ≠ 0
+        rw [hk_eq']
+        exact Polynomial.eval_divByMonic_pow_rootMultiplicity_ne_zero α hb
+
+/-- Sα has at most 2 elements: the picked Q and its conjugate. -/
+private theorem fiber_subset_pair (_D : CoordRingElt E.q) (α : Fqbar E)
+    (support : Finset (GeomPoint E)) (Q : GeomPoint E)
+    (hQ_x : Q.x = α) :
+    ∀ Q'' ∈ support.filter (fun Q' : GeomPoint E => Q'.x = α),
+      Q'' = Q ∨ Q'' = Q.conjugate E := by
+  intro Q'' hQ''
+  have hQ''_x : Q''.x = α := (Finset.mem_filter.mp hQ'').2
+  have hQ''_curve := Q''.onCurve
+  have hQ_curve := Q.onCurve
+  rw [hQ''_x, ← hQ_x] at hQ''_curve
+  have h_yy : Q''.y^2 = Q.y^2 := by rw [hQ''_curve, hQ_curve]
+  have h_diff_zero : (Q''.y - Q.y) * (Q''.y + Q.y) = 0 := by
+    have h0 : Q''.y^2 - Q.y^2 = 0 := sub_eq_zero.mpr h_yy
+    linear_combination h0
+  have hQ''_x_eq_Q : Q''.x = Q.x := hQ''_x.trans hQ_x.symm
+  have hconj_x : (Q.conjugate E).x = α := by
+    rw [GeomPoint.conjugate_x]; exact hQ_x
+  have hQ''_x_eq_conj : Q''.x = (Q.conjugate E).x := hQ''_x.trans hconj_x.symm
+  rcases mul_eq_zero.mp h_diff_zero with h | h
+  · left
+    have hy_eq : Q''.y = Q.y := sub_eq_zero.mp h
+    exact geomPoint_eq_of_xy_eq E hQ''_x_eq_Q hy_eq
+  · right
+    have hy_eq : Q''.y = -Q.y := eq_neg_of_add_eq_zero_left h
+    have hconj_y : (Q.conjugate E).y = -Q.y := by rw [GeomPoint.conjugate_y]
+    exact geomPoint_eq_of_xy_eq E hQ''_x_eq_conj (hy_eq.trans hconj_y.symm)
+
+set_option maxHeartbeats 800000 in
 /--
 Fiber accounting for the explicit local-order candidate.
 
@@ -417,7 +610,303 @@ theorem geomLocalOrder_fiber_accounting
     ∀ α : Fqbar E,
       (∑ Q ∈ support.filter (fun Q => Q.x = α), geomLocalOrder E D Q)
         = (normPolyBar E D).rootMultiplicity α := by
-  sorry
+  intro α
+  classical
+  set Sα := support.filter (fun Q : GeomPoint E => Q.x = α) with hSα_def
+  set m := (normPolyBar E D).rootMultiplicity α with hm_def
+  set k := commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α with hk_def
+  set a₀ := (geomAPoly E D).eval α with ha₀_def
+  set b₀ := (geomBPoly E D).eval α with hb₀_def
+  set c : Fqbar E := α^3 + fqToBar E E.curveA * α + fqToBar E E.curveB with hc_def
+  set aT₀ := (geomATilde E D α).eval α with haT₀_def
+  set bT₀ := (geomBTilde E D α).eval α with hbT₀_def
+  have hnPnz : normPolyBar E D ≠ 0 := normPolyBar_ne_zero E D hDnz
+  have h_normPolyBar_eval : (normPolyBar E D).eval α = a₀^2 - b₀^2 * c := by
+    rw [normPolyBar_eval_explicit]
+  have h_geomEval : ∀ Q : GeomPoint E, Q.x = α →
+      D.geomEval E Q = a₀ - b₀ * Q.y := by
+    intro Q hQx
+    rw [geomEval_eq_geomAPoly_sub_geomBPoly_mul_y, hQx]
+  have h_y_sq : ∀ Q : GeomPoint E, Q.x = α → Q.y^2 = c := by
+    intro Q hQx
+    have h := Q.onCurve
+    rw [hQx] at h
+    exact h
+  -- The 2 ≠ 0 fact in Fqbar (char ≠ 2 since q ≥ 5).
+  have h2ne0 : (2 : Fqbar E) ≠ 0 := by
+    have hq5 : E.q ≥ 5 := E.hq_ge
+    have hchar : CharP (Fqbar E) E.q := by
+      have : CharP (ZMod E.q) E.q := ZMod.charP _
+      exact charP_of_injective_algebraMap (algebraMap (ZMod E.q) (Fqbar E)).injective E.q
+    have h2pos : (2 : ℕ) < E.q := by omega
+    have h2ne : (2 : ℕ) ≠ 0 := by norm_num
+    have : (2 : Fqbar E) = ((2 : ℕ) : Fqbar E) := by norm_cast
+    rw [this]
+    rw [Ne, CharP.cast_eq_zero_iff (Fqbar E) E.q 2]
+    exact fun hdvd => by
+      have := Nat.le_of_dvd (by norm_num) hdvd
+      omega
+  -- Case 1: Sα is empty.
+  by_cases hSα_empty : Sα = ∅
+  · rw [hSα_empty, Finset.sum_empty]
+    -- Show m = 0 by deriving contradiction from m > 0.
+    by_contra h_ne
+    have hm_pos : 0 < m := Nat.pos_of_ne_zero (fun h => h_ne h.symm)
+    have h_root : (normPolyBar E D).eval α = 0 :=
+      ((Polynomial.rootMultiplicity_pos hnPnz).mp hm_pos)
+    rw [h_normPolyBar_eval] at h_root
+    -- Either c = 0 (then a₀ = 0 → (α,0) is a zero) or c ≠ 0 (then exists β with β² = c).
+    by_cases hc_zero : c = 0
+    · have h_a₀_zero : a₀ = 0 := by
+        have h_sq : a₀^2 = 0 := by rw [hc_zero] at h_root; linear_combination h_root
+        exact pow_eq_zero_iff (n := 2) (by norm_num) |>.mp h_sq
+      have hQ₀_curve : (0 : Fqbar E)^2 = α^3 + fqToBar E E.curveA * α + fqToBar E E.curveB := by
+        rw [show (0 : Fqbar E)^2 = 0 by ring]
+        rw [show α^3 + fqToBar E E.curveA * α + fqToBar E E.curveB = c from rfl]
+        exact hc_zero.symm
+      let Q₀ : GeomPoint E := ⟨α, 0, hQ₀_curve⟩
+      have hQ₀_eval : D.geomEval E Q₀ = 0 := by
+        rw [h_geomEval Q₀ rfl]
+        show a₀ - b₀ * 0 = 0
+        rw [mul_zero, sub_zero]; exact h_a₀_zero
+      have hQ₀_mem : Q₀ ∈ support := hZeroSupport Q₀ hQ₀_eval
+      have hQ₀_in_Sα : Q₀ ∈ Sα := Finset.mem_filter.mpr ⟨hQ₀_mem, rfl⟩
+      rw [hSα_empty] at hQ₀_in_Sα
+      exact Finset.notMem_empty _ hQ₀_in_Sα
+    · -- c ≠ 0: pick β with β² = c.
+      obtain ⟨β, hβ⟩ : ∃ β : Fqbar E, β^2 = c :=
+        IsAlgClosed.exists_pow_nat_eq c (by norm_num : 0 < 2)
+      have hβ_curve : β^2 = α^3 + fqToBar E E.curveA * α + fqToBar E E.curveB := hβ
+      have hβ_neg_curve : (-β)^2 = α^3 + fqToBar E E.curveA * α + fqToBar E E.curveB := by
+        rw [show (-β)^2 = β^2 by ring]; exact hβ_curve
+      let Q₁ : GeomPoint E := ⟨α, β, hβ_curve⟩
+      let Q₂ : GeomPoint E := ⟨α, -β, hβ_neg_curve⟩
+      have h_prod : D.geomEval E Q₁ * D.geomEval E Q₂ = 0 := by
+        rw [h_geomEval Q₁ rfl, h_geomEval Q₂ rfl]
+        show (a₀ - b₀ * β) * (a₀ - b₀ * (-β)) = 0
+        have hexp : (a₀ - b₀ * β) * (a₀ - b₀ * (-β)) = a₀^2 - b₀^2 * c := by
+          rw [show a₀^2 - b₀^2 * c = a₀^2 - b₀^2 * β^2 by rw [hβ]]
+          ring
+        rw [hexp]; exact h_root
+      rcases mul_eq_zero.mp h_prod with h1 | h2
+      · have hQ₁_mem : Q₁ ∈ support := hZeroSupport Q₁ h1
+        have hQ₁_in_Sα : Q₁ ∈ Sα := Finset.mem_filter.mpr ⟨hQ₁_mem, rfl⟩
+        rw [hSα_empty] at hQ₁_in_Sα; exact Finset.notMem_empty _ hQ₁_in_Sα
+      · have hQ₂_mem : Q₂ ∈ support := hZeroSupport Q₂ h2
+        have hQ₂_in_Sα : Q₂ ∈ Sα := Finset.mem_filter.mpr ⟨hQ₂_mem, rfl⟩
+        rw [hSα_empty] at hQ₂_in_Sα; exact Finset.notMem_empty _ hQ₂_in_Sα
+  · -- Case 2: Sα non-empty.
+    have hSα_nonempty : Sα.Nonempty := Finset.nonempty_iff_ne_empty.mpr hSα_empty
+    obtain ⟨Q, hQ⟩ := hSα_nonempty
+    have hQ_x : Q.x = α := (Finset.mem_filter.mp hQ).2
+    have hQ_mem_support : Q ∈ support := (Finset.mem_filter.mp hQ).1
+    have hQ_eval : D.geomEval E Q = 0 := hSupportZero Q hQ_mem_support
+    have hQ_eval_eq : a₀ - b₀ * Q.y = 0 := by
+      rw [← h_geomEval Q hQ_x]; exact hQ_eval
+    have hQ_y_sq : Q.y^2 = c := h_y_sq Q hQ_x
+    -- Sub-case on Q.y = 0 or not.
+    by_cases hy0 : Q.y = 0
+    · -- Ramified case: c = 0, only point above α is (α, 0).
+      have hc_zero : c = 0 := by rw [← hQ_y_sq, hy0]; ring
+      -- Sα = {Q}.
+      have h_Sα_eq : Sα = {Q} := by
+        apply Finset.Subset.antisymm
+        · intro Q' hQ'
+          have hQ'_x : Q'.x = α := (Finset.mem_filter.mp hQ').2
+          have hQ'_y_sq : Q'.y^2 = c := h_y_sq Q' hQ'_x
+          have hQ'_y0 : Q'.y = 0 := by
+            rw [hc_zero] at hQ'_y_sq
+            exact pow_eq_zero_iff (n := 2) (by norm_num) |>.mp hQ'_y_sq
+          have hQ'_eq : Q' = Q := geomPoint_eq_of_xy_eq E (hQ'_x.trans hQ_x.symm)
+            (hQ'_y0.trans hy0.symm)
+          rw [hQ'_eq]; exact Finset.mem_singleton_self _
+        · intro Q' hQ'
+          rw [Finset.mem_singleton] at hQ'
+          rw [hQ']; exact hQ
+      rw [h_Sα_eq, Finset.sum_singleton]
+      -- geomLocalOrder Q = m (since Q.y = 0).
+      unfold geomLocalOrder
+      rw [if_pos hy0]
+      change rootMultiplicity Q.x (normPolyBar E D) = _
+      rw [hQ_x]
+    · -- Q.y ≠ 0. Conjugate point is distinct.
+      let Q' : GeomPoint E := Q.conjugate E
+      have hQ'_x : Q'.x = α := by
+        show (Q.conjugate E).x = α
+        rw [GeomPoint.conjugate_x]; exact hQ_x
+      have hQ'_y : Q'.y = -Q.y := by
+        show (Q.conjugate E).y = -Q.y
+        rw [GeomPoint.conjugate_y]
+      have hQQ'_ne : Q ≠ Q' := by
+        intro h
+        have hyy : Q.y = Q'.y := by rw [h]
+        rw [hQ'_y] at hyy
+        have h2y : 2 * Q.y = 0 := by linear_combination hyy
+        have h_y_zero : Q.y = 0 := by
+          rcases mul_eq_zero.mp h2y with h2 | hy
+          · exact absurd h2 h2ne0
+          · exact hy
+        exact hy0 h_y_zero
+      have h_Q_eval : a₀ - b₀ * Q.y = 0 := hQ_eval_eq
+      -- Sub-case on whether Q' ∈ Sα.
+      by_cases hQ'_mem : Q' ∈ Sα
+      · -- Both Q, Q' ∈ Sα. Then a₀ = 0 and b₀ = 0.
+        have hQ'_mem_support : Q' ∈ support := (Finset.mem_filter.mp hQ'_mem).1
+        have hQ'_eval : D.geomEval E Q' = 0 := hSupportZero Q' hQ'_mem_support
+        have h_Q'_eval : a₀ - b₀ * Q'.y = 0 := by
+          rw [← h_geomEval Q' hQ'_x]; exact hQ'_eval
+        rw [hQ'_y] at h_Q'_eval
+        -- Sα = {Q, Q'}.
+        have h_Sα_eq : Sα = {Q, Q'} := by
+          apply Finset.Subset.antisymm
+          · intro Q'' hQ''
+            have h_or := fiber_subset_pair E D α support Q hQ_x Q'' hQ''
+            simp only [Finset.mem_insert, Finset.mem_singleton]
+            exact h_or
+          · intro Q'' hQ''
+            simp only [Finset.mem_insert, Finset.mem_singleton] at hQ''
+            rcases hQ'' with rfl | rfl
+            · exact hQ
+            · exact hQ'_mem
+        rw [h_Sα_eq, Finset.sum_insert (by
+          simp only [Finset.mem_singleton]; exact hQQ'_ne)]
+        rw [Finset.sum_singleton]
+        -- Compute geomLocalOrder for both Q and Q'.
+        have hQ'_y_ne : Q'.y ≠ 0 := by
+          rw [hQ'_y]
+          exact fun h => hy0 (neg_eq_zero.mp h)
+        unfold geomLocalOrder
+        rw [if_neg hy0, if_neg hQ'_y_ne]
+        simp only
+        rw [hQ_x, hQ'_x]
+        -- The branch values
+        set bQ := aT₀ - bT₀ * Q.y with hbQ_def
+        set bQ' := aT₀ - bT₀ * Q'.y with hbQ'_def
+        have hbQ'_alt : bQ' = aT₀ + bT₀ * Q.y := by
+          rw [hbQ'_def, hQ'_y]; ring
+        -- aT₀, bT₀ not both zero (helper lemma).
+        have h_tildes_ne : aT₀ ≠ 0 ∨ bT₀ ≠ 0 :=
+          geomTilde_eval_not_both_zero E D hDnz α
+        -- Both branches can't be zero.
+        have h_branches_ne_both_zero : ¬ (bQ = 0 ∧ bQ' = 0) := by
+          intro ⟨hbQ_z, hbQ'_z⟩
+          rw [hbQ'_alt] at hbQ'_z
+          have h_2aT : 2 * aT₀ = 0 := by linear_combination hbQ_z + hbQ'_z
+          have h_2bTy : 2 * (bT₀ * Q.y) = 0 := by
+            linear_combination hbQ'_z - hbQ_z
+          have haT_z : aT₀ = 0 := by
+            rcases mul_eq_zero.mp h_2aT with h | h
+            · exact absurd h h2ne0
+            · exact h
+          have hbT_z : bT₀ = 0 := by
+            rcases mul_eq_zero.mp h_2bTy with h | h
+            · exact absurd h h2ne0
+            · rcases mul_eq_zero.mp h with h | h
+              · exact h
+              · exact absurd h hy0
+          rcases h_tildes_ne with h | h
+          · exact h haT_z
+          · exact h hbT_z
+        -- Now case on which branch is zero.
+        by_cases hbQ_zero : bQ = 0
+        · by_cases hbQ'_zero : bQ' = 0
+          · exact absurd ⟨hbQ_zero, hbQ'_zero⟩ h_branches_ne_both_zero
+          · -- bQ = 0, bQ' ≠ 0. Q gets m-k, Q' gets k.
+            rw [if_pos hbQ_zero, if_neg hbQ'_zero]
+            -- sum = (m - k) + k = m. Need 2k ≤ m.
+            have h2k_le : 2 * k ≤ m :=
+              rootMultiplicity_normPolyBar_ge_twice_common E D hDnz α
+            omega
+        · by_cases hbQ'_zero : bQ' = 0
+          · rw [if_neg hbQ_zero, if_pos hbQ'_zero]
+            have h2k_le : 2 * k ≤ m :=
+              rootMultiplicity_normPolyBar_ge_twice_common E D hDnz α
+            omega
+          · -- Neither branch is zero. Sum = 2k. Need m = 2k.
+            rw [if_neg hbQ_zero, if_neg hbQ'_zero]
+            -- residual nonzero: bQ * bQ' = aT₀² - bT₀² * c.
+            have h_prod_ne : bQ * bQ' ≠ 0 := mul_ne_zero hbQ_zero hbQ'_zero
+            have h_residual_ne : aT₀^2 - bT₀^2 * c ≠ 0 := by
+              have : bQ * bQ' = aT₀^2 - bT₀^2 * Q.y^2 := by
+                rw [hbQ'_alt, hbQ_def]; ring
+              rw [hQ_y_sq] at this
+              rw [← this]; exact h_prod_ne
+            have h_m_eq : m = 2 * k :=
+              rootMultiplicity_normPolyBar_eq_two_k_of_residual_ne_zero E D hDnz α h_residual_ne
+            omega
+      · -- Q' ∉ Sα. Then Sα = {Q}.
+        have h_Sα_eq : Sα = {Q} := by
+          apply Finset.Subset.antisymm
+          · intro Q'' hQ''
+            have h_or := fiber_subset_pair E D α support Q hQ_x Q'' hQ''
+            rcases h_or with hQ''_eq | hQ''_eq_conj
+            · rw [hQ''_eq]; exact Finset.mem_singleton_self _
+            · -- Q'' = Q.conjugate = Q', but Q' ∉ Sα, contradicting hQ''.
+              have : Q'' ∈ Sα := hQ''
+              rw [hQ''_eq_conj] at this
+              exact absurd this hQ'_mem
+          · intro Q'' hQ''
+            rw [Finset.mem_singleton] at hQ''; rw [hQ'']; exact hQ
+        rw [h_Sα_eq, Finset.sum_singleton]
+        -- Show geomLocalOrder Q = m.
+        -- Q' ∉ support: geomEval Q' ≠ 0.
+        have hQ'_eval_ne : D.geomEval E Q' ≠ 0 := by
+          intro h
+          have := hZeroSupport Q' h
+          have hQ'_in : Q' ∈ Sα := Finset.mem_filter.mpr ⟨this, hQ'_x⟩
+          exact hQ'_mem hQ'_in
+        have h_a₀_b₀y : a₀ + b₀ * Q.y ≠ 0 := by
+          intro h
+          apply hQ'_eval_ne
+          rw [h_geomEval Q' hQ'_x, hQ'_y]
+          show a₀ - b₀ * (-Q.y) = 0
+          linear_combination h
+        -- From h_Q_eval (a₀ = b₀ Q.y) and h_a₀_b₀y, derive b₀ ≠ 0 and a₀ ≠ 0.
+        have h_a₀_eq : a₀ = b₀ * Q.y := by linear_combination h_Q_eval
+        have h_b₀_ne : b₀ ≠ 0 := by
+          intro h
+          apply h_a₀_b₀y
+          rw [h_a₀_eq, h]; ring
+        have h_a₀_ne : a₀ ≠ 0 := by
+          rw [h_a₀_eq]; exact mul_ne_zero h_b₀_ne hy0
+        -- a ≠ 0 polynomial, since a(α) = a₀ ≠ 0.
+        have h_a_poly_ne : geomAPoly E D ≠ 0 := by
+          intro h_pa; apply h_a₀_ne
+          show (geomAPoly E D).eval α = 0
+          rw [h_pa]; exact eval_zero
+        have h_root_a_zero : (geomAPoly E D).rootMultiplicity α = 0 :=
+          Polynomial.rootMultiplicity_eq_zero h_a₀_ne
+        have hk_zero_inline :
+            commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α = 0 := by
+          unfold commonRootMultiplicity
+          rw [if_neg h_a_poly_ne]
+          by_cases h_b_poly : geomBPoly E D = 0
+          · rw [if_pos h_b_poly]; exact h_root_a_zero
+          · rw [if_neg h_b_poly]
+            rw [h_root_a_zero]
+            exact Nat.min_eq_left (Nat.zero_le _)
+        unfold geomLocalOrder
+        rw [if_neg hy0]
+        simp only
+        rw [hQ_x]
+        -- branch = aT(α) - bT(α) * Q.y. With k = 0, aT = a, bT = b.
+        have h_aT_eq : geomATilde E D α = geomAPoly E D := by
+          show geomAPoly E D /ₘ
+            ((X - C α)^(commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α))
+              = geomAPoly E D
+          rw [hk_zero_inline, pow_zero, Polynomial.divByMonic_one]
+        have h_bT_eq : geomBTilde E D α = geomBPoly E D := by
+          show geomBPoly E D /ₘ
+            ((X - C α)^(commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) α))
+              = geomBPoly E D
+          rw [hk_zero_inline, pow_zero, Polynomial.divByMonic_one]
+        have h_branch_zero : (geomATilde E D α).eval α - (geomBTilde E D α).eval α * Q.y = 0 := by
+          rw [h_aT_eq, h_bT_eq]
+          show a₀ - b₀ * Q.y = 0
+          exact h_Q_eval
+        rw [if_pos h_branch_zero]
+        -- m - k = m - 0 = m.
+        rw [hk_zero_inline]; omega
 
 /-! ## Frobenius helpers -/
 
