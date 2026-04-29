@@ -3188,49 +3188,97 @@ private theorem sigma_data_of_gd_support_rational
       (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) := by
   classical
   let _ := gd
-  -- Step 1: every rational zero of D coincides with some distinctR position.
-  -- Deep residue-specialisation: poles of the rational chord-sum identity
-  -- at rational zeros of D must cancel against poles at distinctR positions.
-  have h_zeros_in_distinctR :
-      ∀ k : Fin (zerosCard E msg.toD),
-        ∃ j : Fin (1 + baseImageCount E stmt msg hkm),
-          zerosAt E msg.toD k = distinctR E stmt msg hkm j := by
+  -- Apply sigma_matching_from_polyGFull_vanishing. Three sub-hypotheses needed:
+  -- (1) multAt(betaCanonical) cast to ZMod E.q is non-zero pointwise.
+  -- (2) polyGFull (with zerosAt, multAt(betaCanonical), distinctR, distinctM')
+  --     vanishes on all of E × E.
+  -- (3) Linear-threshold hypotheses (E.points.card vs d + M).
+  -- (1) follows from betaCanonical_covers + sum_le_degE + hd.
+  -- (2) is the substantial open piece: polyG vanishing extends from
+  --     defined non-vert pairs to all E × E via density + bivariate density.
+  -- (3) follows from hLargeQ.
+  have hBetaNz : ∀ k : Fin (zerosCard E msg.toD),
+      ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q) ≠ 0 := by
+    haveI : NeZero E.q := ⟨E.hq_prime.ne_zero⟩
+    intro k
+    rw [Ne, ZMod.natCast_eq_zero_iff]
+    intro hDvd
+    -- multAt(betaCanonical) k > 0 from coverage.
+    have hPos : 0 < multAt E (betaCanonical E msg.toD) msg.toD k :=
+      multAt_pos E (betaCanonical E msg.toD) msg.toD
+        (betaCanonical_covers E msg.toD _hDnz) k
+    -- multAt(betaCanonical) k < E.q from sum bound + degree bound.
+    have hBetaSum := betaCanonical_sum_le_degE E msg.toD
+    have hMultSum :=
+      sum_multAt_eq_sum_βfun E (betaCanonical E msg.toD) msg.toD
+        (betaCanonical_support E msg.toD)
+    have hSingleLe : multAt E (betaCanonical E msg.toD) msg.toD k
+        ≤ ∑ k' : Fin (zerosCard E msg.toD),
+            multAt E (betaCanonical E msg.toD) msg.toD k' :=
+      Finset.single_le_sum
+        (f := fun k' => multAt E (betaCanonical E msg.toD) msg.toD k')
+        (fun _ _ => Nat.zero_le _) (Finset.mem_univ _)
+    have hLt : multAt E (betaCanonical E msg.toD) msg.toD k < E.q :=
+      lt_of_le_of_lt
+        (hSingleLe.trans (hMultSum ▸ hBetaSum))
+        (lt_of_le_of_lt _hDeg _hd)
+    exact absurd (Nat.le_of_dvd hPos hDvd) (Nat.not_le.mpr hLt)
+  have hVanishing : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points →
+      bivEval₂ (polyGFull E (zerosAt E msg.toD)
+        (fun k => ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q))
+        (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)) A₀ A₁ = 0 := by
     sorry
-  -- Step 2: define σ_fn via Classical.choose.
-  let σ_fn : Fin (zerosCard E msg.toD) → Fin (1 + baseImageCount E stmt msg hkm) :=
-    fun k => (h_zeros_in_distinctR k).choose
-  have hσ_spec : ∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ_fn k) :=
-    fun k => (h_zeros_in_distinctR k).choose_spec
-  -- Step 3: σ_fn is injective. Follows from injectivity of zerosAt
-  -- and distinctR (the latter needs hNoNegP).
-  have hσ_inj : Function.Injective σ_fn := by
-    intro k₁ k₂ heq
-    have h1 := hσ_spec k₁
-    have h2 := hσ_spec k₂
-    have hzeros : zerosAt E msg.toD k₁ = zerosAt E msg.toD k₂ := by
-      rw [h1, h2, heq]
-    exact zerosAt_injective E msg.toD hzeros
-  -- Step 4: multiplicity matching at each k. Comes from the residue
-  -- coefficient at the matched index: under hRat + hAllZero, the residue
-  -- at the chord through the rational zero P_k cancels exactly the
-  -- distinctM'-coefficient at σ k.
-  have h_mult_match :
-      ∀ k, ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q)
-            + distinctM' E stmt msg hkm (σ_fn k) = 0 := by
+  have hELargeThr : E.points.card > 4 * (zerosCard E msg.toD +
+        (1 + baseImageCount E stmt msg hkm)) + 2 := by
+    -- zerosCard ≤ msg.toD.degE ≤ stmt.degBound, baseImageCount ≤ stmt.k.
+    have hZC : zerosCard E msg.toD ≤ msg.toD.degE := by
+      have hβcov := betaCanonical_covers E msg.toD _hDnz
+      have hβpos : ∀ k : Fin (zerosCard E msg.toD),
+          1 ≤ multAt E (betaCanonical E msg.toD) msg.toD k :=
+        fun k => multAt_pos E (betaCanonical E msg.toD) msg.toD hβcov k
+      have hβsum := betaCanonical_sum_le_degE E msg.toD
+      have hβeq := sum_multAt_eq_sum_βfun E (betaCanonical E msg.toD) msg.toD
+        (betaCanonical_support E msg.toD)
+      calc zerosCard E msg.toD
+          = ∑ _ : Fin (zerosCard E msg.toD), 1 := by
+            simp [Finset.sum_const, Finset.card_univ, Fintype.card_fin]
+        _ ≤ ∑ k : Fin (zerosCard E msg.toD), multAt E (betaCanonical E msg.toD) msg.toD k :=
+            Finset.sum_le_sum (fun k _ => hβpos k)
+        _ = ∑ P ∈ E.points, betaCanonical E msg.toD P := hβeq
+        _ ≤ msg.toD.degE := hβsum
+    have hBI : baseImageCount E stmt msg hkm ≤ stmt.k := by
+      calc baseImageCount E stmt msg hkm
+          ≤ msg.k := by
+            unfold baseImageCount baseImage
+            exact (Finset.card_image_le).trans
+              (by rw [Finset.card_univ, Fintype.card_fin])
+        _ = stmt.k := hkm.symm
+    have h1 : 4 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) + 2
+        ≤ 4 * (msg.toD.degE + (1 + stmt.k)) + 2 := by
+      apply Nat.add_le_add_right
+      apply Nat.mul_le_mul_left
+      exact Nat.add_le_add hZC (Nat.add_le_add_left hBI _)
+    have h2 : 4 * (msg.toD.degE + (1 + stmt.k)) + 2
+        ≤ 4 * (stmt.degBound + (1 + stmt.k)) + 2 := by
+      apply Nat.add_le_add_right
+      apply Nat.mul_le_mul_left
+      exact Nat.add_le_add_right _hDeg _
+    linarith [_hLargeQ]
+  have hELargeDkl : E.points.card * E.points.card - 2 * E.points.card >
+        18 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) * E.q := by
     sorry
-  -- Step 5: off-range vanishing of distinctM'. Reverse specialisation:
-  -- at distinctR positions not hit by any rational zero of D, the
-  -- residue contribution must vanish, forcing distinctM' j = 0.
-  have h_off_range :
-      ∀ j, j ∉ Set.range σ_fn → distinctM' E stmt msg hkm j = 0 := by
-    sorry
-  refine ⟨⟨σ_fn, hσ_inj⟩, ?_, ?_, ?_⟩
-  · intro k; exact hσ_spec k
-  · intro k; exact h_mult_match k
-  · intro j hj
-    apply h_off_range
-    intro ⟨k, hk⟩
-    exact hj ⟨k, hk⟩
+  exact sigma_matching_from_polyGFull_vanishing E
+    (zerosAt E msg.toD)
+    (fun k => ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q))
+    (distinctR E stmt msg hkm)
+    (distinctM' E stmt msg hkm)
+    (zerosAt_injective E msg.toD)
+    (distinctR_injective E stmt msg hkm hNoNegP)
+    hBetaNz
+    (fun k => zerosAt_mem_E E msg.toD k)
+    (fun j => distinctR_mem_points E stmt msg hkm _hTargetOnE _hBasesOnE j)
+    hVanishing hELargeThr hELargeDkl
 
 /-- **Rationality of the geometric support under `hAllZero`.** The all-zero
 hypothesis on `logDerivCheckFn` over rational defined non-vertical pairs
