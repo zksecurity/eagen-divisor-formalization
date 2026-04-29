@@ -570,6 +570,24 @@ private lemma fqToBar_bivEval₂_eq_eval_baseChange
   unfold lineEvalNumAtFullBar barBivEval₂Fun bivEval₂Fun fqToBar
   simp
 
+/-- On nonvertical rational pairs, the geometric line factor is the
+`x`-difference times the affine `z = y - λx` line coordinate. -/
+theorem lineEvalNumAtFullBar_eval_factored
+    (Q : GeomPoint E) (A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q) =
+      fqToBar E (A₁.1 - A₀.1) *
+        (Q.y - fqToBar E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) * Q.x -
+          fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀)) := by
+  rw [lineEvalNumAtFullBar_eval]
+  unfold slopeOf zLambda fqToBar
+  simp only [map_sub, map_mul, map_inv₀]
+  have hx : algebraMap (ZMod E.q) (Fqbar E) A₁.1 -
+      algebraMap (ZMod E.q) (Fqbar E) A₀.1 ≠ 0 := by
+    rw [← map_sub]
+    exact (map_ne_zero_iff _ (RingHom.injective _)).mpr (sub_ne_zero.mpr hNV.symm)
+  field_simp
+  ring
+
 /-- Direct evaluation formula for a base-field line factor after embedding into `F_qbar`. -/
 @[simp] theorem lineEvalNumAtFullBarOfFq_eval
     (P A₀ A₁ : ZMod E.q × ZMod E.q) :
