@@ -3107,6 +3107,35 @@ private theorem hAllZero_baseAt_of_hAllZero_raw
   rw [logDerivCheckFn_eq_grouped] at hRaw
   exact hRaw
 
+/-- **polyG vanishes at every defined non-vertical rational pair under
+hAllZero + hRat with `distinctRCons` / `distinctMCons` and
+`multAt(betaCanonical)` coefficients.** Combines Layer A scalar
+invariance (`hAllZero_baseAt_of_hAllZero_raw`) with the cons-form
+result (`polyG_zero_at_defined_betaCanonical_of_hAllZero_and_hRat`). -/
+private theorem polyG_zero_at_defined_distinctRCons_betaCanonical_of_hAllZero_and_hRat
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
+    (gd : GeometricDivisorData E msg.toD)
+    (hRat : gd_support_rational E msg.toD gd)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
+      logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1)
+    (hDef : logDerivCheckFnDefined E msg.toD stmt.target
+      (baseAt E stmt msg hkm) A₀ A₁) :
+    polyG E (zerosAt E msg.toD)
+      (fun k' => ((multAt E (betaCanonical E msg.toD) msg.toD k' : ℕ) : ZMod E.q))
+      (distinctRCons E stmt msg hkm) (distinctMCons E stmt msg hkm)
+      A₀ A₁ = 0 := by
+  have hAllZeroDistinct := hAllZero_baseAt_of_hAllZero_raw E stmt msg hkm hAllZero
+  exact polyG_zero_at_defined_betaCanonical_of_hAllZero_and_hRat E msg.toD hDnz gd hRat
+    stmt.target (baseAt E stmt msg hkm) (distinctM'_tail E stmt msg hkm)
+    hAllZeroDistinct A₀ A₁ hA₀ hA₁ hNV hDef
+
 /-! ### Residue-matching extraction of `splitsOnE` and σ-data
 
 Two private helpers compose into `geometric_residue_match`:
