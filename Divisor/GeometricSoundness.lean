@@ -2077,58 +2077,109 @@ private theorem geomPolyGFull_zero_at_defined_pair
         A₀ A₁ = 0 :=
   (geomPolyGFull_eval_eq_logDerivCheckFn E D gd P B m A₀ A₁ hA₀ hA₁ hNV hDef).mpr hCheck
 
-/--
-Residue matching extraction of `splitsOnE` together with the σ-matching
-output, given the verifier's `logDerivCheckFn` vanishes on every defined
-non-vertical pair.
+/-! ### Residue-matching extraction of `splitsOnE` and σ-data
 
-PROVIDED SOLUTION
-Form the descended geometric numerator
-`G = geomPolyGFull E msg.toD gd (Fin.cons (-P_aff) baseAt) (Fin.cons (-1) (-distinctMCons-tail))`.
-By `geomPolyGFull_eval_eq_logDerivCheckFn` and `hAllZero`,
-`bivEval₂ G A₀ A₁ = 0` on every defined non-vertical pair of
-`E.points × E.points`. Combined with the undefined-pair count bound
-(`logDerivCheckFn_undefined_set_bound_tight`) and the bivariate-zeros
-bound (`bivariate_poly_zeros_on_ExE_le`), the cardinality of the bad
-set is forced low enough that `bivEval₂ G` agrees with the residue
-form on the rational square — sufficient input for residue matching.
+Two private helpers compose into `geometric_residue_match`:
+1. `gd_support_rational_of_hAllZero`: under `hAllZero`, every `Q ∈
+   gd.support` has `F_q`-rational coordinates. Deep residue
+   specialisation argument: at each defined non-vertical rational
+   pair the residue identity (from `geomPolyGFullBar_eval_zero_of_hAllZero`
+   + `geomPolyGFullBar_eval_eq_residue_clear`) constrains `gd.support`
+   pointwise; Frobenius-orbit analysis rules out non-rational support
+   points.
+2. `sigma_data_of_gd_support_rational`: under `gd_support_rational`,
+   produce the σ embedding matching `zerosAt` against `distinctR` and
+   the multiplicity-cancellation / off-range vanishing identities.
 
-For each rational zero `P` of `D`, take `Q_P = (fqToBar P.1, fqToBar P.2)`.
-By `gd.eval_zero_mem_support`, `Q_P ∈ gd.support`. The base-change
-identity `fqToBar_bivEval₂_eq_eval_baseChange` plus
-`baseChange_geomPolyGFull` plus `geomPolyGFullBar_eval_at_support_point`
-gives, after specialising `A₀ := P` and choosing rational `A₁` to make
-the residual product nonzero, that `(gd.mult Q_P : Fqbar E)` cancels
-against the rational coefficient at the matching `distinctR` index.
-This produces the σ map. `geom_residue_rational_coeff_zero_of_poly_vanishing`
-gives the off-range vanishing.
-
-For non-rational support points: `gd.frobenius_stable` produces a
-Frobenius orbit; the rationality of the right-hand divisor
-`(-P) + Σ m_j B_j` and the bound `gd.mult < E.q` rule them out, so
-`gd.support` consists entirely of rational points, which gives
-`splitsOnE E D` (every root of `normPoly E D` has a rational lift).
+`geometric_residue_match` is the composition: gd_support_rational ⇒
+splitsOnE (via `splitsOnE_of_gd_support_rational`) + σ-matching.
 -/
-private theorem geometric_residue_match
-    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)
-    (_hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
+
+/-- **Deep residue-specialisation helper.** Produces the σ-matching data
+under the hypothesis `gd_support_rational`. The proof requires
+specialised residue extraction: for each rational zero `P` of `D`,
+evaluating the residue identity at carefully chosen rational `(A₀, A₁)`
+isolates the `P`-summand and matches it to a unique `distinctR` index;
+unmatched `distinctR` indices have `distinctM' = 0` by the reverse
+specialisation. -/
+private theorem sigma_data_of_gd_support_rational
+    (stmt : DlogStatement E.q) (_hd : stmt.degBound < E.q)
+    (msg : MAProverMsg E.q) (_hDeg : msg.toD.degE ≤ stmt.degBound)
+    (hkm : stmt.k = msg.k)
+    (_hTargetOnE : stmt.target ∈ E.points)
+    (_hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (_hLargeQ : E.points.card >
+        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (_hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (_hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
+    (gd : GeometricDivisorData E msg.toD)
+    (_hRat : gd_support_rational E msg.toD gd)
+    (_hAllZero :
+      ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+        A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+        logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
+        logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+          (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
+    ∃ (σ : Fin (zerosCard E msg.toD) ↪
+            Fin (1 + baseImageCount E stmt msg hkm)),
+      (∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ k)) ∧
+      (∀ k, ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q)
+            + distinctM' E stmt msg hkm (σ k) = 0) ∧
+      (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) := by
+  let _ := gd
+  sorry
+
+/-- **Rationality of the geometric support under `hAllZero`.** The all-zero
+hypothesis on `logDerivCheckFn` over rational defined non-vertical pairs
+(combined with the `chord_fiber_product_bar_factorisation` axiom) forces
+every `Q ∈ gd.support` to have `F_q`-rational coordinates. The argument
+is a Frobenius-orbit / Bezout combination over `Fqbar` outlined in
+`plan_geometric_residue_match.md`. -/
+private theorem gd_support_rational_of_hAllZero
+    (stmt : DlogStatement E.q) (_hd : stmt.degBound < E.q)
+    (msg : MAProverMsg E.q) (_hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
     (_hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
+    (_hTargetOnE : stmt.target ∈ E.points)
+    (_hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (_hLargeQ : E.points.card >
+        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (_hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
+    (gd : GeometricDivisorData E msg.toD)
+    (_hAllZero :
+      ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+        A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+        logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
+        logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+          (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
+    gd_support_rational E msg.toD gd := by
+  let _ := hDnz
+  let _ := gd
+  sorry
+
+private theorem geometric_residue_match
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)
+    (hd2 : 2 ≤ stmt.degBound)
+    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
+    (hkm : stmt.k = msg.k)
+    (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
     (_hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
         (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
             distinctR E stmt msg hkm j ≠ A₀) →
         denomScaledPoly (E := E) msg.toD stmt.target
           (baseImageCount E stmt msg hkm)
           (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E ≠ 0)
-    (_hTargetOnE : stmt.target ∈ E.points)
-    (_hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (_hLargeQ : E.points.card >
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
         21 * (msg.toD.degE + stmt.k + 2) + 72)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (_hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
-    (_hAllZero :
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hAllZero :
       ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
         A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
         logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
@@ -2141,15 +2192,22 @@ private theorem geometric_residue_match
       (∀ k, ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q)
             + distinctM' E stmt msg hkm (σ k) = 0) ∧
       (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) := by
-  -- Set up the residue-matching argument: geometric divisor data, the
-  -- descended numerator, and degree bounds.  The remainder is the deep
-  -- residue specialisation argument outlined in the docstring.
   classical
-  have _hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
+  let _ := hd2
+  have hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg hAdm
-  have _hDegLt : msg.toD.degE < E.q := lt_of_le_of_lt hDeg hd
-  obtain ⟨_gd, _⟩ := exists_geometricDivisorData E msg.toD _hDnz
-  sorry
+  obtain ⟨gd, _⟩ := exists_geometricDivisorData E msg.toD hDnz
+  -- Step 1: gd.support is rational under hAllZero (deep residue-specialisation).
+  have hRat : gd_support_rational E msg.toD gd :=
+    gd_support_rational_of_hAllZero E stmt hd msg hDeg hkm hSmooth hTargetOnE
+      hBasesOnE hLargeQ hNoNegP hDnz gd hAllZero
+  -- Step 2: splitsOnE follows from rational support.
+  have hSplit : splitsOnE E msg.toD :=
+    splitsOnE_of_gd_support_rational E msg.toD hDnz gd hRat
+  -- Step 3: σ-matching from rational support + chord-sum identity.
+  have hσ := sigma_data_of_gd_support_rational E stmt hd msg hDeg hkm hTargetOnE
+    hBasesOnE hLargeQ hNoNegP hDnz gd hRat hAllZero
+  exact ⟨hSplit, hσ⟩
 
 /--
 Geometric σ-matching theorem (used by
