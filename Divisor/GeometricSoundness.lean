@@ -2180,6 +2180,98 @@ private theorem gd_support_card_eq_zerosCard
       exact ⟨hPpts, hPzero⟩
     exact (hUniq Q hQmem P ⟨hPmem, rfl, rfl⟩).symm
 
+/--
+**Residue identity at defined non-vertical chords.** Under `hAllZero`,
+the residue-divided sum
+`Σ_Q (mult Q : Fqbar) · ℓ_Q⁻¹ + Σ_j fqToBar(m_j') · ℓ_R_j⁻¹`
+vanishes at every defined non-vertical rational pair, where
+`ℓ_Q := eval lineEvalNumAtFullBar Q` and
+`ℓ_R_j := eval lineEvalNumAtFullBarOfFq R_j` are the line factors
+evaluated at `(A₀, A₁)`.
+
+Direct corollary of `geomPolyGFullBar_eval_zero_of_hAllZero` +
+`geomPolyGFullBar_eval_eq_residue_clear` + line-factor non-vanishing
+(from `geom_support_avoids_chord` and `hDef`).
+-/
+private theorem geom_residue_sum_zero_of_hAllZero
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (P : ZMod E.q × ZMod E.q) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E D P B A₀ A₁ →
+      logDerivCheckFn E D P k B m A₀ A₁ = 0)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1)
+    (hDef : logDerivCheckFnDefined E D P B A₀ A₁) :
+    (∑ Q ∈ gd.support, ((gd.mult Q : ℕ) : Fqbar E) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q))⁻¹)
+    + (∑ j : Fin (k + 1),
+        fqToBar E ((Fin.cons (-1) (fun j => -m j) : Fin (k + 1) → ZMod E.q) j) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+          (lineEvalNumAtFullBarOfFq E
+            ((Fin.cons (P.1, -P.2) B : Fin (k + 1) → ZMod E.q × ZMod E.q) j)))⁻¹) = 0 := by
+  classical
+  set R : Fin (k + 1) → ZMod E.q × ZMod E.q := Fin.cons (P.1, -P.2) B with hR_def
+  set m' : Fin (k + 1) → ZMod E.q := Fin.cons (-1) (fun j => -m j) with hM'_def
+  set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLam
+  have hX : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm hNV)
+  have hXBar : fqToBar E (A₁.1 - A₀.1) ≠ 0 :=
+    (fqToBar_eq_zero_iff E _).not.mpr hX
+  -- Line factor non-vanishing on gd.support and on R.
+  have hAvoid := geom_support_avoids_chord E D gd P B A₀ A₁ hA₀ hA₁ hNV hDef
+  have hDef' : (have lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2;
+      have L := lineThrough A₀.1 A₀.2 A₁.1 A₁.2;
+      have x₂ := lam ^ 2 - A₀.1 - A₁.1;
+      have y₂ := lam * x₂ + (A₀.2 - lam * A₀.1);
+      D.eval A₀.1 A₀.2 * D.eval A₁.1 A₁.2 * D.eval x₂ y₂ *
+              (3 * A₀.1 ^ 2 + E.curveA - 2 * lam * A₀.2) *
+            (3 * A₁.1 ^ 2 + E.curveA - 2 * lam * A₁.2) *
+          (3 * x₂ ^ 2 + E.curveA - 2 * lam * y₂) *
+        L.eval P.1 (-P.2) *
+      ∏ j, L.eval (B j).1 (B j).2) ≠ 0 := hDef
+  unfold logDerivCheckFnDefined logDerivCheckFnDenom at hDef
+  have h7 : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2) ≠ 0 :=
+    right_ne_zero_of_mul (left_ne_zero_of_mul hDef)
+  have hBlineProd : (Finset.univ : Finset (Fin k)).prod
+        (fun j => (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2) ≠ 0 :=
+    right_ne_zero_of_mul hDef
+  have hBline : ∀ j : Fin k,
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 ≠ 0 := by
+    intro j hj
+    exact hBlineProd (Finset.prod_eq_zero (Finset.mem_univ j) hj)
+  have hLineQ : ∀ Q ∈ gd.support,
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q) ≠ 0 := by
+    intro Q hQ
+    rw [lineEvalNumAtFullBar_eval_eq_zLambdaBar_diff E Q A₀ A₁ hNV]
+    apply mul_ne_zero (neg_ne_zero.mpr hXBar) (hAvoid Q hQ)
+  have hLineR : ∀ j : Fin (k + 1),
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E (R j)) ≠ 0 := by
+    intro j
+    rw [lineEvalNumAtFullBarOfFq_eval_ne_zero_iff E _ A₀ A₁ hNV]
+    refine Fin.cases ?_ ?_ j
+    · show (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R 0).1 (R 0).2 ≠ 0
+      rw [hR_def]; simp [Fin.cons_zero]; exact h7
+    · intro i
+      show (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R i.succ).1 (R i.succ).2 ≠ 0
+      rw [hR_def]; simp [Fin.cons_succ]; exact hBline i
+  have hProdQ_ne : (∏ Q ∈ gd.support,
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q)) ≠ 0 :=
+    Finset.prod_ne_zero_iff.mpr hLineQ
+  have hProdR_ne : (∏ j : Fin (k + 1),
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E (R j))) ≠ 0 := by
+    refine Finset.prod_ne_zero_iff.mpr ?_; intro j _; exact hLineR j
+  -- bar-eval = ProdQ · ProdR · S = 0; ProdQ, ProdR ≠ 0 ⇒ S = 0.
+  have hZero : MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+      (geomPolyGFullBar E D gd R m') = 0 :=
+    geomPolyGFullBar_eval_zero_of_hAllZero E D gd P B m hAllZero A₀ A₁ hA₀ hA₁ hNV hDef'
+  rw [geomPolyGFullBar_eval_eq_residue_clear E D gd R m' A₀ A₁ hLineQ hLineR] at hZero
+  rcases mul_eq_zero.mp hZero with hProds | hRes
+  · rcases mul_eq_zero.mp hProds with hPQ | hPR
+    · exact absurd hPQ hProdQ_ne
+    · exact absurd hPR hProdR_ne
+  · exact hRes
+
 /-! ### Residue-matching extraction of `splitsOnE` and σ-data
 
 Two private helpers compose into `geometric_residue_match`:
