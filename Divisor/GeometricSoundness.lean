@@ -1525,6 +1525,35 @@ private theorem geomPolyGFullBar_eval_zero_of_hAllZero
   (geomPolyGFullBar_eval_zero_iff_logDerivCheckFn E D gd P B m A₀ A₁
       hA₀ hA₁ hNV hDef).mpr (hAllZero A₀ A₁ hA₀ hA₁ hNV hDef)
 
+/-- Predicate: every `Q ∈ gd.support` has `F_q`-rational coordinates. -/
+def gd_support_rational (D : CoordRingElt E.q) (gd : GeometricDivisorData E D) : Prop :=
+  ∀ Q ∈ gd.support, ∃ P : ZMod E.q × ZMod E.q,
+    P ∈ E.points ∧ Q.x = fqToBar E P.1 ∧ Q.y = fqToBar E P.2
+
+/-- If every geometric support point has rational coordinates, then `D`'s
+norm polynomial splits over `F_q` and every root has a rational lift —
+i.e., `splitsOnE E D`. -/
+private theorem splitsOnE_of_gd_support_rational
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D)
+    (hRat : gd_support_rational E D gd) :
+    splitsOnE E D := by
+  classical
+  -- Strategy:
+  -- 1. Every root α of normPolyBar has rootMultiplicity > 0; by
+  --    gd.fiber_accounting, ∃ Q ∈ gd.support with Q.x = α and gd.mult Q > 0.
+  -- 2. By hRat, Q.x = fqToBar β for some rational β; so α = fqToBar β.
+  -- 3. Every Fqbar-root of normPolyBar is in fqToBar(ZMod E.q), and by
+  --    fqToBar injectivity, normPoly E D splits over F_q.
+  -- 4. Each F_q-root α has a rational lift Q ∈ E.points with Q.x = α
+  --    (from the rational point P with P.1 = α derived from hRat).
+  refine ⟨?_, ?_⟩
+  · -- normPoly_splits_over_Fq E D: card roots = natDegree.
+    sorry
+  · intro α hα
+    -- α is an F_q-root of normPoly E D. Lift to Fqbar.
+    sorry
+
 /-! ## Geometric residue-matching via specialization over `F_qbar`
 
 Inspired by the paper's `residue-matching-cleared` lemma: from
