@@ -1357,13 +1357,98 @@ private theorem geomPolyGFullBar_eval_zero_iff_logDerivCheckFn
       intro i
       show (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R i.succ).1 (R i.succ).2 ≠ 0
       rw [hR]; simp [Fin.cons_succ]; exact hBline i
-  -- Apply bar-eval factorisation.
-  rw [geomPolyGFullBar_eval_eq_residue_clear E D gd R m' A₀ A₁ hLineQ hLineR]
-  -- Goal now: (∏_Q ℓ_Q) · (∏_j ℓ_R_j) · S = 0 ↔ logDerivCheckFn = 0
-  -- where S = Σ_Q (mult Q : Fqbar) · ℓ_Q⁻¹ + Σ_j fqToBar(m'_j) · ℓ_R_j⁻¹.
-  -- We will show S = -fqToBar(logDerivCheckFn) / fqToBar(Δx).
-  -- The residue identity requires combining chord-sum identity +
-  -- slope substitution + Fin.cons unfolding.
+  -- ∏_Q ℓ_Q ≠ 0 and ∏_j ℓ_R_j ≠ 0.
+  have hProdQ_ne : (∏ Q ∈ gd.support,
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q)) ≠ 0 :=
+    Finset.prod_ne_zero_iff.mpr hLineQ
+  have hProdR_ne : (∏ j : Fin (k + 1),
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E (R j))) ≠ 0 := by
+    refine Finset.prod_ne_zero_iff.mpr ?_; intro j _; exact hLineR j
+  -- Identify the residue-divided sum S with -fqToBar(logDerivCheckFn)/fqToBar(Δx).
+  -- Step a: Σ_Q (mult Q) · ℓ_Q⁻¹ = -fqToBar(LHS_rat)/fqToBar(Δx) via chord-sum identity.
+  have hSumQ : (∑ Q ∈ gd.support,
+        ((gd.mult Q : ℕ) : Fqbar E) *
+          (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q))⁻¹)
+      = -fqToBar E
+          (logDerivTerm E D E.curveA lam A₀
+            + logDerivTerm E D E.curveA lam A₁
+            + logDerivTerm E D E.curveA lam
+                (chordX₂ A₀ A₁, chordY₂ A₀ A₁)) *
+            (fqToBar E (A₁.1 - A₀.1))⁻¹ := by
+    have hChord := geometric_chord_sum_eq_residue_sum E D gd P B A₀ A₁ hA₀ hA₁ hNV
+      (by show logDerivCheckFnDenom E D P B A₀ A₁ ≠ 0; exact hDef)
+    -- hChord : fqToBar (logDerivTerm sum) = -fqToBar(Δx) · Σ (mult Q : Fqbar) · ℓ_Q⁻¹.
+    -- Rearrange: Σ ... = -fqToBar(LHS) * fqToBar(Δx)⁻¹.
+    set S : Fqbar E := ∑ Q ∈ gd.support, ((gd.mult Q : ℕ) : Fqbar E) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q))⁻¹
+    set L : Fqbar E := fqToBar E
+        (logDerivTerm E D E.curveA lam A₀
+          + logDerivTerm E D E.curveA lam A₁
+          + logDerivTerm E D E.curveA lam (chordX₂ A₀ A₁, chordY₂ A₀ A₁))
+    show S = -L * (fqToBar E (A₁.1 - A₀.1))⁻¹
+    have hL_eq : L = -fqToBar E (A₁.1 - A₀.1) * S := hChord
+    rw [hL_eq]
+    have : -(-fqToBar E (A₁.1 - A₀.1) * S) * (fqToBar E (A₁.1 - A₀.1))⁻¹
+        = (fqToBar E (A₁.1 - A₀.1) * (fqToBar E (A₁.1 - A₀.1))⁻¹) * S := by ring
+    rw [this, mul_inv_cancel₀ hXBar, one_mul]
+  -- Step b: Σ_j fqToBar(m_j') · ℓ_R_j⁻¹ via Fin.cons + slope identity.
+  have hLineR_eval : ∀ j : Fin (k + 1),
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E (R j))
+        = fqToBar E (A₁.1 - A₀.1) *
+            fqToBar E ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R j).1 (R j).2) := by
+    intro j; exact lineEvalNumAtFullBarOfFq_eval_eq_lineThrough_mul E _ A₀ A₁ hNV
+  have hSumR : (∑ j : Fin (k + 1), fqToBar E (m' j) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E (R j)))⁻¹)
+      = fqToBar E (-((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2))⁻¹
+          + (Finset.univ : Finset (Fin k)).sum (fun j =>
+              -(m j) * ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2)⁻¹))
+        * (fqToBar E (A₁.1 - A₀.1))⁻¹ := by
+    -- Sub-claim: each summand simplifies via hLineR_eval.
+    have hSumand : ∀ j : Fin (k + 1),
+        fqToBar E (m' j)
+          * (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E (R j)))⁻¹
+        = fqToBar E (m' j *
+            ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R j).1 (R j).2)⁻¹)
+          * (fqToBar E (A₁.1 - A₀.1))⁻¹ := by
+      intro j
+      have hL : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R j).1 (R j).2 ≠ 0 := by
+        have := hLineR j
+        rw [hLineR_eval] at this
+        rcases mul_ne_zero_iff.mp this with ⟨_, hF⟩
+        exact (fqToBar_eq_zero_iff E _).not.mp hF
+      rw [hLineR_eval]
+      rw [mul_inv]
+      have hfq_inv : fqToBar E
+          ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R j).1 (R j).2)⁻¹
+          = (fqToBar E ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R j).1 (R j).2))⁻¹ := by
+        unfold fqToBar; exact map_inv₀ _ _
+      have hfq_mul : fqToBar E (m' j *
+          ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R j).1 (R j).2)⁻¹)
+          = fqToBar E (m' j) *
+              fqToBar E ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R j).1 (R j).2)⁻¹ := by
+        unfold fqToBar; rw [map_mul]
+      rw [hfq_mul, hfq_inv]
+      ring
+    rw [Finset.sum_congr rfl (fun j _ => hSumand j)]
+    rw [← Finset.sum_mul]
+    -- Combine the sum: factor (fqToBar E ...) inside.
+    rw [show (∑ j : Fin (k + 1), fqToBar E (m' j *
+              ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R j).1 (R j).2)⁻¹))
+        = fqToBar E (∑ j : Fin (k + 1), m' j *
+              ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R j).1 (R j).2)⁻¹) from by
+      unfold fqToBar; rw [map_sum]]
+    -- Unfold Fin.cons via Fin.sum_univ_succ.
+    rw [show (∑ j : Fin (k + 1), m' j *
+              ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R j).1 (R j).2)⁻¹)
+        = m' 0 * ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R 0).1 (R 0).2)⁻¹
+          + (Finset.univ : Finset (Fin k)).sum (fun i =>
+              m' i.succ * ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R i.succ).1 (R i.succ).2)⁻¹)
+        from Fin.sum_univ_succ _]
+    rw [hM', hR]
+    simp [Fin.cons_zero, Fin.cons_succ]
+  -- Now combine Step a + Step b.
+  -- The remaining algebra: bar-eval = 0 iff S = 0 iff fqToBar(LHS_rat - rhs) = 0
+  -- iff logDerivCheckFn = 0.
   sorry
 
 /-! ## Geometric residue-matching via specialization over `F_qbar`
