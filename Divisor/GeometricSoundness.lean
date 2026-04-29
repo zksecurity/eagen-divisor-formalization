@@ -1075,6 +1075,62 @@ geometric divisor data, and the rational divisor data, and producing
 both `splitsOnE` and the σ extractor data.
 -/
 
+/-! #### Phase 1 helpers -/
+
+/-- For each rational zero `P` of `D`, the lifted geometric point
+`Q_P = ⟨fqToBar P.1, fqToBar P.2, _⟩` is a geometric zero of `D`. -/
+private theorem geomEval_lift_eq_fqToBar
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (hOn : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB) :
+    D.geomEval E (⟨fqToBar E P.1, fqToBar E P.2, by
+        unfold fqToBar
+        rw [← map_pow, ← map_pow, ← map_mul, ← map_add, ← map_add]
+        exact congrArg _ hOn⟩ : GeomPoint E) =
+      fqToBar E (D.eval P.1 P.2) := by
+  unfold CoordRingElt.geomEval CoordRingElt.eval fqToBar
+  simp only [Polynomial.eval₂_at_apply]
+  rw [map_sub, map_mul]
+
+/-- Phase 1.2: For each rational zero `P` of `D`, the corresponding
+geometric point lies in `gd.support`. -/
+private theorem support_lift_of_rational_zero
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (P : ZMod E.q × ZMod E.q) (hPpts : P ∈ E.points)
+    (hPzero : D.eval P.1 P.2 = 0) :
+    (⟨fqToBar E P.1, fqToBar E P.2, by
+        unfold fqToBar
+        rw [← map_pow, ← map_pow, ← map_mul, ← map_add, ← map_add]
+        exact congrArg _ (E.hOnCurve P hPpts)⟩ : GeomPoint E) ∈ gd.support := by
+  apply gd.eval_zero_mem_support
+  rw [geomEval_lift_eq_fqToBar E D P (E.hOnCurve P hPpts), hPzero]
+  simp [fqToBar]
+
+/-- Phase 1.3: every multiplicity in the geometric divisor is strictly
+less than `E.q`. -/
+private theorem gd_mult_lt_q
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (hDeg : D.degE < E.q)
+    (Q : GeomPoint E) (hQ : Q ∈ gd.support) :
+    gd.mult Q < E.q := by
+  have hSingle : gd.mult Q ≤ ∑ Q' ∈ gd.support, gd.mult Q' :=
+    Finset.single_le_sum (f := gd.mult) (fun _ _ => Nat.zero_le _) hQ
+  exact lt_of_le_of_lt (hSingle.trans gd.accounting_le_degE) hDeg
+
+/-- Phase 1.1: the descended geometric numerator vanishes at every
+defined non-vertical rational pair on which `logDerivCheckFn` vanishes. -/
+private theorem geomPolyGFull_zero_at_defined_pair
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (P : ZMod E.q × ZMod E.q) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1)
+    (hDef : logDerivCheckFnDefined E D P B A₀ A₁)
+    (hCheck : logDerivCheckFn E D P k B m A₀ A₁ = 0) :
+    bivEval₂ (geomPolyGFull E D gd
+        (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)))
+        A₀ A₁ = 0 :=
+  (geomPolyGFull_eval_eq_logDerivCheckFn E D gd P B m A₀ A₁ hA₀ hA₁ hNV hDef).mpr hCheck
+
 /--
 Residue matching extraction of `splitsOnE` together with the σ-matching
 output, given the verifier's `logDerivCheckFn` vanishes on every defined
