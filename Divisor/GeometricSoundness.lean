@@ -1500,6 +1500,31 @@ private theorem geomPolyGFullBar_eval_zero_iff_logDerivCheckFn
     rw [h]
     simp [fqToBar]
 
+/--
+Residue identity at a defined non-vertical chord: under `logDerivCheckFn = 0`,
+the bar-evaluation of `geomPolyGFullBar` (with R = `Fin.cons (-P_aff) B` and
+`m' = Fin.cons (-1) (-m_j)`) vanishes.
+
+Direct corollary of `geomPolyGFullBar_eval_zero_iff_logDerivCheckFn` plus
+the all-zero hypothesis on defined non-vertical pairs.
+-/
+private theorem geomPolyGFullBar_eval_zero_of_hAllZero
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (P : ZMod E.q × ZMod E.q) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E D P B A₀ A₁ →
+      logDerivCheckFn E D P k B m A₀ A₁ = 0)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1)
+    (hDef : logDerivCheckFnDefined E D P B A₀ A₁) :
+    MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+        (geomPolyGFullBar E D gd
+          (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j))) = 0 :=
+  (geomPolyGFullBar_eval_zero_iff_logDerivCheckFn E D gd P B m A₀ A₁
+      hA₀ hA₁ hNV hDef).mpr (hAllZero A₀ A₁ hA₀ hA₁ hNV hDef)
+
 /-! ## Geometric residue-matching via specialization over `F_qbar`
 
 Inspired by the paper's `residue-matching-cleared` lemma: from
