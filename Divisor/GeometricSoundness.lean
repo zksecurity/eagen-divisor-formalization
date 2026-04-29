@@ -579,6 +579,54 @@ private lemma fqToBar_bivEval₂_eq_eval_baseChange
   unfold lineEvalNumAtFullBarOfFq barBivEval₂Fun bivEval₂Fun fqToBar
   simp
 
+/-- The geometric rational line factor is exactly the base-change of the
+existing four-variable line factor. -/
+theorem baseChange_lineEvalNumAtFull
+    (P : ZMod E.q × ZMod E.q) :
+  baseChangeFourVar E (lineEvalNumAtFull E P) =
+      lineEvalNumAtFullBarOfFq E P := by
+  unfold baseChangeFourVar lineEvalNumAtFull lineEvalNumAtFullBarOfFq
+  unfold embedScalarFull
+  unfold lamDenFull lamNumFull
+  unfold varA₀y varA₀x varA₁y varA₁x
+  simp [fqToBar]
+
+/-- Evaluation of a rational geometric line factor agrees with base-field
+evaluation followed by `fqToBar`. -/
+theorem lineEvalNumAtFullBarOfFq_eval_eq_fqToBar_bivEval₂
+    (P A₀ A₁ : ZMod E.q × ZMod E.q) :
+    MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E P) =
+      fqToBar E (bivEval₂ (lineEvalNumAtFull E P) A₀ A₁) := by
+  rw [fqToBar_bivEval₂_eq_eval_baseChange, baseChange_lineEvalNumAtFull]
+
+/-- On nonvertical pairs, the rational geometric line factor evaluates to
+`(A₁.x - A₀.x)` times the usual affine line evaluation, embedded in `F_qbar`. -/
+theorem lineEvalNumAtFullBarOfFq_eval_eq_lineThrough_mul
+    (P A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E P) =
+      fqToBar E (A₁.1 - A₀.1) *
+        fqToBar E ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 P.2) := by
+  rw [lineEvalNumAtFullBarOfFq_eval_eq_fqToBar_bivEval₂,
+    bivEval₂_lineEvalNumAtFull_eq_bivEval,
+    bivEval_lineEvalNumAt_eq_mul E A₀ P A₁ hNV]
+  simp [fqToBar]
+
+/-- For nonvertical pairs, nonvanishing of the geometric rational line factor
+is equivalent to nonvanishing of the usual affine line evaluation. -/
+theorem lineEvalNumAtFullBarOfFq_eval_ne_zero_iff
+    (P A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E P) ≠ 0
+      ↔ (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 P.2 ≠ 0 := by
+  rw [lineEvalNumAtFullBarOfFq_eval_eq_lineThrough_mul E P A₀ A₁ hNV]
+  have hx : fqToBar E (A₁.1 - A₀.1) ≠ 0 :=
+    (fqToBar_eq_zero_iff E (A₁.1 - A₀.1)).not.mpr (sub_ne_zero.mpr hNV.symm)
+  rw [mul_ne_zero_iff]
+  constructor
+  · rintro ⟨_, hline⟩
+    exact (fqToBar_eq_zero_iff E _).not.mp hline
+  · intro hline
+    exact ⟨hx, (fqToBar_eq_zero_iff E _).not.mpr hline⟩
+
 /--
 Geometric trace/log-derivative identity on one nonvertical chord.
 
