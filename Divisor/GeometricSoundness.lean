@@ -2769,6 +2769,154 @@ private theorem rational_residue_identity_zero_of_hAllZero
     unfold fqToBar; rw [map_add]] at hBar
   exact (fqToBar_eq_zero_iff E _).mp hBar
 
+/-- **polyG vanishes at every defined non-vertical rational pair** under
+`hAllZero` + `gd_support_rational`, with `rationalMultAt`-derived
+multiplicity coefficients on the zerosAt enumeration. -/
+private theorem polyG_zero_of_hAllZero_and_hRat
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) (hRat : gd_support_rational E D gd)
+    (P : ZMod E.q × ZMod E.q) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E D P B A₀ A₁ →
+      logDerivCheckFn E D P k B m A₀ A₁ = 0)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1)
+    (hDef : logDerivCheckFnDefined E D P B A₀ A₁) :
+    polyG E (zerosAt E D)
+        (fun k' => (rationalMultAt E D gd (zerosAt E D k') : ZMod E.q))
+        (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j))
+        A₀ A₁ = 0 := by
+  classical
+  set L := lineThrough A₀.1 A₀.2 A₁.1 A₁.2 with hL_def
+  -- Step 1: use rational_residue_identity_zero_of_hAllZero.
+  have hRatId := rational_residue_identity_zero_of_hAllZero E D hDnz gd hRat
+    P B m hAllZero A₀ A₁ hA₀ hA₁ hNV hDef
+  -- Step 2: extract chord-avoidance for all denominators (P-side and R-side).
+  have hDenom : logDerivCheckFnDenom E D P B A₀ A₁ ≠ 0 := hDef
+  have h_chord_avoid : ∀ P' ∈ zerosFinset E D, L.eval P'.1 P'.2 ≠ 0 :=
+    chord_avoids_D_zeros_of_denom_defined D P B A₀ A₁ hA₀ hA₁ hNV hDenom
+  unfold logDerivCheckFnDefined logDerivCheckFnDenom at hDef
+  have h_negP_line : L.eval P.1 (-P.2) ≠ 0 :=
+    right_ne_zero_of_mul (left_ne_zero_of_mul hDef)
+  have h_B_lineProd : (Finset.univ : Finset (Fin k)).prod
+        (fun j => L.eval (B j).1 (B j).2) ≠ 0 :=
+    right_ne_zero_of_mul hDef
+  have h_B_line : ∀ j : Fin k, L.eval (B j).1 (B j).2 ≠ 0 := by
+    intro j
+    exact fun hj => h_B_lineProd (Finset.prod_eq_zero (Finset.mem_univ j) hj)
+  -- Step 3: reformulate hRatId using ellP form, after re-indexing the
+  -- zerosFinset sum to a Fin-indexed sum.
+  have hX : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm hNV)
+  -- ellP P A₀ A₁ = (A₁.1 - A₀.1) * L.eval P
+  have hEllP : ∀ Q' : ZMod E.q × ZMod E.q,
+      ellP E Q' A₀ A₁ = (A₁.1 - A₀.1) * L.eval Q'.1 Q'.2 := by
+    intro Q'
+    rw [ellP_eq_lineEval_mul E Q' A₀ A₁ hNV]
+    ring
+  -- Re-index Σ_P ∈ zerosFinset → Σ_k ∈ Fin (zerosCard).
+  have hReIndex :
+      (∑ P' ∈ zerosFinset E D, (rationalMultAt E D gd P' : ZMod E.q) *
+            ((A₁.1 - A₀.1) * L.eval P'.1 P'.2)⁻¹)
+        = ∑ k' : Fin (zerosCard E D),
+            (rationalMultAt E D gd (zerosAt E D k') : ZMod E.q) *
+              ((A₁.1 - A₀.1) * L.eval (zerosAt E D k').1 (zerosAt E D k').2)⁻¹ :=
+    sum_zerosFinset_eq_sum_fin E D _
+  rw [hReIndex] at hRatId
+  -- Step 4: now multiply through by ∏_k ellP(zerosAt k) · ∏_j ellP(R_j).
+  -- Use sum_div_iff_sum_mul_prod_erase on the combined sum form.
+  -- Define the unified index: Sum (Q-side, R-side) and apply.
+  set Q : Fin (zerosCard E D) → ZMod E.q × ZMod E.q := zerosAt E D with hQ_def
+  set beta : Fin (zerosCard E D) → ZMod E.q :=
+    fun k' => (rationalMultAt E D gd (Q k') : ZMod E.q) with hbeta_def
+  set R : Fin (k + 1) → ZMod E.q × ZMod E.q := Fin.cons (P.1, -P.2) B with hR_def
+  set m' : Fin (k + 1) → ZMod E.q := Fin.cons (-1) (fun j => -m j) with hm'_def
+  -- Establish that all ellP values are nonzero.
+  have hQ_ellP : ∀ k', ellP E (Q k') A₀ A₁ ≠ 0 := by
+    intro k'
+    rw [hEllP]; apply mul_ne_zero hX
+    have hQk_mem : zerosAt E D k' ∈ zerosFinset E D :=
+      Finset.mem_filter.mpr ⟨zerosAt_mem_E E D k', zerosAt_eval_zero E D k'⟩
+    exact h_chord_avoid (zerosAt E D k') hQk_mem
+  have hR_ellP : ∀ j, ellP E (R j) A₀ A₁ ≠ 0 := by
+    intro j; rw [hEllP]; apply mul_ne_zero hX
+    refine Fin.cases ?_ ?_ j
+    · show L.eval (R 0).1 (R 0).2 ≠ 0
+      rw [hR_def]; simp [Fin.cons_zero]; exact h_negP_line
+    · intro i
+      show L.eval (R i.succ).1 (R i.succ).2 ≠ 0
+      rw [hR_def]; simp [Fin.cons_succ]; exact h_B_line i
+  -- Restate hRatId using ellP form.
+  have hRatId' :
+      (∑ k' : Fin (zerosCard E D), beta k' * (ellP E (Q k') A₀ A₁)⁻¹) +
+        (∑ j : Fin (k + 1), m' j * (ellP E (R j) A₀ A₁)⁻¹) = 0 := by
+    convert hRatId using 2
+    · apply Finset.sum_congr rfl; intro k' _
+      congr 1; rw [hEllP]
+    · apply Finset.sum_congr rfl; intro j _
+      congr 1; rw [hEllP]
+  -- Combine into a single sum over Fin (zerosCard E D) ⊕ Fin (k+1).
+  -- Multiply the identity by ∏_k ellP(Q k) · ∏_j ellP(R j) to clear denominators.
+  set bigProd : ZMod E.q := (∏ k', ellP E (Q k') A₀ A₁) * ∏ j, ellP E (R j) A₀ A₁
+    with hBigProd_def
+  have hBigProd_ne : bigProd ≠ 0 := by
+    rw [hBigProd_def]
+    exact mul_ne_zero (Finset.prod_ne_zero_iff.mpr (fun k' _ => hQ_ellP k'))
+      (Finset.prod_ne_zero_iff.mpr (fun j _ => hR_ellP j))
+  -- bigProd · 0 = 0
+  have h_mul : bigProd *
+      ((∑ k' : Fin (zerosCard E D), beta k' * (ellP E (Q k') A₀ A₁)⁻¹) +
+        (∑ j : Fin (k + 1), m' j * (ellP E (R j) A₀ A₁)⁻¹)) = 0 := by
+    rw [hRatId']; ring
+  -- Per-summand: bigProd · (a/b) = a · (∏_{x≠b}) (when b ≠ 0).
+  have hQ_summand : ∀ k',
+      bigProd * (beta k' * (ellP E (Q k') A₀ A₁)⁻¹) =
+        beta k' * (Finset.univ.erase k').prod
+          (fun k'' => ellP E (Q k'') A₀ A₁) * ∏ j, ellP E (R j) A₀ A₁ := by
+    intro k'
+    have hk_mem : k' ∈ (Finset.univ : Finset (Fin (zerosCard E D))) :=
+      Finset.mem_univ k'
+    have hk_prod : (∏ k'' : Fin (zerosCard E D), ellP E (Q k'') A₀ A₁)
+        = ellP E (Q k') A₀ A₁ * (Finset.univ.erase k').prod
+            (fun k'' => ellP E (Q k'') A₀ A₁) :=
+      (Finset.mul_prod_erase Finset.univ _ hk_mem).symm
+    rw [hBigProd_def, hk_prod]
+    have hInv : ellP E (Q k') A₀ A₁ * (ellP E (Q k') A₀ A₁)⁻¹ = 1 :=
+      mul_inv_cancel₀ (hQ_ellP k')
+    linear_combination
+      ((Finset.univ.erase k').prod (fun k'' => ellP E (Q k'') A₀ A₁) *
+        ∏ j, ellP E (R j) A₀ A₁) * (beta k') * hInv
+  have hR_summand : ∀ j,
+      bigProd * (m' j * (ellP E (R j) A₀ A₁)⁻¹) =
+        m' j * (∏ k', ellP E (Q k') A₀ A₁) *
+          (Finset.univ.erase j).prod (fun j'' => ellP E (R j'') A₀ A₁) := by
+    intro j
+    have hj_mem : j ∈ (Finset.univ : Finset (Fin (k + 1))) := Finset.mem_univ j
+    have hj_prod : (∏ j'' : Fin (k + 1), ellP E (R j'') A₀ A₁)
+        = ellP E (R j) A₀ A₁ * (Finset.univ.erase j).prod
+            (fun j'' => ellP E (R j'') A₀ A₁) :=
+      (Finset.mul_prod_erase Finset.univ _ hj_mem).symm
+    rw [hBigProd_def, hj_prod]
+    have hInv : ellP E (R j) A₀ A₁ * (ellP E (R j) A₀ A₁)⁻¹ = 1 :=
+      mul_inv_cancel₀ (hR_ellP j)
+    linear_combination
+      ((∏ k', ellP E (Q k') A₀ A₁) *
+        (Finset.univ.erase j).prod (fun j'' => ellP E (R j'') A₀ A₁)) *
+        (m' j) * hInv
+  -- Distribute and combine: bigProd · (Σ + Σ) = polyG.
+  have h_distrib :
+      bigProd *
+        ((∑ k' : Fin (zerosCard E D), beta k' * (ellP E (Q k') A₀ A₁)⁻¹) +
+          (∑ j : Fin (k + 1), m' j * (ellP E (R j) A₀ A₁)⁻¹)) =
+      polyG E Q beta R m' A₀ A₁ := by
+    rw [mul_add, Finset.mul_sum, Finset.mul_sum]
+    rw [Finset.sum_congr rfl (fun k' _ => hQ_summand k')]
+    rw [Finset.sum_congr rfl (fun j _ => hR_summand j)]
+    rfl
+  rw [h_distrib] at h_mul
+  exact h_mul
+
 /-- The sum of geometric multiplicities equals the natDegree of `normPoly`. -/
 private theorem gd_mult_sum_eq_natDegree
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
