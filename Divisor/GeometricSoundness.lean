@@ -2077,6 +2077,52 @@ private theorem geomPolyGFull_zero_at_defined_pair
         A₀ A₁ = 0 :=
   (geomPolyGFull_eval_eq_logDerivCheckFn E D gd P B m A₀ A₁ hA₀ hA₁ hNV hDef).mpr hCheck
 
+/-- Under `gd_support_rational`, the rational image of `gd.support`
+coincides with `zerosFinset E D`. Each `Q ∈ gd.support` rationalizes to
+a unique rational zero of `D`, and conversely every rational zero lifts
+to a unique support point. -/
+private theorem gd_support_eq_zerosFinset_image
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D)
+    (hRat : gd_support_rational E D gd)
+    (Q : GeomPoint E) (hQ : Q ∈ gd.support) :
+    ∃! P : ZMod E.q × ZMod E.q,
+      P ∈ zerosFinset E D ∧ Q.x = fqToBar E P.1 ∧ Q.y = fqToBar E P.2 := by
+  obtain ⟨P, hPpts, hPx, hPy⟩ := hRat Q hQ
+  refine ⟨P, ?_, ?_⟩
+  · refine ⟨?_, hPx, hPy⟩
+    -- P ∈ zerosFinset E D: D.eval P = 0 (from D.geomEval Q = 0 + injectivity).
+    rw [zerosFinset, zeros, Finset.mem_filter]
+    refine ⟨hPpts, ?_⟩
+    have hGeomZero : D.geomEval E Q = 0 := gd.support_eval_zero Q hQ
+    have hLift : D.geomEval E
+          (⟨fqToBar E P.1, fqToBar E P.2, by
+              unfold fqToBar
+              rw [← map_pow, ← map_pow, ← map_mul, ← map_add, ← map_add]
+              exact congrArg _ (E.hOnCurve P hPpts)⟩ : GeomPoint E)
+          = fqToBar E (D.eval P.1 P.2) :=
+      geomEval_lift_eq_fqToBar E D P (E.hOnCurve P hPpts)
+    -- The lifted GeomPoint equals Q (same x, y).
+    have hQeq : Q = (⟨fqToBar E P.1, fqToBar E P.2, by
+        unfold fqToBar
+        rw [← map_pow, ← map_pow, ← map_mul, ← map_add, ← map_add]
+        exact congrArg _ (E.hOnCurve P hPpts)⟩ : GeomPoint E) := by
+      cases Q with
+      | mk x y onCurve => exact GeomPoint.mk.injEq .. |>.mpr ⟨hPx, hPy⟩
+    rw [hQeq] at hGeomZero
+    rw [hLift] at hGeomZero
+    -- hGeomZero: fqToBar E (D.eval P.1 P.2) = 0 ⇒ D.eval P.1 P.2 = 0.
+    exact (fqToBar_eq_zero_iff E _).mp hGeomZero
+  · rintro P' ⟨_, hP'x, hP'y⟩
+    -- Uniqueness: P' has same coords as P after fqToBar.
+    have h1 : fqToBar E P'.1 = fqToBar E P.1 := hP'x ▸ hPx
+    have h2 : fqToBar E P'.2 = fqToBar E P.2 := hP'y ▸ hPy
+    have e1 : P'.1 = P.1 :=
+      (FaithfulSMul.algebraMap_injective (ZMod E.q) (Fqbar E)) h1
+    have e2 : P'.2 = P.2 :=
+      (FaithfulSMul.algebraMap_injective (ZMod E.q) (Fqbar E)) h2
+    exact Prod.ext e1 e2
+
 /-! ### Residue-matching extraction of `splitsOnE` and σ-data
 
 Two private helpers compose into `geometric_residue_match`:
