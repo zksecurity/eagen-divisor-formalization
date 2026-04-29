@@ -2431,6 +2431,67 @@ private theorem prod_lineEvalNumAtFullBar_support_eq_under_rational
     exact lineEvalNumAtFullBar_eq_lineEvalNumAtFullBarOfFq_of_rational E Q (f Q hQ)
       (hSpec Q hQ).2.1 (hSpec Q hQ).2.2
 
+/-- Under `gd_support_rational`, the bar-level residue sum
+`Σ_Q (mult Q : Fqbar) · (lineEvalNumAtFullBar Q evaluated)⁻¹` re-indexes
+to `Σ_P ∈ zerosFinset (rationalMultAt P : Fqbar) · (lineEvalNumAtFullBarOfFq P evaluated)⁻¹`. -/
+private theorem geom_residue_sum_re_index_under_rational
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D)
+    (hRat : gd_support_rational E D gd)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    (∑ Q ∈ gd.support, ((gd.mult Q : ℕ) : Fqbar E) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q))⁻¹)
+      = ∑ P ∈ zerosFinset E D,
+          ((rationalMultAt E D gd P : ℕ) : Fqbar E) *
+            (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+              (lineEvalNumAtFullBarOfFq E P))⁻¹ := by
+  classical
+  refine sum_gd_support_eq_zerosFinset_under_rational E D hDnz gd hRat
+    (fun P =>
+      ((rationalMultAt E D gd P : ℕ) : Fqbar E) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+          (lineEvalNumAtFullBarOfFq E P))⁻¹)
+    (fun Q =>
+      ((gd.mult Q : ℕ) : Fqbar E) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q))⁻¹)
+    ?_
+  intro Q hQ P hPx hPy
+  -- Need: ψ Q = φ P, i.e. the geometric summand at Q equals the rational
+  -- summand at P. P comes from the bijection so P ∈ zerosFinset; in
+  -- particular P ∈ E.points and D.eval P = 0.
+  -- Q is the rational lift of P, so gd.mult Q = rationalMultAt P.
+  have hPgeom : ∃ P', P' ∈ E.points ∧ Q.x = fqToBar E P'.1 ∧ Q.y = fqToBar E P'.2 :=
+    hRat Q hQ
+  obtain ⟨P', hP'pts, hP'x, hP'y⟩ := hPgeom
+  -- P' has same bar-image as P, hence equal.
+  have hP_eq : P = P' := by
+    apply Prod.ext <;>
+      apply (FaithfulSMul.algebraMap_injective (ZMod E.q) (Fqbar E))
+    · exact hPx.symm.trans hP'x
+    · exact hPy.symm.trans hP'y
+  have hPpts : P ∈ E.points := hP_eq ▸ hP'pts
+  have hPzero : D.eval P.1 P.2 = 0 := by
+    have hGeomZero : D.geomEval E Q = 0 := gd.support_eval_zero Q hQ
+    have hLift : D.geomEval E (rationalLift E P hPpts) = fqToBar E (D.eval P.1 P.2) :=
+      geomEval_lift_eq_fqToBar E D P (E.hOnCurve P hPpts)
+    have hQeq : Q = rationalLift E P hPpts :=
+      geomPoint_ext E Q (rationalLift E P hPpts) hPx hPy
+    rw [hQeq] at hGeomZero
+    rw [hLift] at hGeomZero
+    exact (fqToBar_eq_zero_iff E _).mp hGeomZero
+  -- Now use Q = rationalLift E P hPpts to bridge gd.mult Q = rationalMultAt P.
+  have hQeq : Q = rationalLift E P hPpts :=
+    geomPoint_ext E Q (rationalLift E P hPpts) hPx hPy
+  have hMultEq : gd.mult Q = rationalMultAt E D gd P := by
+    rw [hQeq, rationalMultAt_eq_gd_mult_at_lift E D gd P hPpts hPzero]
+  have hLineEq : lineEvalNumAtFullBar E Q = lineEvalNumAtFullBarOfFq E P :=
+    lineEvalNumAtFullBar_eq_lineEvalNumAtFullBarOfFq_of_rational E Q P hPx hPy
+  show ((gd.mult Q : ℕ) : Fqbar E) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q))⁻¹
+      = ((rationalMultAt E D gd P : ℕ) : Fqbar E) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E P))⁻¹
+  rw [hMultEq, hLineEq]
+
 /--
 **Residue identity at defined non-vertical chords.** Under `hAllZero`,
 the residue-divided sum
