@@ -1549,17 +1549,88 @@ private theorem splitsOnE_of_gd_support_rational
   --    (from the rational point P with P.1 = α derived from hRat).
   refine ⟨?_, ?_⟩
   · -- normPoly_splits_over_Fq E D: card roots = natDegree.
-    -- Strategy:
-    -- (1) Show normPolyBar.roots = normPoly.roots.map fqToBar via Multiset.ext +
-    --     count = rootMultiplicity (Polynomial.count_roots) +
-    --     eq_rootMultiplicity_map for in-image-fqToBar elements;
-    --     hRootInImage rules out non-image-fqToBar elements.
-    -- (2) From (1): card normPolyBar.roots = card normPoly.roots (via map_card +
-    --     fqToBar injective).
-    -- (3) From IsAlgClosed (Fqbar E): card normPolyBar.roots = natDegree normPolyBar.
-    -- (4) natDegree normPolyBar = natDegree normPoly (base-change).
-    -- Combine (2)-(4) to get card normPoly.roots = natDegree normPoly.
-    sorry
+    unfold normPoly_splits_over_Fq
+    have hNormBar_ne : normPolyBar E D ≠ 0 := normPolyBar_ne_zero E D hDnz
+    have hNorm_ne : normPoly E D ≠ 0 := normPoly_ne_zero E D hDnz
+    -- Every Fqbar-root of normPolyBar is in image fqToBar (via fiber_accounting + hRat).
+    have hRootInImage : ∀ β ∈ (normPolyBar E D).roots,
+        ∃ α : ZMod E.q, β = fqToBar E α := by
+      intro β hβ
+      have hMul : (normPolyBar E D).rootMultiplicity β > 0 :=
+        (Polynomial.rootMultiplicity_pos hNormBar_ne).mpr
+          ((Polynomial.mem_roots hNormBar_ne).mp hβ)
+      have hSum := gd.fiber_accounting β
+      have hPos : 0 <
+          (∑ Q ∈ gd.support.filter (fun Q => Q.x = β), gd.mult Q) := by
+        rw [hSum]; exact hMul
+      have hNonempty : (gd.support.filter (fun Q => Q.x = β)).Nonempty := by
+        by_contra hEmp
+        rw [Finset.not_nonempty_iff_eq_empty] at hEmp
+        rw [hEmp, Finset.sum_empty] at hPos
+        exact lt_irrefl _ hPos
+      obtain ⟨Q, hQ⟩ := hNonempty
+      have hQmem : Q ∈ gd.support := (Finset.mem_filter.mp hQ).1
+      have hQx : Q.x = β := (Finset.mem_filter.mp hQ).2
+      obtain ⟨P, _, hPx, _⟩ := hRat Q hQmem
+      exact ⟨P.1, by rw [← hQx, hPx]⟩
+    -- Multiset equality: normPolyBar.roots = normPoly.roots.map fqToBar.
+    have hRootsEq : (normPolyBar E D).roots = (normPoly E D).roots.map (fqToBar E) := by
+      apply Multiset.ext.mpr
+      intro β
+      by_cases hβImg : ∃ α : ZMod E.q, β = fqToBar E α
+      · obtain ⟨α, hαβ⟩ := hβImg
+        subst hαβ
+        -- Compute the multiset count on each side and reduce to eq_rootMultiplicity_map.
+        have hLHS :
+            Multiset.count (fqToBar E α) (normPolyBar E D).roots
+              = (normPoly E D).rootMultiplicity α := by
+          rw [Polynomial.count_roots]
+          unfold normPolyBar fqToBar
+          exact (Polynomial.eq_rootMultiplicity_map (RingHom.injective _) α).symm
+        have hRHS :
+            Multiset.count (fqToBar E α) ((normPoly E D).roots.map (fqToBar E))
+              = (normPoly E D).rootMultiplicity α := by
+          rw [Multiset.count_map]
+          have hFilter :
+              ((normPoly E D).roots.filter
+                  (fun a => fqToBar E α = fqToBar E a)).card
+                = Multiset.count α (normPoly E D).roots := by
+            rw [Multiset.count]
+            rw [Multiset.countP_eq_card_filter]
+            congr 1
+            apply Multiset.filter_congr
+            intro a _
+            constructor
+            · intro h
+              exact (FaithfulSMul.algebraMap_injective (ZMod E.q) (Fqbar E)) h
+            · intro h; rw [h]
+          rw [hFilter]
+          rw [Polynomial.count_roots]
+        rw [hLHS, hRHS]
+      · -- β not in image: count β LHS = 0 (since β ∉ roots by hRootInImage); count β RHS = 0.
+        have hLHS : Multiset.count β (normPolyBar E D).roots = 0 := by
+          apply Multiset.count_eq_zero.mpr
+          intro hMem
+          exact hβImg (hRootInImage β hMem)
+        have hRHS : Multiset.count β ((normPoly E D).roots.map (fqToBar E)) = 0 := by
+          rw [Multiset.count_map]
+          apply Multiset.card_eq_zero.mpr
+          rw [Multiset.filter_eq_nil]
+          intro α' _
+          intro hαβ
+          exact hβImg ⟨α', hαβ⟩
+        rw [hLHS, hRHS]
+    -- card LHS = card RHS = card normPoly.roots.
+    have hCardEq : (normPolyBar E D).roots.card = (normPoly E D).roots.card := by
+      rw [hRootsEq, Multiset.card_map]
+    -- card normPolyBar.roots = natDegree normPolyBar (alg closed).
+    have hCardBar : (normPolyBar E D).roots.card = (normPolyBar E D).natDegree := by
+      have hSplits : (normPolyBar E D).Splits := IsAlgClosed.splits _
+      exact hSplits.natDegree_eq_card_roots.symm
+    have hNatBar : (normPolyBar E D).natDegree = (normPoly E D).natDegree := by
+      unfold normPolyBar
+      exact Polynomial.natDegree_map _
+    rw [← hCardEq, hCardBar, hNatBar]
   · intro α hα
     -- α is an F_q-root of normPoly E D. Want: ∃ y ∈ ZMod E.q, (α, y) ∈ E.points.
     -- Step 1: lift α to fqToBar α, a Fqbar-root of normPolyBar E D.
