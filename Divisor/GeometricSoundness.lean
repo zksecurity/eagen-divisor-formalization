@@ -1446,9 +1446,10 @@ private theorem geomPolyGFullBar_eval_zero_iff_logDerivCheckFn
         from Fin.sum_univ_succ _]
     rw [hM', hR]
     simp [Fin.cons_zero, Fin.cons_succ]
-  -- Now combine Step a + Step b.
-  -- The remaining algebra: bar-eval = 0 iff S = 0 iff fqToBar(LHS_rat - rhs) = 0
-  -- iff logDerivCheckFn = 0.
+  -- Final assembly: combine hSumQ + hSumR via fqToBar additivity, derive
+  -- S = -fqToBar(logDerivCheckFn)/fqToBar(Δx), then iff via mul_eq_zero +
+  -- fqToBar injectivity. The chord-third pt rewrite (chordX₂/chordY₂ vs
+  -- (lam²-A₀.1-A₁.1, ...)) is the remaining mechanical step.
   sorry
 
 /-! ## Geometric residue-matching via specialization over `F_qbar`
