@@ -572,6 +572,11 @@ of `D` in `F_qbar`, with multiplicities supplied by `GeometricDivisorData`.
 The theorem is intentionally separated from the denominator-clearing
 algebra in `geomPolyGFullBar_eval_zero_iff_logDerivCheckFn`. It is the
 function-field trace step Aristotle should attack directly.
+
+The line factor `lineEvalNumAtFullBar E Q` is the scaled line evaluation:
+at `(A₀, A₁)` it contributes `(A₁.1 - A₀.1) * lineThrough(A₀,A₁)(Q)`.
+The residue sum below therefore includes the corresponding
+`fqToBar E (A₁.1 - A₀.1)` factor.
 -/
 theorem geometric_chord_sum_eq_residue_sum
     (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
@@ -586,7 +591,7 @@ theorem geometric_chord_sum_eq_residue_sum
           + logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2)
               (chordX₂ A₀ A₁, chordY₂ A₀ A₁))
       =
-        -∑ Q ∈ gd.support,
+        -(fqToBar E (A₁.1 - A₀.1)) * ∑ Q ∈ gd.support,
           ((gd.mult Q : ℕ) : Fqbar E) *
             (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
               (lineEvalNumAtFullBar E Q))⁻¹ := by
