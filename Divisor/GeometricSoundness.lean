@@ -2473,7 +2473,7 @@ private theorem sigma_data_of_gd_support_rational
     (_hLargeQ : E.points.card >
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
         21 * (msg.toD.degE + stmt.k + 2) + 72)
-    (_hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
     (_hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
     (gd : GeometricDivisorData E msg.toD)
     (_hRat : gd_support_rational E msg.toD gd)
@@ -2489,8 +2489,51 @@ private theorem sigma_data_of_gd_support_rational
       (∀ k, ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q)
             + distinctM' E stmt msg hkm (σ k) = 0) ∧
       (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) := by
+  classical
   let _ := gd
-  sorry
+  -- Step 1: every rational zero of D coincides with some distinctR position.
+  -- Deep residue-specialisation: poles of the rational chord-sum identity
+  -- at rational zeros of D must cancel against poles at distinctR positions.
+  have h_zeros_in_distinctR :
+      ∀ k : Fin (zerosCard E msg.toD),
+        ∃ j : Fin (1 + baseImageCount E stmt msg hkm),
+          zerosAt E msg.toD k = distinctR E stmt msg hkm j := by
+    sorry
+  -- Step 2: define σ_fn via Classical.choose.
+  let σ_fn : Fin (zerosCard E msg.toD) → Fin (1 + baseImageCount E stmt msg hkm) :=
+    fun k => (h_zeros_in_distinctR k).choose
+  have hσ_spec : ∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ_fn k) :=
+    fun k => (h_zeros_in_distinctR k).choose_spec
+  -- Step 3: σ_fn is injective. Follows from injectivity of zerosAt
+  -- and distinctR (the latter needs hNoNegP).
+  have hσ_inj : Function.Injective σ_fn := by
+    intro k₁ k₂ heq
+    have h1 := hσ_spec k₁
+    have h2 := hσ_spec k₂
+    have hzeros : zerosAt E msg.toD k₁ = zerosAt E msg.toD k₂ := by
+      rw [h1, h2, heq]
+    exact zerosAt_injective E msg.toD hzeros
+  -- Step 4: multiplicity matching at each k. Comes from the residue
+  -- coefficient at the matched index: under hRat + hAllZero, the residue
+  -- at the chord through the rational zero P_k cancels exactly the
+  -- distinctM'-coefficient at σ k.
+  have h_mult_match :
+      ∀ k, ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q)
+            + distinctM' E stmt msg hkm (σ_fn k) = 0 := by
+    sorry
+  -- Step 5: off-range vanishing of distinctM'. Reverse specialisation:
+  -- at distinctR positions not hit by any rational zero of D, the
+  -- residue contribution must vanish, forcing distinctM' j = 0.
+  have h_off_range :
+      ∀ j, j ∉ Set.range σ_fn → distinctM' E stmt msg hkm j = 0 := by
+    sorry
+  refine ⟨⟨σ_fn, hσ_inj⟩, ?_, ?_, ?_⟩
+  · intro k; exact hσ_spec k
+  · intro k; exact h_mult_match k
+  · intro j hj
+    apply h_off_range
+    intro ⟨k, hk⟩
+    exact hj ⟨k, hk⟩
 
 /-- **Rationality of the geometric support under `hAllZero`.** The all-zero
 hypothesis on `logDerivCheckFn` over rational defined non-vertical pairs
