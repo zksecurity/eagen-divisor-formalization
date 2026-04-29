@@ -2670,6 +2670,105 @@ private theorem geom_residue_sum_zero_re_indexed_of_hAllZero
   rw [← geom_residue_sum_re_index_under_rational E D hDnz gd hRat A₀ A₁]
   exact geom_residue_sum_zero_of_hAllZero E D gd P B m hAllZero A₀ A₁ hA₀ hA₁ hNV hDef
 
+/-- **Descended rational residue identity.** Under `hAllZero` +
+`gd_support_rational`, the descended pure `ZMod E.q` residue identity
+vanishes at every defined non-vertical rational pair. -/
+private theorem rational_residue_identity_zero_of_hAllZero
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) (hRat : gd_support_rational E D gd)
+    (P : ZMod E.q × ZMod E.q) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E D P B A₀ A₁ →
+      logDerivCheckFn E D P k B m A₀ A₁ = 0)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1)
+    (hDef : logDerivCheckFnDefined E D P B A₀ A₁) :
+    (∑ P' ∈ zerosFinset E D, (rationalMultAt E D gd P' : ZMod E.q) *
+          ((A₁.1 - A₀.1) *
+            (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P'.1 P'.2)⁻¹)
+    + (∑ j : Fin (k + 1),
+        ((Fin.cons (-1) (fun j => -m j) : Fin (k + 1) → ZMod E.q) j) *
+        ((A₁.1 - A₀.1) *
+          (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
+            ((Fin.cons (P.1, -P.2) B : Fin (k + 1) → ZMod E.q × ZMod E.q) j).1
+            ((Fin.cons (P.1, -P.2) B : Fin (k + 1) → ZMod E.q × ZMod E.q) j).2)⁻¹)
+      = 0 := by
+  classical
+  set R : Fin (k + 1) → ZMod E.q × ZMod E.q := Fin.cons (P.1, -P.2) B with hR_def
+  set m' : Fin (k + 1) → ZMod E.q := Fin.cons (-1) (fun j => -m j) with hM'_def
+  -- Step 1: bar-level identity.
+  have hBar := geom_residue_sum_zero_re_indexed_of_hAllZero E D hDnz gd hRat
+    P B m hAllZero A₀ A₁ hA₀ hA₁ hNV hDef
+  -- Step 2: chord avoids rational D-zeros and R-positions.
+  have hDenom : logDerivCheckFnDenom E D P B A₀ A₁ ≠ 0 := hDef
+  have h_chord_avoid : ∀ P' ∈ zerosFinset E D,
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P'.1 P'.2 ≠ 0 :=
+    chord_avoids_D_zeros_of_denom_defined D P B A₀ A₁ hA₀ hA₁ hNV hDenom
+  -- For R-positions: from hDef.
+  unfold logDerivCheckFnDefined logDerivCheckFnDenom at hDef
+  have h_negP_line : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2) ≠ 0 :=
+    right_ne_zero_of_mul (left_ne_zero_of_mul hDef)
+  have h_B_lineProd : (Finset.univ : Finset (Fin k)).prod
+        (fun j => (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2) ≠ 0 :=
+    right_ne_zero_of_mul hDef
+  have h_B_line : ∀ j : Fin k,
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 ≠ 0 := by
+    intro j hj
+    exact h_B_lineProd (Finset.prod_eq_zero (Finset.mem_univ j) hj)
+  have h_R_line : ∀ j : Fin (k + 1),
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R j).1 (R j).2 ≠ 0 := by
+    intro j
+    refine Fin.cases ?_ ?_ j
+    · show (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R 0).1 (R 0).2 ≠ 0
+      rw [hR_def]; simp [Fin.cons_zero]; exact h_negP_line
+    · intro i
+      show (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R i.succ).1 (R i.succ).2 ≠ 0
+      rw [hR_def]; simp [Fin.cons_succ]; exact h_B_line i
+  -- Step 3: descend each summand using descent lemmas.
+  have h_first_descend :
+      (∑ P' ∈ zerosFinset E D, ((rationalMultAt E D gd P' : ℕ) : Fqbar E) *
+          (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+            (lineEvalNumAtFullBarOfFq E P'))⁻¹)
+        = fqToBar E (∑ P' ∈ zerosFinset E D,
+            (rationalMultAt E D gd P' : ZMod E.q) *
+              ((A₁.1 - A₀.1) *
+                (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P'.1 P'.2)⁻¹) := by
+    rw [Finset.sum_congr rfl
+      (fun P' hP' => bar_residue_summand_descends E P' A₀ A₁ hNV
+        (rationalMultAt E D gd P') (h_chord_avoid P' hP'))]
+    unfold fqToBar
+    rw [map_sum]
+  have h_second_descend :
+      (∑ j : Fin (k + 1),
+          fqToBar E (m' j) *
+          (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+            (lineEvalNumAtFullBarOfFq E (R j)))⁻¹)
+        = fqToBar E (∑ j : Fin (k + 1),
+            m' j *
+              ((A₁.1 - A₀.1) *
+                (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R j).1 (R j).2)⁻¹) := by
+    rw [Finset.sum_congr rfl
+      (fun j _ => bar_residue_summand_descends_fq E (R j) A₀ A₁ hNV
+        (m' j) (h_R_line j))]
+    unfold fqToBar
+    rw [map_sum]
+  rw [h_first_descend, h_second_descend] at hBar
+  -- Combine the two fqToBar terms via map_add.
+  rw [show (fqToBar E (∑ P' ∈ zerosFinset E D,
+              (rationalMultAt E D gd P' : ZMod E.q) *
+                ((A₁.1 - A₀.1) * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P'.1 P'.2)⁻¹))
+            + fqToBar E (∑ j, m' j * ((A₁.1 - A₀.1) *
+                (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R j).1 (R j).2)⁻¹)
+          = fqToBar E ((∑ P' ∈ zerosFinset E D,
+              (rationalMultAt E D gd P' : ZMod E.q) *
+                ((A₁.1 - A₀.1) * (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P'.1 P'.2)⁻¹)
+            + (∑ j, m' j * ((A₁.1 - A₀.1) *
+                (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (R j).1 (R j).2)⁻¹)) from by
+    unfold fqToBar; rw [map_add]] at hBar
+  exact (fqToBar_eq_zero_iff E _).mp hBar
+
 /-- The sum of geometric multiplicities equals the natDegree of `normPoly`. -/
 private theorem gd_mult_sum_eq_natDegree
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
