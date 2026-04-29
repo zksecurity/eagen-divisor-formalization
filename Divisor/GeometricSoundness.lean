@@ -966,7 +966,7 @@ theorem log_deriv_sz_paper_tight_geometric
           (3 * D.degE + 9 * k + 71) * E.points.card :=
         Nat.add_le_add hCoreBound hUndefBound
 
-/--
+/-
 Geometric all-zero branch: if the verifier discrepancy vanishes on every
 defined nonvertical rational challenge, then the extractor succeeds and
 returns a valid dlog witness.
@@ -982,6 +982,51 @@ support to be rational where it contributes to the extractor. Then reuse
 the existing grouped extractor algebra, but with multiplicities supplied
 by the geometric divisor data rather than `zerosAt`/`β_fun`.
 -/
+/--
+Helper: derive the `distinctSigma_exists` output from geometric residue
+specialisation, without the old `hValidPairsLarge`/`splitsOnE` route.
+
+The descended geometric numerator `geomPolyGFull` has bounded total
+degree. The all-zero hypothesis, combined with the undefined-pair bound,
+should force this numerator to be identically zero by the DKL/Lang-Weil
+zero bound. Residue specialisation over `F_qbar` then matches the
+geometric zero divisor against the prescribed rational divisor
+`(-P) + Σ m_j B_j`.
+-/
+private theorem geometric_sigma_matching
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
+    (hkm : stmt.k = msg.k)
+    (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
+    (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
+        (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
+            distinctR E stmt msg hkm j ≠ A₀) →
+        denomScaledPoly (E := E) msg.toD stmt.target
+          (baseImageCount E stmt msg hkm)
+          (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E ≠ 0)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hAllZero :
+      ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+        A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+        logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
+        logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+          (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
+    splitsOnE E msg.toD ∧
+    ∃ (σ : Fin (zerosCard E msg.toD) ↪
+            Fin (1 + baseImageCount E stmt msg hkm)),
+      (∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ k)) ∧
+      (∀ k, ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q)
+            + distinctM' E stmt msg hkm (σ k) = 0) ∧
+      (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) := by
+  sorry
+
+set_option maxHeartbeats 800000 in
 theorem extractor_of_logDerivCheck_all_zero_geometric_general
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
@@ -1009,7 +1054,66 @@ theorem extractor_of_logDerivCheck_all_zero_geometric_general
     ∃ wit : DlogWitness E.q,
       maExtractor E stmt msg stmt.degBound hd hkm = some wit
       ∧ relDlog E stmt wit := by
-  sorry
+  classical
+  have hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
+    admSet_implies_toD_nonzero stmt msg hAdm
+  obtain ⟨hSplit, σ, hσ_eq, hσ_betam, hσ_off⟩ :=
+    geometric_sigma_matching E stmt hd hd2 msg hDeg hkm hSmooth hDenomNZ
+      hTargetOnE hBasesOnE hLargeQ hAdm hNoNegP hAllZero
+  have hβsup := betaCanonical_support E msg.toD
+  have hβcov := betaCanonical_covers E msg.toD hDnz
+  have hβsum := betaCanonical_sum_le_degE E msg.toD
+  have hβgroup := betaCanonical_group_sum_zero E msg.toD hSplit
+  obtain ⟨hBound, hCanon, hNonCanon⟩ :=
+    extractorCoeffFromSigma_satisfies_D3 E stmt msg stmt.degBound hDeg hkm hNoNegP
+      (betaCanonical E msg.toD) hβsup hβcov hβsum σ hσ_eq hσ_betam hσ_off
+  obtain ⟨hSucc, _⟩ :=
+    extractorSucceeds_of_natural_witness E stmt msg stmt.degBound hd hkm hNoNegP
+      (extractorCoeffFromSigma E stmt msg hkm (betaCanonical E msg.toD) σ)
+      hBound hCanon hNonCanon
+  have hEq : extractorDivisorCoeffs E stmt msg hkm =
+      dCoeffs E msg.toD (betaCanonical E msg.toD) :=
+    funext fun P =>
+      extractorDivisorCoeffs_eq_dCoeffs E stmt msg stmt.degBound hDeg hd hkm
+        hNoNegP (betaCanonical E msg.toD) hβsup hβcov hβsum σ hσ_eq hσ_betam
+        hσ_off P
+  have hβsup_P : ∀ P, betaCanonical E msg.toD P ≠ 0 → P ∈ E.points :=
+    fun P hP => (hβsup P hP).1
+  have hFinSupp :=
+    dCoeffs_finiteSupport E msg.toD (betaCanonical E msg.toD) hβsup_P
+  have hGSup :=
+    dCoeffs_groupSum_zero E msg.toD (betaCanonical E msg.toD) hβsup_P hβgroup hFinSupp
+  have hSupSub : Function.support (dCoeffs E msg.toD (betaCanonical E msg.toD))
+      ⊆ ↑(extractorDivisorCandidate E stmt msg hkm) := fun P hP =>
+    extractorDivisorCoeffs_support_subset_candidate E stmt msg hkm
+      (show extractorDivisorCoeffs E stmt msg hkm P ≠ 0 by rw [hEq]; exact hP)
+  have hFinSupp_sub : hFinSupp.toFinset ⊆ extractorDivisorCandidate E stmt msg hkm :=
+    fun P hP => hSupSub ((Set.Finite.mem_toFinset hFinSupp).mp hP)
+  have hPad : ECPoint.weightedSum E (extractorDivisorCandidate E stmt msg hkm)
+          (fun P => ECPoint.zsmul E (dCoeffs E msg.toD (betaCanonical E msg.toD) P) P)
+        = ECPoint.weightedSum E hFinSupp.toFinset
+            (fun P => ECPoint.zsmul E (dCoeffs E msg.toD (betaCanonical E msg.toD) P) P) :=
+    ECPoint.weightedSum_subset_of_zero_outside E hFinSupp_sub
+      (fun P _ hPnotSup => by
+        rw [Set.Finite.mem_toFinset, Function.mem_support, not_not] at hPnotSup
+        rw [hPnotSup]
+        exact ECPoint.zsmul_zero E P)
+  have hWSum : ECPoint.weightedSum E (extractorDivisorCandidate E stmt msg hkm)
+      (fun P => ECPoint.zsmul E (extractorDivisorCoeffs E stmt msg hkm P) P) = 0 := by
+    have : (fun P => ECPoint.zsmul E (extractorDivisorCoeffs E stmt msg hkm P) P) =
+        fun P => ECPoint.zsmul E (dCoeffs E msg.toD (betaCanonical E msg.toD) P) P := by
+      ext P
+      rw [congr_fun hEq P]
+    rw [this, hPad]
+    exact hGSup
+  have hTarget :=
+    target_eq_weightedSum_of_weightedSum E stmt msg hkm hTargetOnE hBasesOnE
+      hNoNegP hWSum
+  exact ⟨⟨msg.k, extractedScalars E stmt msg hkm, stmt.degBound, hSucc⟩,
+    by
+      unfold maExtractor
+      rw [dif_pos hSucc],
+    ⟨hkm, hTarget⟩⟩
 
 /--
 Geometric all-zero branch, including the degenerate case where `-P` is
