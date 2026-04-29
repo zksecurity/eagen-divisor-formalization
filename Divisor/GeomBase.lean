@@ -44,6 +44,22 @@ structure GeomPoint where
   onCurve :
     y ^ 2 = x ^ 3 + fqToBar E E.curveA * x + fqToBar E E.curveB
 
+namespace GeomPoint
+
+/-- The other sheet in the affine fiber above the same `x` coordinate. -/
+noncomputable def conjugate (Q : GeomPoint E) : GeomPoint E :=
+  ⟨Q.x, -Q.y, by
+    rw [show (-Q.y) ^ 2 = Q.y ^ 2 by ring]
+    exact Q.onCurve⟩
+
+@[simp] theorem conjugate_x (Q : GeomPoint E) :
+    (Q.conjugate E).x = Q.x := rfl
+
+@[simp] theorem conjugate_y (Q : GeomPoint E) :
+    (Q.conjugate E).y = -Q.y := rfl
+
+end GeomPoint
+
 namespace CoordRingElt
 
 /-- Evaluation of a coordinate-ring element at a geometric point. -/
