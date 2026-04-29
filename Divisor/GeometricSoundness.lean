@@ -2303,6 +2303,52 @@ private theorem gd_support_card_eq_zerosCard
       exact ⟨hPpts, hPzero⟩
     exact (hUniq Q hQmem P ⟨hPmem, rfl, rfl⟩).symm
 
+/-- Under `gd_support_rational`, the bar-level product of geometric line
+factors over `gd.support` equals the product of rational line factors
+over `zerosFinset E D` (re-indexed via the bijection `Q ↦ rational lift`). -/
+private theorem prod_lineEvalNumAtFullBar_support_eq_under_rational
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D)
+    (hRat : gd_support_rational E D gd) :
+    ∏ Q ∈ gd.support, lineEvalNumAtFullBar E Q
+      = ∏ P ∈ zerosFinset E D, lineEvalNumAtFullBarOfFq E P := by
+  classical
+  let f : (Q : GeomPoint E) → Q ∈ gd.support → ZMod E.q × ZMod E.q :=
+    fun Q hQ => (gd_support_eq_zerosFinset_image E D hDnz gd hRat Q hQ).choose
+  have hSpec : ∀ Q (hQ : Q ∈ gd.support),
+      f Q hQ ∈ zerosFinset E D ∧ Q.x = fqToBar E (f Q hQ).1 ∧ Q.y = fqToBar E (f Q hQ).2 :=
+    fun Q hQ => (gd_support_eq_zerosFinset_image E D hDnz gd hRat Q hQ).choose_spec.1
+  have hUniq : ∀ Q (hQ : Q ∈ gd.support) P,
+      P ∈ zerosFinset E D ∧ Q.x = fqToBar E P.1 ∧ Q.y = fqToBar E P.2 →
+      P = f Q hQ :=
+    fun Q hQ P hP =>
+      (gd_support_eq_zerosFinset_image E D hDnz gd hRat Q hQ).choose_spec.2 P hP
+  refine Finset.prod_bij f ?_ ?_ ?_ ?_
+  · intro Q hQ; exact (hSpec Q hQ).1
+  · intro Q₁ hQ₁ Q₂ hQ₂ heq
+    have hP₁ := hSpec Q₁ hQ₁
+    have hP₂ := hSpec Q₂ hQ₂
+    have hx : Q₁.x = Q₂.x := by rw [hP₁.2.1, heq, ← hP₂.2.1]
+    have hy : Q₁.y = Q₂.y := by rw [hP₁.2.2, heq, ← hP₂.2.2]
+    exact GeomPoint.mk.injEq .. |>.mpr ⟨hx, hy⟩
+  · intro P hP
+    rw [zerosFinset, zeros, Finset.mem_filter] at hP
+    obtain ⟨hPpts, hPzero⟩ := hP
+    set Q : GeomPoint E := ⟨fqToBar E P.1, fqToBar E P.2, by
+      unfold fqToBar
+      rw [← map_pow, ← map_pow, ← map_mul, ← map_add, ← map_add]
+      exact congrArg _ (E.hOnCurve P hPpts)⟩ with hQ_def
+    have hQmem : Q ∈ gd.support :=
+      support_lift_of_rational_zero E D gd P hPpts hPzero
+    refine ⟨Q, hQmem, ?_⟩
+    have hPmem : P ∈ zerosFinset E D := by
+      rw [zerosFinset, zeros, Finset.mem_filter]
+      exact ⟨hPpts, hPzero⟩
+    exact (hUniq Q hQmem P ⟨hPmem, rfl, rfl⟩).symm
+  · intro Q hQ
+    exact lineEvalNumAtFullBar_eq_lineEvalNumAtFullBarOfFq_of_rational E Q (f Q hQ)
+      (hSpec Q hQ).2.1 (hSpec Q hQ).2.2
+
 /--
 **Residue identity at defined non-vertical chords.** Under `hAllZero`,
 the residue-divided sum
