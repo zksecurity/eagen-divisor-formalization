@@ -50,7 +50,7 @@
 -/
 import Divisor.OrdP.Uniformizer
 import Divisor.Axioms.AxiomPrincipalDivisorIff
-import Divisor.Axioms.AxiomExistsDivisorMultiplicity
+import Divisor.SplitsOnE
 
 open Polynomial Finset
 

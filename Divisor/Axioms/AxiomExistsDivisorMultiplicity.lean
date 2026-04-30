@@ -26,41 +26,26 @@
   Silverman, *The Arithmetic of Elliptic Curves* (GTM 106),
   Corollary III.3.5, p. 63 (Abel's theorem) + II §1 (local orders).
 
-  Phase-1 plan: this axiom is intended to be discharged by
-  mechanising ord_P from uniformizers and deriving the existential
-  via `principal_divisor_iff` applied to `div(D)`.
+  Phase-1 plan (now realised): this existence statement is no longer
+  asserted as an axiom but proved as a theorem with witness
+  `ordAt E D`, derived from the narrower principal-divisor bridge
+  axiom `ordAt_divisor_isPrincipal`. The theorem
+  `Divisor.exists_divisor_multiplicity_proved` lives in
+  `Divisor/OrdP/LocalRing.lean`; this file re-exports it under the
+  legacy name `CoordRingElt.exists_divisor_multiplicity` so that
+  downstream `betaTrue` / `betaCanonical` consumers continue to work
+  unchanged. Importing `Divisor.OrdP.LocalRing` here is safe because
+  `splitsOnE` was extracted into `Divisor.SplitsOnE` to break the
+  prior import cycle.
 -/
 import Divisor.Defs
 import Divisor.BetaConstructive
+import Divisor.SplitsOnE
+import Divisor.OrdP.LocalRing
 
 namespace Divisor
 
 variable (E : ECSetup)
-
-/-! ## The "splits on E" predicate
-
-    `normPoly_splits_over_Fq E D` only requires that `normPoly E D`
-    splits as a univariate polynomial in `X` over `F_q`. That is
-    *not* enough to make the F_q-restricted accounting / group-sum
-    clauses sound: a root `α` of `normPoly E D` carries no F_q-mass
-    if there are no F_q-rational `(α, y) ∈ E.points`.
-
-    The stronger predicate `splitsOnE E D` adds the missing fiber-
-    rationality condition: every root of `normPoly E D` lifts to at
-    least one F_q-rational point of `E`. -/
-
-/-- `splitsOnE E D` ↔ `normPoly E D` splits over F_q AND every root
-    of `normPoly E D` is the x-coordinate of some F_q-point of E. -/
-def splitsOnE (D : CoordRingElt E.q) : Prop :=
-  normPoly_splits_over_Fq E D ∧
-  (∀ α ∈ (normPoly E D).roots, ∃ y : ZMod E.q, (α, y) ∈ E.points)
-
-theorem splitsOnE.toSplits {D : CoordRingElt E.q}
-    (h : splitsOnE E D) : normPoly_splits_over_Fq E D := h.1
-
-theorem splitsOnE.fiber {D : CoordRingElt E.q}
-    (h : splitsOnE E D) :
-    ∀ α ∈ (normPoly E D).roots, ∃ y : ZMod E.q, (α, y) ∈ E.points := h.2
 
 /-- **Existence of true divisor multiplicity** (Silverman AEC III Cor
     3.5 + II §1, specialised to `D = a(x) - b(x)·y ∈ F_q[E]^×`).
@@ -74,8 +59,13 @@ theorem splitsOnE.fiber {D : CoordRingElt E.q}
       rationality of every root over F_q),
         `Σ β = (normPoly E D).natDegree` (pole-at-∞ accounting), and
     * under `splitsOnE E D`,
-        the β-weighted group sum on `E.points` is `O` (Abel's theorem). -/
-axiom CoordRingElt.exists_divisor_multiplicity
+        the β-weighted group sum on `E.points` is `O` (Abel's theorem).
+
+    Proved via `exists_divisor_multiplicity_proved` (witness
+    `ordAt E D`); the only remaining axiom in the dependency closure
+    of this statement is `ordAt_divisor_isPrincipal` (the narrower
+    principal-divisor bridge for `divisorOfD E D`). -/
+theorem CoordRingElt.exists_divisor_multiplicity
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     ∃ β : ZMod E.q × ZMod E.q → ℕ,
       (∀ P, β P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0) ∧
@@ -85,7 +75,8 @@ axiom CoordRingElt.exists_divisor_multiplicity
         (∑ P ∈ E.points, β P) = (normPoly E D).natDegree) ∧
       (splitsOnE E D →
         ECPoint.weightedSum E E.points
-          (fun P => ECPoint.nsmul E (β P) (ECPoint.affine E P.1 P.2)) = 0)
+          (fun P => ECPoint.nsmul E (β P) (ECPoint.affine E P.1 P.2)) = 0) :=
+  exists_divisor_multiplicity_proved E D hD
 
 /-! ## `betaTrue`: a fixed canonical witness from the existence axiom -/
 

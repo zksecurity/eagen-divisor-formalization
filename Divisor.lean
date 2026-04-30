@@ -17,6 +17,7 @@ import Divisor.ClearedPolyFormBounds
 import Divisor.ClearedFullPoly
 import Divisor.SigmaMatching
 import Divisor.BetaConstructive
+import Divisor.SplitsOnE
 import Divisor.BetaUnique
 import Divisor.NormLogDeriv
 import Divisor.BivariateLogDeriv
