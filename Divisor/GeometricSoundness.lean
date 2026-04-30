@@ -3349,12 +3349,11 @@ private theorem sigma_data_of_gd_support_rational
     exact absurd (Nat.le_of_dvd hPos hDvd) (Nat.not_le.mpr hLt)
   have hELargeDkl : E.points.card * E.points.card - 2 * E.points.card >
         18 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) * E.q := by
-    -- Hasse-Weil + hLargeQ arithmetic. The threshold n²-2n > 18(d+M)q
-    -- requires sharp Hasse `(n-q+2)² ≤ 4(n+1)` (derivable from
-    -- `(n-q)² ≤ 4q` via algebraic manipulation). Combined with hLargeQ,
-    -- the resulting polynomial inequality holds for any D+K but
-    -- requires multi-step nlinarith with carefully chosen witnesses.
-    -- Open piece — extraction sketched in `plan_remaining_residue_match.md`.
+    -- Open arithmetic: with hLargeQ coefficient 31 vs needed 36+, the
+    -- linear-bound polynomial inequality fails for D+K ≥ 21 even with
+    -- sharp Hasse `(n-q+2)² ≤ 4(n+1)` if used without sqrt extraction.
+    -- Closure requires Nat.sqrt for sharp Hasse `q ≤ n+2+2√(n+1)`,
+    -- which gives q ≈ n + O(√n) and closes for any D+K.
     sorry
   have hVanishing : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
