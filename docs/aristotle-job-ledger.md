@@ -67,6 +67,17 @@ this repository. The Aristotle queue is shared, so jobs observed via
     smaller missing bridge connecting the bar-level residue identity to the
     one-variable partial-fraction form.
   - Status: QUEUED when checked 2026-04-30.
+- `d7bd9ece-b5cc-4f3f-ae23-81248eb02b5d`
+  - Submitted: 2026-04-30
+  - Target: finite-grid-to-polynomial identity bridge for the existing
+    `hExEToPoly` hypothesis in `Divisor.GeometricSoundness`.
+  - Prompt summary: prove a theorem converting vanishing of the specific
+    `geomPolyGFull` on all rational pairs in `E.points × E.points` to
+    polynomial equality, with an explicit degree/cardinality condition if
+    needed; do not touch the Frobenius descent job and do not add axioms.
+  - Expected useful output: a compiling private theorem that instantiates
+    `hExEToPoly`, or the weakest missing finite-grid/degree condition.
+  - Status: QUEUED when checked 2026-04-30.
 - `43872498-d8b8-4837-9cb2-4d0a31a68fe8`
   - Submitted: 2026-04-30
   - Target: `Divisor.GeometricSoundness.gd_support_rational_of_hAllZero`
