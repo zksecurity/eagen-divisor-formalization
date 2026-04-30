@@ -6,6 +6,17 @@ this repository. The Aristotle queue is shared, so jobs observed via
 
 ## Active Jobs
 
+- `2330e1ea-1086-4711-9e82-76835ccae3cc`
+  - Submitted: 2026-04-30
+  - Target: geometric divisor-of-norm bridge plumbing in
+    `Divisor.GeometricSoundness`
+  - Prompt summary: add a narrow `Fqbar` geometric norm-factorisation bridge
+    axiom, then derive `chord_fiber_product_ne_zero`,
+    `chord_fiber_product_bar_rootMultiplicity_eq_zfiber`, and the existing
+    z-fiber accounting theorem from it.
+  - Expected useful output: a clean proof/axiom boundary for the two chord
+    residual sorries, avoiding the old `splitsOnE`-gated axiom.
+  - Status: submitted, not yet checked.
 - `dbe4c0c9-30f5-4eef-ae28-5c5f2ebf24ea`
   - Submitted: 2026-04-30
   - Target: `Divisor.GeometricSoundness.chord_fiber_product_ne_zero`
