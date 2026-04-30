@@ -52,7 +52,21 @@ this repository. The Aristotle queue is shared, so jobs observed via
     helper lemmas rather than adding an axiom.
   - Expected useful output: a complete proof if possible, otherwise a sharper
     decomposition of the rationality/Frobenius-orbit obstruction.
-  - Status: IN_PROGRESS when checked 2026-04-30, 47%.
+  - Status: COMPLETE_WITH_ERRORS; inspected 2026-04-30. Useful helper output
+    was ported in commit `b7f9312`: `Divisor.FrobDescentHelpers` proves
+    abstract partial-fraction uniqueness and slope choice; `Divisor.SlopeChoice`
+    instantiates slope choice for `GeomPoint`. The broad rational-support sorry
+    is now reduced to `frob_descent_mult_zero_of_not_fixed`.
+- `22cf9f49-19da-4e4a-83b0-6a6b6ef441f4`
+  - Submitted: 2026-04-30
+  - Target: `Divisor.GeometricSoundness.frob_descent_mult_zero_of_not_fixed`
+  - Prompt summary: focus only on the narrowed Frobenius-descent core; use the
+    newly integrated slope-choice and partial-fraction helpers; do not touch
+    `WeilReciprocityDescent` and do not add axioms.
+  - Expected useful output: a complete proof of the narrowed theorem, or a
+    smaller missing bridge connecting the bar-level residue identity to the
+    one-variable partial-fraction form.
+  - Status: QUEUED when checked 2026-04-30.
 - `43872498-d8b8-4837-9cb2-4d0a31a68fe8`
   - Submitted: 2026-04-30
   - Target: `Divisor.GeometricSoundness.gd_support_rational_of_hAllZero`
