@@ -6,23 +6,24 @@ this repository. The Aristotle queue is shared, so jobs observed via
 
 ## Active Jobs
 
-- `65b53e80-0427-413e-b18c-ff86e7d6dd0a`
-  - Submitted: 2026-04-30
-  - Targets: `chord_fiber_product_ne_zero` and
-    `chord_fiber_product_bar_rootMultiplicity_eq_zfiber` in
-    `Divisor.GeometricSoundness`.
-  - Prompt summary: discharge the two sharp residuals of the bar
-    fiber-accounting bundle; rational non-vanishing of the opaque
-    chord-fiber product, and per-`z` push-forward identity for its
-    base change. Constraint: no broad new axiom; sharper sub-`sorry`s
-    are acceptable.
-  - Expected useful output: complete proofs if possible, otherwise a
-    cleaner decomposition with the smallest residual sub-sorries and
-    a derivation of the two targets from them.
-  - Status: submitted, not yet checked.
+(none)
 
 ## Historical Context
 
+- `65b53e80-0427-413e-b18c-ff86e7d6dd0a` completed on 2026-04-30.
+  - Targets: `chord_fiber_product_ne_zero` and
+    `chord_fiber_product_bar_rootMultiplicity_eq_zfiber`.
+  - Result: not merged. Aristotle restructured the proof by
+    introducing a new sorry `chord_fiber_product_bar_factored` (the
+    broad divisor-of-norm factorisation over `Fqbar`) and deriving
+    both targets from it. This collapses the local 2-sorry
+    decomposition back into a single broad obligation, which is
+    exactly the shape the user explicitly asked to avoid (cf. the
+    constraint against `AxiomChordFiberProductBarFactorisation`).
+    One useful by-product, a generic Mathlib-style helper
+    `rootMultiplicity_prod_linear_pow` in a new file
+    `Divisor/RootMultiplicityProd.lean`, was likewise not merged
+    because it is unused under the current local decomposition.
 - `43872498-d8b8-4837-9cb2-4d0a31a68fe8` completed on 2026-04-30.
   - Target: `Divisor.GeometricSoundness.gd_support_rational_of_hAllZero`.
   - Result: did not fully discharge. Aristotle output snapshotted an older
