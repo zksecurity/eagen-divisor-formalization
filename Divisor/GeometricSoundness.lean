@@ -18,6 +18,7 @@ import Divisor.TightBound
 import Divisor.GeomLocalOrder
 import Divisor.CoeffDescent
 import Divisor.PartialFractionExpansion
+import Divisor.SlopeChoice
 import Divisor.Axioms.AxiomChordFiberProductBarFactored
 
 open Polynomial Finset Classical
@@ -2899,7 +2900,7 @@ coincides with `zerosFinset E D`. Each `Q ∈ gd.support` rationalizes to
 a unique rational zero of `D`, and conversely every rational zero lifts
 to a unique support point. -/
 private theorem gd_support_eq_zerosFinset_image
-    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (D : CoordRingElt E.q) (_hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D)
     (hRat : gd_support_rational E D gd)
     (Q : GeomPoint E) (hQ : Q ∈ gd.support) :
@@ -3283,7 +3284,7 @@ descends to `fqToBar` of a rational expression, when the line factor is
 nonzero. -/
 private theorem bar_residue_summand_descends_fq
     (P A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1)
-    (c : ZMod E.q) (hLine : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 P.2 ≠ 0) :
+    (c : ZMod E.q) (_hLine : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 P.2 ≠ 0) :
     fqToBar E c *
         (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E P))⁻¹
       = fqToBar E (c *
@@ -4560,12 +4561,52 @@ private theorem sigma_data_of_gd_support_rational
     (fun j => distinctR_mem_points E stmt msg hkm _hTargetOnE _hBasesOnE j)
     hVanishing hELargeThr hELargeDkl
 
+/--
+Frobenius descent core for the rational-support branch.
+
+PROVIDED SOLUTION
+Choose a slope `lam` with `exists_slope_zLambdaBar_isolated_non_rational`,
+so the non-rational support point `Q` has a unique non-rational pole in the
+single variable `mu = zLambdaBar E lam A₀`. Reparameterise the bar-level
+residue identity from `hAllZero` as a partial-fraction sum in `mu`.
+After removing poles and denominator failures, the `hLargeQ` hypothesis gives
+enough rational evaluation points. Apply
+`FrobDescentHelpers.partial_fraction_coeff_zero` and read off the coefficient
+at the isolated pole, which is `((gd.mult Q : ℕ) : Fqbar E)`.
+-/
+private theorem frob_descent_mult_zero_of_not_fixed
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (hDeg : D.degE < E.q)
+    (P : ZMod E.q × ZMod E.q) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (_hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E D P B A₀ A₁ →
+      logDerivCheckFn E D P k B m A₀ A₁ = 0)
+    (_hLargeQ : E.points.card >
+        2 * (5 * (D.degE + k + 2) + 3) + 21 * (D.degE + k + 2) + 72)
+    (Q : GeomPoint E) (hQ : Q ∈ gd.support)
+    (hNotFixed : frobGeomPoint E Q ≠ Q) :
+    ((gd.mult Q : ℕ) : Fqbar E) = 0 := by
+  have hCardBound : gd.support.card < E.q := by
+    have hSingle : gd.support.card ≤ ∑ Q ∈ gd.support, gd.mult Q := by
+      calc gd.support.card
+          = ∑ _ ∈ gd.support, 1 := by simp
+        _ ≤ ∑ Q ∈ gd.support, gd.mult Q :=
+            Finset.sum_le_sum (fun Q hQ => gd.mult_pos_on_support Q hQ)
+    exact lt_of_le_of_lt (le_trans hSingle gd.accounting_le_degE) hDeg
+  obtain ⟨lam, hSep, hNonRat⟩ :=
+    exists_slope_zLambdaBar_isolated_non_rational E D gd hCardBound Q hQ hNotFixed
+  let _ := lam
+  let _ := hSep
+  let _ := hNonRat
+  -- Remaining bridge: connect the bar-level residue identity to the abstract
+  -- partial-fraction uniqueness lemma at the slope chosen above.
+  sorry
+
 /-- **Rationality of the geometric support under `hAllZero`.** The all-zero
 hypothesis on `logDerivCheckFn` over rational defined non-vertical pairs
-(combined with the `chord_fiber_product_bar_factorisation` axiom) forces
-every `Q ∈ gd.support` to have `F_q`-rational coordinates. The argument
-is a Frobenius-orbit / Bezout combination over `Fqbar` outlined in
-`plan_geometric_residue_match.md`. -/
+forces every `Q ∈ gd.support` to have `F_q`-rational coordinates. -/
 private theorem gd_support_rational_of_hAllZero
     (stmt : DlogStatement E.q) (_hd : stmt.degBound < E.q)
     (msg : MAProverMsg E.q) (_hDeg : msg.toD.degE ≤ stmt.degBound)
@@ -4577,7 +4618,7 @@ private theorem gd_support_rational_of_hAllZero
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
         21 * (msg.toD.degE + stmt.k + 2) + 72)
     (_hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
-    (hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
+    (_hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
     (gd : GeometricDivisorData E msg.toD)
     (_hAllZero :
       ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
@@ -4587,24 +4628,17 @@ private theorem gd_support_rational_of_hAllZero
           (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
     gd_support_rational E msg.toD gd := by
   classical
-  let _ := hDnz
-  -- Reduction via Frobenius-fixedness: gd_support_rational ↔ every Q
-  -- in gd.support is fixed by frobGeomPoint (componentwise q-power Frobenius).
   rw [gd_support_rational_iff_frob_fixed]
   intro Q hQ
-  -- Suppose for contradiction Q is not Frobenius-fixed: then its
-  -- Frobenius orbit has size ≥ 2 inside gd.support, with constant
-  -- multiplicity (by `mult_frobGeomPoint_eq`). The pooled orbital
-  -- residue contribution to the bar-level chord-sum identity must
-  -- vanish (Galois descent — non-rational orbit summands have no
-  -- rational counterpart on the RHS). Combined with `gd_mult_natCast_ne_zero`
-  -- and the orbit size bound (each |orbit| < q), the pooled multiplicity
-  -- mod q is non-zero, contradicting forced vanishing.
-  --
-  -- Mechanizing this requires the residue specialisation argument from
-  -- Stichtenoth GTM 254 §3 (function-field Galois descent at algebraic
-  -- closure) — see `plan_remaining_residue_match.md`.
-  sorry
+  by_contra hNotFixed
+  have hDegLt : msg.toD.degE < E.q := lt_of_le_of_lt _hDeg _hd
+  have hMultNZ : ((gd.mult Q : ℕ) : Fqbar E) ≠ 0 :=
+    gd_mult_fqbar_ne_zero E msg.toD gd hDegLt Q hQ
+  exact absurd
+    (frob_descent_mult_zero_of_not_fixed E msg.toD gd hDegLt
+      stmt.target stmt.bases (fun i => msg.m (hkm ▸ i))
+      _hAllZero _hLargeQ Q hQ hNotFixed)
+    hMultNZ
 
 private theorem geometric_residue_match
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)

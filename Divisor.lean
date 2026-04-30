@@ -38,4 +38,6 @@ import Divisor.DensityBound
 import Divisor.TightBound
 import Divisor.GeomBase
 import Divisor.GeomLocalOrder
+import Divisor.FrobDescentHelpers
+import Divisor.SlopeChoice
 import Divisor.GeometricSoundness
