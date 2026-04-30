@@ -6,7 +6,20 @@ this repository. The Aristotle queue is shared, so jobs observed via
 
 ## Active Jobs
 
-(none)
+- `65b53e80-0427-413e-b18c-ff86e7d6dd0a`
+  - Submitted: 2026-04-30
+  - Targets: `chord_fiber_product_ne_zero` and
+    `chord_fiber_product_bar_rootMultiplicity_eq_zfiber` in
+    `Divisor.GeometricSoundness`.
+  - Prompt summary: discharge the two sharp residuals of the bar
+    fiber-accounting bundle; rational non-vanishing of the opaque
+    chord-fiber product, and per-`z` push-forward identity for its
+    base change. Constraint: no broad new axiom; sharper sub-`sorry`s
+    are acceptable.
+  - Expected useful output: complete proofs if possible, otherwise a
+    cleaner decomposition with the smallest residual sub-sorries and
+    a derivation of the two targets from them.
+  - Status: submitted, not yet checked.
 
 ## Historical Context
 
