@@ -6,6 +6,33 @@ this repository. The Aristotle queue is shared, so jobs observed via
 
 ## Active Jobs
 
+- `dbe4c0c9-30f5-4eef-ae28-5c5f2ebf24ea`
+  - Submitted: 2026-04-30
+  - Target: `Divisor.GeometricSoundness.chord_fiber_product_ne_zero`
+  - Prompt summary: fill only the rational non-vanishing sorry for
+    `chord_fiber_product E lam D`; do not alter statements or collapse the
+    proof boundary.
+  - Expected useful output: a proof from the existing norm/function-field API,
+    or a precise explanation of the missing non-vanishing lemma.
+  - Status: submitted, not yet checked.
+- `0ae3f8d9-c506-48f3-b920-c3eedad49a0d`
+  - Submitted: 2026-04-30
+  - Target:
+    `Divisor.GeometricSoundness.chord_fiber_product_bar_rootMultiplicity_eq_zfiber`
+  - Prompt summary: fill only the per-`z` root-multiplicity push-forward sorry;
+    do not restore the broader bundled axiom.
+  - Expected useful output: a proof of the divisor-of-norm fiber accounting
+    statement, or a precise missing lemma if the API is insufficient.
+  - Status: submitted, not yet checked.
+- `4912fc36-585f-4956-abbe-0c59755e87bb`
+  - Submitted: 2026-04-30
+  - Target: `Divisor.GeometricSoundness.gd_support_rational_of_hAllZero`
+  - Prompt summary: attempt the Frobenius descent/rational support proof using
+    the current geometric residue infrastructure; if blocked, isolate small
+    helper lemmas rather than adding an axiom.
+  - Expected useful output: a complete proof if possible, otherwise a sharper
+    decomposition of the rationality/Frobenius-orbit obstruction.
+  - Status: submitted, not yet checked.
 - `43872498-d8b8-4837-9cb2-4d0a31a68fe8`
   - Submitted: 2026-04-30
   - Target: `Divisor.GeometricSoundness.gd_support_rational_of_hAllZero`
