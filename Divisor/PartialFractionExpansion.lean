@@ -300,4 +300,53 @@ theorem derivative_C_mul_prod_X_sub_C_pow_indexed [DecidableEq ι]
 
 end LinearFactorsIndexed
 
+/-! ### Root multiplicity of `C c · ∏ (X - C (f i)) ^ m i`
+
+Generic helper: over a (commutative) integral domain `K` with decidable
+equality, for a nonzero scalar `c` and any indexed product of linear
+factors, the multiplicity of an arbitrary point `z : K` as a root is
+the sum of `m i` over those `i ∈ s` with `f i = z`. No injectivity
+assumption on `f` is needed; collisions are handled by the filter.
+
+This is the dual of the splits-factorisation lemmas above: those go
+*from* `rootMultiplicity` *to* a product of linear factors when `p`
+has as many roots as its degree; this one goes *from* a known product
+shape *to* `rootMultiplicity`.
+
+Used downstream wherever a base-changed polynomial over `Fqbar E`
+admits a factorisation `C c · ∏ Q ∈ gd.support, (X - C (zLambdaBar Q)) ^ gd.mult Q`
+(for example via `chord_fiber_product_bar_factorisation` in
+`Divisor/GeometricSoundness.lean`): the per-`z` root multiplicity is
+read off as `∑_{Q : zLambdaBar Q = z} gd.mult Q` directly. -/
+
+section RootMultiplicityProductOfLinears
+
+variable {K : Type*} [CommRing K] [IsDomain K] {ι : Type*}
+
+/-- Root multiplicity formula for `C c · ∏ i ∈ s, (X - C (f i)) ^ (m i)`
+over a commutative integral domain `K`. The scalar `c` must be nonzero;
+no injectivity hypothesis is placed on `f`. -/
+theorem rootMultiplicity_C_mul_prod_X_sub_C_pow [DecidableEq K]
+    (s : Finset ι) (f : ι → K) (m : ι → ℕ)
+    {c : K} (hc : c ≠ 0) (z : K) :
+    rootMultiplicity z (C c * ∏ i ∈ s, (X - C (f i)) ^ (m i)) =
+      ∑ i ∈ s.filter (fun i => f i = z), m i := by
+  classical
+  have hprod_ne : (∏ i ∈ s, (X - C (f i)) ^ (m i)) ≠ 0 :=
+    Finset.prod_ne_zero_iff.mpr fun i _ => pow_ne_zero _ (X_sub_C_ne_zero (f i))
+  rw [← Polynomial.count_roots, Polynomial.roots_C_mul _ hc,
+      Polynomial.roots_prod _ _ hprod_ne, Multiset.count_bind]
+  simp only [Polynomial.roots_pow, Polynomial.roots_X_sub_C,
+             Multiset.count_nsmul, Multiset.count_singleton]
+  -- After `simp only`, LHS is `(s.val.map (fun i => m i * if z = f i then 1 else 0)).sum`
+  -- which is definitionally `∑ i ∈ s, m i * if z = f i then 1 else 0`.
+  rw [Finset.sum_filter]
+  refine Finset.sum_congr rfl ?_
+  intro i _
+  by_cases h : f i = z
+  · rw [if_pos h, if_pos h.symm, mul_one]
+  · rw [if_neg h, if_neg (fun H => h H.symm), mul_zero]
+
+end RootMultiplicityProductOfLinears
+
 end Divisor
