@@ -16,7 +16,15 @@ this repository. The Aristotle queue is shared, so jobs observed via
     z-fiber accounting theorem from it.
   - Expected useful output: a clean proof/axiom boundary for the two chord
     residual sorries, avoiding the old `splitsOnE`-gated axiom.
-  - Status: submitted, not yet checked.
+  - Status: COMPLETE; inspected 2026-04-30. The archive implemented the
+    intended bridge plumbing by adding a sorry'd
+    `chord_fiber_product_bar_eq_geom_prod` plus proofs of
+    `chord_fiber_product_ne_zero` and
+    `chord_fiber_product_bar_rootMultiplicity_eq_zfiber` from that bridge.
+    Current branch already contains the useful result, with the bridge exposed
+    as the separated axiom
+    `Divisor.Axioms.AxiomChordFiberProductBarFactored`, so no direct archive
+    application is needed.
 - `dbe4c0c9-30f5-4eef-ae28-5c5f2ebf24ea`
   - Submitted: 2026-04-30
   - Target: `Divisor.GeometricSoundness.chord_fiber_product_ne_zero`
@@ -66,7 +74,7 @@ this repository. The Aristotle queue is shared, so jobs observed via
   - Expected useful output: a complete proof of the narrowed theorem, or a
     smaller missing bridge connecting the bar-level residue identity to the
     one-variable partial-fraction form.
-  - Status: QUEUED when checked 2026-04-30.
+  - Status: IN_PROGRESS at 21% when checked 2026-04-30.
 - `d7bd9ece-b5cc-4f3f-ae23-81248eb02b5d`
   - Submitted: 2026-04-30
   - Target: finite-grid-to-polynomial identity bridge for the existing
