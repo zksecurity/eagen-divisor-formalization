@@ -5,42 +5,45 @@
   affine F_q-rational points), restated against the *sound* `ordAt`
   defined in `Divisor.OrdP.Uniformizer`.
 
-  The previous file used a 0/1 placeholder for `ordAt` and contained
-  two unprovable `sorry`s
-  (`sum_ordAt_eq_natDegree_under_split`, `ordAt_group_sum_zero_under_split`)
-  that were FALSE under that placeholder (concrete F_5 counterexample
-  in `D = X(1+X) − X·y` on `y² = x³+1`).  The redesign here:
+  The previous file used a 0/1 placeholder for `ordAt`; the
+  splitting-time accounting and group-sum-zero identities were
+  provably FALSE under that placeholder (concrete F_5 counterexample:
+  `D = X(1+X) − X·y` on `y² = x³+1`).  The redesign here:
 
   * Uses the new `ordAt` from `Uniformizer.lean`, dispatching to
     `ordAt_twoTorsion` (closed form) at 2-torsion points and
     `ordAt_nonTwoTorsion` (recursive lone/twin trichotomy) elsewhere.
-  * Re-proves the 3 previously discharged shape lemmas
-    (`ordAt_pos_iff_zero`, `ordAt_eq_zero_offE`, `sum_ordAt_le_degE`).
-  * Splits the two formerly-monolithic deep lemmas into named
-    structural obligations:
+  * Proves all support / coverage / sum bounds and the splitting-time
+    `Σ ordAt = natDeg(normPoly)` identity from primitives.
+  * Reduces the function-field / regular-function content to a
+    single explicit axiom `ordAt_divisor_isPrincipal` (Section 7).
 
-      A. `ordAt_twoTorsion_eq_rootMult_normPoly`
-         (2-torsion ord = rootMult x₀ of normPoly).
-      B. `ordAt_nonTwoTorsion_pair_eq_rootMult`
-         (sum of ords on twin sheets = rootMult x₀ of normPoly).
-      C. `ordAt_divisor_isPrincipal`
-         (the divisor `Σ ord_P · (P) − natDeg(N(D))·(O)` is
-         IsPrincipal under splitting; consumed by
-         `principal_divisor_iff` to get group-sum-zero).
+  Layout:
 
-    `sum_ordAt_eq_natDegree_under_split` follows from A + B + C-free
-    machinery.  `ordAt_group_sum_zero_under_split` uses C +
-    `principal_divisor_iff`.
+    Section 1–2: shape lemmas — `ordAt_eq_zero_offE`,
+                 `ordAt_pos_iff_zero`.
+    Section 3:   2-torsion ord identity (Obligation A — proved).
+                 Sub-lemmas: `ordAt_twoTorsion_eq_rootMult_normPoly`
+                 (split into `aZero` / `bZero` / `min` cases via
+                 `rootMult_normPoly_min_at_two_torsion` and
+                 `rootMult_normPoly_at_two_torsion_aZero`).
+    Section 4:   per-fiber sum identity (Obligation B — proved).
+                 `ordAt_nonTwoTorsion_pair_eq_rootMult` via fuel
+                 induction on the recursive helper.
+    Section 5:   `sum_ordAt_le_degE` (unconditional).
+    Section 6:   `sum_ordAt_eq_natDegree_under_split` (proved).
+    Section 7:   `divisorOfD` definition + the principal-divisor
+                 bridge axiom + `ordAt_group_sum_zero_under_split`
+                 (derived from the bridge axiom +
+                 `principal_divisor_iff`).
+    Section 8:   `exists_divisor_multiplicity_proved` — discharges
+                 the existential axiom with witness `ordAt E D`.
 
-  Main API (for downstream consumers):
-
-  * `ordAt_pos_iff_zero`, `ordAt_eq_zero_offE`, `sum_ordAt_le_degE`
-    (proved unconditionally).
-  * `sum_ordAt_eq_natDegree_under_split` — proved modulo A + B.
-  * `ordAt_group_sum_zero_under_split` — proved modulo C.
-  * `exists_divisor_multiplicity_proved` — discharges the
-    `exists_divisor_multiplicity` axiom with witness `ordAt E D`,
-    modulo the structural obligations A/B/C above.
+  Axiomatic surface introduced by this file: exactly one axiom,
+  `ordAt_divisor_isPrincipal` (the principal-divisor bridge for the
+  specific divisor `divisorOfD E D`).  See its docstring for the full
+  scope and a comparison with `exists_divisor_multiplicity` (which it
+  replaces — and is strictly weaker than).
 
   References: Silverman AEC II §1 (local orders) + III.3.5
   (principal divisor characterisation / Abel's theorem).
@@ -800,40 +803,81 @@ noncomputable def divisorOfD (D : CoordRingElt E.q) :
     | WeierstrassCurve.Affine.Point.some (x := x) (y := y) _ =>
         (ordAt E D (x, y) : ℤ)
 
-/-- **Obligation C — `divisorOfD` is principal under splitting.**
-    Mathematical content: `D = a − by ∈ F_q[E]^×` is a regular
-    function on the (function field of the) elliptic curve `E`.  Its
-    divisor `Σ_P ord_P(D)·(P) − natDeg(N(D))·(O)` is, by definition
-    of `IsPrincipal`, principal: `D` itself is the witness.
+/-- **Principal-divisor bridge axiom.**
+
+    The divisor of `D = a − b·y ∈ F_q[E]^×`,
+      `Σ_P ord_P(D) · (P) − natDeg(N(D)) · (∞)`,
+    is principal — witnessed by `D` itself viewed as an element of the
+    function field `F_q(E)`.
 
     The `splitsOnE` precondition is essential: without splitting, some
-    divisor mass lies on non-F_q-rational geometric points, and the
-    F_q-restricted version `divisorOfD` cannot be principal (its
-    degree is `-natDeg + Σ ordAt`, which equals zero only under
-    splitting, by `sum_ordAt_eq_natDegree_under_split`).
+    geometric divisor mass lies on non-F_q-rational points, and the
+    F_q-restricted `divisorOfD` cannot be principal (its degree is
+    `-natDeg + Σ ordAt`, which equals zero only under splitting, by
+    `sum_ordAt_eq_natDegree_under_split`).
 
-    The Lean obligation here is to expose this fact as a `Prop`
-    consumable by `principal_divisor_iff`.  This is NOT the
-    `exists_divisor_multiplicity` axiom in disguise — that axiom
-    bundles existence of `β` along with three sums (degE bound,
-    natDegree equality under split, group-sum-zero under split).
-    The `IsPrincipal` content here is a single algebraic fact about
-    `D` (its divisor is the divisor of a function), and downstream we
-    extract the group-sum-zero clause via the *separately axiomatic*
-    `principal_divisor_iff` characterisation.
+    ## Why this is an axiom and not a theorem
 
-    OPEN: this is the function-field / regular-function bridge that
-    Mathlib does not currently provide for elliptic curves at the
-    `ECPoint`-level abstraction.  Constructing it requires either
-    (i) a definition of `IsPrincipal` in terms of an explicit
-    function-field embedding (substantial), or
-    (ii) admitting the bridge as an axiom of the same character as
-    `principal_divisor_iff` (which Mathlib also lacks). -/
-theorem ordAt_divisor_isPrincipal
-    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplit : splitsOnE E D) :
-    IsPrincipal E (divisorOfD E D) := by
-  sorry
+    `IsPrincipal` is opaque (`Divisor/DefsPre.lean`).  The codebase
+    exposes only one fact about it: `principal_divisor_iff`, which
+    relates `IsPrincipal` to `(deg = 0 ∧ group_sum = 0)`.  That
+    biconditional is itself an axiom.
+
+    Every direct attempt to discharge `ordAt_divisor_isPrincipal` is
+    circular within the current API:
+    * `principal_divisor_iff.mp` requires `IsPrincipal` as input;
+    * `principal_divisor_iff.mpr` requires `group_sum = 0`, which is
+      exactly what we want to derive downstream from this bridge;
+    * `CoordRingElt.has_principal_divisor` packages an existential
+      `β` whose group-sum-zero is the original axiom we are
+      discharging.
+
+    Closing the loop requires the regular-function/divisor bridge for
+    elliptic curves, which Mathlib does not currently provide at the
+    `ECPoint`-level abstraction.
+
+    ## This is *not* `exists_divisor_multiplicity` in disguise
+
+    `exists_divisor_multiplicity` bundles five clauses:
+      (i)   `β` exists with support on F_q-rational `D`-zeros;
+      (ii)  `β` covers every F_q-rational `D`-zero;
+      (iii) `Σ β ≤ D.degE` (unconditional);
+      (iv)  `Σ β = (normPoly E D).natDegree` under splitting;
+      (v)   group-sum-zero of `β` under splitting.
+
+    This axiom supplies *only* the principal-divisor bridge for the
+    specific witness `divisorOfD E D` (with `β = ordAt E D`).
+    Clauses (i)–(iv) are fully **proved** from the redesigned
+    `ordAt`:
+    * (i), (ii) follow from `ordAt_pos_iff_zero`,
+      `ordAt_eq_zero_offE` (Section 1–2 above);
+    * (iii) is `sum_ordAt_le_degE`;
+    * (iv) is `sum_ordAt_eq_natDegree_under_split` (modulo the
+      proved Obligations A and B above).
+    Clause (v) is derived from this axiom + the (axiomatic)
+    `principal_divisor_iff` in `ordAt_group_sum_zero_under_split`.
+
+    So the axiomatic content is strictly weaker: a single algebraic
+    fact about regular functions on E, in place of a packaged
+    existential with five clauses.
+
+    ## Long-term cleanup
+
+    Replacing both this axiom and `principal_divisor_iff` with proved
+    theorems requires formalising:
+    * `F_q(E)` as the fraction field of the coordinate ring;
+    * the DVR structure of the local ring at each smooth affine point;
+    * the divisor map `div : F_q(E)^× → (ECPoint E → ℤ)`;
+    * `IsPrincipal` as `∃ f ∈ F_q(E)^×, div(f) = coeffs`;
+    * compatibility of the recursive `ordAt` here with the abstract
+      DVR valuation.
+    Estimated ~2–3 weeks of focused Mathlib-level work.  Tracked as
+    an explicit follow-up; until then, this axiom is the honest
+    minimal seam. -/
+axiom ordAt_divisor_isPrincipal
+    (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (_hSplit : splitsOnE E D) :
+    IsPrincipal E (divisorOfD E D)
 
 /-- The divisor `divisorOfD` has finite support (covered by
     `E.points` lifted to `ECPoint` via `affine`, plus the point at
