@@ -14,7 +14,12 @@ this repository. The Aristotle queue is shared, so jobs observed via
     proof boundary.
   - Expected useful output: a proof from the existing norm/function-field API,
     or a precise explanation of the missing non-vanishing lemma.
-  - Status: submitted, not yet checked.
+  - Status: COMPLETE; inspected 2026-04-30. No proof produced.
+    Aristotle reported the statement is not provable from the current API
+    because `chord_fiber_product` is opaque and the only connecting axiom,
+    `chord_fiber_product_eq_normZ_under_split`, requires `splitsOnE E D`.
+    Useful conclusion: we need a dedicated norm non-vanishing bridge or a
+    geometric divisor-of-norm statement.
 - `0ae3f8d9-c506-48f3-b920-c3eedad49a0d`
   - Submitted: 2026-04-30
   - Target:
@@ -23,7 +28,11 @@ this repository. The Aristotle queue is shared, so jobs observed via
     do not restore the broader bundled axiom.
   - Expected useful output: a proof of the divisor-of-norm fiber accounting
     statement, or a precise missing lemma if the API is insufficient.
-  - Status: submitted, not yet checked.
+  - Status: COMPLETE_WITH_ERRORS; inspected 2026-04-30. No proof produced.
+    Aristotle identified the exact missing bridge as a geometric
+    divisor-of-norm factorisation over `Fqbar`, e.g.
+    `chord_fiber_product_bar_eq_geom_prod`, from which the per-`z`
+    root-multiplicity equality should be derived.
 - `4912fc36-585f-4956-abbe-0c59755e87bb`
   - Submitted: 2026-04-30
   - Target: `Divisor.GeometricSoundness.gd_support_rational_of_hAllZero`
@@ -32,7 +41,7 @@ this repository. The Aristotle queue is shared, so jobs observed via
     helper lemmas rather than adding an axiom.
   - Expected useful output: a complete proof if possible, otherwise a sharper
     decomposition of the rationality/Frobenius-orbit obstruction.
-  - Status: submitted, not yet checked.
+  - Status: IN_PROGRESS when checked 2026-04-30, 47%.
 - `43872498-d8b8-4837-9cb2-4d0a31a68fe8`
   - Submitted: 2026-04-30
   - Target: `Divisor.GeometricSoundness.gd_support_rational_of_hAllZero`
@@ -42,7 +51,13 @@ this repository. The Aristotle queue is shared, so jobs observed via
     axioms.
   - Expected useful output: a complete proof if possible, otherwise a sharper
     decomposition of the rationality/Frobenius-orbit obstruction.
-  - Status: submitted, not yet checked.
+  - Status: COMPLETE; inspected 2026-04-30. Not a drop-in patch for the
+    current branch. It proved the target by introducing three new helper
+    sorries (`geomPolyGFull_identically_zero_on_ExE`,
+    `geomPolyGFullBar_vanishes_on_Ebar_of_vanish_on_E`, and
+    `support_rational_of_residues_vanish`) plus a proved helper
+    `gd_mult_natCast_ne_zero`. Treat as proof-plan material, not code to
+    merge directly.
 
 ## Historical Context
 
