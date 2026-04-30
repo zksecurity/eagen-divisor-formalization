@@ -1963,6 +1963,127 @@ theorem lineEvalNumAtFullBarOfFq_self_zero
   rw [hx, hy]
   ring
 
+/-- Direct geometric evaluation formula for `lineEvalNumAtFullBar`. -/
+theorem lineEvalNumAtFullBar_geom_eval
+    (Q A₀ : GeomPoint E) (a₁x a₁y : Fqbar E) :
+    MvPolynomial.eval (geomBarEvalFun E A₀ a₁x a₁y)
+      (lineEvalNumAtFullBar E Q) =
+        (Q.y - A₀.y) * (a₁x - A₀.x) -
+          (Q.x - A₀.x) * (a₁y - A₀.y) := by
+  unfold lineEvalNumAtFullBar geomBarEvalFun
+  simp [MvPolynomial.eval_sub, MvPolynomial.eval_mul, MvPolynomial.eval_C,
+    MvPolynomial.eval_X, Matrix.cons_val_zero, Matrix.cons_val_one]
+
+/-- Direct geometric evaluation formula for a rational line factor. -/
+theorem lineEvalNumAtFullBarOfFq_geom_eval
+    (P : ZMod E.q × ZMod E.q) (A₀ : GeomPoint E) (a₁x a₁y : Fqbar E) :
+    MvPolynomial.eval (geomBarEvalFun E A₀ a₁x a₁y)
+      (lineEvalNumAtFullBarOfFq E P) =
+        (fqToBar E P.2 - A₀.y) * (a₁x - A₀.x) -
+          (fqToBar E P.1 - A₀.x) * (a₁y - A₀.y) := by
+  unfold lineEvalNumAtFullBarOfFq geomBarEvalFun
+  simp [MvPolynomial.eval_sub, MvPolynomial.eval_mul, MvPolynomial.eval_C,
+    MvPolynomial.eval_X, Matrix.cons_val_zero, Matrix.cons_val_one]
+
+/--
+Finite line-factor avoidance at an unmatched geometric support point.
+For `A₀ = Q`, choose `A₁ = (Q.x + 1, Q.y + t)` with `t` outside the
+finite set of bad slopes determined by all other support points and all
+rational `R j`.
+-/
+theorem line_factor_avoidance_at_unmatched_support
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    {M : ℕ} (R : Fin M → ZMod E.q × ZMod E.q)
+    (Q : GeomPoint E)
+    (hNoMatch :
+      ∀ j : Fin M, ¬ (Q.x = fqToBar E (R j).1 ∧ Q.y = fqToBar E (R j).2)) :
+    ∃ a₁x a₁y : Fqbar E,
+      (∏ Q' ∈ gd.support.erase Q,
+        MvPolynomial.eval (geomBarEvalFun E Q a₁x a₁y)
+          (lineEvalNumAtFullBar E Q')) *
+      (∏ j : Fin M,
+        MvPolynomial.eval (geomBarEvalFun E Q a₁x a₁y)
+          (lineEvalNumAtFullBarOfFq E (R j))) ≠ 0 := by
+  classical
+  let badSlopes : Finset (Fqbar E) :=
+    (gd.support.erase Q).image
+        (fun Q' : GeomPoint E => (Q'.y - Q.y) * (Q'.x - Q.x)⁻¹) ∪
+      (Finset.univ : Finset (Fin M)).image
+        (fun j : Fin M => (fqToBar E (R j).2 - Q.y) *
+          (fqToBar E (R j).1 - Q.x)⁻¹)
+  obtain ⟨t, ht⟩ := Finset.exists_notMem badSlopes
+  refine ⟨Q.x + 1, Q.y + t, ?_⟩
+  apply mul_ne_zero
+  · refine Finset.prod_ne_zero_iff.mpr ?_
+    intro Q' hQ'
+    have hQ'ne : Q' ≠ Q := Finset.ne_of_mem_erase hQ'
+    have ht_ne : t ≠ (Q'.y - Q.y) * (Q'.x - Q.x)⁻¹ := by
+      intro ht_eq
+      apply ht
+      exact Finset.mem_union.mpr (Or.inl
+        (Finset.mem_image.mpr ⟨Q', hQ', ht_eq.symm⟩))
+    rw [lineEvalNumAtFullBar_geom_eval]
+    have hEval :
+        (Q'.y - Q.y) * (Q.x + 1 - Q.x) -
+            (Q'.x - Q.x) * (Q.y + t - Q.y)
+          = (Q'.y - Q.y) - (Q'.x - Q.x) * t := by ring
+    rw [hEval]
+    by_cases hx : Q'.x - Q.x = 0
+    · have hy : Q'.y - Q.y ≠ 0 := by
+        intro hy
+        have hx' : Q'.x = Q.x := by linear_combination hx
+        have hy' : Q'.y = Q.y := by linear_combination hy
+        exact hQ'ne (geomPoint_ext E Q' Q hx' hy')
+      rw [hx, zero_mul, sub_zero]
+      exact hy
+    · intro hzero
+      have hdy : Q'.y - Q.y = (Q'.x - Q.x) * t := by linear_combination hzero
+      have ht_eq : t = (Q'.y - Q.y) * (Q'.x - Q.x)⁻¹ := by
+        calc t = (Q'.x - Q.x)⁻¹ * ((Q'.x - Q.x) * t) := by
+              rw [← mul_assoc, inv_mul_cancel₀ hx, one_mul]
+          _ = (Q'.x - Q.x)⁻¹ * (Q'.y - Q.y) := by rw [← hdy]
+          _ = (Q'.y - Q.y) * (Q'.x - Q.x)⁻¹ := by ring
+      exact ht_ne ht_eq
+  · refine Finset.prod_ne_zero_iff.mpr ?_
+    intro j _
+    have ht_ne :
+        t ≠ (fqToBar E (R j).2 - Q.y) * (fqToBar E (R j).1 - Q.x)⁻¹ := by
+      intro ht_eq
+      apply ht
+      exact Finset.mem_union.mpr (Or.inr
+        (Finset.mem_image.mpr ⟨j, Finset.mem_univ j, ht_eq.symm⟩))
+    rw [lineEvalNumAtFullBarOfFq_geom_eval]
+    have hEval :
+        (fqToBar E (R j).2 - Q.y) * (Q.x + 1 - Q.x) -
+            (fqToBar E (R j).1 - Q.x) * (Q.y + t - Q.y)
+          = (fqToBar E (R j).2 - Q.y) -
+              (fqToBar E (R j).1 - Q.x) * t := by ring
+    rw [hEval]
+    by_cases hx : fqToBar E (R j).1 - Q.x = 0
+    · have hy : fqToBar E (R j).2 - Q.y ≠ 0 := by
+        intro hy
+        apply hNoMatch j
+        constructor
+        · linear_combination -hx
+        · linear_combination -hy
+      rw [hx, zero_mul, sub_zero]
+      exact hy
+    · intro hzero
+      have hdy :
+          fqToBar E (R j).2 - Q.y = (fqToBar E (R j).1 - Q.x) * t := by
+        linear_combination hzero
+      have ht_eq :
+          t = (fqToBar E (R j).2 - Q.y) *
+              (fqToBar E (R j).1 - Q.x)⁻¹ := by
+        calc t = (fqToBar E (R j).1 - Q.x)⁻¹ *
+                  ((fqToBar E (R j).1 - Q.x) * t) := by
+              rw [← mul_assoc, inv_mul_cancel₀ hx, one_mul]
+          _ = (fqToBar E (R j).1 - Q.x)⁻¹ *
+                (fqToBar E (R j).2 - Q.y) := by rw [← hdy]
+          _ = (fqToBar E (R j).2 - Q.y) *
+                (fqToBar E (R j).1 - Q.x)⁻¹ := by ring
+      exact ht_ne ht_eq
+
 /--
 When `geomPolyGFullBar` is evaluated at `A₀ = Q₀` for `Q₀ ∈ gd.support`,
 all terms vanish except the `Q₀` summand in the geometric-support sum.
@@ -2114,6 +2235,120 @@ theorem geom_residue_rational_coeff_zero_of_poly_vanishing
     (fun h => absurd (Finset.mem_univ j₀) h)] at hEval
   rw [mul_assoc] at hEval
   exact (mul_eq_zero.mp hEval).resolve_right hProd
+
+/--
+Pointwise residue isolation at a geometric support point. If the cleared
+bar numerator vanishes at the specialization `A₀ = Q₀` and the remaining
+line factors are nonzero there, then the geometric residue coefficient at
+`Q₀` is zero.
+-/
+theorem geom_residue_coeff_zero_of_eval_vanishing
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    {M : ℕ} (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (Q₀ : GeomPoint E) (hQ₀ : Q₀ ∈ gd.support)
+    (a₁x a₁y : Fqbar E)
+    (hEvalZero :
+      MvPolynomial.eval (geomBarEvalFun E Q₀ a₁x a₁y)
+        (geomPolyGFullBar E D gd R m) = 0)
+    (hProd :
+      (∏ Q' ∈ gd.support.erase Q₀,
+        MvPolynomial.eval (geomBarEvalFun E Q₀ a₁x a₁y)
+          (lineEvalNumAtFullBar E Q')) *
+      (∏ j : Fin M,
+        MvPolynomial.eval (geomBarEvalFun E Q₀ a₁x a₁y)
+          (lineEvalNumAtFullBarOfFq E (R j))) ≠ 0) :
+    ((gd.mult Q₀ : ℕ) : Fqbar E) = 0 := by
+  have hEval := geomPolyGFullBar_eval_at_support_point E D gd R m Q₀ hQ₀ a₁x a₁y
+  rw [hEval, mul_assoc] at hEvalZero
+  exact (mul_eq_zero.mp hEvalZero).resolve_right hProd
+
+/--
+An unmatched support point is impossible once a residue-isolating
+specialization is known. This packages the coefficient isolation with the
+`degE < q` nonzero-multiplicity fact.
+-/
+theorem geomPolyGFullBar_rules_out_unmatched_support
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    {M : ℕ} (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (hDeg : D.degE < E.q)
+    (Q₀ : GeomPoint E) (hQ₀ : Q₀ ∈ gd.support)
+    (a₁x a₁y : Fqbar E)
+    (hEvalZero :
+      MvPolynomial.eval (geomBarEvalFun E Q₀ a₁x a₁y)
+        (geomPolyGFullBar E D gd R m) = 0)
+    (hProd :
+      (∏ Q' ∈ gd.support.erase Q₀,
+        MvPolynomial.eval (geomBarEvalFun E Q₀ a₁x a₁y)
+          (lineEvalNumAtFullBar E Q')) *
+      (∏ j : Fin M,
+        MvPolynomial.eval (geomBarEvalFun E Q₀ a₁x a₁y)
+          (lineEvalNumAtFullBarOfFq E (R j))) ≠ 0) :
+    False := by
+  exact gd_mult_fqbar_ne_zero E D gd hDeg Q₀ hQ₀
+    (geom_residue_coeff_zero_of_eval_vanishing E D gd R m Q₀ hQ₀ a₁x a₁y
+      hEvalZero hProd)
+
+/--
+Residue-specialization rationality criterion. If every unmatched support
+point admits a specialization that avoids all remaining geometric and
+rational line factors, and the cleared numerator vanishes at those
+specializations, then every geometric support point is one of the rational
+`R j`.
+-/
+theorem support_rational_of_residue_specializations_vanish
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    {M : ℕ} (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (hDeg : D.degE < E.q)
+    (hRpts : ∀ j : Fin M, R j ∈ E.points)
+    (hVanishAt :
+      ∀ Q ∈ gd.support, ∀ a₁x a₁y : Fqbar E,
+        MvPolynomial.eval (geomBarEvalFun E Q a₁x a₁y)
+          (geomPolyGFullBar E D gd R m) = 0)
+    (hAvoidUnmatched :
+      ∀ Q ∈ gd.support,
+        (∀ j : Fin M, ¬ (Q.x = fqToBar E (R j).1 ∧ Q.y = fqToBar E (R j).2)) →
+        ∃ a₁x a₁y : Fqbar E,
+          (∏ Q' ∈ gd.support.erase Q,
+            MvPolynomial.eval (geomBarEvalFun E Q a₁x a₁y)
+              (lineEvalNumAtFullBar E Q')) *
+          (∏ j : Fin M,
+            MvPolynomial.eval (geomBarEvalFun E Q a₁x a₁y)
+              (lineEvalNumAtFullBarOfFq E (R j))) ≠ 0) :
+    gd_support_rational E D gd := by
+  classical
+  intro Q hQ
+  by_cases hMatch :
+      ∃ j : Fin M, Q.x = fqToBar E (R j).1 ∧ Q.y = fqToBar E (R j).2
+  · obtain ⟨j, hx, hy⟩ := hMatch
+    exact ⟨R j, hRpts j, hx, hy⟩
+  · have hNoMatch :
+        ∀ j : Fin M, ¬ (Q.x = fqToBar E (R j).1 ∧ Q.y = fqToBar E (R j).2) := by
+      intro j hj
+      exact hMatch ⟨j, hj⟩
+    obtain ⟨a₁x, a₁y, hProd⟩ := hAvoidUnmatched Q hQ hNoMatch
+    exact False.elim (geomPolyGFullBar_rules_out_unmatched_support E D gd R m
+      hDeg Q hQ a₁x a₁y (hVanishAt Q hQ a₁x a₁y) hProd)
+
+/--
+Identity-level version of `support_rational_of_residue_specializations_vanish`.
+It is the residue/partial-fraction uniqueness step under a clean
+`geomPolyGFullBar = 0` hypothesis. The required line-factor avoidance is
+supplied by `line_factor_avoidance_at_unmatched_support`.
+-/
+theorem support_rational_of_residues_vanish
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    {M : ℕ} (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (hDeg : D.degE < E.q)
+    (hRpts : ∀ j : Fin M, R j ∈ E.points)
+    (hVanish : geomPolyGFullBar E D gd R m = 0) :
+    gd_support_rational E D gd := by
+  refine support_rational_of_residue_specializations_vanish E D gd R m
+    hDeg hRpts ?_ ?_
+  · intro Q _hQ a₁x a₁y
+    rw [hVanish]
+    exact map_zero _
+  · intro Q _hQ hNoMatch
+    exact line_factor_avoidance_at_unmatched_support E D gd R Q hNoMatch
 
 /-! ## Geometric branch theorems -/
 
