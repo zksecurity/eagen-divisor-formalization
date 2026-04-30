@@ -2765,6 +2765,135 @@ private theorem geomPolyGFull_identically_zero_on_ExE_of_hLargeQ
   geomPolyGFull_identically_zero_on_ExE E D hDnz gd P B m hAllZero
     (hELarge_of_hLargeQ E D gd k hLargeQ)
 
+/-- Base-change the descended identity for `geomPolyGFull` back to the
+geometric numerator identity required by the residue-uniqueness helper. -/
+private theorem geomPolyGFullBar_eq_zero_of_geomPolyGFull_eq_zero
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    {M : ℕ} (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (hGZero : geomPolyGFull E D gd R m = 0) :
+    geomPolyGFullBar E D gd R m = 0 := by
+  calc
+    geomPolyGFullBar E D gd R m
+        = baseChangeFourVar E (geomPolyGFull E D gd R m) :=
+            (baseChange_geomPolyGFull E D gd R m).symm
+    _ = baseChangeFourVar E 0 := congrArg (baseChangeFourVar E) hGZero
+    _ = 0 := by simp [baseChangeFourVar]
+
+/--
+Experimental density-to-residue bridge.
+
+The worker-2 density path supplies vanishing of the descended numerator on
+all rational pairs in `E.points × E.points`. To feed the residue uniqueness
+helper, the missing bridge is exactly the conversion from that finite-grid
+vanishing statement to the descended polynomial identity. This theorem wires
+the density output through that bridge and returns the required bar-level
+identity.
+-/
+private theorem geomPolyGFullBar_eq_zero_of_hAllZero_density_with_identity_bridge
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D)
+    (P : ZMod E.q × ZMod E.q) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E D P B A₀ A₁ →
+      logDerivCheckFn E D P k B m A₀ A₁ = 0)
+    (hLargeDensity : 39 * D.degE + 45 * k + 73 < E.points.card)
+    (hExEToPoly :
+      (∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+        A₀ ∈ E.points → A₁ ∈ E.points →
+        bivEval₂ (geomPolyGFull E D gd
+          (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)))
+          A₀ A₁ = 0) →
+      geomPolyGFull E D gd
+        (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)) = 0) :
+    geomPolyGFullBar E D gd
+      (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)) = 0 := by
+  have hOnExE := geomPolyGFull_identically_zero_on_ExE_of_hLargeQ
+    E D hDnz gd P B m hAllZero hLargeDensity
+  exact geomPolyGFullBar_eq_zero_of_geomPolyGFull_eq_zero E D gd
+    (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j))
+    (hExEToPoly hOnExE)
+
+/--
+Residue-rationality consequence of the all-zero density path, assuming only
+the narrow finite-grid-to-polynomial-identity bridge exposed above.
+-/
+private theorem support_rational_of_hAllZero_density_with_identity_bridge
+    (D : CoordRingElt E.q) (hDeg : D.degE < E.q)
+    (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D)
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (hB : ∀ j : Fin k, B j ∈ E.points)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E D P B A₀ A₁ →
+      logDerivCheckFn E D P k B m A₀ A₁ = 0)
+    (hLargeDensity : 39 * D.degE + 45 * k + 73 < E.points.card)
+    (hExEToPoly :
+      (∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+        A₀ ∈ E.points → A₁ ∈ E.points →
+        bivEval₂ (geomPolyGFull E D gd
+          (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)))
+          A₀ A₁ = 0) →
+      geomPolyGFull E D gd
+        (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)) = 0) :
+    gd_support_rational E D gd := by
+  have hBarZero :
+      geomPolyGFullBar E D gd
+        (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)) = 0 :=
+    geomPolyGFullBar_eq_zero_of_hAllZero_density_with_identity_bridge
+      E D hDnz gd P B m hAllZero hLargeDensity hExEToPoly
+  have hRpts :
+      ∀ j : Fin (k + 1),
+        ((Fin.cons (P.1, -P.2) B :
+          Fin (k + 1) → ZMod E.q × ZMod E.q) j) ∈ E.points := by
+    intro j
+    refine Fin.cases ?_ ?_ j
+    · simpa using neg_y_mem_points E P.1 P.2 hP
+    · intro j
+      simpa using hB j
+  exact support_rational_of_residues_vanish E D gd
+    (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j))
+    hDeg hRpts hBarZero
+
+/--
+Statement-level wrapper for the experimental density-to-residue integration.
+The remaining open input is the finite-grid-to-polynomial-identity bridge for
+the specific `geomPolyGFull` instance produced by the verifier message.
+-/
+private theorem gd_support_rational_of_hAllZero_via_density_bridge
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)
+    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
+    (hkm : stmt.k = msg.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeDensity : 39 * msg.toD.degE + 45 * stmt.k + 73 < E.points.card)
+    (hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
+    (gd : GeometricDivisorData E msg.toD)
+    (hAllZero :
+      ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+        A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+        logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
+        logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+          (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
+    (hExEToPoly :
+      (∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+        A₀ ∈ E.points → A₁ ∈ E.points →
+        bivEval₂ (geomPolyGFull E msg.toD gd
+          (Fin.cons (stmt.target.1, -stmt.target.2) stmt.bases)
+          (Fin.cons (-1) (fun j => -(msg.m (hkm ▸ j)))))
+          A₀ A₁ = 0) →
+      geomPolyGFull E msg.toD gd
+        (Fin.cons (stmt.target.1, -stmt.target.2) stmt.bases)
+        (Fin.cons (-1) (fun j => -(msg.m (hkm ▸ j)))) = 0) :
+    gd_support_rational E msg.toD gd := by
+  have hDegLt : msg.toD.degE < E.q := lt_of_le_of_lt hDeg hd
+  exact support_rational_of_hAllZero_density_with_identity_bridge E
+    msg.toD hDegLt hDnz gd stmt.target hTargetOnE stmt.bases
+    (fun i => msg.m (hkm ▸ i)) hBasesOnE hAllZero hLargeDensity hExEToPoly
+
 /-- Under `gd_support_rational`, the rational image of `gd.support`
 coincides with `zerosFinset E D`. Each `Q ∈ gd.support` rationalizes to
 a unique rational zero of `D`, and conversely every rational zero lifts
