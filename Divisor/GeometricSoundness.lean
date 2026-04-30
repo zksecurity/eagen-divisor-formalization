@@ -784,7 +784,52 @@ private theorem intersectionPoly_factorisation
   ring
 
 /--
+Z-fiber accounting for the base-changed chord-fiber product.
+
+The base-changed `chord_fiber_product E lam D` is nonzero, and at each
+`z : Fqbar E` its root multiplicity equals the sum of `gd.mult Q` over
+the geometric support points `Q` whose chord-projection
+`zLambdaBar E lam Q` equals `z`.
+
+This is the precise norm push-forward / z-fiber accounting obligation
+for the function-field extension `F_qbar(E) / F_qbar(zLambdaBar lam)`:
+`div(N(D)) = π_*(div D)`, evaluated at each prime divisor `(z)` of the
+base. The full geometric factorisation
+`chord_fiber_product_bar_factorisation` is derived from this lemma
+below by splitting the polynomial over the algebraically closed
+`Fqbar E` and reorganising linear factors by the `zLambdaBar lam` map.
+
+PROVIDED SOLUTION
+Apply Stichtenoth Prop 3.1.9 (conorm of a principal divisor) and
+Thm 3.7.1 (Galois transitivity on places) over the function-field
+extension `F_qbar(E) / F_qbar(zLambdaBar lam)`. Reading off the
+coefficient of the conorm identity at each base place `(z)` yields the
+displayed sum. Nonvanishing of the norm follows from `D ≠ 0` in the
+upper field combined with integrality of the function-field extension.
+-/
+theorem chord_fiber_product_bar_z_fiber_accounting
+    (D : CoordRingElt E.q) (lam : ZMod E.q)
+    (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) :
+    Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+        (chord_fiber_product E lam D) ≠ 0 ∧
+    ∀ z : Fqbar E,
+      (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+          (chord_fiber_product E lam D)).rootMultiplicity z =
+        ∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z),
+            gd.mult Q := by
+  sorry
+
+/--
 Geometric divisor-of-norm factorisation over `F_qbar`.
+
+Derived from the smaller `chord_fiber_product_bar_z_fiber_accounting`
+obligation: the base-changed chord-fiber product is nonzero, and over
+the algebraically closed `Fqbar E` it splits as a product of linear
+factors whose multiplicities are read off the z-fiber accounting.
+Reorganising the resulting product of linear factors by the
+`zLambdaBar lam` map regroups the support of `gd` into a product
+indexed by `Q ∈ gd.support`.
 
 PROVIDED SOLUTION
 Apply the divisor-of-norm formula for the function-field extension
@@ -796,14 +841,89 @@ unit is a nonzero leading scalar.
 -/
 theorem chord_fiber_product_bar_factorisation
     (D : CoordRingElt E.q) (lam : ZMod E.q)
-    (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D) :
     ∃ c : Fqbar E, c ≠ 0 ∧
       Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
           (chord_fiber_product E lam D)
         = C c * ∏ Q ∈ gd.support,
             (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q) := by
-  sorry
+  classical
+  set f : Polynomial (Fqbar E) :=
+    Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+      (chord_fiber_product E lam D) with hf_def
+  obtain ⟨hf_ne, hAcc⟩ :=
+    chord_fiber_product_bar_z_fiber_accounting E D lam hD gd
+  refine ⟨f.leadingCoeff, ?_, ?_⟩
+  · exact mt leadingCoeff_eq_zero.mp hf_ne
+  -- `f` splits because `Fqbar E` is algebraically closed.
+  have hsplits : f.Splits := IsAlgClosed.splits f
+  have hroots_card : Multiset.card f.roots = f.natDegree :=
+    hsplits.natDegree_eq_card_roots.symm
+  have hSplitFact :
+      f = C f.leadingCoeff *
+        ∏ z ∈ f.roots.toFinset, (X - C z) ^ (rootMultiplicity z f) :=
+    splits_factorization_of_roots_card_eq f hroots_card
+  -- Identify the root set of `f` with the image of the geometric
+  -- support under `zLambdaBar lam`.
+  have hRootSet :
+      f.roots.toFinset = gd.support.image (zLambdaBar E lam) := by
+    ext z
+    rw [Multiset.mem_toFinset, mem_roots hf_ne, ← rootMultiplicity_pos hf_ne,
+      hAcc z, Finset.mem_image]
+    constructor
+    · intro hpos
+      have hne : (gd.support.filter (fun Q => zLambdaBar E lam Q = z)).Nonempty := by
+        by_contra hempty
+        rw [Finset.not_nonempty_iff_eq_empty] at hempty
+        rw [hempty, Finset.sum_empty] at hpos
+        exact (lt_irrefl 0) hpos
+      obtain ⟨Q, hQfilt⟩ := hne
+      rw [Finset.mem_filter] at hQfilt
+      exact ⟨Q, hQfilt.1, hQfilt.2⟩
+    · rintro ⟨Q, hQ, hzQ⟩
+      have hQfilt : Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z) :=
+        Finset.mem_filter.mpr ⟨hQ, hzQ⟩
+      have hmultpos : 0 < gd.mult Q := gd.mult_pos_on_support Q hQ
+      exact Finset.sum_pos' (fun _ _ => Nat.zero_le _) ⟨Q, hQfilt, hmultpos⟩
+  -- Regroup the product over `f.roots.toFinset` as a product over `gd.support`.
+  have hReorg :
+      (∏ z ∈ f.roots.toFinset, (X - C z) ^ (rootMultiplicity z f)) =
+        ∏ Q ∈ gd.support, (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q) := by
+    rw [hRootSet]
+    have hStep1 :
+        ∀ z ∈ gd.support.image (zLambdaBar E lam),
+          (X - C z) ^ (rootMultiplicity z f) =
+            ∏ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z),
+              (X - C z) ^ (gd.mult Q) := by
+      intro z _hz
+      rw [hAcc z]
+      exact (Finset.prod_pow_eq_pow_sum
+        (gd.support.filter (fun Q => zLambdaBar E lam Q = z))
+        gd.mult ((X : Polynomial (Fqbar E)) - C z)).symm
+    rw [Finset.prod_congr rfl hStep1]
+    have hStep2 :
+        ∀ z ∈ gd.support.image (zLambdaBar E lam),
+          (∏ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z),
+              (X - C z) ^ (gd.mult Q))
+            =
+              ∏ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z),
+                (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q) := by
+      intro z _hz
+      apply Finset.prod_congr rfl
+      intro Q hQfilt
+      have hQz : zLambdaBar E lam Q = z := (Finset.mem_filter.mp hQfilt).2
+      rw [hQz]
+    rw [Finset.prod_congr rfl hStep2]
+    exact Finset.prod_fiberwise_of_maps_to
+      (fun Q hQ => Finset.mem_image_of_mem _ hQ)
+      (fun Q => (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q))
+  calc f
+      = C f.leadingCoeff *
+          ∏ z ∈ f.roots.toFinset, (X - C z) ^ rootMultiplicity z f := hSplitFact
+    _ = C f.leadingCoeff *
+          ∏ Q ∈ gd.support, (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q) := by
+        rw [hReorg]
 
 set_option maxHeartbeats 800000 in
 /--
