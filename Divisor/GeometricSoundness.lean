@@ -3397,14 +3397,129 @@ private theorem sigma_data_of_gd_support_rational
     exact absurd (Nat.le_of_dvd hPos hDvd) (Nat.not_le.mpr hLt)
   have hELargeDkl : E.points.card * E.points.card - 2 * E.points.card >
         18 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) * E.q := by
-    -- Sharp Hasse `q ≤ n + 2 + Nat.sqrt(4(n+1))` is now in hand
-    -- (`hasse_q_le_sharp_nat`). The remaining polynomial inequality
-    -- `n*(n-2) > 18*T*q` with `T ≤ degE+k+1` and the sqrt-witness
-    -- `s² ≤ 4(n+1)` is genuinely satisfiable under hLargeQ for any
-    -- D+K (numerically verified for D+K up to 10000), but the
-    -- triple-product structure (n, T, s) exceeds nlinarith's
-    -- automation. Manual factorization (~30-50 LOC) needed for closure.
-    sorry
+    -- Setup bounds.
+    have hZC : zerosCard E msg.toD ≤ msg.toD.degE := by
+      have hβcov := betaCanonical_covers E msg.toD _hDnz
+      have hβpos : ∀ k : Fin (zerosCard E msg.toD),
+          1 ≤ multAt E (betaCanonical E msg.toD) msg.toD k :=
+        fun k => multAt_pos E (betaCanonical E msg.toD) msg.toD hβcov k
+      have hβsum := betaCanonical_sum_le_degE E msg.toD
+      have hβeq := sum_multAt_eq_sum_βfun E (betaCanonical E msg.toD) msg.toD
+        (betaCanonical_support E msg.toD)
+      calc zerosCard E msg.toD
+          = ∑ _ : Fin (zerosCard E msg.toD), 1 := by
+            simp [Finset.sum_const, Finset.card_univ, Fintype.card_fin]
+        _ ≤ ∑ k : Fin (zerosCard E msg.toD), multAt E (betaCanonical E msg.toD) msg.toD k :=
+            Finset.sum_le_sum (fun k _ => hβpos k)
+        _ = ∑ P ∈ E.points, betaCanonical E msg.toD P := hβeq
+        _ ≤ msg.toD.degE := hβsum
+    have hBI : baseImageCount E stmt msg hkm ≤ stmt.k := by
+      calc baseImageCount E stmt msg hkm
+          ≤ msg.k := by
+            unfold baseImageCount baseImage
+            exact (Finset.card_image_le).trans
+              (by rw [Finset.card_univ, Fintype.card_fin])
+        _ = stmt.k := hkm.symm
+    set n := E.points.card with hn_def
+    set T := zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm) with hT_def
+    set M := msg.toD.degE + (1 + stmt.k) with hM_def
+    have hT_le_M : T ≤ M := by
+      rw [hT_def, hM_def]
+      exact Nat.add_le_add hZC (Nat.add_le_add_left hBI _)
+    have hM_pos : 1 ≤ M := by rw [hM_def]; omega
+    -- hLargeQ flat: n > 31*(degE+k+2)+78 = 31*M + 109 (since M = degE+k+1).
+    have hN_flat : n > 31 * M + 109 := by
+      have h := _hLargeQ
+      have hEq : 2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+              21 * (msg.toD.degE + stmt.k + 2) + 72
+            = 31 * M + 109 := by rw [hM_def]; ring
+      rw [hEq] at h
+      exact h
+    -- Sharp Hasse: q ≤ n + 2 + s with s² ≤ 4(n+1).
+    have hQbound : E.q ≤ n + 2 + Nat.sqrt (4 * (n + 1)) := hasse_q_le_sharp_nat E
+    set s := Nat.sqrt (4 * (n + 1)) with hs_def
+    have hSqrtSq : s * s ≤ 4 * (n + 1) := Nat.sqrt_le _
+    -- Step 1: 13n > 18s (from squared bound 169n² > 324s² ≤ 1296(n+1)).
+    have hN_141 : n ≥ 141 := by
+      have h1 := hN_flat; have h2 := hM_pos; omega
+    have h_169n2 : 169 * n * n > 1296 * (n + 1) := by
+      nlinarith [hN_141, sq_nonneg n]
+    have h_13n_18s : 13 * n > 18 * s := by
+      have h_169n2' : 169 * n * n > 324 * (s * s) := by
+        calc 169 * n * n > 1296 * (n + 1) := h_169n2
+          _ = 324 * (4 * (n + 1)) := by ring
+          _ ≥ 324 * (s * s) := Nat.mul_le_mul_left _ hSqrtSq
+      have hSq : (13 * n) * (13 * n) > (18 * s) * (18 * s) := by
+        have : (13 * n) * (13 * n) = 169 * n * n := by ring
+        rw [this]
+        have : (18 * s) * (18 * s) = 324 * (s * s) := by ring
+        rw [this]
+        exact h_169n2'
+      -- From a*a > b*b in ℕ, derive a > b (contrapositive: a ≤ b → a*a ≤ b*b).
+      by_contra h_le
+      push_neg at h_le
+      have : (13 * n) * (13 * n) ≤ (18 * s) * (18 * s) :=
+        Nat.mul_le_mul h_le h_le
+      omega
+    -- Step 2: 107n > 36M.
+    have h_107n_36M : 107 * n > 36 * M := by
+      have h1 : 107 * n ≥ 107 * (31 * M + 110) := by
+        have : n ≥ 31 * M + 110 := by omega
+        exact Nat.mul_le_mul_left _ this
+      have h2 : 107 * (31 * M + 110) = 3317 * M + 11770 := by ring
+      have h3 : 3317 * M + 11770 > 36 * M := by omega
+      linarith
+    -- Combine: 13Mn + 107n > 18Ms + 36M.
+    have h_combined : 13 * M * n + 107 * n > 18 * M * s + 36 * M := by
+      have h1 : 13 * M * n ≥ 18 * M * s := by
+        have h13_18 : M * (13 * n) ≥ M * (18 * s) :=
+          Nat.mul_le_mul_left M (le_of_lt h_13n_18s)
+        have heq1 : 13 * M * n = M * (13 * n) := by ring
+        have heq2 : 18 * M * s = M * (18 * s) := by ring
+        rw [heq1, heq2]; exact h13_18
+      omega
+    -- Goal: n*n - 2*n > 18*T*q.
+    -- We have n*n - 2*n ≥ n*(n - 2 - 18*M) + 18*M*n = ... let me reformulate.
+    -- n² - 2n = n(n-2). Want n(n-2) > 18*T*q.
+    -- 18*T*q ≤ 18*M*q ≤ 18*M*(n + 2 + s) = 18Mn + 36M + 18Ms.
+    -- Want n(n-2) > 18Mn + 36M + 18Ms.
+    -- ⟺ n² - 2n - 18Mn - 36M > 18Ms.
+    -- ⟺ n*(n - 18M - 2) - 36M > 18Ms.
+    -- With n ≥ 31M + 110, n - 18M - 2 ≥ 13M + 108 ≥ 13M + 107.
+    -- n*(13M+107) - 36M > 18Ms ⟺ 13Mn + 107n - 36M > 18Ms ⟺ 13Mn + 107n > 18Ms + 36M ✓.
+    have h_n_minus : n - 18 * M - 2 ≥ 13 * M + 107 := by omega
+    have h_lhs : n * (n - 18 * M - 2) ≥ n * (13 * M + 107) :=
+      Nat.mul_le_mul_left _ h_n_minus
+    have h_lhs2 : n * (13 * M + 107) = 13 * M * n + 107 * n := by ring
+    have h_step : n * (n - 18 * M - 2) ≥ 13 * M * n + 107 * n := by
+      rw [← h_lhs2]; exact h_lhs
+    -- n*n = n*(n - 18M - 2) + n*(18M + 2) (since n ≥ 18M+2).
+    have h_n_ge_18M2 : 18 * M + 2 ≤ n := by omega
+    have h_n_split :
+        n * (n - 18 * M - 2) + n * (18 * M + 2) = n * n := by
+      rw [← Nat.mul_add]
+      congr 1
+      omega
+    have h_n_split' : n * (n - 18 * M - 2) = n * n - n * (18 * M + 2) := by omega
+    -- 18*T*q ≤ 18*M*(n + 2 + s).
+    have h_18Tq_le : 18 * T * E.q ≤ 18 * M * (n + 2 + s) := by
+      calc 18 * T * E.q ≤ 18 * M * E.q :=
+            Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ hT_le_M)
+        _ ≤ 18 * M * (n + 2 + s) := Nat.mul_le_mul_left _ hQbound
+    -- Want: n*n - 2*n > 18*T*q. Apply chain with sub: n*n - 2*n = n*(n-18M-2) + 18Mn.
+    have h_n_expand : n * n - 2 * n = n * (n - 18 * M - 2) + 18 * M * n := by
+      have h1 : n * (18 * M + 2) = 18 * M * n + 2 * n := by ring
+      omega
+    rw [h_n_expand]
+    have h_18M_expand : 18 * M * (n + 2 + s) = 18 * M * n + 36 * M + 18 * M * s := by ring
+    have h_chain : 18 * T * E.q ≤ 18 * M * n + 36 * M + 18 * M * s := by
+      rw [← h_18M_expand]; exact h_18Tq_le
+    -- Combine: 13Mn + 107n + 18Mn > 36M + 18Ms + 18Mn (since 13Mn + 107n > 36M + 18Ms).
+    have h_combined' : 13 * M * n + 107 * n + 18 * M * n
+        > 36 * M + 18 * M * s + 18 * M * n := by omega
+    have h_step3 : n * (n - 18 * M - 2) + 18 * M * n
+        ≥ 13 * M * n + 107 * n + 18 * M * n := by omega
+    omega
   have hVanishing : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
       bivEval₂ (polyGFull E (zerosAt E msg.toD)
