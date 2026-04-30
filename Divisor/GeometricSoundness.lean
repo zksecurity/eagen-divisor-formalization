@@ -2335,6 +2335,131 @@ private theorem geomPolyGFull_zero_at_defined_pair
         A₀ A₁ = 0 :=
   (geomPolyGFull_eval_eq_logDerivCheckFn E D gd P B m A₀ A₁ hA₀ hA₁ hNV hDef).mpr hCheck
 
+/-- **All-zero density helper.** If `logDerivCheckFn` vanishes on every
+defined non-vertical rational pair (the `hAllZero` hypothesis) and
+`E.points.card` is large enough to dominate the DKL/Lang–Weil bound on
+the zero set of the descended polynomial together with the bounds on
+vertical and undefined pairs, then the descended polynomial
+`geomPolyGFull E D gd (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (-m))`
+vanishes on **every** pair `(A₀, A₁) ∈ E.points × E.points`.
+
+Proof sketch: by contradiction; a non-zero witness gives a DKL/Lang–Weil
+bound `≤ 18·(gd.support.card + k)·E.q` on the zero set. But under
+`hAllZero` the zero set contains every defined non-vertical pair, whose
+complement (vertical or undefined) is bounded linearly in `|E|` by
+`card_vertical_pairs_le` and `logDerivCheckFn_undefined_set_bound_tight`.
+The threshold `hELarge` rules this out. -/
+private theorem geomPolyGFull_identically_zero_on_ExE
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D)
+    (P : ZMod E.q × ZMod E.q) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E D P B A₀ A₁ →
+      logDerivCheckFn E D P k B m A₀ A₁ = 0)
+    (hELarge :
+      18 * (gd.support.card + k) * E.q +
+          2 * E.points.card +
+          (3 * D.degE + 9 * k + 71) * E.points.card
+        < E.points.card * E.points.card) :
+    ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points →
+      bivEval₂ (geomPolyGFull E D gd
+          (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)))
+          A₀ A₁ = 0 := by
+  classical
+  by_contra h
+  push_neg at h
+  obtain ⟨A₀, A₁, hA₀, hA₁, hNZ⟩ := h
+  -- Total-degree bound for the descended polynomial.
+  have hTD := geomPolyGFull_total_degree_le_tight E D gd
+    (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j))
+  have hdM1 : gd.support.card + (k + 1) - 1 = gd.support.card + k := by omega
+  have hTD' : total_degree_le E
+      (geomPolyGFull E D gd
+        (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)))
+      (2 * (gd.support.card + k)) := by
+    rwa [hdM1] at hTD
+  -- DKL bound on the zero set, witnessed by `(A₀, A₁)`.
+  have hLW := bivariate_poly_zeros_on_ExE_le E
+    (geomPolyGFull E D gd
+      (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)))
+    (2 * (gd.support.card + k)) hTD' ⟨A₀, A₁, hA₀, hA₁, hNZ⟩
+  -- Defined non-vertical pairs are contained in the zero set under hAllZero.
+  have hSdefSubZero :
+      (E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          p.1.1 ≠ p.2.1 ∧ logDerivCheckFnDefined E D P B p.1 p.2) ⊆
+      (E.points ×ˢ E.points).filter
+        (fun p =>
+          bivEval₂ (geomPolyGFull E D gd
+              (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)))
+            p.1 p.2 = 0) := by
+    intro p hp
+    rw [Finset.mem_filter, Finset.mem_product] at hp
+    obtain ⟨⟨h1, h2⟩, hNV, hDef⟩ := hp
+    have hCheck := hAllZero p.1 p.2 h1 h2 hNV hDef
+    rw [Finset.mem_filter]
+    exact ⟨Finset.mem_product.mpr ⟨h1, h2⟩,
+      geomPolyGFull_zero_at_defined_pair E D gd P B m
+        p.1 p.2 h1 h2 hNV hDef hCheck⟩
+  -- Card bound on the defined non-vertical set via the DKL bound.
+  have hSdefCard :
+      ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          p.1.1 ≠ p.2.1 ∧ logDerivCheckFnDefined E D P B p.1 p.2)).card
+        ≤ 18 * (gd.support.card + k) * E.q := by
+    calc _ ≤ _ := Finset.card_le_card hSdefSubZero
+      _ ≤ 9 * (2 * (gd.support.card + k)) * E.q := hLW
+      _ = 18 * (gd.support.card + k) * E.q := by ring
+  -- Cover E×E by (defined non-vert) ∪ vertical ∪ undefined.
+  have hCover : (E.points ×ˢ E.points) ⊆
+      (E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          p.1.1 ≠ p.2.1 ∧ logDerivCheckFnDefined E D P B p.1 p.2) ∪
+      (E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          p.1.1 = p.2.1) ∪
+      (E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ logDerivCheckFnDefined E D P B p.1 p.2) := by
+    intro p hp
+    simp only [Finset.mem_union, Finset.mem_filter]
+    by_cases hVert : p.1.1 = p.2.1
+    · left; right; exact ⟨hp, hVert⟩
+    · by_cases hDef : logDerivCheckFnDefined E D P B p.1 p.2
+      · left; left; exact ⟨hp, hVert, hDef⟩
+      · right; exact ⟨hp, hDef⟩
+  have hVertCard :
+      ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          p.1.1 = p.2.1)).card ≤ 2 * E.points.card :=
+    card_vertical_pairs_le E
+  have hUndefCard :
+      ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ logDerivCheckFnDefined E D P B p.1 p.2)).card
+        ≤ (3 * D.degE + 9 * k + 71) * E.points.card :=
+    logDerivCheckFn_undefined_set_bound_tight E D P k B hDnz
+  have hCardProd : (E.points ×ˢ E.points).card = E.points.card * E.points.card :=
+    Finset.card_product _ _
+  -- Combine into a single linear inequality and contradict hELarge.
+  have hFinal : E.points.card * E.points.card ≤
+      18 * (gd.support.card + k) * E.q +
+        2 * E.points.card +
+        (3 * D.degE + 9 * k + 71) * E.points.card := by
+    calc E.points.card * E.points.card
+        = (E.points ×ˢ E.points).card := hCardProd.symm
+      _ ≤ _ := Finset.card_le_card hCover
+      _ ≤ _ := Finset.card_union_le _ _
+      _ ≤ _ := Nat.add_le_add_right (Finset.card_union_le _ _) _
+      _ ≤ 18 * (gd.support.card + k) * E.q +
+            2 * E.points.card +
+            (3 * D.degE + 9 * k + 71) * E.points.card :=
+          Nat.add_le_add (Nat.add_le_add hSdefCard hVertCard) hUndefCard
+  exact absurd hFinal (Nat.not_le.mpr hELarge)
+
 /-- Under `gd_support_rational`, the rational image of `gd.support`
 coincides with `zerosFinset E D`. Each `Q ∈ gd.support` rationalizes to
 a unique rational zero of `D`, and conversely every rational zero lifts
