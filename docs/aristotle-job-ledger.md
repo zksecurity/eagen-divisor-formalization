@@ -6,7 +6,16 @@ this repository. The Aristotle queue is shared, so jobs observed via
 
 ## Active Jobs
 
-None submitted by this Codex session are currently active.
+- `43872498-d8b8-4837-9cb2-4d0a31a68fe8`
+  - Submitted: 2026-04-30
+  - Target: `Divisor.GeometricSoundness.gd_support_rational_of_hAllZero`
+  - Prompt summary: attempt the hard Frobenius/residue-specialization proof
+    that `hAllZero` forces every geometric support point to be `F_q`-rational;
+    if too large, decompose to minimal named missing lemmas without adding
+    axioms.
+  - Expected useful output: a complete proof if possible, otherwise a sharper
+    decomposition of the rationality/Frobenius-orbit obstruction.
+  - Status: submitted, not yet checked.
 
 ## Historical Context
 
