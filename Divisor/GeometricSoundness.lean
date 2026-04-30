@@ -2460,6 +2460,76 @@ private theorem geomPolyGFull_identically_zero_on_ExE
           Nat.add_le_add (Nat.add_le_add hSdefCard hVertCard) hUndefCard
   exact absurd hFinal (Nat.not_le.mpr hELarge)
 
+/-- **Bridge from a linear `hLargeQ` bound to the quadratic `hELarge`
+hypothesis required by `geomPolyGFull_identically_zero_on_ExE`.**
+
+Combines `hasse_q_le_two_mul_card` (so `E.q ≤ 2·|E|` once `8 ≤ |E|`)
+with `gd.accounting_le_degE` (so `gd.support.card ≤ D.degE`) to discharge
+the cardinality threshold. The threshold `39·D.degE + 45·k + 73 < |E|`
+covers the worst-case combination of the DKL/Lang–Weil zero-set bound,
+the vertical-pairs slack, and the undefined-set boundary. -/
+private theorem hELarge_of_hLargeQ
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D) (k : ℕ)
+    (hLargeQ : 39 * D.degE + 45 * k + 73 < E.points.card) :
+    18 * (gd.support.card + k) * E.q +
+        2 * E.points.card +
+        (3 * D.degE + 9 * k + 71) * E.points.card
+      < E.points.card * E.points.card := by
+  classical
+  have hN8 : 8 ≤ E.points.card := by omega
+  have hQ2 : E.q ≤ 2 * E.points.card := hasse_q_le_two_mul_card E hN8
+  have hSC : gd.support.card ≤ D.degE := by
+    calc gd.support.card
+        = ∑ _ ∈ gd.support, 1 := by simp
+      _ ≤ ∑ Q ∈ gd.support, gd.mult Q :=
+          Finset.sum_le_sum (fun Q hQ => gd.mult_pos_on_support Q hQ)
+      _ ≤ D.degE := gd.accounting_le_degE
+  have hPos : 0 < E.points.card := by omega
+  have hStep1 : 18 * (gd.support.card + k) * E.q
+      ≤ 36 * (D.degE + k) * E.points.card := by
+    calc 18 * (gd.support.card + k) * E.q
+        ≤ 18 * (D.degE + k) * E.q := by
+          apply Nat.mul_le_mul_right; apply Nat.mul_le_mul_left; omega
+      _ ≤ 18 * (D.degE + k) * (2 * E.points.card) :=
+          Nat.mul_le_mul_left _ hQ2
+      _ = 36 * (D.degE + k) * E.points.card := by ring
+  have hStep2 :
+      18 * (gd.support.card + k) * E.q +
+          2 * E.points.card +
+          (3 * D.degE + 9 * k + 71) * E.points.card
+        ≤ (39 * D.degE + 45 * k + 73) * E.points.card := by
+    calc _ ≤ 36 * (D.degE + k) * E.points.card +
+            2 * E.points.card +
+            (3 * D.degE + 9 * k + 71) * E.points.card :=
+          Nat.add_le_add_right (Nat.add_le_add_right hStep1 _) _
+      _ = (39 * D.degE + 45 * k + 73) * E.points.card := by ring
+  have hStep3 :
+      (39 * D.degE + 45 * k + 73) * E.points.card
+        < E.points.card * E.points.card :=
+    (Nat.mul_lt_mul_right hPos).mpr hLargeQ
+  exact lt_of_le_of_lt hStep2 hStep3
+
+/-- **Convenience corollary**: combine `hELarge_of_hLargeQ` with the density
+theorem to conclude vanishing on every pair `(A₀, A₁) ∈ E.points × E.points`
+directly from the linear `hLargeQ` threshold. -/
+private theorem geomPolyGFull_identically_zero_on_ExE_of_hLargeQ
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D)
+    (P : ZMod E.q × ZMod E.q) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E D P B A₀ A₁ →
+      logDerivCheckFn E D P k B m A₀ A₁ = 0)
+    (hLargeQ : 39 * D.degE + 45 * k + 73 < E.points.card) :
+    ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points →
+      bivEval₂ (geomPolyGFull E D gd
+          (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)))
+          A₀ A₁ = 0 :=
+  geomPolyGFull_identically_zero_on_ExE E D hDnz gd P B m hAllZero
+    (hELarge_of_hLargeQ E D gd k hLargeQ)
+
 /-- Under `gd_support_rational`, the rational image of `gd.support`
 coincides with `zerosFinset E D`. Each `Q ∈ gd.support` rationalizes to
 a unique rational zero of `D`, and conversely every rational zero lifts
