@@ -3350,10 +3350,11 @@ private theorem sigma_data_of_gd_support_rational
   have hELargeDkl : E.points.card * E.points.card - 2 * E.points.card >
         18 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) * E.q := by
     -- Hasse-Weil + hLargeQ arithmetic. The threshold n²-2n > 18(d+M)q
-    -- requires careful interplay between (n-q)² ≤ 4q (Hasse) and
-    -- the linear hLargeQ. With loose Hasse q ≤ 2n+3, fails for D+K ≥ 21;
-    -- sharp Hasse q ≤ n + 2 + 2*sqrt(n+1) closes it for any D+K but
-    -- the Nat.sqrt mechanization is non-trivial. Open piece.
+    -- requires sharp Hasse `(n-q+2)² ≤ 4(n+1)` (derivable from
+    -- `(n-q)² ≤ 4q` via algebraic manipulation). Combined with hLargeQ,
+    -- the resulting polynomial inequality holds for any D+K but
+    -- requires multi-step nlinarith with carefully chosen witnesses.
+    -- Open piece — extraction sketched in `plan_remaining_residue_match.md`.
     sorry
   have hVanishing : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
