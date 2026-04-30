@@ -6,19 +6,18 @@ this repository. The Aristotle queue is shared, so jobs observed via
 
 ## Active Jobs
 
-- `43872498-d8b8-4837-9cb2-4d0a31a68fe8`
-  - Submitted: 2026-04-30
-  - Target: `Divisor.GeometricSoundness.gd_support_rational_of_hAllZero`
-  - Prompt summary: attempt the hard Frobenius/residue-specialization proof
-    that `hAllZero` forces every geometric support point to be `F_q`-rational;
-    if too large, decompose to minimal named missing lemmas without adding
-    axioms.
-  - Expected useful output: a complete proof if possible, otherwise a sharper
-    decomposition of the rationality/Frobenius-orbit obstruction.
-  - Status: submitted, not yet checked.
+(none)
 
 ## Historical Context
 
+- `43872498-d8b8-4837-9cb2-4d0a31a68fe8` completed on 2026-04-30.
+  - Target: `Divisor.GeometricSoundness.gd_support_rational_of_hAllZero`.
+  - Result: did not fully discharge. Aristotle output snapshotted an older
+    revision of the file (missing the local Frobenius-helpers block at lines
+    318-374) and produced a proof skeleton that delegates to several new
+    helpers, of which at least lines 1588 / 1610 / 1640 / 1805 still carry
+    `sorry`. Decomposition is reasonable but cannot be cleanly merged onto
+    the current `master`/`job2` snapshot without manual reconciliation.
 - `edf1eaa2-0cd8-4bec-be91-ba8e5c1e7c82` completed on 2026-04-30.
   - Target: `Divisor.GeometricSoundness.chord_fiber_product_bar_factorisation`
   - Result: did not fully discharge the theorem from existing project facts.
@@ -26,8 +25,13 @@ this repository. The Aristotle queue is shared, so jobs observed via
     `chord_fiber_product_bar_z_fiber_accounting`, asserting nonvanishing of
     the base-changed chord-fiber product and equality between its root
     multiplicities at `z` and the sum of `gd.mult` over the `zLambdaBar`
-    fiber. This is the exact function-field norm push-forward lemma needed to
-    replace the broad chord-factorisation axiom.
+    fiber. On 2026-04-30 (commit `f475ff3`) this single bundle was further
+    split locally into two sharper named obligations:
+    - `chord_fiber_product_ne_zero` (rational non-vanishing),
+    - `chord_fiber_product_bar_rootMultiplicity_eq_zfiber` (per-`z`
+      push-forward identity),
+    with the original `chord_fiber_product_bar_z_fiber_accounting` bundle
+    now derived from these via `Polynomial.map_ne_zero`.
 - `8aef918d-d611-4ee2-9abf-87b50bec8ca8` was observed as `IN_PROGRESS`
   after the latest work-branch check, but this Codex session did not submit it.
   Treat it as external unless later evidence ties it to this session.
