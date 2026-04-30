@@ -17,6 +17,8 @@ import Divisor.ExtractorBridge
 import Divisor.TightBound
 import Divisor.GeomLocalOrder
 import Divisor.CoeffDescent
+import Divisor.PartialFractionExpansion
+import Divisor.Axioms.AxiomChordFiberProductBarFactored
 
 open Polynomial Finset Classical
 
@@ -966,9 +968,29 @@ nonvanishing half of the bar fiber-accounting bundle.
 -/
 theorem chord_fiber_product_ne_zero
     (D : CoordRingElt E.q) (lam : ZMod E.q)
-    (_hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     chord_fiber_product E lam D ≠ 0 := by
-  sorry
+  classical
+  -- Extract a geometric divisor data witness from `hD`.
+  obtain ⟨gd, _⟩ := exists_geometricDivisorData E D hD
+  -- Apply the narrow factored-form bridge axiom over `Fqbar E`.
+  obtain ⟨c, hc, hEq⟩ :=
+    chord_fiber_product_bar_eq_geom_prod E D lam hD gd
+  -- The RHS of the bridge is nonzero (nonzero scalar times a product of
+  -- nonzero linear-factor powers in a domain), hence the base-changed
+  -- chord-fiber product is nonzero.
+  have hRhsNe :
+      C c * ∏ Q ∈ gd.support,
+          (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q) ≠ 0 :=
+    mul_ne_zero (Polynomial.C_ne_zero.mpr hc)
+      (Finset.prod_ne_zero_iff.mpr fun _ _ => pow_ne_zero _ (X_sub_C_ne_zero _))
+  have hMapNe :
+      Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+          (chord_fiber_product E lam D) ≠ 0 := by
+    rw [hEq]; exact hRhsNe
+  -- Pull non-vanishing back through the polynomial base-change.
+  intro hZero
+  exact hMapNe (by rw [hZero, Polynomial.map_zero])
 
 /--
 Per-`z` root-multiplicity equality for the base-changed chord-fiber
@@ -987,13 +1009,22 @@ identity, independently of the global non-vanishing claim.
 -/
 theorem chord_fiber_product_bar_rootMultiplicity_eq_zfiber
     (D : CoordRingElt E.q) (lam : ZMod E.q)
-    (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D) (z : Fqbar E) :
     (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
         (chord_fiber_product E lam D)).rootMultiplicity z =
       ∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z),
           gd.mult Q := by
-  sorry
+  classical
+  -- Apply the narrow factored-form bridge axiom over `Fqbar E`...
+  obtain ⟨c, hc, hEq⟩ :=
+    chord_fiber_product_bar_eq_geom_prod E D lam hD gd
+  rw [hEq]
+  -- ...and read off the root multiplicity via the generic helper
+  -- `rootMultiplicity_C_mul_prod_X_sub_C_pow` from
+  -- `Divisor/PartialFractionExpansion.lean`.
+  exact rootMultiplicity_C_mul_prod_X_sub_C_pow gd.support
+    (zLambdaBar E lam) gd.mult hc z
 
 /--
 Z-fiber accounting for the base-changed chord-fiber product.
