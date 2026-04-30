@@ -2,23 +2,52 @@
   Divisor/OrdP/Uniformizer.lean
 
   Order of vanishing at affine F_q-rational points of `E`, computed
-  by Taylor expansion in a local uniformizer.
+  by a sound local-ring recipe.
 
   Background (Silverman AEC, II §1): for a smooth affine point `P` on
-  `E : y² = x³ + Ax + B` (char ≠ 2), uniformizer choice depends on
-  whether `P.2 = 0`:
+  `E : y² = x³ + Ax + B` (char ≠ 2), the local ring `O_{E,P}` is a DVR
+  and the choice of uniformizer depends on whether `P.2 = 0`:
 
-  * Non-2-torsion (`P.2 ≠ 0`): `x − P.1` is a uniformizer.
-  * 2-torsion (`P.2 = 0`): `y` is a uniformizer; `x − P.1` has order 2.
+  * Non-2-torsion (`P.2 ≠ 0`): `t = x − P.1` is a uniformizer; `y` is a
+    unit at `P`.
+  * 2-torsion (`P.2 = 0`): `t = y` is a uniformizer; `x − P.1` has
+    order 2 (since `y² = (x − P.1) · q(x)` with `q(P.1) ≠ 0`).
 
-  We define `ordAt E D P : ℕ` as the order of vanishing of `D = a − b·y`
-  at `P`, computed by iterated Taylor coefficient extraction in the
-  uniformizer.
+  ## Sound `ordAt` design (replaces the previous 0/1 placeholder)
+
+  We compute `ord_P(D)` for `D = a(x) − b(x)·y` ∈ F_q[E] without
+  appealing to formal Taylor expansion of `y(x)`.  Two case-specific
+  recipes:
+
+  ### 2-torsion (closed form)
+
+    For `P = (x₀, 0)`:
+    * `a(x)` contributes only EVEN powers of the uniformizer `t = y`,
+      with order `2 · rootMult x₀ a` (since `x − x₀` has order `2`).
+    * `b(x) · y` contributes only ODD powers, with order
+      `2 · rootMult x₀ b + 1`.
+    * Different parities, so the two pieces never cancel:
+      `ord_P(D) = min(2·rootMult x₀ a, 2·rootMult x₀ b + 1)`.
+
+  ### Non-2-torsion (recursive twin/lone trichotomy)
+
+    For `P = (x₀, y₀)` with `y₀ ≠ 0`:
+    * `D(P) ≠ 0` ⇒ `ord_P(D) = 0`.
+    * `D(P) = 0`, `D(P^σ) ≠ 0` (lone): the only mass at `x₀` is on
+      the `P` sheet, so by the norm identity
+      `ord_P(D) + ord_{P^σ}(D) = rootMult x₀ N(D)`
+      we get `ord_P(D) = rootMult x₀ (normPoly E D)`.
+    * `D(P) = 0`, `D(P^σ) = 0` (twin): `(X − x₀)` divides both `a`
+      and `b`, hence `D = (X − x₀) · D'` on `E` with
+      `D' = D /ₘ (X − C x₀)` (componentwise).  Since
+      `ord_P(X − x₀) = 1`, we recurse: `ord_P(D) = 1 + ord_P(D')`.
+      Termination: `(D'.a.natDegree, D'.b.natDegree)` strictly drops.
 -/
 import Divisor.Defs
 import Divisor.BetaConstructive
 import Mathlib.Algebra.Polynomial.RingDivision
 import Mathlib.Algebra.Polynomial.Roots
+import Mathlib.Algebra.Polynomial.Div
 
 open Polynomial
 
@@ -26,111 +55,130 @@ namespace Divisor
 
 variable (E : ECSetup)
 
-/-! ## Non-2-torsion uniformizer order
+/-! ## Helper: divide both `a` and `b` by `(X − C x₀)` -/
 
-    For `P = (x₀, y₀)` with `y₀ ≠ 0`, `x − x₀` is a uniformizer.
-    The Taylor expansion of `D = a − b·y` along `x` uses
-    `y(x) = y₀ + λ_y · (x − x₀) + …` with
-    `λ_y = (3x₀² + A) / (2 y₀)`.
+/-- Componentwise division of `D = (a, b)` by the linear polynomial
+    `X − C x₀`.  When `(X − C x₀)` divides both `a` and `b`, the
+    result `D'` satisfies `D = (X − x₀) · D'` as elements of the
+    coordinate ring of `E`. -/
+noncomputable def CoordRingElt.divLin {q : ℕ} [Fact (Nat.Prime q)]
+    (D : CoordRingElt q) (x₀ : ZMod q) : CoordRingElt q :=
+  { a := D.a /ₘ (Polynomial.X - Polynomial.C x₀)
+    b := D.b /ₘ (Polynomial.X - Polynomial.C x₀) }
 
-    The order of vanishing is the smallest `n` such that the
-    `(x − x₀)^n`-coefficient of `D` is nonzero.  We encode this via
-    iterated derivatives:
+theorem CoordRingElt.divLin_a {q : ℕ} [Fact (Nat.Prime q)]
+    (D : CoordRingElt q) (x₀ : ZMod q) :
+    (D.divLin x₀).a = D.a /ₘ (Polynomial.X - Polynomial.C x₀) := rfl
 
-      `ord_P(D) = inf { n : (d/dx)^n D evaluated at P ≠ 0 }`.
+theorem CoordRingElt.divLin_b {q : ℕ} [Fact (Nat.Prime q)]
+    (D : CoordRingElt q) (x₀ : ZMod q) :
+    (D.divLin x₀).b = D.b /ₘ (Polynomial.X - Polynomial.C x₀) := rfl
 
-    The (d/dx) operation on `CoordRingElt` is
+/-! ## 2-torsion: closed-form local order -/
 
-      `(d/dx)(a − b·y) = (a' − b·λ_y) − (b' − 0)·y`           (when y₀ ≠ 0)
+/-- Order of vanishing of `D = a − b·y` at a 2-torsion point
+    `P = (x₀, 0)`.
 
-    where the curve's `dy/dx = λ_y` is treated as a *constant* at `P`
-    (since we're expanding in `x − P.1`, evaluating at `P` after each
-    derivative step).  More precisely the formal recipe is:
+    Closed form `min(2·rootMult x₀ a, 2·rootMult x₀ b + 1)`:
+    `a(x)` contributes only even orders (via `x − x₀ = y²·u(x)` with
+    `u(x₀) = 1/(3x₀² + A) ≠ 0`); `b(x)·y` contributes only odd orders.
+    The two parities are disjoint so the min is exact.
 
-      D₀ := D
-      D_{n+1} := derivCRE_x D_n     -- (d/dx) at P, threading curve eq
-
-    with `D_n.eval P.1 P.2 = (n!)⁻¹ · ∂ⁿ D` evaluated at P. -/
-
-/-- One step of formal x-derivative on a `CoordRingElt`, evaluated
-    along the curve at a non-2-torsion point.
-
-    Concretely: `(d/dx)(a − b·y) = (a' − b · (3x² + A)/(2y)) − b' · y`,
-    *as a formal CoordRingElt*. Encoded by clearing the `1/(2y)`
-    factor — we keep the leading-x form intact for non-evaluative
-    use, and evaluate at `P` only when needed. -/
-noncomputable def stepX (D : CoordRingElt E.q)
-    (P : ZMod E.q × ZMod E.q) : CoordRingElt E.q :=
-  { a := D.a.derivative -
-         D.b * Polynomial.C ((3 * P.1 ^ 2 + E.curveA) / (2 * P.2))
-    b := D.b.derivative }
-
-/-- Order of vanishing of `D` at a non-2-torsion `P`.  Returns the
-    smallest `n` such that `(stepX^n D).eval P.1 P.2 ≠ 0`, bounded
-    by `D.degE + 1`. Returns 0 if D is identically zero or P is off-curve. -/
-noncomputable def ordAt_nonTwoTorsion
-    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q) : ℕ := by
-  classical
-  exact
-    if hP : P ∈ E.points ∧ P.2 ≠ 0 ∧ ¬ (D.a = 0 ∧ D.b = 0) then
-      Nat.find (p := fun n =>
-        ((Nat.iterate (stepX E · P) n D).eval P.1 P.2 ≠ 0
-        ∨ n ≥ D.degE + 1))
-        ⟨D.degE + 1, Or.inr (by omega)⟩
-    else 0
-
-/-! ## 2-torsion uniformizer order
-
-    For `P = (x₀, 0)`, `y` is a uniformizer; `x − x₀` has order 2.
-    Order of `D = a − b·y` at `P`:
-    * Constant: `a(x₀)`. If nonzero, ord = 0.
-    * `y` term: `−b(x₀)`. If nonzero, ord = 1.
-    * Higher: `a` contributes only even powers (via `x − x₀ = y² · q⁻¹`),
-      `b · y` contributes only odd powers. So:
-      - `y²` coeff comes from `a'(x₀) · q(x₀)⁻¹` where `q(x) = x² + x·x₀ + x₀² + A`.
-      - `y³` coeff from `−b'(x₀) · q(x₀)⁻¹`.
-      - And so on, with derivatives of `a, b` and powers of `q⁻¹`.
--/
-
-/-- Compactified value `q(P) = 3 x₀² + A = curve's tangent denominator at P`.
-    For 2-torsion P, `q(P)` is nonzero (by smoothness of E). -/
-noncomputable def qAtTwoTorsion (P : ZMod E.q × ZMod E.q) : ZMod E.q :=
-  3 * P.1 ^ 2 + E.curveA
-
-/-- Order of vanishing of `D` at a 2-torsion `P`. Computes the order
-    by alternating derivatives of `a, b` weighted by `q(P)⁻¹` powers.
-    The y-term contributes odd orders; the a-term contributes even
-    orders. -/
+    Conventions: when `a = 0` we omit the `2·rootMult x₀ a` slot
+    (treat as `+∞`); similarly when `b = 0` we omit
+    `2·rootMult x₀ b + 1`; if both are zero, we return `0` (the
+    "ord of the zero divisor" placeholder used uniformly across the
+    file). -/
 noncomputable def ordAt_twoTorsion
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q) : ℕ := by
   classical
-  -- Skeleton: real recursion in LocalRing.lean.
-  exact 0
+  exact
+    if D.a = 0 ∧ D.b = 0 then 0
+    else if D.a = 0 then 2 * rootMultiplicity P.1 D.b + 1
+    else if D.b = 0 then 2 * rootMultiplicity P.1 D.a
+    else min (2 * rootMultiplicity P.1 D.a) (2 * rootMultiplicity P.1 D.b + 1)
+
+/-! ## Non-2-torsion: recursive lone/twin local order -/
+
+/-- Auxiliary recursion with explicit fuel, used to define
+    `ordAt_nonTwoTorsion` without a well-founded termination proof.
+
+    `ordAt_nonTwoTorsion_aux fuel D P` agrees with the intended
+    recursion as long as `fuel ≥ D.a.natDegree + D.b.natDegree + 1`.
+    The wrapper `ordAt_nonTwoTorsion` always supplies enough fuel. -/
+noncomputable def ordAt_nonTwoTorsion_aux :
+    ℕ → CoordRingElt E.q → (ZMod E.q × ZMod E.q) → ℕ
+  | 0,       _, _ => 0
+  | fuel + 1, D, P =>
+      if D.a = 0 ∧ D.b = 0 then 0
+      else if D.eval P.1 P.2 ≠ 0 then 0
+      else if D.eval P.1 (-P.2) ≠ 0 then rootMultiplicity P.1 (normPoly E D)
+      else 1 + ordAt_nonTwoTorsion_aux fuel (D.divLin P.1) P
+
+/-- Order of vanishing of `D = a − b·y` at a non-2-torsion point
+    `P = (x₀, y₀)`, `y₀ ≠ 0`.
+
+    Recursive trichotomy:
+    * `D(P) ≠ 0`: ord = 0.
+    * `D(P) = 0`, `D(P^σ) ≠ 0` (lone sheet): ord =
+      `rootMultiplicity x₀ (normPoly E D)`.  This is correct because
+      `ord_P(D) + ord_{P^σ}(D) = rootMult x₀ N(D)` (norm identity)
+      and the second term is zero.
+    * Both vanish (twin): `(X − x₀)` divides both `a` and `b`, write
+      `D = (X − x₀) · D'`; since `ord_P(X − x₀) = 1` at non-2-torsion
+      `P`, ord_P(D) = 1 + ord_P(D').  Recurse on `D' := D.divLin x₀`.
+
+    The fuel-based implementation gives the value `0` if the
+    recursion should keep firing past `D.degE + 1` steps (which
+    cannot happen on F_q-rational `P` on `E` for nonzero `D`, but
+    needs to be a Nat regardless). -/
+noncomputable def ordAt_nonTwoTorsion
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q) : ℕ :=
+  ordAt_nonTwoTorsion_aux E (D.a.natDegree + D.b.natDegree + 1) D P
 
 /-! ## Combined `ordAt` -/
 
-/-- Order of vanishing of `D` at the affine F_q-rational point `P`.
+/-- Order of vanishing of `D = a − b·y` at the affine F_q-rational
+    point `P` of `E`.
 
-    Currently defined as a *minimal* placeholder that satisfies the
-    support / coverage / total-degree-bound shape but NOT the
-    accounting or group-sum identities (those require the full
-    Taylor expansion in the uniformizer, deferred to a future
-    iteration).
+    Dispatches to `ordAt_twoTorsion` when `P.2 = 0` and to
+    `ordAt_nonTwoTorsion` otherwise.  Off `E` or for the zero divisor,
+    returns `0` by convention.
 
-    Phase-1 status: the placeholder gives `ordAt = 1` at every
-    F_q-rational affine zero of `D` (when `D` is nonzero) and `0`
-    elsewhere. Lemmas `ordAt_pos_iff_zero`, `ordAt_eq_zero_offE`,
-    and `sum_ordAt_le_degE` are dischargeable from this placeholder;
-    `sum_ordAt_eq_natDegree_under_split` and
-    `ordAt_group_sum_zero_under_split` require the real
-    Taylor-expansion definition (sorry'd in `LocalRing.lean`). -/
+    This replaces the earlier 0/1 placeholder, which was incompatible
+    with the splitting-time identities `sum_ordAt_eq_natDegree_under_split`
+    and `ordAt_group_sum_zero_under_split`.  The new definition agrees
+    with the textbook ord_P from a chosen uniformizer (Silverman AEC II §1)
+    via the closed-form / recursive recipes documented above. -/
 noncomputable def ordAt (D : CoordRingElt E.q)
     (P : ZMod E.q × ZMod E.q) : ℕ := by
   classical
   exact
-    if P ∈ E.points ∧ D.eval P.1 P.2 = 0 ∧ ¬ (D.a = 0 ∧ D.b = 0) then
-      1
-    else
-      0
+    if P ∈ E.points ∧ ¬ (D.a = 0 ∧ D.b = 0) then
+      if P.2 = 0 then ordAt_twoTorsion E D P
+      else ordAt_nonTwoTorsion E D P
+    else 0
+
+/-! ## Basic shape lemmas -/
+
+/-- Off `E.points` or for the zero divisor, `ordAt` is `0`. -/
+theorem ordAt_eq_zero_of_offE_or_zero
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (h : ¬ (P ∈ E.points ∧ ¬ (D.a = 0 ∧ D.b = 0))) :
+    ordAt E D P = 0 := by
+  classical
+  unfold ordAt
+  rw [if_neg h]
+
+/-- On-shell rewrite of `ordAt` into its case-split form. -/
+theorem ordAt_eq_dispatch
+    (D : CoordRingElt E.q) {P : ZMod E.q × ZMod E.q}
+    (hP : P ∈ E.points) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    ordAt E D P =
+      (if P.2 = 0 then ordAt_twoTorsion E D P
+       else ordAt_nonTwoTorsion E D P) := by
+  classical
+  unfold ordAt
+  rw [if_pos ⟨hP, hD⟩]
 
 end Divisor
