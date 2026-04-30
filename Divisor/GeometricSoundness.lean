@@ -951,6 +951,51 @@ private theorem intersectionPoly_factorisation
   ring
 
 /--
+Rational non-vanishing of the chord-fiber product.
+
+`chord_fiber_product` is opaque, defined only via the divisor-of-norm
+axiom. Its non-vanishing for nonzero `D` is the function-field
+statement that the norm `N_{F_q(E)/F_q(z)}(D)` of a nonzero rational
+function in the upper field is a nonzero rational function in the
+base field. Stichtenoth Prop 3.1.9 / Thm 3.7.1: a function-field
+extension is integral, so the norm vanishes iff the original
+function does.
+
+This is the smallest sharp obligation isolating the rational
+nonvanishing half of the bar fiber-accounting bundle.
+-/
+theorem chord_fiber_product_ne_zero
+    (D : CoordRingElt E.q) (lam : ZMod E.q)
+    (_hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    chord_fiber_product E lam D ≠ 0 := by
+  sorry
+
+/--
+Per-`z` root-multiplicity equality for the base-changed chord-fiber
+product over `F_qbar`.
+
+For each `z : Fqbar E`, the local multiplicity of the base-changed
+chord-fiber product at `z` equals the sum of geometric multiplicities
+`gd.mult Q` over the geometric support points `Q` whose chord
+projection `zLambdaBar E lam Q` equals `z`.
+
+This is the per-place reading of the divisor-of-norm formula
+`div(N(D)) = π_*(div D)` evaluated at the base place `(z)` of the
+function-field extension `F_qbar(E) / F_qbar(zLambdaBar lam)`. Stated
+pointwise in `z` so it can be discharged by a per-place push-forward
+identity, independently of the global non-vanishing claim.
+-/
+theorem chord_fiber_product_bar_rootMultiplicity_eq_zfiber
+    (D : CoordRingElt E.q) (lam : ZMod E.q)
+    (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) (z : Fqbar E) :
+    (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+        (chord_fiber_product E lam D)).rootMultiplicity z =
+      ∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z),
+          gd.mult Q := by
+  sorry
+
+/--
 Z-fiber accounting for the base-changed chord-fiber product.
 
 The base-changed `chord_fiber_product E lam D` is nonzero, and at each
@@ -962,21 +1007,19 @@ This is the precise norm push-forward / z-fiber accounting obligation
 for the function-field extension `F_qbar(E) / F_qbar(zLambdaBar lam)`:
 `div(N(D)) = π_*(div D)`, evaluated at each prime divisor `(z)` of the
 base. The full geometric factorisation
-`chord_fiber_product_bar_factorisation` is derived from this lemma
+`chord_fiber_product_bar_factorisation` is derived from this bundle
 below by splitting the polynomial over the algebraically closed
 `Fqbar E` and reorganising linear factors by the `zLambdaBar lam` map.
 
-PROVIDED SOLUTION
-Apply Stichtenoth Prop 3.1.9 (conorm of a principal divisor) and
-Thm 3.7.1 (Galois transitivity on places) over the function-field
-extension `F_qbar(E) / F_qbar(zLambdaBar lam)`. Reading off the
-coefficient of the conorm identity at each base place `(z)` yields the
-displayed sum. Nonvanishing of the norm follows from `D ≠ 0` in the
-upper field combined with integrality of the function-field extension.
+This bundle is now derived directly from the two sharper helpers
+`chord_fiber_product_ne_zero` (rational non-vanishing) and
+`chord_fiber_product_bar_rootMultiplicity_eq_zfiber` (per-`z`
+push-forward), via injectivity of the algebraic-closure base change
+on the polynomial ring.
 -/
 theorem chord_fiber_product_bar_z_fiber_accounting
     (D : CoordRingElt E.q) (lam : ZMod E.q)
-    (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D) :
     Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
         (chord_fiber_product E lam D) ≠ 0 ∧
@@ -985,7 +1028,9 @@ theorem chord_fiber_product_bar_z_fiber_accounting
           (chord_fiber_product E lam D)).rootMultiplicity z =
         ∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z),
             gd.mult Q := by
-  sorry
+  refine ⟨?_, fun z =>
+    chord_fiber_product_bar_rootMultiplicity_eq_zfiber E D lam hD gd z⟩
+  exact Polynomial.map_ne_zero (chord_fiber_product_ne_zero E D lam hD)
 
 /--
 Geometric divisor-of-norm factorisation over `F_qbar`.
