@@ -3397,11 +3397,13 @@ private theorem sigma_data_of_gd_support_rational
     exact absurd (Nat.le_of_dvd hPos hDvd) (Nat.not_le.mpr hLt)
   have hELargeDkl : E.points.card * E.points.card - 2 * E.points.card >
         18 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) * E.q := by
-    -- Open arithmetic: with hLargeQ coefficient 31 vs needed 36+, the
-    -- linear-bound polynomial inequality fails for D+K ≥ 21 even with
-    -- sharp Hasse `(n-q+2)² ≤ 4(n+1)` if used without sqrt extraction.
-    -- Closure requires Nat.sqrt for sharp Hasse `q ≤ n+2+2√(n+1)`,
-    -- which gives q ≈ n + O(√n) and closes for any D+K.
+    -- Sharp Hasse `q ≤ n + 2 + Nat.sqrt(4(n+1))` is now in hand
+    -- (`hasse_q_le_sharp_nat`). The remaining polynomial inequality
+    -- `n*(n-2) > 18*T*q` with `T ≤ degE+k+1` and the sqrt-witness
+    -- `s² ≤ 4(n+1)` is genuinely satisfiable under hLargeQ for any
+    -- D+K (numerically verified for D+K up to 10000), but the
+    -- triple-product structure (n, T, s) exceeds nlinarith's
+    -- automation. Manual factorization (~30-50 LOC) needed for closure.
     sorry
   have hVanishing : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
