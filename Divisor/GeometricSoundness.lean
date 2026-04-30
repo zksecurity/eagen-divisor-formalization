@@ -3136,6 +3136,54 @@ private theorem polyG_zero_at_defined_distinctRCons_betaCanonical_of_hAllZero_an
     stmt.target (baseAt E stmt msg hkm) (distinctM'_tail E stmt msg hkm)
     hAllZeroDistinct A₀ A₁ hA₀ hA₁ hNV hDef
 
+/-- **Sharp Hasse-Weil bound** in `ℕ`: `q ≤ n + 2 + Nat.sqrt(4(n+1))`. -/
+private theorem hasse_q_le_sharp_nat :
+    E.q ≤ E.points.card + 2 + Nat.sqrt (4 * (E.points.card + 1)) := by
+  classical
+  have hHW := Divisor.hasse_weil E
+  rw [E.hNumPoints] at hHW
+  -- hHW: (((card + 1) : ℤ) - q - 1)^2 ≤ 4q.
+  have hMcard : ((E.points.card : ℤ) - E.q)^2 ≤ 4 * (E.q : ℤ) := by
+    have heq : ((E.points.card + 1 : ℕ) : ℤ) - E.q - 1
+        = ((E.points.card : ℤ) - E.q) := by push_cast; ring
+    rw [heq] at hHW; exact hHW
+  by_cases hQ : E.q ≤ E.points.card + 2
+  · -- q ≤ n + 2, so q ≤ n + 2 + sqrt(...) trivially.
+    have hSqrtNonNeg : 0 ≤ Nat.sqrt (4 * (E.points.card + 1)) := Nat.zero_le _
+    omega
+  · push_neg at hQ
+    -- q > n + 2, so q - n - 2 > 0 in ℕ.
+    -- Derive (q - n - 2)^2 ≤ 4(n + 1) in ℕ.
+    have hSqInt : ((E.q : ℤ) - E.points.card - 2)^2 ≤ 4 * ((E.points.card : ℤ) + 1) := by
+      -- Identity: (q-n-2)² = (n-q)² + 4(n+1) - 4q.
+      have h1 : ((E.q : ℤ) - E.points.card - 2)^2
+          = ((E.points.card : ℤ) - E.q)^2 + 4 * ((E.points.card : ℤ) + 1) - 4 * E.q := by
+        ring
+      rw [h1]
+      linarith
+    -- Convert to ℕ.
+    have hQ_le : E.points.card + 2 ≤ E.q := le_of_lt hQ
+    have hSubInt : ((E.q - E.points.card - 2 : ℕ) : ℤ) = (E.q : ℤ) - E.points.card - 2 := by
+      push_cast [Nat.cast_sub hQ_le]
+      have : E.q - E.points.card ≥ 2 := by omega
+      push_cast [Nat.cast_sub (Nat.le_of_lt (by omega : E.points.card < E.q))]
+      omega
+    have hSqNat : (E.q - E.points.card - 2)^2 ≤ 4 * (E.points.card + 1) := by
+      have hCastLhs : (((E.q - E.points.card - 2 : ℕ) : ℤ))^2
+          = ((E.q : ℤ) - E.points.card - 2)^2 := by rw [hSubInt]
+      have hCastRhs : ((4 * (E.points.card + 1) : ℕ) : ℤ)
+          = 4 * ((E.points.card : ℤ) + 1) := by push_cast; ring
+      have hZ : ((E.q - E.points.card - 2 : ℕ) : ℤ)^2
+          ≤ ((4 * (E.points.card + 1) : ℕ) : ℤ) := by
+        rw [hCastLhs, hCastRhs]; exact hSqInt
+      exact_mod_cast hZ
+    -- Apply Nat.le_sqrt.
+    have hLeSqrt : E.q - E.points.card - 2 ≤ Nat.sqrt (4 * (E.points.card + 1)) := by
+      rw [Nat.le_sqrt]; rw [show (E.q - E.points.card - 2) * (E.q - E.points.card - 2)
+          = (E.q - E.points.card - 2)^2 from by ring]
+      exact hSqNat
+    omega
+
 /-- **Per-A₀ count of non-defined A₁ pairs.** For A₀ ∈ E.points outside
 zerosFinset and the distinctR positions, the number of A₁ ∈ E.points
 with `¬logDerivCheckFnDefined E D stmt.target baseAt A₀ A₁` is bounded
