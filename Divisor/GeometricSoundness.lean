@@ -3560,8 +3560,10 @@ private theorem sigma_data_of_gd_support_rational
       exact h
     -- Step C: density extension via polyG_zero_on_nonvertical_of_defined.
     -- Per-A₀ density: # defined non-vert A₁ > 2 * resultantX_polyGPoly.natDegree.
-    -- Bound on bad A₁'s: from internal proof in ExtractorBridge.lean (line 2972),
-    -- # non-defined ≤ 18 * D.degE + 10 * stmt.k + 112.
+    -- For A₀ ∈ zerosFinset/distinctR, defined fails universally; closing
+    -- requires polyG_swap_zero case-split (mirrors ExtractorBridge.lean
+    -- rational pathway lines 2876-3340). ~100-200 LOC of case-split
+    -- mechanization. Path documented in plan_remaining_residue_match.md.
     have hDensity : ∀ A₀ ∈ E.points,
         (E.points.filter (fun A₁ => A₀.1 ≠ A₁.1 ∧
           logDerivCheckFnDefined E msg.toD stmt.target
