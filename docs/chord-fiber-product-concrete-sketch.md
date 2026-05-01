@@ -60,7 +60,9 @@ The sketch file states each obligation as a `theorem … := by sorry`.
 | 3a | `chord_fiber_product_concrete_bar_eval` | **Plumbing** | Base-change the resultant to `Fqbar`, then specialise the intercept `μ`. This is two `resultant_map_map` applications. |
 | 3b | `chord_fiber_product_concrete_bar_eval_eq_prod` | **Plumbing** | Same as 2 over `Fqbar`, where `Splits` is automatic, using 3a as the input. |
 | 4 | `chord_fiber_product_concrete_ne_zero` | **Done** | Proved by evaluating over `Fqbar`, choosing an intercept outside the finite set `gd.support.image (zLambdaBar E lam)`, and using the resultant product formula. |
-| 5 | `chord_fiber_product_concrete_bar_eq_geom_prod` | **Hard math (deepest)** | The divisor-of-norm identity `div(N(D)) = π_*(div D)` for the chord projection. Needs the link `mult_at_μ (resultant) = ∑_{Q : zLambdaBar Q = μ} gd.mult Q`, i.e., per-place inertial degree of the chord cover. Project's existing `geomLocalOrder` and `IsGeometricZeroMultiplicity` give one direction; the multiplicity-summing direction needs new machinery. **No mathlib analogue.** |
+| 4a | `chord_fiber_product_concrete_bar_eval_eq_zero_iff_support` | **Done** | Multiplicity-free zero-locus bridge: bar evaluation at `μ` is zero iff some `Q ∈ gd.support` has `zLambdaBar Q = μ`. |
+| 4b | `chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image` | **Done** | Root-set consequence of 4a and non-vanishing. This pins support before multiplicities. |
+| 5 | `chord_fiber_product_concrete_bar_eq_geom_prod` | **Hard math (deepest)** | The divisor-of-norm identity `div(N(D)) = π_*(div D)` for the chord projection. The root support is now proved; what remains is the multiplicity link `mult_at_μ (resultant) = ∑_{Q : zLambdaBar Q = μ} gd.mult Q`, i.e., per-place ramification/inertial accounting for the chord cover. **No mathlib analogue.** |
 | 6 | `chord_fiber_product_concrete_eq_normZ_under_split` | **Plumbing** | Once obligation 5 is in hand, this is a "match factored forms over `Fqbar`, scalar descends to `ZMod E.q`" argument. |
 | 7 | `chord_fiber_product_concrete_logDeriv` | **Medium math** | Logarithmic derivative of `∏_i D(x_i(μ), λx_i(μ) + μ)` via product rule + implicit-function differentiation of the chord cubic. The cancellation that produces the `logDerivTerm` formula is the substantive step; `hDen` rules out the cusp where the implicit-function argument fails. Mathlib has `Polynomial.derivative_*` and `aeval` machinery for the formal-derivative side; the chain rule is `Polynomial.derivative_comp` plus algebra. |
 
@@ -157,10 +159,15 @@ Discharge progress:
   `exists_geometric_zero_support`, `exists_geometricDivisorData_of_support`,
   `Infinite.exists_notMem_finset`, and
   `chord_fiber_product_concrete_bar_eval_eq_prod`.
+* **Support bridge (`chord_fiber_product_concrete_bar_eval_eq_zero_iff_support`): DONE.**
+  This proves the set-theoretic roots of the concrete resultant are exactly
+  chord projections of the geometric support of `D`.
+* **Root-set corollary (`chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image`): DONE.**
+  This packages the support bridge as an equality of finite root sets.
 * Obligations 5, 6, 7: still `sorry`.
 
-Next planned: support-level zero-locus bridge for obligation 5, then obligation
-6 (factored-forms-match descent — depends on 5).
+Next planned: isolate the remaining multiplicity assertion in obligation 5,
+then obligation 6 (factored-forms-match descent — depends on 5).
 
 ## Summary for codex
 
