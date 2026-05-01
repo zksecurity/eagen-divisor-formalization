@@ -415,18 +415,84 @@ theorem chord_fiber_product_concrete_bar_eval_eq_prod
         (DLineBar_natDegree_le E lam D μ) hSplit,
       chordCubicBar_leadingCoeff, one_pow, one_mul]
 
+/-- Explicit evaluation of `chordCubicBar` at a base point `x ∈ Fqbar`.
+This local form is used by the non-vanishing proof below. -/
+private lemma chordCubicBar_eval_eq_nonzero_aux
+    (lam : ZMod E.q) (μ x : Fqbar E) :
+    (chordCubicBar E lam μ).eval x =
+      x ^ 3 - (fqToBar E lam) ^ 2 * x ^ 2
+        + (fqToBar E E.curveA - 2 * fqToBar E lam * μ) * x
+        + (fqToBar E E.curveB - μ ^ 2) := by
+  unfold chordCubicBar chordCubicBivBar chordCubicBiv toBarPolyHom fqToBar
+  simp only [Polynomial.map_add, Polynomial.map_sub, Polynomial.map_mul,
+             Polynomial.map_pow, Polynomial.map_C, Polynomial.map_X,
+             Polynomial.coe_evalRingHom, Polynomial.coe_mapRingHom,
+             Polynomial.eval_C, Polynomial.eval_X, Polynomial.eval_add,
+             Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_pow,
+             Polynomial.eval_ofNat, Polynomial.map_ofNat, map_mul, map_pow,
+             map_ofNat]
+
+/-- A root `x` of `chordCubicBar lam μ` gives a point `(x, λ̄x + μ)` that
+satisfies the curve equation `y² = x³ + Ax + B` over `Fqbar`. -/
+private lemma chordCubicBar_root_onCurve_of_mem_roots
+    (lam : ZMod E.q) (μ x : Fqbar E)
+    (hRoot : x ∈ (chordCubicBar E lam μ).roots) :
+    (fqToBar E lam * x + μ) ^ 2 =
+      x ^ 3 + fqToBar E E.curveA * x + fqToBar E E.curveB := by
+  have hEval : (chordCubicBar E lam μ).eval x = 0 :=
+    (Polynomial.mem_roots'.mp hRoot).2
+  rw [chordCubicBar_eval_eq_nonzero_aux] at hEval
+  linear_combination -hEval
+
 /-- **Non-vanishing.** The candidate is nonzero whenever `D` is.
 
-*Math (medium)*: a polynomial in `μ` is nonzero iff some specialisation is.
-By Hasse-Weil + finiteness of `D`'s zero locus on `E`, there exists a
-rational `μ` (after extending to `Fqbar` if necessary) such that the
-chord cubic at `μ` splits with three distinct roots, none of which is
-killed by `D` on the corresponding line. The resultant at that `μ` is then
-a nonzero product, so the polynomial is nonzero. -/
+Proof: by contradiction. If the polynomial were zero, all bar evaluations
+would be zero. Pick `μ ∈ Fqbar E` outside the finite set
+`gd.support.image (zLambdaBar E lam)` (possible since `Fqbar E` is
+algebraically closed, hence infinite). At this `μ`, `bar_eval_eq_prod`
+expresses the evaluation as a product over chord roots; for the product
+to be zero, some chord root `x` must satisfy `D̄(x, λ̄x + μ) = 0`. The
+geometric point `Q := (x, λ̄x + μ)` then lies on `E` and is a `D`-zero,
+hence in `gd.support`, hence `μ = zLambdaBar E lam Q` lies in the bad
+set after all. -/
 theorem chord_fiber_product_concrete_ne_zero
     (lam : ZMod E.q) (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     chord_fiber_product_concrete E lam D ≠ 0 := by
-  sorry
+  classical
+  intro hZero
+  obtain ⟨support, hSuppZero, hZeroSupp⟩ := exists_geometric_zero_support E D hD
+  obtain ⟨gd, _hSuppEq⟩ :=
+    exists_geometricDivisorData_of_support E D hD support hSuppZero hZeroSupp
+  set badMu : Finset (Fqbar E) := gd.support.image (zLambdaBar E lam)
+    with hBadMu_def
+  obtain ⟨μ, hμ⟩ := Infinite.exists_notMem_finset badMu
+  have hBarZero :
+      (chord_fiber_product_concrete E lam D).map
+        (algebraMap (ZMod E.q) (Fqbar E)) = 0 := by
+    rw [hZero]
+    exact Polynomial.map_zero _
+  have hEvalZero :
+      Polynomial.eval μ
+        (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+          (chord_fiber_product_concrete E lam D)) = 0 := by
+    rw [hBarZero]
+    simp
+  rw [chord_fiber_product_concrete_bar_eval_eq_prod] at hEvalZero
+  rw [Multiset.prod_eq_zero_iff, Multiset.mem_map] at hEvalZero
+  obtain ⟨x, hx_root, hx_eq⟩ := hEvalZero
+  have hOnE :
+      (fqToBar E lam * x + μ) ^ 2 =
+        x ^ 3 + fqToBar E E.curveA * x + fqToBar E E.curveB :=
+    chordCubicBar_root_onCurve_of_mem_roots E lam μ x hx_root
+  set Q : GeomPoint E := ⟨x, fqToBar E lam * x + μ, hOnE⟩ with hQ_def
+  have hQzero : D.geomEval E Q = 0 := by
+    rw [← DLineBar_eval_eq_geomEval E lam D μ x hOnE]
+    exact hx_eq
+  have hQ_mem : Q ∈ gd.support := gd.eval_zero_mem_support Q hQzero
+  have hμ_eq : zLambdaBar E lam Q = μ := by
+    show (fqToBar E lam * x + μ) - fqToBar E lam * x = μ
+    ring
+  exact hμ (Finset.mem_image.mpr ⟨Q, hQ_mem, hμ_eq⟩)
 
 /-- **Bar-level factored form** (replacement of
 `chord_fiber_product_bar_eq_geom_prod`).
