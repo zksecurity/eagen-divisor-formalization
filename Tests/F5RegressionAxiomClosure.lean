@@ -4,9 +4,9 @@
   Regression sanity-check for the soundness restoration:
   * The headline theorems no longer depend on the false
     `CoordRingElt.divisor_group_sum_zero` axiom.
-  * On the geometric-zero skeleton branch, the closure is intentionally
-    `sorryAx` plus Lean foundations while the named geometric obligations
-    are discharged.
+  * On the geometric-zero skeleton branch, the MA/IP closures are
+    sorry-free and expose the current named geometric/class-group
+    obligations directly.
 
   Run via `lake env lean Tests/F5RegressionAxiomClosure.lean` (the
   `#print axioms` outputs land in the build log).
