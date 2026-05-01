@@ -85,7 +85,58 @@ theorem chord_fiber_product_concrete_bar_eq_geom_prod_of_rootMultiplicity
           (chord_fiber_product_concrete E lam D)
         = Polynomial.C c * ∏ Q ∈ gd.support,
             (Polynomial.X - Polynomial.C (zLambdaBar E lam Q)) ^ (gd.mult Q) := by
-  sorry
+  classical
+  set p := (chord_fiber_product_concrete E lam D).map
+    (algebraMap (ZMod E.q) (Fqbar E)) with hp_def
+  have hpne : p ≠ 0 :=
+    Polynomial.map_ne_zero
+      (chord_fiber_product_concrete_ne_zero E lam D hD)
+  have hpsplit : p.Splits := IsAlgClosed.splits _
+  have hcard : p.roots.card = p.natDegree := hpsplit.natDegree_eq_card_roots.symm
+  refine ⟨p.leadingCoeff, ?_, ?_⟩
+  · exact Polynomial.leadingCoeff_ne_zero.mpr hpne
+  have hfac :
+      Polynomial.C p.leadingCoeff *
+        (p.roots.map fun a => Polynomial.X - Polynomial.C a).prod = p :=
+    Polynomial.C_leadingCoeff_mul_prod_multiset_X_sub_C hcard
+  have hrootSet :
+      p.roots.toFinset = gd.support.image (zLambdaBar E lam) :=
+    chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image E lam D hD gd
+  have hMaps : ∀ Q ∈ gd.support, zLambdaBar E lam Q ∈
+      gd.support.image (zLambdaBar E lam) :=
+    fun Q hQ => Finset.mem_image.mpr ⟨Q, hQ, rfl⟩
+  have hprod :
+      (p.roots.map fun a => Polynomial.X - Polynomial.C a).prod =
+        ∏ Q ∈ gd.support,
+          (Polynomial.X - Polynomial.C (zLambdaBar E lam Q)) ^ (gd.mult Q) := by
+    rw [Finset.prod_multiset_map_count]
+    rw [hrootSet]
+    have hcount_eq : ∀ z ∈ gd.support.image (zLambdaBar E lam),
+        (Polynomial.X - Polynomial.C z) ^ (p.roots.count z) =
+        (Polynomial.X - Polynomial.C z) ^
+          (∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z),
+            gd.mult Q) := by
+      intro z _
+      rw [Polynomial.count_roots, hZ]
+    rw [Finset.prod_congr rfl hcount_eq]
+    rw [Finset.prod_congr rfl
+      (fun z _ => (Finset.prod_pow_eq_pow_sum
+        (gd.support.filter (fun Q => zLambdaBar E lam Q = z))
+        gd.mult (Polynomial.X - Polynomial.C z)).symm)]
+    have hZreplace : ∀ z ∈ gd.support.image (zLambdaBar E lam),
+        (∏ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z),
+          (Polynomial.X - Polynomial.C z) ^ (gd.mult Q)) =
+        (∏ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z),
+          (Polynomial.X - Polynomial.C (zLambdaBar E lam Q)) ^ (gd.mult Q)) := by
+      intro z _
+      refine Finset.prod_congr rfl ?_
+      intro Q hQ
+      rw [(Finset.mem_filter.mp hQ).2]
+    rw [Finset.prod_congr rfl hZreplace]
+    exact Finset.prod_fiberwise_of_maps_to hMaps
+      (fun Q => (Polynomial.X - Polynomial.C (zLambdaBar E lam Q)) ^ (gd.mult Q))
+  conv_lhs => rw [← hfac]
+  rw [hprod]
 
 /-- **Bar-level factored form** (replacement of
 `chord_fiber_product_bar_eq_geom_prod`).

@@ -72,7 +72,7 @@ sorry`.
 | 4a | `chord_fiber_product_concrete_bar_eval_eq_zero_iff_support` | **Done** | Multiplicity-free zero-locus bridge: bar evaluation at `μ` is zero iff some `Q ∈ gd.support` has `zLambdaBar Q = μ`. |
 | 4b | `chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image` | **Done** | Root-set consequence of 4a and non-vanishing. This pins support before multiplicities. |
 | 5a | `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber` | **Hard math (deepest)** | The divisor-of-norm identity `div(N(D)) = π_*(div D)` for the chord projection, stated as the exact root-multiplicity formula `mult_at_z(resultant) = ∑_{Q : zLambdaBar Q = z} gd.mult Q`. This is the narrow citable core (Stichtenoth Prop. 3.1.9 + Thm. 3.7.1). |
-| 5b | `chord_fiber_product_concrete_bar_eq_geom_prod_of_rootMultiplicity` | **Plumbing** | Given 5a plus the proved root-set bridge, derive the factored form by polynomial factorisation over `Fqbar`. This is a finite-product/root-count argument, not a new mathematical axiom. |
+| 5b | `chord_fiber_product_concrete_bar_eq_geom_prod_of_rootMultiplicity` | **Done** | Given 5a plus the proved root-set bridge, derive the factored form by polynomial factorisation over `Fqbar`. This is a finite-product/root-count argument, not a new mathematical axiom. |
 | 6 | `chord_fiber_product_concrete_eq_normZ_under_split` | **Plumbing** | Once obligation 5 is in hand, this is a "match factored forms over `Fqbar`, scalar descends to `ZMod E.q`" argument. |
 | 7 | `chord_fiber_product_concrete_logDeriv` | **Medium math** | Logarithmic derivative of `∏_i D(x_i(μ), λx_i(μ) + μ)` via product rule + implicit-function differentiation of the chord cubic. The cancellation that produces the `logDerivTerm` formula is the substantive step; `hDen` rules out the cusp where the implicit-function argument fails. Mathlib has `Polynomial.derivative_*` and `aeval` machinery for the formal-derivative side; the chain rule is `Polynomial.derivative_comp` plus algebra. |
 
@@ -178,12 +178,14 @@ Discharge progress:
 * **Narrow multiplicity core (`chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber`): still `sorry`.**
   This is the intended citable axiom boundary if we stop short of fully
   mechanising divisor-of-norm pushforward.
-* **Factorisation plumbing (`chord_fiber_product_concrete_bar_eq_geom_prod_of_rootMultiplicity`): still `sorry`.**
-  This should be an Aristotle/worker-sized finite-product proof.
+* **Factorisation plumbing (`chord_fiber_product_concrete_bar_eq_geom_prod_of_rootMultiplicity`): DONE.**
+  It uses `C_leadingCoeff_mul_prod_multiset_X_sub_C`,
+  `Finset.prod_multiset_map_count`, `Polynomial.count_roots`,
+  `Finset.prod_pow_eq_pow_sum`, and `Finset.prod_fiberwise_of_maps_to`.
 * Obligations 6 and 7: still `sorry`.
 
-Next planned: discharge the finite-product plumbing lemma, then obligation 6
-(factored-forms-match descent — depends on the multiplicity core).
+Next planned: obligation 6 (factored-forms-match descent — depends on the
+multiplicity core) and the log-derivative product-rule chain.
 
 ## Summary for codex
 
@@ -192,7 +194,7 @@ Next planned: discharge the finite-product plumbing lemma, then obligation 6
 * The production core is now separated from the sketch obligations.
 * The genuine new mathematics has been isolated as the narrow
   `rootMultiplicity_eq_zfiber` statement; the old broad `bar_eq_geom_prod`
-  follows from it plus finite-product plumbing.
+  now follows from it by proven finite-product plumbing.
 * If the project keeps the new mathematics axiomatic, the construction
   collapses to **one axiom + concrete definition** (vs the current three
   axioms + opaque), which is a clean reduction in surface area.
