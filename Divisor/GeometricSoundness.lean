@@ -3478,6 +3478,125 @@ private theorem geom_residue_sum_zero_of_hAllZero
     · exact absurd hPR hProdR_ne
   · exact hRes
 
+/-- Rational analogue of `lineEvalNumAtFullBar_eval_eq_zLambdaBar_diff`:
+on a non-vertical chord, the rational geometric line factor evaluates to
+`-(A₁.1 − A₀.1) · (μ − zLambda lam P)`, embedded in `Fqbar`. -/
+private theorem lineEvalNumAtFullBarOfFq_eval_eq_zLambda_diff
+    (P A₀ A₁ : ZMod E.q × ZMod E.q) (hNV : A₀.1 ≠ A₁.1) :
+    MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E P)
+      = -(fqToBar E (A₁.1 - A₀.1)) *
+          (fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀)
+            - fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) P)) := by
+  rw [lineEvalNumAtFullBarOfFq_eval_eq_lineThrough_mul E P A₀ A₁ hNV,
+      L_eval_eq_zLambda_sub E A₀ A₁ P]
+  have hSub : fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) P
+        - zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀)
+      = fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) P)
+        - fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀) := by
+    unfold fqToBar; rw [map_sub]
+  rw [hSub]; ring
+
+/--
+**Partial-fraction form of the bar-level residue identity at a defined
+non-vertical chord.** Under `hAllZero`, the residue-divided sum
+re-expresses as a partial-fraction identity in
+`μ := fqToBar (zLambda lam A₀)` over the geometric support and the
+re-indexed rational `R = Fin.cons (P,-P) B`, with weights
+`m' = Fin.cons (-1) (fun j => -m j)`:
+
+  Σ_Q (mult Q) · (μ − zLambdaBar lam Q)⁻¹ +
+  Σ_j fqToBar (m'_j) · (μ − fqToBar (zLambda lam R_j))⁻¹ = 0.
+
+Direct corollary of `geom_residue_sum_zero_of_hAllZero` plus the
+line-factor identities `lineEvalNumAtFullBar_eval_eq_zLambdaBar_diff`
+and `lineEvalNumAtFullBarOfFq_eval_eq_zLambda_diff`, together with
+non-vanishing of `(A₁.1 − A₀.1)` in `Fqbar`.
+-/
+private theorem geom_residue_sum_zero_as_zLambda_pf
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (P : ZMod E.q × ZMod E.q) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E D P B A₀ A₁ →
+      logDerivCheckFn E D P k B m A₀ A₁ = 0)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1)
+    (hDef : logDerivCheckFnDefined E D P B A₀ A₁) :
+    (∑ Q ∈ gd.support, ((gd.mult Q : ℕ) : Fqbar E) *
+        (fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀)
+          - zLambdaBar E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) Q)⁻¹)
+    + (∑ j : Fin (k + 1),
+        fqToBar E ((Fin.cons (-1) (fun j => -m j) : Fin (k + 1) → ZMod E.q) j) *
+        (fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀)
+          - fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2)
+            ((Fin.cons (P.1, -P.2) B : Fin (k + 1) → ZMod E.q × ZMod E.q) j)))⁻¹)
+      = 0 := by
+  classical
+  set R : Fin (k + 1) → ZMod E.q × ZMod E.q := Fin.cons (P.1, -P.2) B with hR_def
+  set m' : Fin (k + 1) → ZMod E.q := Fin.cons (-1) (fun j => -m j) with hM'_def
+  set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLam
+  set μ := zLambda E lam A₀ with hMu_def
+  have hX : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm hNV)
+  have hXBar : fqToBar E (A₁.1 - A₀.1) ≠ 0 :=
+    (fqToBar_eq_zero_iff E _).not.mpr hX
+  -- Starting bar-level residue identity.
+  have hStart :=
+    geom_residue_sum_zero_of_hAllZero E D gd P B m hAllZero A₀ A₁ hA₀ hA₁ hNV hDef
+  -- Q-summand rewrite via the geometric line-factor identity.
+  have hQ_rewrite : ∀ Q ∈ gd.support,
+      ((gd.mult Q : ℕ) : Fqbar E) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q))⁻¹
+      = -(fqToBar E (A₁.1 - A₀.1))⁻¹ *
+          (((gd.mult Q : ℕ) : Fqbar E) *
+            (fqToBar E μ - zLambdaBar E lam Q)⁻¹) := by
+    intro Q _hQ
+    rw [lineEvalNumAtFullBar_eval_eq_zLambdaBar_diff E Q A₀ A₁ hNV]
+    simp only [neg_mul, inv_neg, mul_inv]
+    ring
+  -- R-summand rewrite via the rational line-factor identity.
+  have hR_rewrite : ∀ j : Fin (k + 1),
+      fqToBar E (m' j) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+          (lineEvalNumAtFullBarOfFq E (R j)))⁻¹
+      = -(fqToBar E (A₁.1 - A₀.1))⁻¹ *
+          (fqToBar E (m' j) *
+            (fqToBar E μ - fqToBar E (zLambda E lam (R j)))⁻¹) := by
+    intro j
+    rw [lineEvalNumAtFullBarOfFq_eval_eq_zLambda_diff E (R j) A₀ A₁ hNV]
+    simp only [neg_mul, inv_neg, mul_inv]
+    ring
+  -- Apply the rewrites to hStart.
+  have hStart' :
+      (∑ Q ∈ gd.support, -(fqToBar E (A₁.1 - A₀.1))⁻¹ *
+          (((gd.mult Q : ℕ) : Fqbar E) *
+            (fqToBar E μ - zLambdaBar E lam Q)⁻¹))
+      + (∑ j : Fin (k + 1), -(fqToBar E (A₁.1 - A₀.1))⁻¹ *
+          (fqToBar E (m' j) *
+            (fqToBar E μ - fqToBar E (zLambda E lam (R j)))⁻¹)) = 0 := by
+    rw [show (∑ Q ∈ gd.support, -(fqToBar E (A₁.1 - A₀.1))⁻¹ *
+          (((gd.mult Q : ℕ) : Fqbar E) *
+            (fqToBar E μ - zLambdaBar E lam Q)⁻¹))
+        = ∑ Q ∈ gd.support, ((gd.mult Q : ℕ) : Fqbar E) *
+            (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+              (lineEvalNumAtFullBar E Q))⁻¹ from
+        Finset.sum_congr rfl (fun Q hQ => (hQ_rewrite Q hQ).symm)]
+    rw [show (∑ j : Fin (k + 1), -(fqToBar E (A₁.1 - A₀.1))⁻¹ *
+          (fqToBar E (m' j) *
+            (fqToBar E μ - fqToBar E (zLambda E lam (R j)))⁻¹))
+        = ∑ j : Fin (k + 1), fqToBar E (m' j) *
+            (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+              (lineEvalNumAtFullBarOfFq E (R j)))⁻¹ from
+        Finset.sum_congr rfl (fun j _ => (hR_rewrite j).symm)]
+    exact hStart
+  -- Pull out -(fqToBar Δx)⁻¹ and cancel.
+  rw [← Finset.mul_sum, ← Finset.mul_sum, ← mul_add] at hStart'
+  have hInvNe : -(fqToBar E (A₁.1 - A₀.1))⁻¹ ≠ 0 :=
+    neg_ne_zero.mpr (inv_ne_zero hXBar)
+  rcases mul_eq_zero.mp hStart' with h | h
+  · exact absurd h hInvNe
+  · exact h
+
 /-- A rational scalar-weighted summand of the bar-level residue identity
 descends to `fqToBar` of a rational expression, when the line factor is
 nonzero. -/
