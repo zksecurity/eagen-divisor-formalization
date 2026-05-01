@@ -83,6 +83,24 @@ private noncomputable abbrev toBarPolyHom :
     Polynomial (ZMod E.q) →+* Polynomial (Fqbar E) :=
   Polynomial.mapRingHom (algebraMap (ZMod E.q) (Fqbar E))
 
+/-- Base-changing a base-field polynomial whose coefficients were embedded
+as constants, then specialising the inner variable, is ordinary base-change. -/
+private lemma eval₂_mapC_toBar_evalRingHom (μ x : Fqbar E)
+    (p : Polynomial (ZMod E.q)) :
+    Polynomial.eval₂ (Polynomial.evalRingHom μ) x
+        ((p.map (Polynomial.C : ZMod E.q →+* Polynomial (ZMod E.q))).map
+          (toBarPolyHom E)) =
+      p.eval₂ (algebraMap (ZMod E.q) (Fqbar E)) x := by
+  rw [← Polynomial.eval_map]
+  have hmap :
+      ((p.map (Polynomial.C : ZMod E.q →+* Polynomial (ZMod E.q))).map
+          (toBarPolyHom E)).map (Polynomial.evalRingHom μ) =
+        p.map (algebraMap (ZMod E.q) (Fqbar E)) := by
+    ext n
+    simp [toBarPolyHom]
+  rw [hmap]
+  rw [Polynomial.eval_map]
+
 /-- The bivariate chord cubic after coefficient base-change to
 `F_qbar[Z][X]`. -/
 noncomputable def chordCubicBivBar (lam : ZMod E.q) :
@@ -106,6 +124,19 @@ intercept variable to `μ`. -/
 noncomputable def DLineBar (lam : ZMod E.q) (D : CoordRingElt E.q)
     (μ : Fqbar E) : Polynomial (Fqbar E) :=
   (DLineBivBar E lam D).map (Polynomial.evalRingHom μ)
+
+/-- Evaluating the specialised bar-level D-on-line polynomial is the same
+as evaluating `D` at the geometric point on the line `y = λx + μ`. -/
+private lemma DLineBar_eval_eq_geomEval (lam : ZMod E.q)
+    (D : CoordRingElt E.q) (μ x : Fqbar E)
+    (hOnE :
+      (fqToBar E lam * x + μ) ^ 2 =
+        x ^ 3 + fqToBar E E.curveA * x + fqToBar E E.curveB) :
+    (DLineBar E lam D μ).eval x =
+      D.geomEval E ⟨x, fqToBar E lam * x + μ, hOnE⟩ := by
+  unfold DLineBar DLineBivBar DLineBiv toBarPolyHom
+    CoordRingElt.geomEval fqToBar
+  simp [Polynomial.eval_map, eval₂_mapC_toBar_evalRingHom]
 
 /-- **Concrete chord-fiber-product candidate.** The X-resultant of the
 chord cubic and the D-on-line lift, viewed as a polynomial in the
