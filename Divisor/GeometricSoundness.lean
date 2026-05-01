@@ -4713,6 +4713,75 @@ private theorem sigma_data_of_gd_support_rational
     hVanishing hELargeThr hELargeDkl
 
 /--
+Glue lemma packaging the final partial-fraction step of the Frobenius
+descent branch.
+
+Takes:
+* slope-isolation `hSep` and non-rationality `hNonRat` (from
+  `exists_slope_zLambdaBar_isolated_non_rational`),
+* an enumeration `e : Fin n ≃ gd.support` with `e i₀ = Q`,
+* an auxiliary `Fin k` family `R` of rational base points whose
+  `zLambda` projections give the second pole family,
+* a coefficient family `d` for the auxiliary poles,
+* an evaluation finset `S` of size at least `n + k`, disjoint from
+  both pole families, on which the partial-fraction sum vanishes.
+
+Builds the abstract `α/β/c/d` data and invokes
+`FrobDescentHelpers.isolated_coeff_zero_of_pf_sum` to conclude
+`((gd.mult Q : ℕ) : Fqbar E) = 0`. The lemma is pure glue: the actual
+sampling-set construction (cardinality / disjointness / vanish) is
+left to the caller.
+-/
+private theorem frob_descent_isolate_mult_of_pf_sum
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    (lam : ZMod E.q)
+    (Q : GeomPoint E)
+    (hSep : ∀ Q' ∈ gd.support, Q' ≠ Q →
+      zLambdaBar E lam Q' ≠ zLambdaBar E lam Q)
+    (hNonRat : (zLambdaBar E lam Q) ^ E.q ≠ zLambdaBar E lam Q)
+    {n : ℕ} (e : Fin n ≃ {x // x ∈ gd.support})
+    (i₀ : Fin n) (hi₀ : (e i₀).val = Q)
+    {k : ℕ} (R : Fin k → ZMod E.q × ZMod E.q)
+    (d : Fin k → Fqbar E)
+    (S : Finset (Fqbar E))
+    (hCard : n + k ≤ S.card)
+    (hDisjointα : ∀ μ ∈ S, ∀ i : Fin n,
+      μ ≠ zLambdaBar E lam (e i).val)
+    (hDisjointβ : ∀ μ ∈ S, ∀ j : Fin k,
+      μ ≠ fqToBar E (zLambda E lam (R j)))
+    (hVanish : ∀ μ ∈ S,
+      (∑ i : Fin n,
+          ((gd.mult (e i).val : ℕ) : Fqbar E) *
+            (μ - zLambdaBar E lam (e i).val)⁻¹) +
+        (∑ j : Fin k,
+            d j * (μ - fqToBar E (zLambda E lam (R j)))⁻¹) = 0) :
+    ((gd.mult Q : ℕ) : Fqbar E) = 0 := by
+  have hIsolatedα : ∀ j : Fin n, j ≠ i₀ →
+      zLambdaBar E lam (e j).val ≠ zLambdaBar E lam (e i₀).val := by
+    intro j hj
+    rw [hi₀]
+    refine hSep _ (e j).property (fun hEq => hj ?_)
+    exact e.injective (Subtype.ext (hEq.trans hi₀.symm))
+  have hIsolatedβ : ∀ j : Fin k,
+      fqToBar E (zLambda E lam (R j)) ≠ zLambdaBar E lam (e i₀).val := by
+    intro j hEq
+    rw [hi₀] at hEq
+    apply hNonRat
+    have hβFix : (fqToBar E (zLambda E lam (R j))) ^ E.q =
+        fqToBar E (zLambda E lam (R j)) := fqToBar_frob_fixed E _
+    rw [hEq] at hβFix
+    exact hβFix
+  have key : ((gd.mult (e i₀).val : ℕ) : Fqbar E) = 0 :=
+    FrobDescentHelpers.isolated_coeff_zero_of_pf_sum
+      (α := fun i => zLambdaBar E lam (e i).val)
+      (c := fun i => ((gd.mult (e i).val : ℕ) : Fqbar E))
+      (β := fun j => fqToBar E (zLambda E lam (R j)))
+      (d := d) i₀ hIsolatedα hIsolatedβ S hCard
+      hDisjointα hDisjointβ hVanish
+  rw [hi₀] at key
+  exact key
+
+/--
 Frobenius descent core for the rational-support branch.
 
 PROVIDED SOLUTION
