@@ -5062,6 +5062,85 @@ private theorem sum_support_eq_sum_fin
   · intro i _
     rfl
 
+/-- Choose many rational intercepts avoiding all geometric support poles and
+all auxiliary rational poles. -/
+private theorem exists_goodIntercepts_avoiding_geom_and_rational_poles
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    {M : ℕ} (R : Fin M → ZMod E.q × ZMod E.q)
+    (lam : ZMod E.q)
+    (hGood : 2 * (gd.support.card + M) ≤ (goodIntercepts E lam).card) :
+    ∃ S0 : Finset (ZMod E.q),
+      S0 ⊆ goodIntercepts E lam ∧
+      gd.support.card + M ≤ S0.card ∧
+      (∀ μ ∈ S0, ∀ Q ∈ gd.support,
+        fqToBar E μ ≠ zLambdaBar E lam Q) ∧
+      (∀ μ ∈ S0, ∀ j : Fin M,
+        μ ≠ zLambda E lam (R j)) := by
+  classical
+  set G := goodIntercepts E lam
+  set badGeom : Finset (ZMod E.q) :=
+    G.filter (fun μ => ∃ Q ∈ gd.support, fqToBar E μ = zLambdaBar E lam Q)
+  set badRat : Finset (ZMod E.q) :=
+    G.filter (fun μ => ∃ j : Fin M, μ = zLambda E lam (R j))
+  set bad := badGeom ∪ badRat
+  set S0 := G \ bad
+  have hBadGeom_card : badGeom.card ≤ gd.support.card := by
+    let f : {μ // μ ∈ badGeom} → {Q // Q ∈ gd.support} := fun μ =>
+      ⟨Classical.choose (Finset.mem_filter.mp μ.property).2,
+        (Classical.choose_spec (Finset.mem_filter.mp μ.property).2).1⟩
+    have hf : Function.Injective f := by
+      intro μ ν hEq
+      apply Subtype.ext
+      have hμeq :
+          fqToBar E μ.val = zLambdaBar E lam (f μ).val :=
+        (Classical.choose_spec (Finset.mem_filter.mp μ.property).2).2
+      have hνeq :
+          fqToBar E ν.val = zLambdaBar E lam (f ν).val :=
+        (Classical.choose_spec (Finset.mem_filter.mp ν.property).2).2
+      have hQ : (f μ).val = (f ν).val := congrArg Subtype.val hEq
+      have hbar : fqToBar E μ.val = fqToBar E ν.val := by
+        rw [hμeq, hνeq, hQ]
+      exact fqToBar_injective E hbar
+    have hcard := Fintype.card_le_of_injective f hf
+    simpa [Fintype.card_coe] using hcard
+  have hBadRat_card : badRat.card ≤ M := by
+    have hSub : badRat ⊆ (Finset.univ : Finset (Fin M)).image
+        (fun j => zLambda E lam (R j)) := by
+      intro μ hμ
+      rcases (Finset.mem_filter.mp hμ).2 with ⟨j, hμj⟩
+      exact Finset.mem_image.mpr ⟨j, Finset.mem_univ _, hμj.symm⟩
+    calc badRat.card
+        ≤ ((Finset.univ : Finset (Fin M)).image
+            (fun j => zLambda E lam (R j))).card := Finset.card_le_card hSub
+      _ ≤ M := by
+        exact Finset.card_image_le.trans (by rw [Finset.card_univ, Fintype.card_fin])
+  have hBad_card : bad.card ≤ gd.support.card + M := by
+    calc bad.card
+        ≤ badGeom.card + badRat.card := Finset.card_union_le _ _
+      _ ≤ gd.support.card + M := Nat.add_le_add hBadGeom_card hBadRat_card
+  have hBad_sub : bad ⊆ G := by
+    intro μ hμ
+    rcases Finset.mem_union.mp hμ with hμ | hμ
+    · exact (Finset.mem_filter.mp hμ).1
+    · exact (Finset.mem_filter.mp hμ).1
+  refine ⟨S0, ?_, ?_, ?_, ?_⟩
+  · intro μ hμ
+    exact (Finset.mem_sdiff.mp hμ).1
+  · have hCard : S0.card = G.card - bad.card := by
+      exact Finset.card_sdiff_of_subset hBad_sub
+    rw [hCard]
+    omega
+  · intro μ hμ Q hQ hEq
+    have hμG : μ ∈ G := (Finset.mem_sdiff.mp hμ).1
+    have hμNotBad : μ ∉ bad := (Finset.mem_sdiff.mp hμ).2
+    exact hμNotBad (Finset.mem_union_left _
+      (Finset.mem_filter.mpr ⟨hμG, ⟨Q, hQ, hEq⟩⟩))
+  · intro μ hμ j hEq
+    have hμG : μ ∈ G := (Finset.mem_sdiff.mp hμ).1
+    have hμNotBad : μ ∉ bad := (Finset.mem_sdiff.mp hμ).2
+    exact hμNotBad (Finset.mem_union_right _
+      (Finset.mem_filter.mpr ⟨hμG, ⟨j, hEq⟩⟩))
+
 /--
 Frobenius descent core for the rational-support branch.
 
