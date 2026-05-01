@@ -31,7 +31,7 @@ variable (E : ECSetup)
 
     This is Weil reciprocity applied to the principal divisor of the
     rational function `D / L^m` where `L` is the chord line through
-    `A₀, A₁, A₂`: the log-derivative identity is obtained from the
+    the on-curve points `A₀, A₁, A₂`: the log-derivative identity is obtained from the
     fact that a principal divisor has zero sum of residues on `E`, so
     summing residues over the divisor of zeros yields the stated
     identity whenever the evaluation points avoid the support of that
@@ -66,6 +66,7 @@ axiom weil_reciprocity_honest
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
     (hGood : (A₀, A₁) ∉ badChallengesCompleteness E msg.toD) :
     logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
       (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0

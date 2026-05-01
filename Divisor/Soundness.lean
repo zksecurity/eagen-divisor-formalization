@@ -322,12 +322,13 @@ theorem ma_completeness
   have hSub : rejectSet ⊆ badChallengesCompleteness E msg.toD := by
     intro p hp
     simp only [hRS, Finset.mem_filter] at hp
-    obtain ⟨_, hpR⟩ := hp
+    obtain ⟨hpIn, hpR⟩ := hp
     by_contra hNotBad
     apply hpR
     refine ⟨hDegK, hAdm, ?_⟩
+    have hpPts := Finset.mem_product.mp hpIn
     exact weil_reciprocity_honest E stmt wit hk msg hkm hHonestDivisor
-      p.1 p.2 hNotBad
+      p.1 p.2 hpPts.1 hpPts.2 hNotBad
   exact le_trans (Finset.card_le_card hSub)
     (support_disjointness E msg.toD (numZeros E msg.toD) (le_refl _))
 

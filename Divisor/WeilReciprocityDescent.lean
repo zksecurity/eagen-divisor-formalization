@@ -73,17 +73,26 @@ Proof sketch (to be mechanized):
    the product-to-sum conversion and ensures the identity holds
    when the supports are disjoint (guaranteed by `¬ bad`).
 
+The statement is intentionally restricted to `A₀, A₁ ∈ E.points`,
+matching the completeness consumer and the geometric hypotheses needed
+by the chord-residue identity.
+
 This lemma requires importing and chaining several axioms
 (`weil_reciprocity_textbook`, `chord_sum_eq_chord_fiber_product_logDeriv`,
 `chord_fiber_product_eq_normZ_under_split`, `principal_divisor_iff`).
-The sorry records the gap between these axioms and the protocol-level
-statement. -/
+The remaining formal gap is the honest-divisor identification:
+`msg.isHonestFor E stmt wit hk hkm` currently proves that the formal
+honest divisor is principal, but it does not directly identify
+`msg.toD`'s actual zero divisor and multiplicities with
+`(-P) + Σᵢ wit.scalars(i) · (Bᵢ)`. That bridge is needed to rewrite the
+partial-fraction sum over `msg.toD`'s zeros into the protocol RHS. -/
 theorem weil_residue_identity
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k)
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (_hA₀ : A₀ ∈ E.points) (_hA₁ : A₁ ∈ E.points)
     (hGood : (A₀, A₁) ∉ badChallengesCompleteness E msg.toD) :
     let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
     let x₂ := lam ^ 2 - A₀.1 - A₁.1
@@ -109,11 +118,13 @@ theorem weil_pairing_zero_under_honest
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
     (hGood : (A₀, A₁) ∉ badChallengesCompleteness E msg.toD) :
     logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
       (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0 := by
   -- logDerivCheckFn is defined as lhs - rhs; show lhs = rhs.
-  have hId := weil_residue_identity E stmt wit hk msg hkm hHonestDivisor A₀ A₁ hGood
+  have hId := weil_residue_identity E stmt wit hk msg hkm hHonestDivisor
+    A₀ A₁ hA₀ hA₁ hGood
   simp only [] at hId
   -- logDerivCheckFn = lhs - rhs, so logDerivCheckFn = 0 ↔ lhs = rhs
   show logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
@@ -129,9 +140,11 @@ theorem weil_reciprocity_honest_descent
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
     (hGood : (A₀, A₁) ∉ badChallengesCompleteness E msg.toD) :
     logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
       (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0 :=
-  weil_pairing_zero_under_honest E stmt wit hk msg hkm hHonestDivisor A₀ A₁ hGood
+  weil_pairing_zero_under_honest E stmt wit hk msg hkm hHonestDivisor
+    A₀ A₁ hA₀ hA₁ hGood
 
 end Divisor
