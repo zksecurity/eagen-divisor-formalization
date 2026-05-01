@@ -18,6 +18,19 @@ axiom chord_fiber_product_eq_normZ_under_split
 
 Identifies the function-field norm `N_{F_q(E)/F_q(z)}(D)` (the chord-fiber product) with a nonzero constant multiple of `normZ` under `splitsOnE` and faithful multiplicity accounting.
 
+## Boundary status
+
+This is a sound bridge statement, but it is not the desired final axiom
+shape. It packages the textbook divisor-of-norm theorem together with
+the project-specific opaque `chord_fiber_product`, rational `normZ`,
+and `splitsOnE` accounting.
+
+Final target: use a clean norm/divisor push-forward theorem for finite
+separable function-field extensions, then prove this rational split
+statement and the geometric `chord_fiber_product_bar_eq_geom_prod`
+statement as coordinate consequences. See
+`docs/axiom-boundary-target.md`.
+
 ## Citation
 
 Stichtenoth, *Algebraic Function Fields and Codes* (GTM 254, 2nd ed.):

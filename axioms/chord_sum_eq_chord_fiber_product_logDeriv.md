@@ -8,6 +8,18 @@ The trace-of-logarithmic-derivative identity
 
 specialised to `g = D`, `K = F_q(z)`, `L = F_q(E)`, evaluated at the chord intercept `μ = zLambda λ A₀`.
 
+## Boundary status
+
+This is a sound bridge statement, but it is not the desired final axiom
+shape. It packages the textbook trace/log-derivative theorem together
+with project-specific chord coordinates, `logDerivTerm`, the
+third-intersection formula, and denominator side conditions.
+
+Final target: state or import the clean theorem
+`Tr(dg/g) = d(N(g))/N(g)` for finite separable function-field
+extensions, then prove this chord-specialized statement as a theorem.
+See `docs/axiom-boundary-target.md`.
+
 ## Citation
 
 Lang, *Algebra* (3rd ed., GTM 211):
