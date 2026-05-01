@@ -3478,6 +3478,54 @@ private theorem geom_residue_sum_zero_of_hAllZero
     · exact absurd hPR hProdR_ne
   · exact hRes
 
+/-- Base-change a rational evaluation zero of the descended geometric
+numerator to a bar-level evaluation zero of `geomPolyGFullBar`. -/
+private theorem geomPolyGFullBar_eval_zero_of_geomPolyGFull_eval_zero
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    {M : ℕ} (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hZero : bivEval₂ (geomPolyGFull E D gd R m) A₀ A₁ = 0) :
+    MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+      (geomPolyGFullBar E D gd R m) = 0 := by
+  have hLift := fqToBar_bivEval₂_eq_eval_baseChange E
+    (geomPolyGFull E D gd R m) A₀ A₁
+  rw [hZero, baseChange_geomPolyGFull E D gd R m] at hLift
+  simpa [fqToBar] using hLift.symm
+
+/-- Residue-divided identity from a direct bar-level evaluation zero and
+explicit nonvanishing of every geometric and rational line factor. -/
+private theorem geom_residue_sum_zero_of_eval_zero
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    {M : ℕ} (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hZero : MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+      (geomPolyGFullBar E D gd R m) = 0)
+    (hLineQ : ∀ Q ∈ gd.support,
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q) ≠ 0)
+    (hLineR : ∀ j,
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E (R j)) ≠ 0) :
+    (∑ Q ∈ gd.support, ((gd.mult Q : ℕ) : Fqbar E) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q))⁻¹)
+    + (∑ j : Fin M,
+        fqToBar E (m j) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+          (lineEvalNumAtFullBarOfFq E (R j)))⁻¹) = 0 := by
+  classical
+  have hProdQ_ne : (∏ Q ∈ gd.support,
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q)) ≠ 0 :=
+    Finset.prod_ne_zero_iff.mpr hLineQ
+  have hProdR_ne : (∏ j : Fin M,
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E (R j))) ≠ 0 := by
+    refine Finset.prod_ne_zero_iff.mpr ?_
+    intro j _
+    exact hLineR j
+  rw [geomPolyGFullBar_eval_eq_residue_clear E D gd R m A₀ A₁ hLineQ hLineR] at hZero
+  rcases mul_eq_zero.mp hZero with hProds | hRes
+  · rcases mul_eq_zero.mp hProds with hPQ | hPR
+    · exact absurd hPQ hProdQ_ne
+    · exact absurd hPR hProdR_ne
+  · exact hRes
+
 /-- Rational analogue of `lineEvalNumAtFullBar_eval_eq_zLambdaBar_diff`:
 on a non-vertical chord, the rational geometric line factor evaluates to
 `-(A₁.1 − A₀.1) · (μ − zLambda lam P)`, embedded in `Fqbar`. -/
@@ -3590,6 +3638,99 @@ private theorem geom_residue_sum_zero_as_zLambda_pf
         Finset.sum_congr rfl (fun j _ => (hR_rewrite j).symm)]
     exact hStart
   -- Pull out -(fqToBar Δx)⁻¹ and cancel.
+  rw [← Finset.mul_sum, ← Finset.mul_sum, ← mul_add] at hStart'
+  have hInvNe : -(fqToBar E (A₁.1 - A₀.1))⁻¹ ≠ 0 :=
+    neg_ne_zero.mpr (inv_ne_zero hXBar)
+  rcases mul_eq_zero.mp hStart' with h | h
+  · exact absurd h hInvNe
+  · exact h
+
+/-- Partial-fraction form of the residue identity from direct polynomial
+evaluation zero. This variant is used by the Frobenius-descent sampler:
+definedness of `logDerivCheckFn` is not needed once density has already
+given zero of the descended geometric numerator at every rational pair. -/
+private theorem geom_residue_sum_zero_as_zLambda_pf_of_eval_zero
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    {M : ℕ} (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hNV : A₀.1 ≠ A₁.1)
+    (hZero : MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+      (geomPolyGFullBar E D gd R m) = 0)
+    (hAvoidQ : ∀ Q ∈ gd.support,
+      fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀)
+        - zLambdaBar E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) Q ≠ 0)
+    (hAvoidR : ∀ j : Fin M,
+      fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀)
+        - fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) (R j)) ≠ 0) :
+    (∑ Q ∈ gd.support, ((gd.mult Q : ℕ) : Fqbar E) *
+        (fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀)
+          - zLambdaBar E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) Q)⁻¹)
+    + (∑ j : Fin M,
+        fqToBar E (m j) *
+        (fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀)
+          - fqToBar E (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) (R j)))⁻¹)
+      = 0 := by
+  classical
+  set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLam
+  set μ := zLambda E lam A₀ with hMu_def
+  have hX : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm hNV)
+  have hXBar : fqToBar E (A₁.1 - A₀.1) ≠ 0 :=
+    (fqToBar_eq_zero_iff E _).not.mpr hX
+  have hLineQ : ∀ Q ∈ gd.support,
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q) ≠ 0 := by
+    intro Q hQ
+    rw [lineEvalNumAtFullBar_eval_eq_zLambdaBar_diff E Q A₀ A₁ hNV]
+    exact mul_ne_zero (neg_ne_zero.mpr hXBar) (hAvoidQ Q hQ)
+  have hLineR : ∀ j : Fin M,
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBarOfFq E (R j)) ≠ 0 := by
+    intro j
+    rw [lineEvalNumAtFullBarOfFq_eval_eq_zLambda_diff E (R j) A₀ A₁ hNV]
+    exact mul_ne_zero (neg_ne_zero.mpr hXBar) (hAvoidR j)
+  have hStart :=
+    geom_residue_sum_zero_of_eval_zero E D gd R m A₀ A₁ hZero hLineQ hLineR
+  have hQ_rewrite : ∀ Q ∈ gd.support,
+      ((gd.mult Q : ℕ) : Fqbar E) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁) (lineEvalNumAtFullBar E Q))⁻¹
+      = -(fqToBar E (A₁.1 - A₀.1))⁻¹ *
+          (((gd.mult Q : ℕ) : Fqbar E) *
+            (fqToBar E μ - zLambdaBar E lam Q)⁻¹) := by
+    intro Q _hQ
+    rw [lineEvalNumAtFullBar_eval_eq_zLambdaBar_diff E Q A₀ A₁ hNV]
+    simp only [neg_mul, inv_neg, mul_inv]
+    ring
+  have hR_rewrite : ∀ j : Fin M,
+      fqToBar E (m j) *
+        (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+          (lineEvalNumAtFullBarOfFq E (R j)))⁻¹
+      = -(fqToBar E (A₁.1 - A₀.1))⁻¹ *
+          (fqToBar E (m j) *
+            (fqToBar E μ - fqToBar E (zLambda E lam (R j)))⁻¹) := by
+    intro j
+    rw [lineEvalNumAtFullBarOfFq_eval_eq_zLambda_diff E (R j) A₀ A₁ hNV]
+    simp only [neg_mul, inv_neg, mul_inv]
+    ring
+  have hStart' :
+      (∑ Q ∈ gd.support, -(fqToBar E (A₁.1 - A₀.1))⁻¹ *
+          (((gd.mult Q : ℕ) : Fqbar E) *
+            (fqToBar E μ - zLambdaBar E lam Q)⁻¹))
+      + (∑ j : Fin M, -(fqToBar E (A₁.1 - A₀.1))⁻¹ *
+          (fqToBar E (m j) *
+            (fqToBar E μ - fqToBar E (zLambda E lam (R j)))⁻¹)) = 0 := by
+    rw [show (∑ Q ∈ gd.support, -(fqToBar E (A₁.1 - A₀.1))⁻¹ *
+          (((gd.mult Q : ℕ) : Fqbar E) *
+            (fqToBar E μ - zLambdaBar E lam Q)⁻¹))
+        = ∑ Q ∈ gd.support, ((gd.mult Q : ℕ) : Fqbar E) *
+            (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+              (lineEvalNumAtFullBar E Q))⁻¹ from
+        Finset.sum_congr rfl (fun Q hQ => (hQ_rewrite Q hQ).symm)]
+    rw [show (∑ j : Fin M, -(fqToBar E (A₁.1 - A₀.1))⁻¹ *
+          (fqToBar E (m j) *
+            (fqToBar E μ - fqToBar E (zLambda E lam (R j)))⁻¹))
+        = ∑ j : Fin M, fqToBar E (m j) *
+            (MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+              (lineEvalNumAtFullBarOfFq E (R j)))⁻¹ from
+        Finset.sum_congr rfl (fun j _ => (hR_rewrite j).symm)]
+    exact hStart
   rw [← Finset.mul_sum, ← Finset.mul_sum, ← mul_add] at hStart'
   have hInvNe : -(fqToBar E (A₁.1 - A₀.1))⁻¹ ≠ 0 :=
     neg_ne_zero.mpr (inv_ne_zero hXBar)
