@@ -5228,9 +5228,102 @@ private theorem frob_sampling_validPairs_threshold
         21 * (D.degE + k + 2) + 72) :
     6 * E.q * (2 * (gd.support.card + (k + 1)) + gd.support.card) + 1
       ≤ (validPairs E).card := by
-  -- Same arithmetic shape as `hELarge_of_hLargeQ_main`, but targeting
-  -- `card_validPairs_lb : n*n - 3*n ≤ |validPairs|`.
-  sorry
+  classical
+  set n := E.points.card with hn_def
+  set d := D.degE with hd_def
+  set M := d + k + 1 with hM_def
+  set s := gd.support.card with hs_def
+  have hSC : s ≤ d := by
+    rw [hs_def, hd_def]
+    calc gd.support.card
+        = ∑ _ ∈ gd.support, 1 := by simp
+      _ ≤ ∑ Q ∈ gd.support, gd.mult Q :=
+          Finset.sum_le_sum (fun Q hQ => gd.mult_pos_on_support Q hQ)
+      _ ≤ D.degE := gd.accounting_le_degE
+  have hM_pos : 0 < M := by
+    rw [hM_def]
+    omega
+  have hN_flat : n ≥ 31 * M + 110 := by
+    have h := hLargeQ
+    have hEq : 2 * (5 * (D.degE + k + 2) + 3) +
+            21 * (D.degE + k + 2) + 72
+          = 31 * M + 109 := by
+      rw [hM_def, hd_def]
+      ring
+    rw [hEq] at h
+    omega
+  have hN141 : n ≥ 141 := by
+    have hM1 : 1 ≤ M := Nat.succ_le_of_lt hM_pos
+    omega
+  have hQbound : E.q ≤ n + 2 + Nat.sqrt (4 * (n + 1)) := by
+    simpa [n] using hasse_q_le_sharp_nat E
+  set r := Nat.sqrt (4 * (n + 1)) with hr_def
+  have hSqrtSq : r * r ≤ 4 * (n + 1) := Nat.sqrt_le _
+  have h_169n2 : 169 * n * n > 1296 * (n + 1) := by
+    nlinarith [hN141, sq_nonneg n]
+  have h_13n_18r : 13 * n > 18 * r := by
+    have h_169n2' : 169 * n * n > 324 * (r * r) := by
+      calc 169 * n * n > 1296 * (n + 1) := h_169n2
+        _ = 324 * (4 * (n + 1)) := by ring
+        _ ≥ 324 * (r * r) := Nat.mul_le_mul_left _ hSqrtSq
+    have hSq : (13 * n) * (13 * n) > (18 * r) * (18 * r) := by
+      have h1 : (13 * n) * (13 * n) = 169 * n * n := by ring
+      have h2 : (18 * r) * (18 * r) = 324 * (r * r) := by ring
+      rw [h1, h2]
+      exact h_169n2'
+    by_contra hle
+    push_neg at hle
+    have : (13 * n) * (13 * n) ≤ (18 * r) * (18 * r) :=
+      Nat.mul_le_mul hle hle
+    omega
+  have h_18Mr_lt_13Mn : 18 * M * r < 13 * M * n := by
+    have h := (Nat.mul_lt_mul_left hM_pos).2 h_13n_18r
+    have h1 : M * (18 * r) = 18 * M * r := by ring
+    have h2 : M * (13 * n) = 13 * M * n := by ring
+    rwa [h1, h2] at h
+  have h_107n_36M : 107 * n > 36 * M := by
+    have h1 : 107 * n ≥ 107 * (31 * M + 110) :=
+      Nat.mul_le_mul_left _ hN_flat
+    have h2 : 107 * (31 * M + 110) = 3317 * M + 11770 := by ring
+    have h3 : 3317 * M + 11770 > 36 * M := by omega
+    linarith
+  have h_tail : 36 * M + 18 * M * r < (13 * M + 107) * n := by
+    have hsum : 36 * M + 18 * M * r < 107 * n + 13 * M * n := by
+      omega
+    have hEq : 107 * n + 13 * M * n = (13 * M + 107) * n := by ring
+    rwa [hEq] at hsum
+  have hMain : 18 * M * (n + 2 + r) + 3 * n < n * n := by
+    have hPre : 18 * M * (n + 2 + r) + 3 * n < (31 * M + 110) * n := by
+      have hL : 18 * M * (n + 2 + r) + 3 * n =
+          18 * M * n + 3 * n + (36 * M + 18 * M * r) := by ring
+      have hR : (31 * M + 110) * n =
+          18 * M * n + 3 * n + (13 * M + 107) * n := by ring
+      rw [hL, hR]
+      omega
+    have hTop : (31 * M + 110) * n ≤ n * n := by
+      exact Nat.mul_le_mul_right n hN_flat
+    exact lt_of_lt_of_le hPre hTop
+  have hQMain : 18 * M * E.q + 1 ≤ n * n - 3 * n := by
+    have hq : 18 * M * E.q ≤ 18 * M * (n + 2 + r) :=
+      Nat.mul_le_mul_left (18 * M) hQbound
+    omega
+  have hSampleCount :
+      6 * E.q * (2 * (s + (k + 1)) + s) + 1 ≤ 18 * M * E.q + 1 := by
+    have hT : 2 * (s + (k + 1)) + s ≤ 3 * M := by
+      rw [hM_def]
+      omega
+    calc 6 * E.q * (2 * (s + (k + 1)) + s) + 1
+        ≤ 6 * E.q * (3 * M) + 1 := by
+          exact Nat.add_le_add_right (Nat.mul_le_mul_left (6 * E.q) hT) 1
+      _ = 18 * M * E.q + 1 := by ring
+  have hValid := card_validPairs_lb E
+  calc
+    6 * E.q * (2 * (gd.support.card + (k + 1)) + gd.support.card) + 1
+        = 6 * E.q * (2 * (s + (k + 1)) + s) + 1 := by rw [hs_def]
+    _ ≤ 18 * M * E.q + 1 := hSampleCount
+    _ ≤ n * n - 3 * n := hQMain
+    _ ≤ (validPairs E).card := by
+      simpa [n, ECSetup.numAffine] using hValid
 
 /--
 Frobenius descent core for the rational-support branch.
