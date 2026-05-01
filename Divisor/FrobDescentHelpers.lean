@@ -184,4 +184,94 @@ theorem exists_good_slope_abstract
     (h lam fun j hj => hS.2 lam
       (Finset.notMem_mono (Finset.subset_union_left) hlam) j hj)
 
+/-!
+## Two-family partial fractions
+
+The Frobenius descent branch produces a partial-fraction identity with
+one family of poles from the geometric support and one auxiliary family
+from rational protocol points.  The lemma below isolates the coefficient
+of a pole that appears in only the first family.
+-/
+
+set_option maxHeartbeats 800000 in
+/--
+If a two-part partial-fraction sum vanishes at enough evaluation points,
+and one pole `α i₀` is isolated from all other poles in both families,
+then the corresponding coefficient `c i₀` is zero.
+
+The proof clears all denominators, obtains a polynomial of degree
+`< n + m`, shows it is zero by root counting, and evaluates it at the
+isolated pole.
+-/
+theorem isolated_coeff_zero_of_pf_sum
+    {n m : ℕ}
+    (α : Fin n → F) (c : Fin n → F)
+    (β : Fin m → F) (d : Fin m → F)
+    (i₀ : Fin n)
+    (hIsolatedα : ∀ j : Fin n, j ≠ i₀ → α j ≠ α i₀)
+    (hIsolatedβ : ∀ j : Fin m, β j ≠ α i₀)
+    (S : Finset F)
+    (hCard : n + m ≤ S.card)
+    (hDisjointα : ∀ μ ∈ S, ∀ i : Fin n, μ ≠ α i)
+    (hDisjointβ : ∀ μ ∈ S, ∀ j : Fin m, μ ≠ β j)
+    (hVanish : ∀ μ ∈ S,
+      (∑ i, c i * (μ - α i)⁻¹) + (∑ j, d j * (μ - β j)⁻¹) = 0) :
+    c i₀ = 0 := by
+  set N : Polynomial F :=
+    ∑ i, Polynomial.C (c i) *
+      (∏ j ∈ Finset.univ.erase i, (Polynomial.X - Polynomial.C (α j))) *
+      (∏ j, (Polynomial.X - Polynomial.C (β j))) +
+    ∑ i, Polynomial.C (d i) *
+      (∏ j, (Polynomial.X - Polynomial.C (α j))) *
+      (∏ j ∈ Finset.univ.erase i, (Polynomial.X - Polynomial.C (β j)))
+  have hN_zero : N = 0 := by
+    have hN_roots : ∀ μ ∈ S, N.eval μ = 0 := by
+      intro μ hμ
+      have hNμ : N.eval μ =
+          (∏ i, (μ - α i)) * (∏ j, (μ - β j)) *
+            ((∑ i, c i * (μ - α i)⁻¹) +
+              ∑ j, d j * (μ - β j)⁻¹) := by
+        simp +decide [N, Polynomial.eval_finset_sum, Polynomial.eval_prod,
+          mul_add, mul_assoc, mul_comm, mul_left_comm, Finset.mul_sum _ _ _]
+        simp +decide [Finset.mul_sum _ _ _, mul_assoc, mul_left_comm,
+          Finset.sum_mul]
+        congr! 2
+        · simp +decide [← mul_assoc,
+            ← Finset.prod_erase_mul _ _ (Finset.mem_univ ‹_›)]
+          grind +qlia
+        · simp +decide [← mul_assoc,
+            ← Finset.prod_erase_mul _ _ (Finset.mem_univ ‹_›)]
+          grind +revert
+      rw [hNμ, hVanish μ hμ, MulZeroClass.mul_zero]
+    have hN_deg : N.degree < n + m := by
+      refine' lt_of_le_of_lt (Polynomial.degree_add_le _ _) (max_lt _ _)
+      · refine' lt_of_le_of_lt (Polynomial.degree_sum_le _ _)
+          (Finset.sup_lt_iff _ |>.2 _)
+        · exact WithBot.bot_lt_coe _
+        · intro i hi
+          by_cases hi' : c i = 0 <;> simp +decide [hi', Polynomial.degree_prod]
+          exact_mod_cast Nat.add_lt_add_right
+            (Nat.pred_lt (ne_bot_of_gt (Fin.pos i))) m
+      · refine' lt_of_le_of_lt (Polynomial.degree_sum_le _ _)
+          (Finset.sup_lt_iff _ |>.2 _)
+        · exact WithBot.bot_lt_coe _
+        · intro i hi
+          by_cases hi' : d i = 0 <;> simp +decide [hi', Polynomial.degree_prod]
+          exact_mod_cast Nat.add_lt_add_left
+            (Nat.pred_lt (ne_bot_of_gt (Fin.pos i))) n
+    refine' Polynomial.eq_of_degree_sub_lt_of_eval_finset_eq _ _ _
+    exact S
+    · simpa using hN_deg.trans_le (mod_cast hCard)
+    · aesop
+  have hN_eval : N.eval (α i₀) =
+      c i₀ * (∏ j ∈ Finset.erase Finset.univ i₀, (α i₀ - α j)) *
+        (∏ j, (α i₀ - β j)) := by
+    simp +zetaDelta at *
+    rw [Polynomial.eval_finset_sum, Polynomial.eval_finset_sum]
+    rw [Finset.sum_eq_single i₀, Finset.sum_eq_zero] <;>
+      simp +contextual [Polynomial.eval_prod, Finset.prod_eq_zero_iff, sub_eq_zero, *]
+    exact fun j hj => Or.inl <| Or.inr ⟨i₀, Ne.symm hj, rfl⟩
+  simp_all +decide [Finset.prod_eq_zero_iff, sub_eq_zero]
+  grind
+
 end Divisor.FrobDescentHelpers

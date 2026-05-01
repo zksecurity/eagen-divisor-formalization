@@ -78,7 +78,8 @@ this repository. The Aristotle queue is shared, so jobs observed via
     fully proved `FrobDescentHelpers.isolated_coeff_zero_of_pf_sum` helper and
     restructures `frob_descent_mult_zero_of_not_fixed` so the remaining gap is
     only the bridge from the bar-level residue identity to the two-family
-    partial-fraction form plus enough rational evaluation points. Not yet
+    partial-fraction form plus enough rational evaluation points. The helper
+    was ported; the sorry-bearing theorem rewrite was intentionally not
     ported.
 - `d7bd9ece-b5cc-4f3f-ae23-81248eb02b5d`
   - Submitted: 2026-04-30
