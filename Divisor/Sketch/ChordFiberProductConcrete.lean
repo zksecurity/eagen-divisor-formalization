@@ -85,7 +85,7 @@ private noncomputable abbrev toBarPolyHom :
 
 /-- Base-changing a base-field polynomial whose coefficients were embedded
 as constants, then specialising the inner variable, is ordinary base-change. -/
-private lemma eval₂_mapC_toBar_evalRingHom (μ x : Fqbar E)
+theorem eval₂_mapC_toBar_evalRingHom (μ x : Fqbar E)
     (p : Polynomial (ZMod E.q)) :
     Polynomial.eval₂ (Polynomial.evalRingHom μ) x
         ((p.map (Polynomial.C : ZMod E.q →+* Polynomial (ZMod E.q))).map
@@ -127,7 +127,7 @@ noncomputable def DLineBar (lam : ZMod E.q) (D : CoordRingElt E.q)
 
 /-- Evaluating the specialised bar-level D-on-line polynomial is the same
 as evaluating `D` at the geometric point on the line `y = λx + μ`. -/
-private lemma DLineBar_eval_eq_geomEval (lam : ZMod E.q)
+theorem DLineBar_eval_eq_geomEval (lam : ZMod E.q)
     (D : CoordRingElt E.q) (μ x : Fqbar E)
     (hOnE :
       (fqToBar E lam * x + μ) ^ 2 =
