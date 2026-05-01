@@ -3738,6 +3738,83 @@ private theorem geom_residue_sum_zero_as_zLambda_pf_of_eval_zero
   · exact absurd h hInvNe
   · exact h
 
+/-- Sampled partial-fraction identity at a good rational intercept, using
+density to obtain polynomial vanishing and explicit pole avoidance to divide
+the cleared numerator. -/
+private theorem geom_pf_identity_at_good_intercept
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D)
+    (P : ZMod E.q × ZMod E.q) {k : ℕ}
+    (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      logDerivCheckFnDefined E D P B A₀ A₁ →
+      logDerivCheckFn E D P k B m A₀ A₁ = 0)
+    (hLargeQ : E.points.card >
+        2 * (5 * (D.degE + k + 2) + 3) +
+        21 * (D.degE + k + 2) + 72)
+    (lam μ : ZMod E.q)
+    (hμ : μ ∈ goodIntercepts E lam)
+    (hAvoidQ : ∀ Q ∈ gd.support,
+      fqToBar E μ - zLambdaBar E lam Q ≠ 0)
+    (hAvoidR : ∀ j : Fin (k + 1),
+      fqToBar E μ - fqToBar E
+        (zLambda E lam
+          ((Fin.cons (P.1, -P.2) B :
+            Fin (k + 1) → ZMod E.q × ZMod E.q) j)) ≠ 0) :
+    (∑ Q ∈ gd.support, ((gd.mult Q : ℕ) : Fqbar E) *
+        (fqToBar E μ - zLambdaBar E lam Q)⁻¹)
+    + (∑ j : Fin (k + 1),
+        fqToBar E
+          ((Fin.cons (-1) (fun j => -m j) :
+            Fin (k + 1) → ZMod E.q) j) *
+        (fqToBar E μ - fqToBar E
+          (zLambda E lam
+            ((Fin.cons (P.1, -P.2) B :
+              Fin (k + 1) → ZMod E.q × ZMod E.q) j)))⁻¹)
+      = 0 := by
+  classical
+  simp only [goodIntercepts, Finset.mem_filter, Finset.mem_univ, true_and] at hμ
+  obtain ⟨A₀, hA₀, A₁, hA₁, hne_A⟩ := Finset.one_lt_card.mp hμ
+  simp only [pointsOnLine, Finset.mem_filter] at hA₀ hA₁
+  have hNV : A₀.1 ≠ A₁.1 := by
+    intro hx
+    apply hne_A
+    apply Prod.ext hx
+    rw [hA₀.2, hA₁.2, hx]
+  have hxne : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm hNV)
+  have hslope : slopeOf A₀.1 A₀.2 A₁.1 A₁.2 = lam := by
+    simp only [slopeOf]
+    rw [hA₀.2, hA₁.2]
+    have : lam * A₁.1 + μ - (lam * A₀.1 + μ) = lam * (A₁.1 - A₀.1) := by ring
+    rw [this, mul_assoc, mul_inv_cancel₀ hxne, mul_one]
+  have hμ_eq : zLambda E lam A₀ = μ := by
+    simp only [zLambda]
+    rw [hA₀.2]
+    ring
+  let R : Fin (k + 1) → ZMod E.q × ZMod E.q := Fin.cons (P.1, -P.2) B
+  let m' : Fin (k + 1) → ZMod E.q := Fin.cons (-1) (fun j => -m j)
+  have hRatZero :
+      bivEval₂ (geomPolyGFull E D gd R m') A₀ A₁ = 0 :=
+    geomPolyGFull_identically_zero_on_ExE_of_hLargeQ E D hDnz gd P B m
+      hAllZero hLargeQ A₀ A₁ hA₀.1 hA₁.1
+  have hBarZero :
+      MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
+        (geomPolyGFullBar E D gd R m') = 0 :=
+    geomPolyGFullBar_eval_zero_of_geomPolyGFull_eval_zero E D gd R m'
+      A₀ A₁ hRatZero
+  have hPF := geom_residue_sum_zero_as_zLambda_pf_of_eval_zero
+    E D gd R m' A₀ A₁ hNV hBarZero
+    (by
+      intro Q hQ
+      rw [hslope, hμ_eq]
+      exact hAvoidQ Q hQ)
+    (by
+      intro j
+      rw [hslope, hμ_eq]
+      exact hAvoidR j)
+  simpa [R, m', hslope, hμ_eq] using hPF
+
 /-- A rational scalar-weighted summand of the bar-level residue identity
 descends to `fqToBar` of a rational expression, when the line factor is
 nonzero. -/
