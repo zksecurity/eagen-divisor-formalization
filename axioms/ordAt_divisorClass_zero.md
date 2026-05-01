@@ -1,17 +1,19 @@
-# `ordAt_divisorClass_zero`
+# `ordAt_divisorClass_zero` (derived theorem)
 
 - **Lean source**: `Divisor/OrdP/LocalRing.lean`
 
 ```lean
-axiom ordAt_divisorClass_zero
+theorem ordAt_divisorClass_zero
     (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0))
     (_hSplit : splitsOnE E D)
     (hFinSup : Set.Finite (Function.support (divisorOfD E D))) :
     divisorClass E (divisorOfD E D) hFinSup = 0
 ```
 
-This is the remaining function-field bridge behind the proved theorem
-`CoordRingElt.exists_divisor_multiplicity`.
+This was formerly the remaining function-field bridge behind the
+proved theorem `CoordRingElt.exists_divisor_multiplicity`. It is now a
+theorem derived from the narrower principal fractional-ideal axiom
+`CoordRingElt.divisorClass_isPrincipal`.
 
 It says that the concrete divisor attached to the regular function
 `D = a - b*y`,
@@ -40,11 +42,12 @@ sum is zero.  Therefore the MA extraction path needs only the zero
 class of this specific divisor, not the full principal-divisor
 biconditional.
 
-Pinned closure:
+Pinned closure now names the underlying axiom:
 
 ```lean
 #print axioms Divisor.CoordRingElt.exists_divisor_multiplicity
--- propext, Classical.choice, Quot.sound, Divisor.ordAt_divisorClass_zero
+-- propext, Classical.choice, Quot.sound,
+-- Divisor.CoordRingElt.divisorClass_isPrincipal
 ```
 
 ## Citation

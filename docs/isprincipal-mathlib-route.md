@@ -8,7 +8,9 @@ Update: Stage A has landed in `Divisor/OrdP/PrincipalClass.lean`.
 `Divisor/OrdP/LocalRing.lean` no longer consumes
 `ordAt_divisor_isPrincipal` or `principal_divisor_iff` for
 `ordAt_group_sum_zero_under_split`; it assumes the narrower
-`ordAt_divisorClass_zero` axiom and derives group-sum-zero through
+`CoordRingElt.divisorClass_isPrincipal` axiom, derives the former
+`ordAt_divisorClass_zero` bridge through mathlib's
+`ClassGroup.mk_eq_one_iff`, and then derives group-sum-zero through
 mathlib's `Point.toClass_eq_zero`.
 
 ## What the two axioms produce, jointly
@@ -152,8 +154,11 @@ concrete mathlib language (a `Finset.sum` in
 
 ### Genuine algebraic-geometry formalisation (~2-3 weeks, see comment block in `Divisor/OrdP/LocalRing.lean:864`)
 
-* The replacement axiom `ordAt_divisorClass_zero E D ... : divisorClass E (divisorOfD E D) _ = 0`
-  is **the mathematical content**. Discharging it as a theorem
+* The replacement axiom
+  `CoordRingElt.divisorClass_isPrincipal E D ...` is **the mathematical
+  content**. The old zero-class statement
+  `ordAt_divisorClass_zero E D ...` is now a theorem derived from it.
+  Discharging the remaining axiom as a theorem
   requires:
   1. Showing the project's recursive `ordAt` (defined via
      `ordAt_twoTorsion` / `ordAt_nonTwoTorsion` in
@@ -187,10 +192,11 @@ concrete mathlib language (a `Finset.sum` in
 The headline path used to consume `ordAt_divisor_isPrincipal` and
 `principal_divisor_iff` exclusively through
 `ordAt_group_sum_zero_under_split` (clause (v) of
-`exists_divisor_multiplicity_proved`). The landed replacement
-`ordAt_divisorClass_zero` produces the same conclusion via
-`weightedSum_zero_of_divisorClass_zero`; no headline-theorem statement
-changes.
+`exists_divisor_multiplicity_proved`). The landed replacement first
+derives `ordAt_divisorClass_zero` from
+`CoordRingElt.divisorClass_isPrincipal`, then produces the same
+conclusion via `weightedSum_zero_of_divisorClass_zero`; no
+headline-theorem statement changes.
 
 `Divisor/DivisorPrincipal.lean`'s use of `principal_divisor_iff.mpr`
 in `IsPrincipal_dCoeffs_of_β` becomes an `Iff.mpr` of the proved
@@ -207,8 +213,8 @@ depends on one narrower class-group bridge axiom instead of the
 `IsPrincipal`/`principal_divisor_iff` pair.
 
 **Stage B — algebraic-geometry seam (~2-3 weeks).**  Discharge the
-single remaining `ordAt_divisorClass_zero` axiom by formalising the
-recursive-ord ↔ localization-ord agreement. This is the genuine
+single remaining `CoordRingElt.divisorClass_isPrincipal` axiom by
+formalising the recursive-ord ↔ localization-ord agreement. This is the genuine
 algebraic-geometry work; the rest is bookkeeping. Once it lands,
 the class-group bridge comes out of the closure.
 

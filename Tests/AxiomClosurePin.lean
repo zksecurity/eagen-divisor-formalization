@@ -13,15 +13,15 @@
       Divisor.chord_fiber_product_eq_normZ_under_split,
       Divisor.chord_sum_eq_chord_fiber_product_logDeriv,
       Divisor.hasse_weil,
-      Divisor.ordAt_divisorClass_zero
+      Divisor.CoordRingElt.divisorClass_isPrincipal
 
     The Frobenius descent proof gap is closed: there is no `sorryAx` in
     the MA/IP closure. The headline theorem signatures no longer carry
     `hSplit : splitsOnE E D`; the `splitsOnE` predicate now only gates
     the multiplicity-accounting test below. `hasse_weil` comes from the
     geometric SZ bound on `E(F_q) × E(F_q)`. The chord/log-deriv axioms
-    and the `ordAt` class-group axiom form the algebraic bridge linking
-    the chord-sum identity to the divisor formalism.
+    and the principal fractional-ideal class axiom form the algebraic
+    bridge linking the chord-sum identity to the divisor formalism.
 
   * `ma_completeness`:
       propext, Classical.choice, Quot.sound,
@@ -36,7 +36,7 @@
     `CoordRingElt.exists_divisor_multiplicity_ecpoint`,
     `ordAt_group_sum_zero_under_split`:
       propext, Classical.choice, Quot.sound,
-      Divisor.ordAt_divisorClass_zero
+      Divisor.CoordRingElt.divisorClass_isPrincipal
 
   In particular: `Divisor.CoordRingElt.divisor_group_sum_zero` (the
   previously unsound axiom) is no longer reachable from any headline

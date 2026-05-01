@@ -16,8 +16,9 @@
   * Proves all support / coverage / sum bounds and the splitting-time
     `Σ ordAt = natDeg(normPoly)` identity from primitives.
   * Reduces the function-field / regular-function content to a
-    single explicit class-group axiom `ordAt_divisorClass_zero`
-    (Section 7).
+    single explicit principal fractional-ideal axiom
+    `CoordRingElt.divisorClass_isPrincipal` (Section 7), from which
+    the former zero-class bridge `ordAt_divisorClass_zero` is derived.
 
   Layout:
 
@@ -39,10 +40,10 @@
                  the existential axiom with witness `ordAt E D`.
 
   Axiomatic surface introduced by this file: exactly one axiom,
-  `ordAt_divisorClass_zero` (the concrete class-group bridge for the
-  specific divisor `divisorOfD E D`).  See its docstring for the full
-  scope and a comparison with `exists_divisor_multiplicity` (which it
-  replaces — and is strictly weaker than).
+  `CoordRingElt.divisorClass_isPrincipal` (the concrete principal
+  fractional-ideal bridge for the specific divisor `divisorOfD E D`).
+  The old `ordAt_divisorClass_zero` statement is now a theorem derived
+  from that axiom and mathlib's `ClassGroup.mk_eq_one_iff`.
 
   References: Silverman AEC II §1 (local orders) + III.3.5
   (principal divisor characterisation / Abel's theorem).
@@ -50,6 +51,7 @@
 import Divisor.OrdP.Uniformizer
 import Divisor.OrdP.PrincipalClass
 import Divisor.SplitsOnE
+import Mathlib.RingTheory.ClassGroup
 
 open Polynomial Finset
 
@@ -853,25 +855,68 @@ theorem divisorOfD_finiteSupport
       -- Need ECPoint.affine E x y = ECPoint.some hns.
       exact ECPoint.affine_of_nonsingular E hns
 
-/-- **Class-group bridge axiom.**
+/-- **Citable principal-class boundary axiom.**
 
-    The divisor of `D = a - b*y ∈ F_q[E]^×`,
-      `Σ_P ord_P(D) · (P) - natDeg(N(D)) · (∞)`,
-    has trivial class in mathlib's elliptic-curve class group, provided
-    all geometric divisor mass is visible over `F_q`.
+    The divisor class of the concrete rational function
+    `D = a - b*y ∈ F_q[E]^×` is represented by a principal fractional
+    ideal in mathlib's class group, provided all geometric divisor mass is
+    visible over `F_q`.
 
-    This is the only function-field bridge retained in this file.  It
-    is narrower than the old `ordAt_divisor_isPrincipal` +
-    `principal_divisor_iff` pair: downstream code needs only the zero
-    class of this concrete divisor, and `PrincipalClass.lean` proves the
-    required group-sum-zero consequence from mathlib's `Point.toClass`
-    API.  The support proof is an explicit argument so `divisorClass`
-    does not depend on proof-irrelevance gymnastics at call sites. -/
-axiom ordAt_divisorClass_zero
+    This is the remaining function-field bridge retained in this file.
+    It is phrased in mathlib's `ClassGroup` / `FractionalIdeal` /
+    `IsPrincipal` language; the older zero-class statement
+    `ordAt_divisorClass_zero` is derived below using
+    `ClassGroup.mk_eq_one_iff`.
+
+    Citation boundary: Silverman AEC Corollary III.3.5, together with
+    the local-order compatibility between `ordAt` and the affine prime
+    ideals of `E.toW.toAffine.CoordinateRing`. -/
+axiom CoordRingElt.divisorClass_isPrincipal
+    (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (_hSplit : splitsOnE E D) :
+    ∃ I : (FractionalIdeal (nonZeroDivisors E.toW.toAffine.CoordinateRing)
+              (FractionRing E.toW.toAffine.CoordinateRing))ˣ,
+      (I : Submodule E.toW.toAffine.CoordinateRing
+            (FractionRing E.toW.toAffine.CoordinateRing)).IsPrincipal ∧
+      Additive.toMul
+        (divisorClass E (divisorOfD E D)
+          (divisorOfD_finiteSupport E D)) =
+      ClassGroup.mk I
+
+/-- `divisorClass` is independent of the finite-support witness for a fixed
+coefficient function. -/
+private theorem divisorClass_canonical
+    (coeffs : ECPoint E → ℤ)
+    (h₁ h₂ : Set.Finite (Function.support coeffs)) :
+    divisorClass E coeffs h₁ = divisorClass E coeffs h₂ := by
+  classical
+  have hSet : h₁.toFinset = h₂.toFinset := by
+    ext P
+    simp only [Set.Finite.mem_toFinset]
+  unfold divisorClass
+  rw [hSet]
+
+/-- **Derived zero-class bridge.**
+
+    This is the former class-group bridge axiom's statement, now proved
+    from `CoordRingElt.divisorClass_isPrincipal` and mathlib's
+    `ClassGroup.mk_eq_one_iff`. -/
+theorem ordAt_divisorClass_zero
     (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0))
     (_hSplit : splitsOnE E D)
     (hFinSup : Set.Finite (Function.support (divisorOfD E D))) :
-    divisorClass E (divisorOfD E D) hFinSup = 0
+    divisorClass E (divisorOfD E D) hFinSup = 0 := by
+  rw [divisorClass_canonical E (divisorOfD E D) hFinSup
+        (divisorOfD_finiteSupport E D)]
+  obtain ⟨I, hPrin, hEq⟩ :=
+    CoordRingElt.divisorClass_isPrincipal E D _hD _hSplit
+  have hMkOne : ClassGroup.mk I = 1 := ClassGroup.mk_eq_one_iff.mpr hPrin
+  have hToMulOne :
+      Additive.toMul
+        (divisorClass E (divisorOfD E D)
+          (divisorOfD_finiteSupport E D)) = 1 :=
+    hEq.trans hMkOne
+  exact hToMulOne
 
 /-! ### Bridging helpers for the group-sum proof.
 

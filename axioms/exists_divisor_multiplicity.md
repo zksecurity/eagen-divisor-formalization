@@ -84,15 +84,17 @@ It sums over `ECPoint.affinePoints E`, uses
 except at the protocol boundary.
 
 The remaining axiom in its dependency closure is the narrower
-`Divisor.ordAt_divisorClass_zero`, documented separately in
-[`ordAt_divisorClass_zero.md`](ordAt_divisorClass_zero.md). The closure
-is pinned in `Tests/AxiomClosurePin.lean`:
+`Divisor.CoordRingElt.divisorClass_isPrincipal`, documented separately
+in [`divisorClass_isPrincipal.md`](divisorClass_isPrincipal.md). The
+old `Divisor.ordAt_divisorClass_zero` statement is now a theorem
+derived from that axiom and mathlib's `ClassGroup.mk_eq_one_iff`.
+The closure is pinned in `Tests/AxiomClosurePin.lean`:
 
 ```lean
 #print axioms Divisor.CoordRingElt.exists_divisor_multiplicity
--- propext, Classical.choice, Quot.sound, Divisor.ordAt_divisorClass_zero
+-- propext, Classical.choice, Quot.sound, Divisor.CoordRingElt.divisorClass_isPrincipal
 #print axioms Divisor.CoordRingElt.exists_divisor_multiplicity_ecpoint
--- propext, Classical.choice, Quot.sound, Divisor.ordAt_divisorClass_zero
+-- propext, Classical.choice, Quot.sound, Divisor.CoordRingElt.divisorClass_isPrincipal
 ```
 
 ## Citation
@@ -127,7 +129,9 @@ The former axiom was discharged in Phase 1 of the trust-closure plan:
    - 2-torsion `P = (x₀, 0)`: uniformizer = `y`.
 2. Prove the four divisor properties for `ord_P` in
    `Divisor/OrdP/LocalRing.lean`.
-3. Use `ordAt_divisorClass_zero` plus mathlib's `Point.toClass_eq_zero`
+3. Derive `ordAt_divisorClass_zero` from
+   `CoordRingElt.divisorClass_isPrincipal` and mathlib's
+   `ClassGroup.mk_eq_one_iff`, then use mathlib's `Point.toClass_eq_zero`
    to obtain group-sum-zero under splitting.
 4. Replace the axiom with the proven theorem
    `Divisor.exists_divisor_multiplicity_proved` in

@@ -5,7 +5,7 @@ Axiom-by-axiom status of textbook coverage in `/Users/rot256/paper/crypto-books/
 | Axiom | Status |
 |---|---|
 | `principal_divisor_iff` | Covered — Silverman AEC Cor III.3.5 |
-| `ordAt_divisorClass_zero` | Open bridge — narrower replacement for the former `ordAt_divisor_isPrincipal`/`principal_divisor_iff` path on MA extraction. See `ordAt_divisorClass_zero.md`. |
+| `CoordRingElt.divisorClass_isPrincipal` | Open bridge — principal fractional-ideal replacement for the former `ordAt_divisor_isPrincipal`/`principal_divisor_iff` path on MA extraction. The old `ordAt_divisorClass_zero` statement is now a theorem derived from this axiom. See `divisorClass_isPrincipal.md`. |
 | `hasse_weil` | Covered — Silverman AEC Thm V.1.1 + Stichtenoth Thm 5.2.3 |
 | `ECPoint.add_comm` | Covered — Silverman AEC Prop III.2.2(c) |
 | `ECPoint.add_assoc` | Covered — Silverman AEC Prop III.2.2(e) |
@@ -14,14 +14,14 @@ Axiom-by-axiom status of textbook coverage in `/Users/rot256/paper/crypto-books/
 | `chord_fiber_product_bar_eq_geom_prod` | **Temporary bridge** — better than the split rational statement because it uses geometric divisor data, but still proof-specific. Final target: theorem from the norm/divisor push-forward axiom. |
 | `chord_sum_eq_chord_fiber_product_logDeriv` | **Temporary bridge** — mathematically covered by Lang *Algebra* §VI.5 Thm 5.1 + §VIII.5 Thm 5.1 Case 1, but the current statement packages trace/log-derivative with chord coordinates and denominator bookkeeping. Final target: theorem from a clean `Tr(dg/g)=dN(g)/N(g)` axiom. |
 | `weil_reciprocity_honest` | Covered — Stichtenoth Cor 4.3.3 (Residue Theorem) + Silverman AEC Ex II.2.11. Descent skeleton in `Divisor/WeilReciprocityDescent.lean` (sorry'd; in-flight, see P3 of soundness plan). |
-| `CoordRingElt.exists_divisor_multiplicity` | **Proven modulo `ordAt_divisorClass_zero`** — theorem-backed by `Divisor.exists_divisor_multiplicity_proved`; the new `CoordRingElt.exists_divisor_multiplicity_ecpoint` exposes the cleaner `ECPoint`-indexed form. Replaces the previously-listed `CoordRingElt.divisor_group_sum_zero`, which was provably unsound (counterexample over `F_5`; see file header in `Divisor/Axioms/AxiomExistsDivisorMultiplicity.lean`). |
+| `CoordRingElt.exists_divisor_multiplicity` | **Proven modulo `CoordRingElt.divisorClass_isPrincipal`** — theorem-backed by `Divisor.exists_divisor_multiplicity_proved`; the new `CoordRingElt.exists_divisor_multiplicity_ecpoint` exposes the cleaner `ECPoint`-indexed form. Replaces the previously-listed `CoordRingElt.divisor_group_sum_zero`, which was provably unsound (counterexample over `F_5`; see file header in `Divisor/Axioms/AxiomExistsDivisorMultiplicity.lean`). |
 | `bivariate_poly_zeros_on_ExE_le` | **Proven** — derived from `hasse_weil` via fiber-counting (`Divisor/BivariateZerosOnExE.lean` + `Divisor/CurveEvalZerosHelper.lean`). No longer an axiom. |
 
 ## Status
 
 The old false divisor-group axiom is removed. The current MA extraction
 closure has one explicit class-group bridge,
-`ordAt_divisorClass_zero`, plus Hasse-Weil and the temporary chord
+`CoordRingElt.divisorClass_isPrincipal`, plus Hasse-Weil and the temporary chord
 bridges pinned in `Tests/AxiomClosurePin.lean`.
 
 The desired final boundary is tracked in
