@@ -8,7 +8,7 @@
   Expected closures on the geometric-zero skeleton branch:
 
   * `ma_extractable`, `ip_knowledge_sound`:
-      propext, sorryAx, Classical.choice, Quot.sound,
+      propext, Classical.choice, Quot.sound,
       Divisor.chord_fiber_product_bar_eq_geom_prod,
       Divisor.chord_fiber_product_eq_normZ_under_split,
       Divisor.chord_sum_eq_chord_fiber_product_logDeriv,
@@ -16,10 +16,8 @@
       Divisor.ordAt_divisor_isPrincipal,
       Divisor.principal_divisor_iff
 
-    The `sorryAx` is the Frobenius descent proof gap in
-    `Divisor/GeometricSoundness.lean` (the named geometric obligation),
-    NOT a hidden divisor-multiplicity / `divisor_group_sum_zero` axiom.
-    The headline theorem signatures no longer carry
+    The Frobenius descent proof gap is closed: there is no `sorryAx` in
+    the MA/IP closure. The headline theorem signatures no longer carry
     `hSplit : splitsOnE E D`; the `splitsOnE` predicate now only gates
     the multiplicity-accounting test below. `hasse_weil` comes from the
     geometric SZ bound on `E(F_q) × E(F_q)`. The chord/log-deriv axioms
