@@ -5,6 +5,7 @@ Axiom-by-axiom status of textbook coverage in `/Users/rot256/paper/crypto-books/
 | Axiom | Status |
 |---|---|
 | `principal_divisor_iff` | Covered — Silverman AEC Cor III.3.5 |
+| `ordAt_divisorClass_zero` | Open bridge — narrower replacement for the former `ordAt_divisor_isPrincipal`/`principal_divisor_iff` path on MA extraction. See `ordAt_divisorClass_zero.md`. |
 | `hasse_weil` | Covered — Silverman AEC Thm V.1.1 + Stichtenoth Thm 5.2.3 |
 | `ECPoint.add_comm` | Covered — Silverman AEC Prop III.2.2(c) |
 | `ECPoint.add_assoc` | Covered — Silverman AEC Prop III.2.2(e) |
@@ -12,12 +13,15 @@ Axiom-by-axiom status of textbook coverage in `/Users/rot256/paper/crypto-books/
 | `chord_fiber_product_eq_normZ_under_split` | Covered — Stichtenoth Prop 3.1.9 + Thm 3.7.1 |
 | `chord_sum_eq_chord_fiber_product_logDeriv` | Covered — Lang *Algebra* §VI.5 Thm 5.1 + §VIII.5 Thm 5.1 Case 1 |
 | `weil_reciprocity_honest` | Covered — Stichtenoth Cor 4.3.3 (Residue Theorem) + Silverman AEC Ex II.2.11. Descent skeleton in `Divisor/WeilReciprocityDescent.lean` (sorry'd; in-flight, see P3 of soundness plan). |
-| `CoordRingElt.exists_divisor_multiplicity` | Covered — Silverman AEC Cor III.3.5 + II §1 (local order ord_P at smooth points). Replaces the previously-listed `CoordRingElt.divisor_group_sum_zero`, which was provably unsound (counterexample over `F_5`; see file header in `Divisor/Axioms/AxiomExistsDivisorMultiplicity.lean`). |
+| `CoordRingElt.exists_divisor_multiplicity` | **Proven modulo `ordAt_divisorClass_zero`** — theorem-backed by `Divisor.exists_divisor_multiplicity_proved`; the new `CoordRingElt.exists_divisor_multiplicity_ecpoint` exposes the cleaner `ECPoint`-indexed form. Replaces the previously-listed `CoordRingElt.divisor_group_sum_zero`, which was provably unsound (counterexample over `F_5`; see file header in `Divisor/Axioms/AxiomExistsDivisorMultiplicity.lean`). |
 | `bivariate_poly_zeros_on_ExE_le` | **Proven** — derived from `hasse_weil` via fiber-counting (`Divisor/BivariateZerosOnExE.lean` + `Divisor/CurveEvalZerosHelper.lean`). No longer an axiom. |
 
-## Status — all closed
+## Status
 
-All axioms have textbook or primary-source citations archived. No further papers required.
+The old false divisor-group axiom is removed. The current MA extraction
+closure has one explicit class-group bridge,
+`ordAt_divisorClass_zero`, plus the chord/Hasse obligations pinned in
+`Tests/AxiomClosurePin.lean`.
 
 ### `weil_reciprocity_honest`
 

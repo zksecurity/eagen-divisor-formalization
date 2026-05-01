@@ -47,6 +47,28 @@ namespace Divisor
 
 variable (E : ECSetup)
 
+/-- ECPoint-indexed form of true affine divisor multiplicity.
+
+    This is the preferred internal API when downstream code already
+    works with the mathlib point type `ECPoint E`. The legacy
+    pair-indexed theorem below remains for protocol-facing code whose
+    inputs are still coordinate pairs. -/
+theorem CoordRingElt.exists_divisor_multiplicity_ecpoint
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    ∃ β : ECPoint E → ℕ,
+      β (0 : ECPoint E) = 0 ∧
+      (∀ P, β P ≠ 0 →
+        P ∈ ECPoint.affinePoints E ∧ CoordRingElt.evalPoint E D P = 0) ∧
+      (∀ P ∈ ECPoint.affinePoints E,
+        CoordRingElt.evalPoint E D P = 0 → β P ≠ 0) ∧
+      (∑ P ∈ ECPoint.affinePoints E, β P) ≤ D.degE ∧
+      (splitsOnE E D →
+        (∑ P ∈ ECPoint.affinePoints E, β P) = (normPoly E D).natDegree) ∧
+      (splitsOnE E D →
+        ECPoint.weightedSum E (ECPoint.affinePoints E)
+          (fun P => ECPoint.nsmul E (β P) P) = 0) :=
+  exists_ecpoint_divisor_multiplicity_proved E D hD
+
 /-- **Existence of true divisor multiplicity** (Silverman AEC III Cor
     3.5 + II §1, specialised to `D = a(x) - b(x)·y ∈ F_q[E]^×`).
 

@@ -3,7 +3,7 @@
 - **Lean source**: `Divisor/Axioms/AxiomExistsDivisorMultiplicity.lean`
 
 ```lean
-axiom CoordRingElt.exists_divisor_multiplicity
+theorem CoordRingElt.exists_divisor_multiplicity
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     ∃ β : ZMod E.q × ZMod E.q → ℕ,
       (∀ P, β P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0) ∧
@@ -65,6 +65,36 @@ at least one F_q-rational point of E*. Under `splitsOnE`, every
 geometric zero of `D` on `E` IS F_q-rational, so the F_q-sum
 captures the full Cor III.3.5 content.
 
+## Current status
+
+This is no longer an axiom. It is theorem-backed by
+`Divisor.exists_divisor_multiplicity_proved` in
+`Divisor/OrdP/LocalRing.lean`, with witness `ordAt E D`.
+
+There is also an `ECPoint`-indexed theorem for internal use:
+
+```lean
+theorem CoordRingElt.exists_divisor_multiplicity_ecpoint
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    ∃ β : ECPoint E → ℕ, ...
+```
+
+It sums over `ECPoint.affinePoints E`, uses
+`CoordRingElt.evalPoint E D`, and avoids raw coordinate-pair indexing
+except at the protocol boundary.
+
+The remaining axiom in its dependency closure is the narrower
+`Divisor.ordAt_divisorClass_zero`, documented separately in
+[`ordAt_divisorClass_zero.md`](ordAt_divisorClass_zero.md). The closure
+is pinned in `Tests/AxiomClosurePin.lean`:
+
+```lean
+#print axioms Divisor.CoordRingElt.exists_divisor_multiplicity
+-- propext, Classical.choice, Quot.sound, Divisor.ordAt_divisorClass_zero
+#print axioms Divisor.CoordRingElt.exists_divisor_multiplicity_ecpoint
+-- propext, Classical.choice, Quot.sound, Divisor.ordAt_divisorClass_zero
+```
+
 ## Citation
 
 Silverman, *The Arithmetic of Elliptic Curves* (GTM 106):
@@ -88,18 +118,17 @@ properties.
 
 ![Silverman Cor III.3.5](snippets/silverman-cor-III.3.5-principal-divisor-081.png)
 
-## Discharge plan
+## Discharge history
 
-The axiom is intended to be discharged in Phase 1 of the trust-
-closure plan:
+The former axiom was discharged in Phase 1 of the trust-closure plan:
 
 1. Mechanise `ord_P` from local uniformizers (`Divisor/OrdP/Uniformizer.lean`):
    - Non-2-torsion `P = (x₀, y₀)` with `y₀ ≠ 0`: uniformizer = `x − x₀`.
    - 2-torsion `P = (x₀, 0)`: uniformizer = `y`.
 2. Prove the four divisor properties for `ord_P` in
-   `Divisor/OrdP/LocalRing.lean` (currently sorry'd skeleton).
-3. Apply `principal_divisor_iff.mp` to obtain the group-sum-zero
-   property under splitting.
+   `Divisor/OrdP/LocalRing.lean`.
+3. Use `ordAt_divisorClass_zero` plus mathlib's `Point.toClass_eq_zero`
+   to obtain group-sum-zero under splitting.
 4. Replace the axiom with the proven theorem
    `Divisor.exists_divisor_multiplicity_proved` in
    `Divisor/OrdP/LocalRing.lean`.

@@ -33,6 +33,7 @@
       Divisor.hasse_weil
 
   * `CoordRingElt.exists_divisor_multiplicity`,
+    `CoordRingElt.exists_divisor_multiplicity_ecpoint`,
     `ordAt_group_sum_zero_under_split`:
       propext, Classical.choice, Quot.sound,
       Divisor.ordAt_divisorClass_zero
@@ -51,6 +52,7 @@ import Divisor.Soundness
 #print axioms Divisor.ma_completeness
 #print axioms Divisor.ma_completeness_clean
 #print axioms Divisor.CoordRingElt.exists_divisor_multiplicity
+#print axioms Divisor.CoordRingElt.exists_divisor_multiplicity_ecpoint
 #print axioms Divisor.ordAt_group_sum_zero_under_split
 
 /-! ## Hard guards: typecheck-fail if these axioms ever come back

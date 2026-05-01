@@ -235,7 +235,42 @@ theorem affine_eq_affineOfMem (E : ECSetup) {p : ZMod E.q × ZMod E.q}
   exact affine_of_nonsingular E
     (E.equation_iff_nonsingular.mp ((E.equation_iff x y).mpr (E.hOnCurve _ hp)))
 
+/-- The finite set of affine `F_q`-points of `E`, represented as
+    `ECPoint E` instead of raw coordinate pairs. -/
+noncomputable def affinePoints (E : ECSetup) : Finset (ECPoint E) := by
+  classical
+  exact E.points.image (fun P => ECPoint.affine E P.1 P.2)
+
 end ECPoint
+
+namespace CoordRingElt
+
+/-- Evaluate a coordinate-ring element at an `ECPoint`. The value at
+    infinity is a harmless total-function default; callers that use this
+    as affine evaluation should also require membership in
+    `ECPoint.affinePoints E`. -/
+def evalPoint (D : CoordRingElt E.q) : ECPoint E → ZMod E.q
+  | 0 => 0
+  | @WeierstrassCurve.Affine.Point.some _ _ _ x y _ => D.eval x y
+
+@[simp] theorem evalPoint_infinity (D : CoordRingElt E.q) :
+    evalPoint E D (0 : ECPoint E) = 0 := rfl
+
+@[simp] theorem evalPoint_some (D : CoordRingElt E.q)
+    {x y : ZMod E.q} (h : E.toW.toAffine.Nonsingular x y) :
+    evalPoint E D (.some h) = D.eval x y := rfl
+
+/-- Pair-based evaluation and `ECPoint` evaluation agree on `E.points`. -/
+theorem evalPoint_affine (D : CoordRingElt E.q)
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) :
+    evalPoint E D (ECPoint.affine E P.1 P.2) = D.eval P.1 P.2 := by
+  have hns : E.toW.toAffine.Nonsingular P.1 P.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP))
+  rw [ECPoint.affine_of_nonsingular E hns]
+  rcases P with ⟨x, y⟩
+  rfl
+
+end CoordRingElt
 
 /-- Third-intersection point of the chord/tangent line through `A₀`, `A₁`
     with the curve `E`. Operates on raw `ZMod q × ZMod q` pairs and

@@ -783,6 +783,30 @@ theorem sum_ordAt_eq_natDegree_under_split
 
 /-! ## Section 7: group-sum-zero (Obligation C via the class group) -/
 
+/-- Nonnegative affine multiplicity as a function on `ECPoint E`.
+    Infinity has multiplicity zero; the pole at infinity is represented
+    separately by `divisorOfD`. -/
+noncomputable def ordAtPoint (D : CoordRingElt E.q) : ECPoint E → ℕ
+  | 0 => 0
+  | @WeierstrassCurve.Affine.Point.some _ _ _ x y _ => ordAt E D (x, y)
+
+@[simp] theorem ordAtPoint_infinity (D : CoordRingElt E.q) :
+    ordAtPoint E D (0 : ECPoint E) = 0 := rfl
+
+@[simp] theorem ordAtPoint_some (D : CoordRingElt E.q)
+    {x y : ZMod E.q} (h : E.toW.toAffine.Nonsingular x y) :
+    ordAtPoint E D (.some h) = ordAt E D (x, y) := rfl
+
+/-- Pair-based local order and `ECPoint` local order agree on `E.points`. -/
+theorem ordAtPoint_affine (D : CoordRingElt E.q)
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) :
+    ordAtPoint E D (ECPoint.affine E P.1 P.2) = ordAt E D P := by
+  have hns : E.toW.toAffine.Nonsingular P.1 P.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP))
+  rw [ECPoint.affine_of_nonsingular E hns]
+  rcases P with ⟨x, y⟩
+  rfl
+
 /-- The integer-valued divisor associated to a nonzero `D` on `E`:
     `Σ ordAt(D, P)·(P) − natDeg(N(D))·(O)` viewed as a function
     `ECPoint E → ℤ`.  Total degree is zero by construction (via
@@ -858,16 +882,15 @@ open Classical in
 /-- Concrete finite cover of `divisorOfD`'s support: `{∞} ∪ image
     (affine) E.points`. -/
 private noncomputable def divisorOfD_cover : Finset (ECPoint E) :=
-  insert (ECPoint.infinity : ECPoint E)
-    (E.points.image (fun P => ECPoint.affine E P.1 P.2))
+  insert (ECPoint.infinity : ECPoint E) (ECPoint.affinePoints E)
 
 open Classical in
 /-- Infinity is not in the affine image (the `some _` constructor
     differs from `zero`). -/
-private theorem infinity_notin_affine_image :
-    (ECPoint.infinity : ECPoint E) ∉
-      E.points.image (fun P => ECPoint.affine E P.1 P.2) := by
+private theorem infinity_notin_affinePoints :
+    (ECPoint.infinity : ECPoint E) ∉ ECPoint.affinePoints E := by
   intro hContra
+  unfold ECPoint.affinePoints at hContra
   rw [Finset.mem_image] at hContra
   obtain ⟨Q, hQ, heq⟩ := hContra
   have hns : E.toW.toAffine.Nonsingular Q.1 Q.2 :=
@@ -916,8 +939,9 @@ private theorem divisorOfD_support_subset_cover (D : CoordRingElt E.q) :
       have hOC : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB :=
         (E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hns)
       have hMem : (x, y) ∈ E.points := E.hComplete x y hOC
-      exact Finset.mem_image.mpr
-        ⟨(x, y), hMem, ECPoint.affine_of_nonsingular E hns⟩
+      unfold ECPoint.affinePoints
+      refine Finset.mem_image.mpr ?_
+      exact ⟨(x, y), hMem, ECPoint.affine_of_nonsingular E hns⟩
 
 /-- The `dCoeffsCandidate`-shaped weighted sum bridges the
     ECPoint-level and ZMod-pair-level forms. -/
@@ -929,7 +953,7 @@ private theorem weightedSum_divisorOfD_cover_eq (D : CoordRingElt E.q) :
                         (ECPoint.affine E P.1 P.2)) := by
   classical
   unfold divisorOfD_cover
-  rw [ECPoint.weightedSum_insert E (infinity_notin_affine_image E)]
+  rw [ECPoint.weightedSum_insert E (infinity_notin_affinePoints E)]
   -- Infinity contribution: zsmul anything · zero = 0.
   rw [show ECPoint.zsmul E (divisorOfD E D (ECPoint.infinity : ECPoint E))
             (ECPoint.infinity : ECPoint E) = 0
@@ -937,11 +961,42 @@ private theorem weightedSum_divisorOfD_cover_eq (D : CoordRingElt E.q) :
       zero_add]
   -- Affine image sum = E.points sum (via injectivity).
   unfold ECPoint.weightedSum
+  unfold ECPoint.affinePoints
   rw [Finset.sum_image
         (fun P₁ hP₁ P₂ hP₂ heq => affine_inj_on_points E hP₁ hP₂ heq)]
   apply Finset.sum_congr rfl
   intro P hP
   rw [divisorOfD_affine E D hP, ECPoint.zsmul_natCast]
+
+/-- Summing the `ECPoint`-indexed affine multiplicity over affine
+`ECPoint`s is the same as summing `ordAt` over raw `E.points`. -/
+theorem sum_ordAtPoint_affinePoints_eq (D : CoordRingElt E.q) :
+    (∑ P ∈ ECPoint.affinePoints E, ordAtPoint E D P) =
+      ∑ P ∈ E.points, ordAt E D P := by
+  classical
+  unfold ECPoint.affinePoints
+  rw [Finset.sum_image
+        (fun P₁ hP₁ P₂ hP₂ heq => affine_inj_on_points E hP₁ hP₂ heq)]
+  apply Finset.sum_congr rfl
+  intro P hP
+  rw [ordAtPoint_affine E D hP]
+
+/-- The `ECPoint`-indexed affine multiplicity has the same weighted
+group sum as the legacy pair-indexed `ordAt` form. -/
+theorem weightedSum_ordAtPoint_affinePoints_eq (D : CoordRingElt E.q) :
+    ECPoint.weightedSum E (ECPoint.affinePoints E)
+        (fun P => ECPoint.nsmul E (ordAtPoint E D P) P)
+      =
+    ECPoint.weightedSum E E.points
+      (fun P => ECPoint.nsmul E (ordAt E D P) (ECPoint.affine E P.1 P.2)) := by
+  classical
+  unfold ECPoint.weightedSum
+  unfold ECPoint.affinePoints
+  rw [Finset.sum_image
+        (fun P₁ hP₁ P₂ hP₂ heq => affine_inj_on_points E hP₁ hP₂ heq)]
+  apply Finset.sum_congr rfl
+  intro P hP
+  rw [ordAtPoint_affine E D hP]
 
 /-- **Group-sum-zero** under `splitsOnE`. -/
 theorem ordAt_group_sum_zero_under_split
@@ -978,6 +1033,69 @@ theorem ordAt_group_sum_zero_under_split
   exact hCoverSum
 
 /-! ## Section 8: discharge `exists_divisor_multiplicity` -/
+
+/-- ECPoint-indexed version of the true affine divisor multiplicity.
+
+    This is the cleaner internal form: affine points are indexed by
+    `ECPoint E` rather than raw coordinate pairs, while the pole at
+    infinity remains represented separately by `divisorOfD`. The legacy
+    pair-indexed theorem below is retained as a compatibility surface
+    for protocol code that still speaks in coordinates. -/
+theorem exists_ecpoint_divisor_multiplicity_proved
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    ∃ β : ECPoint E → ℕ,
+      β (0 : ECPoint E) = 0 ∧
+      (∀ P, β P ≠ 0 →
+        P ∈ ECPoint.affinePoints E ∧ CoordRingElt.evalPoint E D P = 0) ∧
+      (∀ P ∈ ECPoint.affinePoints E,
+        CoordRingElt.evalPoint E D P = 0 → β P ≠ 0) ∧
+      (∑ P ∈ ECPoint.affinePoints E, β P) ≤ D.degE ∧
+      (splitsOnE E D →
+        (∑ P ∈ ECPoint.affinePoints E, β P) = (normPoly E D).natDegree) ∧
+      (splitsOnE E D →
+        ECPoint.weightedSum E (ECPoint.affinePoints E)
+          (fun P => ECPoint.nsmul E (β P) P) = 0) := by
+  classical
+  refine ⟨ordAtPoint E D, rfl, ?_, ?_, ?_, ?_, ?_⟩
+  · intro P hP
+    match P with
+    | WeierstrassCurve.Affine.Point.zero =>
+        exfalso
+        exact hP rfl
+    | WeierstrassCurve.Affine.Point.some (x := x) (y := y) hns =>
+        have hOC : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB :=
+          (E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hns)
+        have hMem : (x, y) ∈ E.points := E.hComplete x y hOC
+        refine ⟨?_, ?_⟩
+        · unfold ECPoint.affinePoints
+          refine Finset.mem_image.mpr ?_
+          exact ⟨(x, y), hMem, ECPoint.affine_of_nonsingular E hns⟩
+        · by_contra hNZ
+          apply hP
+          have : ¬ 0 < ordAt E D (x, y) := by
+            rw [ordAt_pos_iff_zero E D hD (x, y) hMem]
+            exact hNZ
+          have hZero : ordAt E D (x, y) = 0 := by omega
+          simpa using hZero
+  · intro P hP hEval
+    unfold ECPoint.affinePoints at hP
+    rw [Finset.mem_image] at hP
+    obtain ⟨Q, hQ, hAff⟩ := hP
+    rw [← hAff, ordAtPoint_affine E D hQ]
+    rw [← Nat.pos_iff_ne_zero, ordAt_pos_iff_zero E D hD Q hQ]
+    have hEvalQ : D.eval Q.1 Q.2 = 0 := by
+      rw [← CoordRingElt.evalPoint_affine E D hQ]
+      rw [hAff]
+      exact hEval
+    exact hEvalQ
+  · rw [sum_ordAtPoint_affinePoints_eq E D]
+    exact sum_ordAt_le_degE E D
+  · intro hSplit
+    rw [sum_ordAtPoint_affinePoints_eq E D]
+    exact sum_ordAt_eq_natDegree_under_split E D hD hSplit
+  · intro hSplit
+    rw [weightedSum_ordAtPoint_affinePoints_eq E D]
+    exact ordAt_group_sum_zero_under_split E D hD hSplit
 
 /-- **Goal of Phase 1**: the existential `β` axiom is discharged with
     witness `ordAt E D`.  Once Sections A/B/C above are filled, this
