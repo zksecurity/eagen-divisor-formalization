@@ -1,7 +1,8 @@
 # Concrete `chord_fiber_product`: prototype + assessment
 
 Branch: `geom-polyG-skeleton`
-Sketch file: `Divisor/Sketch/ChordFiberProductConcrete.lean`
+Production core: `Divisor/ChordFiberProductConcrete.lean`
+Remaining obligations: `Divisor/Sketch/ChordFiberProductConcrete.lean`
 
 ## Current state
 
@@ -49,9 +50,17 @@ This gives, on evaluation at `μ`:
 `chord_fiber_product_concrete.eval μ = ∏_{i=0,1,2} D.eval(x_i, λ x_i + μ)`
 when the chord cubic at `μ` splits — exactly the fibre-product reading.
 
-## The obligations against the candidate
+## Production core
 
-The sketch file states each obligation as a `theorem … := by sorry`.
+The axiom-free resultant candidate and all proved evaluation/root-support
+plumbing now live in `Divisor/ChordFiberProductConcrete.lean` under namespace
+`Divisor`. That module contains no `sorry` and does not import the chord-fiber
+axiom files.
+
+## The remaining obligations against the candidate
+
+The sketch file now states only the remaining obligations as `theorem … := by
+sorry`.
 
 | # | Obligation | Difficulty | Notes |
 | --- | --- | --- | --- |
@@ -62,20 +71,21 @@ The sketch file states each obligation as a `theorem … := by sorry`.
 | 4 | `chord_fiber_product_concrete_ne_zero` | **Done** | Proved by evaluating over `Fqbar`, choosing an intercept outside the finite set `gd.support.image (zLambdaBar E lam)`, and using the resultant product formula. |
 | 4a | `chord_fiber_product_concrete_bar_eval_eq_zero_iff_support` | **Done** | Multiplicity-free zero-locus bridge: bar evaluation at `μ` is zero iff some `Q ∈ gd.support` has `zLambdaBar Q = μ`. |
 | 4b | `chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image` | **Done** | Root-set consequence of 4a and non-vanishing. This pins support before multiplicities. |
-| 5 | `chord_fiber_product_concrete_bar_eq_geom_prod` | **Hard math (deepest)** | The divisor-of-norm identity `div(N(D)) = π_*(div D)` for the chord projection. The root support is now proved; what remains is the multiplicity link `mult_at_μ (resultant) = ∑_{Q : zLambdaBar Q = μ} gd.mult Q`, i.e., per-place ramification/inertial accounting for the chord cover. **No mathlib analogue.** |
+| 5a | `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber` | **Hard math (deepest)** | The divisor-of-norm identity `div(N(D)) = π_*(div D)` for the chord projection, stated as the exact root-multiplicity formula `mult_at_z(resultant) = ∑_{Q : zLambdaBar Q = z} gd.mult Q`. This is the narrow citable core (Stichtenoth Prop. 3.1.9 + Thm. 3.7.1). |
+| 5b | `chord_fiber_product_concrete_bar_eq_geom_prod_of_rootMultiplicity` | **Plumbing** | Given 5a plus the proved root-set bridge, derive the factored form by polynomial factorisation over `Fqbar`. This is a finite-product/root-count argument, not a new mathematical axiom. |
 | 6 | `chord_fiber_product_concrete_eq_normZ_under_split` | **Plumbing** | Once obligation 5 is in hand, this is a "match factored forms over `Fqbar`, scalar descends to `ZMod E.q`" argument. |
 | 7 | `chord_fiber_product_concrete_logDeriv` | **Medium math** | Logarithmic derivative of `∏_i D(x_i(μ), λx_i(μ) + μ)` via product rule + implicit-function differentiation of the chord cubic. The cancellation that produces the `logDerivTerm` formula is the substantive step; `hDen` rules out the cusp where the implicit-function argument fails. Mathlib has `Polynomial.derivative_*` and `aeval` machinery for the formal-derivative side; the chain rule is `Polynomial.derivative_comp` plus algebra. |
 
 ## Plumbing / math split
 
 **Pure plumbing (would land within a session each, given the right mathlib
-identifiers):** 1, 2, 3a, 3b, 6.
+identifiers):** 1, 2, 3a, 3b, 5b, 6.
 
 **Medium math (sketchable in 1–2 days, with care):** 7.
 
-**Hard math (the actual proof obligation, needs new infra):** 5.
+**Hard math (the actual proof obligation, needs new infra):** 5a.
 
-Obligation 5 is the **only** one whose hardness comes from genuinely new
+Obligation 5a is the **only** one whose hardness comes from genuinely new
 mathematics that has no mathlib analogue. Specifically: the divisor-of-norm
 formula relates the `μ`-multiplicity of `chord_fiber_product` at `μ_0` to the
 sum of `D`'s geometric multiplicities `gd.mult Q` over geometric points `Q`
@@ -105,10 +115,11 @@ Both halves use only finite-field algebraic geometry; nothing transcendental.
 3. Discharge obligation 4 via `bar_eval_eq_prod` at a generic `μ` — **done**.
 4. Discharge obligation 7 via product-rule + implicit-function chain — **1–2
    days** (with care around the cusp / non-degeneracy).
-5. Discharge obligation 5 — **3–5 days** (the new infra: per-place
+5. Discharge obligation 5a — **3–5 days** (the new infra: per-place
    multiplicity-summing for the resultant of `chord cubic` against
    `D-on-line`).
-6. Discharge obligation 6 (Fqbar-factored-forms-match descent) — **half a day**.
+6. Discharge obligation 5b and then 6 (Fqbar-factored-forms-match descent) —
+   **half a day** once 5a is available.
 7. Replace the `opaque` declaration of `chord_fiber_product` by the concrete
    definition; replace each axiom invocation by the now-proven theorem; remove
    the three axiom files.
@@ -127,7 +138,7 @@ A mid-point: define `chord_fiber_product` concretely (the resultant), prove
 obligations 1–4, 6, 7 by construction, and leave a single narrower axiom
 
 ```lean
-axiom chord_fiber_product_concrete_bar_eq_geom_prod  -- (formerly 5)
+axiom chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber  -- formerly the core of 5
 ```
 
 This is **strictly weaker** than the current `chord_fiber_product_bar_eq_geom_prod`
@@ -164,18 +175,24 @@ Discharge progress:
   chord projections of the geometric support of `D`.
 * **Root-set corollary (`chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image`): DONE.**
   This packages the support bridge as an equality of finite root sets.
-* Obligations 5, 6, 7: still `sorry`.
+* **Narrow multiplicity core (`chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber`): still `sorry`.**
+  This is the intended citable axiom boundary if we stop short of fully
+  mechanising divisor-of-norm pushforward.
+* **Factorisation plumbing (`chord_fiber_product_concrete_bar_eq_geom_prod_of_rootMultiplicity`): still `sorry`.**
+  This should be an Aristotle/worker-sized finite-product proof.
+* Obligations 6 and 7: still `sorry`.
 
-Next planned: isolate the remaining multiplicity assertion in obligation 5,
-then obligation 6 (factored-forms-match descent — depends on 5).
+Next planned: discharge the finite-product plumbing lemma, then obligation 6
+(factored-forms-match descent — depends on the multiplicity core).
 
 ## Summary for codex
 
 * Concrete candidate: **resultant of chord cubic against D-on-line lift**
   (well-posed, mathlib-friendly).
-* 7 top-level obligations are stated, with obligation 3 split into two
-  plumbing lemmas; only obligations 5, 6, and 7 remain. Obligation 5 is the
-  genuine new mathematics (`bar_eq_geom_prod`).
+* The production core is now separated from the sketch obligations.
+* The genuine new mathematics has been isolated as the narrow
+  `rootMultiplicity_eq_zfiber` statement; the old broad `bar_eq_geom_prod`
+  follows from it plus finite-product plumbing.
 * If the project keeps the new mathematics axiomatic, the construction
   collapses to **one axiom + concrete definition** (vs the current three
   axioms + opaque), which is a clean reduction in surface area.

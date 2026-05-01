@@ -138,4 +138,44 @@ theorem DLineBar_eval_eq_geomEval_at_zLambda
     unfold zLambdaBar; ring
   simp only [CoordRingElt.geomEval, hY]
 
+/-! ## Formal X-derivative of `chordCubicBar`
+
+Useful local helper for the eventual log-derivative proof of
+`chord_fiber_product_concrete_logDeriv`. Identifies the formal X-derivative
+of the chord cubic with the chord-cone denominator factor
+`3*x^2 + A - 2*lambda*y` that appears in `logDerivTerm`. -/
+
+/-- Explicit closed form of `chordCubicBar` as a polynomial in
+`Polynomial (Fqbar E)`. -/
+theorem chordCubicBar_eq_explicit
+    (lam : ZMod E.q) (μ : Fqbar E) :
+    chordCubicBar E lam μ
+      = Polynomial.X ^ 3
+        - Polynomial.C ((fqToBar E lam) ^ 2) * Polynomial.X ^ 2
+        + Polynomial.C (fqToBar E E.curveA - 2 * fqToBar E lam * μ) * Polynomial.X
+        + Polynomial.C (fqToBar E E.curveB - μ ^ 2) := by
+  unfold chordCubicBar chordCubicBivBar chordCubicBiv fqToBar
+  simp [Polynomial.map_add, Polynomial.map_mul,
+        Polynomial.map_pow, Polynomial.map_C, Polynomial.map_X,
+        Polynomial.coe_evalRingHom, Polynomial.coe_mapRingHom,
+        Polynomial.eval_C, Polynomial.eval_X, map_mul, map_pow, map_ofNat]
+
+/-- **Formal X-derivative of `chordCubicBar`, evaluated at any `x`.**
+The derivative coincides with the chord-cone denominator factor
+`3*x^2 + A - 2*lambda*(lambda*x + μ)`. At a chord-cubic root `x`, where
+`y = lambda*x + μ` lies on the curve, this is the bar-level denominator
+appearing in `logDerivTerm`. -/
+theorem chordCubicBar_derivative_eval
+    (lam : ZMod E.q) (μ x : Fqbar E) :
+    (chordCubicBar E lam μ).derivative.eval x =
+      3 * x ^ 2 + fqToBar E E.curveA -
+        2 * fqToBar E lam * (fqToBar E lam * x + μ) := by
+  rw [chordCubicBar_eq_explicit]
+  simp [Polynomial.derivative_add, Polynomial.derivative_sub,
+        Polynomial.derivative_mul, Polynomial.derivative_C,
+        Polynomial.derivative_X, Polynomial.derivative_pow,
+        Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_mul,
+        Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X]
+  ring
+
 end Divisor.Sketch
