@@ -32,6 +32,11 @@
       Divisor.weil_reciprocity_honest,
       Divisor.hasse_weil
 
+  * `CoordRingElt.exists_divisor_multiplicity`,
+    `ordAt_group_sum_zero_under_split`:
+      propext, Classical.choice, Quot.sound,
+      Divisor.ordAt_divisorClass_zero
+
   In particular: `Divisor.CoordRingElt.divisor_group_sum_zero` (the
   previously unsound axiom) is no longer reachable from any headline
   theorem, and `CoordRingElt.exists_divisor_multiplicity` is now
@@ -45,6 +50,8 @@ import Divisor.Soundness
 #print axioms Divisor.ip_knowledge_sound
 #print axioms Divisor.ma_completeness
 #print axioms Divisor.ma_completeness_clean
+#print axioms Divisor.CoordRingElt.exists_divisor_multiplicity
+#print axioms Divisor.ordAt_group_sum_zero_under_split
 
 /-! ## Hard guards: typecheck-fail if these axioms ever come back
 
