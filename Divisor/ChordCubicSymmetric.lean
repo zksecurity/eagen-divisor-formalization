@@ -151,4 +151,88 @@ theorem chord_third_point_on_E
   simp only [] at he₂ he₃
   linear_combination x₂ * he₂ - he₃
 
+/-- **Chord-line Bezout helper.** For `A₀, A₁ ∈ E.points` with
+`A₀.1 ≠ A₁.1`, any point `Q ∈ E.points` lying on the chord line
+`y = λ·x + μ` (where `λ = slopeOf A₀ A₁`, `μ = A₀.2 − λ·A₀.1`) is
+exactly one of the three chord-fiber points: `A₀`, `A₁`, or
+`A₂ = (λ² − A₀.1 − A₁.1, λ·A₂.1 + μ)`.
+
+Proof: the curve equation `Q.2² = Q.1³ + A·Q.1 + B` together with
+`Q.2 = λ·Q.1 + μ` (from the chord) yield the cubic
+`Q.1³ − λ²·Q.1² + (A − 2λμ)·Q.1 − (μ² − B) = 0`. By Vieta
+(`chord_x_pairwise_sum`, `chord_x_triple_product`) this cubic factors
+as `(Q.1 − A₀.1)(Q.1 − A₁.1)(Q.1 − x₂) = 0`, so `Q.1 ∈
+{A₀.1, A₁.1, x₂}`; pairing with `Q.2 = λ·Q.1 + μ` and the analogous
+equations at `A₀, A₁, A₂` identifies `Q` with the corresponding
+chord point. -/
+theorem chord_line_support_in_E
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
+    (hNV : A₀.1 ≠ A₁.1)
+    (Q : ZMod E.q × ZMod E.q)
+    (hQ : Q ∈ E.points)
+    (hLine : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 = 0) :
+    Q = A₀ ∨ Q = A₁ ∨
+      Q = (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1,
+           slopeOf A₀.1 A₀.2 A₁.1 A₁.2 *
+             (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1) +
+           (A₀.2 - slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.1)) := by
+  set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLamDef
+  set mu := A₀.2 - lam * A₀.1 with hMuDef
+  set x₂ := lam ^ 2 - A₀.1 - A₁.1 with hx₂Def
+  -- Step 1: Q lies on the chord line, so `Q.2 = λ·Q.1 + μ`.
+  have hQy : Q.2 = lam * Q.1 + mu := by
+    have hL : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2
+            = Q.2 - lam * Q.1 - mu := by
+      simp [Line.eval, lineThrough, hLamDef, hMuDef]
+    have h := hLine
+    rw [hL] at h
+    linear_combination h
+  -- Step 2: curve equation for Q.
+  have hQc : Q.2 ^ 2 = Q.1 ^ 3 + E.curveA * Q.1 + E.curveB := E.hOnCurve Q hQ
+  -- Step 3: substitute `Q.2 = λ·Q.1 + μ` into the curve equation.
+  have hY2 : (lam * Q.1 + mu) ^ 2 = Q.1 ^ 3 + E.curveA * Q.1 + E.curveB := by
+    rw [← hQy]; exact hQc
+  -- Step 4: Vieta for the chord cubic.
+  have he₁ : A₀.1 + A₁.1 + x₂ = lam ^ 2 := by
+    show A₀.1 + A₁.1 + (lam ^ 2 - A₀.1 - A₁.1) = lam ^ 2; ring
+  have he₂ : A₀.1 * A₁.1 + A₀.1 * x₂ + A₁.1 * x₂ = E.curveA - 2 * lam * mu :=
+    chord_x_pairwise_sum E A₀ A₁ hA₀ hA₁ hNV
+  have he₃ : A₀.1 * A₁.1 * x₂ = mu ^ 2 - E.curveB :=
+    chord_x_triple_product E A₀ A₁ hA₀ hA₁ hNV
+  -- Step 5: cubic factors at `Q.1`.
+  have hCubic : (Q.1 - A₀.1) * (Q.1 - A₁.1) * (Q.1 - x₂) = 0 := by
+    linear_combination
+      -Q.1 ^ 2 * he₁ + Q.1 * he₂ - he₃ - hY2
+  -- Step 6: case-split on which factor vanishes.
+  rcases mul_eq_zero.mp hCubic with h | h
+  · rcases mul_eq_zero.mp h with h | h
+    · -- Q.1 = A₀.1
+      have hx : Q.1 = A₀.1 := sub_eq_zero.mp h
+      have hy : Q.2 = A₀.2 := by
+        rw [hQy, hx]
+        show lam * A₀.1 + (A₀.2 - lam * A₀.1) = A₀.2
+        ring
+      left
+      exact Prod.ext hx hy
+    · -- Q.1 = A₁.1
+      have hx : Q.1 = A₁.1 := sub_eq_zero.mp h
+      -- Slope identity: λ·(A₁.1 − A₀.1) = A₁.2 − A₀.2.
+      have hSlope : lam * (A₁.1 - A₀.1) = A₁.2 - A₀.2 := by
+        show slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (A₁.1 - A₀.1) = A₁.2 - A₀.2
+        have hxne : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm hNV)
+        rw [slopeOf]
+        field_simp
+      have hy : Q.2 = A₁.2 := by
+        rw [hQy, hx]
+        show lam * A₁.1 + (A₀.2 - lam * A₀.1) = A₁.2
+        linear_combination hSlope
+      right; left
+      exact Prod.ext hx hy
+  · -- Q.1 = x₂
+    have hx : Q.1 = x₂ := sub_eq_zero.mp h
+    have hy : Q.2 = lam * x₂ + mu := by rw [hQy, hx]
+    refine Or.inr (Or.inr ?_)
+    rw [show Q = (Q.1, Q.2) from Prod.mk.eta.symm, hx, hy]
+
 end Divisor
