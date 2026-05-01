@@ -8,10 +8,9 @@
   arbitrary cheating divisors: the zero divisor of `D` naturally lives over
   `F_qbar`, and only the final cleared polynomial should descend to `F_q`.
 
-  This file introduces the clean geometric API and records the hard proof
-  obligations as named theorems with `sorry`. The headline theorem imports
-  these branch theorems instead of carrying `splitsOnE` as an external
-  hypothesis.
+  This file introduces the clean geometric API and proves the branch
+  theorems needed by the headline statement, instead of carrying
+  `splitsOnE` as an external hypothesis.
 -/
 import Divisor.ExtractorBridge
 import Divisor.TightBound
