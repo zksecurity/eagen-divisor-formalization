@@ -5041,6 +5041,27 @@ private theorem frob_descent_isolate_mult_of_pf_sum
   rw [hi₀] at key
   exact key
 
+/-- Reindex a support sum through an explicit `Fin` enumeration. -/
+private theorem sum_support_eq_sum_fin
+    {α : Type*} [AddCommMonoid α]
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
+    {n : ℕ} (e : Fin n ≃ {x // x ∈ gd.support})
+    (f : GeomPoint E → α) :
+    (∑ i : Fin n, f (e i).val) = ∑ Q ∈ gd.support, f Q := by
+  classical
+  refine Finset.sum_bij
+    (fun i (_ : i ∈ (Finset.univ : Finset (Fin n))) => (e i).val)
+    ?_ ?_ ?_ ?_
+  · intro i _
+    exact (e i).property
+  · intro i _ j _ hEq
+    exact e.injective (Subtype.ext hEq)
+  · intro Q hQ
+    refine ⟨e.symm ⟨Q, hQ⟩, Finset.mem_univ _, ?_⟩
+    simp
+  · intro i _
+    rfl
+
 /--
 Frobenius descent core for the rational-support branch.
 
