@@ -184,6 +184,120 @@ theorem exists_good_slope_abstract
     (h lam fun j hj => hS.2 lam
       (Finset.notMem_mono (Finset.subset_union_left) hlam) j hj)
 
+/--
+Finite bad-slope form of `exists_good_slope_abstract`.
+
+For the distinguished point `i₀`, all slopes that either fail to separate
+`i₀` from another point or make the projected coordinate Frobenius-fixed are
+contained in a finset of cardinality at most `n`.  Downstream counting can
+therefore avoid this finset while optimizing unrelated rational conditions
+such as the number of good chord intercepts.
+-/
+theorem exists_bad_slope_set_abstract
+    {p : ℕ} [hp : Fact (Nat.Prime p)]
+    {K : Type*} [Field K] [Algebra (ZMod p) K] [CharP K p]
+    {n : ℕ}
+    (x y : Fin n → K)
+    (i₀ : Fin n)
+    (hDistinct : ∀ j, j ≠ i₀ → (x j ≠ x i₀ ∨ y j ≠ y i₀))
+    (hNF : (x i₀) ^ p ≠ x i₀ ∨ (y i₀) ^ p ≠ y i₀) :
+    ∃ S : Finset (ZMod p), S.card ≤ n ∧
+      ∀ lam : ZMod p, lam ∉ S →
+        (∀ j, j ≠ i₀ →
+          y j - algebraMap (ZMod p) K lam * x j ≠
+          y i₀ - algebraMap (ZMod p) K lam * x i₀) ∧
+        (y i₀ - algebraMap (ZMod p) K lam * x i₀) ^ p ≠
+          y i₀ - algebraMap (ZMod p) K lam * x i₀ := by
+  have h_bad_slopes :
+      ∀ j : Fin n, j ≠ i₀ → ∃ Sj : Finset (ZMod p), Sj.card ≤ 1 ∧
+        ∀ lam : ZMod p, lam ∉ Sj →
+          y j - (algebraMap (ZMod p) K) lam * x j ≠
+            y i₀ - (algebraMap (ZMod p) K) lam * x i₀ := by
+    intro j hj
+    by_cases hx : x j = x i₀
+    · exact ⟨∅, by simp +decide, by specialize hDistinct j hj; aesop⟩
+    · have h_eq : ∀ lam₁ lam₂ : ZMod p,
+          y j - (algebraMap (ZMod p) K) lam₁ * x j =
+              y i₀ - (algebraMap (ZMod p) K) lam₁ * x i₀ →
+          y j - (algebraMap (ZMod p) K) lam₂ * x j =
+              y i₀ - (algebraMap (ZMod p) K) lam₂ * x i₀ →
+          lam₁ = lam₂ := by
+        intro lam₁ lam₂ h₁ h₂
+        have h_eq : (algebraMap (ZMod p) K) (lam₁ - lam₂) * (x j - x i₀) = 0 := by
+          grind
+        simp_all +decide [sub_eq_iff_eq_add]
+      by_cases h : ∃ lam : ZMod p,
+          y j - (algebraMap (ZMod p) K) lam * x j =
+            y i₀ - (algebraMap (ZMod p) K) lam * x i₀
+      · exact ⟨{h.choose}, by simp +decide, fun lam hl => fun hlam =>
+          hl <| Finset.mem_singleton.mpr <| h_eq _ _ hlam h.choose_spec⟩
+      · exact ⟨∅, by simp +decide, fun lam _ => fun hlam => h ⟨lam, hlam⟩⟩
+  obtain ⟨Ssep, hSsep_card, hSsep⟩ : ∃ S : Finset (ZMod p), S.card ≤ n - 1 ∧
+      ∀ lam : ZMod p, lam ∉ S → ∀ j : Fin n, j ≠ i₀ →
+        y j - (algebraMap (ZMod p) K) lam * x j ≠
+          y i₀ - (algebraMap (ZMod p) K) lam * x i₀ := by
+    choose! S hS₁ hS₂ using h_bad_slopes
+    refine' ⟨Finset.biUnion (Finset.univ.erase i₀) S, _, _⟩ <;>
+      simp_all +decide
+    exact le_trans (Finset.card_biUnion_le)
+      (le_trans (Finset.sum_le_sum fun j hj => hS₁ j (Finset.ne_of_mem_erase hj))
+        (by simp +decide [Finset.card_erase_of_mem (Finset.mem_univ i₀)]))
+  have h_bad_slope_nf : ∃ T : Finset (ZMod p), T.card ≤ 1 ∧
+      ∀ lam : ZMod p, lam ∉ T →
+        (y i₀ - (algebraMap (ZMod p) K) lam * x i₀) ^ p ≠
+          y i₀ - (algebraMap (ZMod p) K) lam * x i₀ := by
+    have hproj_fixed_linear : ∀ lam : ZMod p,
+        (y i₀ - (algebraMap (ZMod p) K) lam * x i₀) ^ p =
+            y i₀ - (algebraMap (ZMod p) K) lam * x i₀ →
+        (algebraMap (ZMod p) K) lam * (x i₀ ^ p - x i₀) =
+          y i₀ ^ p - y i₀ := by
+      intro lam hfix
+      have hpow_lam : (algebraMap (ZMod p) K) lam ^ p =
+          (algebraMap (ZMod p) K) lam := by rw [← map_pow, ZMod.pow_card]
+      have hfix' : y i₀ ^ p - (algebraMap (ZMod p) K) lam * x i₀ ^ p =
+          y i₀ - (algebraMap (ZMod p) K) lam * x i₀ := by
+        simpa [sub_pow_char, mul_pow, hpow_lam, mul_assoc, mul_comm, mul_left_comm] using hfix
+      calc (algebraMap (ZMod p) K) lam * (x i₀ ^ p - x i₀)
+          = (algebraMap (ZMod p) K) lam * x i₀ ^ p
+              - (algebraMap (ZMod p) K) lam * x i₀ := by ring
+        _ = y i₀ ^ p - y i₀ := by linear_combination -hfix'
+    by_cases hxi₀ : x i₀ ^ p = x i₀
+    · refine' ⟨∅, by simp +decide, ?_⟩
+      intro lam _ hfix
+      rcases hNF with hxNF | hyNF
+      · exact hxNF hxi₀
+      · apply hyNF
+        have hlin := hproj_fixed_linear lam hfix
+        rw [hxi₀, sub_self, mul_zero] at hlin
+        exact sub_eq_zero.mp hlin.symm
+    · by_cases hExists : ∃ lam₀ : ZMod p,
+          (y i₀ - (algebraMap (ZMod p) K) lam₀ * x i₀) ^ p =
+            y i₀ - (algebraMap (ZMod p) K) lam₀ * x i₀
+      · refine' ⟨{hExists.choose}, by simp +decide, ?_⟩
+        intro lam hlam hfix
+        have hlin := hproj_fixed_linear lam hfix
+        have hlin₀ := hproj_fixed_linear hExists.choose hExists.choose_spec
+        have hmap_eq : (algebraMap (ZMod p) K) lam =
+            (algebraMap (ZMod p) K) hExists.choose := by
+          apply mul_right_cancel₀ (sub_ne_zero_of_ne hxi₀)
+          rw [hlin, hlin₀]
+        exact hlam (Finset.mem_singleton.mpr ((algebraMap (ZMod p) K).injective hmap_eq))
+      · refine' ⟨∅, by simp +decide, ?_⟩
+        intro lam _ hfix
+        exact hExists ⟨lam, hfix⟩
+  obtain ⟨T, hT_card, hT⟩ := h_bad_slope_nf
+  refine ⟨Ssep ∪ T, ?_, ?_⟩
+  · calc (Ssep ∪ T).card
+        ≤ Ssep.card + T.card := Finset.card_union_le _ _
+      _ ≤ (n - 1) + 1 := Nat.add_le_add hSsep_card hT_card
+      _ ≤ n := by
+        have hnpos : 1 ≤ n := Fin.pos i₀
+        omega
+  · intro lam hlam
+    have hnotS : lam ∉ Ssep := Finset.notMem_mono (Finset.subset_union_left) hlam
+    have hnotT : lam ∉ T := Finset.notMem_mono (Finset.subset_union_right) hlam
+    exact ⟨hSsep lam hnotS, hT lam hnotT⟩
+
 /-!
 ## Two-family partial fractions
 

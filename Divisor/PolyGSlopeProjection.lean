@@ -405,6 +405,74 @@ theorem validPairs_le_six_sum_goodIntercepts :
   exact Finset.sum_le_sum
     (fun lam _ => pairsWithSlope_card_le_six_mul_goodIntercepts E lam)
 
+/-- Choose a slope with many good intercepts while avoiding an arbitrary
+finite set of forbidden slopes.
+
+This is the slope-counting primitive used by the Frobenius-descent branch:
+geometric bad slopes are supplied by a separate support/Frobenius argument,
+while this lemma only performs the aggregate pigeonhole over rational
+slopes. -/
+theorem exists_good_lambda_avoiding_bad
+    (bad : Finset (ZMod E.q))
+    (N : ℕ)
+    (hQuant : 6 * E.q * (N + bad.card) + 1 ≤ (validPairs E).card) :
+    ∃ lam : ZMod E.q, lam ∉ bad ∧ N ≤ (goodIntercepts E lam).card := by
+  classical
+  have hsum_ineq := validPairs_le_six_sum_goodIntercepts E
+  by_contra habsurd
+  push_neg at habsurd
+  have hcard_univ : (Finset.univ : Finset (ZMod E.q)).card = E.q := by
+    rw [Finset.card_univ, ZMod.card E.q]
+  set c := (Finset.univ \ bad : Finset (ZMod E.q)).card with hc_def
+  have hc_le_q : c ≤ E.q := by
+    rw [hc_def]; exact (Finset.card_le_univ _).trans (le_of_eq hcard_univ)
+  have hsum_bad :
+      ∑ lam ∈ bad, (goodIntercepts E lam).card ≤ bad.card * E.q := by
+    calc ∑ lam ∈ bad, (goodIntercepts E lam).card
+        ≤ ∑ _ ∈ bad, E.q := by
+          apply Finset.sum_le_sum
+          intro lam _
+          exact ((goodIntercepts E lam).card_le_univ).trans (le_of_eq hcard_univ)
+      _ = bad.card * E.q := by rw [Finset.sum_const, smul_eq_mul]
+  have hbound_notbad : ∀ lam ∈ Finset.univ \ bad,
+      (goodIntercepts E lam).card + 1 ≤ N := by
+    intro lam hlam
+    simp only [Finset.mem_sdiff, Finset.mem_univ, true_and] at hlam
+    exact habsurd lam hlam
+  have hsum_notbad_shifted :
+      (∑ lam ∈ Finset.univ \ bad, (goodIntercepts E lam).card) + c ≤ N * c := by
+    have hsum_add : ∑ lam ∈ Finset.univ \ bad, ((goodIntercepts E lam).card + 1)
+        ≤ ∑ _ ∈ Finset.univ \ bad, N := Finset.sum_le_sum hbound_notbad
+    rw [Finset.sum_add_distrib, Finset.sum_const, Finset.sum_const,
+        smul_eq_mul, smul_eq_mul, Nat.mul_one, Nat.mul_comm] at hsum_add
+    exact hsum_add
+  have hsum_split : ∑ lam : ZMod E.q, (goodIntercepts E lam).card =
+      (∑ lam ∈ bad, (goodIntercepts E lam).card) +
+      (∑ lam ∈ Finset.univ \ bad, (goodIntercepts E lam).card) := by
+    have : (∑ lam : ZMod E.q, (goodIntercepts E lam).card) =
+        ∑ lam ∈ (Finset.univ : Finset (ZMod E.q)), (goodIntercepts E lam).card := rfl
+    rw [this, ← Finset.sum_sdiff (Finset.subset_univ bad)]
+    ring
+  set T := ∑ lam : ZMod E.q, (goodIntercepts E lam).card
+  set Tbad := ∑ lam ∈ bad, (goodIntercepts E lam).card
+  set Tnb := ∑ lam ∈ Finset.univ \ bad, (goodIntercepts E lam).card
+  have hA : E.q * (N + bad.card) + 1 ≤ T := by
+    have h1 : 6 * E.q * (N + bad.card) + 1 ≤ 6 * T :=
+      hQuant.trans hsum_ineq
+    have h2 : 6 * (E.q * (N + bad.card)) + 1 ≤ 6 * T := by
+      rw [← Nat.mul_assoc]; exact h1
+    omega
+  have hB : E.q * N + 1 ≤ Tnb := by
+    have h1 : Tbad ≤ bad.card * E.q := hsum_bad
+    have h3 : E.q * (N + bad.card) =
+              E.q * N + E.q * bad.card := by ring
+    have h4 : E.q * bad.card = bad.card * E.q := by ring
+    omega
+  have hC : Tnb + c ≤ N * E.q :=
+    hsum_notbad_shifted.trans (Nat.mul_le_mul_left N hc_le_q)
+  have hmul : E.q * N = N * E.q := Nat.mul_comm _ _
+  omega
+
 /-- **existence lemma.** Given a "reference point set" `S`
     (in the T5 application: `S = range Q ∪ range R`) and a required
     lower bound `N` on realized chord-intercepts (in T5: `N = d + M`),
