@@ -8,12 +8,23 @@
   Expected closures on the geometric-zero skeleton branch:
 
   * `ma_extractable`, `ip_knowledge_sound`:
-      propext, sorryAx, Classical.choice, Divisor.hasse_weil, Quot.sound
+      propext, sorryAx, Classical.choice, Quot.sound,
+      Divisor.chord_fiber_product_bar_eq_geom_prod,
+      Divisor.chord_fiber_product_eq_normZ_under_split,
+      Divisor.chord_sum_eq_chord_fiber_product_logDeriv,
+      Divisor.hasse_weil,
+      Divisor.ordAt_divisor_isPrincipal,
+      Divisor.principal_divisor_iff
 
-    The `sorryAx` comes only from the named geometric obligations in
-    `Divisor/GeometricSoundness.lean`. In particular, the headline theorem
-    signatures no longer carry `hSplit : splitsOnE E D`. The `hasse_weil`
-    dependency comes from the geometric SZ bound on `E(F_q) × E(F_q)`.
+    The `sorryAx` is the Frobenius descent proof gap in
+    `Divisor/GeometricSoundness.lean` (the named geometric obligation),
+    NOT a hidden divisor-multiplicity / `divisor_group_sum_zero` axiom.
+    The headline theorem signatures no longer carry
+    `hSplit : splitsOnE E D`; the `splitsOnE` predicate now only gates
+    the multiplicity-accounting test below. `hasse_weil` comes from the
+    geometric SZ bound on `E(F_q) × E(F_q)`. The chord/log-deriv axioms
+    and the `ordAt`/`principal_divisor` pair come from the algebraic
+    bridge linking the chord-sum identity to the divisor formalism.
 
   * `ma_completeness`:
       propext, Classical.choice, Quot.sound,
@@ -26,7 +37,9 @@
 
   In particular: `Divisor.CoordRingElt.divisor_group_sum_zero` (the
   previously unsound axiom) is no longer reachable from any headline
-  theorem.
+  theorem, and `CoordRingElt.exists_divisor_multiplicity` is now
+  theorem-backed (no longer an axiom) with the strong-accounting and
+  group-sum-zero clauses gated on `splitsOnE`.
 -/
 import Divisor.ExtractorBridgeTheorems
 import Divisor.Soundness
