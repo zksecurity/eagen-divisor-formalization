@@ -43,3 +43,4 @@ import Divisor.GeomLocalOrder
 import Divisor.FrobDescentHelpers
 import Divisor.SlopeChoice
 import Divisor.GeometricSoundness
+import Divisor.Sketch.ChordFiberProductConcrete
