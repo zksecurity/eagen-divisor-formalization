@@ -74,7 +74,12 @@ this repository. The Aristotle queue is shared, so jobs observed via
   - Expected useful output: a complete proof of the narrowed theorem, or a
     smaller missing bridge connecting the bar-level residue identity to the
     one-variable partial-fraction form.
-  - Status: IN_PROGRESS at 21% when checked 2026-04-30.
+  - Status: COMPLETE_WITH_PROGRESS; inspected 2026-05-01. Archive adds a
+    fully proved `FrobDescentHelpers.isolated_coeff_zero_of_pf_sum` helper and
+    restructures `frob_descent_mult_zero_of_not_fixed` so the remaining gap is
+    only the bridge from the bar-level residue identity to the two-family
+    partial-fraction form plus enough rational evaluation points. Not yet
+    ported.
 - `d7bd9ece-b5cc-4f3f-ae23-81248eb02b5d`
   - Submitted: 2026-04-30
   - Target: finite-grid-to-polynomial identity bridge for the existing
@@ -85,7 +90,11 @@ this repository. The Aristotle queue is shared, so jobs observed via
     needed; do not touch the Frobenius descent job and do not add axioms.
   - Expected useful output: a compiling private theorem that instantiates
     `hExEToPoly`, or the weakest missing finite-grid/degree condition.
-  - Status: QUEUED when checked 2026-04-30.
+  - Status: COMPLETE_WITH_PROGRESS; inspected 2026-05-01. Archive adds
+    `Divisor.DensityBridge` with three sorry-free general density/curve
+    vanishing helpers and documents why the requested `hExEToPoly` bridge is
+    false for arbitrary polynomials. The specific `geomPolyGFull` bridge still
+    needs polynomial-division/curve-avoidance infrastructure. Not yet ported.
 - `43872498-d8b8-4837-9cb2-4d0a31a68fe8`
   - Submitted: 2026-04-30
   - Target: `Divisor.GeometricSoundness.gd_support_rational_of_hAllZero`
