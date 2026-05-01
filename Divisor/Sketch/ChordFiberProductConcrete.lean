@@ -494,6 +494,65 @@ theorem chord_fiber_product_concrete_ne_zero
     ring
   exact hμ (Finset.mem_image.mpr ⟨Q, hQ_mem, hμ_eq⟩)
 
+/-- **Support-level zero-locus bridge.** Over `Fqbar`, the base-changed
+concrete chord-fiber product vanishes at `μ` exactly when some
+geometric `D`-zero `Q ∈ gd.support` projects to `μ` under `zLambdaBar`.
+
+This is the multiplicity-free precursor to `bar_eq_geom_prod`: it pins
+down the *roots* of the polynomial set-theoretically without yet
+counting how many times each root appears. -/
+theorem chord_fiber_product_concrete_bar_eval_eq_zero_iff_support
+    (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) (μ : Fqbar E) :
+    Polynomial.eval μ
+        (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+          (chord_fiber_product_concrete E lam D)) = 0 ↔
+      ∃ Q ∈ gd.support, zLambdaBar E lam Q = μ := by
+  rw [chord_fiber_product_concrete_bar_eval_eq_prod,
+      Multiset.prod_eq_zero_iff, Multiset.mem_map]
+  constructor
+  · -- Forward: a vanishing factor lifts to a `D`-zero in `gd.support`.
+    rintro ⟨x, hx_root, hx_eq⟩
+    have hOnE :=
+      chordCubicBar_root_onCurve_of_mem_roots E lam μ x hx_root
+    set Q : GeomPoint E := ⟨x, fqToBar E lam * x + μ, hOnE⟩
+    have hQzero : D.geomEval E Q = 0 := by
+      rw [← DLineBar_eval_eq_geomEval E lam D μ x hOnE]
+      exact hx_eq
+    refine ⟨Q, gd.eval_zero_mem_support Q hQzero, ?_⟩
+    show (fqToBar E lam * x + μ) - fqToBar E lam * x = μ
+    ring
+  · -- Reverse: a support point `Q` with `zLambdaBar lam Q = μ` makes `Q.x`
+    -- a chord cubic root with vanishing `D`-on-line factor.
+    rintro ⟨Q, hQ_mem, hQ_proj⟩
+    -- From `zLambdaBar Q = μ`: `Q.y = λ̄ Q.x + μ`.
+    have hQy : Q.y = fqToBar E lam * Q.x + μ := by
+      have hzL : Q.y - fqToBar E lam * Q.x = μ := hQ_proj
+      linear_combination hzL
+    -- Q.x is a root of `chordCubicBar lam μ`.
+    have hRootEval : (chordCubicBar E lam μ).eval Q.x = 0 := by
+      rw [chordCubicBar_eval_eq_nonzero_aux]
+      have hQc := Q.onCurve
+      linear_combination -hQc + (Q.y + fqToBar E lam * Q.x + μ) * hQy
+    have hCubicNz : chordCubicBar E lam μ ≠ 0 := by
+      intro h
+      have h3 : (chordCubicBar E lam μ).natDegree = 3 := chordCubicBar_natDegree E lam μ
+      rw [h, Polynomial.natDegree_zero] at h3
+      exact absurd h3 (by decide)
+    have hRootMem : Q.x ∈ (chordCubicBar E lam μ).roots :=
+      (Polynomial.mem_roots'.mpr ⟨hCubicNz, hRootEval⟩)
+    refine ⟨Q.x, hRootMem, ?_⟩
+    -- (DLineBar lam D μ).eval Q.x = D.geomEval E Q (with `Q.y = λ̄Q.x + μ`).
+    have hQ_eq_lifted : Q = ⟨Q.x, fqToBar E lam * Q.x + μ,
+        hQy ▸ Q.onCurve⟩ := by
+      rcases Q with ⟨qx, qy, qc⟩
+      simp only at hQy
+      simp [hQy]
+    rw [DLineBar_eval_eq_geomEval E lam D μ Q.x (hQy ▸ Q.onCurve)]
+    rw [← hQ_eq_lifted]
+    exact gd.support_eval_zero Q hQ_mem
+
 /-- **Bar-level factored form** (replacement of
 `chord_fiber_product_bar_eq_geom_prod`).
 
