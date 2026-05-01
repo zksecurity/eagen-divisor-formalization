@@ -553,6 +553,28 @@ theorem chord_fiber_product_concrete_bar_eval_eq_zero_iff_support
     rw [← hQ_eq_lifted]
     exact gd.support_eval_zero Q hQ_mem
 
+/-- The root set of the base-changed concrete chord-fiber product is exactly
+the image of the geometric `D`-zero support under `zLambdaBar`. -/
+theorem chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image
+    [DecidableEq (Fqbar E)]
+    (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) :
+    (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+        (chord_fiber_product_concrete E lam D)).roots.toFinset =
+      gd.support.image (zLambdaBar E lam) := by
+  classical
+  ext μ
+  rw [Multiset.mem_toFinset]
+  rw [Polynomial.mem_roots
+    (Polynomial.map_ne_zero (chord_fiber_product_concrete_ne_zero E lam D hD))]
+  change Polynomial.eval μ
+      (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+        (chord_fiber_product_concrete E lam D)) = 0 ↔
+    μ ∈ gd.support.image (zLambdaBar E lam)
+  rw [chord_fiber_product_concrete_bar_eval_eq_zero_iff_support E lam D hD gd μ]
+  exact Iff.symm Finset.mem_image
+
 /-- **Bar-level factored form** (replacement of
 `chord_fiber_product_bar_eq_geom_prod`).
 
