@@ -1,7 +1,6 @@
 # Concrete `chord_fiber_product`: prototype + assessment
 
-Branch: `worker-2/chord-fiber-product`
-Worktree: `/tmp/divisors-worker-2-chord` (off `geom-polyG-skeleton` @ `47737e4`)
+Branch: `geom-polyG-skeleton`
 Sketch file: `Divisor/Sketch/ChordFiberProductConcrete.lean`
 
 ## Current state
@@ -60,7 +59,7 @@ The sketch file states each obligation as a `theorem … := by sorry`.
 | 2 | `chord_fiber_product_concrete_eval_eq_prod_split` | **Plumbing** | Direct `Polynomial.resultant_eq_prod_eval`; chord cubic is monic (LC = 1). Requires the `Splits` hypothesis. |
 | 3a | `chord_fiber_product_concrete_bar_eval` | **Plumbing** | Base-change the resultant to `Fqbar`, then specialise the intercept `μ`. This is two `resultant_map_map` applications. |
 | 3b | `chord_fiber_product_concrete_bar_eval_eq_prod` | **Plumbing** | Same as 2 over `Fqbar`, where `Splits` is automatic, using 3a as the input. |
-| 4 | `chord_fiber_product_concrete_ne_zero` | **Medium math** | Need: ∃ `μ` (over `Fqbar` is fine) with chord cubic squarefree, no chord root sent to a `D`-zero on the chord line. Hasse-Weil + finiteness of `D`-zeros, similar in flavour to the existing `chord_fiber_product_ne_zero` derivation. |
+| 4 | `chord_fiber_product_concrete_ne_zero` | **Done** | Proved by evaluating over `Fqbar`, choosing an intercept outside the finite set `gd.support.image (zLambdaBar E lam)`, and using the resultant product formula. |
 | 5 | `chord_fiber_product_concrete_bar_eq_geom_prod` | **Hard math (deepest)** | The divisor-of-norm identity `div(N(D)) = π_*(div D)` for the chord projection. Needs the link `mult_at_μ (resultant) = ∑_{Q : zLambdaBar Q = μ} gd.mult Q`, i.e., per-place inertial degree of the chord cover. Project's existing `geomLocalOrder` and `IsGeometricZeroMultiplicity` give one direction; the multiplicity-summing direction needs new machinery. **No mathlib analogue.** |
 | 6 | `chord_fiber_product_concrete_eq_normZ_under_split` | **Plumbing** | Once obligation 5 is in hand, this is a "match factored forms over `Fqbar`, scalar descends to `ZMod E.q`" argument. |
 | 7 | `chord_fiber_product_concrete_logDeriv` | **Medium math** | Logarithmic derivative of `∏_i D(x_i(μ), λx_i(μ) + μ)` via product rule + implicit-function differentiation of the chord cubic. The cancellation that produces the `logDerivTerm` formula is the substantive step; `hDen` rules out the cusp where the implicit-function argument fails. Mathlib has `Polynomial.derivative_*` and `aeval` machinery for the formal-derivative side; the chain rule is `Polynomial.derivative_comp` plus algebra. |
@@ -70,7 +69,7 @@ The sketch file states each obligation as a `theorem … := by sorry`.
 **Pure plumbing (would land within a session each, given the right mathlib
 identifiers):** 1, 2, 3a, 3b, 6.
 
-**Medium math (sketchable in 1–2 days, with care):** 4, 7.
+**Medium math (sketchable in 1–2 days, with care):** 7.
 
 **Hard math (the actual proof obligation, needs new infra):** 5.
 
@@ -100,9 +99,8 @@ Both halves use only finite-field algebraic geometry; nothing transcendental.
 1. Land the sketch file `Divisor/Sketch/ChordFiberProductConcrete.lean` (compiles
    with the remaining sketch sorries — ~90 minutes of mathlib-API alignment).
 2. Discharge obligations 1, 2, 3a, 3b (plumbing only; resultant_map_map +
-   resultant_eq_prod_eval) — **half a day**.
-3. Discharge obligation 4 via `bar_eval_eq_prod` at a generic `μ` — **half a
-   day**.
+   resultant_eq_prod_eval) — **done**.
+3. Discharge obligation 4 via `bar_eval_eq_prod` at a generic `μ` — **done**.
 4. Discharge obligation 7 via product-rule + implicit-function chain — **1–2
    days** (with care around the cusp / non-degeneracy).
 5. Discharge obligation 5 — **3–5 days** (the new infra: per-place
@@ -137,7 +135,7 @@ collapses from "three axioms + opaque" to "one axiom + concrete definition".
 
 ## Sketch file build status
 
-`lake build Divisor.Sketch.ChordFiberProductConcrete` **passes** (8053 jobs).
+`lake build Divisor.Sketch.ChordFiberProductConcrete` **passes**.
 
 Discharge progress:
 * **Obligation 1 (`chord_fiber_product_concrete_eval`): DONE.** Discharge via
@@ -154,18 +152,23 @@ Discharge progress:
   Discharge via `Polynomial.resultant_eq_prod_eval` over `Fqbar E`, using
   `IsAlgClosed.splits` plus degree/leading-coefficient lemmas for
   `chordCubicBar`.
-* Obligations 4, 5, 6, 7: still `sorry`.
+* **Obligation 4 (`chord_fiber_product_concrete_ne_zero`): DONE.**
+  Discharged by the finite-bad-intercept argument over `Fqbar E`, using
+  `exists_geometric_zero_support`, `exists_geometricDivisorData_of_support`,
+  `Infinite.exists_notMem_finset`, and
+  `chord_fiber_product_concrete_bar_eval_eq_prod`.
+* Obligations 5, 6, 7: still `sorry`.
 
-Next planned: obligation 4 (non-vanishing via a generic-`μ` argument),
-obligation 6 (factored-forms-match descent — depends on 5).
+Next planned: support-level zero-locus bridge for obligation 5, then obligation
+6 (factored-forms-match descent — depends on 5).
 
 ## Summary for codex
 
 * Concrete candidate: **resultant of chord cubic against D-on-line lift**
   (well-posed, mathlib-friendly).
 * 7 top-level obligations are stated, with obligation 3 split into two
-  plumbing lemmas; 5 line-items are plumbing, 2 are medium math, and **1 is
-  the genuine new mathematics** (`bar_eq_geom_prod`).
+  plumbing lemmas; only obligations 5, 6, and 7 remain. Obligation 5 is the
+  genuine new mathematics (`bar_eq_geom_prod`).
 * If the project keeps the new mathematics axiomatic, the construction
   collapses to **one axiom + concrete definition** (vs the current three
   axioms + opaque), which is a clean reduction in surface area.
