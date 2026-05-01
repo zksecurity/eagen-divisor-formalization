@@ -16,8 +16,8 @@
 
   This file provides a **concrete candidate** built from `mathlib`'s
   `Polynomial.resultant`, restated as the resultant in the chord
-  x-variable of the chord cubic and the D-on-line polynomial. Each of
-  the four downstream obligations is restated against the concrete
+  x-variable of the chord cubic and the D-on-line polynomial. Each
+  downstream obligation is restated against the concrete
   candidate as a `theorem … := by sorry`. The accompanying note
   `docs/chord-fiber-product-concrete-sketch.md` categorises each sorry
   as plumbing or genuine mathematics.
@@ -76,6 +76,36 @@ noncomputable def DLineBiv (lam : ZMod E.q) (D : CoordRingElt E.q) :
     - D.b.map Polynomial.C *
         (Polynomial.C (Polynomial.C lam) * Polynomial.X
           + Polynomial.C Polynomial.X)
+
+/-- Coefficient base-change for the inner polynomial ring from `F_q` to
+`F_qbar`. -/
+private noncomputable abbrev toBarPolyHom :
+    Polynomial (ZMod E.q) →+* Polynomial (Fqbar E) :=
+  Polynomial.mapRingHom (algebraMap (ZMod E.q) (Fqbar E))
+
+/-- The bivariate chord cubic after coefficient base-change to
+`F_qbar[Z][X]`. -/
+noncomputable def chordCubicBivBar (lam : ZMod E.q) :
+    Polynomial (Polynomial (Fqbar E)) :=
+  (chordCubicBiv E lam).map (toBarPolyHom E)
+
+/-- The bivariate D-on-line polynomial after coefficient base-change to
+`F_qbar[Z][X]`. -/
+noncomputable def DLineBivBar (lam : ZMod E.q) (D : CoordRingElt E.q) :
+    Polynomial (Polynomial (Fqbar E)) :=
+  (DLineBiv E lam D).map (toBarPolyHom E)
+
+/-- The chord cubic over `F_qbar` after specialising the intercept
+variable to `μ`. -/
+noncomputable def chordCubicBar (lam : ZMod E.q) (μ : Fqbar E) :
+    Polynomial (Fqbar E) :=
+  (chordCubicBivBar E lam).map (Polynomial.evalRingHom μ)
+
+/-- The D-on-line polynomial over `F_qbar` after specialising the
+intercept variable to `μ`. -/
+noncomputable def DLineBar (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (μ : Fqbar E) : Polynomial (Fqbar E) :=
+  (DLineBivBar E lam D).map (Polynomial.evalRingHom μ)
 
 /-- **Concrete chord-fiber-product candidate.** The X-resultant of the
 chord cubic and the D-on-line lift, viewed as a polynomial in the
@@ -216,6 +246,62 @@ private lemma DLine_specialized_natDegree_le (lam μ : ZMod E.q)
   rw [← DLineBiv_map_evalRingHom E lam μ D]
   exact Polynomial.natDegree_map_le
 
+/-- The coefficient of `X^3` in the base-changed/specialised chord cubic is
+one. -/
+private lemma chordCubicBar_coeff_three (lam : ZMod E.q) (μ : Fqbar E) :
+    (chordCubicBar E lam μ).coeff 3 = 1 := by
+  unfold chordCubicBar chordCubicBivBar chordCubicBiv toBarPolyHom
+  simp [Polynomial.coeff_add, Polynomial.coeff_sub, Polynomial.coeff_X_pow]
+  rw [show
+      ((Polynomial.C ((algebraMap (ZMod E.q) (Fqbar E)) lam) ^ 2 *
+          Polynomial.X ^ 2 : Polynomial (Fqbar E)).coeff 3) = 0 by
+        rw [show 3 = 1 + 2 by norm_num]
+        rw [Polynomial.coeff_mul_X_pow]
+        rw [← Polynomial.C_pow]
+        rw [Polynomial.coeff_C]
+        norm_num]
+  rw [show (((Polynomial.C μ : Polynomial (Fqbar E)) ^ 2).coeff 3) = 0 by
+        rw [← Polynomial.C_pow]
+        rw [Polynomial.coeff_C]
+        norm_num]
+  ring
+
+/-- The base-changed/specialised chord cubic has natDegree 3. -/
+private lemma chordCubicBar_natDegree (lam : ZMod E.q) (μ : Fqbar E) :
+    (chordCubicBar E lam μ).natDegree = 3 := by
+  refine le_antisymm ?_ ?_
+  · calc
+      (chordCubicBar E lam μ).natDegree
+          ≤ (chordCubicBivBar E lam).natDegree := by
+            unfold chordCubicBar
+            exact Polynomial.natDegree_map_le
+      _ ≤ (chordCubicBiv E lam).natDegree := by
+            unfold chordCubicBivBar
+            exact Polynomial.natDegree_map_le
+      _ = 3 := chordCubicBiv_natDegree E lam
+  · refine Polynomial.le_natDegree_of_ne_zero ?_
+    rw [chordCubicBar_coeff_three]
+    norm_num
+
+/-- The base-changed/specialised chord cubic is monic. -/
+private lemma chordCubicBar_leadingCoeff (lam : ZMod E.q) (μ : Fqbar E) :
+    (chordCubicBar E lam μ).leadingCoeff = 1 := by
+  rw [Polynomial.leadingCoeff, chordCubicBar_natDegree,
+      chordCubicBar_coeff_three]
+
+/-- Base-changing and specialising `DLineBiv` cannot raise the natDegree. -/
+private lemma DLineBar_natDegree_le (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (μ : Fqbar E) :
+    (DLineBar E lam D μ).natDegree ≤ (DLineBiv E lam D).natDegree := by
+  calc
+    (DLineBar E lam D μ).natDegree
+        ≤ (DLineBivBar E lam D).natDegree := by
+          unfold DLineBar
+          exact Polynomial.natDegree_map_le
+    _ ≤ (DLineBiv E lam D).natDegree := by
+          unfold DLineBivBar
+          exact Polynomial.natDegree_map_le
+
 /-- Resultant-as-product: when the chord cubic at `μ` splits, the
 specialised resultant equals the product of `D`-on-line evaluations at
 each chord root.
@@ -243,22 +329,60 @@ theorem chord_fiber_product_concrete_eval_eq_prod_split
   simp [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_add,
         Polynomial.eval_C, Polynomial.eval_X, CoordRingElt.eval]
 
-/-- Bar-level evaluation specialisation. Same as above but over `Fqbar E`,
-where the chord cubic always splits (algebraically closed). -/
+/-- Bar-level specialisation: evaluating the base-changed concrete
+chord-fiber product at `μ : F_qbar` is the resultant of the base-changed
+and specialised chord cubic against the specialised D-on-line polynomial. -/
+theorem chord_fiber_product_concrete_bar_eval
+    (lam : ZMod E.q) (D : CoordRingElt E.q) (μ : Fqbar E) :
+    Polynomial.eval μ
+        (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+          (chord_fiber_product_concrete E lam D))
+      =
+        Polynomial.resultant (chordCubicBar E lam μ) (DLineBar E lam D μ)
+          (chordCubicBiv E lam).natDegree
+          (DLineBiv E lam D).natDegree := by
+  unfold chord_fiber_product_concrete chordCubicBar DLineBar
+    chordCubicBivBar DLineBivBar
+  rw [show Polynomial.eval μ
+        (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+          (Polynomial.resultant (chordCubicBiv E lam) (DLineBiv E lam D)
+            (chordCubicBiv E lam).natDegree
+            (DLineBiv E lam D).natDegree))
+      =
+        (Polynomial.evalRingHom μ)
+          ((Polynomial.mapRingHom (algebraMap (ZMod E.q) (Fqbar E)))
+            (Polynomial.resultant (chordCubicBiv E lam) (DLineBiv E lam D)
+              (chordCubicBiv E lam).natDegree
+              (DLineBiv E lam D).natDegree)) by
+      rw [Polynomial.coe_evalRingHom, Polynomial.coe_mapRingHom]]
+  rw [← Polynomial.resultant_map_map
+    (φ := Polynomial.mapRingHom (algebraMap (ZMod E.q) (Fqbar E)))
+    (f := chordCubicBiv E lam) (g := DLineBiv E lam D)
+    (m := (chordCubicBiv E lam).natDegree) (n := (DLineBiv E lam D).natDegree)]
+  rw [← Polynomial.resultant_map_map
+    (φ := Polynomial.evalRingHom μ)
+    (f := (chordCubicBiv E lam).map (toBarPolyHom E))
+    (g := (DLineBiv E lam D).map (toBarPolyHom E))
+    (m := (chordCubicBiv E lam).natDegree) (n := (DLineBiv E lam D).natDegree)]
+
+/-- Bar-level resultant-as-product. Same as
+`chord_fiber_product_concrete_eval_eq_prod_split`, but over `Fqbar E`,
+where the specialised chord cubic splits automatically. -/
 theorem chord_fiber_product_concrete_bar_eval_eq_prod
     (lam : ZMod E.q) (D : CoordRingElt E.q) (μ : Fqbar E) :
     Polynomial.eval μ
         (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
           (chord_fiber_product_concrete E lam D))
       =
-        ((Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
-            (Divisor.intersectionPoly E lam (0 : ZMod E.q)) -- placeholder,
-            -- conceptually: chord cubic at μ — but μ ∈ Fqbar so we
-            -- need a slightly different specialisation route via
-            -- coefficient base-change first.
-            ).roots.map
-          (fun _ => (1 : Fqbar E))).prod := by
-  sorry
+        ((chordCubicBar E lam μ).roots.map
+          fun x => (DLineBar E lam D μ).eval x).prod := by
+  rw [chord_fiber_product_concrete_bar_eval E lam D μ]
+  rw [show (chordCubicBiv E lam).natDegree = (chordCubicBar E lam μ).natDegree by
+        rw [chordCubicBiv_natDegree, chordCubicBar_natDegree]]
+  have hSplit : (chordCubicBar E lam μ).Splits := IsAlgClosed.splits _
+  rw [Polynomial.resultant_eq_prod_eval _ _ _
+        (DLineBar_natDegree_le E lam D μ) hSplit,
+      chordCubicBar_leadingCoeff, one_pow, one_mul]
 
 /-- **Non-vanishing.** The candidate is nonzero whenever `D` is.
 
