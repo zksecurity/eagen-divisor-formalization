@@ -16,7 +16,8 @@
   * Proves all support / coverage / sum bounds and the splitting-time
     `Σ ordAt = natDeg(normPoly)` identity from primitives.
   * Reduces the function-field / regular-function content to a
-    single explicit axiom `ordAt_divisor_isPrincipal` (Section 7).
+    single explicit class-group axiom `ordAt_divisorClass_zero`
+    (Section 7).
 
   Layout:
 
@@ -32,15 +33,13 @@
                  induction on the recursive helper.
     Section 5:   `sum_ordAt_le_degE` (unconditional).
     Section 6:   `sum_ordAt_eq_natDegree_under_split` (proved).
-    Section 7:   `divisorOfD` definition + the principal-divisor
-                 bridge axiom + `ordAt_group_sum_zero_under_split`
-                 (derived from the bridge axiom +
-                 `principal_divisor_iff`).
+    Section 7:   `divisorOfD` definition + the class-group bridge
+                 axiom + `ordAt_group_sum_zero_under_split`.
     Section 8:   `exists_divisor_multiplicity_proved` — discharges
                  the existential axiom with witness `ordAt E D`.
 
   Axiomatic surface introduced by this file: exactly one axiom,
-  `ordAt_divisor_isPrincipal` (the principal-divisor bridge for the
+  `ordAt_divisorClass_zero` (the concrete class-group bridge for the
   specific divisor `divisorOfD E D`).  See its docstring for the full
   scope and a comparison with `exists_divisor_multiplicity` (which it
   replaces — and is strictly weaker than).
@@ -49,7 +48,7 @@
   (principal divisor characterisation / Abel's theorem).
 -/
 import Divisor.OrdP.Uniformizer
-import Divisor.Axioms.AxiomPrincipalDivisorIff
+import Divisor.OrdP.PrincipalClass
 import Divisor.SplitsOnE
 
 open Polynomial Finset
@@ -782,7 +781,7 @@ theorem sum_ordAt_eq_natDegree_under_split
   rw [sum_rootMultiplicity_eq_card_roots]
   exact hSplit.1
 
-/-! ## Section 7: group-sum-zero (Obligation C + Abel via principal_divisor_iff) -/
+/-! ## Section 7: group-sum-zero (Obligation C via the class group) -/
 
 /-- The integer-valued divisor associated to a nonzero `D` on `E`:
     `Σ ordAt(D, P)·(P) − natDeg(N(D))·(O)` viewed as a function
@@ -790,7 +789,7 @@ theorem sum_ordAt_eq_natDegree_under_split
     `sum_ordAt_eq_natDegree_under_split` under splitsOnE; the
     unconditional total can differ when N(D) doesn't split).
 
-    Defined here so we can phrase IsPrincipal of the divisor of D
+    Defined here so we can phrase the class of the divisor of D
     cleanly. -/
 noncomputable def divisorOfD (D : CoordRingElt E.q) :
     ECPoint E → ℤ := by
@@ -802,82 +801,6 @@ noncomputable def divisorOfD (D : CoordRingElt E.q) :
         -((normPoly E D).natDegree : ℤ)
     | WeierstrassCurve.Affine.Point.some (x := x) (y := y) _ =>
         (ordAt E D (x, y) : ℤ)
-
-/-- **Principal-divisor bridge axiom.**
-
-    The divisor of `D = a − b·y ∈ F_q[E]^×`,
-      `Σ_P ord_P(D) · (P) − natDeg(N(D)) · (∞)`,
-    is principal — witnessed by `D` itself viewed as an element of the
-    function field `F_q(E)`.
-
-    The `splitsOnE` precondition is essential: without splitting, some
-    geometric divisor mass lies on non-F_q-rational points, and the
-    F_q-restricted `divisorOfD` cannot be principal (its degree is
-    `-natDeg + Σ ordAt`, which equals zero only under splitting, by
-    `sum_ordAt_eq_natDegree_under_split`).
-
-    ## Why this is an axiom and not a theorem
-
-    `IsPrincipal` is opaque (`Divisor/DefsPre.lean`).  The codebase
-    exposes only one fact about it: `principal_divisor_iff`, which
-    relates `IsPrincipal` to `(deg = 0 ∧ group_sum = 0)`.  That
-    biconditional is itself an axiom.
-
-    Every direct attempt to discharge `ordAt_divisor_isPrincipal` is
-    circular within the current API:
-    * `principal_divisor_iff.mp` requires `IsPrincipal` as input;
-    * `principal_divisor_iff.mpr` requires `group_sum = 0`, which is
-      exactly what we want to derive downstream from this bridge;
-    * `CoordRingElt.has_principal_divisor` packages an existential
-      `β` whose group-sum-zero is the original axiom we are
-      discharging.
-
-    Closing the loop requires the regular-function/divisor bridge for
-    elliptic curves, which Mathlib does not currently provide at the
-    `ECPoint`-level abstraction.
-
-    ## This is *not* `exists_divisor_multiplicity` in disguise
-
-    `exists_divisor_multiplicity` bundles five clauses:
-      (i)   `β` exists with support on F_q-rational `D`-zeros;
-      (ii)  `β` covers every F_q-rational `D`-zero;
-      (iii) `Σ β ≤ D.degE` (unconditional);
-      (iv)  `Σ β = (normPoly E D).natDegree` under splitting;
-      (v)   group-sum-zero of `β` under splitting.
-
-    This axiom supplies *only* the principal-divisor bridge for the
-    specific witness `divisorOfD E D` (with `β = ordAt E D`).
-    Clauses (i)–(iv) are fully **proved** from the redesigned
-    `ordAt`:
-    * (i), (ii) follow from `ordAt_pos_iff_zero`,
-      `ordAt_eq_zero_offE` (Section 1–2 above);
-    * (iii) is `sum_ordAt_le_degE`;
-    * (iv) is `sum_ordAt_eq_natDegree_under_split` (modulo the
-      proved Obligations A and B above).
-    Clause (v) is derived from this axiom + the (axiomatic)
-    `principal_divisor_iff` in `ordAt_group_sum_zero_under_split`.
-
-    So the axiomatic content is strictly weaker: a single algebraic
-    fact about regular functions on E, in place of a packaged
-    existential with five clauses.
-
-    ## Long-term cleanup
-
-    Replacing both this axiom and `principal_divisor_iff` with proved
-    theorems requires formalising:
-    * `F_q(E)` as the fraction field of the coordinate ring;
-    * the DVR structure of the local ring at each smooth affine point;
-    * the divisor map `div : F_q(E)^× → (ECPoint E → ℤ)`;
-    * `IsPrincipal` as `∃ f ∈ F_q(E)^×, div(f) = coeffs`;
-    * compatibility of the recursive `ordAt` here with the abstract
-      DVR valuation.
-    Estimated ~2–3 weeks of focused Mathlib-level work.  Tracked as
-    an explicit follow-up; until then, this axiom is the honest
-    minimal seam. -/
-axiom ordAt_divisor_isPrincipal
-    (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (_hSplit : splitsOnE E D) :
-    IsPrincipal E (divisorOfD E D)
 
 /-- The divisor `divisorOfD` has finite support (covered by
     `E.points` lifted to `ECPoint` via `affine`, plus the point at
@@ -905,6 +828,26 @@ theorem divisorOfD_finiteSupport
       refine ⟨(x, y), hMem, ?_⟩
       -- Need ECPoint.affine E x y = ECPoint.some hns.
       exact ECPoint.affine_of_nonsingular E hns
+
+/-- **Class-group bridge axiom.**
+
+    The divisor of `D = a - b*y ∈ F_q[E]^×`,
+      `Σ_P ord_P(D) · (P) - natDeg(N(D)) · (∞)`,
+    has trivial class in mathlib's elliptic-curve class group, provided
+    all geometric divisor mass is visible over `F_q`.
+
+    This is the only function-field bridge retained in this file.  It
+    is narrower than the old `ordAt_divisor_isPrincipal` +
+    `principal_divisor_iff` pair: downstream code needs only the zero
+    class of this concrete divisor, and `PrincipalClass.lean` proves the
+    required group-sum-zero consequence from mathlib's `Point.toClass`
+    API.  The support proof is an explicit argument so `divisorClass`
+    does not depend on proof-irrelevance gymnastics at call sites. -/
+axiom ordAt_divisorClass_zero
+    (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (_hSplit : splitsOnE E D)
+    (hFinSup : Set.Finite (Function.support (divisorOfD E D))) :
+    divisorClass E (divisorOfD E D) hFinSup = 0
 
 /-! ### Bridging helpers for the group-sum proof.
 
@@ -1008,15 +951,15 @@ theorem ordAt_group_sum_zero_under_split
       (fun P => ECPoint.nsmul E (ordAt E D P)
                     (ECPoint.affine E P.1 P.2)) = 0 := by
   classical
-  -- Step 1: `divisorOfD E D` is principal (uses splitsOnE).
-  have hPrin : IsPrincipal E (divisorOfD E D) :=
-    ordAt_divisor_isPrincipal E D hD hSplit
   have hFinSup : Set.Finite (Function.support (divisorOfD E D)) :=
     divisorOfD_finiteSupport E D
-  -- Step 2: principal_divisor_iff gives Σ_supp zsmul(coeff)·P = 0.
+  -- Step 1: the concrete divisor has trivial class (uses splitsOnE).
+  have hClassZero : divisorClass E (divisorOfD E D) hFinSup = 0 :=
+    ordAt_divisorClass_zero E D hD hSplit hFinSup
+  -- Step 2: mathlib's `Point.toClass` API gives Σ_supp zsmul(coeff)·P = 0.
   have hSumZero : ECPoint.weightedSum E hFinSup.toFinset
         (fun P => ECPoint.zsmul E (divisorOfD E D P) P) = 0 :=
-    ((principal_divisor_iff E (divisorOfD E D) hFinSup).mp hPrin).2
+    weightedSum_zero_of_divisorClass_zero E (divisorOfD E D) hFinSup hClassZero
   -- Step 3: extend to the cover (outside support, divisorOfD = 0 ⇒ zsmul = 0).
   have hSubFS : hFinSup.toFinset ⊆ divisorOfD_cover E := by
     intro P hP

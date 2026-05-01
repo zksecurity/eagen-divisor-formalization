@@ -28,8 +28,8 @@
 
   Phase-1 plan (now realised): this existence statement is no longer
   asserted as an axiom but proved as a theorem with witness
-  `ordAt E D`, derived from the narrower principal-divisor bridge
-  axiom `ordAt_divisor_isPrincipal`. The theorem
+  `ordAt E D`, derived from the narrower class-group bridge
+  axiom `ordAt_divisorClass_zero`. The theorem
   `Divisor.exists_divisor_multiplicity_proved` lives in
   `Divisor/OrdP/LocalRing.lean`; this file re-exports it under the
   legacy name `CoordRingElt.exists_divisor_multiplicity` so that
@@ -63,8 +63,8 @@ variable (E : ECSetup)
 
     Proved via `exists_divisor_multiplicity_proved` (witness
     `ordAt E D`); the only remaining axiom in the dependency closure
-    of this statement is `ordAt_divisor_isPrincipal` (the narrower
-    principal-divisor bridge for `divisorOfD E D`). -/
+    of this statement is `ordAt_divisorClass_zero` (the narrower
+    class-group bridge for `divisorOfD E D`). -/
 theorem CoordRingElt.exists_divisor_multiplicity
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     ∃ β : ZMod E.q × ZMod E.q → ℕ,

@@ -4,6 +4,13 @@ Investigation of replacing the `ordAt_divisor_isPrincipal` /
 `principal_divisor_iff` axiom pair with concrete content. Branch:
 `worker-4/isprincipal-investigation`.
 
+Update: Stage A has landed in `Divisor/OrdP/PrincipalClass.lean`.
+`Divisor/OrdP/LocalRing.lean` no longer consumes
+`ordAt_divisor_isPrincipal` or `principal_divisor_iff` for
+`ordAt_group_sum_zero_under_split`; it assumes the narrower
+`ordAt_divisorClass_zero` axiom and derives group-sum-zero through
+mathlib's `Point.toClass_eq_zero`.
+
 ## What the two axioms produce, jointly
 
 The codebase consumes the pair through a single endpoint:
@@ -17,7 +24,7 @@ ECPoint.weightedSum E E.points
   (fun P => ECPoint.nsmul E (ordAt E D P) (ECPoint.affine E P.1 P.2)) = 0
 ```
 
-The current proof chain is:
+The old proof chain was:
 
 1. `ordAt_divisor_isPrincipal E D _ _ : IsPrincipal E (divisorOfD E D)`
    (axiom — opaque target).
@@ -145,7 +152,7 @@ concrete mathlib language (a `Finset.sum` in
 
 ### Genuine algebraic-geometry formalisation (~2-3 weeks, see comment block in `Divisor/OrdP/LocalRing.lean:864`)
 
-* The replacement axiom `ordAt_divisor_classZero E D ... : divisorClass E (divisorOfD E D) _ = 0`
+* The replacement axiom `ordAt_divisorClass_zero E D ... : divisorClass E (divisorOfD E D) _ = 0`
   is **the mathematical content**. Discharging it as a theorem
   requires:
   1. Showing the project's recursive `ordAt` (defined via
@@ -177,12 +184,13 @@ concrete mathlib language (a `Finset.sum` in
 
 ## Sufficiency for `ma_extractable` / `ip_knowledge_sound`
 
-The headline path consumes `ordAt_divisor_isPrincipal` and
+The headline path used to consume `ordAt_divisor_isPrincipal` and
 `principal_divisor_iff` exclusively through
 `ordAt_group_sum_zero_under_split` (clause (v) of
-`exists_divisor_multiplicity_proved`). The replacement
-`ordAt_divisor_classZero` plus the iff-theorem produces the same
-conclusion via the same chain; no headline-theorem statement changes.
+`exists_divisor_multiplicity_proved`). The landed replacement
+`ordAt_divisorClass_zero` produces the same conclusion via
+`weightedSum_zero_of_divisorClass_zero`; no headline-theorem statement
+changes.
 
 `Divisor/DivisorPrincipal.lean`'s use of `principal_divisor_iff.mpr`
 in `IsPrincipal_dCoeffs_of_β` becomes an `Iff.mpr` of the proved
@@ -192,21 +200,17 @@ biconditional and is mechanical to update.
 
 Two-stage plan:
 
-**Stage A — plumbing (1-3 days).**  Land the concrete `IsPrincipal'`
-+ the iff-theorem in a side module
-(`Divisor/OrdP/IsPrincipalSkeleton.lean`, see the companion file in
-this branch). Keep the existing `IsPrincipal` opaque and the two
-axioms in place; gate the new path behind a short bridge so consumers
-can opt in. The skeleton in this branch already factors the iff
-through mathlib's `toClass` directly — no new axioms needed for that
-half.
+**Stage A — plumbing (landed).**  The side module
+`Divisor/OrdP/PrincipalClass.lean` factors the needed implication
+through mathlib's `toClass` directly.  The MA extraction path now
+depends on one narrower class-group bridge axiom instead of the
+`IsPrincipal`/`principal_divisor_iff` pair.
 
 **Stage B — algebraic-geometry seam (~2-3 weeks).**  Discharge the
-single remaining `ordAt_divisor_classZero` axiom by formalising the
+single remaining `ordAt_divisorClass_zero` axiom by formalising the
 recursive-ord ↔ localization-ord agreement. This is the genuine
 algebraic-geometry work; the rest is bookkeeping. Once it lands,
-`IsPrincipal` becomes fully theorem-backed, both axioms come out of
-the closure, and the headline theorems' axiom list drops two entries.
+the class-group bridge comes out of the closure.
 
 The risk surface in Stage A is essentially zero (it's a refactor
 behind an Iff). Stage B is bounded — the per-prime `ordAt`
@@ -218,6 +222,7 @@ infrastructure (`CoordinateRing`, `XYIdeal`, `ClassGroup`,
 
 * `Divisor/DefsPre.lean:194,275` — `ECPoint`, opaque `IsPrincipal`.
 * `Divisor/Axioms/AxiomPrincipalDivisorIff.lean:48` — the iff axiom.
+* `Divisor/OrdP/PrincipalClass.lean` — landed mathlib `toClass` bridge.
 * `Divisor/OrdP/LocalRing.lean:785-1035` — Section 7 (the consumers).
 * `Divisor/OrdP/Uniformizer.lean:92-160` — recursive `ordAt`.
 * `Divisor/DivisorPrincipal.lean` — the wrapper consumer.
