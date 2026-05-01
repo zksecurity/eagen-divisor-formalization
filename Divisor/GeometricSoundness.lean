@@ -5218,6 +5218,20 @@ private theorem exists_goodIntercepts_avoiding_geom_and_rational_poles
     exact hμNotBad (Finset.mem_union_right _
       (Finset.mem_filter.mpr ⟨hμG, ⟨j, hEq⟩⟩))
 
+/-- Numeric threshold supplying enough rational samples for the Frobenius
+partial-fraction descent. This is the remaining Hasse/valid-pairs arithmetic
+obligation after the geometric and sampling plumbing is in place. -/
+private theorem frob_sampling_validPairs_threshold
+    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D) (k : ℕ)
+    (hLargeQ : E.points.card >
+        2 * (5 * (D.degE + k + 2) + 3) +
+        21 * (D.degE + k + 2) + 72) :
+    6 * E.q * (2 * (gd.support.card + (k + 1)) + gd.support.card) + 1
+      ≤ (validPairs E).card := by
+  -- Same arithmetic shape as `hELarge_of_hLargeQ_main`, but targeting
+  -- `card_validPairs_lb : n*n - 3*n ≤ |validPairs|`.
+  sorry
+
 /--
 Frobenius descent core for the rational-support branch.
 
@@ -5233,33 +5247,83 @@ at the isolated pole, which is `((gd.mult Q : ℕ) : Fqbar E)`.
 -/
 private theorem frob_descent_mult_zero_of_not_fixed
     (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
-    (hDeg : D.degE < E.q)
+    (_hDeg : D.degE < E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
     (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
-    (_hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+    (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E D P B A₀ A₁ →
       logDerivCheckFn E D P k B m A₀ A₁ = 0)
-    (_hLargeQ : E.points.card >
+    (hLargeQ : E.points.card >
         2 * (5 * (D.degE + k + 2) + 3) + 21 * (D.degE + k + 2) + 72)
     (Q : GeomPoint E) (hQ : Q ∈ gd.support)
     (hNotFixed : frobGeomPoint E Q ≠ Q) :
     ((gd.mult Q : ℕ) : Fqbar E) = 0 := by
-  have hCardBound : gd.support.card < E.q := by
-    have hSingle : gd.support.card ≤ ∑ Q ∈ gd.support, gd.mult Q := by
-      calc gd.support.card
-          = ∑ _ ∈ gd.support, 1 := by simp
-        _ ≤ ∑ Q ∈ gd.support, gd.mult Q :=
-            Finset.sum_le_sum (fun Q hQ => gd.mult_pos_on_support Q hQ)
-    exact lt_of_le_of_lt (le_trans hSingle gd.accounting_le_degE) hDeg
-  obtain ⟨lam, hSep, hNonRat⟩ :=
-    exists_slope_zLambdaBar_isolated_non_rational E D gd hCardBound Q hQ hNotFixed
-  let _ := lam
-  let _ := hSep
-  let _ := hNonRat
-  -- Remaining bridge: connect the bar-level residue identity to the abstract
-  -- partial-fraction uniqueness lemma at the slope chosen above.
-  sorry
+  classical
+  let M : ℕ := k + 1
+  let R : Fin M → ZMod E.q × ZMod E.q := Fin.cons (P.1, -P.2) B
+  let m' : Fin M → ZMod E.q := Fin.cons (-1) (fun j => -m j)
+  let N : ℕ := 2 * (gd.support.card + M)
+  have hQuant :
+      6 * E.q * (N + gd.support.card) + 1 ≤ (validPairs E).card := by
+    have h := frob_sampling_validPairs_threshold E D gd k hLargeQ
+    simpa [N, M, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+  obtain ⟨lam, hSep, hNonRat, hGood⟩ :=
+    exists_slope_zLambdaBar_isolated_non_rational_with_good_intercepts
+      E D gd Q hQ hNotFixed N hQuant
+  obtain ⟨S0, hS0Good, hS0Card, hS0AvoidQ, hS0AvoidR⟩ :=
+    exists_goodIntercepts_avoiding_geom_and_rational_poles E D gd R lam
+      (by simpa [N, M] using hGood)
+  set S : Finset (Fqbar E) := S0.image (fqToBar E)
+  have hS_card_eq : S.card = S0.card := by
+    change (S0.image (fqToBar E)).card = S0.card
+    exact Finset.card_image_of_injective (f := fqToBar E) S0 (fqToBar_injective E)
+  set n : ℕ := gd.support.card
+  set e : Fin n ≃ {x // x ∈ gd.support} := gd.support.equivFin.symm
+  set i₀ : Fin n := e.symm ⟨Q, hQ⟩
+  have hi₀ : (e i₀).val = Q := by
+    simp [i₀, e]
+  have hCard : n + M ≤ S.card := by
+    rw [hS_card_eq]
+    simpa [n, M] using hS0Card
+  have hDisjointα : ∀ μ ∈ S, ∀ i : Fin n,
+      μ ≠ zLambdaBar E lam (e i).val := by
+    intro μ hμ i
+    change μ ∈ S0.image (fqToBar E) at hμ
+    rcases Finset.mem_image.mp hμ with ⟨μ0, hμ0, rfl⟩
+    exact hS0AvoidQ μ0 hμ0 (e i).val (e i).property
+  have hDisjointβ : ∀ μ ∈ S, ∀ j : Fin M,
+      μ ≠ fqToBar E (zLambda E lam (R j)) := by
+    intro μ hμ j hEq
+    change μ ∈ S0.image (fqToBar E) at hμ
+    rcases Finset.mem_image.mp hμ with ⟨μ0, hμ0, rfl⟩
+    exact hS0AvoidR μ0 hμ0 j (fqToBar_injective E hEq)
+  have hVanish : ∀ μ ∈ S,
+      (∑ i : Fin n,
+          ((gd.mult (e i).val : ℕ) : Fqbar E) *
+            (μ - zLambdaBar E lam (e i).val)⁻¹) +
+        (∑ j : Fin M,
+            fqToBar E (m' j) *
+            (μ - fqToBar E (zLambda E lam (R j)))⁻¹) = 0 := by
+    intro μ hμ
+    change μ ∈ S0.image (fqToBar E) at hμ
+    rcases Finset.mem_image.mp hμ with ⟨μ0, hμ0, rfl⟩
+    have hPF := geom_pf_identity_at_good_intercept E D hDnz gd P B m
+      hAllZero hLargeQ lam μ0 (hS0Good hμ0)
+      (by
+        intro Q' hQ'
+        exact sub_ne_zero.mpr (hS0AvoidQ μ0 hμ0 Q' hQ'))
+      (by
+        intro j
+        exact sub_ne_zero.mpr (fun hEq =>
+          hS0AvoidR μ0 hμ0 j (fqToBar_injective E hEq)))
+    rw [sum_support_eq_sum_fin E D gd e
+      (fun Q' => ((gd.mult Q' : ℕ) : Fqbar E) *
+        (fqToBar E μ0 - zLambdaBar E lam Q')⁻¹)]
+    simpa [R, m', M] using hPF
+  exact frob_descent_isolate_mult_of_pf_sum E D gd lam Q hSep hNonRat
+    e i₀ hi₀ R (fun j => fqToBar E (m' j)) S hCard
+    hDisjointα hDisjointβ hVanish
 
 /-- **Rationality of the geometric support under `hAllZero`.** The all-zero
 hypothesis on `logDerivCheckFn` over rational defined non-vertical pairs
@@ -5293,7 +5357,7 @@ private theorem gd_support_rational_of_hAllZero
     gd_mult_fqbar_ne_zero E msg.toD gd hDegLt Q hQ
   exact absurd
     (frob_descent_mult_zero_of_not_fixed E msg.toD gd hDegLt
-      stmt.target stmt.bases (fun i => msg.m (hkm ▸ i))
+      _hDnz stmt.target stmt.bases (fun i => msg.m (hkm ▸ i))
       _hAllZero _hLargeQ Q hQ hNotFixed)
     hMultNZ
 
