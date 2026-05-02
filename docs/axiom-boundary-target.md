@@ -32,11 +32,19 @@ The same shape is acceptable for:
 The current MA/IP closure has already moved the trace/log-derivative
 step to the desired citable shape:
 
-- `chord_fiber_product_logDeriv_eq_logDerivTerm_trace` is the Lang
-  trace/log-derivative identity specialized to the chord projection.
-  The older coordinate-heavy
-  `chord_sum_eq_chord_fiber_product_logDeriv` statement is now a
-  theorem derived from this axiom plus chord-cubic factorization.
+- The trace/log-derivative step is now a generic (chord-agnostic)
+  axiom `Polynomial.resultant_logDeriv_at_split_specialization`
+  about the logarithmic derivative of `Res_X(f, g)` at a split
+  inner-specialisation of `f`. The chord-specific identity
+  `chord_fiber_product_logDeriv_eq_logDerivTerm_trace` is now a
+  *theorem* derived from this axiom plus chord-cubic-specific
+  algebra (computing `f_X`, `f_T`, `g_X`, `g_T`, `g_val` for
+  `f := chordCubicBiv` and `g := DLineBiv`). The older
+  coordinate-heavy `chord_sum_eq_chord_fiber_product_logDeriv`
+  statement is also a theorem, derived in turn from the
+  chord-specific identity by chord-cubic factorisation. See
+  `axioms/resultant_logDeriv_at_split.md` for the citable boundary
+  and discharge plan.
 
 The remaining bridges are:
 

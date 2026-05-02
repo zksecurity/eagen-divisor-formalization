@@ -11,17 +11,13 @@ specialised to `g = D`, `K = F_q(z)`, `L = F_q(E)`, evaluated at the chord inter
 
 ## Boundary status
 
-The project-specific statement `chord_sum_eq_chord_fiber_product_logDeriv`
-is now a theorem. It is derived from the narrower axiom
-`chord_fiber_product_logDeriv_eq_logDerivTerm_trace`, which states the
-trace/log-derivative formula over the roots of the chord cubic, plus
-the chord-cubic factorisation lemmas that identify those roots with
-`A₀`, `A₁`, and the third intersection point.
+Both the project-specific statement `chord_sum_eq_chord_fiber_product_logDeriv` and the chord-specific intermediate `chord_fiber_product_logDeriv_eq_logDerivTerm_trace` are now **theorems**, not axioms. They are derived from the strictly narrower generic axiom `Polynomial.resultant_logDeriv_at_split_specialization` (in `axioms/resultant_logDeriv_at_split.md`) plus chord-cubic-specific algebra:
 
-This is the desired citable boundary for the trace/log-derivative step.
-The remaining formal work is to replace the axiom with a general
-function-field theorem `Tr(dg/g)=d(N(g))/N(g)` once that infrastructure
-exists in mathlib or in this repo.
+1. The chord-specific identity is obtained by applying the generic resultant log-derivative formula with `f := chordCubicBiv E lam` and `g := DLineBiv E lam D`, then identifying each per-chord-root partial-derivative combination with `logDerivTerm` via direct chord-cubic-specific computation (the helper lemmas `chordCubicBiv_map_derivative_eval`, `chordCubicBiv_eval_C_derivative_eval`, `DLineBiv_map_derivative_eval`, `DLineBiv_eval_C_derivative_eval`, `DLineBiv_map_eval_at_root` in `Divisor/Axioms/AxiomChordSumEqChordFiberProductLogDeriv.lean`).
+
+2. The exported chord-vertex form `chord_sum_eq_chord_fiber_product_logDeriv` follows from the chord-specific identity by chord-cubic factorisation (`Sketch.intersectionPoly_factor_at_zLambda`, `Sketch.intersectionPoly_splits_at_zLambda`) plus the slope identity.
+
+The citable boundary for the trace/log-derivative step is now `Polynomial.resultant_logDeriv_at_split_specialization`. The remaining formal work is to discharge that single axiom against mathlib's `Differential` / splitting-field infrastructure (see `axioms/resultant_logDeriv_at_split.md` for the discharge plan).
 
 ## Citation
 
