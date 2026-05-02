@@ -671,4 +671,41 @@ theorem chord_fiber_product_concrete_bar_X_sub_C_zLambda_pow_one_dvd_of_mem_supp
     chord_fiber_product_concrete_bar_X_sub_C_pow_one_dvd_of_mem_support_image
       E lam D hD gd (Finset.mem_image.mpr ⟨Q, hQ, rfl⟩)
 
+/-! ## DLineBiv non-vanishing -/
+
+/-- **`DLineBiv` is nonzero whenever `D` is.**
+
+`DLineBiv = 0` would imply, after the inner-ring evaluation
+`evalRingHom μ`, that `D.a − D.b · (lam · X + μ) = 0` in `(ZMod E.q)[X]`
+for *every* `μ ∈ ZMod E.q`. Comparing two distinct `μ` values forces
+`D.b = 0`, then any `μ` forces `D.a = 0`. -/
+theorem DLineBiv_ne_zero (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    DLineBiv E lam D ≠ 0 := by
+  classical
+  intro h
+  apply hD
+  have hμ : ∀ μ : ZMod E.q,
+      D.a - D.b * (Polynomial.C lam * Polynomial.X + Polynomial.C μ) = 0 := by
+    intro μ
+    rw [← DLineBiv_map_evalRingHom E lam μ D, h, Polynomial.map_zero]
+  -- At μ = 0: D.a - D.b * (C lam * X) = 0.
+  have h0 := hμ 0
+  -- At μ = 1: D.a - D.b * (C lam * X + 1) = 0.
+  have h1 := hμ 1
+  -- Subtracting h0 - h1 gives D.b = 0 by polynomial algebra.
+  have hb : D.b = 0 := by
+    have hC0 : (Polynomial.C (0 : ZMod E.q) : (ZMod E.q)[X]) = 0 :=
+      Polynomial.C_0
+    have hC1 : (Polynomial.C (1 : ZMod E.q) : (ZMod E.q)[X]) = 1 :=
+      Polynomial.C_1
+    rw [hC0, add_zero] at h0
+    rw [hC1] at h1
+    linear_combination h0 - h1
+  -- D.b = 0 ⇒ from h0: D.a = 0.
+  have ha : D.a = 0 := by
+    rw [hb, zero_mul, sub_zero] at h0
+    exact h0
+  exact ⟨ha, hb⟩
+
 end Divisor
