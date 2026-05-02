@@ -97,7 +97,7 @@ yet entirely reduced to textbook-shaped infrastructure theorems.
 
 ## Reusable plumbing
 
-The branch added three pieces of project-side infrastructure that the
+The branch added several pieces of project-side infrastructure that the
 future axiom-1 discharge can build on:
 
 1. `Divisor.rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le`
@@ -111,7 +111,28 @@ future axiom-1 discharge can build on:
    This identifies the `∑ gd.mult` total appearing in the squeeze
    helper's degree-bound hypothesis with a concrete polynomial natDegree.
 
-3. `Divisor/Sketch/ChordFiberProductConcrete.lean` —
+3. **`Divisor/ChordFiberMultiplicativity.lean`** (new module) — the
+   inductive structure for `divLin`-based natDegree induction. Both
+   linear-factor (`X − C x₀`) and arbitrary-monic-factor versions of:
+   - DLineBiv multiplicativity (`DLineBiv_eq_X_sub_C_mul_divLin`,
+     `DLineBiv_eq_C_mul_divByMonic`).
+   - chord_fiber_product multiplicativity
+     (`chord_fiber_product_concrete_eq_resXSubC_mul_of_div`,
+     `chord_fiber_product_concrete_eq_resPmap_mul_of_div`).
+   - normPoly recurrences
+     (`normPoly_eq_X_sub_C_sq_mul_of_div`,
+     `normPoly_eq_p_sq_mul_of_div`).
+   - natDegree inductive steps
+     (`chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step`,
+     `_step_general`).
+
+   The linear case includes the resultant-against-linear-factor
+   natDegree calculation
+   (`resultant_chordCubicBiv_X_sub_C_natDegree`), proven via
+   `compute_degree!` on the explicit
+   `chordCubicBiv.eval (C x₀) = -T² + …` form.
+
+4. `Divisor/Sketch/ChordFiberProductConcrete.lean` —
    `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_via_squeeze`
    shows the discharge architecture as code: two stubs (a fibrewise
    divisibility + a degree comparison) plus the squeeze helper give
@@ -128,4 +149,9 @@ future axiom-1 discharge can build on:
      either to axiomatise the general norm/divisor pushforward (a
      textbook-shape replacement for axiom 1) or to prove it via a
      weighted-leading-term Sylvester analysis with `wt(T) = 3`,
-     `wt(X) = 2`.
+     `wt(X) = 2`. The remaining gap for closing the natDegree
+     comparison via the inductive infrastructure (item 3) is the
+     resultant natDegree formula
+     `Res(chordCubic, p.map C, 3, p.natDegree).natDegree = 2 · p.natDegree`
+     for arbitrary monic `p`, provable via splitting field of `p`
+     over `ZMod q` plus `resultant_comm` + `resultant_eq_prod_eval`.
