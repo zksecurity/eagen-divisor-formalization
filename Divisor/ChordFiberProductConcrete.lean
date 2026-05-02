@@ -812,6 +812,79 @@ private lemma resultant_chordCubicBiv_X_sub_C_natDegree
       neg_one_mul, Polynomial.natDegree_neg]
   exact chordCubicBiv_eval_C_natDegree E lam x₀
 
+/-! ### Generalised twin step: arbitrary monic common factor
+
+The linear-factor multiplicativity above is the F_q-rational case
+(`p = X − C x₀`). For `D` with non-F_q-rational common factors of
+`a, b` (e.g. `X² + 1` over F_5 has roots in F_25 but not F_5), the
+divLin recursion gets stuck. The generalised form below extends the
+multiplicativity to *arbitrary monic* common factors `p`. -/
+
+/-- **DLineBiv multiplicativity under arbitrary monic common factor**:
+when `p ∣ D.a, D.b` and `p` is monic, `DLineBiv D` factors as
+`p.map C · DLineBiv D'` for `D' := { a := D.a /ₘ p, b := D.b /ₘ p }`. -/
+theorem DLineBiv_eq_C_mul_divByMonic
+    (lam : ZMod E.q) (D : CoordRingElt E.q) (p : Polynomial (ZMod E.q))
+    (hpm : p.Monic) (hpa : p ∣ D.a) (hpb : p ∣ D.b) :
+    DLineBiv E lam D
+      = p.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X])
+          * DLineBiv E lam
+              { a := D.a /ₘ p
+                b := D.b /ₘ p } := by
+  classical
+  -- D.a = p * (D.a /ₘ p) using modByMonic_eq_zero_iff_dvd + modByMonic_add_div.
+  have ha_factor : p * (D.a /ₘ p) = D.a := by
+    have hmod : D.a %ₘ p = 0 := (Polynomial.modByMonic_eq_zero_iff_dvd hpm).mpr hpa
+    have := Polynomial.modByMonic_add_div D.a hpm
+    rw [hmod, zero_add] at this
+    exact this
+  have hb_factor : p * (D.b /ₘ p) = D.b := by
+    have hmod : D.b %ₘ p = 0 := (Polynomial.modByMonic_eq_zero_iff_dvd hpm).mpr hpb
+    have := Polynomial.modByMonic_add_div D.b hpm
+    rw [hmod, zero_add] at this
+    exact this
+  unfold DLineBiv
+  conv_lhs => rw [← ha_factor, ← hb_factor]
+  rw [Polynomial.map_mul, Polynomial.map_mul]
+  ring
+
+/-- **`chord_fiber_product` multiplicativity under arbitrary monic common
+factor.** Generalises `chord_fiber_product_concrete_eq_resXSubC_mul_of_div`
+from `p = X − C x₀` to any monic `p ∣ D.a, D.b`. -/
+theorem chord_fiber_product_concrete_eq_resPmap_mul_of_div
+    (lam : ZMod E.q) (D : CoordRingElt E.q) (p : Polynomial (ZMod E.q))
+    (hpm : p.Monic) (hpa : p ∣ D.a) (hpb : p ∣ D.b)
+    (hDLne : DLineBiv E lam { a := D.a /ₘ p, b := D.b /ₘ p } ≠ 0) :
+    chord_fiber_product_concrete E lam D
+      = Polynomial.resultant (chordCubicBiv E lam)
+          (p.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
+          (chordCubicBiv E lam).natDegree p.natDegree
+        * chord_fiber_product_concrete E lam
+            { a := D.a /ₘ p, b := D.b /ₘ p } := by
+  classical
+  unfold chord_fiber_product_concrete
+  rw [DLineBiv_eq_C_mul_divByMonic E lam D p hpm hpa hpb]
+  set PC := p.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]) with hPC
+  set DL := DLineBiv E lam { a := D.a /ₘ p, b := D.b /ₘ p } with hDL_def
+  have hPC_natDegree : PC.natDegree = p.natDegree := by
+    rw [hPC]; exact Polynomial.natDegree_map_eq_of_injective
+      (Polynomial.C_injective (R := ZMod E.q)) p
+  have hPC_monic : PC.Monic := by
+    rw [hPC]; exact hpm.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X])
+  have hDLne' : DL ≠ 0 := hDLne
+  have hMul_natDegree : (PC * DL).natDegree = PC.natDegree + DL.natDegree :=
+    Polynomial.natDegree_mul hPC_monic.ne_zero hDLne'
+  have hRes :=
+    Polynomial.resultant_mul_right (chordCubicBiv E lam) PC DL
+      (chordCubicBiv E lam).natDegree le_rfl
+  rw [show
+      Polynomial.resultant (chordCubicBiv E lam) (PC * DL)
+          (chordCubicBiv E lam).natDegree (PC * DL).natDegree
+        = Polynomial.resultant (chordCubicBiv E lam) (PC * DL)
+          (chordCubicBiv E lam).natDegree (PC.natDegree + DL.natDegree) by
+        rw [hMul_natDegree]]
+  rw [hRes, hPC_natDegree]
+
 /-- **`chord_fiber_product` natDegree increases by exactly 2 per twin step.**
 
 When the linear-factor multiplicativity applies and both factors are
