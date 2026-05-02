@@ -17,8 +17,8 @@ namespace Divisor
 variable {E : ECSetup}
 
 /-- **polyG vanishes at a fully defined pair in Fin.cons form.**
-    Parameterised over an arbitrary β_fun (the existential from
-    `CoordRingElt.exists_divisor_multiplicity` / `has_principal_divisor`). -/
+    Parameterised over a `β_fun` that agrees pointwise with the true
+    local-order multiplicity. -/
 theorem polyG_zero_at_defined_fincons
     (D : CoordRingElt E.q)
     (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
@@ -28,6 +28,7 @@ theorem polyG_zero_at_defined_fincons
     (hSplit : splitsOnE E D)
     (hAccount : (∑ P ∈ E.points, β_fun P) =
                   (normPoly E D).natDegree)
+    (hβtrue : ∀ P, β_fun P = betaTrue E D hDnz P)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
     (B : Fin k → ZMod E.q × ZMod E.q)
     (m : Fin k → ZMod E.q)
@@ -76,7 +77,7 @@ theorem polyG_zero_at_defined_fincons
   have hBline : ∀ j : Fin k, L.eval (B j).1 (B j).2 ≠ 0 := by
     intro j hj; exact hBlineProd (prod_eq_zero (mem_univ j) hj)
   -- Apply the existing bridge theorem
-  exact polyG_zero_at_defined E D hDnz β_fun hβsup hβcov hSplit hAccount
+  exact polyG_zero_at_defined E D hDnz β_fun hβsup hβcov hSplit hAccount hβtrue
     P B m A₀ A₁ hA₀ hA₁ hNV h1 h2 h3 hQline hDen h7 hBline hCheck
 
 end Divisor

@@ -2,9 +2,8 @@
   Divisor/PolyGTraceFormula.lean
 
   Sub-theorems toward proving polyG vanishing at defined non-vertical
-  pairs, parameterised over an arbitrary multiplicity function β_fun
-  (the existential from `CoordRingElt.exists_divisor_multiplicity`,
-  consumed via `CoordRingElt.has_principal_divisor`).
+  pairs, parameterised over a multiplicity function β_fun that is
+  pointwise the true local-order multiplicity.
 
   **Proof chain (β_fun case)**:
   1. `chord_sum_eq_residue_sum` (theorem in ChordLogDerivProof.lean):
@@ -46,8 +45,8 @@ theorem sum_zerosFinset_eq_sum_fin
     exact ⟨k, Finset.mem_univ _, hk⟩
   · intro k _; rfl
 
-/-- The chord-sum identity restated with Fin-indexed sums for an
-    arbitrary β_fun. This is the `hLemma6` input needed by
+/-- The chord-sum identity restated with Fin-indexed sums. This is the
+    `hLemma6` input needed by
     `polyG_zero_of_Lemma6_and_logDerivCheck_zero`. -/
 theorem chord_sum_eq_residue_sum_fin
     (D : CoordRingElt E.q)
@@ -60,6 +59,7 @@ theorem chord_sum_eq_residue_sum_fin
     (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
     (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
     (hAccount : (∑ P ∈ E.points, β_fun P) = (normPoly E D).natDegree)
+    (hβtrue : ∀ P, β_fun P = betaTrue E D hD P)
     (hA₀def : D.eval A₀.1 A₀.2 ≠ 0)
     (hA₁def : D.eval A₁.1 A₁.2 ≠ 0)
     (hA₂def : let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
@@ -85,7 +85,8 @@ theorem chord_sum_eq_residue_sum_fin
           ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
             (zerosAt E D k').1 (zerosAt E D k').2)⁻¹ := by
   have hOrig := chord_sum_eq_residue_sum E D β_fun A₀ A₁
-    hA₀ hA₁ hNV hD hSplit hβsup hβcov hAccount hA₀def hA₁def hA₂def hQline hDen
+    hA₀ hA₁ hNV hD hSplit hβsup hβcov hAccount hβtrue
+    hA₀def hA₁def hA₂def hQline hDen
   rw [sum_zerosFinset_eq_sum_fin] at hOrig
   exact hOrig
 
@@ -115,6 +116,7 @@ theorem polyG_zero_at_defined
     (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
     (hSplit : splitsOnE E D)
     (hAccount : (∑ P ∈ E.points, β_fun P) = (normPoly E D).natDegree)
+    (hβtrue : ∀ P, β_fun P = betaTrue E D hD P)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
     (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
@@ -142,7 +144,8 @@ theorem polyG_zero_at_defined
       (Fin.cons (-1) (fun j => -m j))
       A₀ A₁ = 0 := by
   have hLemma6 := chord_sum_eq_residue_sum_fin E D β_fun A₀ A₁
-    hA₀ hA₁ hNV hD hSplit hβsup hβcov hAccount hA₀def hA₁def hA₂def hQline hDen
+    hA₀ hA₁ hNV hD hSplit hβsup hβcov hAccount hβtrue
+    hA₀def hA₁def hA₂def hQline hDen
   have hLemma6' :
       logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀
         + logDerivTerm E D E.curveA (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₁

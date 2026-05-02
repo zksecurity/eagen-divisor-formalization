@@ -9,19 +9,21 @@
 
   * `ma_extractable`, `ip_knowledge_sound`:
       propext, Classical.choice, Quot.sound,
-      Divisor.chord_fiber_product_bar_eq_geom_prod,
-      Divisor.chord_fiber_product_eq_normZ_under_split,
-      Divisor.chord_sum_eq_chord_fiber_product_logDeriv,
+      Divisor.chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber,
+      Divisor.chord_fiber_product_logDeriv_eq_logDerivTerm_trace,
       Divisor.hasse_weil,
+      Divisor.ordAt_eq_rationalMultAt_of_gd_support_rational,
       Divisor.CoordRingElt.divisorClass_isPrincipal
 
     The Frobenius descent proof gap is closed: there is no `sorryAx` in
     the MA/IP closure. The headline theorem signatures no longer carry
     `hSplit : splitsOnE E D`; the `splitsOnE` predicate now only gates
     the multiplicity-accounting test below. `hasse_weil` comes from the
-    geometric SZ bound on `E(F_q) × E(F_q)`. The chord/log-deriv axioms
-    and the principal fractional-ideal class axiom form the algebraic
-    bridge linking the chord-sum identity to the divisor formalism.
+    geometric SZ bound on `E(F_q) × E(F_q)`. The remaining algebraic
+    assumptions are narrow: divisor-of-norm local multiplicity for the
+    concrete resultant, Lang's trace-of-log-derivative identity, local
+    order compatibility after rational support descent, and principal
+    divisor class triviality for the concrete `D`.
 
   * `ma_completeness`:
       propext, Classical.choice, Quot.sound,

@@ -1385,7 +1385,7 @@ theorem geometric_chord_sum_eq_residue_sum
         = fqToBar E ((chord_fiber_product E lam D).eval μ) from by
       simp [fqToBar, Polynomial.eval_map, Polynomial.eval₂_at_apply]]
     rw [hZero]; simp [fqToBar]
-  -- Rational chord-sum identity (axiom).
+  -- Rational chord-sum identity, derived from the narrower trace axiom.
   have hRatLHS := chord_sum_eq_chord_fiber_product_logDeriv E D A₀ A₁ hA₀ hA₁ hNV
     hDnz h1 h2 h3 hDen hCfpRatNe
   -- Lift `eval μ p = ...` to Fqbar via the algebra map.
@@ -3232,19 +3232,28 @@ theorem rationalMultAt_eq_gd_mult_at_lift
 /-- **Local multiplicity compatibility.**
 
 When the geometric zero divisor of `D` is supported on rational points,
-the project-level canonical affine multiplicity `betaCanonical` agrees
-pointwise with the geometric local multiplicity at the rational lift.
+the affine local order `ordAt` agrees pointwise with the geometric local
+multiplicity at the rational lift.
 
 Mathematically this is the statement that the local order computed in
 the affine coordinate chart is the coefficient of the same place in the
 geometric divisor of `D`; see Stichtenoth, Algebraic Function Fields and
 Codes, §I.4 (places, valuations, local parameters) and Silverman AEC
 II §1-3 (divisors of rational functions on curves). -/
-axiom betaCanonical_eq_rationalMultAt_of_gd_support_rational
+axiom ordAt_eq_rationalMultAt_of_gd_support_rational
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D) (hRat : gd_support_rational E D gd) :
     ∀ P : ZMod E.q × ZMod E.q,
-      betaCanonical E D P = rationalMultAt E D gd P
+      ordAt E D P = rationalMultAt E D gd P
+
+theorem betaCanonical_eq_rationalMultAt_of_gd_support_rational
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) (hRat : gd_support_rational E D gd) :
+    ∀ P : ZMod E.q × ZMod E.q,
+      betaCanonical E D P = rationalMultAt E D gd P := by
+  intro P
+  rw [betaCanonical_eq_betaTrue E D hDnz]
+  exact ordAt_eq_rationalMultAt_of_gd_support_rational E D hDnz gd hRat P
 
 /-- Under `gd_support_rational`, any `Fqbar`-valued sum over `gd.support`
 that depends on `Q` only through `(Q.x, Q.y)` re-indexes to a sum over

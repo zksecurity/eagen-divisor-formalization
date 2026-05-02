@@ -6,6 +6,21 @@ this repository. The Aristotle queue is shared, so jobs observed via
 
 ## Active Jobs
 
+- `31730b9b-8824-4df0-a337-5c81ec8dfdfb`
+  - Submitted: 2026-05-02
+  - Target: concrete `chord_fiber_product_concrete_eq_normZ_under_split`
+    descent in `Divisor/Sketch/ChordFiberProductConcrete.lean`.
+  - Prompt summary: prove the rational proportionality theorem from a
+    bar-level bridge, keeping the hard geometric multiplicity theorem as the
+    remaining boundary.
+  - Expected useful output: coefficient-descent plumbing or a sharper
+    decomposition of the residual normZ matching gap.
+  - Status: COMPLETE; inspected 2026-05-02. The archive proves a general
+    coefficient-descent helper and reduces the target to a named bar-level
+    proportionality bridge. It does not reduce the MA/IP closure, because
+    `chord_fiber_product_eq_normZ_under_split` is already off the headline
+    path. We kept the result as proof-plan material and instead tightened the
+    legacy rational axiom by requiring `β_fun = betaTrue` pointwise.
 - `2330e1ea-1086-4711-9e82-76835ccae3cc`
   - Submitted: 2026-04-30
   - Target: geometric divisor-of-norm bridge plumbing in

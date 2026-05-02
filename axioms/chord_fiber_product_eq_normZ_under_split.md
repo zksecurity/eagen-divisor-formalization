@@ -11,19 +11,25 @@ axiom chord_fiber_product_eq_normZ_under_split
     (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
     (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
     (hAccount : (∑ P ∈ E.points, β_fun P) =
-                  (normPoly E D).natDegree) :
+                  (normPoly E D).natDegree)
+    (hβtrue : ∀ P, β_fun P = betaTrue E D hD P) :
     ∃ c : ZMod E.q, c ≠ 0 ∧
       chord_fiber_product E lam D = C c * normZ E lam D β_fun
 ```
 
-Identifies the function-field norm `N_{F_q(E)/F_q(z)}(D)` (the chord-fiber product) with a nonzero constant multiple of `normZ` under `splitsOnE` and faithful multiplicity accounting.
+Identifies the function-field norm `N_{F_q(E)/F_q(z)}(D)` (the chord-fiber product) with a nonzero constant multiple of `normZ` under `splitsOnE` and pointwise faithful multiplicity accounting (`β_fun = betaTrue`).
 
 ## Boundary status
 
-This is a sound bridge statement, but it is not the desired final axiom
-shape. It packages the textbook divisor-of-norm theorem together with
-the project-specific opaque `chord_fiber_product`, rational `normZ`,
-and `splitsOnE` accounting.
+This is now a sound but legacy bridge statement. It is not in the
+headline MA/IP closure. The explicit `hβtrue` hypothesis is essential:
+support, coverage, and total accounting alone do not determine
+pointwise local multiplicities, so the older arbitrary-β shape was too
+broad.
+
+The statement is still not the desired final axiom shape. It packages
+the textbook divisor-of-norm theorem together with the project-specific
+`chord_fiber_product`, rational `normZ`, and `splitsOnE` accounting.
 
 Final target: use a clean norm/divisor push-forward theorem for finite
 separable function-field extensions, then prove this rational split

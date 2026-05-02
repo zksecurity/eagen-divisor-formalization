@@ -120,7 +120,8 @@ theorem logDerivCheckFn_zero_of_polyG_zero
   have hAccount := betaTrue_account E D hDnz hSplit
   -- Lemma 6 with β = betaTrue.
   have hLemma6 := chord_sum_eq_residue_sum_fin E D (betaTrue E D hDnz) A₀ A₁
-    hA₀ hA₁ hNV hDnz hSplit hβsup hβcov hAccount h1 h2 h3 hQline hDen
+    hA₀ hA₁ hNV hDnz hSplit hβsup hβcov hAccount (fun _ => rfl)
+    h1 h2 h3 hQline hDen
   -- multAt = β at zerosAt.
   have hLemma6' :
       logDerivTerm E D E.curveA lam A₀
@@ -178,7 +179,7 @@ theorem bad_pair_implies_polyGFull_zero
   rw [bivEval₂_polyGFull_eq_polyG]
   exact polyG_zero_at_defined_fincons D hDnz (betaTrue E D hDnz)
     (betaTrue_support E D hDnz) (betaTrue_covers E D hDnz)
-    hSplit (betaTrue_account E D hDnz hSplit) P B m A₀ A₁
+    hSplit (betaTrue_account E D hDnz hSplit) (fun _ => rfl) P B m A₀ A₁
     hA₀ hA₁ hNVx hDef
     (chord_avoids_D_zeros_of_denom_defined D P B A₀ A₁ hA₀ hA₁ hNVx hDef)
     hCheck

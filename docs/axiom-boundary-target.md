@@ -27,26 +27,32 @@ The same shape is acceptable for:
 - a trace/logarithmic-derivative theorem
   `Tr(dg/g) = d(N(g))/N(g)`.
 
-## Temporary Bridge Axioms
+## Current Remaining Bridges
 
-The current chord axioms are mathematically standard consequences, but
-their Lean statements are too proof-specific to be the final trust
-boundary:
+The current MA/IP closure has already moved the trace/log-derivative
+step to the desired citable shape:
 
-- `chord_sum_eq_chord_fiber_product_logDeriv` combines the abstract
-  trace/log-derivative theorem with the project-specific chord
-  parameterization, `logDerivTerm`, explicit third-intersection
-  coordinates, and denominator side conditions.
-- `chord_fiber_product_eq_normZ_under_split` combines the
-  divisor-of-norm theorem with the old rational `normZ` encoding and
-  `splitsOnE` accounting.
-- `chord_fiber_product_bar_eq_geom_prod` is better because it is
-  geometric and avoids `splitsOnE`, but it still states the final
-  factorization of the project-specific opaque
-  `chord_fiber_product`.
+- `chord_fiber_product_logDeriv_eq_logDerivTerm_trace` is the Lang
+  trace/log-derivative identity specialized to the chord projection.
+  The older coordinate-heavy
+  `chord_sum_eq_chord_fiber_product_logDeriv` statement is now a
+  theorem derived from this axiom plus chord-cubic factorization.
 
-These should be treated as bridge lemmas waiting to be proved or
-re-expressed from simpler axioms, not as final assumptions.
+The remaining bridges are:
+
+- `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber`, the
+  coefficientwise norm/divisor push-forward statement for the concrete
+  resultant. This is narrow and citable, but still coordinate-level.
+- `ordAt_eq_rationalMultAt_of_gd_support_rational`, local-order
+  compatibility between the affine `ordAt` definition and the geometric
+  multiplicity data after rational support descent.
+- `CoordRingElt.divisorClass_isPrincipal`, the concrete principal-class
+  bridge for the divisor of `D`.
+
+The legacy rational bridge `chord_fiber_product_eq_normZ_under_split`
+still exists for the off-path rational tight-bound chain, but it is no
+longer in the MA/IP closure and now explicitly requires
+`β_fun = betaTrue` pointwise.
 
 ## Target Refactor
 
@@ -57,16 +63,15 @@ The intended replacement is:
    proof.
 2. State one clean norm/divisor axiom, or use mathlib if available:
    the divisor of a norm is the push-forward of the divisor.
-3. State one clean trace/log-derivative axiom, or use mathlib if
-   available:
-   `Tr(dg/g) = d(N(g))/N(g)` for a finite separable extension with
-   nonzero denominator at the evaluation place.
-4. Prove the current chord-specific statements as coordinate
+3. Replace the local-order compatibility and concrete principal-class
+   bridge by the corresponding local-ring/function-field theorems when
+   that infrastructure is available.
+4. Prove the remaining chord-specific statements as coordinate
    consequences:
    chord fibers are the three intersections with the line, the
    `logDerivTerm` formula is the derivative of `D` along the chord, and
    the geometric product descends to the concrete polynomial used in
    the SZ argument.
 
-Until those steps land, the axiom closure is sound but not yet in the
-desired "all axioms are simple and natural" form.
+Until those steps land, the axiom closure is sound and narrow, but not
+yet entirely reduced to textbook-shaped infrastructure theorems.

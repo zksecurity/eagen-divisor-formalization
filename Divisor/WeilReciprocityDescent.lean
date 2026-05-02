@@ -81,6 +81,7 @@ theorem logDerivCheckFn_zero_of_chord_residue_match
     (hβsup : ∀ Q, β_fun Q ≠ 0 → Q ∈ E.points ∧ D.eval Q.1 Q.2 = 0)
     (hβcov : ∀ Q ∈ E.points, D.eval Q.1 Q.2 = 0 → β_fun Q ≠ 0)
     (hAccount : (∑ Q ∈ E.points, β_fun Q) = (normPoly E D).natDegree)
+    (hβtrue : ∀ Q, β_fun Q = betaTrue E D hD Q)
     -- per-pair geometric data:
     (A₀ A₁ : ZMod E.q × ZMod E.q)
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
@@ -112,7 +113,7 @@ theorem logDerivCheckFn_zero_of_chord_residue_match
   -- Apply the chord-sum identity from `chord_sum_eq_residue_sum`.
   have hChord :=
     chord_sum_eq_residue_sum E D β_fun A₀ A₁ hA₀ hA₁ hNV hD hSplit
-      hβsup hβcov hAccount hA₀def hA₁def hA₂def hQline hDen
+      hβsup hβcov hAccount hβtrue hA₀def hA₁def hA₂def hQline hDen
   unfold logDerivCheckFn
   simp only []
   rw [sub_eq_zero, hChord, hResidueMatch]
@@ -145,6 +146,7 @@ theorem logDerivCheckFn_zero_of_explicit_divisor_data
     (hβsup : ∀ Q, β_fun Q ≠ 0 → Q ∈ E.points ∧ D.eval Q.1 Q.2 = 0)
     (hβcov : ∀ Q ∈ E.points, D.eval Q.1 Q.2 = 0 → β_fun Q ≠ 0)
     (hAccount : (∑ Q ∈ E.points, β_fun Q) = (normPoly E D).natDegree)
+    (hβtrue : ∀ Q, β_fun Q = betaTrue E D hD Q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
     (hNV : A₀.1 ≠ A₁.1)
@@ -199,7 +201,7 @@ theorem logDerivCheckFn_zero_of_explicit_divisor_data
     rw [hThirdEq]
     exact h
   exact logDerivCheckFn_zero_of_chord_residue_match E D P B m β_fun
-    hD hSplit hβsup hβcov hAccount A₀ A₁ hA₀ hA₁ hNV
+    hD hSplit hβsup hβcov hAccount hβtrue A₀ A₁ hA₀ hA₁ hNV
     hA₀def hA₁def hA₂def hQline hDen hResidueMatch
 
 /-! ## Bridge lemma: the Weil residue identity

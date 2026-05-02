@@ -2854,6 +2854,7 @@ theorem polyG_zero_trace_formula
         (betaCanonical_support E D)
         (betaCanonical_covers E D hDnz)
         hSplit (betaCanonical_account E D hSplit)
+        (fun P => congrFun (betaCanonical_eq_betaTrue E D hDnz) P)
         stmt.target (baseAt E stmt msg hkm) (distinctM'_tail E stmt msg hkm)
         A₀ A₁ hA₀ hA₁ hNV hDefBaseAt hQline hCheckGrouped
       show polyG E Q_fn β_fn R_fn m_fn A₀ A₁ = 0

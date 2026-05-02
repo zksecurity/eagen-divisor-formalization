@@ -14,9 +14,12 @@
 
   **Step 1.** Show `normZ(μ) ≠ 0` from `hQline`.
   **Step 2.** Reduce to ratio form via `chordLogDerivMatchesNormZ_of_ratio_eq`.
-  **Step 3.** Prove the ratio identity via two axioms:
-    AXIOM 1 (`chord_fiber_product_eq_normZ_under_split`): chord_fiber_product = c·normZ.
-    AXIOM 2 (`chord_sum_eq_chord_fiber_product_logDeriv`): chord-sum = log-deriv of chord_fiber_product.
+  **Step 3.** Prove the ratio identity via two algebraic bridges:
+    1. `chord_fiber_product_eq_normZ_under_split`: chord_fiber_product = c·normZ
+       when `β_fun` is pointwise the true local-order multiplicity.
+    2. `chord_sum_eq_chord_fiber_product_logDeriv`: chord-sum = log-deriv of
+       chord_fiber_product, now derived from the narrower Lang trace identity
+       `chord_fiber_product_logDeriv_eq_logDerivTerm_trace`.
 -/
 import Divisor.ChordSumResidue
 import Divisor.NormZDecomp
@@ -66,9 +69,9 @@ theorem logDeriv_const_mul {K : Type*} [Field K]
 /-! ## Step 3: chord_sum_eq_residue_sum -/
 
 /-- **Theorem (scalar trace-of-log-derivative identity on the chord fiber).**
-Parameterised over an arbitrary multiplicity function β_fun. The
-support / coverage / accounting hypotheses on β_fun ensure the
-chord-fiber-product axiom applies. -/
+Parameterised over a multiplicity function `β_fun` that is pointwise
+the true local-order multiplicity. Support / coverage / accounting are
+threaded separately because downstream rational lemmas consume them. -/
 theorem chord_sum_eq_residue_sum
     (D : CoordRingElt E.q)
     (β_fun : ZMod E.q × ZMod E.q → ℕ)
@@ -80,6 +83,7 @@ theorem chord_sum_eq_residue_sum
     (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
     (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
     (hAccount : (∑ P ∈ E.points, β_fun P) = (normPoly E D).natDegree)
+    (hβtrue : ∀ P, β_fun P = betaTrue E D hD P)
     (hA₀def : D.eval A₀.1 A₀.2 ≠ 0)
     (hA₁def : D.eval A₁.1 A₁.2 ≠ 0)
     (hA₂def : let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
@@ -110,11 +114,12 @@ theorem chord_sum_eq_residue_sum
     rw [hMu, hLam]
     exact normZ_eval_ne_zero_of_hQline E D β_fun A₀ A₁ hD hQline
   obtain ⟨c, hc_ne, hcfp_eq⟩ :=
-    chord_fiber_product_eq_normZ_under_split E D lam hD hSplit β_fun hβsup hβcov hAccount
+    chord_fiber_product_eq_normZ_under_split E D lam hD hSplit β_fun
+      hβsup hβcov hAccount hβtrue
   have hcfp_ne : (chord_fiber_product E lam D).eval μ ≠ 0 := by
     rw [hcfp_eq, eval_mul, eval_C]
     exact mul_ne_zero hc_ne hNormZne
-  have hAxiom2 : logDerivTerm E D E.curveA lam A₀
+  have hTrace : logDerivTerm E D E.curveA lam A₀
         + logDerivTerm E D E.curveA lam A₁
         + logDerivTerm E D E.curveA lam
             (lam ^ 2 - A₀.1 - A₁.1,
@@ -145,7 +150,7 @@ theorem chord_sum_eq_residue_sum
         ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2)⁻¹ with hS
   change Nd = -(N * S) at hPFE
   have hLT_eq : LT = Nd / N := by
-    rw [hAxiom2, hLogDeriv]
+    rw [hTrace, hLogDeriv]
   have hNd_div : Nd / N = -S := by
     rw [hPFE]
     field_simp
@@ -164,6 +169,7 @@ theorem trace_logDeriv_eq_normZ_logDeriv
     (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
     (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
     (hAccount : (∑ P ∈ E.points, β_fun P) = (normPoly E D).natDegree)
+    (hβtrue : ∀ P, β_fun P = betaTrue E D hD P)
     (hA₀def : D.eval A₀.1 A₀.2 ≠ 0)
     (hA₁def : D.eval A₁.1 A₁.2 ≠ 0)
     (hA₂def : let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
@@ -193,7 +199,8 @@ theorem trace_logDeriv_eq_normZ_logDeriv
   set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLam
   set μ := zLambda E lam A₀ with hMu
   have hScalar := chord_sum_eq_residue_sum E D β_fun A₀ A₁
-    hA₀ hA₁ hNV hD hSplit hβsup hβcov hAccount hA₀def hA₁def hA₂def hQline hDen
+    hA₀ hA₁ hNV hD hSplit hβsup hβcov hAccount hβtrue
+    hA₀def hA₁def hA₂def hQline hDen
   have hPFE := normZ_logDeriv_at_chord_intercept E D β_fun A₀ A₁ hQline
   set LT : ZMod E.q :=
     logDerivTerm E D E.curveA lam A₀
@@ -229,6 +236,7 @@ theorem chordLogDerivMatchesNormZ_holds
     (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
     (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
     (hAccount : (∑ P ∈ E.points, β_fun P) = (normPoly E D).natDegree)
+    (hβtrue : ∀ P, β_fun P = betaTrue E D hD P)
     (hA₀def : D.eval A₀.1 A₀.2 ≠ 0)
     (hA₁def : D.eval A₁.1 A₁.2 ≠ 0)
     (hA₂def : let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
@@ -247,6 +255,7 @@ theorem chordLogDerivMatchesNormZ_holds
   have hNormZne := normZ_eval_ne_zero_of_hQline E D β_fun A₀ A₁ hD hQline
   apply chordLogDerivMatchesNormZ_of_ratio_eq E D β_fun A₀ A₁ hNormZne
   exact trace_logDeriv_eq_normZ_logDeriv E D β_fun A₀ A₁
-    hA₀ hA₁ hNV hD hSplit hβsup hβcov hAccount hA₀def hA₁def hA₂def hQline hDen hNormZne
+    hA₀ hA₁ hNV hD hSplit hβsup hβcov hAccount hβtrue
+    hA₀def hA₁def hA₂def hQline hDen hNormZne
 
 end Divisor

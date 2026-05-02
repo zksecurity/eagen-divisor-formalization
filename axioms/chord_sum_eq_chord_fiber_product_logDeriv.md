@@ -1,6 +1,7 @@
-# `chord_sum_eq_chord_fiber_product_logDeriv`
+# `chord_fiber_product_logDeriv_eq_logDerivTerm_trace`
 
-- **Lean source**: `Divisor/ChordLogDerivProof.lean:220`
+- **Lean source**: `Divisor/Axioms/AxiomChordSumEqChordFiberProductLogDeriv.lean`
+- **Derived API theorem**: `chord_sum_eq_chord_fiber_product_logDeriv`
 
 The trace-of-logarithmic-derivative identity
 
@@ -10,15 +11,17 @@ specialised to `g = D`, `K = F_q(z)`, `L = F_q(E)`, evaluated at the chord inter
 
 ## Boundary status
 
-This is a sound bridge statement, but it is not the desired final axiom
-shape. It packages the textbook trace/log-derivative theorem together
-with project-specific chord coordinates, `logDerivTerm`, the
-third-intersection formula, and denominator side conditions.
+The project-specific statement `chord_sum_eq_chord_fiber_product_logDeriv`
+is now a theorem. It is derived from the narrower axiom
+`chord_fiber_product_logDeriv_eq_logDerivTerm_trace`, which states the
+trace/log-derivative formula over the roots of the chord cubic, plus
+the chord-cubic factorisation lemmas that identify those roots with
+`A₀`, `A₁`, and the third intersection point.
 
-Final target: state or import the clean theorem
-`Tr(dg/g) = d(N(g))/N(g)` for finite separable function-field
-extensions, then prove this chord-specialized statement as a theorem.
-See `docs/axiom-boundary-target.md`.
+This is the desired citable boundary for the trace/log-derivative step.
+The remaining formal work is to replace the axiom with a general
+function-field theorem `Tr(dg/g)=d(N(g))/N(g)` once that infrastructure
+exists in mathlib or in this repo.
 
 ## Citation
 

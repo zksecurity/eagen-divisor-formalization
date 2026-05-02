@@ -31,11 +31,11 @@ noncomputable def chord_fiber_product
 
 /-! ## Divisor-of-norm formula (Stichtenoth Prop 3.1.9 + Thm 3.7.1)
 
-Under the splitting and accounting hypotheses, the chord-fiber product
-∏ᵢ D(Aᵢ(z)) (the function-field norm) equals a nonzero constant times
-normZ(z). Both polynomials have the same roots with the same
-multiplicities: the norm's roots are the z-coordinates of D's zeros on
-E, with multiplicities matching `betaConstructive`.
+Under the splitting and pointwise true-multiplicity hypotheses, the
+chord-fiber product ∏ᵢ D(Aᵢ(z)) (the function-field norm) equals a
+nonzero constant times normZ(z). Both polynomials have the same roots
+with the same multiplicities: the norm's roots are the z-coordinates of
+D's zeros on E, with multiplicities matching `betaTrue`.
 
 **Citation**: Stichtenoth, *Algebraic Function Fields and Codes*,
 2nd ed., GTM 254, Proposition 3.1.9 (p. 73) — the conorm of a
@@ -69,13 +69,11 @@ proportionality.
 /-- **Chord-fiber product as a constant multiple of `normZ` under
     splitting + accounting.**
 
-    Parameterised over an arbitrary multiplicity function `β_fun`. The
-    proportionality holds when `β_fun` matches the *true* divisor
-    multiplicity of `D` on `E`; the support / coverage / accounting
-    hypotheses pin `β_fun` to that interpretation. The existential
-    witness from `CoordRingElt.exists_divisor_multiplicity` (consumed
-    via `CoordRingElt.has_principal_divisor`) is the canonical such
-    `β_fun`.
+    Parameterised over a multiplicity function `β_fun`, with an explicit
+    pointwise hypothesis that `β_fun` is the true local-order witness
+    `betaTrue E D hD`. Support, coverage, and total accounting are kept
+    because the older rational chain consumes them separately, but they
+    do **not** by themselves determine the pointwise multiplicities.
 
     **Why `β_fun` is parameterised.** The previous formulation hard-
     coded `β_fun = betaConstructive E D`, but `betaConstructive`'s
@@ -91,7 +89,8 @@ axiom chord_fiber_product_eq_normZ_under_split
     (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
     (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
     (hAccount : (∑ P ∈ E.points, β_fun P) =
-                  (normPoly E D).natDegree) :
+                  (normPoly E D).natDegree)
+    (hβtrue : ∀ P, β_fun P = betaTrue E D hD P) :
     ∃ c : ZMod E.q, c ≠ 0 ∧
       chord_fiber_product E lam D = C c * normZ E lam D β_fun
 

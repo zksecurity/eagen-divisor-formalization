@@ -100,35 +100,50 @@ theorem CoordRingElt.exists_divisor_multiplicity
           (fun P => ECPoint.nsmul E (β P) (ECPoint.affine E P.1 P.2)) = 0) :=
   exists_divisor_multiplicity_proved E D hD
 
-/-! ## `betaTrue`: a fixed canonical witness from the existence axiom -/
+/-! ## `betaTrue`: the explicit local-order witness -/
 
 /-- Canonical "true divisor multiplicity" for `D = a − by ∈ F_q[E]^×`,
-    obtained by `Classical.choose` of `exists_divisor_multiplicity`. -/
+    defined by the affine local order `ordAt E D`. -/
 noncomputable def betaTrue (E : ECSetup)
-    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     ZMod E.q × ZMod E.q → ℕ :=
-  Classical.choose (CoordRingElt.exists_divisor_multiplicity E D hD)
+  ordAt E D
 
 theorem betaTrue_support (E : ECSetup)
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     ∀ P, betaTrue E D hD P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0 :=
-  (Classical.choose_spec (CoordRingElt.exists_divisor_multiplicity E D hD)).1
+  by
+    intro P hP
+    unfold betaTrue at hP
+    have hOnE : P ∈ E.points := by
+      by_contra hOff
+      exact hP (ordAt_eq_zero_offE E D hOff)
+    refine ⟨hOnE, ?_⟩
+    by_contra hNZ
+    apply hP
+    exact Nat.eq_zero_of_not_pos (by
+      rw [ordAt_pos_iff_zero E D hD P hOnE]
+      exact hNZ)
 
 theorem betaTrue_covers (E : ECSetup)
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → betaTrue E D hD P ≠ 0 :=
-  (Classical.choose_spec (CoordRingElt.exists_divisor_multiplicity E D hD)).2.1
+  by
+    intro P hP hZ
+    unfold betaTrue
+    rw [← Nat.pos_iff_ne_zero, ordAt_pos_iff_zero E D hD P hP]
+    exact hZ
 
 theorem betaTrue_sum_le_degE (E : ECSetup)
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     (∑ P ∈ E.points, betaTrue E D hD P) ≤ D.degE :=
-  (Classical.choose_spec (CoordRingElt.exists_divisor_multiplicity E D hD)).2.2.1
+  sum_ordAt_le_degE E D
 
 theorem betaTrue_account (E : ECSetup)
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (hSplitOnE : splitsOnE E D) :
     (∑ P ∈ E.points, betaTrue E D hD P) = (normPoly E D).natDegree :=
-  (Classical.choose_spec (CoordRingElt.exists_divisor_multiplicity E D hD)).2.2.2.1 hSplitOnE
+  sum_ordAt_eq_natDegree_under_split E D hD hSplitOnE
 
 theorem betaTrue_group_sum_zero (E : ECSetup)
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
@@ -136,7 +151,7 @@ theorem betaTrue_group_sum_zero (E : ECSetup)
     ECPoint.weightedSum E E.points
       (fun P => ECPoint.nsmul E (betaTrue E D hD P)
                   (ECPoint.affine E P.1 P.2)) = 0 :=
-  (Classical.choose_spec (CoordRingElt.exists_divisor_multiplicity E D hD)).2.2.2.2 hSplitOnE
+  ordAt_group_sum_zero_under_split E D hD hSplitOnE
 
 /-! ## `betaCanonical`: totalised `betaTrue` -/
 
