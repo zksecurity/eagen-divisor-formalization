@@ -105,8 +105,30 @@ theorem chord_fiber_product_concrete_bar_zfiber_pow_dvd
   sorry
 
 /-- **Stub 2a**: natDegree bound for the chord-fibre product against the
-norm polynomial's natDegree. The remaining substantive content (the
-Sylvester analysis or equivalent). -/
+norm polynomial's natDegree.
+
+Mathematically this should be an *equality*, not just `≤`: both
+`chord_fiber_product_concrete` and `normPoly` are affine principal-divisor
+polynomials of the function `D = a - b·y` under different finite
+projections `E → P^1` (chord-projection `z = y - λx` and X-projection),
+and both have natDegree equal to the total zero multiplicity of `D` on
+the affine part of `E`. Since `D` is regular away from infinity, this
+total equals `∑ Q ∈ gd.support, gd.mult Q`, hence
+`(normPoly).natDegree` by `mult_sum_eq_normPoly_natDegree`.
+
+Reference: Stacks Project, [Lemma 42.18.1 (Principal divisors and
+pushforward)](https://stacks.math.columbia.edu/tag/02RS).
+
+Two Lean-tractable proof routes:
+1. Cite the general norm/divisor pushforward as an axiom and
+   instantiate it for both projections.
+2. Direct weighted-leading-term resultant analysis with weights
+   `wt(T) = 3`, `wt(X) = 2`. Under those weights, the leading part of
+   `chordCubicBiv` is `X³ - T²` (weight 6) and the leading part of
+   `DLineBiv` matches `normPoly`'s leading-coefficient structure.
+
+Stated as `≤` (rather than `=`) because that is the form the squeeze
+helper consumes; the equality itself is not needed for the discharge. -/
 theorem chord_fiber_product_concrete_bar_natDegree_le_normPoly
     (lam : ZMod E.q) (D : CoordRingElt E.q)
     (_hD : ¬ (D.a = 0 ∧ D.b = 0)) :
