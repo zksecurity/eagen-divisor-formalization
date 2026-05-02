@@ -930,3 +930,73 @@ theorem chord_fiber_product_concrete_natDegree_eq_of_div
     omega
   rw [Polynomial.natDegree_mul hRES_ne hCFPne, hRES,
       resultant_chordCubicBiv_X_sub_C_natDegree]
+
+/-- **`normPoly` factors under linear divisibility**:
+when `(X − C x₀) ∣ D.a, D.b`, the norm polynomial factors as
+`(X − C x₀)² · normPoly D'` for the linearly-divided `D'`. -/
+theorem normPoly_eq_X_sub_C_sq_mul_of_div
+    (D : CoordRingElt E.q) (x₀ : ZMod E.q)
+    (hda : (Polynomial.X - Polynomial.C x₀) ∣ D.a)
+    (hdb : (Polynomial.X - Polynomial.C x₀) ∣ D.b) :
+    normPoly E D
+      = (Polynomial.X - Polynomial.C x₀) ^ 2
+          * normPoly E { a := D.a /ₘ (Polynomial.X - Polynomial.C x₀),
+                          b := D.b /ₘ (Polynomial.X - Polynomial.C x₀) } := by
+  classical
+  have ha_root : (D.a).IsRoot x₀ := Polynomial.dvd_iff_isRoot.mp hda
+  have hb_root : (D.b).IsRoot x₀ := Polynomial.dvd_iff_isRoot.mp hdb
+  have ha_factor :
+      (Polynomial.X - Polynomial.C x₀) *
+        (D.a /ₘ (Polynomial.X - Polynomial.C x₀)) = D.a :=
+    Polynomial.mul_divByMonic_eq_iff_isRoot.mpr ha_root
+  have hb_factor :
+      (Polynomial.X - Polynomial.C x₀) *
+        (D.b /ₘ (Polynomial.X - Polynomial.C x₀)) = D.b :=
+    Polynomial.mul_divByMonic_eq_iff_isRoot.mpr hb_root
+  rw [normPoly_eq, normPoly_eq]
+  conv_lhs => rw [← ha_factor, ← hb_factor]
+  ring
+
+/-- **Inductive step for the natDegree equality**:
+under the linear divisibility, if `chord_fiber_product`'s natDegree
+matches `normPoly`'s for the linearly-divided `D'`, then it matches
+for `D` itself. This is the natDegree induction step that, combined
+with a base case, would close the natDegree comparison stub
+(`chord_fiber_product.natDegree ≤ normPoly.natDegree`). -/
+theorem chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step
+    (lam : ZMod E.q) (D : CoordRingElt E.q) (x₀ : ZMod E.q)
+    (hda : (Polynomial.X - Polynomial.C x₀) ∣ D.a)
+    (hdb : (Polynomial.X - Polynomial.C x₀) ∣ D.b)
+    (hD'ne : ¬ ((D.a /ₘ (Polynomial.X - Polynomial.C x₀)) = 0
+                ∧ (D.b /ₘ (Polynomial.X - Polynomial.C x₀)) = 0))
+    (hDLne : DLineBiv E lam
+              { a := D.a /ₘ (Polynomial.X - Polynomial.C x₀)
+                b := D.b /ₘ (Polynomial.X - Polynomial.C x₀) } ≠ 0)
+    (hCFPne : chord_fiber_product_concrete E lam
+                { a := D.a /ₘ (Polynomial.X - Polynomial.C x₀)
+                  b := D.b /ₘ (Polynomial.X - Polynomial.C x₀) } ≠ 0)
+    (hIH : (chord_fiber_product_concrete E lam
+              { a := D.a /ₘ (Polynomial.X - Polynomial.C x₀)
+                b := D.b /ₘ (Polynomial.X - Polynomial.C x₀) }).natDegree
+            = (normPoly E
+                { a := D.a /ₘ (Polynomial.X - Polynomial.C x₀)
+                  b := D.b /ₘ (Polynomial.X - Polynomial.C x₀) }).natDegree) :
+    (chord_fiber_product_concrete E lam D).natDegree
+      = (normPoly E D).natDegree := by
+  classical
+  rw [chord_fiber_product_concrete_natDegree_eq_of_div E lam D x₀
+        hda hdb hDLne hCFPne]
+  rw [hIH]
+  rw [normPoly_eq_X_sub_C_sq_mul_of_div E D x₀ hda hdb]
+  -- Goal: 2 + (normPoly E D').natDegree = ((X - C x₀)^2 * normPoly E D').natDegree
+  have hXne : (Polynomial.X - Polynomial.C x₀ : (ZMod E.q)[X]) ≠ 0 :=
+    (Polynomial.monic_X_sub_C _).ne_zero
+  have hXpow_ne :
+      ((Polynomial.X - Polynomial.C x₀ : (ZMod E.q)[X]) ^ 2) ≠ 0 :=
+    pow_ne_zero _ hXne
+  have hNormD'_ne : normPoly E
+      { a := D.a /ₘ (Polynomial.X - Polynomial.C x₀)
+        b := D.b /ₘ (Polynomial.X - Polynomial.C x₀) } ≠ 0 :=
+    normPoly_ne_zero E _ hD'ne
+  rw [Polynomial.natDegree_mul hXpow_ne hNormD'_ne]
+  rw [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C]
