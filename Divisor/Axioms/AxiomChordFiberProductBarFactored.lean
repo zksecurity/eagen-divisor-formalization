@@ -43,6 +43,27 @@ variable (E : ECSetup)
 
     This is exactly the push-forward of the zero divisor under the chord
     projection, i.e. `div(N(D)) = π_*(div D)` written coefficientwise.
+
+    Citation: Stichtenoth, *Algebraic Function Fields and Codes*
+    (GTM 254, 2nd ed.), **Proposition 3.1.9**, p. 73 (conorm of a
+    principal divisor is principal). The coefficientwise form of this
+    statement still requires two project-side bridges (handled
+    implicitly by the carriers in this signature):
+    (a) `chord_fiber_product_concrete` is the function-field norm of
+        `D` for the extension `F_qbar(E) / F_qbar(zLambdaBar lam)`,
+        i.e. equality between the concrete resultant and the abstract
+        norm. The "value at every fibre" form of this identification is
+        already proved as
+        `chord_fiber_product_concrete_bar_eval_eq_prod` via mathlib's
+        `Polynomial.resultant_eq_prod_eval`; the "rootMultiplicity at
+        every fibre" form is what this axiom packages.
+    (b) `gd.mult Q` is the local divisor multiplicity at the place of
+        `F_qbar(E)` corresponding to `Q : GeomPoint E`. Project-side
+        this follows from
+        `GeometricDivisorData.mult_eq_geomLocalOrder` plus the
+        identification of `geomLocalOrder` with the adic valuation at
+        the relevant maximal ideal — substantive work that mathlib
+        does not yet supply for the affine coordinate ring of `E`.
 -/
 axiom chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
