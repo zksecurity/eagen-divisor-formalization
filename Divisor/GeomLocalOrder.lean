@@ -1240,6 +1240,106 @@ theorem geomLocalOrderCore_accounting_le_degE
   exact Finset.sum_congr rfl fun α _hα => by rw [Polynomial.count_roots]
 
 /--
+**Equality form of degree accounting**: the total geometric divisor
+multiplicity equals `natDegree(normPolyBar E D)` (the X-projection norm
+polynomial after base change to `Fqbar`).
+
+Strengthens `geomLocalOrderCore_accounting_le_degE` from `≤ D.degE` to
+the *exact* equality with the natDegree of the base-changed norm
+polynomial. Over an algebraically closed `Fqbar E`, the norm polynomial
+splits, so its `roots.card` equals its `natDegree`; combined with the
+`fiber_accounting` re-indexing, the sum identity is exact.
+
+Useful infrastructure for divisor-of-norm pushforward arguments
+(in particular for the chord-projection version, where the same total
+appears as `∑ Q gd.mult Q` on the right side of the in-image case of
+the chord-fibre rootMultiplicity identity).
+-/
+theorem geomLocalOrderCore_accounting_eq_normPolyBar_natDegree
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (support : Finset (GeomPoint E))
+    (hSupportZero : ∀ Q ∈ support, D.geomEval E Q = 0)
+    (_hZeroSupport : ∀ Q, D.geomEval E Q = 0 → Q ∈ support)
+    (core : GeomLocalOrderCore E D support) :
+    (∑ Q ∈ support, core.ord Q) = (normPolyBar E D).natDegree := by
+  classical
+  -- Re-index by x-coordinate; every Q.x lies in normPolyBar.roots.toFinset.
+  have hsum :
+      (∑ Q ∈ support, core.ord Q)
+        = ∑ α ∈ (normPolyBar E D).roots.toFinset,
+            (normPolyBar E D).rootMultiplicity α := by
+    have hfiber :
+        (∑ Q ∈ support, core.ord Q)
+          = ∑ α ∈ (normPolyBar E D).roots.toFinset,
+              ∑ Q ∈ support.filter (fun Q => Q.x = α), core.ord Q := by
+      rw [← Finset.sum_biUnion]
+      · congr with Q
+        simp +decide
+        intro hQ
+        exact ⟨
+          Polynomial.map_ne_zero (normPoly_ne_zero E D hDnz),
+          normPolyBar_eval_zero_of_geomEval_zero E D Q (hSupportZero Q hQ)⟩
+      · intro x _hx y _hy hxy
+        exact Finset.disjoint_left.mpr fun z hz₁ hz₂ => hxy (by aesop)
+    exact hfiber.trans (Finset.sum_congr rfl fun α _hα => core.fiber_accounting α)
+  rw [hsum]
+  -- ∑ over roots of rootMultiplicity = roots.card; over Fqbar the polynomial
+  -- splits so card = natDegree.
+  have hpne : (normPolyBar E D) ≠ 0 :=
+    Polynomial.map_ne_zero (normPoly_ne_zero E D hDnz)
+  have hsplit : (normPolyBar E D).Splits := IsAlgClosed.splits _
+  have hcard : (normPolyBar E D).roots.card = (normPolyBar E D).natDegree :=
+    hsplit.natDegree_eq_card_roots.symm
+  have hcountSum :
+      ∑ α ∈ (normPolyBar E D).roots.toFinset,
+        (normPolyBar E D).rootMultiplicity α
+        = (normPolyBar E D).roots.card := by
+    rw [← Multiset.toFinset_sum_count_eq]
+    exact Finset.sum_congr rfl fun α _hα => by rw [Polynomial.count_roots]
+  rw [hcountSum, hcard]
+
+/-- **Equality of total multiplicity with `normPoly`'s natDegree**
+(over `ZMod E.q`). Same as the bar version above, lifted across the
+injective `algebraMap : ZMod E.q → Fqbar E`. -/
+theorem geomLocalOrderCore_accounting_eq_normPoly_natDegree
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (support : Finset (GeomPoint E))
+    (hSupportZero : ∀ Q ∈ support, D.geomEval E Q = 0)
+    (_hZeroSupport : ∀ Q, D.geomEval E Q = 0 → Q ∈ support)
+    (core : GeomLocalOrderCore E D support) :
+    (∑ Q ∈ support, core.ord Q) = (normPoly E D).natDegree := by
+  rw [geomLocalOrderCore_accounting_eq_normPolyBar_natDegree
+        E D hDnz support hSupportZero _hZeroSupport core]
+  unfold normPolyBar
+  exact Polynomial.natDegree_map _
+
+/-- **GeometricDivisorData total multiplicity = `normPolyBar` natDegree.** -/
+theorem GeometricDivisorData.mult_sum_eq_normPolyBar_natDegree
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) :
+    (∑ Q ∈ gd.support, gd.mult Q) = (normPolyBar E D).natDegree := by
+  classical
+  -- Build a `GeomLocalOrderCore` from `gd`'s fields and apply the core lemma.
+  let core : GeomLocalOrderCore E D gd.support :=
+    { ord := gd.mult
+      ord_pos_on_support := gd.mult_pos_on_support
+      ord_zero_off_support := gd.mult_zero_off_support
+      multiplicity_spec := gd.multiplicity_spec
+      fiber_accounting := gd.fiber_accounting
+      frobenius_stable := gd.frobenius_stable }
+  exact geomLocalOrderCore_accounting_eq_normPolyBar_natDegree
+    E D hDnz gd.support gd.support_eval_zero gd.eval_zero_mem_support core
+
+/-- **GeometricDivisorData total multiplicity = `normPoly` natDegree.** -/
+theorem GeometricDivisorData.mult_sum_eq_normPoly_natDegree
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) :
+    (∑ Q ∈ gd.support, gd.mult Q) = (normPoly E D).natDegree := by
+  rw [GeometricDivisorData.mult_sum_eq_normPolyBar_natDegree E D hDnz gd]
+  unfold normPolyBar
+  exact Polynomial.natDegree_map _
+
+/--
 Fiber accounting for geometric local orders.
 
 PROVIDED SOLUTION
