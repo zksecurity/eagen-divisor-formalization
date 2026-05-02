@@ -456,4 +456,56 @@ theorem chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_genera
     normPoly_ne_zero E _ hD'ne
   rw [Polynomial.natDegree_mul hp_pow_ne hNormD'_ne, Polynomial.natDegree_pow]
 
+/-! ### Streamlined inductive steps with auto-derived non-vanishing
+
+The `_step` theorems above take both `hDLne` and `hCFPne` as explicit
+hypotheses. With the project's `DLineBiv_ne_zero` and the production
+`chord_fiber_product_concrete_ne_zero` lemmas, both follow from the
+single non-degeneracy condition `¬ (D'.a = 0 ∧ D'.b = 0)`. The
+streamlined wrappers below let callers pass that single hypothesis. -/
+
+/-- **Streamlined linear-factor inductive step**: takes only
+`¬ (D'.a = 0 ∧ D'.b = 0)` and derives the DLineBiv/chord_fiber_product
+non-vanishing internally. -/
+theorem chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step'
+    (lam : ZMod E.q) (D : CoordRingElt E.q) (x₀ : ZMod E.q)
+    (hda : (Polynomial.X - Polynomial.C x₀) ∣ D.a)
+    (hdb : (Polynomial.X - Polynomial.C x₀) ∣ D.b)
+    (hD'ne : ¬ ((D.a /ₘ (Polynomial.X - Polynomial.C x₀)) = 0
+                ∧ (D.b /ₘ (Polynomial.X - Polynomial.C x₀)) = 0))
+    (hIH : (chord_fiber_product_concrete E lam
+              { a := D.a /ₘ (Polynomial.X - Polynomial.C x₀)
+                b := D.b /ₘ (Polynomial.X - Polynomial.C x₀) }).natDegree
+            = (normPoly E
+                { a := D.a /ₘ (Polynomial.X - Polynomial.C x₀)
+                  b := D.b /ₘ (Polynomial.X - Polynomial.C x₀) }).natDegree) :
+    (chord_fiber_product_concrete E lam D).natDegree
+      = (normPoly E D).natDegree :=
+  chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step
+    E lam D x₀ hda hdb hD'ne (DLineBiv_ne_zero E lam _ hD'ne)
+    (chord_fiber_product_concrete_ne_zero E lam _ hD'ne) hIH
+
+/-- **Streamlined general-monic inductive step**: takes only
+`¬ (D'.a = 0 ∧ D'.b = 0)` and derives the DLineBiv/chord_fiber_product
+non-vanishing internally. -/
+theorem chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_general'
+    (lam : ZMod E.q) (D : CoordRingElt E.q) (p : Polynomial (ZMod E.q))
+    (hpm : p.Monic) (hpa : p ∣ D.a) (hpb : p ∣ D.b)
+    (hD'ne : ¬ ((D.a /ₘ p) = 0 ∧ (D.b /ₘ p) = 0))
+    (hRES_natDegree :
+      (Polynomial.resultant (chordCubicBiv E lam)
+        (p.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
+        (chordCubicBiv E lam).natDegree p.natDegree).natDegree
+        = 2 * p.natDegree)
+    (hIH : (chord_fiber_product_concrete E lam
+              { a := D.a /ₘ p, b := D.b /ₘ p }).natDegree
+            = (normPoly E
+                { a := D.a /ₘ p, b := D.b /ₘ p }).natDegree) :
+    (chord_fiber_product_concrete E lam D).natDegree
+      = (normPoly E D).natDegree :=
+  chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_general
+    E lam D p hpm hpa hpb hD'ne (DLineBiv_ne_zero E lam _ hD'ne)
+    (chord_fiber_product_concrete_ne_zero E lam _ hD'ne)
+    hRES_natDegree hIH
+
 end Divisor
