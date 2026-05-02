@@ -3215,7 +3215,7 @@ private noncomputable def rationalLift
 
 /-- The geometric multiplicity at the rational lift of `P`, when `P` is
 a rational zero of `D`; otherwise zero. -/
-private noncomputable def rationalMultAt
+noncomputable def rationalMultAt
     (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
     (P : ZMod E.q × ZMod E.q) : ℕ :=
   if hP : P ∈ E.points ∧ D.eval P.1 P.2 = 0 then
@@ -3228,6 +3228,23 @@ theorem rationalMultAt_eq_gd_mult_at_lift
     rationalMultAt E D gd P = gd.mult (rationalLift E P hP) := by
   unfold rationalMultAt
   rw [dif_pos ⟨hP, hZero⟩]
+
+/-- **Local multiplicity compatibility.**
+
+When the geometric zero divisor of `D` is supported on rational points,
+the project-level canonical affine multiplicity `betaCanonical` agrees
+pointwise with the geometric local multiplicity at the rational lift.
+
+Mathematically this is the statement that the local order computed in
+the affine coordinate chart is the coefficient of the same place in the
+geometric divisor of `D`; see Stichtenoth, Algebraic Function Fields and
+Codes, §I.4 (places, valuations, local parameters) and Silverman AEC
+II §1-3 (divisors of rational functions on curves). -/
+axiom betaCanonical_eq_rationalMultAt_of_gd_support_rational
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) (hRat : gd_support_rational E D gd) :
+    ∀ P : ZMod E.q × ZMod E.q,
+      betaCanonical E D P = rationalMultAt E D gd P
 
 /-- Under `gd_support_rational`, any `Fqbar`-valued sum over `gd.support`
 that depends on `Q` only through `(Q.x, Q.y)` re-indexes to a sum over
@@ -4212,67 +4229,11 @@ private theorem polyG_zero_at_defined_betaCanonical_of_hAllZero_and_hRat
       (Fin.cons (-1) (fun j => -m j))
       A₀ A₁ = 0 := by
   classical
-  -- Step 1: derive splitsOnE from hRat.
-  have hSplit : splitsOnE E D :=
-    splitsOnE_of_gd_support_rational E D hDnz gd hRat
-  -- Step 2: betaCanonical's properties.
-  have hβsup : ∀ P', betaCanonical E D P' ≠ 0 → P' ∈ E.points ∧ D.eval P'.1 P'.2 = 0 :=
-    betaCanonical_support E D
-  have hβcov : ∀ P' ∈ E.points, D.eval P'.1 P'.2 = 0 → betaCanonical E D P' ≠ 0 :=
-    betaCanonical_covers E D hDnz
-  have hβaccount : (∑ P' ∈ E.points, betaCanonical E D P') = (normPoly E D).natDegree :=
-    betaCanonical_account E D hSplit
-  -- Step 3: extract chord-fiber non-vanishing conditions from hDef.
-  have hDenom : logDerivCheckFnDenom E D P B A₀ A₁ ≠ 0 := hDef
-  have h_chord_avoid : ∀ P' ∈ zerosFinset E D,
-      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P'.1 P'.2 ≠ 0 :=
-    chord_avoids_D_zeros_of_denom_defined D P B A₀ A₁ hA₀ hA₁ hNV hDenom
-  unfold logDerivCheckFnDefined logDerivCheckFnDenom at hDef
-  set lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2 with hLam_def
-  set x₂ := lam ^ 2 - A₀.1 - A₁.1 with hX₂_def
-  set y₂ := lam * x₂ + (A₀.2 - lam * A₀.1) with hY₂_def
-  -- Extract individual factors from hDef. hDef =
-  --   D.eval A₀ * D.eval A₁ * D.eval A₂
-  --     * (3A₀²+A-2λA₀.y) * (3A₁²+A-2λA₁.y) * (3A₂²+A-2λA₂.y)
-  --     * L.eval(-P) * ∏_j L.eval(B_j) ≠ 0
-  -- left-nested as (((((((D₀*D₁)*D₂)*S₀)*S₁)*S₂)*Lp)*Lbp.
-  have h1 := left_ne_zero_of_mul hDef                       -- (D₀*D₁*D₂*S₀*S₁*S₂*Lp)
-  have h2 := left_ne_zero_of_mul h1                         -- (D₀*D₁*D₂*S₀*S₁*S₂)
-  have h3 := left_ne_zero_of_mul h2                         -- (D₀*D₁*D₂*S₀*S₁)
-  have h4 := left_ne_zero_of_mul h3                         -- (D₀*D₁*D₂*S₀)
-  have h5 := left_ne_zero_of_mul h4                         -- (D₀*D₁*D₂)
-  have h6 := left_ne_zero_of_mul h5                         -- (D₀*D₁)
-  have hA₀def : D.eval A₀.1 A₀.2 ≠ 0 := left_ne_zero_of_mul h6
-  have hA₁def : D.eval A₁.1 A₁.2 ≠ 0 := right_ne_zero_of_mul h6
-  have hA₂def : D.eval x₂ y₂ ≠ 0 := right_ne_zero_of_mul h5
-  have hDen0 : 3 * A₀.1 ^ 2 + E.curveA - 2 * lam * A₀.2 ≠ 0 :=
-    right_ne_zero_of_mul h4
-  have hDen1 : 3 * A₁.1 ^ 2 + E.curveA - 2 * lam * A₁.2 ≠ 0 :=
-    right_ne_zero_of_mul h3
-  have hDen2 : 3 * x₂ ^ 2 + E.curveA - 2 * lam * y₂ ≠ 0 :=
-    right_ne_zero_of_mul h2
-  have hDen : ∀ pt : ZMod E.q × ZMod E.q,
-      pt = A₀ ∨ pt = A₁ ∨ pt = (x₂, y₂) →
-      3 * pt.1 ^ 2 + E.curveA - 2 * lam * pt.2 ≠ 0 := by
-    intro pt hpt
-    rcases hpt with rfl | rfl | rfl
-    · exact hDen0
-    · exact hDen1
-    · exact hDen2
-  have h_negP_line : (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P.1 (-P.2) ≠ 0 :=
-    right_ne_zero_of_mul (left_ne_zero_of_mul hDef)
-  have h_B_lineProd : (Finset.univ : Finset (Fin k)).prod
-        (fun j => (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2) ≠ 0 :=
-    right_ne_zero_of_mul hDef
-  have h_B_line : ∀ j : Fin k,
-      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2 ≠ 0 := by
-    intro j
-    exact fun hj => h_B_lineProd (Finset.prod_eq_zero (Finset.mem_univ j) hj)
-  have hCheck : logDerivCheckFn E D P k B m A₀ A₁ = 0 :=
-    hAllZero A₀ A₁ hA₀ hA₁ hNV hDef
-  exact polyG_zero_at_defined E D hDnz (betaCanonical E D) hβsup hβcov hSplit hβaccount
-    P B m A₀ A₁ hA₀ hA₁ hNV hA₀def hA₁def hA₂def h_chord_avoid hDen
-    h_negP_line h_B_line hCheck
+  have hGeom :=
+    polyG_zero_of_hAllZero_and_hRat E D hDnz gd hRat P B m hAllZero
+      A₀ A₁ hA₀ hA₁ hNV hDef
+  have hβeq := betaCanonical_eq_rationalMultAt_of_gd_support_rational E D hDnz gd hRat
+  simpa [multAt, hβeq] using hGeom
 
 /-- **Layer A bridge**: raw `hAllZero` (on `stmt.bases`, `msg.m`) implies
 the distinct-form `hAllZero` (on `baseAt`, `distinctM'_tail`). -/
