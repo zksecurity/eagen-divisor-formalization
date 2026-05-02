@@ -169,16 +169,54 @@ theorem chord_fiber_product_concrete_bar_eq_geom_prod
   exact chord_fiber_product_concrete_bar_eq_geom_prod_of_rootMultiplicity E lam D hD gd
     (chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber E lam D hD gd)
 
+/-- **Narrow gap: bar-level proportionality.**
+
+Under `splitsOnE` and the standard `β_fun` hypotheses, the base-changed
+`chord_fiber_product_concrete` and the base-changed `normZ` agree up to
+a non-zero `Fqbar`-scalar.
+
+This is the *true* missing mathematical step. The
+`support`/`coverage`/`accounting` hypotheses on `β_fun` constrain its
+support and total sum but **do not pin its pointwise multiplicities**:
+for each `P ∈ zerosFinset E D`, the value `β_fun P` is constrained only
+to lie in `[1, ..., (normPoly E D).natDegree − (#zerosFinset − 1)]` with
+the others summing to the rest. The bar-level proportionality forces
+`β_fun P` to equal the *true* divisor multiplicity at `P` (a.k.a.
+`gd.mult Q_P` after lifting), so the right value of `β_fun` is the one
+coming from `betaTrue` / `CoordRingElt.exists_divisor_multiplicity` /
+`HasPrincipalDivisor`.
+
+Since the theorem statement does not enforce this matching, it is
+**not provable from the hypotheses as stated** — concretely, a `β_fun`
+with the right support and sum but wrong pointwise distribution makes
+the LHS and RHS unequal even up to a scalar. The downstream consumer
+always supplies `β_fun = betaTrue`, so this is morally fine, but the
+formalisation needs either an extra matching hypothesis or a switch to
+`gd.mult ∘ lift` directly.
+
+This lemma encapsulates the full gap as a single sorry. -/
+private lemma chord_fiber_product_concrete_eq_normZ_under_split_bar
+    (D : CoordRingElt E.q) (lam : ZMod E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (_hSplitOnE : splitsOnE E D)
+    (β_fun : ZMod E.q × ZMod E.q → ℕ)
+    (_hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
+    (_hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
+    (_hAccount : (∑ P ∈ E.points, β_fun P) = (normPoly E D).natDegree) :
+    ∃ cBar : Fqbar E, cBar ≠ 0 ∧
+      (chord_fiber_product_concrete E lam D).map
+          (algebraMap (ZMod E.q) (Fqbar E)) =
+        Polynomial.C cBar *
+          (normZ E lam D β_fun).map (algebraMap (ZMod E.q) (Fqbar E)) := by
+  sorry
+
 /-- **Proportionality to `normZ` under splitting** (replacement of
 `chord_fiber_product_eq_normZ_under_split`).
 
-*Plumbing once `bar_eq_geom_prod` is in hand.*
-
-Both sides are polynomials in `(ZMod E.q)[X]`. Pass to `Fqbar`; the
-left factors via `bar_eq_geom_prod`, the right factors directly via the
-splitting hypothesis (rational `D`-zeros = `gd.support` over the bar).
-The two factored forms agree up to a leading scalar, which descends to
-`ZMod E.q` since both originals do. -/
+Reduces to the bar-level matching lemma
+`chord_fiber_product_concrete_eq_normZ_under_split_bar` (the only
+remaining `sorry`); descent from `Fqbar` to `ZMod E.q` is mechanical
+via leading coefficients and injectivity of `Polynomial.map (algebraMap)`. -/
 theorem chord_fiber_product_concrete_eq_normZ_under_split
     (D : CoordRingElt E.q) (lam : ZMod E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0))
@@ -190,7 +228,51 @@ theorem chord_fiber_product_concrete_eq_normZ_under_split
                   (normPoly E D).natDegree) :
     ∃ c : ZMod E.q, c ≠ 0 ∧
       chord_fiber_product_concrete E lam D = Polynomial.C c * normZ E lam D β_fun := by
-  sorry
+  classical
+  set f := chord_fiber_product_concrete E lam D with hf_def
+  set g := normZ E lam D β_fun with hg_def
+  have hf_ne : f ≠ 0 := chord_fiber_product_concrete_ne_zero E lam D hD
+  have hg_ne : g ≠ 0 := normZ_ne_zero E lam D hD β_fun
+  -- Bar-level proportionality from the sorry'd lemma.
+  obtain ⟨cBar, hcBar_ne, hbar⟩ :=
+    chord_fiber_product_concrete_eq_normZ_under_split_bar E D lam hD hSplitOnE
+      β_fun hβsup hβcov hAccount
+  -- Descent: cBar must lie in the image of `algebraMap`, namely as the ratio
+  -- of leading coefficients (over the field `ZMod E.q`).
+  set φ : ZMod E.q →+* Fqbar E := algebraMap (ZMod E.q) (Fqbar E)
+  have hφ_inj : Function.Injective φ :=
+    (algebraMap (ZMod E.q) (Fqbar E)).injective
+  -- Leading coefficients: lc(f.map) = cBar * lc(g.map), with both sides via φ.
+  have hlc_eq : φ f.leadingCoeff = cBar * φ g.leadingCoeff := by
+    have h_lc :
+        (f.map φ).leadingCoeff =
+          (Polynomial.C cBar * g.map φ).leadingCoeff := by rw [hbar]
+    have _hg_map_ne : g.map φ ≠ 0 := Polynomial.map_ne_zero hg_ne
+    rw [Polynomial.leadingCoeff_mul, Polynomial.leadingCoeff_C] at h_lc
+    rw [Polynomial.leadingCoeff_map_of_injective hφ_inj f,
+        Polynomial.leadingCoeff_map_of_injective hφ_inj g] at h_lc
+    exact h_lc
+  -- Pick c := lc f / lc g; then φ c = cBar.
+  have hg_lc_ne : g.leadingCoeff ≠ 0 :=
+    Polynomial.leadingCoeff_ne_zero.mpr hg_ne
+  refine ⟨f.leadingCoeff * g.leadingCoeff⁻¹, ?_, ?_⟩
+  · -- c ≠ 0.
+    have hf_lc_ne : f.leadingCoeff ≠ 0 :=
+      Polynomial.leadingCoeff_ne_zero.mpr hf_ne
+    exact mul_ne_zero hf_lc_ne (inv_ne_zero hg_lc_ne)
+  · -- f = C c * g, by descending from f.map = (C c * g).map (injective map).
+    have hφc : φ (f.leadingCoeff * g.leadingCoeff⁻¹) = cBar := by
+      rw [map_mul, map_inv₀]
+      have hφg_ne : φ g.leadingCoeff ≠ 0 := by
+        rw [Ne, ← map_zero φ]; exact fun h => hg_lc_ne (hφ_inj h)
+      rw [hlc_eq]
+      field_simp
+    have hmap_eq :
+        f.map φ = (Polynomial.C (f.leadingCoeff * g.leadingCoeff⁻¹) * g).map φ := by
+      rw [Polynomial.map_mul, Polynomial.map_C]
+      rw [hφc]
+      exact hbar
+    exact Polynomial.map_injective φ hφ_inj hmap_eq
 
 /-- **Log-derivative identity** (replacement of
 `chord_sum_eq_chord_fiber_product_logDeriv`).
