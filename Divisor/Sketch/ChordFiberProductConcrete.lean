@@ -30,6 +30,7 @@ import Divisor.ChordFiberProductConcrete
 import Divisor.FunctionFieldZ
 import Divisor.GeomLocalOrder
 import Divisor.LogDeriv
+import Divisor.PartialFractionExpansion
 
 open Polynomial
 
@@ -64,6 +65,82 @@ theorem chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber
         (chord_fiber_product_concrete E lam D)).rootMultiplicity z =
         ∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q := by
   sorry
+
+/-! ### Discharge plan via the multiplicity squeeze helper
+
+The above multiplicity equality can be discharged from two strictly
+weaker pieces using `Divisor.rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le`:
+
+1. **Fibrewise divisibility** (the local divisor-of-norm content):
+   for each `z` in the fibre image, `(X − C z)^(fibre sum) ∣ p`.
+
+2. **Global natDegree bound**: `p.natDegree ≤ ∑ Q ∈ gd.support, gd.mult Q`.
+
+Combined with the existing root-set theorem
+`chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image`, the
+helper's squeeze argument forces multiplicity equality at every fibre.
+The two stubbed pieces capture *exactly* what's substantive: a local
+divisor-of-norm intersection statement, and a degree count for the
+chord-projection norm polynomial. The natDegree bound is plausibly
+provable from mathlib's resultant Sylvester-matrix machinery applied to
+the specific T-degree profiles of `chordCubicBiv`'s coefficients
+(constants, A − 2λT, B − T²) and `DLineBiv`'s coefficients
+(`-D.b·λ` and `D.a − D.b·T`); the divisibility bound is the genuine
+divisor-of-norm content. -/
+
+/-- **Stub 1**: fibrewise divisibility for the chord-fibre product. -/
+theorem chord_fiber_product_concrete_bar_zfiber_pow_dvd
+    [DecidableEq (Fqbar E)]
+    (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) (z : Fqbar E) :
+    (Polynomial.X - Polynomial.C z) ^
+      (∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q)
+      ∣ (chord_fiber_product_concrete E lam D).map
+          (algebraMap (ZMod E.q) (Fqbar E)) :=
+  sorry
+
+/-- **Stub 2**: natDegree bound for the chord-fibre product (bar). -/
+theorem chord_fiber_product_concrete_bar_natDegree_le
+    (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) :
+    ((chord_fiber_product_concrete E lam D).map
+        (algebraMap (ZMod E.q) (Fqbar E))).natDegree
+      ≤ ∑ Q ∈ gd.support, gd.mult Q :=
+  sorry
+
+/-- **Discharge sketch**: the multiplicity equality follows from the two
+stubs via the helper. -/
+theorem chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_via_squeeze
+    [DecidableEq (Fqbar E)]
+    (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) :
+    ∀ z : Fqbar E,
+      (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+        (chord_fiber_product_concrete E lam D)).rootMultiplicity z =
+        ∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q := by
+  classical
+  set p := (chord_fiber_product_concrete E lam D).map
+    (algebraMap (ZMod E.q) (Fqbar E)) with hp_def
+  have hpne : p ≠ 0 :=
+    Polynomial.map_ne_zero
+      (chord_fiber_product_concrete_ne_zero E lam D hD)
+  have hroots :
+      p.roots.toFinset = gd.support.image (zLambdaBar E lam) :=
+    chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image
+      E lam D hD gd
+  have hdvd : ∀ z ∈ gd.support.image (zLambdaBar E lam),
+      (Polynomial.X - Polynomial.C z) ^
+        (∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q)
+        ∣ p :=
+    fun z _ =>
+      chord_fiber_product_concrete_bar_zfiber_pow_dvd E lam D hD gd z
+  have hdeg : p.natDegree ≤ ∑ Q ∈ gd.support, gd.mult Q :=
+    chord_fiber_product_concrete_bar_natDegree_le E lam D hD gd
+  exact Divisor.rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le
+    p gd.support (zLambdaBar E lam) gd.mult hpne hroots hdvd hdeg
 
 /-- **Plumbing from multiplicity accounting to factored form.**
 
