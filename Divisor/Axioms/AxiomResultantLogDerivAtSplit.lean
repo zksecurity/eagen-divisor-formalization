@@ -61,8 +61,49 @@ and `Mathlib.FieldTheory.Differential.Basic`. The bridge between the
 `Polynomial.derivative` map on `K[T]` and the `Differential` instance
 on the splitting field is the only missing ingredient. -/
 
+/-! ### Conclusion abbrev (used by both axiom and trivial-case theorem) -/
+
+/-- The conclusion of the resultant-log-derivative identity, factored
+out so the axiom and its trivial-case theorem do not duplicate the
+long expression. Marked `abbrev` so it transparently reduces at the
+existing call site in
+`AxiomChordSumEqChordFiberProductLogDeriv.lean`. -/
+private abbrev resultantLogDerivConclusion
+    {K : Type*} [Field K] (f g : K[X][X]) (t₀ : K) : Prop :=
+  Polynomial.eval t₀
+      (Polynomial.derivative
+        (Polynomial.resultant f g f.natDegree g.natDegree))
+    / (Polynomial.resultant f g f.natDegree g.natDegree).eval t₀
+  =
+    ((f.map (Polynomial.evalRingHom t₀)).roots.map (fun x =>
+      let f_X := ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x
+      let f_T := ((f.eval (Polynomial.C x)).derivative).eval t₀
+      let g_X := ((g.map (Polynomial.evalRingHom t₀)).derivative).eval x
+      let g_T := ((g.eval (Polynomial.C x)).derivative).eval t₀
+      let g_val := (g.map (Polynomial.evalRingHom t₀)).eval x
+      (g_T * f_X - g_X * f_T) / (f_X * g_val))).sum
+
+/-- **Trivial case** (degree zero): when `f` is monic of degree zero,
+`f = 1`, so `Res_X(f, g) = 1` (mathlib's `Polynomial.resultant_one_left`
+specialised to `m = 0`), the LHS is `0/1 = 0`, and the RHS sum is empty.
+This case is provable from polynomial identities and does not need the
+generic resultant log-derivative axiom. -/
+theorem resultant_logDeriv_at_split_specialization_of_natDegree_eq_zero
+    {K : Type*} [Field K]
+    (f g : K[X][X]) (t₀ : K)
+    (hMonic : f.Monic) (hfdeg : f.natDegree = 0) :
+    resultantLogDerivConclusion f g t₀ := by
+  have hf : f = 1 := hMonic.natDegree_eq_zero.mp hfdeg
+  subst hf
+  simp [resultantLogDerivConclusion]
+
 /-- **Logarithmic derivative of a bivariate resultant at a split
-specialization.**
+specialization** — narrowed to `0 < f.natDegree`.
+
+The `f.natDegree = 0` case is handled separately by the theorem
+`resultant_logDeriv_at_split_specialization_of_natDegree_eq_zero` above.
+The unrestricted form is recovered as a theorem via case split:
+see `resultant_logDeriv_at_split_specialization` below.
 
 Setup: `f, g : K[X][X]` (i.e. polynomials in the outer `Polynomial.X`
 with coefficients in `K[X]` for the inner `Polynomial.X`); `t₀ : K` the
@@ -76,6 +117,9 @@ Hypotheses:
   picks up the corresponding logarithmic derivative
   `d/dT log(lc(f)^{deg g})` term. The project-side caller
   (`chordCubicBiv`) is monic, so we keep the simpler statement.
+* `hf_pos` — `0 < f.natDegree`. The degree-zero case is provable from
+  polynomial identities (see the theorem above) and is handled by the
+  unrestricted re-export.
 * `hF_ne` — the resultant evaluation `F(t₀) ≠ 0`.
 * `hSplit` — the inner-specialised polynomial `f(X, t₀)` splits
   over `K`.
@@ -105,7 +149,28 @@ moving chord root `x(t)` defined by `f(x(t), t) = 0`.
 Reference: Lang, *Algebra* GTM 211, §VI.5 Theorem 5.1
 (product-of-embeddings / norm-trace) + §VIII.5 Theorem 5.1 Case 1
 (extension of derivations to separable algebraic extensions). -/
-axiom resultant_logDeriv_at_split_specialization
+axiom resultant_logDeriv_at_split_specialization_of_pos_natDegree
+    {K : Type*} [Field K]
+    (f g : K[X][X]) (t₀ : K)
+    (hMonic : f.Monic)
+    (hf_pos : 0 < f.natDegree)
+    (hF_ne : (Polynomial.resultant f g f.natDegree g.natDegree).eval t₀ ≠ 0)
+    (hSplit : (f.map (Polynomial.evalRingHom t₀)).Splits)
+    (hg_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
+        (g.map (Polynomial.evalRingHom t₀)).eval x ≠ 0)
+    (hf_X_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
+        ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x ≠ 0) :
+  resultantLogDerivConclusion f g t₀
+
+/-- **Re-export — the unrestricted resultant log-derivative identity**,
+now a theorem derived from the narrowed `0 < f.natDegree` axiom plus
+the trivial degree-zero theorem above.
+
+This is the form that downstream consumers
+(`chord_fiber_product_logDeriv_eq_logDerivTerm_trace` in
+`AxiomChordSumEqChordFiberProductLogDeriv.lean`) actually use; the
+call site is unchanged. -/
+theorem resultant_logDeriv_at_split_specialization
     {K : Type*} [Field K]
     (f g : K[X][X]) (t₀ : K)
     (hMonic : f.Monic)
@@ -115,17 +180,11 @@ axiom resultant_logDeriv_at_split_specialization
         (g.map (Polynomial.evalRingHom t₀)).eval x ≠ 0)
     (hf_X_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
         ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x ≠ 0) :
-  Polynomial.eval t₀
-      (Polynomial.derivative
-        (Polynomial.resultant f g f.natDegree g.natDegree))
-    / (Polynomial.resultant f g f.natDegree g.natDegree).eval t₀
-  =
-    ((f.map (Polynomial.evalRingHom t₀)).roots.map (fun x =>
-      let f_X := ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x
-      let f_T := ((f.eval (Polynomial.C x)).derivative).eval t₀
-      let g_X := ((g.map (Polynomial.evalRingHom t₀)).derivative).eval x
-      let g_T := ((g.eval (Polynomial.C x)).derivative).eval t₀
-      let g_val := (g.map (Polynomial.evalRingHom t₀)).eval x
-      (g_T * f_X - g_X * f_T) / (f_X * g_val))).sum
+    resultantLogDerivConclusion f g t₀ := by
+  by_cases hd : f.natDegree = 0
+  · exact resultant_logDeriv_at_split_specialization_of_natDegree_eq_zero
+      f g t₀ hMonic hd
+  · exact resultant_logDeriv_at_split_specialization_of_pos_natDegree
+      f g t₀ hMonic (Nat.pos_of_ne_zero hd) hF_ne hSplit hg_def hf_X_def
 
 end Polynomial

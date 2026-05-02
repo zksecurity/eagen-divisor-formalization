@@ -1,10 +1,13 @@
-# `Polynomial.resultant_logDeriv_at_split_specialization`
+# `Polynomial.resultant_logDeriv_at_split_specialization_of_pos_natDegree`
 
 - **Lean source**: `Divisor/Axioms/AxiomResultantLogDerivAtSplit.lean`
-- **Downstream consumer**: `chord_fiber_product_logDeriv_eq_logDerivTerm_trace` in `Divisor/Axioms/AxiomChordSumEqChordFiberProductLogDeriv.lean` (now a theorem).
+- **Downstream consumer**: `chord_fiber_product_logDeriv_eq_logDerivTerm_trace` in `Divisor/Axioms/AxiomChordSumEqChordFiberProductLogDeriv.lean` (now a theorem). The downstream consumer continues to use the unrestricted name `Polynomial.resultant_logDeriv_at_split_specialization`, which is now a theorem derived from the narrowed `_of_pos_natDegree` axiom plus the trivial degree-zero case.
 - **Status**: temporary generic bridge axiom. It is intentionally less
   project-specific than the old chord axiom, but it is still a composed
   polynomial/resultant specialization and is not the final trust boundary.
+  Now narrowed to the `0 < f.natDegree` case; the trivial `f.natDegree = 0`
+  case is a theorem (under `Monic`, `f.natDegree = 0 ⇒ f = 1`, so the
+  resultant is 1 and both sides of the identity are 0).
 
 ## Statement
 
