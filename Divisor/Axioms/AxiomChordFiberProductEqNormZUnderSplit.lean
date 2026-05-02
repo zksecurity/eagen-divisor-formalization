@@ -11,6 +11,7 @@
 import Divisor.Defs
 import Divisor.BetaConstructive
 import Divisor.FunctionFieldZ
+import Divisor.ChordFiberProductConcrete
 import Divisor.Axioms.AxiomExistsDivisorMultiplicity
 
 open Polynomial
@@ -19,14 +20,14 @@ namespace Divisor
 
 variable (E : ECSetup)
 
-/-- The chord-fiber product: ∏ᵢ D(Aᵢ(z)) as a polynomial in z.
-    Represents the function-field norm N_{F_q(E)/F_q(z)}(D).
+/-- The chord-fiber product: `∏ᵢ D(Aᵢ(z))` as a polynomial in `z`.
 
-    Left opaque: concrete construction requires resultant infrastructure
-    (Sylvester matrix over three sheets) beyond current scope. The axiom
-    `chord_fiber_product_eq_normZ_under_split` captures the key property
-    the proof needs. -/
-noncomputable opaque chord_fiber_product (E : ECSetup) (lam : ZMod E.q) (D : CoordRingElt E.q) : (ZMod E.q)[X]
+    This is now the concrete resultant of the chord cubic against the
+    D-on-line lift, i.e. the function-field norm candidate
+    `N_{F_q(E)/F_q(z)}(D)`. -/
+noncomputable def chord_fiber_product
+    (E : ECSetup) (lam : ZMod E.q) (D : CoordRingElt E.q) : (ZMod E.q)[X] :=
+  chord_fiber_product_concrete E lam D
 
 /-! ## Divisor-of-norm formula (Stichtenoth Prop 3.1.9 + Thm 3.7.1)
 

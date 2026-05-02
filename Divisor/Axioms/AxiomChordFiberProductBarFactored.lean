@@ -1,7 +1,7 @@
 /-
   Divisor/Axioms/AxiomChordFiberProductBarFactored.lean
 
-  Narrow factored-form bridge for the base-changed chord-fiber product.
+  Narrow multiplicity bridge for the base-changed chord-fiber product.
 
   Over `F_qbar`, the chord-fiber product of `D` (a function-field norm
   for the extension `F_qbar(E) / F_qbar(zLambdaBar lam)`) splits as a
@@ -17,20 +17,9 @@
   into linear factors with multiplicities equal to `gd.mult Q`. The
   remaining unit is a nonzero leading scalar.
 
-  This is a strictly narrower obligation than the previously bundled
-  `chord_fiber_product_bar_factorisation` theorem in
-  `Divisor/GeometricSoundness.lean`: the bundled theorem is now
-  derivable from this axiom, and so are the per-place
-  `chord_fiber_product_bar_rootMultiplicity_eq_zfiber` and the
-  rational `chord_fiber_product_ne_zero` (via injectivity of the
-  algebraMap base-change), so the dependency direction is
-
-      this axiom  ⇒  rootMultiplicity_eq_zfiber  ⇒  z_fiber_accounting
-
-  rather than the previous
-
-      ne_zero  +  rootMultiplicity_eq_zfiber  ⇒  z_fiber_accounting
-                                            ⇒  factorisation.
+  The remaining citable axiom is the root-multiplicity version of this
+  statement for the concrete resultant. The global factored form below is
+  now a theorem by ordinary polynomial factorisation over `F_qbar`.
 
   No projection / accounting hypotheses are needed in the statement;
   the geometric data carried by `gd` (a `GeometricDivisorData E D`)
@@ -45,6 +34,91 @@ open Polynomial
 namespace Divisor
 
 variable (E : ECSetup)
+
+/-- **Narrow divisor-of-norm multiplicity axiom for the concrete resultant.**
+
+    The multiplicity of a chord intercept `z` as a root of the concrete
+    chord-fiber resultant equals the sum of the local multiplicities of
+    geometric zeros in the fibre `zLambdaBar = z`.
+
+    This is exactly the push-forward of the zero divisor under the chord
+    projection, i.e. `div(N(D)) = π_*(div D)` written coefficientwise.
+-/
+axiom chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber
+    (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
+    [DecidableEq (Fqbar E)]
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) :
+    ∀ z : Fqbar E,
+      (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+        (chord_fiber_product_concrete E lam D)).rootMultiplicity z =
+        ∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q
+
+/-- **Polynomial factorisation from root-multiplicity accounting.** -/
+theorem chord_fiber_product_concrete_bar_eq_geom_prod_of_rootMultiplicity
+    (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
+    [DecidableEq (Fqbar E)]
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D)
+    (hZ : ∀ z : Fqbar E,
+      (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+        (chord_fiber_product_concrete E lam D)).rootMultiplicity z =
+        ∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q) :
+    ∃ c : Fqbar E, c ≠ 0 ∧
+      Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+          (chord_fiber_product_concrete E lam D)
+        = C c * ∏ Q ∈ gd.support,
+            (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q) := by
+  classical
+  set p := (chord_fiber_product_concrete E lam D).map
+    (algebraMap (ZMod E.q) (Fqbar E)) with hp_def
+  have hpne : p ≠ 0 :=
+    Polynomial.map_ne_zero
+      (chord_fiber_product_concrete_ne_zero E lam D hD)
+  have hpsplit : p.Splits := IsAlgClosed.splits _
+  have hcard : p.roots.card = p.natDegree := hpsplit.natDegree_eq_card_roots.symm
+  refine ⟨p.leadingCoeff, ?_, ?_⟩
+  · exact Polynomial.leadingCoeff_ne_zero.mpr hpne
+  have hfac :
+      C p.leadingCoeff * (p.roots.map fun a => X - C a).prod = p :=
+    Polynomial.C_leadingCoeff_mul_prod_multiset_X_sub_C hcard
+  have hrootSet :
+      p.roots.toFinset = gd.support.image (zLambdaBar E lam) :=
+    chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image E lam D hD gd
+  have hMaps : ∀ Q ∈ gd.support, zLambdaBar E lam Q ∈
+      gd.support.image (zLambdaBar E lam) :=
+    fun Q hQ => Finset.mem_image.mpr ⟨Q, hQ, rfl⟩
+  have hprod :
+      (p.roots.map fun a => X - C a).prod =
+        ∏ Q ∈ gd.support, (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q) := by
+    rw [Finset.prod_multiset_map_count]
+    rw [hrootSet]
+    have hcount_eq : ∀ z ∈ gd.support.image (zLambdaBar E lam),
+        (X - C z) ^ (p.roots.count z) =
+        (X - C z) ^
+          (∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z),
+            gd.mult Q) := by
+      intro z _
+      rw [Polynomial.count_roots, hZ]
+    rw [Finset.prod_congr rfl hcount_eq]
+    rw [Finset.prod_congr rfl
+      (fun z _ => (Finset.prod_pow_eq_pow_sum
+        (gd.support.filter (fun Q => zLambdaBar E lam Q = z))
+        gd.mult (X - C z)).symm)]
+    have hZreplace : ∀ z ∈ gd.support.image (zLambdaBar E lam),
+        (∏ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z),
+          (X - C z) ^ (gd.mult Q)) =
+        (∏ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z),
+          (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q)) := by
+      intro z _
+      refine Finset.prod_congr rfl ?_
+      intro Q hQ
+      rw [(Finset.mem_filter.mp hQ).2]
+    rw [Finset.prod_congr rfl hZreplace]
+    exact Finset.prod_fiberwise_of_maps_to hMaps
+      (fun Q => (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q))
+  conv_lhs => rw [← hfac]
+  rw [hprod]
 
 /-- **Geometric factored-form bridge for the chord-fiber product.**
 
@@ -65,7 +139,7 @@ variable (E : ECSetup)
     bridge alone (see `chord_fiber_product_bar_rootMultiplicity_eq_zfiber`
     and `chord_fiber_product_ne_zero` in `Divisor/GeometricSoundness.lean`).
 -/
-axiom chord_fiber_product_bar_eq_geom_prod
+theorem chord_fiber_product_bar_eq_geom_prod
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D) :
@@ -73,6 +147,10 @@ axiom chord_fiber_product_bar_eq_geom_prod
       Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
           (chord_fiber_product E lam D)
         = C c * ∏ Q ∈ gd.support,
-            (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q)
+            (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q) := by
+  classical
+  dsimp [chord_fiber_product]
+  exact chord_fiber_product_concrete_bar_eq_geom_prod_of_rootMultiplicity E D lam hD gd
+    (chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber E D lam hD gd)
 
 end Divisor
