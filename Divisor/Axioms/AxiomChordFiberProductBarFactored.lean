@@ -35,11 +35,76 @@ namespace Divisor
 
 variable (E : ECSetup)
 
+/-! ### Off-fibre boundary — multiplicity = 0 outside `gd.support.image`
+
+The all-`z` form of the divisor-of-norm pushforward can be split into
+two pieces:
+
+* **Off-image side** (provable, no axiom): if `z` is not in the image
+  of `gd.support` under `zLambdaBar lam`, then both sides of the
+  equality are zero. The LHS `rootMultiplicity z` is zero because the
+  set of roots of the bar-resultant is exactly that image (existing
+  `chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image`),
+  and the RHS sum is empty.
+* **In-image side** (the remaining axiom below): for `z` in the image,
+  the multiplicity equals the sum of `gd.mult Q` over the fibre.
+
+The off-image side is proved here as a theorem; the in-image side is
+the narrowed axiom and the unrestricted form is re-exported as a
+theorem via case-splitting on image membership. -/
+
+/-- Off-image: when `z` is not in `zLambdaBar lam`'s image of
+`gd.support`, no `Q ∈ gd.support` projects to `z`, so the per-fibre
+multiplicity sum is empty. -/
+theorem chord_fiber_product_concrete_bar_zfiber_sum_eq_zero_of_not_image
+    (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
+    [DecidableEq (Fqbar E)]
+    (gd : GeometricDivisorData E D) {z : Fqbar E}
+    (hz : z ∉ gd.support.image (zLambdaBar E lam)) :
+    (∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q)
+      = 0 := by
+  classical
+  apply Finset.sum_eq_zero
+  intro Q hQ
+  exfalso
+  rcases Finset.mem_filter.mp hQ with ⟨hQs, hQe⟩
+  exact hz (Finset.mem_image.mpr ⟨Q, hQs, hQe⟩)
+
+/-- Off-image: when `z` is not in the image of `gd.support` under
+`zLambdaBar lam`, the bar-resultant has multiplicity zero at `z`. -/
+theorem chord_fiber_product_concrete_bar_rootMultiplicity_eq_zero_of_not_image
+    (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
+    [DecidableEq (Fqbar E)]
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) {z : Fqbar E}
+    (hz : z ∉ gd.support.image (zLambdaBar E lam)) :
+    (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+      (chord_fiber_product_concrete E lam D)).rootMultiplicity z = 0 := by
+  classical
+  set p := (chord_fiber_product_concrete E lam D).map
+    (algebraMap (ZMod E.q) (Fqbar E)) with hp_def
+  have hpne : p ≠ 0 :=
+    Polynomial.map_ne_zero
+      (chord_fiber_product_concrete_ne_zero E lam D hD)
+  have hroots :
+      p.roots.toFinset = gd.support.image (zLambdaBar E lam) :=
+    chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image
+      E lam D hD gd
+  have hnot_root : ¬ p.IsRoot z := by
+    intro hroot
+    apply hz
+    rw [← hroots]
+    exact Multiset.mem_toFinset.mpr
+      ((Polynomial.mem_roots' (p := p)).mpr ⟨hpne, hroot⟩)
+  exact Polynomial.rootMultiplicity_eq_zero hnot_root
+
 /-- **Narrow divisor-of-norm multiplicity axiom for the concrete resultant.**
 
-    The multiplicity of a chord intercept `z` as a root of the concrete
-    chord-fiber resultant equals the sum of the local multiplicities of
-    geometric zeros in the fibre `zLambdaBar = z`.
+    For each `z` actually in the image of `gd.support` under
+    `zLambdaBar lam`, the multiplicity of `z` as a root of the
+    concrete chord-fiber resultant equals the sum of the local
+    multiplicities of geometric zeros in the fibre
+    `zLambdaBar = z`. The off-image case is proved separately above.
 
     This is exactly the push-forward of the zero divisor under the chord
     projection, i.e. `div(N(D)) = π_*(div D)` written coefficientwise.
@@ -56,7 +121,7 @@ variable (E : ECSetup)
         already proved as
         `chord_fiber_product_concrete_bar_eval_eq_prod` via mathlib's
         `Polynomial.resultant_eq_prod_eval`; the "rootMultiplicity at
-        every fibre" form is what this axiom packages.
+        every in-image fibre" form is what this axiom packages.
     (b) `gd.mult Q` is the local divisor multiplicity at the place of
         `F_qbar(E)` corresponding to `Q : GeomPoint E`. Project-side
         this follows from
@@ -65,7 +130,24 @@ variable (E : ECSetup)
         the relevant maximal ideal — substantive work that mathlib
         does not yet supply for the affine coordinate ring of `E`.
 -/
-axiom chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber
+axiom chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image
+    (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
+    [DecidableEq (Fqbar E)]
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) :
+    ∀ z ∈ gd.support.image (zLambdaBar E lam),
+      (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+        (chord_fiber_product_concrete E lam D)).rootMultiplicity z =
+        ∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q
+
+/-- **Re-export — the unrestricted divisor-of-norm pushforward**, now a
+theorem derived from the narrowed in-image axiom plus the off-image
+boundary lemma.
+
+The unrestricted form is what downstream consumers
+(`chord_fiber_product_concrete_bar_eq_geom_prod_of_rootMultiplicity`,
+`chord_fiber_product_bar_eq_geom_prod`) actually use. -/
+theorem chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
     [DecidableEq (Fqbar E)]
     (hD : ¬ (D.a = 0 ∧ D.b = 0))
@@ -73,7 +155,16 @@ axiom chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber
     ∀ z : Fqbar E,
       (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
         (chord_fiber_product_concrete E lam D)).rootMultiplicity z =
-        ∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q
+        ∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q := by
+  classical
+  intro z
+  by_cases hz : z ∈ gd.support.image (zLambdaBar E lam)
+  · exact chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image
+      E D lam hD gd z hz
+  · rw [chord_fiber_product_concrete_bar_rootMultiplicity_eq_zero_of_not_image
+        E D lam hD gd hz,
+        chord_fiber_product_concrete_bar_zfiber_sum_eq_zero_of_not_image
+        E D lam gd hz]
 
 /-- **Polynomial factorisation from root-multiplicity accounting.** -/
 theorem chord_fiber_product_concrete_bar_eq_geom_prod_of_rootMultiplicity
