@@ -131,6 +131,13 @@ future axiom-1 discharge can build on:
      `DLineBiv_ne_zero` and the existing
      `chord_fiber_product_concrete_ne_zero`.
 
+   Closed-form natDegree theorems for special `p` (resolving the
+   resultant natDegree formula
+   `Res(chordCubic, p.map C, 3, p.natDegree).natDegree = 2 · p.natDegree`):
+   - `resultant_chordCubicBiv_pmap_C_natDegree_of_eq_one` — `p = 1`.
+   - `resultant_chordCubicBiv_pmap_C_natDegree_of_eq_X_sub_C` — `p = X − C x₀`.
+   - `resultant_chordCubicBiv_pmap_C_natDegree_of_eq_X_sub_C_pow` — `p = (X − C x₀)^k`.
+
    The linear case includes the resultant-against-linear-factor
    natDegree calculation
    (`resultant_chordCubicBiv_X_sub_C_natDegree`), proven via
