@@ -12,7 +12,6 @@
       Divisor.chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber,
       Divisor.chord_fiber_product_logDeriv_eq_logDerivTerm_trace,
       Divisor.hasse_weil,
-      Divisor.ordAt_eq_rationalMultAt_of_gd_support_rational,
       Divisor.CoordRingElt.divisorClass_isPrincipal
 
     The Frobenius descent proof gap is closed: there is no `sorryAx` in
@@ -21,9 +20,17 @@
     the multiplicity-accounting test below. `hasse_weil` comes from the
     geometric SZ bound on `E(F_q) × E(F_q)`. The remaining algebraic
     assumptions are narrow: divisor-of-norm local multiplicity for the
-    concrete resultant, Lang's trace-of-log-derivative identity, local
-    order compatibility after rational support descent, and principal
-    divisor class triviality for the concrete `D`.
+    concrete resultant, Lang's trace-of-log-derivative identity, and
+    principal divisor class triviality for the concrete `D`.
+
+    The previously listed axiom
+    `Divisor.ordAt_eq_rationalMultAt_of_gd_support_rational` has been
+    eliminated: the rational-vs-geometric local-order bridge is now a
+    proved theorem (induction on `divLin`'s natDegree-sum measure,
+    combined with the closed-form `geomLocalOrder` formula on rational
+    lifts). `GeometricDivisorData.mult` is now certified to coincide
+    pointwise with `geomLocalOrder`, so `rationalMultAt` reduces to
+    `geomLocalOrder` at the lifted rational point.
 
   * `ma_completeness`:
       propext, Classical.choice, Quot.sound,

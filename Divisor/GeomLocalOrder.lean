@@ -159,6 +159,11 @@ structure GeometricDivisorData (D : CoordRingElt E.q) where
     ∀ Q ∈ support,
       ∃ Q' ∈ support,
         Q'.x = Q.x ^ E.q ∧ Q'.y = Q.y ^ E.q ∧ mult Q' = mult Q
+  /-- The multiplicity field is canonically the geometric local order.
+  This certification removes any freedom in the assignment of multiplicities
+  on the support, which is required to bridge the rational `ordAt` model
+  with the geometric multiplicity at rational lifts. -/
+  mult_eq_geomLocalOrder : ∀ Q, mult Q = geomLocalOrder E D Q
 
 /--
 Core exact local orders on a fixed finite geometric zero support.
@@ -1311,19 +1316,44 @@ theorem exists_geometricDivisorData_of_support
     (hZeroSupport : ∀ Q, D.geomEval E Q = 0 → Q ∈ support) :
     ∃ gd : GeometricDivisorData E D, gd.support = support := by
   classical
-  obtain ⟨lo, _⟩ :=
-    exists_geomLocalOrderOnSupport E D hDnz support hSupportZero hZeroSupport
+  -- Build the data directly with `mult = geomLocalOrder E D`, so the
+  -- canonical-multiplicity field holds by `rfl`.
   refine ⟨{
     support := support
-    mult := lo.ord
+    mult := geomLocalOrder E D
     support_eval_zero := hSupportZero
     eval_zero_mem_support := hZeroSupport
-    multiplicity_spec := lo.multiplicity_spec
-    mult_pos_on_support := lo.ord_pos_on_support
-    mult_zero_off_support := lo.ord_zero_off_support
-    accounting_le_degE := lo.accounting_le_degE
-    fiber_accounting := lo.fiber_accounting
-    frobenius_stable := lo.frobenius_stable
+    multiplicity_spec := fun Q hQ =>
+      geomLocalOrder_multiplicity_spec E D hDnz Q (hSupportZero Q hQ)
+    mult_pos_on_support := fun Q hQ =>
+      geomLocalOrder_pos_of_geomEval_zero E D hDnz Q (hSupportZero Q hQ)
+    mult_zero_off_support := fun Q hQ =>
+      geomLocalOrder_eq_zero_of_geomEval_ne_zero E D hDnz Q
+        (fun hZero => hQ (hZeroSupport Q hZero))
+    accounting_le_degE := by
+      let hcore : GeomLocalOrderCore E D support := {
+        ord := geomLocalOrder E D
+        ord_pos_on_support := fun Q hQ =>
+          geomLocalOrder_pos_of_geomEval_zero E D hDnz Q (hSupportZero Q hQ)
+        ord_zero_off_support := fun Q hQ =>
+          geomLocalOrder_eq_zero_of_geomEval_ne_zero E D hDnz Q
+            (fun hZero => hQ (hZeroSupport Q hZero))
+        multiplicity_spec := fun Q hQ =>
+          geomLocalOrder_multiplicity_spec E D hDnz Q (hSupportZero Q hQ)
+        fiber_accounting :=
+          geomLocalOrder_fiber_accounting E D hDnz support hSupportZero hZeroSupport
+        frobenius_stable :=
+          geomLocalOrder_frobenius_stable E D hDnz support hSupportZero hZeroSupport
+      }
+      have h := geomLocalOrderCore_accounting_le_degE E D hDnz support hSupportZero
+        hZeroSupport hcore
+      change (∑ Q ∈ support, hcore.ord Q) ≤ D.degE
+      exact h
+    fiber_accounting :=
+      geomLocalOrder_fiber_accounting E D hDnz support hSupportZero hZeroSupport
+    frobenius_stable :=
+      geomLocalOrder_frobenius_stable E D hDnz support hSupportZero hZeroSupport
+    mult_eq_geomLocalOrder := fun _ => rfl
   }, rfl⟩
 
 end Divisor
