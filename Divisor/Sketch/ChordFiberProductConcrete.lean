@@ -85,12 +85,26 @@ helper's squeeze argument forces multiplicity equality at every fibre.
 The two stubbed pieces capture *exactly* what's substantive: a local
 divisor-of-norm intersection statement (the divisibility), and a
 degree count for the chord-projection norm polynomial against the
-X-projection norm polynomial. The natDegree bound is plausibly
-provable from mathlib's resultant Sylvester-matrix machinery applied to
-the specific T-degree profiles of `chordCubicBiv`'s coefficients
-(constants, A − 2λT, B − T²) and `DLineBiv`'s coefficients
-(`-D.b·λ` and `D.a − D.b·T`), or by an algebraic identification of the
-two norms via the chord projection / X-projection comparison. -/
+X-projection norm polynomial.
+
+The natDegree bound has substantial inductive infrastructure already
+landed in `Divisor/ChordFiberMultiplicativity.lean`:
+
+* Linear-factor `divLin` recursion via
+  `chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step`
+  (each twin step adds 2 to both `chord_fiber_product.natDegree` and
+  `normPoly.natDegree`).
+* General-monic factor extraction via
+  `chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_general`
+  (taking the resultant natDegree formula
+  `Res(chordCubic, p.map C, 3, p.natDegree).natDegree = 2 · p.natDegree`
+  as a hypothesis).
+
+The remaining gap is the resultant natDegree formula for general
+monic `p`, provable via splitting field of `p` over `ZMod q` plus
+`resultant_comm` + `resultant_eq_prod_eval` (each linear factor over
+the splitting field contributing natDegree 2 by
+`resultant_chordCubicBiv_X_sub_C_natDegree`). -/
 
 /-- **Stub 1**: fibrewise divisibility for the chord-fibre product.
 
