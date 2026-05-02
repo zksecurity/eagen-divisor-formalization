@@ -92,7 +92,20 @@ the specific T-degree profiles of `chordCubicBiv`'s coefficients
 (`-D.b·λ` and `D.a − D.b·T`), or by an algebraic identification of the
 two norms via the chord projection / X-projection comparison. -/
 
-/-- **Stub 1**: fibrewise divisibility for the chord-fibre product. -/
+/-- **Stub 1**: fibrewise divisibility for the chord-fibre product.
+
+The `(X - C z)^1` case (equivalently the per-Q `(X - C (zLambdaBar Q))^1`
+case for `Q ∈ gd.support`) is *not* a stub: it is now a theorem in
+`Divisor/ChordFiberProductConcrete.lean` —
+`chord_fiber_product_concrete_bar_X_sub_C_pow_one_dvd_of_mem_support_image`
+and `chord_fiber_product_concrete_bar_X_sub_C_zLambda_pow_one_dvd_of_mem_support`.
+Both follow directly from the existing root-set theorem
+`chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image`.
+
+The remaining substantive content is exactly the higher exponents:
+when the per-fibre multiplicity sum exceeds 1, the local order of `D` at
+each `Q` in the fibre must propagate to the chord-projection norm. This
+is the local divisor-of-norm / local-intersection content. -/
 theorem chord_fiber_product_concrete_bar_zfiber_pow_dvd
     [DecidableEq (Fqbar E)]
     (lam : ZMod E.q) (D : CoordRingElt E.q)
