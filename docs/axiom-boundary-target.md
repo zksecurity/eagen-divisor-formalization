@@ -97,14 +97,35 @@ yet entirely reduced to textbook-shaped infrastructure theorems.
 
 ## Reusable plumbing
 
-`Divisor.rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le`
-(`Divisor/PartialFractionExpansion.lean`) is a generic squeeze lemma
-that converts a multiplicity equality into a fibrewise divisibility
-plus a global degree bound. It is the cleanest landing target for a
-future divisibility-based discharge of axiom 1: replace the equality
-axiom by a divisibility axiom (the local divisor-of-norm content), add
-a `chord_fiber_product` natDegree bound (mathlib's resultant-degree
-machinery applied to the Sylvester matrix of `chordCubicBiv` and
-`DLineBiv`), and apply the helper to recover the equality form. The
-helper itself is purely polynomial and unused today; it is recorded
-for that future refactor.
+The branch added three pieces of project-side infrastructure that the
+future axiom-1 discharge can build on:
+
+1. `Divisor.rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le`
+   (`Divisor/PartialFractionExpansion.lean`) — generic squeeze lemma
+   that converts a multiplicity equality into a fibrewise divisibility
+   plus a global degree bound.
+
+2. `Divisor.GeometricDivisorData.mult_sum_eq_normPoly_natDegree`
+   (`Divisor/GeomLocalOrder.lean`) — exact equality form of the
+   X-fibre degree accounting: `∑ Q ∈ gd.support, gd.mult Q = (normPoly E D).natDegree`.
+   This identifies the `∑ gd.mult` total appearing in the squeeze
+   helper's degree-bound hypothesis with a concrete polynomial natDegree.
+
+3. `Divisor/Sketch/ChordFiberProductConcrete.lean` —
+   `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_via_squeeze`
+   shows the discharge architecture as code: two stubs (a fibrewise
+   divisibility + a degree comparison) plus the squeeze helper give
+   the multiplicity equality. The two stubs are precisely the
+   substantive content remaining:
+
+   - `chord_fiber_product_concrete_bar_zfiber_pow_dvd` — local
+     divisor-of-norm content (genuine math, splitting field route
+     or local intersection theory).
+   - `chord_fiber_product_concrete_bar_natDegree_le_normPoly` — degree
+     comparison between two norm polynomials. Stacks Project Lemma
+     [42.18.1 (Principal divisors and pushforward)](https://stacks.math.columbia.edu/tag/02RS)
+     gives the underlying theorem; in Lean the natural routes are
+     either to axiomatise the general norm/divisor pushforward (a
+     textbook-shape replacement for axiom 1) or to prove it via a
+     weighted-leading-term Sylvester analysis with `wt(T) = 3`,
+     `wt(X) = 2`.
