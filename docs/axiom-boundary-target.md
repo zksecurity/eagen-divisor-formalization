@@ -124,7 +124,12 @@ future axiom-1 discharge can build on:
      `normPoly_eq_p_sq_mul_of_div`).
    - natDegree inductive steps
      (`chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step`,
-     `_step_general`).
+     `_step_general`); plus streamlined wrappers (`_step'`,
+     `_step_general'`) that take only the project-standard
+     non-degeneracy hypothesis `¬ (D'.a = 0 ∧ D'.b = 0)` and derive
+     the DLineBiv/chord_fiber_product non-vanishing internally via
+     `DLineBiv_ne_zero` and the existing
+     `chord_fiber_product_concrete_ne_zero`.
 
    The linear case includes the resultant-against-linear-factor
    natDegree calculation
