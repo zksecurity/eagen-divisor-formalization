@@ -17,8 +17,12 @@
     `Σ ordAt = natDeg(normPoly)` identity from primitives.
   * Reduces the function-field / regular-function content to a
     single explicit principal fractional-ideal axiom
-    `CoordRingElt.divisorClass_isPrincipal` (Section 7), from which
-    the former zero-class bridge `ordAt_divisorClass_zero` is derived.
+    `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit`
+    (Section 7), from which the former zero-class bridge
+    `ordAt_divisorClass_zero` is derived. The unrestricted form
+    `CoordRingElt.divisorClass_isPrincipal` is a re-exported theorem,
+    case-split between the trivial constant-unit case and the
+    narrowed axiom.
 
   Layout:
 
@@ -40,10 +44,13 @@
                  the existential axiom with witness `ordAt E D`.
 
   Axiomatic surface introduced by this file: exactly one axiom,
-  `CoordRingElt.divisorClass_isPrincipal` (the concrete principal
-  fractional-ideal bridge for the specific divisor `divisorOfD E D`).
-  The old `ordAt_divisorClass_zero` statement is now a theorem derived
-  from that axiom and mathlib's `ClassGroup.mk_eq_one_iff`.
+  `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit` (the
+  concrete principal fractional-ideal bridge for the specific divisor
+  `divisorOfD E D`, narrowed to non-constant-unit `D`). The old
+  `ordAt_divisorClass_zero` statement is now a theorem derived from
+  the unrestricted re-export `CoordRingElt.divisorClass_isPrincipal`
+  (case-split between the trivial constant-unit case and the
+  narrowed axiom) and mathlib's `ClassGroup.mk_eq_one_iff`.
 
   References: Silverman AEC II §1 (local orders) + III.3.5
   (principal divisor characterisation / Abel's theorem).

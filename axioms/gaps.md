@@ -23,9 +23,12 @@ Axiom-by-axiom status of textbook coverage in `/Users/rot256/paper/crypto-books/
 
 The old false divisor-group axiom is removed. The current MA extraction
 closure has one explicit class-group bridge,
-`CoordRingElt.divisorClass_isPrincipal`, plus Hasse-Weil, the narrow
-root-multiplicity norm/divisor axiom, and the temporary generic
-resultant log-derivative bridge. The exact closure is pinned in
+`CoordRingElt.divisorClass_isPrincipal_of_not_const_unit` (the
+unrestricted theorem `CoordRingElt.divisorClass_isPrincipal` is a
+re-exported case-split derivation), plus Hasse-Weil, the narrow
+in-image root-multiplicity norm/divisor axiom, and the temporary
+generic resultant log-derivative bridge (now narrowed to
+`0 < f.natDegree`). The exact closure is pinned in
 `Tests/AxiomClosurePin.lean`.
 
 The desired final boundary is tracked in

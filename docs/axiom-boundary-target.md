@@ -58,11 +58,15 @@ boundary:
 
 The remaining bridges are:
 
-- `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber`, the
-  coefficientwise norm/divisor push-forward statement for the concrete
-  resultant. This is narrow and citable, but still coordinate-level.
-- `CoordRingElt.divisorClass_isPrincipal`, the concrete principal-class
-  bridge for the divisor of `D`.
+- `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image`,
+  the coefficientwise norm/divisor push-forward statement for the
+  concrete resultant, *narrowed to the in-image case* (off-image
+  multiplicity = 0 is now a theorem). This is narrow and citable, but
+  still coordinate-level.
+- `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit`, the
+  concrete principal-class bridge for the divisor of `D`, *narrowed
+  to the non-constant-unit case* (constant-unit case is now a
+  theorem). The unrestricted form is a re-exported theorem.
 
 The legacy rational bridge `chord_fiber_product_eq_normZ_under_split`
 still exists for the off-path rational tight-bound chain, but it is no

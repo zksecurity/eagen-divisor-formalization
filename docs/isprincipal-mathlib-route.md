@@ -8,10 +8,12 @@ Update: Stage A has landed in `Divisor/OrdP/PrincipalClass.lean`.
 `Divisor/OrdP/LocalRing.lean` no longer consumes
 `ordAt_divisor_isPrincipal` or `principal_divisor_iff` for
 `ordAt_group_sum_zero_under_split`; it assumes the narrower
-`CoordRingElt.divisorClass_isPrincipal` axiom, derives the former
-`ordAt_divisorClass_zero` bridge through mathlib's
-`ClassGroup.mk_eq_one_iff`, and then derives group-sum-zero through
-mathlib's `Point.toClass_eq_zero`.
+`CoordRingElt.divisorClass_isPrincipal_of_not_const_unit` axiom (the
+unrestricted form `CoordRingElt.divisorClass_isPrincipal` is a
+re-exported theorem, derived by case-splitting on whether `D` is a
+constant unit), derives the former `ordAt_divisorClass_zero` bridge
+through mathlib's `ClassGroup.mk_eq_one_iff`, and then derives
+group-sum-zero through mathlib's `Point.toClass_eq_zero`.
 
 ## What the two axioms produce, jointly
 
@@ -213,10 +215,10 @@ depends on one narrower class-group bridge axiom instead of the
 `IsPrincipal`/`principal_divisor_iff` pair.
 
 **Stage B — algebraic-geometry seam (~2-3 weeks).**  Discharge the
-single remaining `CoordRingElt.divisorClass_isPrincipal` axiom by
-formalising the recursive-ord ↔ localization-ord agreement. This is the genuine
-algebraic-geometry work; the rest is bookkeeping. Once it lands,
-the class-group bridge comes out of the closure.
+single remaining `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit`
+axiom by formalising the recursive-ord ↔ localization-ord agreement. This
+is the genuine algebraic-geometry work; the rest is bookkeeping. Once
+it lands, the class-group bridge comes out of the closure.
 
 The risk surface in Stage A is essentially zero (it's a refactor
 behind an Iff). Stage B is bounded — the per-prime `ordAt`

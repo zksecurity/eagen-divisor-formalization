@@ -4,9 +4,11 @@
 - **Re-exported as theorem**: `CoordRingElt.divisorClass_isPrincipal` (the unrestricted form, derived from this narrowed axiom plus the trivial constant-unit case).
 
 ```lean
-axiom CoordRingElt.divisorClass_isPrincipal
+axiom CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
     (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (_hSplit : splitsOnE E D) :
+    (_hSplit : splitsOnE E D)
+    (_hNotConstUnit :
+      ¬ ∃ c : ZMod E.q, c ≠ 0 ∧ D.a = Polynomial.C c ∧ D.b = 0) :
     ∃ I : (FractionalIdeal (nonZeroDivisors E.toW.toAffine.CoordinateRing)
               (FractionRing E.toW.toAffine.CoordinateRing))ˣ,
       (I : Submodule E.toW.toAffine.CoordinateRing
@@ -47,7 +49,7 @@ Pinned closure:
 ```lean
 #print axioms Divisor.CoordRingElt.exists_divisor_multiplicity
 -- propext, Classical.choice, Quot.sound,
--- Divisor.CoordRingElt.divisorClass_isPrincipal
+-- Divisor.CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
 ```
 
 ## Citation
