@@ -347,6 +347,103 @@ theorem rootMultiplicity_C_mul_prod_X_sub_C_pow [DecidableEq K]
   · rw [if_pos h, if_pos h.symm, mul_one]
   · rw [if_neg h, if_neg (fun H => h H.symm), mul_zero]
 
+/-- **Multiplicity squeeze lemma**: a nonzero polynomial `p ∈ K[X]` over a
+commutative integral domain whose roots are exactly the image of a finite
+indexing set under `φ` has its `rootMultiplicity` at every `z` agreeing
+with the per-fibre exponent sum, given just two extra hypotheses:
+
+* fibrewise divisibility by `(X - C z)` to the per-fibre power
+  (lower bound),
+* a global degree bound `natDegree p ≤ ∑ i, m i` (upper bound).
+
+The conclusion captures the typical "norm/divisor pushforward" packaging
+used in algebraic-geometry arguments: knowing where a polynomial vanishes,
+its order at each point, and a global degree count is enough to pin
+multiplicities exactly without further machinery (no splitting field or
+local-ring analysis).
+
+The conclusion is stated for *every* `z : K`, not just `z ∈ s.image φ`:
+off-image, both sides are `0` (no fibre, and `z ∉ p.roots`). -/
+theorem rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le
+    [DecidableEq K] [DecidableEq ι]
+    (p : K[X]) (s : Finset ι) (φ : ι → K) (m : ι → ℕ)
+    (hp : p ≠ 0)
+    (hroots : p.roots.toFinset = s.image φ)
+    (hdvd : ∀ z ∈ s.image φ,
+      (X - C z) ^ (∑ i ∈ s.filter (fun i => φ i = z), m i) ∣ p)
+    (hdeg : p.natDegree ≤ ∑ i ∈ s, m i) :
+    ∀ z : K,
+      p.rootMultiplicity z =
+        ∑ i ∈ s.filter (fun i => φ i = z), m i := by
+  classical
+  -- Re-indexing identity for the fibrewise sum.
+  have hMaps : ∀ i ∈ s, φ i ∈ s.image φ :=
+    fun i hi => Finset.mem_image.mpr ⟨i, hi, rfl⟩
+  have hReindex :
+      ∑ z ∈ s.image φ, ∑ i ∈ s.filter (fun i => φ i = z), m i
+        = ∑ i ∈ s, m i :=
+    Finset.sum_fiberwise_of_maps_to hMaps m
+  -- Lower bound: fibrewise divisibility ⇒ rootMultiplicity ≥ fibre sum.
+  have hLower : ∀ z ∈ s.image φ,
+      ∑ i ∈ s.filter (fun i => φ i = z), m i ≤ p.rootMultiplicity z := by
+    intro z hz
+    rw [le_rootMultiplicity_iff hp]
+    exact hdvd z hz
+  -- Sum of multiplicities over the root set equals roots.card ≤ natDegree.
+  have hSumMult :
+      ∑ z ∈ s.image φ, p.rootMultiplicity z ≤ p.natDegree := by
+    have hcount : ∀ z ∈ s.image φ, p.rootMultiplicity z = p.roots.count z := by
+      intro z _; exact (Polynomial.count_roots p).symm
+    rw [Finset.sum_congr rfl hcount, ← hroots]
+    -- ∑ z ∈ p.roots.toFinset, p.roots.count z = p.roots.card
+    rw [Multiset.toFinset_sum_count_eq]
+    exact p.card_roots'
+  -- Combined squeeze: ∑ fibre ≤ ∑ multi ≤ natDegree ≤ ∑ i m i = ∑ fibre.
+  have hSumEq :
+      ∑ z ∈ s.image φ, p.rootMultiplicity z =
+        ∑ z ∈ s.image φ, ∑ i ∈ s.filter (fun i => φ i = z), m i := by
+    refine le_antisymm ?_ (Finset.sum_le_sum hLower)
+    calc ∑ z ∈ s.image φ, p.rootMultiplicity z
+        ≤ p.natDegree := hSumMult
+      _ ≤ ∑ i ∈ s, m i := hdeg
+      _ = ∑ z ∈ s.image φ, ∑ i ∈ s.filter (fun i => φ i = z), m i :=
+            hReindex.symm
+  -- Per-z equality follows by contradiction: a strict gap at z would
+  -- imply ∑ multi > ∑ fibre, contradicting hSumEq.
+  have hPerZ : ∀ z ∈ s.image φ,
+      p.rootMultiplicity z = ∑ i ∈ s.filter (fun i => φ i = z), m i := by
+    intro z hz
+    refine le_antisymm ?_ (hLower z hz)
+    by_contra hLt
+    push_neg at hLt
+    have hStrictAtZ :
+        ∑ i ∈ s.filter (fun i => φ i = z), m i < p.rootMultiplicity z :=
+      hLt
+    have hSumLt :
+        ∑ z' ∈ s.image φ, ∑ i ∈ s.filter (fun i => φ i = z'), m i
+          < ∑ z' ∈ s.image φ, p.rootMultiplicity z' :=
+      Finset.sum_lt_sum hLower ⟨z, hz, hStrictAtZ⟩
+    exact absurd hSumEq.symm hSumLt.ne
+  -- Off-image: rootMultiplicity z = 0 = empty sum.
+  intro z
+  by_cases hz : z ∈ s.image φ
+  · exact hPerZ z hz
+  · -- Off-image: filter is empty (no i ∈ s maps to z).
+    have hFilterEmpty : s.filter (fun i => φ i = z) = ∅ := by
+      ext i
+      simp only [Finset.mem_filter, Finset.notMem_empty, iff_false, not_and]
+      intro hi heq
+      exact hz (Finset.mem_image.mpr ⟨i, hi, heq⟩)
+    rw [hFilterEmpty, Finset.sum_empty]
+    -- z ∉ p.roots, so rootMultiplicity z = 0.
+    have hNotRoot : ¬ p.IsRoot z := by
+      intro h
+      apply hz
+      rw [← hroots]
+      exact Multiset.mem_toFinset.mpr
+        ((Polynomial.mem_roots' (p := p)).mpr ⟨hp, h⟩)
+    exact rootMultiplicity_eq_zero hNotRoot
+
 end RootMultiplicityProductOfLinears
 
 end Divisor
