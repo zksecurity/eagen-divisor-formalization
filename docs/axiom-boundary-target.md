@@ -94,3 +94,17 @@ The intended replacement is:
 
 Until those steps land, the axiom closure is sound and narrow, but not
 yet entirely reduced to textbook-shaped infrastructure theorems.
+
+## Reusable plumbing
+
+`Divisor.rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le`
+(`Divisor/PartialFractionExpansion.lean`) is a generic squeeze lemma
+that converts a multiplicity equality into a fibrewise divisibility
+plus a global degree bound. It is the cleanest landing target for a
+future divisibility-based discharge of axiom 1: replace the equality
+axiom by a divisibility axiom (the local divisor-of-norm content), add
+a `chord_fiber_product` natDegree bound (mathlib's resultant-degree
+machinery applied to the Sylvester matrix of `chordCubicBiv` and
+`DLineBiv`), and apply the helper to recover the equality form. The
+helper itself is purely polynomial and unused today; it is recorded
+for that future refactor.
