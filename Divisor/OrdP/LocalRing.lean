@@ -855,34 +855,6 @@ theorem divisorOfD_finiteSupport
       -- Need ECPoint.affine E x y = ECPoint.some hns.
       exact ECPoint.affine_of_nonsingular E hns
 
-/-- **Citable principal-class boundary axiom.**
-
-    The divisor class of the concrete rational function
-    `D = a - b*y ∈ F_q[E]^×` is represented by a principal fractional
-    ideal in mathlib's class group, provided all geometric divisor mass is
-    visible over `F_q`.
-
-    This is the remaining function-field bridge retained in this file.
-    It is phrased in mathlib's `ClassGroup` / `FractionalIdeal` /
-    `IsPrincipal` language; the older zero-class statement
-    `ordAt_divisorClass_zero` is derived below using
-    `ClassGroup.mk_eq_one_iff`.
-
-    Citation boundary: Silverman AEC Corollary III.3.5, together with
-    the local-order compatibility between `ordAt` and the affine prime
-    ideals of `E.toW.toAffine.CoordinateRing`. -/
-axiom CoordRingElt.divisorClass_isPrincipal
-    (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (_hSplit : splitsOnE E D) :
-    ∃ I : (FractionalIdeal (nonZeroDivisors E.toW.toAffine.CoordinateRing)
-              (FractionRing E.toW.toAffine.CoordinateRing))ˣ,
-      (I : Submodule E.toW.toAffine.CoordinateRing
-            (FractionRing E.toW.toAffine.CoordinateRing)).IsPrincipal ∧
-      Additive.toMul
-        (divisorClass E (divisorOfD E D)
-          (divisorOfD_finiteSupport E D)) =
-      ClassGroup.mk I
-
 /-- `divisorClass` is independent of the finite-support witness for a fixed
 coefficient function. -/
 private theorem divisorClass_canonical
@@ -895,6 +867,194 @@ private theorem divisorClass_canonical
     simp only [Set.Finite.mem_toFinset]
   unfold divisorClass
   rw [hSet]
+
+/-! ### Trivial case: constant unit `D = C c` with `c ≠ 0`
+
+When `D = (C c, 0)` for some nonzero `c ∈ ZMod E.q`:
+
+* `D` does not vanish anywhere on `E` (its evaluation at any point is `c`),
+  so `ordAt E D P = 0` for every affine `P`;
+* `normPoly E D = (C c)² - 0² · curveX = C (c²)`, which has natDegree 0,
+  so the infinity coefficient `-natDegree(normPoly E D) = 0`;
+* hence `divisorOfD E D = 0` as a function, the divisor class is the
+  identity, and any principal ideal (e.g. `(1 : Unit)`) witnesses the
+  conclusion.
+
+The case is provable directly from the recursive definitions and does
+not need the local-order/class-group bridge that the general axiom
+encodes. -/
+
+/-- For `D = (C c, 0)` with `c ≠ 0`, the projective divisor `divisorOfD`
+is the zero function. -/
+private theorem divisorOfD_const_unit_eq_zero
+    {c : ZMod E.q} (hc : c ≠ 0) :
+    divisorOfD E ({ a := Polynomial.C c, b := 0 } : CoordRingElt E.q)
+      = 0 := by
+  classical
+  funext P
+  unfold divisorOfD
+  match P with
+  | WeierstrassCurve.Affine.Point.zero =>
+      -- Infinity coefficient: −natDegree(normPoly E D).
+      -- normPoly = (C c)² − 0² · curveX = C (c²); natDegree = 0.
+      have hNorm :
+          normPoly E ({ a := Polynomial.C c, b := 0 } : CoordRingElt E.q)
+            = Polynomial.C (c ^ 2) := by
+        rw [normPoly_eq]
+        simp [pow_two, Polynomial.C_mul]
+      simp [hNorm]
+  | WeierstrassCurve.Affine.Point.some (x := x) (y := y) hns =>
+      -- Affine: ordAt E D (x, y) = 0 since D never vanishes on E.
+      simp only [Pi.zero_apply, Nat.cast_eq_zero]
+      have hOnCurve : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB :=
+        (E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hns)
+      have hP : (x, y) ∈ E.points := E.hComplete x y hOnCurve
+      have hDne :
+          ¬ ((Polynomial.C c : (ZMod E.q)[X]) = 0
+              ∧ (0 : (ZMod E.q)[X]) = 0) := by
+        rintro ⟨h1, _⟩
+        exact hc (Polynomial.C_eq_zero.mp h1)
+      have hCcNe : (Polynomial.C c : (ZMod E.q)[X]) ≠ 0 :=
+        fun h => hc (Polynomial.C_eq_zero.mp h)
+      -- D.eval (x, y) = c ≠ 0 ⇒ ordAt = 0 in both 2-torsion and
+      -- non-2-torsion branches.
+      classical
+      rw [ordAt_eq_dispatch E _ hP hDne]
+      by_cases hy : y = 0
+      · -- 2-torsion branch: ordAt_twoTorsion = 2 * rootMultiplicity x (C c).
+        rw [if_pos hy]
+        unfold ordAt_twoTorsion
+        rw [if_neg hDne, if_neg hCcNe, if_pos rfl]
+        -- Goal becomes 2 * rootMultiplicity x (C c) = 0 (cast to ℤ).
+        -- C c has no roots when c ≠ 0, so rootMultiplicity = 0.
+        have hMult : Polynomial.rootMultiplicity x (Polynomial.C c) = 0 := by
+          apply Polynomial.rootMultiplicity_eq_zero
+          intro hRoot
+          rw [Polynomial.IsRoot.def, Polynomial.eval_C] at hRoot
+          exact hc hRoot
+        rw [hMult]
+      · -- Non-2-torsion: dispatch into the recursive aux.
+        rw [if_neg hy]
+        unfold ordAt_nonTwoTorsion
+        -- The auxiliary recursion at fuel ≥ 1 sees `D.eval P ≠ 0`,
+        -- so it returns 0 on the first step.
+        have hFuelPos :
+            0 <
+              ((({ a := Polynomial.C c, b := 0 } : CoordRingElt E.q).a.natDegree
+                + ({ a := Polynomial.C c, b := 0 } : CoordRingElt E.q).b.natDegree
+                + 1) : ℕ) :=
+          Nat.succ_pos _
+        obtain ⟨n, hn⟩ : ∃ n,
+            ((({ a := Polynomial.C c, b := 0 } : CoordRingElt E.q).a.natDegree
+                + ({ a := Polynomial.C c, b := 0 } : CoordRingElt E.q).b.natDegree
+                + 1) : ℕ) = n + 1 :=
+          ⟨_, rfl⟩
+        rw [hn]
+        unfold ordAt_nonTwoTorsion_aux
+        rw [if_neg hDne]
+        -- D.eval x y = C c · 1 - 0 · y = c, which is ≠ 0.
+        have hEvalNe :
+            ({ a := Polynomial.C c, b := 0 } : CoordRingElt E.q).eval x y ≠ 0 := by
+          unfold CoordRingElt.eval
+          simpa using hc
+        rw [if_pos hEvalNe]
+
+/-- If the coefficient function is identically zero, the divisor class
+is trivial regardless of the finite-support witness. -/
+private theorem divisorClass_eq_zero_of_eq_zero
+    (coeffs : ECPoint E → ℤ) (hcoeffs : coeffs = 0)
+    (h : Set.Finite (Function.support coeffs)) :
+    divisorClass E coeffs h = 0 := by
+  classical
+  unfold divisorClass
+  apply Finset.sum_eq_zero
+  intro P _hP
+  simp [hcoeffs]
+
+/-- **Trivial case as a theorem**: for `D = (C c, 0)` with `c ≠ 0`, the
+principal-class conclusion holds via the trivial unit `1`. -/
+theorem CoordRingElt.divisorClass_isPrincipal_const_unit
+    {c : ZMod E.q} (hc : c ≠ 0) :
+    ∃ I : (FractionalIdeal (nonZeroDivisors E.toW.toAffine.CoordinateRing)
+              (FractionRing E.toW.toAffine.CoordinateRing))ˣ,
+      (I : Submodule E.toW.toAffine.CoordinateRing
+            (FractionRing E.toW.toAffine.CoordinateRing)).IsPrincipal ∧
+      Additive.toMul
+        (divisorClass E
+          (divisorOfD E ({ a := Polynomial.C c, b := 0 } : CoordRingElt E.q))
+          (divisorOfD_finiteSupport E _)) =
+      ClassGroup.mk I := by
+  classical
+  refine ⟨1, ?_, ?_⟩
+  · -- (1 : (FractionalIdeal ..)ˣ).val.IsPrincipal — the unit submodule
+    -- is `Submodule.span R {1}` (mathlib's `Submodule.one_eq_span`).
+    rw [Units.val_one, FractionalIdeal.coe_one, Submodule.one_eq_span]
+    exact ⟨1, rfl⟩
+  · -- Use `divisorClass_eq_zero_of_eq_zero` to fold both sides through 0.
+    rw [divisorClass_eq_zero_of_eq_zero E _
+          (divisorOfD_const_unit_eq_zero E hc) _]
+    -- Goal: Additive.toMul (0 : Additive (ClassGroup _)) = ClassGroup.mk 1.
+    -- LHS = 1; RHS = ClassGroup.mk 1 = 1 by `map_one`.
+    exact (map_one ClassGroup.mk).symm
+
+/-- **Citable principal-class boundary axiom — narrowed.**
+
+    The divisor class of the concrete rational function
+    `D = a - b*y ∈ F_q[E]^×` is represented by a principal fractional
+    ideal in mathlib's class group, provided all geometric divisor mass is
+    visible over `F_q`. The trivial constant-unit case
+    `(D.a = C c, D.b = 0, c ≠ 0)` is excluded — it is handled by the
+    theorem `CoordRingElt.divisorClass_isPrincipal_const_unit` above.
+
+    This is the remaining function-field bridge retained in this file.
+    It is phrased in mathlib's `ClassGroup` / `FractionalIdeal` /
+    `IsPrincipal` language; the older zero-class statement
+    `ordAt_divisorClass_zero` is derived below using
+    `ClassGroup.mk_eq_one_iff`.
+
+    Citation boundary: Silverman AEC Corollary III.3.5, together with
+    the local-order compatibility between `ordAt` and the affine prime
+    ideals of `E.toW.toAffine.CoordinateRing`. -/
+axiom CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
+    (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (_hSplit : splitsOnE E D)
+    (_hNotConstUnit :
+      ¬ ∃ c : ZMod E.q, c ≠ 0 ∧ D.a = Polynomial.C c ∧ D.b = 0) :
+    ∃ I : (FractionalIdeal (nonZeroDivisors E.toW.toAffine.CoordinateRing)
+              (FractionRing E.toW.toAffine.CoordinateRing))ˣ,
+      (I : Submodule E.toW.toAffine.CoordinateRing
+            (FractionRing E.toW.toAffine.CoordinateRing)).IsPrincipal ∧
+      Additive.toMul
+        (divisorClass E (divisorOfD E D)
+          (divisorOfD_finiteSupport E D)) =
+      ClassGroup.mk I
+
+/-- **Re-export — unrestricted principal-class statement**, now a
+theorem derived from the narrowed axiom plus the constant-unit case. -/
+theorem CoordRingElt.divisorClass_isPrincipal
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hSplit : splitsOnE E D) :
+    ∃ I : (FractionalIdeal (nonZeroDivisors E.toW.toAffine.CoordinateRing)
+              (FractionRing E.toW.toAffine.CoordinateRing))ˣ,
+      (I : Submodule E.toW.toAffine.CoordinateRing
+            (FractionRing E.toW.toAffine.CoordinateRing)).IsPrincipal ∧
+      Additive.toMul
+        (divisorClass E (divisorOfD E D)
+          (divisorOfD_finiteSupport E D)) =
+      ClassGroup.mk I := by
+  classical
+  by_cases hConstUnit :
+      ∃ c : ZMod E.q, c ≠ 0 ∧ D.a = Polynomial.C c ∧ D.b = 0
+  · obtain ⟨c, hc, hCa, hCb⟩ := hConstUnit
+    have hDeq : D = ({ a := Polynomial.C c, b := 0 } : CoordRingElt E.q) := by
+      rcases D with ⟨a, b⟩
+      simp only at hCa hCb
+      subst hCa; subst hCb
+      rfl
+    subst hDeq
+    exact CoordRingElt.divisorClass_isPrincipal_const_unit E hc
+  · exact CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
+      E D hD hSplit hConstUnit
 
 /-- **Derived zero-class bridge.**
 

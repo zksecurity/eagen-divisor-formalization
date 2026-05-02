@@ -12,7 +12,7 @@
       Divisor.chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image,
       Polynomial.resultant_logDeriv_at_split_specialization_of_pos_natDegree,
       Divisor.hasse_weil,
-      Divisor.CoordRingElt.divisorClass_isPrincipal
+      Divisor.CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
 
     The Frobenius descent proof gap is closed: there is no `sorryAx` in
     the MA/IP closure. The headline theorem signatures no longer carry
@@ -62,7 +62,7 @@
     `CoordRingElt.exists_divisor_multiplicity_ecpoint`,
     `ordAt_group_sum_zero_under_split`:
       propext, Classical.choice, Quot.sound,
-      Divisor.CoordRingElt.divisorClass_isPrincipal
+      Divisor.CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
 
   In particular: `Divisor.CoordRingElt.divisor_group_sum_zero` (the
   previously unsound axiom) is no longer reachable from any headline

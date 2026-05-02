@@ -5,7 +5,7 @@ Axiom-by-axiom status of textbook coverage in `/Users/rot256/paper/crypto-books/
 | Axiom | Status |
 |---|---|
 | `principal_divisor_iff` | Covered — Silverman AEC Cor III.3.5 |
-| `CoordRingElt.divisorClass_isPrincipal` | Open bridge — principal fractional-ideal replacement for the former `ordAt_divisor_isPrincipal`/`principal_divisor_iff` path on MA extraction. The old `ordAt_divisorClass_zero` statement is now a theorem derived from this axiom. See `divisorClass_isPrincipal.md`. |
+| `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit` | Open bridge — principal fractional-ideal replacement for the former `ordAt_divisor_isPrincipal`/`principal_divisor_iff` path on MA extraction. Now narrowed: the trivial constant-unit case `(D.a = C c, D.b = 0, c ≠ 0)` is a theorem (since `divisorOfD = 0`), and the unrestricted form `CoordRingElt.divisorClass_isPrincipal` is a re-exported theorem. The old `ordAt_divisorClass_zero` statement is also a theorem derived from this axiom. See `divisorClass_isPrincipal.md`. |
 | `hasse_weil` | Covered — Silverman AEC Thm V.1.1 + Stichtenoth Thm 5.2.3 |
 | `ECPoint.add_comm` | Covered — Silverman AEC Prop III.2.2(c) |
 | `ECPoint.add_assoc` | Covered — Silverman AEC Prop III.2.2(e) |

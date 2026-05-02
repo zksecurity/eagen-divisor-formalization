@@ -1,6 +1,7 @@
-# `CoordRingElt.divisorClass_isPrincipal`
+# `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit`
 
 - **Lean source**: `Divisor/OrdP/LocalRing.lean`
+- **Re-exported as theorem**: `CoordRingElt.divisorClass_isPrincipal` (the unrestricted form, derived from this narrowed axiom plus the trivial constant-unit case).
 
 ```lean
 axiom CoordRingElt.divisorClass_isPrincipal
