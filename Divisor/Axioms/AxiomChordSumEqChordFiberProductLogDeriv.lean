@@ -225,7 +225,8 @@ theorem chord_fiber_product_logDeriv_eq_logDerivTerm_trace
   -- 4. Apply the generic resultant log-derivative axiom.
   have hAxiom :=
     Polynomial.resultant_logDeriv_at_split_specialization
-      (chordCubicBiv E lam) (DLineBiv E lam D) μ hF_ne hSplit' hg_def' hf_X_def'
+      (chordCubicBiv E lam) (DLineBiv E lam D) μ
+      (chordCubicBiv_monic E lam) hF_ne hSplit' hg_def' hf_X_def'
   rw [hAxiom, hMap_eq]
   -- 5. Match per-root expressions to `logDerivTerm` (`.sum` propagates).
   apply congrArg Multiset.sum

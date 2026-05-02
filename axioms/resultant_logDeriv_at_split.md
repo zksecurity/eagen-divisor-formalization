@@ -10,6 +10,7 @@
 
 For `f, g : K[T][X]` (a bivariate polynomial pair, with the *outer* `Polynomial.X` playing the resultant variable and the *inner* `Polynomial.X` the specialization parameter `T`) and `t₀ : K`, set `F(T) := Res_X(f, g) ∈ K[T]`. Under the hypotheses
 
+- `f.Monic` (in the outer variable). Without monicity, mathlib's `Polynomial.resultant_eq_prod_eval` carries an extra `lc(f)^{deg g}` factor, and the per-root sum picks up a corresponding `d/dT log(lc(f)^{deg g})` term. The project's caller `chordCubicBiv` is monic, so we keep the simpler statement.
 - `F(t₀) ≠ 0`,
 - `f(X, t₀) := f.map (evalRingHom t₀)` splits over `K`,
 - `g(x, t₀) ≠ 0` for every chord root `x` of `f(X, t₀)`,

@@ -70,6 +70,12 @@ inner specialization point. Write `F := Res_X(f, g) ∈ K[T]`, where
 `T = Polynomial.X : K[X]` is the inner variable.
 
 Hypotheses:
+* `hMonic` — `f` is monic in the outer variable. Without monicity the
+  resultant carries an extra `lc(f)^{deg g}` factor (cf. mathlib's
+  `Polynomial.resultant_eq_prod_eval`), and the per-chord-root sum
+  picks up the corresponding logarithmic derivative
+  `d/dT log(lc(f)^{deg g})` term. The project-side caller
+  (`chordCubicBiv`) is monic, so we keep the simpler statement.
 * `hF_ne` — the resultant evaluation `F(t₀) ≠ 0`.
 * `hSplit` — the inner-specialised polynomial `f(X, t₀)` splits
   over `K`.
@@ -102,6 +108,7 @@ Reference: Lang, *Algebra* GTM 211, §VI.5 Theorem 5.1
 axiom resultant_logDeriv_at_split_specialization
     {K : Type*} [Field K]
     (f g : K[X][X]) (t₀ : K)
+    (hMonic : f.Monic)
     (hF_ne : (Polynomial.resultant f g f.natDegree g.natDegree).eval t₀ ≠ 0)
     (hSplit : (f.map (Polynomial.evalRingHom t₀)).Splits)
     (hg_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,

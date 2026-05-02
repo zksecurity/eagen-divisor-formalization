@@ -235,6 +235,16 @@ private lemma intersectionPoly_leadingCoeff (lam μ : ZMod E.q) :
              Polynomial.coeff_C, Polynomial.coeff_X]
   norm_num
 
+/-- The coefficient of `X^3` in `chordCubicBiv` is `1` (in the inner
+ring `(ZMod E.q)[X]`). -/
+private lemma chordCubicBiv_coeff_three (lam : ZMod E.q) :
+    (chordCubicBiv E lam).coeff 3 = 1 := by
+  unfold chordCubicBiv
+  simp only [Polynomial.coeff_add, Polynomial.coeff_sub,
+             Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
+             Polynomial.coeff_C, Polynomial.coeff_X]
+  norm_num
+
 /-- The bivariate chord cubic also has natDegree 3. -/
 private lemma chordCubicBiv_natDegree (lam : ZMod E.q) :
     (chordCubicBiv E lam).natDegree = 3 := by
@@ -253,12 +263,20 @@ private lemma chordCubicBiv_natDegree (lam : ZMod E.q) :
     · exact (Polynomial.natDegree_C _).le.trans (by omega)
   · -- natDegree ≥ 3 via coeff at 3 = 1
     refine Polynomial.le_natDegree_of_ne_zero ?_
-    show (chordCubicBiv E lam).coeff 3 ≠ 0
-    unfold chordCubicBiv
-    simp only [Polynomial.coeff_add, Polynomial.coeff_sub,
-               Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
-               Polynomial.coeff_C, Polynomial.coeff_X]
-    norm_num
+    rw [chordCubicBiv_coeff_three]
+    exact one_ne_zero
+
+/-- **The bivariate chord cubic is monic.**
+
+The outer `Polynomial.X` is the resultant variable; its leading
+coefficient (in the inner ring `(ZMod E.q)[X]`) is `1`. This is the
+hypothesis that `Polynomial.resultant_eq_prod_eval`-style identities
+expect for the resultant-as-product-of-evaluations formula to omit a
+leading-coefficient factor. -/
+theorem chordCubicBiv_monic (lam : ZMod E.q) :
+    (chordCubicBiv E lam).Monic := by
+  rw [Polynomial.Monic.def, Polynomial.leadingCoeff,
+      chordCubicBiv_natDegree, chordCubicBiv_coeff_three]
 
 /-- Specialising `DLineBiv` cannot raise the natDegree (mapping a polynomial
 through a `RingHom` is degree-non-increasing). -/
