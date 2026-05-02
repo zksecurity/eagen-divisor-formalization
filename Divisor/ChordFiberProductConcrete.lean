@@ -1000,3 +1000,86 @@ theorem chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step
     normPoly_ne_zero E _ hD'ne
   rw [Polynomial.natDegree_mul hXpow_ne hNormD'_ne]
   rw [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C]
+
+/-- **`normPoly` factors under arbitrary monic divisibility**:
+when `p ∣ D.a, D.b` and `p` is monic, `normPoly D = p² · normPoly D'`. -/
+theorem normPoly_eq_p_sq_mul_of_div
+    (D : CoordRingElt E.q) (p : Polynomial (ZMod E.q))
+    (hpm : p.Monic) (hpa : p ∣ D.a) (hpb : p ∣ D.b) :
+    normPoly E D
+      = p ^ 2
+          * normPoly E { a := D.a /ₘ p, b := D.b /ₘ p } := by
+  classical
+  have ha_factor : p * (D.a /ₘ p) = D.a := by
+    have hmod : D.a %ₘ p = 0 := (Polynomial.modByMonic_eq_zero_iff_dvd hpm).mpr hpa
+    have := Polynomial.modByMonic_add_div D.a hpm
+    rw [hmod, zero_add] at this
+    exact this
+  have hb_factor : p * (D.b /ₘ p) = D.b := by
+    have hmod : D.b %ₘ p = 0 := (Polynomial.modByMonic_eq_zero_iff_dvd hpm).mpr hpb
+    have := Polynomial.modByMonic_add_div D.b hpm
+    rw [hmod, zero_add] at this
+    exact this
+  rw [normPoly_eq, normPoly_eq]
+  conv_lhs => rw [← ha_factor, ← hb_factor]
+  ring
+
+/-- **General-monic inductive natDegree-equality step.**
+
+Generalises `chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step`
+from the linear factor case to arbitrary monic divisor `p`, given
+the natDegree formula for the resultant against `p.map C` as
+hypothesis. The hypothesis
+`hRES_natDegree : Res(chordCubic, p.map C, 3, p.natDegree).natDegree = 2 · p.natDegree`
+is the remaining substantive obligation; it is provable for `p` linear
+(by `resultant_chordCubicBiv_X_sub_C_natDegree`) and for `p` monic of
+arbitrary degree via splitting-field machinery
+(`resultant_eq_prod_eval` reversed by `resultant_comm`, applied over
+`Polynomial.SplittingField p`). -/
+theorem chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_general
+    (lam : ZMod E.q) (D : CoordRingElt E.q) (p : Polynomial (ZMod E.q))
+    (hpm : p.Monic) (hpa : p ∣ D.a) (hpb : p ∣ D.b)
+    (hD'ne : ¬ ((D.a /ₘ p) = 0 ∧ (D.b /ₘ p) = 0))
+    (hDLne : DLineBiv E lam { a := D.a /ₘ p, b := D.b /ₘ p } ≠ 0)
+    (hCFPne : chord_fiber_product_concrete E lam
+                { a := D.a /ₘ p, b := D.b /ₘ p } ≠ 0)
+    (hRES_natDegree :
+      (Polynomial.resultant (chordCubicBiv E lam)
+        (p.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
+        (chordCubicBiv E lam).natDegree p.natDegree).natDegree
+        = 2 * p.natDegree)
+    (hIH : (chord_fiber_product_concrete E lam
+              { a := D.a /ₘ p, b := D.b /ₘ p }).natDegree
+            = (normPoly E
+                { a := D.a /ₘ p, b := D.b /ₘ p }).natDegree) :
+    (chord_fiber_product_concrete E lam D).natDegree
+      = (normPoly E D).natDegree := by
+  classical
+  rw [chord_fiber_product_concrete_eq_resPmap_mul_of_div E lam D p hpm hpa hpb hDLne]
+  -- LHS: (RES * chord_fiber_product D').natDegree
+  set RES := Polynomial.resultant (chordCubicBiv E lam)
+              (p.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
+              (chordCubicBiv E lam).natDegree p.natDegree with hRES
+  have hRES_ne : RES ≠ 0 := by
+    intro h
+    -- Distinguish p.natDegree = 0 (where the natDegree formula degenerates).
+    rcases Nat.eq_zero_or_pos p.natDegree with hzero | hpos
+    · -- p.natDegree = 0, p monic ⇒ p = 1, RES = Polynomial.resultant _ 1 _ 0 = 1.
+      have hp1 : p = 1 := (hpm.natDegree_eq_zero).mp hzero
+      have hRES_eq_one : RES = 1 := by
+        rw [hRES, hp1, Polynomial.map_one]
+        simp [Polynomial.resultant_one_right]
+      rw [hRES_eq_one] at h
+      exact one_ne_zero h
+    · -- 0 < p.natDegree ⇒ RES.natDegree = 2 * p.natDegree > 0 ⇒ RES ≠ 0.
+      have h0 : RES.natDegree = 0 := by rw [h, Polynomial.natDegree_zero]
+      rw [hRES_natDegree] at h0
+      omega
+  rw [Polynomial.natDegree_mul hRES_ne hCFPne, hRES_natDegree, hIH,
+      normPoly_eq_p_sq_mul_of_div E D p hpm hpa hpb]
+  -- Goal: 2 * p.natDegree + normPoly D'.natDegree = (p^2 * normPoly D').natDegree
+  have hp_ne : p ≠ 0 := hpm.ne_zero
+  have hp_pow_ne : p^2 ≠ 0 := pow_ne_zero _ hp_ne
+  have hNormD'_ne : normPoly E { a := D.a /ₘ p, b := D.b /ₘ p } ≠ 0 :=
+    normPoly_ne_zero E _ hD'ne
+  rw [Polynomial.natDegree_mul hp_pow_ne hNormD'_ne, Polynomial.natDegree_pow]
