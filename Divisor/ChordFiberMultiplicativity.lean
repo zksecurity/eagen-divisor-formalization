@@ -456,6 +456,37 @@ theorem chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_genera
     normPoly_ne_zero E _ hD'ne
   rw [Polynomial.natDegree_mul hp_pow_ne hNormD'_ne, Polynomial.natDegree_pow]
 
+/-! ### natDegree-formula for the resultant against `p.map C`
+
+Closed forms for the resultant natDegree in special cases of `p`. The
+general monic case is the remaining substantive obligation; the cases
+below close trivial sub-cases that the inductive step degenerates to. -/
+
+/-- **Trivial case**: when `p = 1`, the resultant is `1` and natDegree is `0`. -/
+theorem resultant_chordCubicBiv_pmap_C_natDegree_of_eq_one
+    (lam : ZMod E.q) (p : Polynomial (ZMod E.q)) (hp1 : p = 1) :
+    (Polynomial.resultant (chordCubicBiv E lam)
+      (p.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
+      (chordCubicBiv E lam).natDegree p.natDegree).natDegree
+    = 2 * p.natDegree := by
+  subst hp1
+  simp [Polynomial.map_one, Polynomial.resultant_one_right]
+
+/-- **Linear case**: the resultant against `(X - C x₀).map C` has natDegree 2. -/
+theorem resultant_chordCubicBiv_pmap_C_natDegree_of_eq_X_sub_C
+    (lam x₀ : ZMod E.q)
+    (p : Polynomial (ZMod E.q))
+    (hp : p = Polynomial.X - Polynomial.C x₀) :
+    (Polynomial.resultant (chordCubicBiv E lam)
+      (p.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
+      (chordCubicBiv E lam).natDegree p.natDegree).natDegree
+    = 2 * p.natDegree := by
+  subst hp
+  -- p.natDegree = 1, so target is 2 * 1 = 2.
+  rw [Polynomial.natDegree_X_sub_C, Polynomial.map_sub, Polynomial.map_X,
+      Polynomial.map_C]
+  exact resultant_chordCubicBiv_X_sub_C_natDegree E lam x₀
+
 /-! ### Streamlined inductive steps with auto-derived non-vanishing
 
 The `_step` theorems above take both `hDLne` and `hCFPne` as explicit
