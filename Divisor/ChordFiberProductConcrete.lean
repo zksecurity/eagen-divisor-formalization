@@ -586,4 +586,89 @@ theorem chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image
   rw [chord_fiber_product_concrete_bar_eval_eq_zero_iff_support E lam D hD gd μ]
   exact Iff.symm Finset.mem_image
 
+/-- Membership in the support image gives a positive root multiplicity for
+the base-changed concrete chord-fiber product. This is the multiplicity-free
+root-set theorem repackaged as the lower bound `1 ≤ rootMultiplicity`. -/
+theorem chord_fiber_product_concrete_bar_rootMultiplicity_pos_of_mem_support_image
+    [DecidableEq (Fqbar E)]
+    (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) {z : Fqbar E}
+    (hz : z ∈ gd.support.image (zLambdaBar E lam)) :
+    0 <
+      (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+        (chord_fiber_product_concrete E lam D)).rootMultiplicity z := by
+  classical
+  set p := Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+    (chord_fiber_product_concrete E lam D) with hp_def
+  have hpne : p ≠ 0 :=
+    Polynomial.map_ne_zero
+      (chord_fiber_product_concrete_ne_zero E lam D hD)
+  have hroots :
+      p.roots.toFinset = gd.support.image (zLambdaBar E lam) := by
+    rw [hp_def]
+    exact chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image
+      E lam D hD gd
+  have hz_roots : z ∈ p.roots.toFinset := by
+    rw [hroots]
+    exact hz
+  have hz_root : p.IsRoot z :=
+    (Polynomial.mem_roots'.mp (Multiset.mem_toFinset.mp hz_roots)).2
+  exact (Polynomial.rootMultiplicity_pos hpne).mpr hz_root
+
+/-- The support-image root-set theorem gives the simple linear divisibility
+`(X - C z) ∣ p` for every `z` hit by the geometric support. -/
+theorem chord_fiber_product_concrete_bar_X_sub_C_dvd_of_mem_support_image
+    [DecidableEq (Fqbar E)]
+    (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) {z : Fqbar E}
+    (hz : z ∈ gd.support.image (zLambdaBar E lam)) :
+    (Polynomial.X - Polynomial.C z) ∣
+      Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+        (chord_fiber_product_concrete E lam D) := by
+  classical
+  set p := Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+    (chord_fiber_product_concrete E lam D) with hp_def
+  have hpne : p ≠ 0 :=
+    Polynomial.map_ne_zero
+      (chord_fiber_product_concrete_ne_zero E lam D hD)
+  have hpos : 0 < p.rootMultiplicity z := by
+    rw [hp_def]
+    exact chord_fiber_product_concrete_bar_rootMultiplicity_pos_of_mem_support_image
+      E lam D hD gd hz
+  have hroot : p.IsRoot z :=
+    (Polynomial.rootMultiplicity_pos hpne).mp hpos
+  rw [hp_def]
+  exact Polynomial.dvd_iff_isRoot.mpr hroot
+
+/-- Equivalent `(X - C z)^1` form of
+`chord_fiber_product_concrete_bar_X_sub_C_dvd_of_mem_support_image`. -/
+theorem chord_fiber_product_concrete_bar_X_sub_C_pow_one_dvd_of_mem_support_image
+    [DecidableEq (Fqbar E)]
+    (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) {z : Fqbar E}
+    (hz : z ∈ gd.support.image (zLambdaBar E lam)) :
+    (Polynomial.X - Polynomial.C z) ^ 1 ∣
+      Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+        (chord_fiber_product_concrete E lam D) := by
+  simpa using
+    chord_fiber_product_concrete_bar_X_sub_C_dvd_of_mem_support_image
+      E lam D hD gd hz
+
+/-- Pointwise support version of the simple `(X - C z)^1` divisibility. -/
+theorem chord_fiber_product_concrete_bar_X_sub_C_zLambda_pow_one_dvd_of_mem_support
+    [DecidableEq (Fqbar E)]
+    (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) {Q : GeomPoint E}
+    (hQ : Q ∈ gd.support) :
+    (Polynomial.X - Polynomial.C (zLambdaBar E lam Q)) ^ 1 ∣
+      Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+        (chord_fiber_product_concrete E lam D) := by
+  exact
+    chord_fiber_product_concrete_bar_X_sub_C_pow_one_dvd_of_mem_support_image
+      E lam D hD gd (Finset.mem_image.mpr ⟨Q, hQ, rfl⟩)
+
 end Divisor
