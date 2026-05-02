@@ -671,4 +671,102 @@ theorem chord_fiber_product_concrete_bar_X_sub_C_zLambda_pow_one_dvd_of_mem_supp
     chord_fiber_product_concrete_bar_X_sub_C_pow_one_dvd_of_mem_support_image
       E lam D hD gd (Finset.mem_image.mpr ⟨Q, hQ, rfl⟩)
 
-end Divisor
+/-! ## Twin-step multiplicativity of `DLineBiv` and `chord_fiber_product`
+
+When both `D.a` and `D.b` are divisible by `(X − C x₀)` (i.e. the "twin"
+case in the recursive `ordAt` analysis), `DLineBiv` factors as
+`(X − C (C x₀)) · DLineBiv(D')` where `D' = D.divLin x₀`. The chord-fibre
+product then factors via mathlib's `Polynomial.resultant_mul_right`,
+giving an explicit multiplicativity theorem under one twin step.
+
+This is project infrastructure for a future degree induction on the
+`divLin`-recursive structure of `D`. Each twin step contributes
+`Res_X(chordCubic, X − C (C x₀))` (a polynomial of natDegree 2 in the
+chord-intercept variable) to `chord_fiber_product`, matching the
+contribution `(X − x₀)²` to `normPoly`. -/
+
+/-- **DLineBiv multiplicativity under linear factor extraction**:
+when `(X − C x₀) ∣ D.a` and `(X − C x₀) ∣ D.b`, `DLineBiv D` factors
+as `(X − C (C x₀)) · DLineBiv D'` for the linearly-divided
+`D' := { a := D.a /ₘ (X − C x₀), b := D.b /ₘ (X − C x₀) }` (the same
+operation as `Divisor.CoordRingElt.divLin`, inlined here to keep
+imports minimal). -/
+theorem DLineBiv_eq_X_sub_C_mul_divLin
+    (lam : ZMod E.q) (D : CoordRingElt E.q) (x₀ : ZMod E.q)
+    (hda : (Polynomial.X - Polynomial.C x₀) ∣ D.a)
+    (hdb : (Polynomial.X - Polynomial.C x₀) ∣ D.b) :
+    DLineBiv E lam D
+      = (Polynomial.X - Polynomial.C (Polynomial.C x₀))
+          * DLineBiv E lam
+              { a := D.a /ₘ (Polynomial.X - Polynomial.C x₀)
+                b := D.b /ₘ (Polynomial.X - Polynomial.C x₀) } := by
+  classical
+  -- D.a = (X - C x₀) * (D.a /ₘ (X - C x₀)) via `mul_divByMonic_eq_iff_isRoot`.
+  have ha_root : (D.a).IsRoot x₀ := Polynomial.dvd_iff_isRoot.mp hda
+  have hb_root : (D.b).IsRoot x₀ := Polynomial.dvd_iff_isRoot.mp hdb
+  have ha_factor :
+      (Polynomial.X - Polynomial.C x₀) *
+        (D.a /ₘ (Polynomial.X - Polynomial.C x₀)) = D.a :=
+    Polynomial.mul_divByMonic_eq_iff_isRoot.mpr ha_root
+  have hb_factor :
+      (Polynomial.X - Polynomial.C x₀) *
+        (D.b /ₘ (Polynomial.X - Polynomial.C x₀)) = D.b :=
+    Polynomial.mul_divByMonic_eq_iff_isRoot.mpr hb_root
+  unfold DLineBiv
+  conv_lhs => rw [← ha_factor, ← hb_factor]
+  rw [Polynomial.map_mul, Polynomial.map_mul]
+  rw [show ((Polynomial.X - Polynomial.C x₀ : Polynomial (ZMod E.q)).map
+        (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
+      = Polynomial.X - Polynomial.C (Polynomial.C x₀) by
+        rw [Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C]]
+  ring
+
+/-- **`chord_fiber_product` multiplicativity under linear factor extraction.**
+
+Combining `DLineBiv_eq_X_sub_C_mul_divLin` with mathlib's
+`Polynomial.resultant_mul_right`: when `(X − C x₀) ∣ D.a, D.b` and the
+linearly-divided `D'` has nonzero `DLineBiv`, the chord-fibre product
+factors as the resultant of `chordCubicBiv` against the linear factor
+times the chord-fibre product of `D'`. This is the multiplicativity
+step in a future degree induction on the `divLin`-recursion. -/
+theorem chord_fiber_product_concrete_eq_resXSubC_mul_of_div
+    (lam : ZMod E.q) (D : CoordRingElt E.q) (x₀ : ZMod E.q)
+    (hda : (Polynomial.X - Polynomial.C x₀) ∣ D.a)
+    (hdb : (Polynomial.X - Polynomial.C x₀) ∣ D.b)
+    (hDLne : DLineBiv E lam
+              { a := D.a /ₘ (Polynomial.X - Polynomial.C x₀)
+                b := D.b /ₘ (Polynomial.X - Polynomial.C x₀) } ≠ 0) :
+    chord_fiber_product_concrete E lam D
+      = Polynomial.resultant (chordCubicBiv E lam)
+          (Polynomial.X - Polynomial.C (Polynomial.C x₀))
+          (chordCubicBiv E lam).natDegree 1
+        * chord_fiber_product_concrete E lam
+            { a := D.a /ₘ (Polynomial.X - Polynomial.C x₀)
+              b := D.b /ₘ (Polynomial.X - Polynomial.C x₀) } := by
+  classical
+  unfold chord_fiber_product_concrete
+  rw [DLineBiv_eq_X_sub_C_mul_divLin E lam D x₀ hda hdb]
+  set XC := (Polynomial.X - Polynomial.C (Polynomial.C x₀)
+              : (ZMod E.q)[X][X]) with hXC
+  set DL := DLineBiv E lam
+              { a := D.a /ₘ (Polynomial.X - Polynomial.C x₀)
+                b := D.b /ₘ (Polynomial.X - Polynomial.C x₀) }
+              with hDL_def
+  have hXC_natDegree : XC.natDegree = 1 := by
+    rw [hXC]; exact Polynomial.natDegree_X_sub_C _
+  have hXC_monic : XC.Monic := by
+    rw [hXC]; exact Polynomial.monic_X_sub_C _
+  have hDLne' : DL ≠ 0 := hDLne
+  have hMul_natDegree :
+      (XC * DL).natDegree = XC.natDegree + DL.natDegree :=
+    Polynomial.natDegree_mul hXC_monic.ne_zero hDLne'
+  have hRes :=
+    Polynomial.resultant_mul_right (chordCubicBiv E lam) XC DL
+      (chordCubicBiv E lam).natDegree le_rfl
+  rw [show
+      Polynomial.resultant (chordCubicBiv E lam) (XC * DL)
+          (chordCubicBiv E lam).natDegree (XC * DL).natDegree
+        = Polynomial.resultant (chordCubicBiv E lam) (XC * DL)
+          (chordCubicBiv E lam).natDegree (XC.natDegree + DL.natDegree) by
+        rw [hMul_natDegree]]
+  rw [hRes, hXC_natDegree]
