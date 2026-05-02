@@ -487,6 +487,59 @@ theorem resultant_chordCubicBiv_pmap_C_natDegree_of_eq_X_sub_C
       Polynomial.map_C]
   exact resultant_chordCubicBiv_X_sub_C_natDegree E lam x₀
 
+/-- **Power-of-linear case**: the resultant against `((X - C x₀)^k).map C` has
+natDegree `2k`.
+
+Proof via mathlib's `Polynomial.resultant_X_sub_C_pow_right`, which
+gives the closed form `(-1)^(m*n) * eval r f ^ n`. The natDegree of
+`(eval (C x₀) chordCubicBiv)^k` is `k * 2 = 2k` by power-of-natDegree.
+-/
+theorem resultant_chordCubicBiv_pmap_C_natDegree_of_eq_X_sub_C_pow
+    (lam x₀ : ZMod E.q) (k : ℕ)
+    (p : Polynomial (ZMod E.q))
+    (hp : p = (Polynomial.X - Polynomial.C x₀) ^ k) :
+    (Polynomial.resultant (chordCubicBiv E lam)
+      (p.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
+      (chordCubicBiv E lam).natDegree p.natDegree).natDegree
+    = 2 * p.natDegree := by
+  classical
+  subst hp
+  -- p.natDegree = k.
+  have hp_natDegree :
+      ((Polynomial.X - Polynomial.C x₀ : Polynomial (ZMod E.q)) ^ k).natDegree
+        = k := by
+    rw [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C, mul_one]
+  -- p.map C = ((X - C(C x₀))^k) in (ZMod E.q)[X][X].
+  have hpmapC :
+      ((Polynomial.X - Polynomial.C x₀ : Polynomial (ZMod E.q)) ^ k).map
+          (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X])
+        = (Polynomial.X - Polynomial.C (Polynomial.C x₀)) ^ k := by
+    rw [Polynomial.map_pow, Polynomial.map_sub, Polynomial.map_X,
+        Polynomial.map_C]
+  rw [hpmapC, hp_natDegree]
+  -- By `resultant_X_sub_C_pow_right`:
+  --   Res(f, (X - C r)^k, m, k) = (-1)^(m*k) * (eval r f)^k.
+  -- For us m = 3, r = C x₀, f = chordCubicBiv.
+  rw [Polynomial.resultant_X_sub_C_pow_right (f := chordCubicBiv E lam)
+        (r := Polynomial.C x₀) (m := (chordCubicBiv E lam).natDegree)
+        (n := k) le_rfl]
+  rw [chordCubicBiv_natDegree]
+  -- Goal: ((-1)^(3*k) * (eval (C x₀) chordCubicBiv)^k).natDegree = 2 * k.
+  -- The factor `(-1)^(3*k) : Polynomial (ZMod E.q)` is `C ((-1)^(3*k))`, a unit
+  -- (=±1, nonzero).
+  have hC : ((-1 : Polynomial (ZMod E.q)) ^ (3 * k))
+          = Polynomial.C ((-1 : ZMod E.q) ^ (3 * k)) := by
+    rw [show ((-1 : Polynomial (ZMod E.q))) = Polynomial.C (-1 : ZMod E.q) from
+          by simp,
+        ← Polynomial.C_pow]
+  rw [hC]
+  -- Goal: (C ((-1)^(3*k)) * (eval (C x₀) chordCubic)^k).natDegree = 2 * k.
+  rw [Polynomial.natDegree_C_mul (by
+    -- (-1)^(3*k) ≠ 0 in ZMod E.q (a unit raised to a power).
+    exact pow_ne_zero _ (neg_ne_zero.mpr one_ne_zero))]
+  rw [Polynomial.natDegree_pow, chordCubicBiv_eval_C_natDegree]
+  ring
+
 /-! ### Streamlined inductive steps with auto-derived non-vanishing
 
 The `_step` theorems above take both `hDLne` and `hCFPne` as explicit
