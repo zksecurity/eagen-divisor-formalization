@@ -770,3 +770,90 @@ theorem chord_fiber_product_concrete_eq_resXSubC_mul_of_div
           (chordCubicBiv E lam).natDegree (XC.natDegree + DL.natDegree) by
         rw [hMul_natDegree]]
   rw [hRes, hXC_natDegree]
+
+/-- **`chordCubicBiv` evaluated at outer X = C x₀ has natDegree exactly 2.**
+
+Direct via mathlib's `compute_degree` tactic. The polynomial after
+substitution is `-T² - 2λx₀ T + (x₀³ - λ²x₀² + Ax₀ + B)`; the leading
+T² coefficient is `-1 ≠ 0`. -/
+private lemma chordCubicBiv_eval_C_natDegree
+    (lam x₀ : ZMod E.q) :
+    ((chordCubicBiv E lam).eval (Polynomial.C x₀)).natDegree = 2 := by
+  classical
+  unfold chordCubicBiv
+  simp only [Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_mul,
+             Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X]
+  -- After simp, the expression is in (ZMod E.q)[T] form. Compute its degree.
+  compute_degree!
+
+/-- **The chord-fibre resultant against `X − C(C x₀)` has natDegree 2.**
+
+Combines `Polynomial.resultant_X_sub_C_right` with the above evaluation
+natDegree. -/
+private lemma resultant_chordCubicBiv_X_sub_C_natDegree
+    (lam x₀ : ZMod E.q) :
+    (Polynomial.resultant (chordCubicBiv E lam)
+        (Polynomial.X - Polynomial.C (Polynomial.C x₀))
+        (chordCubicBiv E lam).natDegree 1).natDegree = 2 := by
+  classical
+  have hres :
+      Polynomial.resultant (chordCubicBiv E lam)
+        (Polynomial.X - Polynomial.C (Polynomial.C x₀))
+        (chordCubicBiv E lam).natDegree 1
+        = (-1) ^ (chordCubicBiv E lam).natDegree
+            * (chordCubicBiv E lam).eval (Polynomial.C x₀) :=
+    Polynomial.resultant_X_sub_C_right
+      (f := chordCubicBiv E lam)
+      (m := (chordCubicBiv E lam).natDegree)
+      (r := Polynomial.C x₀) le_rfl
+  rw [hres, chordCubicBiv_natDegree]
+  -- Goal: ((-1)^3 * chordCubicBiv.eval (C x₀)).natDegree = 2.
+  rw [show ((-1 : Polynomial (ZMod E.q)) ^ 3) = -1 by ring,
+      neg_one_mul, Polynomial.natDegree_neg]
+  exact chordCubicBiv_eval_C_natDegree E lam x₀
+
+/-- **`chord_fiber_product` natDegree increases by exactly 2 per twin step.**
+
+When the linear-factor multiplicativity applies and both factors are
+non-zero, taking the natDegree of the multiplicativity equation gives
+the recurrence
+  `(chord_fiber_product D).natDegree = 2 + (chord_fiber_product D').natDegree`.
+
+This is the inductive step for proving the natDegree-of-chord_fiber_product
+equality with `(normPoly).natDegree`: each twin step in `divLin` adds
+2 to both `chord_fiber_product.natDegree` (this lemma) and to
+`(normPoly).natDegree` (since
+`normPoly D = (X − x₀)² · normPoly D'`). -/
+theorem chord_fiber_product_concrete_natDegree_eq_of_div
+    (lam : ZMod E.q) (D : CoordRingElt E.q) (x₀ : ZMod E.q)
+    (hda : (Polynomial.X - Polynomial.C x₀) ∣ D.a)
+    (hdb : (Polynomial.X - Polynomial.C x₀) ∣ D.b)
+    (hDLne : DLineBiv E lam
+              { a := D.a /ₘ (Polynomial.X - Polynomial.C x₀)
+                b := D.b /ₘ (Polynomial.X - Polynomial.C x₀) } ≠ 0)
+    (hCFPne : chord_fiber_product_concrete E lam
+                { a := D.a /ₘ (Polynomial.X - Polynomial.C x₀)
+                  b := D.b /ₘ (Polynomial.X - Polynomial.C x₀) } ≠ 0) :
+    (chord_fiber_product_concrete E lam D).natDegree
+      = 2 + (chord_fiber_product_concrete E lam
+              { a := D.a /ₘ (Polynomial.X - Polynomial.C x₀)
+                b := D.b /ₘ (Polynomial.X - Polynomial.C x₀) }).natDegree := by
+  classical
+  rw [chord_fiber_product_concrete_eq_resXSubC_mul_of_div E lam D x₀ hda hdb hDLne]
+  -- Now: (Res(chordCubic, X - C(C x₀), _, 1) * chord_fiber_product D').natDegree.
+  -- Apply Polynomial.natDegree_mul; both factors are nonzero.
+  set RES := Polynomial.resultant (chordCubicBiv E lam)
+              (Polynomial.X - Polynomial.C (Polynomial.C x₀))
+              (chordCubicBiv E lam).natDegree 1 with hRES
+  have hRES_ne : RES ≠ 0 := by
+    rw [hRES]
+    -- RES has natDegree 2 from `resultant_chordCubicBiv_X_sub_C_natDegree`,
+    -- so it is nonzero.
+    intro h
+    have h0 : (RES).natDegree = 0 := by rw [hRES, h, Polynomial.natDegree_zero]
+    have h2 : RES.natDegree = 2 := by
+      rw [hRES]
+      exact resultant_chordCubicBiv_X_sub_C_natDegree E lam x₀
+    omega
+  rw [Polynomial.natDegree_mul hRES_ne hCFPne, hRES,
+      resultant_chordCubicBiv_X_sub_C_natDegree]
