@@ -36,9 +36,13 @@ boundary:
 - The trace/log-derivative step is now a generic, chord-agnostic
   axiom `Polynomial.resultant_logDeriv_at_split_specialization`
   about the logarithmic derivative of `Res_X(f, g)` at a split
-  inner-specialisation of `f`. This is a useful intermediate bridge,
-  not the final trust boundary. The final target is to prove it from
-  the Galois norm/trace/log-derivative theorem
+  inner-specialisation of `f`. The axiom carries an explicit
+  `Monic f` hypothesis (added after a code review caught that the
+  non-monic case picks up an extra `d/dT log(lc(f)^{deg g})` term per
+  mathlib's `Polynomial.resultant_eq_prod_eval`); the project caller
+  `chordCubicBiv` is monic. This is a useful intermediate bridge, not
+  the final trust boundary. The final target is to prove it from the
+  Galois norm/trace/log-derivative theorem
   `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`
   (already proved from mathlib) plus resultant and specialisation
   algebra. The chord-specific identity
