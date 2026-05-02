@@ -74,19 +74,23 @@ weaker pieces using `Divisor.rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le`:
 1. **Fibrewise divisibility** (the local divisor-of-norm content):
    for each `z` in the fibre image, `(X − C z)^(fibre sum) ∣ p`.
 
-2. **Global natDegree bound**: `p.natDegree ≤ ∑ Q ∈ gd.support, gd.mult Q`.
+2. **Global natDegree bound**: `p.natDegree ≤ (normPoly E D).natDegree`,
+   which by `GeometricDivisorData.mult_sum_eq_normPoly_natDegree`
+   transports to `p.natDegree ≤ ∑ Q ∈ gd.support, gd.mult Q` (the
+   shape required by the helper).
 
 Combined with the existing root-set theorem
 `chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image`, the
 helper's squeeze argument forces multiplicity equality at every fibre.
 The two stubbed pieces capture *exactly* what's substantive: a local
-divisor-of-norm intersection statement, and a degree count for the
-chord-projection norm polynomial. The natDegree bound is plausibly
+divisor-of-norm intersection statement (the divisibility), and a
+degree count for the chord-projection norm polynomial against the
+X-projection norm polynomial. The natDegree bound is plausibly
 provable from mathlib's resultant Sylvester-matrix machinery applied to
 the specific T-degree profiles of `chordCubicBiv`'s coefficients
 (constants, A − 2λT, B − T²) and `DLineBiv`'s coefficients
-(`-D.b·λ` and `D.a − D.b·T`); the divisibility bound is the genuine
-divisor-of-norm content. -/
+(`-D.b·λ` and `D.a − D.b·T`), or by an algebraic identification of the
+two norms via the chord projection / X-projection comparison. -/
 
 /-- **Stub 1**: fibrewise divisibility for the chord-fibre product. -/
 theorem chord_fiber_product_concrete_bar_zfiber_pow_dvd
@@ -100,15 +104,29 @@ theorem chord_fiber_product_concrete_bar_zfiber_pow_dvd
           (algebraMap (ZMod E.q) (Fqbar E)) :=
   sorry
 
-/-- **Stub 2**: natDegree bound for the chord-fibre product (bar). -/
+/-- **Stub 2a**: natDegree bound for the chord-fibre product against the
+norm polynomial's natDegree. The remaining substantive content (the
+Sylvester analysis or equivalent). -/
+theorem chord_fiber_product_concrete_bar_natDegree_le_normPoly
+    (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (_hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    ((chord_fiber_product_concrete E lam D).map
+        (algebraMap (ZMod E.q) (Fqbar E))).natDegree
+      ≤ (normPoly E D).natDegree :=
+  sorry
+
+/-- **Stub 2b**: natDegree bound restated against `∑ Q gd.mult Q`, using
+the `mult_sum_eq_normPoly_natDegree` identity from
+`Divisor/GeomLocalOrder.lean`. This is now a *theorem* (mod stub 2a). -/
 theorem chord_fiber_product_concrete_bar_natDegree_le
     (lam : ZMod E.q) (D : CoordRingElt E.q)
-    (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D) :
     ((chord_fiber_product_concrete E lam D).map
         (algebraMap (ZMod E.q) (Fqbar E))).natDegree
-      ≤ ∑ Q ∈ gd.support, gd.mult Q :=
-  sorry
+      ≤ ∑ Q ∈ gd.support, gd.mult Q := by
+  rw [GeometricDivisorData.mult_sum_eq_normPoly_natDegree E D hD gd]
+  exact chord_fiber_product_concrete_bar_natDegree_le_normPoly E lam D hD
 
 /-- **Discharge sketch**: the multiplicity equality follows from the two
 stubs via the helper. -/
