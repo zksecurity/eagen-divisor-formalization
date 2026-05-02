@@ -3707,7 +3707,7 @@ private theorem rootMult_normPoly_divLin
 
 /-- In the lone case, the rational `commonRootMultRat` is zero. -/
 private theorem commonRootMultRat_eq_zero_of_lone
-    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (D : CoordRingElt E.q)
     {P : ZMod E.q × ZMod E.q} (hY : P.2 ≠ 0)
     (hZero : D.eval P.1 P.2 = 0) (hZneg : D.eval P.1 (-P.2) ≠ 0) :
     commonRootMultRat E D P.1 = 0 := by
@@ -3735,12 +3735,12 @@ private theorem commonRootMultRat_eq_zero_of_lone
 
 /-- In the lone case, `branchRat = D.eval P = 0`. -/
 private theorem branchRat_eq_zero_of_lone
-    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (D : CoordRingElt E.q)
     {P : ZMod E.q × ZMod E.q} (hY : P.2 ≠ 0)
     (hZero : D.eval P.1 P.2 = 0) (hZneg : D.eval P.1 (-P.2) ≠ 0) :
     branchRat E D P = 0 := by
   unfold branchRat aTildeRat bTildeRat
-  rw [commonRootMultRat_eq_zero_of_lone E D hDnz hY hZero hZneg]
+  rw [commonRootMultRat_eq_zero_of_lone E D hY hZero hZneg]
   rw [pow_zero, Polynomial.divByMonic_one, Polynomial.divByMonic_one]
   exact hZero
 
@@ -3884,9 +3884,9 @@ private theorem ordAt_nonTwoTorsion_aux_eq_geomLocalOrder
         rw [if_pos hEvalNegP]
         rw [geomLocalOrder_rationalLift_non_two_torsion E D P hP hY]
         have hk : commonRootMultRat E D P.1 = 0 :=
-          commonRootMultRat_eq_zero_of_lone E D hDnz hY hEvalP hEvalNegP
+          commonRootMultRat_eq_zero_of_lone E D hY hEvalP hEvalNegP
         have hbr : branchRat E D P = 0 :=
-          branchRat_eq_zero_of_lone E D hDnz hY hEvalP hEvalNegP
+          branchRat_eq_zero_of_lone E D hY hEvalP hEvalNegP
         simp only [hbr, if_true, hk, Nat.sub_zero]
     · -- D.eval P ≠ 0: both = 0.
       push_neg at hEvalP
