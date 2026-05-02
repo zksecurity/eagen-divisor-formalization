@@ -40,8 +40,9 @@ Lang, *Algebra* (3rd ed., GTM 211):
 
 - **§VI.5 Theorem 5.1**, p. 285 — multiplicativity of the norm and the product-of-embeddings formula `N^E_k(α) = ∏_σ σα`.
 - **§VIII.5 Theorem 5.1 Case 1**, p. 370 — a derivation extends uniquely to a separable algebraic extension via the implicit-function formula `ξ′ = -f^D(ξ)/f'(ξ)`.
+- **§IV.8 Proposition 8.1 / 8.3**, pp. 200–202 — resultant as a product over roots, i.e. `Res(f, g) = lc(f)^{deg g} · ∏_α g(α)` for monic `f` (and the `lc(f)^{deg g}` correction in the non-monic case). This is the bridge that identifies `Res_X(f, g)` with the function-field norm `N_{L/K(T)}(g)` once `L` is a splitting field of `f` over `K(T)`. Mathlib's `Polynomial.resultant_eq_prod_eval` (`Mathlib/RingTheory/Polynomial/Resultant/Basic.lean`) supplies this in mechanised form; the `Monic` hypothesis on the axiom is exactly what makes the leading-coefficient factor disappear.
 
-The identity is the trace-of-log-derivative formula `Tr_{L/K}(dα/α) = d N_{L/K}(α) / N_{L/K}(α)` specialised to the bivariate resultant: `F = Res_X(f, g)` is the norm of `g` from the splitting field `L = K(T)[ξ_1, …, ξ_n]/(f)` down to `K(T)`, and the per-root sum is the trace of the log-derivative of `g` along the moving roots. The needed Galois norm/trace/log-derivative identity is already proved in Lean as `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`.
+The identity is the trace-of-log-derivative formula `Tr_{L/K}(dα/α) = d N_{L/K}(α) / N_{L/K}(α)` specialised to the bivariate resultant: `F = Res_X(f, g)` is the norm of `g` from the splitting field `L = K(T)[ξ_1, …, ξ_n]/(f)` down to `K(T)` (via Lang IV.8), and the per-root sum is the trace of the log-derivative of `g` along the moving roots. The needed Galois norm/trace/log-derivative identity is already proved in Lean as `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`.
 
 ## Discharge plan
 

@@ -41,10 +41,10 @@ statement as coordinate consequences. See
 
 Stichtenoth, *Algebraic Function Fields and Codes* (GTM 254, 2nd ed.):
 
-- **Proposition 3.1.9**, p. 73 — conorm of a principal divisor is principal.
-- **Theorem 3.7.1**, p. 121 — the Galois group acts transitively on the extensions of a place.
+- **Proposition 3.1.9**, p. 73 — conorm of a principal divisor is principal. This is the *core* citation for the rational split case actually used: the principal divisor of the norm equals the conorm of the principal divisor of `D`, which decomposes into the F_q-rational fibres under `splitsOnE`.
+- **Theorem 3.7.1**, p. 121 — Galois transitivity on extensions of a place. Used as part of the underlying proof of 3.1.9 (folding Galois orbits into a single conorm contribution) but logically redundant for the F_q-split corollary that the axiom states. Kept here for completeness.
 
-The two combine to match the F_q-rational roots and multiplicities of `N(D)(z)` with those of `normZ(z)`.
+A separate "this concrete resultant is the function-field norm for the extension `F_qbar(E) / F_qbar(zLambdaBar lam)` and `gd.mult` is the local divisor multiplicity at the corresponding place" bridge is also needed; the textbook content of that bridge is Lang IV.8 (resultant as product over roots) plus the standard identification of local multiplicities with adic valuations on the function field.
 
 ## Verbatim
 
