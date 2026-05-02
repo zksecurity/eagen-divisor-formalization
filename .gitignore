@@ -1,3 +1,4 @@
 .lake/
+.claude/
 *.pdf
 !axioms/papers/*.pdf
