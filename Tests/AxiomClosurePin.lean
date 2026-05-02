@@ -10,7 +10,7 @@
   * `ma_extractable`, `ip_knowledge_sound`:
       propext, Classical.choice, Quot.sound,
       Divisor.chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber,
-      Divisor.chord_fiber_product_logDeriv_eq_logDerivTerm_trace,
+      Polynomial.resultant_logDeriv_at_split_specialization,
       Divisor.hasse_weil,
       Divisor.CoordRingElt.divisorClass_isPrincipal
 
@@ -20,8 +20,13 @@
     the multiplicity-accounting test below. `hasse_weil` comes from the
     geometric SZ bound on `E(F_q) × E(F_q)`. The remaining algebraic
     assumptions are narrow: divisor-of-norm local multiplicity for the
-    concrete resultant, Lang's trace-of-log-derivative identity, and
-    principal divisor class triviality for the concrete `D`.
+    concrete resultant, the generic resultant logarithmic derivative
+    formula at a split specialization (Lang's trace-of-log-derivative
+    identity narrowed to a polynomial/resultant statement; replaces the
+    old project-shaped axiom
+    `chord_fiber_product_logDeriv_eq_logDerivTerm_trace`, now a
+    theorem), and principal divisor class triviality for the concrete
+    `D`.
 
     The previously listed axiom
     `Divisor.ordAt_eq_rationalMultAt_of_gd_support_rational` has been
@@ -31,6 +36,12 @@
     lifts). `GeometricDivisorData.mult` is now certified to coincide
     pointwise with `geomLocalOrder`, so `rationalMultAt` reduces to
     `geomLocalOrder` at the lifted rational point.
+
+    The source theorem intended to discharge the generic resultant
+    bridge,
+    `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`,
+    is proved from mathlib's Galois norm/trace and differential
+    machinery; it is printed below to guard against drift.
 
   * `ma_completeness`:
       propext, Classical.choice, Quot.sound,
@@ -63,6 +74,7 @@ import Divisor.Soundness
 #print axioms Divisor.CoordRingElt.exists_divisor_multiplicity
 #print axioms Divisor.CoordRingElt.exists_divisor_multiplicity_ecpoint
 #print axioms Divisor.ordAt_group_sum_zero_under_split
+#print axioms Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois
 
 /-! ## Hard guards: typecheck-fail if these axioms ever come back
 

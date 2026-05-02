@@ -29,23 +29,33 @@ The same shape is acceptable for:
 
 ## Current Remaining Bridges
 
-The current MA/IP closure has already moved the trace/log-derivative
-step to the desired citable shape:
+The current MA/IP closure has moved the trace/log-derivative step away
+from a chord-specific axiom, but it has not yet reached the final
+boundary:
 
-- `chord_fiber_product_logDeriv_eq_logDerivTerm_trace` is the Lang
-  trace/log-derivative identity specialized to the chord projection.
-  The older coordinate-heavy
-  `chord_sum_eq_chord_fiber_product_logDeriv` statement is now a
-  theorem derived from this axiom plus chord-cubic factorization.
+- The trace/log-derivative step is now a generic, chord-agnostic
+  axiom `Polynomial.resultant_logDeriv_at_split_specialization`
+  about the logarithmic derivative of `Res_X(f, g)` at a split
+  inner-specialisation of `f`. This is a useful intermediate bridge,
+  not the final trust boundary. The final target is to prove it from
+  the Galois norm/trace/log-derivative theorem
+  `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`
+  (already proved from mathlib) plus resultant and specialisation
+  algebra. The chord-specific identity
+  `chord_fiber_product_logDeriv_eq_logDerivTerm_trace` is now a
+  *theorem* derived from this axiom plus chord-cubic-specific
+  algebra (computing `f_X`, `f_T`, `g_X`, `g_T`, `g_val` for
+  `f := chordCubicBiv` and `g := DLineBiv`). The older
+  coordinate-heavy `chord_sum_eq_chord_fiber_product_logDeriv`
+  statement is also a theorem, derived in turn from the
+  chord-specific identity by chord-cubic factorisation. See
+  `axioms/resultant_logDeriv_at_split.md` for the discharge plan.
 
 The remaining bridges are:
 
 - `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber`, the
   coefficientwise norm/divisor push-forward statement for the concrete
   resultant. This is narrow and citable, but still coordinate-level.
-- `ordAt_eq_rationalMultAt_of_gd_support_rational`, local-order
-  compatibility between the affine `ordAt` definition and the geometric
-  multiplicity data after rational support descent.
 - `CoordRingElt.divisorClass_isPrincipal`, the concrete principal-class
   bridge for the divisor of `D`.
 

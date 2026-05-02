@@ -13,7 +13,8 @@ Axiom-by-axiom status of textbook coverage in `/Users/rot256/paper/crypto-books/
 | `chord_fiber_product_eq_normZ_under_split` | **Legacy temporary bridge** — mathematically covered by Stichtenoth Prop 3.1.9 + Thm 3.7.1, but the statement is proof-specific (`chord_fiber_product`, `normZ`, `splitsOnE`). It now explicitly requires `β_fun = betaTrue` pointwise, avoiding the older too-broad arbitrary-β shape. It is no longer in the MA/IP headline closure. |
 | `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber` | **Narrow remaining norm/divisor axiom** — coefficientwise push-forward of the zero divisor under the chord projection, i.e. `div(N(D)) = π_*(div D)` for the concrete resultant. Covered by Stichtenoth Prop 3.1.9 + Thm 3.7.1, with coordinate/resultant plumbing still formalized locally. |
 | `chord_fiber_product_bar_eq_geom_prod` | **Theorem from the narrow multiplicity axiom** — no longer an independent axiom. |
-| `chord_fiber_product_logDeriv_eq_logDerivTerm_trace` | **Narrow trace axiom** — Lang *Algebra* §VI.5 Thm 5.1 + §VIII.5 Thm 5.1 Case 1, specialized to the chord projection. The old `chord_sum_eq_chord_fiber_product_logDeriv` statement is now a theorem derived from this axiom plus chord-cubic factorization. |
+| `chord_fiber_product_logDeriv_eq_logDerivTerm_trace` | **Theorem** — derived from the strictly narrower generic axiom `Polynomial.resultant_logDeriv_at_split_specialization` plus chord-cubic-specific algebra. No longer in the headline closure. |
+| `Polynomial.resultant_logDeriv_at_split_specialization` | **Temporary generic trace bridge** — replaces the older project-shaped chord-specific axiom, but is still a composed polynomial/resultant specialisation. The final target is to prove it from the already-proved Galois theorem `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois` plus resultant and specialisation algebra. See `axioms/resultant_logDeriv_at_split.md`. |
 | `weil_reciprocity_honest` | Covered — Stichtenoth Cor 4.3.3 (Residue Theorem) + Silverman AEC Ex II.2.11. Descent skeleton in `Divisor/WeilReciprocityDescent.lean` (sorry'd; in-flight, see P3 of soundness plan). |
 | `CoordRingElt.exists_divisor_multiplicity` | **Proven modulo `CoordRingElt.divisorClass_isPrincipal`** — theorem-backed by `Divisor.exists_divisor_multiplicity_proved`; the new `CoordRingElt.exists_divisor_multiplicity_ecpoint` exposes the cleaner `ECPoint`-indexed form. Replaces the previously-listed `CoordRingElt.divisor_group_sum_zero`, which was provably unsound (counterexample over `F_5`; see file header in `Divisor/Axioms/AxiomExistsDivisorMultiplicity.lean`). |
 | `bivariate_poly_zeros_on_ExE_le` | **Proven** — derived from `hasse_weil` via fiber-counting (`Divisor/BivariateZerosOnExE.lean` + `Divisor/CurveEvalZerosHelper.lean`). No longer an axiom. |
@@ -23,16 +24,18 @@ Axiom-by-axiom status of textbook coverage in `/Users/rot256/paper/crypto-books/
 The old false divisor-group axiom is removed. The current MA extraction
 closure has one explicit class-group bridge,
 `CoordRingElt.divisorClass_isPrincipal`, plus Hasse-Weil, the narrow
-root-multiplicity norm/divisor axiom, the narrow Lang trace axiom, and
-local-order/geometric-multiplicity compatibility. The exact closure is
-pinned in `Tests/AxiomClosurePin.lean`.
+root-multiplicity norm/divisor axiom, and the temporary generic
+resultant log-derivative bridge. The exact closure is pinned in
+`Tests/AxiomClosurePin.lean`.
 
 The desired final boundary is tracked in
 [`docs/axiom-boundary-target.md`](../docs/axiom-boundary-target.md):
-Hasse-Weil and the trace/log-derivative boundary are now in the desired
-shape. The remaining norm/divisor and local-order compatibility
-assumptions are narrow, but still need the project-specific coordinate
-statements proved downstream.
+Hasse-Weil is in the desired shape. The trace/log-derivative boundary has
+made one step: the chord-specific axiom is now a theorem, and the Galois
+norm/trace/log-derivative identity is proved from mathlib, but the generic
+resultant specialisation is still an axiom. The remaining norm/divisor and
+principal-class assumptions are narrow, but still need the project-specific
+coordinate statements proved downstream.
 
 ### `weil_reciprocity_honest`
 
