@@ -3229,22 +3229,712 @@ theorem rationalMultAt_eq_gd_mult_at_lift
   unfold rationalMultAt
   rw [dif_pos ⟨hP, hZero⟩]
 
-/-- **Local multiplicity compatibility.**
+/-! ### Bridge: rational `ordAt` versus geometric `geomLocalOrder` -/
 
-When the geometric zero divisor of `D` is supported on rational points,
-the affine local order `ordAt` agrees pointwise with the geometric local
-multiplicity at the rational lift.
+/-- Root multiplicity of `normPolyBar` at the lift of a base-field point
+coincides with the rational root multiplicity of `normPoly`. -/
+private theorem rootMult_normPolyBar_at_fqToBar
+    (D : CoordRingElt E.q) (β : ZMod E.q) :
+    (normPolyBar E D).rootMultiplicity (fqToBar E β)
+      = (normPoly E D).rootMultiplicity β := by
+  unfold normPolyBar fqToBar
+  exact (Polynomial.eq_rootMultiplicity_map (fqToBar_injective E) β).symm
 
-Mathematically this is the statement that the local order computed in
-the affine coordinate chart is the coefficient of the same place in the
-geometric divisor of `D`; see Stichtenoth, Algebraic Function Fields and
-Codes, §I.4 (places, valuations, local parameters) and Silverman AEC
-II §1-3 (divisors of rational functions on curves). -/
-axiom ordAt_eq_rationalMultAt_of_gd_support_rational
+/-- Rational counterpart of `commonRootMultiplicity`. -/
+private noncomputable def commonRootMultRat
+    (D : CoordRingElt E.q) (β : ZMod E.q) : ℕ :=
+  if D.a = 0 then D.b.rootMultiplicity β
+  else if D.b = 0 then D.a.rootMultiplicity β
+  else min (D.a.rootMultiplicity β) (D.b.rootMultiplicity β)
+
+private theorem commonRootMultiplicity_at_fqToBar_eq
+    (D : CoordRingElt E.q) (β : ZMod E.q) :
+    commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) (fqToBar E β)
+      = commonRootMultRat E D β := by
+  classical
+  unfold commonRootMultiplicity commonRootMultRat
+  have ha : (geomAPoly E D = 0) ↔ (D.a = 0) := by
+    unfold geomAPoly
+    exact Polynomial.map_eq_zero_iff (fqToBar_injective E)
+  have hb : (geomBPoly E D = 0) ↔ (D.b = 0) := by
+    unfold geomBPoly
+    exact Polynomial.map_eq_zero_iff (fqToBar_injective E)
+  have hRMa : (geomAPoly E D).rootMultiplicity (fqToBar E β)
+      = D.a.rootMultiplicity β := by
+    unfold geomAPoly fqToBar
+    exact (Polynomial.eq_rootMultiplicity_map (fqToBar_injective E) β).symm
+  have hRMb : (geomBPoly E D).rootMultiplicity (fqToBar E β)
+      = D.b.rootMultiplicity β := by
+    unfold geomBPoly fqToBar
+    exact (Polynomial.eq_rootMultiplicity_map (fqToBar_injective E) β).symm
+  by_cases h_a : D.a = 0
+  · simp only [ha.mpr h_a, h_a, if_true, hRMb]
+  · simp only [if_neg ((Iff.not ha).mpr h_a), if_neg h_a]
+    by_cases h_b : D.b = 0
+    · simp only [hb.mpr h_b, h_b, if_true, hRMa]
+    · simp only [if_neg ((Iff.not hb).mpr h_b), if_neg h_b, hRMa, hRMb]
+
+/-- Rational a-tilde: `D.a` after removing the common `(X - C β)`-factor. -/
+private noncomputable def aTildeRat (D : CoordRingElt E.q) (β : ZMod E.q) :
+    Polynomial (ZMod E.q) :=
+  D.a /ₘ (Polynomial.X - Polynomial.C β) ^ commonRootMultRat E D β
+
+/-- Rational b-tilde: `D.b` after removing the common `(X - C β)`-factor. -/
+private noncomputable def bTildeRat (D : CoordRingElt E.q) (β : ZMod E.q) :
+    Polynomial (ZMod E.q) :=
+  D.b /ₘ (Polynomial.X - Polynomial.C β) ^ commonRootMultRat E D β
+
+/-- Rational branch value: residual `D`-evaluation after exhausting the
+common factor at `P.1`. -/
+private noncomputable def branchRat
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q) : ZMod E.q :=
+  (aTildeRat E D P.1).eval P.1 - (bTildeRat E D P.1).eval P.1 * P.2
+
+private theorem geomATilde_at_fqToBar
+    (D : CoordRingElt E.q) (β : ZMod E.q) :
+    geomATilde E D (fqToBar E β)
+      = Polynomial.map (algebraMap (ZMod E.q) (Fqbar E)) (aTildeRat E D β) := by
+  unfold geomATilde aTildeRat
+  rw [commonRootMultiplicity_at_fqToBar_eq E D β]
+  set k := commonRootMultRat E D β
+  have hpm : ((Polynomial.X - Polynomial.C β : (ZMod E.q)[X]) ^ k).Monic :=
+    (monic_X_sub_C _).pow _
+  have hmap_pow :
+      Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+          ((Polynomial.X - Polynomial.C β) ^ k)
+        = (Polynomial.X - Polynomial.C (fqToBar E β)) ^ k := by
+    rw [Polynomial.map_pow, Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C]
+    rfl
+  rw [Polynomial.map_divByMonic _ hpm, hmap_pow]
+  rfl
+
+private theorem geomBTilde_at_fqToBar
+    (D : CoordRingElt E.q) (β : ZMod E.q) :
+    geomBTilde E D (fqToBar E β)
+      = Polynomial.map (algebraMap (ZMod E.q) (Fqbar E)) (bTildeRat E D β) := by
+  unfold geomBTilde bTildeRat
+  rw [commonRootMultiplicity_at_fqToBar_eq E D β]
+  set k := commonRootMultRat E D β
+  have hpm : ((Polynomial.X - Polynomial.C β : (ZMod E.q)[X]) ^ k).Monic :=
+    (monic_X_sub_C _).pow _
+  have hmap_pow :
+      Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
+          ((Polynomial.X - Polynomial.C β) ^ k)
+        = (Polynomial.X - Polynomial.C (fqToBar E β)) ^ k := by
+    rw [Polynomial.map_pow, Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C]
+    rfl
+  rw [Polynomial.map_divByMonic _ hpm, hmap_pow]
+  rfl
+
+private theorem geomBranch_at_fqToBar
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q) :
+    (geomATilde E D (fqToBar E P.1)).eval (fqToBar E P.1)
+        - (geomBTilde E D (fqToBar E P.1)).eval (fqToBar E P.1) * (fqToBar E P.2)
+      = fqToBar E (branchRat E D P) := by
+  rw [geomATilde_at_fqToBar E D P.1, geomBTilde_at_fqToBar E D P.1]
+  unfold branchRat fqToBar
+  rw [Polynomial.eval_map, Polynomial.eval_map,
+      Polynomial.eval₂_at_apply, Polynomial.eval₂_at_apply]
+  rw [map_sub, map_mul]
+
+/-- 2-torsion case: geometric local order at the rational lift is the
+rational `rootMultiplicity` of the norm. -/
+private theorem geomLocalOrder_rationalLift_two_torsion
+    (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hY : P.2 = 0) :
+    geomLocalOrder E D (rationalLift E P hP)
+      = (normPoly E D).rootMultiplicity P.1 := by
+  unfold geomLocalOrder
+  have hQy_zero : (rationalLift E P hP).y = 0 := by
+    show fqToBar E P.2 = 0
+    rw [hY]; exact map_zero _
+  rw [if_pos hQy_zero]
+  show (normPolyBar E D).rootMultiplicity (fqToBar E P.1) = _
+  exact rootMult_normPolyBar_at_fqToBar E D P.1
+
+/-- Non-2-torsion case: geometric local order at a rational lift in
+closed form on the rational level. -/
+private theorem geomLocalOrder_rationalLift_non_two_torsion
+    (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hY : P.2 ≠ 0) :
+    geomLocalOrder E D (rationalLift E P hP)
+      = (let k := commonRootMultRat E D P.1
+         let m := (normPoly E D).rootMultiplicity P.1
+         if branchRat E D P = 0 then m - k else k) := by
+  classical
+  unfold geomLocalOrder
+  have hQy_ne : (rationalLift E P hP).y ≠ 0 := by
+    show fqToBar E P.2 ≠ 0
+    exact (fqToBar_eq_zero_iff E _).not.mpr hY
+  rw [if_neg hQy_ne]
+  have hm : (normPolyBar E D).rootMultiplicity (rationalLift E P hP).x
+      = (normPoly E D).rootMultiplicity P.1 := by
+    show (normPolyBar E D).rootMultiplicity (fqToBar E P.1) = _
+    exact rootMult_normPolyBar_at_fqToBar E D P.1
+  have hk : commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D)
+              (rationalLift E P hP).x
+      = commonRootMultRat E D P.1 := by
+    show commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) (fqToBar E P.1) = _
+    exact commonRootMultiplicity_at_fqToBar_eq E D P.1
+  have hbranch_eq : ((geomATilde E D (rationalLift E P hP).x).eval
+                      (rationalLift E P hP).x
+                    - (geomBTilde E D (rationalLift E P hP).x).eval
+                      (rationalLift E P hP).x * (rationalLift E P hP).y)
+                  = fqToBar E (branchRat E D P) := by
+    show (geomATilde E D (fqToBar E P.1)).eval (fqToBar E P.1)
+          - (geomBTilde E D (fqToBar E P.1)).eval (fqToBar E P.1) * (fqToBar E P.2) = _
+    exact geomBranch_at_fqToBar E D P
+  rw [hm, hk]
+  by_cases hBranch : branchRat E D P = 0
+  · have hbranch_zero :
+        (geomATilde E D (rationalLift E P hP).x).eval (rationalLift E P hP).x
+          - (geomBTilde E D (rationalLift E P hP).x).eval (rationalLift E P hP).x
+            * (rationalLift E P hP).y = 0 := by
+      rw [hbranch_eq, hBranch]; exact map_zero _
+    rw [if_pos hbranch_zero]
+    simp only [hBranch, if_true]
+  · have hbranch_ne :
+        (geomATilde E D (rationalLift E P hP).x).eval (rationalLift E P hP).x
+          - (geomBTilde E D (rationalLift E P hP).x).eval (rationalLift E P hP).x
+            * (rationalLift E P hP).y ≠ 0 := by
+      rw [hbranch_eq]
+      exact (fqToBar_eq_zero_iff E _).not.mpr hBranch
+    rw [if_neg hbranch_ne]
+    simp only [hBranch, if_false]
+
+/-! #### Common-factor count and branch value under `divLin` -/
+
+private theorem one_le_commonRootMultRat_of_both_eval_zero
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
-    (gd : GeometricDivisorData E D) (hRat : gd_support_rational E D gd) :
+    (β : ZMod E.q) (ha : D.a.eval β = 0) (hb : D.b.eval β = 0) :
+    1 ≤ commonRootMultRat E D β := by
+  classical
+  unfold commonRootMultRat
+  by_cases h_a : D.a = 0
+  · rw [if_pos h_a]
+    have hbz : D.b ≠ 0 := fun h => hDnz ⟨h_a, h⟩
+    exact (Polynomial.rootMultiplicity_pos hbz).mpr hb
+  · rw [if_neg h_a]
+    by_cases h_b : D.b = 0
+    · rw [if_pos h_b]
+      exact (Polynomial.rootMultiplicity_pos h_a).mpr ha
+    · rw [if_neg h_b]
+      exact le_min ((Polynomial.rootMultiplicity_pos h_a).mpr ha)
+        ((Polynomial.rootMultiplicity_pos h_b).mpr hb)
+
+/-- For a polynomial `p` divisible by `(X - C β)`, the rootMultiplicity at
+`β` of `p /ₘ (X - C β)` is one less. -/
+private theorem rootMultiplicity_div_X_sub_C
+    {β : ZMod E.q} {p : Polynomial (ZMod E.q)}
+    (hp : p ≠ 0) (hroot : p.eval β = 0) :
+    (p /ₘ (Polynomial.X - Polynomial.C β)).rootMultiplicity β
+      = p.rootMultiplicity β - 1 := by
+  classical
+  have hroot_pos : 0 < p.rootMultiplicity β :=
+    (Polynomial.rootMultiplicity_pos hp).mpr hroot
+  have hMonic : (Polynomial.X - Polynomial.C β : (ZMod E.q)[X]).Monic :=
+    monic_X_sub_C _
+  have h_dvd : (Polynomial.X - Polynomial.C β) ∣ p :=
+    Polynomial.dvd_iff_isRoot.mpr hroot
+  have h_eq : p = (Polynomial.X - Polynomial.C β) *
+      (p /ₘ (Polynomial.X - Polynomial.C β)) := by
+    have := Polynomial.modByMonic_add_div p hMonic
+    have hmod : p %ₘ (Polynomial.X - Polynomial.C β) = 0 :=
+      (Polynomial.modByMonic_eq_zero_iff_dvd hMonic).mpr h_dvd
+    rw [hmod, zero_add] at this
+    exact this.symm
+  have h_quot_ne : p /ₘ (Polynomial.X - Polynomial.C β) ≠ 0 := by
+    intro hq
+    rw [hq, mul_zero] at h_eq
+    exact hp h_eq
+  have h_rm := Polynomial.rootMultiplicity_mul (p := Polynomial.X - Polynomial.C β)
+    (q := p /ₘ (Polynomial.X - Polynomial.C β)) (x := β)
+    (mul_ne_zero (Polynomial.X_sub_C_ne_zero _) h_quot_ne)
+  rw [← h_eq] at h_rm
+  rw [Polynomial.rootMultiplicity_X_sub_C_self] at h_rm
+  omega
+
+/-- Iterated divByMonic by a monic polynomial: dividing by `q^k` then `q`
+gives the same as dividing by `q^(k+1)`. -/
+private theorem divByMonic_pow_succ
+    (p : Polynomial (ZMod E.q)) {q : Polynomial (ZMod E.q)} (hq : q.Monic) (k : ℕ) :
+    (p /ₘ q ^ k) /ₘ q = p /ₘ q ^ (k + 1) := by
+  classical
+  by_cases hq1 : q = 1
+  · subst hq1; simp [Polynomial.divByMonic_one, one_pow]
+  have hq_deg_pos : 0 < q.natDegree := by
+    rcases Nat.eq_zero_or_pos q.natDegree with h | h
+    · exact absurd (hq.natDegree_eq_zero.mp h) hq1
+    · exact h
+  have hqp : (q ^ k).Monic := hq.pow _
+  have hqp1 : (q ^ (k + 1)).Monic := hq.pow _
+  set d := (p /ₘ q ^ k) /ₘ q with hd_def
+  set r := q ^ k * ((p /ₘ q ^ k) %ₘ q) + (p %ₘ q ^ k) with hr_def
+  have hp_eq : r + q ^ (k + 1) * d = p := by
+    have h1 := Polynomial.modByMonic_add_div p hqp
+    have h2 := Polynomial.modByMonic_add_div (p /ₘ q ^ k) hq
+    rw [show q ^ (k + 1) = q ^ k * q from pow_succ q k]
+    linear_combination h1 + q^k * h2
+  -- Show natDegree r < natDegree (q^(k+1)) when r ≠ 0; if r = 0 use degree ⊥.
+  have hr_deg : r.degree < (q ^ (k + 1)).degree := by
+    have hq_ne_zero : q ≠ 0 := hq.ne_zero
+    have hqk_natDeg : (q ^ k).natDegree = k * q.natDegree := hq.natDegree_pow k
+    have hqk1_natDeg : (q ^ (k + 1)).natDegree = (k + 1) * q.natDegree := hq.natDegree_pow (k+1)
+    have hqk1_deg : (q ^ (k + 1)).degree = ((k + 1) * q.natDegree : ℕ) := by
+      rw [Polynomial.degree_eq_natDegree hqp1.ne_zero, hqk1_natDeg]
+    have hqk_deg : (q ^ k).degree = (k * q.natDegree : ℕ) := by
+      rw [Polynomial.degree_eq_natDegree hqp.ne_zero, hqk_natDeg]
+    -- We bound: natDegree(q^k * mod1) ≤ k*natDeg q + (natDeg q - 1) < (k+1)*natDeg q.
+    -- And natDegree(p %ₘ q^k) ≤ k*natDeg q - 1 < (k+1)*natDeg q.
+    have h_mod_q_natDeg : ((p /ₘ q ^ k) %ₘ q).natDegree < q.natDegree :=
+      Polynomial.natDegree_modByMonic_lt _ hq hq1
+    have hk1_eq : (k + 1) * q.natDegree = k * q.natDegree + q.natDegree := by ring
+    -- Bound 1: degree of q^k * mod1.
+    have h_mul_deg : (q ^ k * ((p /ₘ q ^ k) %ₘ q)).degree
+        < (q ^ (k + 1)).degree := by
+      by_cases hmod_zero : (p /ₘ q ^ k) %ₘ q = 0
+      · rw [hmod_zero, mul_zero, Polynomial.degree_zero, hqk1_deg]
+        exact WithBot.bot_lt_coe _
+      · have h_mul_nz : q ^ k * ((p /ₘ q ^ k) %ₘ q) ≠ 0 :=
+          mul_ne_zero hqp.ne_zero hmod_zero
+        rw [Polynomial.degree_eq_natDegree h_mul_nz, hqk1_deg]
+        have h_mul_natDeg : (q ^ k * ((p /ₘ q ^ k) %ₘ q)).natDegree
+            ≤ (q ^ k).natDegree + ((p /ₘ q ^ k) %ₘ q).natDegree :=
+          Polynomial.natDegree_mul_le
+        rw [hqk_natDeg] at h_mul_natDeg
+        exact_mod_cast (by omega : (q ^ k * ((p /ₘ q ^ k) %ₘ q)).natDegree
+          < (k + 1) * q.natDegree)
+    -- Bound 2: degree of p %ₘ q^k.
+    have h_mod_pq_deg : (p %ₘ q ^ k).degree < (q ^ (k + 1)).degree := by
+      rw [hqk1_deg]
+      by_cases hk : k = 0
+      · subst hk
+        rw [pow_zero, Polynomial.modByMonic_one, Polynomial.degree_zero]
+        exact WithBot.bot_lt_coe _
+      · have hqk_ne_one : q ^ k ≠ 1 := by
+          intro h
+          have h_natDeg : (q ^ k).natDegree = 0 := by rw [h]; simp
+          rw [hqk_natDeg] at h_natDeg
+          rcases Nat.mul_eq_zero.mp h_natDeg with h0 | h0
+          · exact hk h0
+          · omega
+        have h_natDeg_lt : (p %ₘ q ^ k).natDegree < (q ^ k).natDegree :=
+          Polynomial.natDegree_modByMonic_lt _ hqp hqk_ne_one
+        rw [hqk_natDeg] at h_natDeg_lt
+        by_cases hr_z : p %ₘ q ^ k = 0
+        · rw [hr_z, Polynomial.degree_zero]; exact WithBot.bot_lt_coe _
+        · rw [Polynomial.degree_eq_natDegree hr_z]
+          exact_mod_cast (by omega : (p %ₘ q ^ k).natDegree < (k + 1) * q.natDegree)
+    rw [hr_def]
+    refine lt_of_le_of_lt (Polynomial.degree_add_le _ _) ?_
+    exact max_lt h_mul_deg h_mod_pq_deg
+  exact (Polynomial.div_modByMonic_unique d r hqp1 ⟨hp_eq, hr_deg⟩).1.symm
+
+/-- `commonRootMultRat` of `D.divLin β` is one less than that of `D`,
+when both `a` and `b` vanish at `β`. -/
+private theorem commonRootMultRat_divLin
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    {β : ZMod E.q} (ha : D.a.eval β = 0) (hb : D.b.eval β = 0) :
+    commonRootMultRat E (D.divLin β) β = commonRootMultRat E D β - 1 := by
+  classical
+  unfold commonRootMultRat
+  have hDdivLnz : ¬ ((D.divLin β).a = 0 ∧ (D.divLin β).b = 0) :=
+    divLin_not_both_zero E D hDnz ha hb
+  by_cases h_a : D.a = 0
+  · -- D.a = 0 ⇒ D.b ≠ 0; (D.divLin β).a = 0; (D.divLin β).b ≠ 0.
+    have hbz : D.b ≠ 0 := fun h => hDnz ⟨h_a, h⟩
+    have h_da_div : (D.divLin β).a = 0 := by
+      show D.a /ₘ (Polynomial.X - Polynomial.C β) = 0
+      rw [h_a]; exact Polynomial.zero_divByMonic _
+    have h_db_div : (D.divLin β).b ≠ 0 := fun h => hDdivLnz ⟨h_da_div, h⟩
+    rw [if_pos h_a, if_pos h_da_div]
+    show (D.b /ₘ (Polynomial.X - Polynomial.C β)).rootMultiplicity β
+      = D.b.rootMultiplicity β - 1
+    exact rootMultiplicity_div_X_sub_C E hbz hb
+  · by_cases h_b : D.b = 0
+    · have h_db_div : (D.divLin β).b = 0 := by
+        show D.b /ₘ (Polynomial.X - Polynomial.C β) = 0
+        rw [h_b]; exact Polynomial.zero_divByMonic _
+      have h_da_div : (D.divLin β).a ≠ 0 := fun h => hDdivLnz ⟨h, h_db_div⟩
+      rw [if_neg h_a, if_pos h_b, if_neg h_da_div, if_pos h_db_div]
+      show (D.a /ₘ (Polynomial.X - Polynomial.C β)).rootMultiplicity β
+        = D.a.rootMultiplicity β - 1
+      exact rootMultiplicity_div_X_sub_C E h_a ha
+    · -- Both nonzero. divLin keeps both nonzero.
+      have h_da_div : (D.divLin β).a ≠ 0 := by
+        intro hq
+        have hMonic : (Polynomial.X - Polynomial.C β : (ZMod E.q)[X]).Monic :=
+          monic_X_sub_C _
+        have h_dvd : (Polynomial.X - Polynomial.C β) ∣ D.a :=
+          Polynomial.dvd_iff_isRoot.mpr ha
+        have hmod : D.a %ₘ (Polynomial.X - Polynomial.C β) = 0 :=
+          (Polynomial.modByMonic_eq_zero_iff_dvd hMonic).mpr h_dvd
+        have h_eq2 := Polynomial.modByMonic_add_div D.a hMonic
+        rw [hmod, zero_add] at h_eq2
+        rw [show (D.divLin β).a = D.a /ₘ (Polynomial.X - Polynomial.C β) from rfl] at hq
+        rw [← h_eq2, hq, mul_zero] at h_a
+        exact h_a rfl
+      have h_db_div : (D.divLin β).b ≠ 0 := by
+        intro hq
+        have hMonic : (Polynomial.X - Polynomial.C β : (ZMod E.q)[X]).Monic :=
+          monic_X_sub_C _
+        have h_dvd : (Polynomial.X - Polynomial.C β) ∣ D.b :=
+          Polynomial.dvd_iff_isRoot.mpr hb
+        have hmod : D.b %ₘ (Polynomial.X - Polynomial.C β) = 0 :=
+          (Polynomial.modByMonic_eq_zero_iff_dvd hMonic).mpr h_dvd
+        have h_eq2 := Polynomial.modByMonic_add_div D.b hMonic
+        rw [hmod, zero_add] at h_eq2
+        rw [show (D.divLin β).b = D.b /ₘ (Polynomial.X - Polynomial.C β) from rfl] at hq
+        rw [← h_eq2, hq, mul_zero] at h_b
+        exact h_b rfl
+      rw [if_neg h_a, if_neg h_b, if_neg h_da_div, if_neg h_db_div]
+      show min
+        ((D.a /ₘ (Polynomial.X - Polynomial.C β)).rootMultiplicity β)
+        ((D.b /ₘ (Polynomial.X - Polynomial.C β)).rootMultiplicity β)
+      = min (D.a.rootMultiplicity β) (D.b.rootMultiplicity β) - 1
+      rw [rootMultiplicity_div_X_sub_C E h_a ha, rootMultiplicity_div_X_sub_C E h_b hb]
+      have ha_pos : 0 < D.a.rootMultiplicity β :=
+        (Polynomial.rootMultiplicity_pos h_a).mpr ha
+      have hb_pos : 0 < D.b.rootMultiplicity β :=
+        (Polynomial.rootMultiplicity_pos h_b).mpr hb
+      omega
+
+/-- Iterated commutativity for `divByMonic` by powers of a monic factor:
+`(p /ₘ q) /ₘ q^n = (p /ₘ q^n) /ₘ q`. Both equal `p /ₘ q^(n+1)`. -/
+private theorem divByMonic_X_sub_C_comm_pow
+    (p : Polynomial (ZMod E.q)) (β : ZMod E.q) (n : ℕ) :
+    (p /ₘ (Polynomial.X - Polynomial.C β))
+        /ₘ (Polynomial.X - Polynomial.C β) ^ n
+      = (p /ₘ (Polynomial.X - Polynomial.C β) ^ n)
+          /ₘ (Polynomial.X - Polynomial.C β) := by
+  have hMonic : (Polynomial.X - Polynomial.C β : (ZMod E.q)[X]).Monic :=
+    monic_X_sub_C _
+  -- LHS via divByMonic_pow_succ.
+  -- RHS via divByMonic_pow_succ.
+  -- They both equal p /ₘ (X - C β)^(n+1).
+  -- LHS: do divByMonic by q first, then by q^n. We want (p /ₘ q) /ₘ q^n = p /ₘ q^(n+1).
+  -- Use: (p /ₘ q^n) /ₘ q = p /ₘ q^(n+1) (divByMonic_pow_succ).
+  -- And (p /ₘ q) /ₘ q^n = p /ₘ q^(n+1) requires the "other order" lemma.
+  -- Strategy: induct on n.
+  induction n with
+  | zero => simp [Polynomial.divByMonic_one]
+  | succ n IH =>
+    -- LHS: (p /ₘ q) /ₘ q^(n+1) = ?.
+    -- RHS: (p /ₘ q^(n+1)) /ₘ q = p /ₘ q^(n+2).
+    -- By divByMonic_pow_succ: p /ₘ q^(n+1) /ₘ q = p /ₘ q^(n+2).
+    -- IH: (p /ₘ q) /ₘ q^n = (p /ₘ q^n) /ₘ q.
+    -- We want: (p /ₘ q) /ₘ q^(n+1) = p /ₘ q^(n+1) /ₘ q.
+    -- (p /ₘ q) /ₘ q^(n+1) = ((p /ₘ q) /ₘ q^n) /ₘ q  [divByMonic_pow_succ]
+    --                     = ((p /ₘ q^n) /ₘ q) /ₘ q  [IH]
+    --                     = (p /ₘ q^n) /ₘ q^2       [divByMonic_pow_succ]
+    --                     = p /ₘ q^(n+2)            [hmm, need iterated]
+    -- OR more directly: use divByMonic_pow_succ on both sides reaching p /ₘ q^(n+2).
+    rw [← divByMonic_pow_succ E _ hMonic]
+    rw [IH]
+    rw [divByMonic_pow_succ E _ hMonic]
+
+/-- `aTildeRat` is invariant under `divLin`. -/
+private theorem aTildeRat_divLin
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    {β : ZMod E.q} (ha : D.a.eval β = 0) (hb : D.b.eval β = 0) :
+    aTildeRat E (D.divLin β) β = aTildeRat E D β := by
+  classical
+  unfold aTildeRat
+  rw [commonRootMultRat_divLin E D hDnz ha hb]
+  set k := commonRootMultRat E D β with hk_def
+  have hk_pos : 1 ≤ k := one_le_commonRootMultRat_of_both_eval_zero E D hDnz β ha hb
+  show D.a /ₘ (Polynomial.X - Polynomial.C β)
+      /ₘ (Polynomial.X - Polynomial.C β) ^ (k - 1)
+    = D.a /ₘ (Polynomial.X - Polynomial.C β) ^ k
+  rw [divByMonic_X_sub_C_comm_pow E D.a β (k - 1)]
+  rw [divByMonic_pow_succ E D.a (monic_X_sub_C _) (k - 1)]
+  congr 2
+  omega
+
+private theorem bTildeRat_divLin
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    {β : ZMod E.q} (ha : D.a.eval β = 0) (hb : D.b.eval β = 0) :
+    bTildeRat E (D.divLin β) β = bTildeRat E D β := by
+  classical
+  unfold bTildeRat
+  rw [commonRootMultRat_divLin E D hDnz ha hb]
+  set k := commonRootMultRat E D β with hk_def
+  have hk_pos : 1 ≤ k := one_le_commonRootMultRat_of_both_eval_zero E D hDnz β ha hb
+  show D.b /ₘ (Polynomial.X - Polynomial.C β)
+      /ₘ (Polynomial.X - Polynomial.C β) ^ (k - 1)
+    = D.b /ₘ (Polynomial.X - Polynomial.C β) ^ k
+  rw [divByMonic_X_sub_C_comm_pow E D.b β (k - 1)]
+  rw [divByMonic_pow_succ E D.b (monic_X_sub_C _) (k - 1)]
+  congr 2
+  omega
+
+/-- `branchRat` is invariant under `divLin` in the twin case. -/
+private theorem branchRat_divLin
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (P : ZMod E.q × ZMod E.q)
+    (ha : D.a.eval P.1 = 0) (hb : D.b.eval P.1 = 0) :
+    branchRat E (D.divLin P.1) P = branchRat E D P := by
+  unfold branchRat
+  rw [aTildeRat_divLin E D hDnz ha hb, bTildeRat_divLin E D hDnz ha hb]
+
+/-- `(normPoly E (D.divLin β)).rootMultiplicity β = (normPoly E D).rootMult β - 2`
+when both `a` and `b` vanish at `β`. -/
+private theorem rootMult_normPoly_divLin
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    {β : ZMod E.q} (ha : D.a.eval β = 0) (hb : D.b.eval β = 0) :
+    (normPoly E (D.divLin β)).rootMultiplicity β
+      = (normPoly E D).rootMultiplicity β - 2 := by
+  classical
+  have hDdivLnz : ¬ ((D.divLin β).a = 0 ∧ (D.divLin β).b = 0) :=
+    divLin_not_both_zero E D hDnz ha hb
+  have hN_div_ne : normPoly E (D.divLin β) ≠ 0 := normPoly_ne_zero E _ hDdivLnz
+  have hXsubCNZ : (Polynomial.X - Polynomial.C β : (ZMod E.q)[X]) ≠ 0 :=
+    Polynomial.X_sub_C_ne_zero _
+  have hsq : ((Polynomial.X - Polynomial.C β : (ZMod E.q)[X])) ^ 2 ≠ 0 :=
+    pow_ne_zero _ hXsubCNZ
+  have hMul : ((Polynomial.X - Polynomial.C β : (ZMod E.q)[X])) ^ 2 *
+      normPoly E (D.divLin β) ≠ 0 := mul_ne_zero hsq hN_div_ne
+  have hN_factor := normPoly_divLin_factor E D ha hb
+  rw [hN_factor]
+  rw [Polynomial.rootMultiplicity_mul hMul]
+  rw [show ((Polynomial.X - Polynomial.C β : (ZMod E.q)[X])) ^ 2
+      = (Polynomial.X - Polynomial.C β) * (Polynomial.X - Polynomial.C β) from sq _]
+  rw [Polynomial.rootMultiplicity_mul (mul_ne_zero hXsubCNZ hXsubCNZ)]
+  rw [Polynomial.rootMultiplicity_X_sub_C_self]
+  omega
+
+/-! #### Geometric local order: recursion under `divLin` for non-2-torsion -/
+
+/-- In the lone case, the rational `commonRootMultRat` is zero. -/
+private theorem commonRootMultRat_eq_zero_of_lone
+    (D : CoordRingElt E.q)
+    {P : ZMod E.q × ZMod E.q} (hY : P.2 ≠ 0)
+    (hZero : D.eval P.1 P.2 = 0) (hZneg : D.eval P.1 (-P.2) ≠ 0) :
+    commonRootMultRat E D P.1 = 0 := by
+  classical
+  unfold commonRootMultRat
+  have h_a_ne : D.a.eval P.1 ≠ 0 := by
+    intro ha
+    apply hZneg
+    show D.a.eval P.1 - D.b.eval P.1 * (-P.2) = 0
+    have hZ' : D.a.eval P.1 - D.b.eval P.1 * P.2 = 0 := hZero
+    rw [ha] at hZ' ⊢
+    have hb_zero : D.b.eval P.1 * P.2 = 0 := by linear_combination -hZ'
+    rcases mul_eq_zero.mp hb_zero with hb_eval | hY_zero
+    · rw [hb_eval]; ring
+    · exact absurd hY_zero hY
+  have h_a_poly_ne : D.a ≠ 0 := by
+    intro h; apply h_a_ne; rw [h]; exact Polynomial.eval_zero
+  have h_a_rm_zero : D.a.rootMultiplicity P.1 = 0 :=
+    Polynomial.rootMultiplicity_eq_zero h_a_ne
+  rw [if_neg h_a_poly_ne]
+  by_cases h_b : D.b = 0
+  · rw [if_pos h_b]; exact h_a_rm_zero
+  · rw [if_neg h_b, h_a_rm_zero]
+    exact Nat.min_eq_left (Nat.zero_le _)
+
+/-- In the lone case, `branchRat = D.eval P = 0`. -/
+private theorem branchRat_eq_zero_of_lone
+    (D : CoordRingElt E.q)
+    {P : ZMod E.q × ZMod E.q} (hY : P.2 ≠ 0)
+    (hZero : D.eval P.1 P.2 = 0) (hZneg : D.eval P.1 (-P.2) ≠ 0) :
+    branchRat E D P = 0 := by
+  unfold branchRat aTildeRat bTildeRat
+  rw [commonRootMultRat_eq_zero_of_lone E D hY hZero hZneg]
+  rw [pow_zero, Polynomial.divByMonic_one, Polynomial.divByMonic_one]
+  exact hZero
+
+/-- The rational analogue of `rootMultiplicity_normPolyBar_ge_twice_common`:
+twice the common-factor count is at most the rational `normPoly` root
+multiplicity at the same point. -/
+private theorem rootMultiplicity_normPoly_ge_twice_commonRootMultRat
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0)) (β : ZMod E.q) :
+    2 * commonRootMultRat E D β ≤ (normPoly E D).rootMultiplicity β := by
+  classical
+  -- Show (X - C β)^(2k) ∣ normPoly E D.
+  have hN_ne : normPoly E D ≠ 0 := normPoly_ne_zero E D hDnz
+  set k := commonRootMultRat E D β
+  have h_dvd_a : (Polynomial.X - Polynomial.C β) ^ k ∣ D.a := by
+    unfold commonRootMultRat at *
+    by_cases h_a : D.a = 0
+    · rw [h_a]; exact dvd_zero _
+    · exact dvd_trans (pow_dvd_pow _
+        (show k ≤ D.a.rootMultiplicity β by
+          show (if D.a = 0 then D.b.rootMultiplicity β
+            else if D.b = 0 then D.a.rootMultiplicity β
+            else min (D.a.rootMultiplicity β) (D.b.rootMultiplicity β))
+            ≤ D.a.rootMultiplicity β
+          rw [if_neg h_a]
+          by_cases h_b : D.b = 0
+          · rw [if_pos h_b]
+          · rw [if_neg h_b]; exact min_le_left _ _))
+        (Polynomial.pow_rootMultiplicity_dvd D.a β)
+  have h_dvd_b : (Polynomial.X - Polynomial.C β) ^ k ∣ D.b := by
+    unfold commonRootMultRat at *
+    by_cases h_a : D.a = 0
+    · -- k = D.b.rootMultiplicity β.
+      show (Polynomial.X - Polynomial.C β) ^ k ∣ D.b
+      have : k = D.b.rootMultiplicity β := by
+        show (if D.a = 0 then D.b.rootMultiplicity β
+            else if D.b = 0 then D.a.rootMultiplicity β
+            else min (D.a.rootMultiplicity β) (D.b.rootMultiplicity β))
+            = D.b.rootMultiplicity β
+        rw [if_pos h_a]
+      rw [this]; exact Polynomial.pow_rootMultiplicity_dvd D.b β
+    · by_cases h_b : D.b = 0
+      · rw [h_b]; exact dvd_zero _
+      · exact dvd_trans (pow_dvd_pow _
+          (show k ≤ D.b.rootMultiplicity β by
+            show (if D.a = 0 then D.b.rootMultiplicity β
+              else if D.b = 0 then D.a.rootMultiplicity β
+              else min (D.a.rootMultiplicity β) (D.b.rootMultiplicity β))
+              ≤ D.b.rootMultiplicity β
+            rw [if_neg h_a, if_neg h_b]; exact min_le_right _ _))
+          (Polynomial.pow_rootMultiplicity_dvd D.b β)
+  -- normPoly = D.a^2 - D.b^2 * curveX. (X - β)^(2k) divides both D.a^2 and D.b^2.
+  have h_sq_dvd_a : (Polynomial.X - Polynomial.C β) ^ (2 * k) ∣ D.a ^ 2 := by
+    rw [show (2 * k : ℕ) = k + k from by ring, pow_add, sq]
+    exact mul_dvd_mul h_dvd_a h_dvd_a
+  have h_sq_dvd_b : (Polynomial.X - Polynomial.C β) ^ (2 * k) ∣ D.b ^ 2 := by
+    rw [show (2 * k : ℕ) = k + k from by ring, pow_add, sq]
+    exact mul_dvd_mul h_dvd_b h_dvd_b
+  have h_dvd_norm : (Polynomial.X - Polynomial.C β) ^ (2 * k) ∣ normPoly E D := by
+    rw [normPoly_eq]
+    exact dvd_sub h_sq_dvd_a (dvd_mul_of_dvd_left h_sq_dvd_b _)
+  exact (Polynomial.le_rootMultiplicity_iff hN_ne).mpr h_dvd_norm
+
+/-- Recursion: `geomLocalOrder` at a non-2-torsion rational lift drops by
+exactly 1 when both `a` and `b` vanish at `P.1`. -/
+private theorem geomLocalOrder_rationalLift_divLin
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (ha : D.a.eval P.1 = 0) (hb : D.b.eval P.1 = 0) :
+    geomLocalOrder E D (rationalLift E P hP) =
+      geomLocalOrder E (D.divLin P.1) (rationalLift E P hP) + 1 := by
+  classical
+  rw [geomLocalOrder_rationalLift_non_two_torsion E D P hP hY]
+  rw [geomLocalOrder_rationalLift_non_two_torsion E (D.divLin P.1) P hP hY]
+  have hk : commonRootMultRat E (D.divLin P.1) P.1 = commonRootMultRat E D P.1 - 1 :=
+    commonRootMultRat_divLin E D hDnz ha hb
+  have hm : (normPoly E (D.divLin P.1)).rootMultiplicity P.1
+      = (normPoly E D).rootMultiplicity P.1 - 2 :=
+    rootMult_normPoly_divLin E D hDnz ha hb
+  have hbranch : branchRat E (D.divLin P.1) P = branchRat E D P :=
+    branchRat_divLin E D hDnz P ha hb
+  have hk_pos : 1 ≤ commonRootMultRat E D P.1 :=
+    one_le_commonRootMultRat_of_both_eval_zero E D hDnz P.1 ha hb
+  -- 2 k_D ≤ m_D.
+  have hm_ge_2k : 2 * commonRootMultRat E D P.1
+      ≤ (normPoly E D).rootMultiplicity P.1 :=
+    rootMultiplicity_normPoly_ge_twice_commonRootMultRat E D hDnz P.1
+  rw [hbranch]
+  by_cases hB : branchRat E D P = 0
+  · simp only [hB, if_true, hk, hm]
+    omega
+  · simp only [hB, if_false, hk]
+    omega
+
+/-! #### `ordAt` recursion and bridge -/
+
+private theorem ordAt_nonTwoTorsion_aux_zero (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) :
+    ordAt_nonTwoTorsion_aux E 0 D P = 0 := rfl
+
+private theorem ordAt_nonTwoTorsion_aux_succ (D : CoordRingElt E.q)
+    (P : ZMod E.q × ZMod E.q) (n : ℕ) :
+    ordAt_nonTwoTorsion_aux E (n + 1) D P =
+      (if D.a = 0 ∧ D.b = 0 then 0
+        else if D.eval P.1 P.2 ≠ 0 then 0
+        else if D.eval P.1 (-P.2) ≠ 0 then
+          Polynomial.rootMultiplicity P.1 (normPoly E D)
+        else 1 + ordAt_nonTwoTorsion_aux E n (D.divLin P.1) P) := rfl
+
+/-- Auxiliary: bridge for the fuel-form on non-2-torsion. By induction on
+fuel. -/
+private theorem ordAt_nonTwoTorsion_aux_eq_geomLocalOrder
+    (n : ℕ) (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (hFuel : D.a.natDegree + D.b.natDegree < n)
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hY : P.2 ≠ 0) :
+    ordAt_nonTwoTorsion_aux E n D P
+      = geomLocalOrder E D (rationalLift E P hP) := by
+  classical
+  induction n generalizing D with
+  | zero => omega
+  | succ n IH =>
+    rw [ordAt_nonTwoTorsion_aux_succ]
+    rw [if_neg hDnz]
+    by_cases hEvalP : D.eval P.1 P.2 = 0
+    · rw [if_neg (not_not.mpr hEvalP)]
+      by_cases hEvalNegP : D.eval P.1 (-P.2) = 0
+      · -- Twin case: ordAt = 1 + ordAt(D.divLin); geomLocalOrder = 1 + geomLocalOrder(D.divLin).
+        rw [if_neg (not_not.mpr hEvalNegP)]
+        obtain ⟨ha, hb⟩ :=
+          Da_Db_eval_zero_of_both_sheets_zero E D hY hEvalP hEvalNegP
+        have hDdivLnz : ¬ ((D.divLin P.1).a = 0 ∧ (D.divLin P.1).b = 0) :=
+          divLin_not_both_zero E D hDnz ha hb
+        have hLT := divLin_natDegree_sum_lt E D hDnz ha hb
+        have hFuel' : (D.divLin P.1).a.natDegree + (D.divLin P.1).b.natDegree < n := by
+          omega
+        have hIH := IH (D.divLin P.1) hDdivLnz hFuel'
+        rw [hIH]
+        have h_eq := geomLocalOrder_rationalLift_divLin E D hDnz P hP hY ha hb
+        omega
+      · -- Lone case: ordAt = m; geomLocalOrder = m too.
+        push_neg at hEvalNegP
+        rw [if_pos hEvalNegP]
+        rw [geomLocalOrder_rationalLift_non_two_torsion E D P hP hY]
+        have hk : commonRootMultRat E D P.1 = 0 :=
+          commonRootMultRat_eq_zero_of_lone E D hY hEvalP hEvalNegP
+        have hbr : branchRat E D P = 0 :=
+          branchRat_eq_zero_of_lone E D hY hEvalP hEvalNegP
+        simp only [hbr, if_true, hk, Nat.sub_zero]
+    · -- D.eval P ≠ 0: both = 0.
+      push_neg at hEvalP
+      rw [if_pos hEvalP]
+      have hGeomZero_iff_evalZero :
+          D.geomEval E (rationalLift E P hP) = fqToBar E (D.eval P.1 P.2) := by
+        show D.geomEval E (⟨fqToBar E P.1, fqToBar E P.2, _⟩ : GeomPoint E)
+            = fqToBar E (D.eval P.1 P.2)
+        exact geomEval_lift_eq_fqToBar E D P (E.hOnCurve P hP)
+      have hGeomNonZero : D.geomEval E (rationalLift E P hP) ≠ 0 := by
+        rw [hGeomZero_iff_evalZero]
+        exact (fqToBar_eq_zero_iff E _).not.mpr hEvalP
+      exact (geomLocalOrder_eq_zero_of_geomEval_ne_zero E D hDnz _ hGeomNonZero).symm
+
+/-- **The bridge theorem**: `ordAt` agrees with `geomLocalOrder` at a
+rational lift, for any nonzero `D`, any rational point `P ∈ E.points`. -/
+private theorem ordAt_eq_geomLocalOrder_at_rationalLift
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) :
+    ordAt E D P = geomLocalOrder E D (rationalLift E P hP) := by
+  classical
+  by_cases hY : P.2 = 0
+  · rw [ordAt_eq_dispatch E D hP hDnz, if_pos hY]
+    rw [ordAt_twoTorsion_eq_rootMult_normPoly E D hDnz hP hY]
+    exact (geomLocalOrder_rationalLift_two_torsion E D P hP hY).symm
+  · rw [ordAt_eq_dispatch E D hP hDnz, if_neg hY]
+    show ordAt_nonTwoTorsion E D P = _
+    unfold ordAt_nonTwoTorsion
+    exact ordAt_nonTwoTorsion_aux_eq_geomLocalOrder E
+      (D.a.natDegree + D.b.natDegree + 1) D hDnz (by omega) P hP hY
+
+theorem ordAt_eq_rationalMultAt_of_gd_support_rational
+    (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
+    (gd : GeometricDivisorData E D) (_hRat : gd_support_rational E D gd) :
     ∀ P : ZMod E.q × ZMod E.q,
-      ordAt E D P = rationalMultAt E D gd P
+      ordAt E D P = rationalMultAt E D gd P := by
+  intro P
+  unfold rationalMultAt
+  by_cases hP : P ∈ E.points ∧ D.eval P.1 P.2 = 0
+  · rw [dif_pos hP]
+    rw [gd.mult_eq_geomLocalOrder]
+    exact ordAt_eq_geomLocalOrder_at_rationalLift E D hDnz P hP.1
+  · rw [dif_neg hP]
+    push_neg at hP
+    by_cases hP' : P ∈ E.points
+    · exact ordAt_pos_iff_zero E D hDnz P hP' |>.not.mpr (hP hP')
+        |> Nat.eq_zero_of_not_pos
+    · exact ordAt_eq_zero_offE E D hP'
 
 theorem betaCanonical_eq_rationalMultAt_of_gd_support_rational
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
