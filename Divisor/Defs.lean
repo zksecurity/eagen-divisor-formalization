@@ -192,6 +192,17 @@ theorem ECPoint.affine_neg (E : ECSetup) (x y : ZMod E.q) :
       unfold ECPoint.affine; rw [dif_neg hns']
     rw [h0, h0', neg_zero]
 
+/-- The fiber sum at `x` over `(x, y)` and `(x, -y)` is zero in
+`ECPoint E`, regardless of multiplicity. Uses `affine_neg` to fold
+the pair into `n • P + n • (−P) = 0`. -/
+theorem ECPoint.nsmul_affine_pair_eq_zero (E : ECSetup)
+    (n : ℕ) (x y : ZMod E.q) :
+    ECPoint.nsmul E n (ECPoint.affine E x y) +
+    ECPoint.nsmul E n (ECPoint.affine E x (-y)) = 0 := by
+  rw [← ECPoint.affine_neg E x y]
+  rw [ECPoint.nsmul_def, ECPoint.nsmul_def, neg_nsmul]
+  exact add_neg_cancel _
+
 /-- Left cancellation. -/
 theorem ECPoint.add_left_cancel (E : ECSetup) {p a b : ECPoint E}
     (h : p + a = p + b) : a = b :=
