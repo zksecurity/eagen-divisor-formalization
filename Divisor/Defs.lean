@@ -154,6 +154,44 @@ theorem ECPoint.neg_add_cancel_law (E : ECSetup) (p : ECPoint E) :
 theorem ECPoint.neg_inj {E : ECSetup} {p₁ p₂ : ECPoint E} (h : -p₁ = -p₂) :
     p₁ = p₂ := neg_injective h
 
+/-- For our setup (with `a₁ = a₃ = 0`), the curve's `negY` formula
+collapses to plain `−y`. -/
+theorem ECSetup.negY_eq_neg (E : ECSetup) (x y : ZMod E.q) :
+    E.toW.toAffine.negY x y = -y := by
+  show -y - E.toW.a₁ * x - E.toW.a₃ = -y
+  rw [E.toW_a₁, E.toW_a₃]; ring
+
+/-- The negation of `ECPoint.affine E x y` agrees with the
+coordinate-level `(x, -y)` form. Holds whether or not `(x, y)` is
+nonsingular: if it isn't, both sides equal infinity. -/
+theorem ECPoint.affine_neg (E : ECSetup) (x y : ZMod E.q) :
+    -(ECPoint.affine E x y : ECPoint E) = ECPoint.affine E x (-y) := by
+  classical
+  by_cases hns : E.toW.toAffine.Nonsingular x y
+  · have hns' : E.toW.toAffine.Nonsingular x (-y) := by
+      have := (WeierstrassCurve.Affine.nonsingular_neg
+                (W' := E.toW.toAffine) x y).mpr hns
+      rwa [E.negY_eq_neg] at this
+    rw [ECPoint.affine_of_nonsingular E hns,
+        ECPoint.affine_of_nonsingular E hns',
+        WeierstrassCurve.Affine.Point.neg_some,
+        WeierstrassCurve.Affine.Point.some.injEq]
+    exact ⟨rfl, by rw [E.negY_eq_neg]⟩
+  · have hns' : ¬ E.toW.toAffine.Nonsingular x (-y) := by
+      intro h
+      apply hns
+      have hbi := (WeierstrassCurve.Affine.nonsingular_neg
+                (W' := E.toW.toAffine) x (-y)).mpr h
+      rw [E.negY_eq_neg] at hbi
+      have hyy : -(-y) = y := _root_.neg_neg y
+      rw [hyy] at hbi
+      exact hbi
+    have h0 : (ECPoint.affine E x y : ECPoint E) = 0 := by
+      unfold ECPoint.affine; rw [dif_neg hns]
+    have h0' : (ECPoint.affine E x (-y) : ECPoint E) = 0 := by
+      unfold ECPoint.affine; rw [dif_neg hns']
+    rw [h0, h0', neg_zero]
+
 /-- Left cancellation. -/
 theorem ECPoint.add_left_cancel (E : ECSetup) {p a b : ECPoint E}
     (h : p + a = p + b) : a = b :=
