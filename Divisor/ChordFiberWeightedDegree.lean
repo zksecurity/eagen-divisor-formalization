@@ -310,6 +310,86 @@ private lemma DLineBiv_coeff_natDegree_le_zero_of_b_coeff_zero
       -- (0, 1) ∈ antidiagonal 1 always.
       exact absurd (Finset.mem_antidiagonal.mpr (by simp)) hne
 
+/-! ### Auxiliary normPoly natDegree bounds
+
+The weighted-Sylvester analysis needs lower bounds on `(normPoly).natDegree`
+in terms of `D.a.natDegree` and `D.b.natDegree`. The key observation:
+`normPoly = D.a^2 - D.b^2 · curveX` with `curveX.natDegree = 3`, so the
+two summands have natDegrees of different parities (`2·a.natDeg` even,
+`2·b.natDeg + 3` odd) and cannot cancel. -/
+
+/-- **`(normPoly).natDegree ≥ 2·D.b.natDegree + 3`** when `D.b ≠ 0`. -/
+private lemma normPoly_natDegree_ge_b_curveX
+    (D : CoordRingElt E.q) (hb : D.b ≠ 0) :
+    2 * D.b.natDegree + 3 ≤ (normPoly E D).natDegree := by
+  classical
+  -- normPoly = D.a² - D.b² · curveX.
+  rw [normPoly_eq]
+  have hbsq_ne : D.b ^ 2 ≠ 0 := pow_ne_zero _ hb
+  have hcurveX_natDeg : (curveX E).natDegree = 3 := by
+    refine le_antisymm (curveX_natDegree_le_three E) ?_
+    refine Polynomial.le_natDegree_of_ne_zero ?_
+    show (curveX E).coeff 3 ≠ 0
+    unfold curveX
+    simp [Polynomial.coeff_add, Polynomial.coeff_X_pow,
+          Polynomial.coeff_C_mul, Polynomial.coeff_X, Polynomial.coeff_C]
+  have hcurveX_ne : (curveX E) ≠ 0 := by
+    intro h
+    have := hcurveX_natDeg
+    rw [h, Polynomial.natDegree_zero] at this
+    omega
+  have hprod_natDeg : (D.b ^ 2 * curveX E).natDegree = 2 * D.b.natDegree + 3 := by
+    rw [Polynomial.natDegree_mul hbsq_ne hcurveX_ne, hcurveX_natDeg,
+        Polynomial.natDegree_pow]
+  have hprod_lead :
+      (D.b ^ 2 * curveX E).coeff (2 * D.b.natDegree + 3) ≠ 0 := by
+    rw [show 2 * D.b.natDegree + 3 = (D.b ^ 2 * curveX E).natDegree from hprod_natDeg.symm]
+    rw [← Polynomial.leadingCoeff]
+    exact (Polynomial.leadingCoeff_ne_zero).mpr (mul_ne_zero hbsq_ne hcurveX_ne)
+  -- Case-split on whether D.a² dominates the index 2·D.b.natDegree + 3.
+  by_cases hdeg : 2 * D.a.natDegree < 2 * D.b.natDegree + 3
+  · -- D.a².natDegree < target index, so D.a².coeff at index = 0.
+    refine Polynomial.le_natDegree_of_ne_zero ?_
+    rw [Polynomial.coeff_sub]
+    have hDa_sq_natDeg : (D.a ^ 2).natDegree = 2 * D.a.natDegree :=
+      Polynomial.natDegree_pow _ _
+    have hDa_zero : (D.a ^ 2).coeff (2 * D.b.natDegree + 3) = 0 := by
+      apply Polynomial.coeff_eq_zero_of_natDegree_lt
+      rw [hDa_sq_natDeg]; exact hdeg
+    rw [hDa_zero, zero_sub, neg_ne_zero]
+    exact hprod_lead
+  · -- 2·D.a.natDegree ≥ 2·D.b.natDegree + 3. Then D.a ≠ 0 (from hb-related parity).
+    push_neg at hdeg
+    -- We must have D.a ≠ 0, since otherwise 2·D.a.natDegree = 0 and target ≥ 3.
+    have ha : D.a ≠ 0 := by
+      intro ha0
+      rw [ha0, Polynomial.natDegree_zero, mul_zero] at hdeg
+      omega
+    -- By parity (LHS even, RHS odd): 2·D.a.natDegree ≥ 2·D.b.natDegree + 4.
+    have hparity : 2 * D.a.natDegree ≥ 2 * D.b.natDegree + 4 := by
+      rcases Nat.even_or_odd (2 * D.a.natDegree) with hev | hod
+      · omega
+      · have : Even (2 * D.a.natDegree) := ⟨_, two_mul _⟩
+        exact absurd this (Nat.not_even_iff_odd.mpr hod)
+    -- Show normPoly.natDegree ≥ 2·D.a.natDegree (D.a² wins at this index).
+    have hDa_sq_natDeg : (D.a ^ 2).natDegree = 2 * D.a.natDegree :=
+      Polynomial.natDegree_pow _ _
+    have hDa_sq_lead :
+        (D.a ^ 2).coeff (2 * D.a.natDegree) = D.a.leadingCoeff ^ 2 := by
+      rw [show 2 * D.a.natDegree = (D.a ^ 2).natDegree from hDa_sq_natDeg.symm,
+          ← Polynomial.leadingCoeff, Polynomial.leadingCoeff_pow]
+    have hDa_sq_lead_ne : (D.a.leadingCoeff : ZMod E.q) ^ 2 ≠ 0 :=
+      pow_ne_zero _ ((Polynomial.leadingCoeff_ne_zero).mpr ha)
+    have hprod_zero :
+        (D.b ^ 2 * curveX E).coeff (2 * D.a.natDegree) = 0 := by
+      apply Polynomial.coeff_eq_zero_of_natDegree_lt
+      rw [hprod_natDeg]; omega
+    have hDa_le : 2 * D.a.natDegree ≤ (D.a ^ 2 - D.b ^ 2 * curveX E).natDegree := by
+      refine Polynomial.le_natDegree_of_ne_zero ?_
+      rw [Polynomial.coeff_sub, hDa_sq_lead, hprod_zero, sub_zero]
+      exact hDa_sq_lead_ne
+    omega
+
 /-- **Lemma B (target): DLineBiv per-coefficient weight bound.**
 
 For `k ≤ (DLineBiv E lam D).natDegree`,
@@ -320,22 +400,7 @@ This is the G-row weight bound feeding into the Sylvester determinant
 analysis, completing the per-coefficient ingredient list for the
 weighted-Sylvester proof of the natDegree bound
 
-    (chord_fiber_product_concrete E lam D).natDegree ≤ (normPoly E D).natDegree
-
-(which is stub 2a-coprime — actually unconditional once Lemma B is
-established).
-
-Proof sketch (case-split on whether `D.b.coeff k = 0`):
-
-* `D.b.coeff k ≠ 0`: then `k ≤ D.b.natDegree`, so
-  `2k ≤ 2 D.b.natDegree`. The coefficient natDegree is ≤ 1, so
-  `3·1 + 2k = 3 + 2k ≤ 2 D.b.natDegree + 3 ≤ (normPoly).natDegree`.
-
-* `D.b.coeff k = 0`: the coefficient natDegree drops to ≤ 0
-  (`DLineBiv_coeff_natDegree_le_zero_of_b_coeff_zero`), so the
-  bound becomes `2k ≤ (normPoly).natDegree`. Since
-  `k ≤ DLineBiv.natDegree ≤ max(D.a.natDegree, D.b.natDegree + 1)`,
-  case-split on which `max` branch wins. -/
+    (chord_fiber_product_concrete E lam D).natDegree ≤ (normPoly E D).natDegree. -/
 private lemma DLineBiv_coeff_natDegree_weighted_bound
     (lam : ZMod E.q) (D : CoordRingElt E.q)
     (_hD : ¬ (D.a = 0 ∧ D.b = 0))
