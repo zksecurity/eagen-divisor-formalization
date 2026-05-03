@@ -28,6 +28,7 @@
   `docs/chord-fiber-product-concrete-sketch.md` categorises them. -/
 import Divisor.ChordFiberMultiplicativity
 import Divisor.ChordFiberProductConcrete
+import Divisor.ChordFiberWeightedDegree
 import Divisor.FunctionFieldZ
 import Divisor.GeomLocalOrder
 import Divisor.LogDeriv
@@ -211,11 +212,14 @@ Recommended Lean route: weighted-Sylvester degree bound with
 `wt(x)=2`, `wt(Z)=3`. -/
 theorem chord_fiber_product_concrete_natDegree_le_of_coprime
     (lam : ZMod E.q) (D : CoordRingElt E.q)
-    (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (_hcop : IsCoprime D.a D.b) :
     (chord_fiber_product_concrete E lam D).natDegree
       ≤ (normPoly E D).natDegree :=
-  sorry
+  -- The weighted-Sylvester proof (`Divisor/ChordFiberWeightedDegree.lean`) is
+  -- *unconditional* — works for any D with `¬(D.a = 0 ∧ D.b = 0)`, no coprime
+  -- hypothesis needed. So this stub is now a theorem.
+  chord_fiber_product_concrete_natDegree_le_normPoly_natDegree E lam D hD
 
 theorem chord_fiber_product_concrete_bar_natDegree_le_normPoly
     (lam : ZMod E.q) (D : CoordRingElt E.q)
