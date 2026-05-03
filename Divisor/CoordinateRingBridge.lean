@@ -223,4 +223,20 @@ theorem norm_toCoordinateRing_eq_normPoly
   simp only [Polynomial.C_0, zero_mul, mul_zero, zero_add, add_zero]
   ring
 
+/-- `Algebra.norm` of `D.toCoordinateRing` is nonzero whenever `D` is. -/
+theorem norm_toCoordinateRing_ne_zero
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    Algebra.norm (Polynomial (ZMod E.q)) (D.toCoordinateRing E) ≠ 0 := by
+  rw [norm_toCoordinateRing_eq_normPoly]
+  exact normPoly_ne_zero E D hD
+
+/-- `Algebra.norm` of `D.toCoordinateRing` has natDegree ≤ `D.degE`,
+matching the project's pole-at-infinity book. -/
+theorem natDegree_norm_toCoordinateRing_le_degE
+    (D : CoordRingElt E.q) :
+    (Algebra.norm (Polynomial (ZMod E.q)) (D.toCoordinateRing E)).natDegree
+      ≤ D.degE := by
+  rw [norm_toCoordinateRing_eq_normPoly]
+  exact normPoly_natDegree_le E D
+
 end Divisor
