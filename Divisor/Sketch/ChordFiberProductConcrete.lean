@@ -146,10 +146,31 @@ total equals `∑ Q ∈ gd.support, gd.mult Q`, hence
 Reference: Stacks Project, [Lemma 42.18.1 (Principal divisors and
 pushforward)](https://stacks.math.columbia.edu/tag/02RS).
 
-Two Lean-tractable proof routes:
+Substantial inductive infrastructure for the equality form is already
+landed in `Divisor/ChordFiberMultiplicativity.lean`:
+
+- `resultant_chordCubicBiv_pmap_C_natDegree_of_eq_one` — `p = 1`.
+- `resultant_chordCubicBiv_pmap_C_natDegree_of_eq_X_sub_C` — `p = X − C x₀`.
+- `resultant_chordCubicBiv_pmap_C_natDegree_of_eq_X_sub_C_pow` — `p = (X − C x₀)^k`.
+- `resultant_chordCubicBiv_pmap_C_natDegree_of_splits` — any monic `p`
+  splitting over `ZMod E.q` (multiset induction on `p.roots`).
+
+Plus inductive-step combinators
+(`chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_*`)
+that compose these closed-form results with normPoly's recurrence to
+derive `chord_fiber_product.natDegree = normPoly.natDegree` for any D
+whose gcd-factor splits over `ZMod E.q`.
+
+Two Lean-tractable proof routes for the *general* (non-splitting) p:
 1. Cite the general norm/divisor pushforward as an axiom and
    instantiate it for both projections.
-2. Direct weighted-leading-term resultant analysis with weights
+2. Lift the existing splits theorem to `Polynomial.SplittingField p`
+   over `ZMod E.q` via `Polynomial.resultant_map_map` and the injective
+   algebraMap natDegree preservation. This requires a generic version
+   of the splits theorem parametrised over `f : R[X][X]` (not specific
+   to `chordCubicBiv`) and a parameterised chord cubic over arbitrary
+   commutative ring R.
+3. Direct weighted-leading-term resultant analysis with weights
    `wt(T) = 3`, `wt(X) = 2`. Under those weights, the leading part of
    `chordCubicBiv` is `X³ - T²` (weight 6) and the leading part of
    `DLineBiv` matches `normPoly`'s leading-coefficient structure.
