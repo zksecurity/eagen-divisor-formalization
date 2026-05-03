@@ -1056,6 +1056,134 @@ theorem chord_ordAt_eq_two_at_tangent
   rw [hRootMult] at hPair
   omega
 
+/-! ## Tangent: ordAt = 1 at A₂ (non-flex, non-2-torsion A₂)
+
+For the tangent branch with P.1 ≠ A₂.1 (non-flex) and the third
+intersection A₂ at non-2-torsion (`λ·x₂+μ ≠ 0`), `ordAt = 1` at A₂.
+Combined with `ordAt = 2` at P, this gives the full tangent divisor:
+`(P) + (P) + (A₂) − 3·(O)`. -/
+
+theorem chord_ordAt_eq_one_at_tangent_third
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (h2t : P.2 ≠ 0)
+    (hP_neq_A2 : P.1 ≠ ((3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹) ^ 2 - 2 * P.1) :
+    let lam := (3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹
+    let mu := P.2 - lam * P.1
+    let x₂ := lam ^ 2 - 2 * P.1
+    let A₂ := (x₂, lam * x₂ + mu)
+    ordAt E (chordCoordRingElt E P P) A₂ = 1 := by
+  classical
+  intro lam mu x₂ A₂
+  -- Combine: total mass = 3, ordAt at P = 2, support ⊆ ... ⇒ ordAt at A₂ ≤ 1.
+  -- Plus ordAt at A₂ > 0 (D vanishes there).
+  have hSum := sum_ordAt_chordCoordRingElt_tangent E hP h2t
+  have hOrdP_eq_2 := chord_ordAt_eq_two_at_tangent E hP h2t hP_neq_A2
+  -- A₂ ∈ E.points
+  have hA₂ : A₂ ∈ E.points := by
+    apply E.hComplete
+    -- Use the proven tangent normPoly factorisation: x₂ is a root.
+    -- normPoly = -(X - P.1)²(X - x₂), evaluating at x₂ gives 0.
+    -- And normPoly_eq: normPoly = a² - b²·curveX = (lam·X + mu)² - curveX
+    --   (after taking absolute via b = -1; b² = 1).
+    -- So at x = x₂: (lam·x₂ + mu)² - (x₂³ + A·x₂ + B) = 0.
+    -- Hence (lam·x₂ + mu)² = x₂³ + A·x₂ + B. ✓
+    have hF := normPoly_chord_factor_tangent E hP h2t
+    simp only at hF
+    have hN : normPoly E (chordCoordRingElt E P P) =
+        (C lam * X + C mu) ^ 2 - curveX E := by
+      rw [normPoly_eq]
+      unfold chordCoordRingElt
+      rw [dif_pos rfl, dif_pos rfl, if_neg h2t]
+      ring
+    -- Evaluating both sides at x₂:
+    have hRoot : ((C lam * X + C mu) ^ 2 - curveX E).eval x₂ = 0 := by
+      rw [← hN, hF]
+      simp only [Polynomial.eval_neg, Polynomial.eval_mul, Polynomial.eval_pow,
+                 Polynomial.eval_sub, Polynomial.eval_C, Polynomial.eval_X]
+      -- Goal: -((x₂ - P.1)^2 * (x₂ - (... lam expanded ...))) = 0
+      -- Note: the `C x₂` was C ((3*P.1²+A) * (2*P.2)⁻¹)² − 2 P.1)
+      -- which when evaluated to x₂ gives x₂ - x₂ = 0.
+      have hzz : x₂ - (((3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹) ^ 2 - 2 * P.1) = 0 := by
+        show (((3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹) ^ 2 - 2 * P.1)
+              - (((3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹) ^ 2 - 2 * P.1) = 0
+        ring
+      rw [hzz]
+      ring
+    -- Convert hRoot to the curve equation form.
+    unfold curveX at hRoot
+    simp only [Polynomial.eval_sub, Polynomial.eval_pow, Polynomial.eval_add,
+               Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_X] at hRoot
+    show A₂.2 ^ 2 = A₂.1 ^ 3 + E.curveA * A₂.1 + E.curveB
+    show (lam * x₂ + mu) ^ 2 = x₂ ^ 3 + E.curveA * x₂ + E.curveB
+    linear_combination hRoot
+  -- D vanishes at A₂ (chord_third_point eval).
+  -- The chord version assumed P.1 ≠ Q.1; for tangent the analog holds by direct computation.
+  have hZA₂ : (chordCoordRingElt E P P).eval A₂.1 A₂.2 = 0 := by
+    have hD : (chordCoordRingElt E P P).a = -(C lam) * X - C mu ∧
+              (chordCoordRingElt E P P).b = -1 := by
+      unfold chordCoordRingElt
+      rw [dif_pos rfl, dif_pos rfl, if_neg h2t]
+      refine ⟨rfl, rfl⟩
+    show (chordCoordRingElt E P P).a.eval A₂.1
+        - (chordCoordRingElt E P P).b.eval A₂.1 * A₂.2 = 0
+    rw [hD.1, hD.2]
+    simp only [eval_sub, eval_mul, eval_neg, eval_C, eval_X, eval_one,
+               Polynomial.eval_one]
+    -- A₂.1 = x₂, A₂.2 = lam · x₂ + mu, so eval gives -lam·x₂ - mu + (lam·x₂ + mu) = 0
+    -- after simp the expression may use neg_mul forms; use ring.
+    ring
+  -- ordAt at A₂ > 0.
+  have hNZ := chordCoordRingElt_ne_zero E P P
+  have hOrdA₂_pos : 0 < ordAt E (chordCoordRingElt E P P) A₂ :=
+    (ordAt_pos_iff_zero E _ hNZ A₂ hA₂).mpr hZA₂
+  -- Support of the chord-line `ordAt` on E.points: only at P, P.1-flip, A₂, A₂.1-flip.
+  -- (ordAt > 0 ⇒ D vanishes ⇒ x-coord is a root of normPoly, which factors as
+  -- -(X-P.1)²(X-x₂), so x ∈ {P.1, x₂}.)
+  -- For each x there are at most 2 sheet points; we exclude the opposite-y sheet
+  -- where D doesn't vanish.
+  -- We use: total = 3, ordAt P = 2, ordAt A₂ ≥ 1 ⇒ remaining = 0.
+  -- For this we'd need: ordAt = 0 at all points other than P and A₂.
+  -- We proved ordAt at (P.1, -P.2) = 0 in the previous theorem; need same at (x₂, -A₂.2).
+  -- For now, use the weaker observation: sum = 3, ordAt P = 2, every term ≥ 0,
+  -- so ordAt A₂ ≤ 1 BUT only if every other point is bounded.
+  -- More precisely, decompose the sum into terms at P, A₂, and "the rest";
+  -- the rest is ≥ 0, so ordAt A₂ ≤ 3 - 2 = 1.
+  -- Combined with ordAt A₂ ≥ 1 ⇒ ordAt A₂ = 1.
+  -- Define f and split the finset sum:
+  set f : ZMod E.q × ZMod E.q → ℕ :=
+    fun S => ordAt E (chordCoordRingElt E P P) S
+  have hPA₂ : P ≠ A₂ := fun h => hP_neq_A2 (congrArg Prod.fst h)
+  have hP_in : P ∈ E.points := hP
+  have hA₂_in : A₂ ∈ E.points := hA₂
+  -- ∑ S, f S ≥ f P + f A₂.
+  have hSubset : ({P, A₂} : Finset (ZMod E.q × ZMod E.q)) ⊆ E.points := by
+    intro x hx
+    rcases Finset.mem_insert.mp hx with h | h
+    · exact h ▸ hP_in
+    · exact (Finset.mem_singleton.mp h) ▸ hA₂_in
+  have hPnotin : P ∉ ({A₂} : Finset (ZMod E.q × ZMod E.q)) := by
+    simp; exact hPA₂
+  have hSumOnPair : f P + f A₂ = ∑ S ∈ ({P, A₂} : Finset _), f S := by
+    rw [show ({P, A₂} : Finset (ZMod E.q × ZMod E.q)) = insert P {A₂} from rfl,
+        Finset.sum_insert hPnotin]
+    simp
+  have hSumLB : f P + f A₂ ≤ ∑ S ∈ E.points, f S := by
+    rw [hSumOnPair]
+    exact Finset.sum_le_sum_of_subset_of_nonneg hSubset (fun _ _ _ => Nat.zero_le _)
+  -- Substitute the known values:
+  have hOrdP_f : f P = 2 := hOrdP_eq_2
+  have hSum_f : ∑ S ∈ E.points, f S = 3 := hSum
+  have hOrdA₂_f : 0 < f A₂ := hOrdA₂_pos
+  -- Combine: 2 + f A₂ ≤ 3 and 1 ≤ f A₂ ⇒ f A₂ = 1.
+  have hUpper : f A₂ ≤ 1 := by
+    have : 2 + f A₂ ≤ 3 := by
+      calc 2 + f A₂ = f P + f A₂ := by rw [hOrdP_f]
+        _ ≤ ∑ S ∈ E.points, f S := hSumLB
+        _ = 3 := hSum_f
+    omega
+  have hLower : 1 ≤ f A₂ := hOrdA₂_f
+  show f A₂ = 1
+  omega
+
 /-! ## Multiplication of `CoordRingElt`s in `F_q[E]`
 
 `F_q[E] = F_q[X,Y]/(Y² - X³ - AX - B)` admits multiplication by reducing
