@@ -97,6 +97,22 @@ theorem resultant_logDeriv_at_split_specialization_of_natDegree_eq_zero
   subst hf
   simp [resultantLogDerivConclusion]
 
+/-! ### Resultant collapse when `g` is constant in the outer variable
+
+Reusable helper: when `g.natDegree = 0` (g is constant in the outer
+resultant variable), `g = Polynomial.C (g.coeff 0)` and the resultant
+collapses to `(g.coeff 0) ^ f.natDegree`. This is a thin wrapper around
+mathlib's `Polynomial.resultant_zero_right_deg`. -/
+
+/-- When `g.natDegree = 0`, the bivariate resultant
+`Res_X(f, g, m, 0)` equals `(g.coeff 0) ^ m`. -/
+theorem resultant_eq_pow_of_g_natDegree_eq_zero
+    {K : Type*} [Field K]
+    (f g : K[X][X]) (hg_zero : g.natDegree = 0) :
+    Polynomial.resultant f g f.natDegree g.natDegree
+      = (g.coeff 0) ^ f.natDegree := by
+  rw [hg_zero, Polynomial.resultant_zero_right_deg]
+
 /-- **Logarithmic derivative of a bivariate resultant at a split
 specialization** — narrowed to `0 < f.natDegree`.
 
