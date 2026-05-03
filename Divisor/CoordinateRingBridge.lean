@@ -278,4 +278,5 @@ theorem CoordRingElt.classGroup_mk_principalFracIdeal_eq_one
   rw [coe_toPrincipalIdeal, FractionalIdeal.coe_spanSingleton]
   exact ⟨_, rfl⟩
 
+
 end Divisor

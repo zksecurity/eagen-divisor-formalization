@@ -58,6 +58,7 @@
 import Divisor.OrdP.Uniformizer
 import Divisor.OrdP.PrincipalClass
 import Divisor.SplitsOnE
+import Divisor.CoordinateRingBridge
 import Mathlib.RingTheory.ClassGroup
 
 open Polynomial Finset
@@ -1069,6 +1070,27 @@ axiom CoordRingElt.divisorClass_eq_zero_of_not_const_unit
     (_hNotConstUnit :
       ¬ ∃ c : ZMod E.q, c ≠ 0 ∧ D.a = Polynomial.C c ∧ D.b = 0) :
     divisorClass E (divisorOfD E D) (divisorOfD_finiteSupport E D) = 0
+
+/-- **Reduction lemma for the discharge plan**: if the project's
+`divisorClass` matches the principal-class image of `D` via
+`ClassGroup.mk` of `D.principalFracIdeal`, then `divisorClass = 0`.
+
+This separates the genuine algebraic-geometry content (the
+factorization-style identification of the project's accountancy with
+the principal-fractional-ideal class) from the trivial principal-class
+triviality (which is an immediate corollary of `ClassGroup.mk_eq_one_iff`).
+
+The discharge of `divisorClass_eq_zero_of_not_const_unit` reduces to
+providing the `hEq` hypothesis below. -/
+theorem CoordRingElt.divisorClass_eq_zero_of_eq_principalFracIdeal_class
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hEq : Additive.toMul
+        (divisorClass E (divisorOfD E D)
+          (divisorOfD_finiteSupport E D))
+      = ClassGroup.mk (D.principalFracIdeal E hD)) :
+    divisorClass E (divisorOfD E D) (divisorOfD_finiteSupport E D) = 0 := by
+  have h1 := CoordRingElt.classGroup_mk_principalFracIdeal_eq_one E D hD
+  exact hEq.trans h1
 
 /-- **Re-export of the older `_isPrincipal_of_not_const_unit` shape**,
 now a theorem derived from the cleaner zero-class axiom by picking
