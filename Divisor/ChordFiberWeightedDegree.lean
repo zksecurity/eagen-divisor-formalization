@@ -633,6 +633,63 @@ private lemma sum_sylvesterOff_eq
           Finset.sum_congr rfl (fun j₁ _ => h2 j₁)]
     rw [Fin.sum_univ_eq_sum_range (fun i => i), Finset.sum_range_id]
 
+/-- **Sum of (σ j).val over a permutation** equals `(m+n)(m+n-1)/2`. -/
+private lemma sum_perm_val
+    {m n : ℕ} (σ : Equiv.Perm (Fin (m + n))) :
+    (∑ j : Fin (m + n), (σ j).val) = (m + n) * (m + n - 1) / 2 := by
+  classical
+  rw [Equiv.sum_comp σ (fun j : Fin (m + n) => j.val)]
+  rw [Fin.sum_univ_eq_sum_range (fun i => i), Finset.sum_range_id]
+
+/-- **Index sum identity for Sylvester**: `Σ_j ((σ j).val - sylvesterOff j) = m * n`,
+provided each `(σ j).val ≥ sylvesterOff j` (so the σ-image lands within
+the row range of each column). -/
+private lemma sum_sylvester_idx_eq
+    {m n : ℕ} (σ : Equiv.Perm (Fin (m + n)))
+    (h : ∀ j, sylvesterOff m n j ≤ (σ j).val) :
+    (∑ j : Fin (m + n), ((σ j).val - sylvesterOff m n j)) = m * n := by
+  classical
+  -- We show: (Σ idx) + (Σ off) = Σ (σ j).val, which gives Σ idx = Σ σ - Σ off.
+  -- Using Nat.sub_add_cancel pointwise.
+  have hadd : (∑ j : Fin (m + n), ((σ j).val - sylvesterOff m n j))
+              + (∑ j : Fin (m + n), sylvesterOff m n j)
+            = (∑ j : Fin (m + n), (σ j).val) := by
+    rw [← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl (fun j _ => ?_)
+    exact Nat.sub_add_cancel (h j)
+  rw [sum_perm_val σ, sum_sylvesterOff_eq] at hadd
+  -- hadd: (Σ idx) + (m(m-1)/2 + n(n-1)/2) = (m+n)(m+n-1)/2.
+  -- Need: Σ idx = m*n.
+  have h_m : Even (m * (m - 1)) := Nat.even_mul_pred_self m
+  have h_n : Even (n * (n - 1)) := Nat.even_mul_pred_self n
+  have h_mn_full : Even ((m + n) * (m + n - 1)) := Nat.even_mul_pred_self (m + n)
+  obtain ⟨a, ha⟩ := h_m
+  obtain ⟨b, hb⟩ := h_n
+  obtain ⟨c, hc⟩ := h_mn_full
+  -- Show: (m+n)(m+n-1) = m(m-1) + n(n-1) + 2mn (over ℕ).
+  have hkey : (m + n) * (m + n - 1) = m * (m - 1) + n * (n - 1) + 2 * m * n := by
+    rcases Nat.eq_zero_or_pos m with hm | hm
+    · rcases Nat.eq_zero_or_pos n with hn | hn
+      · simp [hm, hn]
+      · simp [hm]
+    · rcases Nat.eq_zero_or_pos n with hn | hn
+      · simp [hn]
+      · -- Both positive: lift to ℤ for clean ring arithmetic.
+        zify [Nat.sub_le, hm, hn, Nat.add_sub_cancel,
+              show 1 ≤ m + n from by omega]
+        ring
+  rw [ha, hb, hc] at hkey hadd
+  have h_div_a : (a + a) / 2 = a := by omega
+  have h_div_b : (b + b) / 2 = b := by omega
+  have h_div_c : (c + c) / 2 = c := by omega
+  rw [h_div_a, h_div_b, h_div_c] at hadd
+  -- hadd: Σ idx + (a + b) = c.
+  -- hkey: c + c = (a + a) + (b + b) + 2 * m * n.
+  -- ⇒ c = a + b + m*n.
+  -- ⇒ Σ idx = m * n.
+  have hc_eq : c = a + b + m * n := by linarith
+  linarith
+
 theorem chord_fiber_product_concrete_natDegree_le_normPoly_natDegree
     (lam : ZMod E.q) (D : CoordRingElt E.q)
     (_hD : ¬ (D.a = 0 ∧ D.b = 0)) :
