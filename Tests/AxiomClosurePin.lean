@@ -9,7 +9,7 @@
 
   * `ma_extractable`, `ip_knowledge_sound`:
       propext, Classical.choice, Quot.sound,
-      Divisor.chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image,
+      Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
       Polynomial.resultant_logDeriv_at_split_specialization_of_pos_natDegree,
       Divisor.hasse_weil,
       Divisor.CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
@@ -19,20 +19,25 @@
     `hSplit : splitsOnE E D`; the `splitsOnE` predicate now only gates
     the multiplicity-accounting test below. `hasse_weil` comes from the
     geometric SZ bound on `E(F_q) × E(F_q)`. The remaining algebraic
-    assumptions are narrow: divisor-of-norm local multiplicity for the
-    concrete resultant *restricted to chord intercepts that actually
-    appear in the geometric support* (the off-image case is now a
-    theorem, derived from the existing root-set bridge plus
-    `Polynomial.rootMultiplicity_eq_zero`; the unrestricted form
-    `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber` is a
-    re-exported theorem), the generic resultant logarithmic derivative
-    formula at a split specialization (Lang's trace-of-log-derivative
-    identity narrowed to a polynomial/resultant statement; replaces the
-    old project-shaped axiom
-    `chord_fiber_product_logDeriv_eq_logDerivTerm_trace`, now a
-    theorem; carries an explicit `Monic f` hypothesis to match
-    mathlib's `Polynomial.resultant_eq_prod_eval`), and principal
-    divisor class triviality for the concrete `D`.
+    assumptions are narrow:
+    * divisor-of-norm divisibility (lower bound) for the concrete
+      resultant: `chord_fiber_product_concrete_bar_zfiber_pow_dvd`
+      (Stacks 02RS lower-bound coefficient form). This *replaces* the
+      previous multiplicity-equality axiom: the matching upper bound
+      (the global natDegree inequality) is now a theorem
+      (`chord_fiber_product_concrete_natDegree_le_normPoly_natDegree`
+      in `Divisor/ChordFiberWeightedDegree.lean`, via the
+      weighted-Sylvester analysis). The squeeze argument promotes
+      lower-bound-divisibility plus upper-bound-natDegree to
+      multiplicity equality.
+    * the generic resultant logarithmic derivative formula at a split
+      specialization (Lang's trace-of-log-derivative identity narrowed
+      to a polynomial/resultant statement; replaces the old
+      project-shaped axiom
+      `chord_fiber_product_logDeriv_eq_logDerivTerm_trace`, now a
+      theorem; carries an explicit `Monic f` hypothesis to match
+      mathlib's `Polynomial.resultant_eq_prod_eval`).
+    * principal divisor class triviality for the concrete `D`.
 
     The previously listed axiom
     `Divisor.ordAt_eq_rationalMultAt_of_gd_support_rational` has been

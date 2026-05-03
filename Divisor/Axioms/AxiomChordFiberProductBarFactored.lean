@@ -26,8 +26,11 @@
   already pins them down.
 -/
 import Divisor.Axioms.AxiomChordFiberProductEqNormZUnderSplit
+import Divisor.Axioms.AxiomChordFiberDivisibility
+import Divisor.ChordFiberWeightedDegree
 import Divisor.GeomBase
 import Divisor.GeomLocalOrder
+import Divisor.PartialFractionExpansion
 
 open Polynomial
 
@@ -98,7 +101,7 @@ theorem chord_fiber_product_concrete_bar_rootMultiplicity_eq_zero_of_not_image
       ((Polynomial.mem_roots' (p := p)).mpr ⟨hpne, hroot⟩)
   exact Polynomial.rootMultiplicity_eq_zero hnot_root
 
-/-- **Narrow divisor-of-norm multiplicity axiom for the concrete resultant.**
+/-- **Narrow divisor-of-norm multiplicity theorem for the concrete resultant.**
 
     For each `z` actually in the image of `gd.support` under
     `zLambdaBar lam`, the multiplicity of `z` as a root of the
@@ -109,28 +112,25 @@ theorem chord_fiber_product_concrete_bar_rootMultiplicity_eq_zero_of_not_image
     This is exactly the push-forward of the zero divisor under the chord
     projection, i.e. `div(N(D)) = π_*(div D)` written coefficientwise.
 
-    Citation: Stichtenoth, *Algebraic Function Fields and Codes*
-    (GTM 254, 2nd ed.), **Proposition 3.1.9**, p. 73 (conorm of a
-    principal divisor is principal). The coefficientwise form of this
-    statement still requires two project-side bridges (handled
-    implicitly by the carriers in this signature):
-    (a) `chord_fiber_product_concrete` is the function-field norm of
-        `D` for the extension `F_qbar(E) / F_qbar(zLambdaBar lam)`,
-        i.e. equality between the concrete resultant and the abstract
-        norm. The "value at every fibre" form of this identification is
-        already proved as
-        `chord_fiber_product_concrete_bar_eval_eq_prod` via mathlib's
-        `Polynomial.resultant_eq_prod_eval`; the "rootMultiplicity at
-        every in-image fibre" form is what this axiom packages.
-    (b) `gd.mult Q` is the local divisor multiplicity at the place of
-        `F_qbar(E)` corresponding to `Q : GeomPoint E`. Project-side
-        this follows from
-        `GeometricDivisorData.mult_eq_geomLocalOrder` plus the
-        identification of `geomLocalOrder` with the adic valuation at
-        the relevant maximal ideal — substantive work that mathlib
-        does not yet supply for the affine coordinate ring of `E`.
--/
-axiom chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image
+    **Now a theorem (mod the narrower divisibility axiom).** Discharged
+    via the squeeze argument
+    `Divisor.rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le`:
+    - root set: `chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image`.
+    - per-fibre divisibility (lower bound):
+      `chord_fiber_product_concrete_bar_zfiber_pow_dvd` — narrowed
+      divisibility-only axiom (the local divisor-of-norm inequality
+      content).
+    - global natDegree bound (upper bound):
+      `chord_fiber_product_concrete_natDegree_le_normPoly_natDegree`
+      via the weighted-Sylvester analysis (now a complete theorem).
+    - `mult_sum_eq_normPoly_natDegree`: Σ_Q gd.mult Q = (normPoly).natDegree.
+
+    The closure now uses the divisibility axiom
+    `chord_fiber_product_concrete_bar_zfiber_pow_dvd`, replacing the
+    previous multiplicity-equality axiom. The new axiom is closer to
+    a textbook statement (Stacks 02RS lower-bound part) since the
+    upper bound is now a coordinate-native theorem. -/
+theorem chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
     [DecidableEq (Fqbar E)]
     (hD : ¬ (D.a = 0 ∧ D.b = 0))
@@ -138,7 +138,31 @@ axiom chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image
     ∀ z ∈ gd.support.image (zLambdaBar E lam),
       (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
         (chord_fiber_product_concrete E lam D)).rootMultiplicity z =
-        ∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q
+        ∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q := by
+  classical
+  set p := (chord_fiber_product_concrete E lam D).map
+    (algebraMap (ZMod E.q) (Fqbar E)) with hp_def
+  have hpne : p ≠ 0 :=
+    Polynomial.map_ne_zero
+      (chord_fiber_product_concrete_ne_zero E lam D hD)
+  have hroots :
+      p.roots.toFinset = gd.support.image (zLambdaBar E lam) :=
+    chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image
+      E lam D hD gd
+  have hdvd : ∀ z ∈ gd.support.image (zLambdaBar E lam),
+      (Polynomial.X - Polynomial.C z) ^
+        (∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q)
+        ∣ p :=
+    fun z _ =>
+      chord_fiber_product_concrete_bar_zfiber_pow_dvd E D lam hD gd z
+  have hdeg : p.natDegree ≤ ∑ Q ∈ gd.support, gd.mult Q := by
+    rw [GeometricDivisorData.mult_sum_eq_normPoly_natDegree E D hD gd]
+    rw [hp_def, Polynomial.natDegree_map_eq_of_injective
+          (algebraMap (ZMod E.q) (Fqbar E)).injective]
+    exact chord_fiber_product_concrete_natDegree_le_normPoly_natDegree E lam D hD
+  exact fun z hz =>
+    Divisor.rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le
+      p gd.support (zLambdaBar E lam) gd.mult hpne hroots hdvd hdeg z
 
 /-- **Re-export — the unrestricted divisor-of-norm pushforward**, now a
 theorem derived from the narrowed in-image axiom plus the off-image
