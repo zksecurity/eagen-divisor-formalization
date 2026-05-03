@@ -949,6 +949,113 @@ theorem chord_ordAt_eq_one_at_distinct_chord
     rw [show ordAt E (chordCoordRingElt E P Q) _ = f _ from rfl]
     omega
 
+/-! ## Tangent-line `ordAt` exact multiplicities
+
+For the tangent branch (P = Q with P.2 ≠ 0), assuming P ≠ A₂ (the
+"non-flex" generic case), `ordAt = 2` at P (the tangent point) and
+`ordAt = 1` at A₂. -/
+
+theorem chord_ordAt_eq_two_at_tangent
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (h2t : P.2 ≠ 0)
+    (hP_neq_A2 : P.1 ≠ ((3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹) ^ 2 - 2 * P.1) :
+    ordAt E (chordCoordRingElt E P P) P = 2 := by
+  classical
+  set lam := (3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹ with hlam
+  set x₂ := lam ^ 2 - 2 * P.1 with hx₂
+  -- normPoly factored: -(X - P.1)²(X - x₂).
+  have hFactor := normPoly_chord_factor_tangent E hP h2t
+  simp only [← hlam, ← hx₂] at hFactor
+  -- rootMultiplicity P.1 normPoly = 2 since P.1 ≠ x₂.
+  have hRootMult :
+      Polynomial.rootMultiplicity P.1 (normPoly E (chordCoordRingElt E P P)) = 2 := by
+    rw [hFactor]
+    rw [show -((X - C P.1) ^ 2 * (X - C x₂)) =
+              (-1 : (ZMod E.q)[X]) * ((X - C P.1) ^ 2 * (X - C x₂)) from by ring]
+    have h1 : ((-1 : (ZMod E.q)[X])) * ((X - C P.1) ^ 2 * (X - C x₂)) ≠ 0 := by
+      simp [X_sub_C_ne_zero]
+    rw [Polynomial.rootMultiplicity_mul h1]
+    rw [Polynomial.rootMultiplicity_eq_zero (by
+      simp [Polynomial.IsRoot, eval_neg, eval_one]),
+        zero_add]
+    have h2 : ((X - C P.1) ^ 2 : (ZMod E.q)[X]) * (X - C x₂) ≠ 0 :=
+      mul_ne_zero (pow_ne_zero _ (X_sub_C_ne_zero _)) (X_sub_C_ne_zero _)
+    rw [Polynomial.rootMultiplicity_mul h2,
+        Polynomial.rootMultiplicity_X_sub_C_pow,
+        Polynomial.rootMultiplicity_X_sub_C, if_neg hP_neq_A2]
+  -- D doesn't vanish at (P.1, -P.2) — algebraic computation.
+  have hMP : (P.1, -P.2) ∈ E.points := by
+    apply E.hComplete
+    have hOC : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := E.hOnCurve P hP
+    show (-P.2) ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB
+    linear_combination hOC
+  have hY_neq : (-P.2 : ZMod E.q) ≠ P.2 := by
+    intro h
+    have : (2 : ZMod E.q) * P.2 = 0 := by linear_combination -h
+    have h2NZ : (2 : ZMod E.q) ≠ 0 := by
+      have hq5 : E.q ≥ 5 := E.hq_ge
+      have hcast : (2 : ZMod E.q) = ((2 : ℕ) : ZMod E.q) := by norm_cast
+      rw [hcast, Ne, CharP.cast_eq_zero_iff (ZMod E.q) E.q]
+      intro hdvd
+      have : E.q ≤ 2 := Nat.le_of_dvd (by norm_num) hdvd
+      omega
+    rcases mul_eq_zero.mp this with h | h
+    · exact h2NZ h
+    · exact h2t h
+  -- D evaluated at (P.1, -P.2) is non-zero.
+  have hMP_eval : (chordCoordRingElt E P P).eval P.1 (-P.2) ≠ 0 := by
+    set mu := P.2 - lam * P.1 with hmu
+    have hD : (chordCoordRingElt E P P).a = -(C lam) * X - C mu ∧
+              (chordCoordRingElt E P P).b = -1 := by
+      unfold chordCoordRingElt
+      rw [dif_pos rfl, dif_pos rfl, if_neg h2t]
+      refine ⟨rfl, rfl⟩
+    -- D.eval P.1 (-P.2) = -λ·P.1 - μ + P.2 = -λ·P.1 - (P.2 - λ·P.1) + P.2 = 2·P.2.
+    -- Wait: D.eval x y = a.eval x - b.eval x * y = -(λ·x) - μ - (-1)·y = -λ·x - μ + y
+    -- At y = -P.2: -λ·P.1 - μ - P.2.
+    -- μ = P.2 - λ·P.1; so = -λP.1 - P.2 + λP.1 - P.2 = -2 P.2 ≠ 0.
+    have hEvalForm :
+        (chordCoordRingElt E P P).eval P.1 (-P.2) = -2 * P.2 := by
+      show (chordCoordRingElt E P P).a.eval P.1
+          - (chordCoordRingElt E P P).b.eval P.1 * (-P.2) = -2 * P.2
+      rw [hD.1, hD.2]
+      simp only [eval_sub, eval_mul, eval_neg, eval_C, eval_X, eval_one,
+                 Polynomial.eval_one]
+      have hmu_eq : mu = P.2 - lam * P.1 := rfl
+      linear_combination -hmu_eq
+    rw [hEvalForm]
+    intro hZ
+    have h2NZ : (2 : ZMod E.q) ≠ 0 := by
+      have hq5 : E.q ≥ 5 := E.hq_ge
+      have hcast : (2 : ZMod E.q) = ((2 : ℕ) : ZMod E.q) := by norm_cast
+      rw [hcast, Ne, CharP.cast_eq_zero_iff (ZMod E.q) E.q]
+      intro hdvd
+      have : E.q ≤ 2 := Nat.le_of_dvd (by norm_num) hdvd
+      omega
+    have h2y : (2 : ZMod E.q) * P.2 = 0 := by linear_combination -hZ
+    rcases mul_eq_zero.mp h2y with h | h
+    · exact h2NZ h
+    · exact h2t h
+  -- ordAt at (P.1, -P.2) = 0.
+  have hNZ := chordCoordRingElt_ne_zero E P P
+  have hOrdMP : ordAt E (chordCoordRingElt E P P) (P.1, -P.2) = 0 := by
+    rcases Nat.eq_zero_or_pos (ordAt E (chordCoordRingElt E P P) (P.1, -P.2)) with h | h
+    · exact h
+    · exfalso
+      apply hMP_eval
+      exact (ordAt_pos_iff_zero E _ hNZ (P.1, -P.2) hMP).mp h
+  -- Apply ordAt_nonTwoTorsion_pair_eq_rootMult.
+  have hPair := ordAt_nonTwoTorsion_pair_eq_rootMult E (chordCoordRingElt E P P) hNZ hP h2t
+  -- The dispatch to ordAt for non-2-torsion:
+  -- ordAt E D P (with P.2 ≠ 0) = ordAt_nonTwoTorsion E D P.
+  rw [ordAt_eq_dispatch E _ hP hNZ, if_neg h2t] at *
+  rw [ordAt_eq_dispatch E _ hMP hNZ] at hOrdMP
+  have hMPneg : (P.1, -P.2).2 ≠ 0 := by simp; exact h2t
+  rw [if_neg hMPneg] at hOrdMP
+  -- Now `hPair` says: ordAt_nonTwoTorsion E D P + ordAt_nonTwoTorsion E D (P.1, -P.2) = 2
+  -- And hOrdMP says: ordAt_nonTwoTorsion E D (P.1, -P.2) = 0.
+  rw [hRootMult] at hPair
+  omega
+
 /-! ## Multiplication of `CoordRingElt`s in `F_q[E]`
 
 `F_q[E] = F_q[X,Y]/(Y² - X³ - AX - B)` admits multiplication by reducing
