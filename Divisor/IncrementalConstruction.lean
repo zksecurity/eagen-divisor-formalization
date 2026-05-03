@@ -751,6 +751,35 @@ theorem splitsOnE_chordCoordRingElt_tangent
         linear_combination hRoot
       exact ⟨lam * x₂ + mu, E.hComplete _ _ hOC⟩
 
+/-! ## Unified `splitsOnE` for any chord/tangent/vertical line
+
+Combining all three branches: `chordCoordRingElt P Q` always satisfies
+`splitsOnE` whenever `P, Q` are both on `E`, with the additional
+proviso that for the vertical-2-torsion-doubling branch we need
+`P.2 ≠ 0` is *not* required (the proof handles 2-torsion by the
+vertical case). -/
+
+theorem splitsOnE_chordCoordRingElt
+    (P Q : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hQ : Q ∈ E.points) :
+    splitsOnE E (chordCoordRingElt E P Q) := by
+  classical
+  by_cases hxx : P.1 = Q.1
+  · by_cases hyy : P.2 = Q.2
+    · -- P = Q
+      have hPQ : P = Q := Prod.ext hxx hyy
+      by_cases h2t : P.2 = 0
+      · -- 2-torsion vertical
+        rw [hPQ]
+        exact splitsOnE_chordCoordRingElt_vertical E Q Q hQ rfl
+          (Or.inr ⟨rfl, hPQ ▸ h2t⟩)
+      · -- tangent at non-2-torsion
+        rw [hPQ]
+        exact splitsOnE_chordCoordRingElt_tangent E hQ (hPQ ▸ h2t)
+    · -- vertical: P.1 = Q.1, P.2 ≠ Q.2 ⇒ Q = -P
+      exact splitsOnE_chordCoordRingElt_vertical E P Q hP hxx (Or.inl hyy)
+  · -- chord
+    exact splitsOnE_chordCoordRingElt_chord E P Q hP hQ hxx
+
 /-! ## Multiplication of `CoordRingElt`s in `F_q[E]`
 
 `F_q[E] = F_q[X,Y]/(Y² - X³ - AX - B)` admits multiplication by reducing
