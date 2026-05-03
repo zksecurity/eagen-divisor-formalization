@@ -257,4 +257,72 @@ theorem ordAt_eq_zero_of_eval_ne_zero
   · rw [if_neg h2]
     exact ordAt_nonTwoTorsion_eq_zero_of_eval_ne_zero E D hEval
 
+/-! ### Symmetry of `ordAt_nonTwoTorsion_aux` for `D.b = 0`
+
+For `D.b = 0`, the project's recursive `ordAt` has the property:
+`ord(D, (x, y)) = ord(D, (x, -y))`. The reason is that
+`D.eval x y = D.a.eval x` is independent of `y`, so the lone-sheet
+branch never fires and the twin-sheet recursion produces equal values
+on both sheets. -/
+
+/-- `(D.divLin x).b = 0` whenever `D.b = 0`. -/
+private theorem CoordRingElt.divLin_b_zero {q : ℕ} [Fact (Nat.Prime q)]
+    (D : CoordRingElt q) (hb : D.b = 0) (x : ZMod q) :
+    (D.divLin x).b = 0 := by
+  rw [CoordRingElt.divLin_b, hb, Polynomial.zero_divByMonic]
+
+/-- For `D.b = 0`, `D.eval x y` is independent of `y`. -/
+private theorem CoordRingElt.eval_b_zero
+    (D : CoordRingElt E.q) (hb : D.b = 0) (x y₁ y₂ : ZMod E.q) :
+    D.eval x y₁ = D.eval x y₂ := by
+  unfold CoordRingElt.eval
+  rw [hb]; simp
+
+/-- For `D.b = 0`, `ordAt_nonTwoTorsion_aux` is symmetric in the
+y-coordinate flip. -/
+theorem ordAt_nonTwoTorsion_aux_symm_b_zero
+    (fuel : ℕ) (D : CoordRingElt E.q) (hb : D.b = 0)
+    (P : ZMod E.q × ZMod E.q) :
+    ordAt_nonTwoTorsion_aux E fuel D P
+      = ordAt_nonTwoTorsion_aux E fuel D (P.1, -P.2) := by
+  classical
+  induction fuel generalizing D with
+  | zero => rfl
+  | succ n IH =>
+    -- Unfold both calls to the same level.
+    show
+      (if D.a = 0 ∧ D.b = 0 then 0
+       else if D.eval P.1 P.2 ≠ 0 then 0
+       else if D.eval P.1 (-P.2) ≠ 0 then rootMultiplicity P.1 (normPoly E D)
+       else 1 + ordAt_nonTwoTorsion_aux E n (D.divLin P.1) P)
+      =
+      (if D.a = 0 ∧ D.b = 0 then 0
+       else if D.eval P.1 (-P.2) ≠ 0 then 0
+       else if D.eval P.1 (-(-P.2)) ≠ 0
+              then rootMultiplicity P.1 (normPoly E D)
+       else 1 + ordAt_nonTwoTorsion_aux E n (D.divLin P.1) (P.1, -P.2))
+    -- For D.b = 0, eval is independent of y.
+    have hEvalEq : D.eval P.1 P.2 = D.eval P.1 (-P.2) :=
+      CoordRingElt.eval_b_zero E D hb P.1 P.2 (-P.2)
+    have hEvalEq' : D.eval P.1 (-P.2) = D.eval P.1 (-(-P.2)) :=
+      CoordRingElt.eval_b_zero E D hb P.1 (-P.2) (-(-P.2))
+    by_cases hD : D.a = 0 ∧ D.b = 0
+    · rw [if_pos hD, if_pos hD]
+    · rw [if_neg hD, if_neg hD]
+      by_cases hVan : D.eval P.1 P.2 = 0
+      · -- Both sheets vanish for D.b = 0.
+        have hVan' : D.eval P.1 (-P.2) = 0 := by rw [← hEvalEq]; exact hVan
+        have hVan'' : D.eval P.1 (-(-P.2)) = 0 := by rw [← hEvalEq']; exact hVan'
+        rw [if_neg (not_not.mpr hVan), if_neg (not_not.mpr hVan'),
+            if_neg (not_not.mpr hVan'), if_neg (not_not.mpr hVan'')]
+        -- Both reduce to 1 + ord(D', P) and 1 + ord(D', P.σ); apply IH.
+        have hb' : (D.divLin P.1).b = 0 :=
+          CoordRingElt.divLin_b_zero D hb P.1
+        have hIH := IH (D := D.divLin P.1) hb'
+        omega
+      · -- Both sheets non-vanishing for D.b = 0.
+        push_neg at hVan
+        have hVan' : D.eval P.1 (-P.2) ≠ 0 := by rw [← hEvalEq]; exact hVan
+        rw [if_pos hVan, if_pos hVan']
+
 end Divisor
