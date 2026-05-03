@@ -230,14 +230,19 @@ theorem ma_extractable_conditional
     the tight SZ bound applies without assuming `splitsOnE E D`.
 
     Hypotheses:
-    * `hDenomNZ` — technical condition of the current mechanized
-      all-zero extraction path. It is not intended as a final
-      paper-level hypothesis; the desired unconditional statement must
-      absorb its failure into `eventDegBound`.
+    * `hd : stmt.degBound < E.q` — degree fits in the field.
+    * `hd2 : 2 ≤ stmt.degBound` — needed by the `-P ∈ {B_j}` special-
+      case witness `(-1).natAbs < d`.
+    * `hkm` — index alignment between statement and prover message.
     * `hTargetOnE`, `hBasesOnE` — statement well-formedness: target
       and base points lie on the curve.
     * `hLargeQ` — combined SZ-on-(E×E) threshold (≡ paper's `q ≥ 16`
-      regime via Hasse). -/
+      regime via Hasse).
+
+    The previous `hDenomNZ` precondition has been internalised: its
+    failure is absorbed into `eventDegBound` via the `badDenomA0`
+    count argument inside `sigma_data_of_gd_support_rational`. The
+    headline now matches the paper's two-event accounting cleanly. -/
 theorem ma_extractable
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q)
