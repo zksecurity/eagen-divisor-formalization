@@ -285,6 +285,32 @@ theorem mulCoordRingElt_eval_on_E
   rw [hRw]
   ring
 
+/-- **Key algebraic identity.** The norm polynomial is multiplicative:
+    `N(D₁ · D₂) = N(D₁) · N(D₂)`. Direct ring identity — no curve
+    machinery needed.
+
+    This is the polynomial-side multiplicativity that drives the
+    `natDegree`-additivity used by `divisorOfD` at infinity. -/
+theorem normPoly_mul_eq
+    (D₁ D₂ : CoordRingElt E.q) :
+    normPoly E (mulCoordRingElt E D₁ D₂) = normPoly E D₁ * normPoly E D₂ := by
+  rw [normPoly_eq, normPoly_eq, normPoly_eq]
+  show (D₁.a * D₂.a + D₁.b * D₂.b * curveX E) ^ 2
+        - (D₁.a * D₂.b + D₂.a * D₁.b) ^ 2 * curveX E
+      = (D₁.a ^ 2 - D₁.b ^ 2 * curveX E)
+        * (D₂.a ^ 2 - D₂.b ^ 2 * curveX E)
+  ring
+
+/-- Multiplicativity of `natDegree(normPoly)` (under nonzero hypotheses). -/
+theorem natDegree_normPoly_mul_eq
+    (D₁ D₂ : CoordRingElt E.q)
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0))
+    (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0)) :
+    (normPoly E (mulCoordRingElt E D₁ D₂)).natDegree =
+      (normPoly E D₁).natDegree + (normPoly E D₂).natDegree := by
+  rw [normPoly_mul_eq]
+  exact Polynomial.natDegree_mul (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂)
+
 /-! ## Polynomial cancellation `(X − x₀)`
 
 When `(X − x₀)` divides both `D.a` and `D.b`, dividing it out gives a
