@@ -697,17 +697,16 @@ For each permutation σ of the Sylvester matrix index set, the product
 with `Matrix.det_apply` and `natDegree_sum_le_of_forall_le`, this
 gives the determinant natDegree bound. -/
 
-/-- **Per-permutation product bound** for the chord/DLine Sylvester matrix.
+/-! **Per-permutation product bound** for the chord/DLine Sylvester matrix.
 
 For any permutation σ of `Fin (3 + DLineBiv.natDegree)`,
-
-    (∏ j, M[σ j, j]).natDegree ≤ (normPoly).natDegree
-
-where M is the Sylvester matrix of `chordCubicBiv` and `DLineBiv`.
+`(∏ j, M[σ j, j]).natDegree ≤ (normPoly).natDegree`.
 
 The proof case-splits on whether some entry vanishes (in which case the
 product is zero) or all entries are nonzero (the weighted-Sylvester
 sum-bound applies). -/
+
+set_option maxHeartbeats 400000 in
 private lemma sylvester_chord_DLine_perm_prod_natDegree_le
     (lam : ZMod E.q) (D : CoordRingElt E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0))
@@ -880,10 +879,81 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
                       ((σ (Fin.natAdd _ j₁)).val - j₁.val) hk_le
         -- hbnd: 3 * natDeg(coeff) + 2*k ≤ 6.
         omega
-    -- Step 3: aggregate via Σ_j to get Σ natDeg ≤ w.
-    -- TODO: sum the per-column inequalities + use sum_sylvester_idx_eq +
-    -- sum of (j.addCases) which evaluates to 3*w + n*6.
-    sorry
+    -- Step 3: aggregate.
+    have hm_eq : (chordCubicBiv E lam).natDegree = 3 := chordCubicBiv_natDegree E lam
+    -- Sum of weights = m * (normPoly).natDegree + n * 6.
+    have hsum_wt :
+        (∑ j : Fin ((chordCubicBiv E lam).natDegree
+                      + (DLineBiv E lam D).natDegree),
+          j.addCases (motive := fun _ => ℕ)
+            (fun _ : Fin (chordCubicBiv E lam).natDegree => (normPoly E D).natDegree)
+            (fun _ : Fin (DLineBiv E lam D).natDegree => 6))
+          = (chordCubicBiv E lam).natDegree * (normPoly E D).natDegree
+            + (DLineBiv E lam D).natDegree * 6 := by
+      classical
+      rw [Fintype.sum_equiv finSumFinEquiv.symm
+            _ (fun j => (finSumFinEquiv j).addCases (motive := fun _ => ℕ)
+                         (fun _ : Fin (chordCubicBiv E lam).natDegree =>
+                           (normPoly E D).natDegree)
+                         (fun _ : Fin (DLineBiv E lam D).natDegree => 6))
+            (fun x => by simp)]
+      rw [Fintype.sum_sum_type]
+      congr 1
+      · have hl : ∀ j₁ : Fin (chordCubicBiv E lam).natDegree,
+            (finSumFinEquiv (Sum.inl j₁)).addCases (motive := fun _ => ℕ)
+              (fun _ : Fin (chordCubicBiv E lam).natDegree => (normPoly E D).natDegree)
+              (fun _ : Fin (DLineBiv E lam D).natDegree => 6)
+              = (normPoly E D).natDegree := by
+          intro j₁
+          simp [finSumFinEquiv, Fin.addCases]
+        rw [Finset.sum_congr rfl (fun j₁ _ => hl j₁)]
+        simp [mul_comm]
+      · have hr : ∀ j₁ : Fin (DLineBiv E lam D).natDegree,
+            (finSumFinEquiv (Sum.inr j₁)).addCases (motive := fun _ => ℕ)
+              (fun _ : Fin (chordCubicBiv E lam).natDegree => (normPoly E D).natDegree)
+              (fun _ : Fin (DLineBiv E lam D).natDegree => 6)
+              = 6 := by
+          intro j₁
+          simp [finSumFinEquiv, Fin.addCases]
+        rw [Finset.sum_congr rfl (fun j₁ _ => hr j₁)]
+        simp [mul_comm]
+    -- Sum the per-column inequalities (using hper_col).
+    have hsum_per_col :
+        ∑ j : Fin ((chordCubicBiv E lam).natDegree
+                    + (DLineBiv E lam D).natDegree),
+          (3 * (Polynomial.sylvester (chordCubicBiv E lam) (DLineBiv E lam D)
+                  (chordCubicBiv E lam).natDegree (DLineBiv E lam D).natDegree
+                  (σ j) j).natDegree
+            + 2 * ((σ j).val - sylvesterOff (chordCubicBiv E lam).natDegree
+                                              (DLineBiv E lam D).natDegree j))
+          ≤ (chordCubicBiv E lam).natDegree * (normPoly E D).natDegree
+            + (DLineBiv E lam D).natDegree * 6 := by
+      rw [← hsum_wt]
+      exact Finset.sum_le_sum (fun j _ => hper_col j)
+    -- Distribute the LHS sum.
+    rw [Finset.sum_add_distrib, ← Finset.mul_sum, ← Finset.mul_sum] at hsum_per_col
+    have hidx_sum := sum_sylvester_idx_eq σ hsupp
+    -- hsum_per_col: 3 * Σ natDeg + 2 * Σ idx ≤ chord.natDeg * w + DLineBiv.natDeg * 6.
+    -- hidx_sum: Σ idx = chord.natDeg * DLineBiv.natDeg.
+    -- hm_eq: chord.natDeg = 3.
+    have hsum_natDeg_le :
+        ∑ j : Fin ((chordCubicBiv E lam).natDegree
+                    + (DLineBiv E lam D).natDegree),
+          (Polynomial.sylvester (chordCubicBiv E lam) (DLineBiv E lam D)
+              (chordCubicBiv E lam).natDegree (DLineBiv E lam D).natDegree
+              (σ j) j).natDegree
+          ≤ (normPoly E D).natDegree := by
+      -- Substitute chord.natDeg = 3 in the multiplication products.
+      have ha :
+          (chordCubicBiv E lam).natDegree * (normPoly E D).natDegree
+            = 3 * (normPoly E D).natDegree := by rw [hm_eq]
+      have hd :
+          (chordCubicBiv E lam).natDegree * (DLineBiv E lam D).natDegree
+            = 3 * (DLineBiv E lam D).natDegree := by rw [hm_eq]
+      rw [hidx_sum, hd, ha] at hsum_per_col
+      omega
+    refine (Polynomial.natDegree_prod_le _ _).trans ?_
+    exact hsum_natDeg_le
 
 theorem chord_fiber_product_concrete_natDegree_le_normPoly_natDegree
     (lam : ZMod E.q) (D : CoordRingElt E.q)
