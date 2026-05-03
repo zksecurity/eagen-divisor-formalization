@@ -1,16 +1,49 @@
 # Discharge plan for `hDenomNZ`
 
-## Status
+## Status: **COMPLETE**
 
-`hDenomNZ` is currently a hypothesis on `Divisor.ma_extractable`
-(at `Divisor/ExtractorBridgeTheorems.lean:60`). The theorem is
-**conditional** on this — it proves "extraction holds when
+The `hDenomNZ` precondition has been fully internalised. Public
+`ma_extractable`, `ip_knowledge_sound`, and the `_paper` / `_clean`
+/ `_witness_of_excess_*` variants no longer expose it.
+
+**Final discharge route** (deviates from the original plan in §6):
+the obstruction is absorbed inside `sigma_data_of_gd_support_rational`
+via the *full* `denomScaledPoly` bad set `badDenomA0` (not just the
+`DAtA₂Scaled` factor `badA₂Mod` originally planned). Internal proof
+threads `A₀ ∉ badDenomA0` through `h_card_nondef` / `h_card_def_lb`
+/ `h_nonspec`, with `h_spec` extended via the swap argument to also
+handle `A₀ ∈ badDenomA0`. See:
+
+- `Divisor/HDenomNZBound.lean` — `badDenomA0`,
+  `badDenomA0_card_mul_card_sub_two_le`, `badDenomA0_card_le_linear_relax`,
+  `exists_A0_outside_bad`.
+- `Divisor/GeometricSoundness.lean` — refactored
+  `card_logDerivCheckFnDefined_complement_le` (per-A₀ hypothesis) and
+  `sigma_data_of_gd_support_rational` (drops `_hDenomNZ` parameter).
+- `Divisor/ExtractorBridgeTheorems.lean` — public theorems no longer
+  carry `hDenomNZ`.
+
+Axiom closure: unchanged. No new axioms, no `sorryAx`. The
+`badA₂Mod_card_mul_card_sub_two_le` lemma is preserved as a
+narrower-but-cheaper alternative; `badDenomA0_card_mul_card_sub_two_le`
+generalises it across the full denominator factorisation.
+
+The remainder of this document is preserved as historical record of
+the original plan.
+
+---
+
+## Original status (before discharge)
+
+`hDenomNZ` was a hypothesis on `Divisor.ma_extractable`
+(at `Divisor/ExtractorBridgeTheorems.lean:60`). The theorem was
+**conditional** on this — it proved "extraction holds when
 `hDenomNZ` holds", not unconditional knowledge soundness.
 
-This corresponds to the paper's `event_deg`-not-occurring
+This corresponded to the paper's `event_deg`-not-occurring
 precondition (`~/paper/divisor-org/sections/ip.tex:396-398`). The
 paper's stated bounds **include** `Pr[event_deg]` explicitly; the
-Lean version must absorb it into the count to be unconditional.
+Lean version had to absorb it into the count to be unconditional.
 
 ## Existing Lean infrastructure
 
