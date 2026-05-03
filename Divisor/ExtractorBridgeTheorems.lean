@@ -407,3 +407,53 @@ theorem ma_extractable_clean
       _ ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q := by
           apply Nat.mul_le_mul_right
           omega
+
+/-- **Soundness probability bound** in natural-number form.
+
+Multiplied form of `|accept|/|validPairs| ≤ 36·(d + k + 4)·q /
+(n·(n − 3))`, avoiding division. Gives the headline soundness-error
+ratio: any prover who beats this on a uniformly random valid
+challenge pair has a witness extracted.
+
+Combines `ma_extractable_clean` (numerator) with
+`card_validPairs_lb` (denominator). -/
+theorem ma_soundness_probability
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (hQ : 5 ≤ E.q) :
+    (∃ wit : DlogWitness E.q,
+        maExtractor E stmt msg stmt.degBound hd hkm = some wit
+        ∧ relDlog E stmt wit) ∨
+    ((validPairs E).filter
+        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      * (E.points.card * E.points.card - 3 * E.points.card)
+      ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q * (validPairs E).card := by
+  rcases ma_extractable_clean E stmt hd hd2 msg hkm
+          hTargetOnE hBasesOnE hLargeQ hQ with hWit | hBound
+  · left; exact hWit
+  · right
+    have hVPlb := card_validPairs_lb E
+    -- |accept| ≤ 36(d+k+4)q. Multiply both sides by n²-3n; chain via |validPairs|.
+    have hStep1 :
+        ((validPairs E).filter
+          (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+          * (E.points.card * E.points.card - 3 * E.points.card)
+        ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q
+          * (E.points.card * E.points.card - 3 * E.points.card) :=
+      Nat.mul_le_mul_right _ hBound
+    have hStep2 :
+        36 * (stmt.degBound + stmt.k + 4) * E.q
+          * (E.points.card * E.points.card - 3 * E.points.card)
+        ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q * (validPairs E).card := by
+      apply Nat.mul_le_mul_left
+      -- card_validPairs_lb uses numAffine; numAffine = E.points.card by defn.
+      have h := hVPlb
+      unfold ECSetup.numAffine at h
+      exact h
+    exact hStep1.trans hStep2
