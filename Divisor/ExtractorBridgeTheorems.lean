@@ -366,6 +366,43 @@ theorem ip_knowledge_sound
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
 
+/-- **`\ref{thm:ip}` paper-tight form.** Same as `ip_knowledge_sound`
+    but with the bound branch as the unconditional paper-tight
+    inclusion `acceptSet ⊆ badChallenges`. The numeric form follows by
+    `badChallenges_card_le`. -/
+theorem ip_knowledge_sound_paper
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg1 : MAProverMsg E.q)
+    (hkm : stmt.k = msg1.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg1.toD.degE + stmt.k + 2) + 72) :
+    ((∃ wit : DlogWitness E.q,
+         maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
+         ∧ relDlog E stmt wit) ∨
+     ((validPairs E).filter
+        (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm))
+      ⊆ badChallenges E msg1.toD stmt.target stmt.bases
+          (fun i => msg1.m (hkm ▸ i)))
+    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
+        (msg3 msg3' : IPProverMsg3 E.q),
+        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
+        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
+        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
+        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
+            stmt.target.1 (-stmt.target.2) ≠ 0 →
+        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
+        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
+        msg3 = msg3' := by
+  refine ⟨?_, ?_⟩
+  · exact ma_extractable_paper E stmt hd hd2 msg1 hkm
+           hTargetOnE hBasesOnE hLargeQ
+  · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
+    exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
+            hD₀ hD₁ hD₂ hLP hAcc hAcc'
+
 /-- **MA extractability, Hasse-clean form.** Same disjunction as
     `ma_extractable`, but with the cardinality bound consolidated to
     a single `q`-term via Hasse (`|E| ≤ 2q` for `q ≥ 5`):
@@ -407,6 +444,42 @@ theorem ma_extractable_clean
       _ ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q := by
           apply Nat.mul_le_mul_right
           omega
+
+/-- **`\ref{thm:ip}` Hasse-clean form.** Same as `ip_knowledge_sound`
+    but with the cardinality bound consolidated to a single `q`-term
+    via Hasse: `≤ 36 · (d + k + 4) · q`. -/
+theorem ip_knowledge_sound_clean
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg1 : MAProverMsg E.q)
+    (hkm : stmt.k = msg1.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg1.toD.degE + stmt.k + 2) + 72)
+    (hQ : 5 ≤ E.q) :
+    ((∃ wit : DlogWitness E.q,
+         maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
+         ∧ relDlog E stmt wit) ∨
+     ((validPairs E).filter
+        (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
+      ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q)
+    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
+        (msg3 msg3' : IPProverMsg3 E.q),
+        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
+        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
+        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
+        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
+            stmt.target.1 (-stmt.target.2) ≠ 0 →
+        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
+        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
+        msg3 = msg3' := by
+  refine ⟨?_, ?_⟩
+  · exact ma_extractable_clean E stmt hd hd2 msg1 hkm
+           hTargetOnE hBasesOnE hLargeQ hQ
+  · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
+    exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
+            hD₀ hD₁ hD₂ hLP hAcc hAcc'
 
 /-- **Soundness probability bound** in natural-number form.
 
