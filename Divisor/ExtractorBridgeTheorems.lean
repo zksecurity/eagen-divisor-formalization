@@ -664,3 +664,78 @@ theorem ma_extractable_witness_of_excess_clean
           hTargetOnE hBasesOnE hLargeQ hQ with hWit | hBound
   · exact hWit
   · exact absurd hBound (Nat.not_le.mpr hExcess)
+
+/-- **IP auditing-friendly ratio form** (contrapositive of
+`ip_knowledge_sound` ratio shape). If the prover's accept-set
+exceeds the soundness ratio bound, the extractor returns a witness
+*and* the IP third-round message is uniquely determined. -/
+theorem ip_knowledge_sound_witness_of_excess_ratio
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg1 : MAProverMsg E.q)
+    (hkm : stmt.k = msg1.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg1.toD.degE + stmt.k + 2) + 72)
+    (hQ : 5 ≤ E.q)
+    (hExcess :
+      ((validPairs E).filter
+          (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
+        * (E.points.card * E.points.card - 3 * E.points.card)
+        > 36 * (stmt.degBound + stmt.k + 4) * E.q * (validPairs E).card) :
+    (∃ wit : DlogWitness E.q,
+        maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
+        ∧ relDlog E stmt wit)
+    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
+        (msg3 msg3' : IPProverMsg3 E.q),
+        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
+        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
+        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
+        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
+            stmt.target.1 (-stmt.target.2) ≠ 0 →
+        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
+        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
+        msg3 = msg3' := by
+  refine ⟨?_, ?_⟩
+  · exact ma_extractable_witness_of_excess_ratio E stmt hd hd2 msg1 hkm
+           hTargetOnE hBasesOnE hLargeQ hQ hExcess
+  · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
+    exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
+            hD₀ hD₁ hD₂ hLP hAcc hAcc'
+
+/-- **IP auditing-friendly Hasse-clean form** (contrapositive of
+`ip_knowledge_sound_clean`). -/
+theorem ip_knowledge_sound_witness_of_excess_clean
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg1 : MAProverMsg E.q)
+    (hkm : stmt.k = msg1.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg1.toD.degE + stmt.k + 2) + 72)
+    (hQ : 5 ≤ E.q)
+    (hExcess :
+      ((validPairs E).filter
+          (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
+        > 36 * (stmt.degBound + stmt.k + 4) * E.q) :
+    (∃ wit : DlogWitness E.q,
+        maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
+        ∧ relDlog E stmt wit)
+    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
+        (msg3 msg3' : IPProverMsg3 E.q),
+        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
+        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
+        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
+        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
+            stmt.target.1 (-stmt.target.2) ≠ 0 →
+        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
+        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
+        msg3 = msg3' := by
+  refine ⟨?_, ?_⟩
+  · exact ma_extractable_witness_of_excess_clean E stmt hd hd2 msg1 hkm
+           hTargetOnE hBasesOnE hLargeQ hQ hExcess
+  · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
+    exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
+            hD₀ hD₁ hD₂ hLP hAcc hAcc'
