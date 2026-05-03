@@ -536,6 +536,221 @@ theorem splitsOnE_chordCoordRingElt_chord
         convert this using 2
       exact ⟨lam * x₂ + mu, E.hComplete _ _ hOC⟩
 
+/-! ## `splitsOnE` for the tangent (non-2-torsion doubling) case
+
+When `P = Q` and `P.2 ≠ 0`, `chordCoordRingElt P P` is the tangent line
+through `P` with slope `λ = (3·P.1²+A)/(2·P.2)`. The cubic `(λX+μ)² −
+(X³+AX+B)` has `P.1` as a double root and `x₂ = λ²−2·P.1` as the third.
+
+Two field-level Vieta identities (derived from the curve equation and
+the slope definition) drive the polynomial factorisation. -/
+
+private theorem tangent_vieta_pairwise
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (h2t : P.2 ≠ 0) :
+    let lam := (3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹
+    let mu := P.2 - lam * P.1
+    let x₂ := lam ^ 2 - 2 * P.1
+    P.1 ^ 2 + 2 * P.1 * x₂ = E.curveA - 2 * lam * mu := by
+  intro lam mu x₂
+  have hOC : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := E.hOnCurve P hP
+  have h2NZ : (2 : ZMod E.q) ≠ 0 := by
+    have hq5 : E.q ≥ 5 := E.hq_ge
+    have hcast : (2 : ZMod E.q) = ((2 : ℕ) : ZMod E.q) := by norm_cast
+    rw [hcast, Ne, CharP.cast_eq_zero_iff (ZMod E.q) E.q]
+    intro hdvd
+    have : E.q ≤ 2 := Nat.le_of_dvd (by norm_num) hdvd
+    omega
+  have h2yNZ : (2 * P.2 : ZMod E.q) ≠ 0 := mul_ne_zero h2NZ h2t
+  -- 2λ · P.2 = 3·P.1² + A
+  have hSlope : 2 * lam * P.2 = 3 * P.1 ^ 2 + E.curveA := by
+    show 2 * ((3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹) * P.2 = 3 * P.1 ^ 2 + E.curveA
+    field_simp
+  -- Derive: 2λμ = 3P.1² + A − 2λ²·P.1 (via μ = P.2 − λ·P.1)
+  -- Hence: A − 2λμ = -3P.1² + 2λ²·P.1.
+  -- Want: P.1² + 2 P.1 (λ² − 2 P.1) = -3P.1² + 2λ²·P.1.
+  -- LHS = P.1² + 2 λ²·P.1 − 4 P.1² = -3 P.1² + 2 λ²·P.1. ✓
+  have hMu : mu = P.2 - lam * P.1 := rfl
+  have h2lm : 2 * lam * mu = 3 * P.1 ^ 2 + E.curveA - 2 * lam ^ 2 * P.1 := by
+    show 2 * lam * (P.2 - lam * P.1) = 3 * P.1 ^ 2 + E.curveA - 2 * lam ^ 2 * P.1
+    linear_combination hSlope
+  show P.1 ^ 2 + 2 * P.1 * (lam ^ 2 - 2 * P.1)
+      = E.curveA - 2 * lam * mu
+  rw [h2lm]; ring
+
+private theorem tangent_vieta_triple
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (h2t : P.2 ≠ 0) :
+    let lam := (3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹
+    let mu := P.2 - lam * P.1
+    let x₂ := lam ^ 2 - 2 * P.1
+    P.1 ^ 2 * x₂ = mu ^ 2 - E.curveB := by
+  intro lam mu x₂
+  have hOC : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := E.hOnCurve P hP
+  have h2NZ : (2 : ZMod E.q) ≠ 0 := by
+    have hq5 : E.q ≥ 5 := E.hq_ge
+    have hcast : (2 : ZMod E.q) = ((2 : ℕ) : ZMod E.q) := by norm_cast
+    rw [hcast, Ne, CharP.cast_eq_zero_iff (ZMod E.q) E.q]
+    intro hdvd
+    have : E.q ≤ 2 := Nat.le_of_dvd (by norm_num) hdvd
+    omega
+  have h2yNZ : (2 * P.2 : ZMod E.q) ≠ 0 := mul_ne_zero h2NZ h2t
+  have hSlope : 2 * lam * P.2 = 3 * P.1 ^ 2 + E.curveA := by
+    show 2 * ((3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹) * P.2 = 3 * P.1 ^ 2 + E.curveA
+    field_simp
+  -- μ² = (P.2 − λ·P.1)² = P.2² − 2λ·P.1·P.2 + λ²·P.1²
+  -- 2λ·P.1·P.2 = (3P.1² + A)·P.1 = 3P.1³ + A·P.1
+  -- P.2² = P.1³ + A·P.1 + B
+  -- μ² = P.1³ + A·P.1 + B − 3P.1³ − A·P.1 + λ²·P.1²
+  --    = −2P.1³ + B + λ²·P.1²
+  -- μ² − B = −2P.1³ + λ²·P.1² = P.1² (λ² − 2 P.1) = P.1² · x₂. ✓
+  have h2lp1p2 : 2 * lam * P.1 * P.2 = 3 * P.1 ^ 3 + E.curveA * P.1 := by
+    linear_combination P.1 * hSlope
+  have hMu2 : mu ^ 2 = P.2 ^ 2 - 2 * lam * P.1 * P.2 + lam ^ 2 * P.1 ^ 2 := by
+    show (P.2 - lam * P.1) ^ 2 = P.2 ^ 2 - 2 * lam * P.1 * P.2 + lam ^ 2 * P.1 ^ 2
+    ring
+  show P.1 ^ 2 * (lam ^ 2 - 2 * P.1) = mu ^ 2 - E.curveB
+  rw [hMu2, hOC, h2lp1p2]; ring
+
+private theorem normPoly_chord_factor_tangent
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (h2t : P.2 ≠ 0) :
+    let lam := (3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹
+    let mu := P.2 - lam * P.1
+    let x₂ := lam ^ 2 - 2 * P.1
+    normPoly E (chordCoordRingElt E P P)
+      = -((X - C P.1) ^ 2 * (X - C x₂)) := by
+  classical
+  intro lam mu x₂
+  have hD : (chordCoordRingElt E P P).a = -(C lam) * X - C mu ∧
+            (chordCoordRingElt E P P).b = -1 := by
+    unfold chordCoordRingElt
+    rw [dif_pos rfl, dif_pos rfl, if_neg h2t]
+    refine ⟨rfl, rfl⟩
+  have hNorm : normPoly E (chordCoordRingElt E P P) =
+      (C lam * X + C mu) ^ 2 - curveX E := by
+    rw [normPoly_eq, hD.1, hD.2]
+    ring
+  rw [hNorm]
+  unfold curveX
+  have hP2 : P.1 ^ 2 + 2 * P.1 * x₂ = E.curveA - 2 * lam * mu :=
+    tangent_vieta_pairwise E hP h2t
+  have hP3 : P.1 ^ 2 * x₂ = mu ^ 2 - E.curveB :=
+    tangent_vieta_triple E hP h2t
+  have hP1 : 2 * P.1 + x₂ = lam ^ 2 := by
+    show 2 * P.1 + (lam ^ 2 - 2 * P.1) = lam ^ 2; ring
+  -- Expand both sides as polynomials and use the field-level Vieta identities.
+  -- LHS = (C lam · X + C mu)² − (X³ + C A · X + C B)
+  --     = C(λ²) X² + C(2λμ) X + C(μ²) − X³ − C A · X − C B
+  -- RHS = -(X − C P.1)²(X − C x₂)
+  --     = −X³ + C(2P.1+x₂) X² − C(P.1² + 2 P.1 x₂) X + C(P.1² · x₂)
+  -- These match coefficient-by-coefficient via Vieta.
+  have h2C : (C (2 : ZMod E.q) : (ZMod E.q)[X]) = 2 := by
+    rw [show (2 : ZMod E.q) = ((2 : ℕ) : ZMod E.q) from by norm_cast,
+        Polynomial.C_eq_natCast]
+    norm_cast
+  have hLHS_expand :
+      (C lam * X + C mu) ^ 2 - (X ^ 3 + C E.curveA * X + C E.curveB) =
+        C (lam ^ 2) * X ^ 2 + C (2 * lam * mu) * X + C (mu ^ 2)
+          - X ^ 3 - C E.curveA * X - C E.curveB := by
+    have hl2C : ((C lam : (ZMod E.q)[X]) ^ 2) = C (lam ^ 2) := by
+      rw [pow_two, ← Polynomial.C_mul, ← pow_two]
+    have hm2C : ((C mu : (ZMod E.q)[X]) ^ 2) = C (mu ^ 2) := by
+      rw [pow_two, ← Polynomial.C_mul, ← pow_two]
+    have h2lmC : (2 * C lam * C mu : (ZMod E.q)[X]) = C (2 * lam * mu) := by
+      rw [show (2 * lam * mu : ZMod E.q) = (2 : ZMod E.q) * lam * mu from rfl,
+          show C ((2 : ZMod E.q) * lam * mu) = C 2 * C lam * C mu from by
+            rw [Polynomial.C_mul, Polynomial.C_mul]]
+      rw [h2C]
+    rw [← hl2C, ← h2lmC, ← hm2C]; ring
+  have hRHS_expand :
+      -((X - C P.1) ^ 2 * (X - C x₂)) =
+        -X ^ 3 + (2 * C P.1 + C x₂) * X ^ 2
+          - (C P.1 ^ 2 + 2 * C P.1 * C x₂) * X
+          + C P.1 ^ 2 * C x₂ := by ring
+  rw [hLHS_expand, hRHS_expand]
+  -- Convert C-products on RHS to single C-applications:
+  have hP1sqC : (C P.1 ^ 2 : (ZMod E.q)[X]) = C (P.1 ^ 2) := by
+    rw [pow_two, ← Polynomial.C_mul, ← pow_two]
+  have h2P1Cx2C : (2 * C P.1 * C x₂ : (ZMod E.q)[X]) = C (2 * P.1 * x₂) := by
+    rw [Polynomial.C_mul, Polynomial.C_mul, h2C]
+  have hP1sqx2C : (C P.1 ^ 2 * C x₂ : (ZMod E.q)[X]) = C (P.1 ^ 2 * x₂) := by
+    rw [hP1sqC, ← Polynomial.C_mul]
+  have h2P1plusx2C : (2 * C P.1 + C x₂ : (ZMod E.q)[X]) = C (2 * P.1 + x₂) := by
+    rw [Polynomial.C_add, Polynomial.C_mul, h2C]
+  have hSumC :
+      (C P.1 ^ 2 + 2 * C P.1 * C x₂ : (ZMod E.q)[X])
+        = C (P.1 ^ 2 + 2 * P.1 * x₂) := by
+    rw [Polynomial.C_add, hP1sqC, h2P1Cx2C]
+  rw [h2P1plusx2C, hSumC, hP1sqx2C]
+  -- Apply the three Vieta identities (under C):
+  rw [show C (2 * P.1 + x₂ : ZMod E.q) = C (lam ^ 2) from by rw [hP1]]
+  rw [show C (P.1 ^ 2 + 2 * P.1 * x₂ : ZMod E.q)
+        = C (E.curveA - 2 * lam * mu) from by rw [hP2]]
+  rw [show C (P.1 ^ 2 * x₂ : ZMod E.q)
+        = C (mu ^ 2 - E.curveB) from by rw [hP3]]
+  -- Now everything is in the same form; close with C-distribution + ring.
+  rw [show C (E.curveA - 2 * lam * mu : ZMod E.q)
+        = C E.curveA - C (2 * lam * mu) from by rw [Polynomial.C_sub]]
+  rw [show C (mu ^ 2 - E.curveB : ZMod E.q) = C (mu ^ 2) - C E.curveB from by
+        rw [Polynomial.C_sub]]
+  ring
+
+theorem splitsOnE_chordCoordRingElt_tangent
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (h2t : P.2 ≠ 0) :
+    splitsOnE E (chordCoordRingElt E P P) := by
+  classical
+  set lam := (3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹ with hlam
+  set x₂ := lam ^ 2 - 2 * P.1 with hx₂
+  have hFactor := normPoly_chord_factor_tangent E hP h2t
+  simp only [← hlam, ← hx₂] at hFactor
+  refine ⟨?_, ?_⟩
+  · show Multiset.card (normPoly E _).roots = (normPoly E _).natDegree
+    rw [hFactor, natDegree_neg]
+    have hSq : (X - C P.1 : (ZMod E.q)[X]) ^ 2 ≠ 0 := pow_ne_zero _ (X_sub_C_ne_zero _)
+    have hX2 : (X - C x₂ : (ZMod E.q)[X]) ≠ 0 := X_sub_C_ne_zero _
+    rw [Polynomial.roots_neg, Polynomial.roots_mul (mul_ne_zero hSq hX2),
+        Polynomial.roots_pow, Polynomial.roots_X_sub_C, Polynomial.roots_X_sub_C]
+    have hND : ((X - C P.1) ^ 2 * (X - C x₂) : (ZMod E.q)[X]).natDegree = 3 := by
+      rw [natDegree_mul hSq hX2, natDegree_pow, natDegree_X_sub_C, natDegree_X_sub_C]
+    rw [hND]
+    simp
+  · intro α hα
+    rw [hFactor] at hα
+    have hSq : (X - C P.1 : (ZMod E.q)[X]) ^ 2 ≠ 0 := pow_ne_zero _ (X_sub_C_ne_zero _)
+    have hX2 : (X - C x₂ : (ZMod E.q)[X]) ≠ 0 := X_sub_C_ne_zero _
+    rw [Polynomial.roots_neg, Polynomial.roots_mul (mul_ne_zero hSq hX2),
+        Polynomial.roots_pow, Polynomial.roots_X_sub_C, Polynomial.roots_X_sub_C] at hα
+    rcases Multiset.mem_add.mp hα with h12 | h3
+    · have h_eq : (2 • ({P.1} : Multiset (ZMod E.q))) = {P.1, P.1} := rfl
+      rw [h_eq] at h12
+      rcases Multiset.mem_cons.mp h12 with h | h
+      · exact ⟨P.2, by rw [h]; exact hP⟩
+      · exact ⟨P.2, by rw [Multiset.mem_singleton.mp h]; exact hP⟩
+    · -- α = x₂; the third intersection is on E.
+      rw [Multiset.mem_singleton.mp h3]
+      -- Use the doubling-third-intersection-on-E claim.
+      -- y₂ = λ·x₂ + μ where μ = P.2 - λ·P.1.
+      set mu := P.2 - lam * P.1 with hmu
+      have hOC : (lam * x₂ + mu) ^ 2 = x₂ ^ 3 + E.curveA * x₂ + E.curveB := by
+        -- Use Vieta's: from `tangent_vieta_pairwise` and `tangent_vieta_triple`,
+        -- (λ·x₂ + μ)² simplifies. Actually easier: just verify (λx + μ)² − (x³+Ax+B) = 0 at x=x₂.
+        -- Since normPoly = -(X-P.1)²(X-x₂), normPoly evaluated at x₂ is 0.
+        -- normPoly = (C λ X + C μ)² - curveX, so eval x₂ gives (λx₂+μ)² − (x₂³+Ax₂+B) = 0.
+        have hRoot :
+            ((C lam * X + C mu) ^ 2 - curveX E).eval x₂ = 0 := by
+          have hRefactor : (C lam * X + C mu) ^ 2 - curveX E
+              = normPoly E (chordCoordRingElt E P P) := by
+            rw [normPoly_eq]
+            unfold chordCoordRingElt
+            rw [dif_pos rfl, dif_pos rfl, if_neg h2t]
+            ring
+          rw [hRefactor, hFactor]
+          simp [Polynomial.eval_neg, Polynomial.eval_mul, Polynomial.eval_pow,
+                Polynomial.eval_sub, Polynomial.eval_C, Polynomial.eval_X]
+        unfold curveX at hRoot
+        simp only [Polynomial.eval_sub, Polynomial.eval_pow, Polynomial.eval_add,
+                   Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_X] at hRoot
+        linear_combination hRoot
+      exact ⟨lam * x₂ + mu, E.hComplete _ _ hOC⟩
+
 /-! ## Multiplication of `CoordRingElt`s in `F_q[E]`
 
 `F_q[E] = F_q[X,Y]/(Y² - X³ - AX - B)` admits multiplication by reducing
