@@ -871,6 +871,68 @@ theorem chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_splits
     (resultant_chordCubicBiv_pmap_C_natDegree_of_splits E lam p hpm hsplit)
     hIH
 
+/-! ### natDegree-inequality step
+
+When proving the natDegree *bound* `chord_fiber_product.natDegree ≤
+normPoly.natDegree`, the inductive step is structurally identical to
+the equality version but uses `Polynomial.natDegree_mul_le` (always
+holds) in place of `Polynomial.natDegree_mul` (requires nonzero
+factors). This is the form needed by the squeeze helper. -/
+
+/-- **General-monic inductive natDegree-inequality step.** Given the
+inequality at the divLin-recursive child `D'` and a monic common
+divisor `p`, the inequality at `D` follows. -/
+theorem chord_fiber_product_concrete_natDegree_le_normPoly_natDegree_step_monic
+    (lam : ZMod E.q) (D : CoordRingElt E.q) (p : Polynomial (ZMod E.q))
+    (hpm : p.Monic) (hpa : p ∣ D.a) (hpb : p ∣ D.b)
+    (hD'ne : ¬ ((D.a /ₘ p) = 0 ∧ (D.b /ₘ p) = 0))
+    (hIH : (chord_fiber_product_concrete E lam
+              { a := D.a /ₘ p, b := D.b /ₘ p }).natDegree
+            ≤ (normPoly E
+                { a := D.a /ₘ p, b := D.b /ₘ p }).natDegree) :
+    (chord_fiber_product_concrete E lam D).natDegree
+      ≤ (normPoly E D).natDegree := by
+  classical
+  have hDLne : DLineBiv E lam
+                { a := D.a /ₘ p, b := D.b /ₘ p } ≠ 0 :=
+    DLineBiv_ne_zero E lam _ hD'ne
+  have hRES_natDegree :=
+    resultant_chordCubicBiv_pmap_C_natDegree_of_monic E lam p hpm
+  rw [chord_fiber_product_concrete_eq_resPmap_mul_of_div E lam D p hpm hpa hpb hDLne]
+  set RES := Polynomial.resultant (chordCubicBiv E lam)
+              (p.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
+              (chordCubicBiv E lam).natDegree p.natDegree with hRES
+  -- LHS bound: natDegree(RES * chord_fiber_product D') ≤ RES.natDegree + (cfp D').natDegree.
+  have hMul_le := Polynomial.natDegree_mul_le
+                    (p := RES)
+                    (q := chord_fiber_product_concrete E lam
+                              { a := D.a /ₘ p, b := D.b /ₘ p })
+  -- RHS structure: normPoly D = p² · normPoly D'.
+  have hNorm_eq := normPoly_eq_p_sq_mul_of_div E D p hpm hpa hpb
+  have hp_ne : p ≠ 0 := hpm.ne_zero
+  have hp_pow_ne : p^2 ≠ 0 := pow_ne_zero _ hp_ne
+  have hNormD'_ne : normPoly E { a := D.a /ₘ p, b := D.b /ₘ p } ≠ 0 :=
+    normPoly_ne_zero E _ hD'ne
+  have hNorm_natDegree :
+      (normPoly E D).natDegree
+        = 2 * p.natDegree
+          + (normPoly E { a := D.a /ₘ p, b := D.b /ₘ p }).natDegree := by
+    rw [hNorm_eq, Polynomial.natDegree_mul hp_pow_ne hNormD'_ne,
+        Polynomial.natDegree_pow]
+  rw [hNorm_natDegree]
+  calc (RES * chord_fiber_product_concrete E lam
+          { a := D.a /ₘ p, b := D.b /ₘ p }).natDegree
+      ≤ RES.natDegree
+          + (chord_fiber_product_concrete E lam
+              { a := D.a /ₘ p, b := D.b /ₘ p }).natDegree := hMul_le
+    _ = 2 * p.natDegree
+          + (chord_fiber_product_concrete E lam
+              { a := D.a /ₘ p, b := D.b /ₘ p }).natDegree := by
+            rw [hRES_natDegree]
+    _ ≤ 2 * p.natDegree
+          + (normPoly E { a := D.a /ₘ p, b := D.b /ₘ p }).natDegree := by
+            exact Nat.add_le_add_left hIH _
+
 /-- **Combinator**: inductive natDegree-equality step for *any* monic `p`
 (no splits hypothesis). Combines `_step_general'` with the
 splitting-field-derived natDegree formula `_of_monic`. -/
