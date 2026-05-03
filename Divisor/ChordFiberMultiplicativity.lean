@@ -699,4 +699,22 @@ theorem chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_X_sub_
     (resultant_chordCubicBiv_pmap_C_natDegree_of_eq_X_sub_C_pow E lam x₀ k _ rfl)
     hIH
 
+/-- **Combinator**: inductive natDegree-equality step for any monic `p`
+that splits over `ZMod E.q`. Combines `_step_general'` with the
+`_of_splits` natDegree formula. -/
+theorem chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_splits
+    (lam : ZMod E.q) (D : CoordRingElt E.q) (p : Polynomial (ZMod E.q))
+    (hpm : p.Monic) (hsplit : p.Splits) (hpa : p ∣ D.a) (hpb : p ∣ D.b)
+    (hD'ne : ¬ ((D.a /ₘ p) = 0 ∧ (D.b /ₘ p) = 0))
+    (hIH : (chord_fiber_product_concrete E lam
+              { a := D.a /ₘ p, b := D.b /ₘ p }).natDegree
+            = (normPoly E
+                { a := D.a /ₘ p, b := D.b /ₘ p }).natDegree) :
+    (chord_fiber_product_concrete E lam D).natDegree
+      = (normPoly E D).natDegree :=
+  chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_general'
+    E lam D p hpm hpa hpb hD'ne
+    (resultant_chordCubicBiv_pmap_C_natDegree_of_splits E lam p hpm hsplit)
+    hIH
+
 end Divisor
