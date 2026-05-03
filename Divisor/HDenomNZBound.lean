@@ -128,4 +128,33 @@ theorem badA₂Mod_card_mul_card_sub_two_le
           Finset.sum_le_sum (fun A₀ _ => hfiber A₀)
   exact hT_card_ge.trans (hT_le_S.trans hS_bound)
 
+/-! ### Witness-form discharge of `hDenomNZ`
+
+The existing theorem `denomScaledPoly_modCurve_ne_zero` discharges
+`hDenomNZ` when there is a witness `A₁` for which the verifier's
+denominator is defined. The version here packages this for
+hypothesis-discharge use: if the count of "totally bad" `A₀` (every
+`A₁ ∈ E.points` makes the verifier's denominator vanish) is small,
+then for "most" `A₀` the witness exists and `hDenomNZ` holds. -/
+
+/-- **Discharge tool for `hDenomNZ` via witness existence.**
+
+For each `A₀ ∈ E.points` satisfying the standard preconditions,
+`hDenomNZ A₀ _ _ _` reduces to "there exists `A₁ ∈ E.points` with
+`A₀.1 ≠ A₁.1` and `logDerivCheckFnDefined E D P B A₀ A₁`". The witness
+existence in turn follows whenever the count of "bad" `A₁` is strictly
+less than `|E.points| - 2`.
+
+This packages `denomScaledPoly_modCurve_ne_zero` so callers can
+discharge `hDenomNZ` from a "bad fiber count" upper bound rather than
+from a per-`A₀` polynomial-non-vanishing argument. -/
+theorem hDenomNZ_of_witness_exists
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q) (A₀ : ZMod E.q × ZMod E.q)
+    (hWitness : ∃ A₁ ∈ E.points, A₀.1 ≠ A₁.1 ∧
+                  logDerivCheckFnDefined E D P B A₀ A₁) :
+    denomScaledPoly (E := E) D P k B A₀ %ₘ curveEqPoly E ≠ 0 :=
+  denomScaledPoly_modCurve_ne_zero E D P k B A₀ hWitness
+
 end Divisor
+
