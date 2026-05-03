@@ -593,6 +593,46 @@ The Sylvester sum-bound is the substantive remaining work: a
 `Matrix.det_apply`-style expansion that tracks the index sum
 `Σ_j (σ j - j_offset) = m·n` and applies the per-column weight bounds. -/
 
+/-! ### Sylvester column offsets and index-sum identity
+
+Combinatorial helpers for the determinant analysis. -/
+
+/-- The column offset for the Sylvester matrix `sylvester f g m n`:
+- For `j` in the first `m` columns (g-columns), `off j = j.val`.
+- For `j` in the last `n` columns (f-columns), `off j = j.val - m`.
+This corresponds to the shift `j₁` used in the matrix definition. -/
+private noncomputable def sylvesterOff (m n : ℕ) (j : Fin (m + n)) : ℕ :=
+  j.addCases (motive := fun _ => ℕ) (fun j₁ : Fin m => j₁.val) (fun j₁ : Fin n => j₁.val)
+
+/-- **Sum of Sylvester column offsets** equals `m(m-1)/2 + n(n-1)/2`. -/
+private lemma sum_sylvesterOff_eq
+    (m n : ℕ) :
+    (∑ j : Fin (m + n), sylvesterOff m n j)
+      = m * (m - 1) / 2 + n * (n - 1) / 2 := by
+  classical
+  rw [Fintype.sum_equiv finSumFinEquiv.symm
+        (sylvesterOff m n)
+        (fun j => sylvesterOff m n (finSumFinEquiv j))
+        (fun x => by simp)]
+  rw [Fintype.sum_sum_type]
+  congr 1
+  · have h1 : ∀ j₁ : Fin m,
+        sylvesterOff m n (finSumFinEquiv (Sum.inl j₁)) = j₁.val := by
+      intro j₁
+      simp [sylvesterOff, finSumFinEquiv, Fin.addCases]
+    rw [show (∑ j₁ : Fin m, sylvesterOff m n (finSumFinEquiv (Sum.inl j₁)))
+          = ∑ j₁ : Fin m, j₁.val from
+          Finset.sum_congr rfl (fun j₁ _ => h1 j₁)]
+    rw [Fin.sum_univ_eq_sum_range (fun i => i), Finset.sum_range_id]
+  · have h2 : ∀ j₁ : Fin n,
+        sylvesterOff m n (finSumFinEquiv (Sum.inr j₁)) = j₁.val := by
+      intro j₁
+      simp [sylvesterOff, finSumFinEquiv, Fin.addCases]
+    rw [show (∑ j₁ : Fin n, sylvesterOff m n (finSumFinEquiv (Sum.inr j₁)))
+          = ∑ j₁ : Fin n, j₁.val from
+          Finset.sum_congr rfl (fun j₁ _ => h2 j₁)]
+    rw [Fin.sum_univ_eq_sum_range (fun i => i), Finset.sum_range_id]
+
 theorem chord_fiber_product_concrete_natDegree_le_normPoly_natDegree
     (lam : ZMod E.q) (D : CoordRingElt E.q)
     (_hD : ¬ (D.a = 0 ∧ D.b = 0)) :
