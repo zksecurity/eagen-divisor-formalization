@@ -406,6 +406,136 @@ theorem splitsOnE_chordCoordRingElt_vertical
     rw [this]
     exact ⟨P.2, hP⟩
 
+/-! ## `splitsOnE` for the chord case
+
+Vieta's formulas on the chord-line cubic `(λX+μ)² − (X³+AX+B)` give
+
+  `(λX+μ)² − (X³+AX+B) = −(X − P.1)(X − Q.1)(X − x₂)`
+
+where `x₂ = λ² − P.1 − Q.1`. Hence the roots multiset is
+`{P.1, Q.1, x₂}`, splitting over `F_q`. Each root has an `F_q`-point
+above it (`P`, `Q`, `chord_third_point_on_E`). -/
+
+private theorem normPoly_chord_factor_chord
+    (P Q : ZMod E.q × ZMod E.q)
+    (hP : P ∈ E.points) (hQ : Q ∈ E.points) (hxx : P.1 ≠ Q.1) :
+    let lam := slopeOf P.1 P.2 Q.1 Q.2
+    let x₂ := lam ^ 2 - P.1 - Q.1
+    normPoly E (chordCoordRingElt E P Q)
+      = -((X - C P.1) * (X - C Q.1) * (X - C x₂)) := by
+  classical
+  intro lam x₂
+  set mu := P.2 - lam * P.1 with hmuDef
+  -- chordCoordRingElt P Q in chord branch = { a := -(C lam) X - C mu, b := -1 }
+  have hD : (chordCoordRingElt E P Q).a = -(C lam) * X - C mu ∧
+            (chordCoordRingElt E P Q).b = -1 := by
+    unfold chordCoordRingElt
+    rw [dif_neg hxx]
+    refine ⟨rfl, rfl⟩
+  -- normPoly = a² - b² · curveX = (lam X + mu)² - curveX
+  have hNorm : normPoly E (chordCoordRingElt E P Q) =
+      (C lam * X + C mu) ^ 2 - curveX E := by
+    rw [normPoly_eq, hD.1, hD.2]
+    ring
+  rw [hNorm]
+  unfold curveX
+  -- Vieta hypotheses.
+  have he₁ : P.1 + Q.1 + x₂ = lam ^ 2 := by
+    show P.1 + Q.1 + (lam ^ 2 - P.1 - Q.1) = lam ^ 2; ring
+  have he₂ : P.1 * Q.1 + P.1 * x₂ + Q.1 * x₂ = E.curveA - 2 * lam * mu := by
+    have := chord_x_pairwise_sum E P Q hP hQ hxx
+    -- this uses lam (slopeOf), mu (= P.2 - lam · P.1), x₂ as in the theorem.
+    -- Match my x₂ and mu definitions.
+    show P.1 * Q.1 + P.1 * x₂ + Q.1 * x₂ = E.curveA - 2 * lam * mu
+    convert this using 2 <;> rfl
+  have he₃ : P.1 * Q.1 * x₂ = mu ^ 2 - E.curveB := by
+    have := chord_x_triple_product E P Q hP hQ hxx
+    show P.1 * Q.1 * x₂ = mu ^ 2 - E.curveB
+    convert this using 2 <;> rfl
+  -- Now: (C lam · X + C mu)² − (X³ + C A · X + C B)
+  --   = -((X - C P.1)(X - C Q.1)(X - C x₂))
+  -- Expand the RHS first, in terms of e₁, e₂, e₃.
+  have hRHS_expand :
+      -((X - C P.1) * (X - C Q.1) * (X - C x₂)) =
+        -X ^ 3 + (C P.1 + C Q.1 + C x₂) * X ^ 2
+          - (C P.1 * C Q.1 + C P.1 * C x₂ + C Q.1 * C x₂) * X
+          + C P.1 * C Q.1 * C x₂ := by ring
+  rw [hRHS_expand]
+  -- Convert C-products to single C of products.
+  have hPQs : C P.1 + C Q.1 + C x₂ = C (P.1 + Q.1 + x₂) := by
+    rw [Polynomial.C_add, Polynomial.C_add]
+  have hPQp : C P.1 * C Q.1 + C P.1 * C x₂ + C Q.1 * C x₂
+      = C (P.1 * Q.1 + P.1 * x₂ + Q.1 * x₂) := by
+    rw [Polynomial.C_add, Polynomial.C_add, Polynomial.C_mul, Polynomial.C_mul,
+        Polynomial.C_mul]
+  have hPQt : C P.1 * C Q.1 * C x₂ = C (P.1 * Q.1 * x₂) := by
+    rw [Polynomial.C_mul, Polynomial.C_mul]
+  rw [hPQs, hPQp, hPQt, he₁, he₂, he₃]
+  -- Now both sides are C-applied polynomial identities.
+  -- LHS: (C lam · X + C mu)² - (X³ + C A · X + C B)
+  -- RHS: -X³ + C(λ²) X² - C(A - 2λμ) X + C(μ² - B)
+  -- expand using Polynomial.C and ring.
+  rw [show C (lam ^ 2) = C lam * C lam from by rw [pow_two, Polynomial.C_mul]]
+  rw [show C (E.curveA - 2 * lam * mu) = C E.curveA - 2 * C lam * C mu from by
+        have h2 : (C (2 : ZMod E.q) : (ZMod E.q)[X]) = 2 := by
+          rw [show (2 : ZMod E.q) = ((2 : ℕ) : ZMod E.q) from by norm_cast,
+              Polynomial.C_eq_natCast]
+          norm_cast
+        rw [Polynomial.C_sub, Polynomial.C_mul, Polynomial.C_mul, h2]]
+  rw [show C (mu ^ 2 - E.curveB) = C mu * C mu - C E.curveB from by
+        rw [Polynomial.C_sub, pow_two, Polynomial.C_mul]]
+  ring
+
+theorem splitsOnE_chordCoordRingElt_chord
+    (P Q : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (hxx : P.1 ≠ Q.1) :
+    splitsOnE E (chordCoordRingElt E P Q) := by
+  classical
+  set lam := slopeOf P.1 P.2 Q.1 Q.2 with hlam
+  set mu := P.2 - lam * P.1 with hmu
+  set x₂ := lam ^ 2 - P.1 - Q.1 with hx₂
+  -- Use the factored form for the roots multiset.
+  have hFactor := normPoly_chord_factor_chord E P Q hP hQ hxx
+  simp only [← hlam, ← hmu, ← hx₂] at hFactor
+  refine ⟨?_, ?_⟩
+  · -- splits: card roots = natDegree
+    show Multiset.card (normPoly E _).roots = (normPoly E _).natDegree
+    rw [hFactor]
+    rw [natDegree_neg]
+    have hMul1 : (X - C P.1 : (ZMod E.q)[X]) * (X - C Q.1) ≠ 0 :=
+      mul_ne_zero (X_sub_C_ne_zero _) (X_sub_C_ne_zero _)
+    have hX2 : (X - C x₂ : (ZMod E.q)[X]) ≠ 0 := X_sub_C_ne_zero _
+    rw [Polynomial.roots_neg]
+    rw [Polynomial.roots_mul (mul_ne_zero hMul1 hX2)]
+    rw [Polynomial.roots_mul hMul1]
+    rw [Polynomial.roots_X_sub_C, Polynomial.roots_X_sub_C, Polynomial.roots_X_sub_C]
+    rw [show ((X - C P.1) * (X - C Q.1) * (X - C x₂) : (ZMod E.q)[X]).natDegree = 3 from ?_]
+    · simp [Multiset.card_add]
+    · rw [natDegree_mul hMul1 hX2, natDegree_mul (X_sub_C_ne_zero _) (X_sub_C_ne_zero _),
+          natDegree_X_sub_C, natDegree_X_sub_C, natDegree_X_sub_C]
+  · -- Every root lifts to an F_q-point
+    intro α hα
+    rw [hFactor] at hα
+    rw [Polynomial.roots_neg] at hα
+    have hMul1 : (X - C P.1 : (ZMod E.q)[X]) * (X - C Q.1) ≠ 0 :=
+      mul_ne_zero (X_sub_C_ne_zero _) (X_sub_C_ne_zero _)
+    have hX2 : (X - C x₂ : (ZMod E.q)[X]) ≠ 0 := X_sub_C_ne_zero _
+    rw [Polynomial.roots_mul (mul_ne_zero hMul1 hX2)] at hα
+    rw [Polynomial.roots_mul hMul1] at hα
+    rw [Polynomial.roots_X_sub_C, Polynomial.roots_X_sub_C, Polynomial.roots_X_sub_C] at hα
+    -- hα : α ∈ {P.1} + {Q.1} + {x₂}
+    rcases Multiset.mem_add.mp hα with h12 | h3
+    · rcases Multiset.mem_add.mp h12 with h1 | h2
+      · exact ⟨P.2, by rw [Multiset.mem_singleton.mp h1]; exact hP⟩
+      · exact ⟨Q.2, by rw [Multiset.mem_singleton.mp h2]; exact hQ⟩
+    · -- α = x₂; lift via chord_third_point_on_E
+      rw [Multiset.mem_singleton.mp h3]
+      have hOC : (lam * x₂ + mu) ^ 2 = x₂ ^ 3 + E.curveA * x₂ + E.curveB := by
+        have := chord_third_point_on_E E P Q hP hQ hxx
+        simp only [← hlam, ← hx₂] at this
+        convert this using 2
+      exact ⟨lam * x₂ + mu, E.hComplete _ _ hOC⟩
+
 /-! ## Multiplication of `CoordRingElt`s in `F_q[E]`
 
 `F_q[E] = F_q[X,Y]/(Y² - X³ - AX - B)` admits multiplication by reducing
