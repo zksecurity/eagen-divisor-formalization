@@ -239,4 +239,20 @@ theorem natDegree_norm_toCoordinateRing_le_degE
   rw [norm_toCoordinateRing_eq_normPoly]
   exact normPoly_natDegree_le E D
 
+/-- The image of `D.toCoordinateRing` in `FunctionField` is nonzero
+whenever `D` has a nonzero polynomial component. Routes through
+`IsFractionRing.to_map_ne_zero_of_mem_nonZeroDivisors` /
+`map_eq_zero_iff` (the algebra map from a domain to its fraction
+ring is injective). -/
+theorem algebraMap_toCoordinateRing_ne_zero
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    (algebraMap E.toW.toAffine.CoordinateRing E.toW.toAffine.FunctionField)
+        (D.toCoordinateRing E) ≠ 0 := by
+  intro h
+  apply CoordRingElt.toCoordinateRing_ne_zero E D hD
+  have := IsFractionRing.injective E.toW.toAffine.CoordinateRing
+            E.toW.toAffine.FunctionField
+  apply this
+  rw [h, map_zero]
+
 end Divisor
