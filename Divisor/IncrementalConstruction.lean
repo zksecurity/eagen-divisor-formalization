@@ -1184,6 +1184,113 @@ theorem chord_ordAt_eq_one_at_tangent_third
   show f A₂ = 1
   omega
 
+/-! ## Vertical line `ordAt` exact multiplicities
+
+For the vertical branch:
+* If P.2 ≠ 0 (so Q = -P with both off 2-torsion), ordAt = 1 at P and 1 at Q = (P.1, -P.2).
+* If P.2 = 0 (P = Q = (x₀, 0) is 2-torsion), ordAt = 2 at P.
+-/
+
+theorem chord_ordAt_eq_one_at_vertical_inverse
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (h2t : P.2 ≠ 0) :
+    (P.1, -P.2) ∈ E.points ∧
+    ordAt E (chordCoordRingElt E P (P.1, -P.2)) P = 1 ∧
+    ordAt E (chordCoordRingElt E P (P.1, -P.2)) (P.1, -P.2) = 1 := by
+  classical
+  set Q : ZMod E.q × ZMod E.q := (P.1, -P.2) with hQdef
+  -- Q on E.
+  have hQ : Q ∈ E.points := by
+    apply E.hComplete
+    have hOC : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := E.hOnCurve P hP
+    show (-P.2) ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB
+    linear_combination hOC
+  -- D = (X - C P.1, 0) since P ≠ Q (Q.2 = -P.2 ≠ P.2).
+  have hQ_ne_P : Q.2 ≠ P.2 := by
+    show (-P.2) ≠ P.2
+    intro h
+    have : (2 : ZMod E.q) * P.2 = 0 := by linear_combination -h
+    have h2NZ : (2 : ZMod E.q) ≠ 0 := by
+      have hq5 : E.q ≥ 5 := E.hq_ge
+      have hcast : (2 : ZMod E.q) = ((2 : ℕ) : ZMod E.q) := by norm_cast
+      rw [hcast, Ne, CharP.cast_eq_zero_iff (ZMod E.q) E.q]
+      intro hdvd
+      have : E.q ≤ 2 := Nat.le_of_dvd (by norm_num) hdvd
+      omega
+    rcases mul_eq_zero.mp this with h | h
+    · exact h2NZ h
+    · exact h2t h
+  have hDeq : chordCoordRingElt E P Q
+      = ({ a := X - C P.1, b := 0 } : CoordRingElt E.q) := by
+    unfold chordCoordRingElt
+    rw [dif_pos rfl]
+    rw [dif_neg (Ne.symm hQ_ne_P)]
+  -- normPoly = (X - C P.1)^2; rootMultiplicity P.1 = 2.
+  have hRootMult :
+      Polynomial.rootMultiplicity P.1 (normPoly E (chordCoordRingElt E P Q)) = 2 := by
+    rw [hDeq, normPoly_chordCoordRingElt_vertical, Polynomial.rootMultiplicity_X_sub_C_pow]
+  -- ordAt > 0 at P and Q (D vanishes at both since they share x-coord with P.1).
+  have hNZ := chordCoordRingElt_ne_zero E P Q
+  have hZP : (chordCoordRingElt E P Q).eval P.1 P.2 = 0 :=
+    chordCoordRingElt_eval_left E P Q
+  have hZQ : (chordCoordRingElt E P Q).eval Q.1 Q.2 = 0 :=
+    chordCoordRingElt_eval_right E P Q
+  have hOrdP_pos : 0 < ordAt E (chordCoordRingElt E P Q) P :=
+    (ordAt_pos_iff_zero E _ hNZ P hP).mpr hZP
+  have hOrdQ_pos : 0 < ordAt E (chordCoordRingElt E P Q) Q :=
+    (ordAt_pos_iff_zero E _ hNZ Q hQ).mpr hZQ
+  -- ordAt is at non-2-torsion (P.2 ≠ 0); apply pair sum.
+  have hPair := ordAt_nonTwoTorsion_pair_eq_rootMult E (chordCoordRingElt E P Q) hNZ hP h2t
+  -- Pair sum hPair: ordAt_nonTwoTorsion E D P + ordAt_nonTwoTorsion E D (P.1, -P.2)
+  --                = rootMultiplicity P.1 (normPoly E D) = 2.
+  -- Q = (P.1, -P.2), so the second term is ordAt_nonTwoTorsion at Q.
+  -- For P.2 ≠ 0, ordAt = ordAt_nonTwoTorsion via dispatch.
+  rw [ordAt_eq_dispatch E _ hP hNZ, if_neg h2t] at *
+  have hQ2 : Q.2 ≠ 0 := by
+    show (-P.2) ≠ 0
+    intro h
+    apply h2t
+    linear_combination -h
+  rw [ordAt_eq_dispatch E _ hQ hNZ, if_neg hQ2] at hOrdQ_pos
+  rw [hRootMult] at hPair
+  -- Make all references to chordCoordRingElt use the same form.
+  -- After dispatch, hPair has ordAt_nonTwoTorsion E (chordCoordRingElt E P Q) P
+  -- + ordAt_nonTwoTorsion E (chordCoordRingElt E P Q) (P.1, -P.2) = 2.
+  -- We need Q normalized to (P.1, -P.2) in all places.
+  -- Goals are already in ordAt_nonTwoTorsion form (rewritten by `rw ... at *`).
+  -- We have hPair: ordAt_nonTwoTorsion E ... P + ordAt_nonTwoTorsion E ... (P.1, -P.2) = 2.
+  -- Need to combine with Q = (P.1, -P.2) defeq.
+  have hPair_form : ordAt_nonTwoTorsion E (chordCoordRingElt E P Q) P
+      + ordAt_nonTwoTorsion E (chordCoordRingElt E P Q) Q = 2 := by
+    rw [hQdef]; exact hPair
+  -- Force omega to see hOrdP_pos, hOrdQ_pos as `≥ 1`.
+  have hP1 : 1 ≤ ordAt_nonTwoTorsion E (chordCoordRingElt E P Q) P := hOrdP_pos
+  have hQ1 : 1 ≤ ordAt_nonTwoTorsion E (chordCoordRingElt E P Q) Q := hOrdQ_pos
+  refine ⟨hQ, ?_, ?_⟩
+  · -- Goal at P: already in ordAt_nonTwoTorsion form.
+    show ordAt_nonTwoTorsion E (chordCoordRingElt E P Q) P = 1
+    omega
+  · -- Goal at Q: still in raw ordAt form.
+    rw [ordAt_eq_dispatch E _ hQ hNZ, if_neg hQ2]
+    omega
+
+theorem chord_ordAt_eq_two_at_2torsion_doubling
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (h2t : P.2 = 0) :
+    ordAt E (chordCoordRingElt E P P) P = 2 := by
+  classical
+  -- D = (X - C P.1, 0).
+  have hDeq : chordCoordRingElt E P P
+      = ({ a := X - C P.1, b := 0 } : CoordRingElt E.q) := by
+    unfold chordCoordRingElt
+    rw [dif_pos rfl, dif_pos rfl, if_pos h2t]
+  have hNZ := chordCoordRingElt_ne_zero E P P
+  -- 2-torsion dispatch.
+  rw [ordAt_eq_dispatch E _ hP hNZ, if_pos h2t]
+  -- ordAt_twoTorsion_eq_rootMult_normPoly.
+  rw [ordAt_twoTorsion_eq_rootMult_normPoly E _ hNZ hP h2t]
+  -- rootMult P.1 (normPoly) = 2 (since normPoly = (X-P.1)²).
+  rw [hDeq, normPoly_chordCoordRingElt_vertical,
+      Polynomial.rootMultiplicity_X_sub_C_pow]
+
 /-! ## Multiplication of `CoordRingElt`s in `F_q[E]`
 
 `F_q[E] = F_q[X,Y]/(Y² - X³ - AX - B)` admits multiplication by reducing
