@@ -208,6 +208,12 @@ theorem ECPoint.affine_y_zero_eq_neg (E : ECSetup) (x : ZMod E.q) :
     -(ECPoint.affine E x 0 : ECPoint E) = ECPoint.affine E x 0 := by
   rw [ECPoint.affine_neg E x 0, neg_zero]
 
+/-- An affine point at `(x, 0)` is 2-torsion: `P + P = 0`. -/
+theorem ECPoint.affine_y_zero_add_self_eq_zero (E : ECSetup) (x : ZMod E.q) :
+    (ECPoint.affine E x 0 : ECPoint E) + ECPoint.affine E x 0 = 0 := by
+  rw [add_eq_zero_iff_eq_neg]
+  exact (ECPoint.affine_y_zero_eq_neg E x).symm
+
 /-- Left cancellation. -/
 theorem ECPoint.add_left_cancel (E : ECSetup) {p a b : ECPoint E}
     (h : p + a = p + b) : a = b :=
