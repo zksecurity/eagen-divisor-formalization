@@ -1416,6 +1416,43 @@ theorem ordAt_group_sum_zero_of_b_zero
     show ((P.1, -P.2).1, -(P.1, -P.2).2) = P
     simp
 
+/-- **Divisor-class trivial for D.b = 0** (axiom-free, sub-case): the
+divisorClass of `divisorOfD E D` is zero whenever `D = (a, 0)` is a
+polynomial in `X`. This is the genuine sub-case discharge — the
+divisor-class axiom is *not* used.
+
+Proof: bridge the affine weighted-sum cancellation
+`ordAt_group_sum_zero_of_b_zero` through the cover and back to
+`divisorClass` via `Point.toClass`. -/
+theorem divisorClass_eq_zero_of_b_zero
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) (hb : D.b = 0) :
+    divisorClass E (divisorOfD E D) (divisorOfD_finiteSupport E D) = 0 := by
+  classical
+  -- Step 1: affine weighted sum is zero (my new theorem).
+  have hSum := ordAt_group_sum_zero_of_b_zero E D hD hb
+  -- Step 2: bridge to cover sum.
+  have hCover : ECPoint.weightedSum E (divisorOfD_cover E)
+        (fun P => ECPoint.zsmul E (divisorOfD E D P) P) = 0 := by
+    rw [weightedSum_divisorOfD_cover_eq]
+    exact hSum
+  -- Step 3: weighted sum over h.toFinset = 0 (extending by zero).
+  have hFinSup : Set.Finite (Function.support (divisorOfD E D)) :=
+    divisorOfD_finiteSupport E D
+  have hSubFS : hFinSup.toFinset ⊆ divisorOfD_cover E := by
+    intro P hP
+    rw [Set.Finite.mem_toFinset] at hP
+    exact divisorOfD_support_subset_cover E D hP
+  have hSupSum : ECPoint.weightedSum E hFinSup.toFinset
+      (fun P => ECPoint.zsmul E (divisorOfD E D P) P) = 0 := by
+    rw [← hCover]
+    rw [ECPoint.weightedSum_subset_of_zero_outside E hSubFS
+          (fun P _ hPnotSup => by
+            rw [Set.Finite.mem_toFinset, Function.mem_support, not_not]
+              at hPnotSup
+            rw [hPnotSup]; exact ECPoint.zsmul_zero E P)]
+  -- Step 4: divisorClass = Point.toClass(weightedSum_h.toFinset) = 0.
+  rw [divisorClass_eq_toClass_weightedSum, hSupSum, map_zero]
+
 /-! ## Section 8: discharge `exists_divisor_multiplicity` -/
 
 /-- ECPoint-indexed version of the true affine divisor multiplicity.
