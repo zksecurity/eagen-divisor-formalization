@@ -848,6 +848,107 @@ theorem sum_ordAt_chordCoordRingElt_vertical
   rw [hD]
   exact natDegree_normPoly_chordCoordRingElt_vertical E _
 
+/-! ## Chord-line `ordAt` exact multiplicities (distinct chord case)
+
+Combining the total mass = 3 with support ⊆ {P, Q, A₂} (from
+`chordCoordRingElt_zeros_on_E_chord`), positivity at each support point
+(from `ordAt_pos_iff_zero` plus the evaluation lemmas), and pairwise
+distinctness, yields `ordAt = 1` at each of `P`, `Q`, `A₂`. -/
+
+/-- For the chord branch with three pairwise-distinct intersection
+    points, `ordAt = 1` at each of `P`, `Q`, and the third intersection. -/
+theorem chord_ordAt_eq_one_at_distinct_chord
+    (P Q : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (hxx : P.1 ≠ Q.1)
+    (hP_neq_A2 : P.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
+    (hQ_neq_A2 : Q.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) :
+    let A₂ := (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1,
+               slopeOf P.1 P.2 Q.1 Q.2 *
+                 (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) +
+               (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1))
+    ordAt E (chordCoordRingElt E P Q) P = 1 ∧
+    ordAt E (chordCoordRingElt E P Q) Q = 1 ∧
+    ordAt E (chordCoordRingElt E P Q) A₂ = 1 := by
+  classical
+  intro A₂
+  -- A₂ is on E (via chord_third_point_on_E).
+  have hA₂ : A₂ ∈ E.points := by
+    apply E.hComplete
+    exact chord_third_point_on_E E P Q hP hQ hxx
+  -- D evaluates to 0 at P, Q, A₂.
+  have hZP := chordCoordRingElt_eval_left E P Q
+  have hZQ := chordCoordRingElt_eval_right E P Q
+  have hZA₂ := chordCoordRingElt_eval_thirdPoint_chord E hP hQ hxx
+  -- ordAt > 0 at P, Q, A₂.
+  have hNZ := chordCoordRingElt_ne_zero E P Q
+  have hOrdP : 0 < ordAt E (chordCoordRingElt E P Q) P :=
+    (ordAt_pos_iff_zero E _ hNZ P hP).mpr hZP
+  have hOrdQ : 0 < ordAt E (chordCoordRingElt E P Q) Q :=
+    (ordAt_pos_iff_zero E _ hNZ Q hQ).mpr hZQ
+  have hOrdA₂ : 0 < ordAt E (chordCoordRingElt E P Q) A₂ :=
+    (ordAt_pos_iff_zero E _ hNZ A₂ hA₂).mpr hZA₂
+  -- Total ordAt mass on E.points = 3.
+  have hSum := sum_ordAt_chordCoordRingElt_chord E P Q hP hQ hxx
+  -- Support ⊆ {P, Q, A₂}: every other point has ordAt = 0.
+  have hSupp : ∀ S ∈ E.points, S ≠ P → S ≠ Q → S ≠ A₂ →
+      ordAt E (chordCoordRingElt E P Q) S = 0 := by
+    intro S hS hSP hSQ hSA₂
+    by_contra h
+    have hOrdSPos : 0 < ordAt E (chordCoordRingElt E P Q) S := Nat.pos_of_ne_zero h
+    have hZS : (chordCoordRingElt E P Q).eval S.1 S.2 = 0 :=
+      (ordAt_pos_iff_zero E _ hNZ S hS).mp hOrdSPos
+    have hSupp' :=
+      chordCoordRingElt_zeros_on_E_chord E hP hQ hxx hS hZS
+    rcases hSupp' with h | h | h
+    · exact hSP h
+    · exact hSQ h
+    · exact hSA₂ h
+  -- Distinctness as pairs (P ≠ Q since x's differ, A₂ ≠ P/Q from hyps).
+  have hPQ : P ≠ Q := fun h => hxx (by rw [h])
+  have hPA₂ : P ≠ A₂ := fun h => hP_neq_A2 (congrArg Prod.fst h)
+  have hQA₂ : Q ≠ A₂ := fun h => hQ_neq_A2 (congrArg Prod.fst h)
+  -- Restricted sum: sum on {P, Q, A₂} = total ordAt sum on E.points.
+  have hP_in : P ∈ E.points := hP
+  have hQ_in : Q ∈ E.points := hQ
+  have hA₂_in : A₂ ∈ E.points := hA₂
+  -- The three points are pairwise distinct, so {P, Q, A₂} has card 3.
+  set f : ZMod E.q × ZMod E.q → ℕ := fun S => ordAt E (chordCoordRingElt E P Q) S
+  have hSplit3 :
+      ∑ S ∈ E.points, f S = f P + f Q + f A₂ := by
+    have hPQA₂ : ({P, Q, A₂} : Finset (ZMod E.q × ZMod E.q)) ⊆ E.points := by
+      intro x hx
+      rcases Finset.mem_insert.mp hx with h | h
+      · exact h ▸ hP_in
+      rcases Finset.mem_insert.mp h with h | h
+      · exact h ▸ hQ_in
+      · exact (Finset.mem_singleton.mp h) ▸ hA₂_in
+    rw [← Finset.sum_subset hPQA₂ (fun S hS hSnotin => hSupp S hS
+          (fun h => hSnotin (h ▸ Finset.mem_insert_self _ _))
+          (fun h => hSnotin (h ▸ Finset.mem_insert_of_mem (Finset.mem_insert_self _ _)))
+          (fun h => hSnotin (h ▸ Finset.mem_insert_of_mem
+            (Finset.mem_insert_of_mem (Finset.mem_singleton_self _)))))]
+    -- Compute the sum on {P, Q, A₂} using card-3 case.
+    have hQ_notin_PA2 : Q ∉ ({A₂} : Finset (ZMod E.q × ZMod E.q)) := by
+      simp; exact hQA₂
+    have hP_notin_QA2 : P ∉ ({Q, A₂} : Finset (ZMod E.q × ZMod E.q)) := by
+      simp; exact ⟨hPQ, hPA₂⟩
+    rw [show ({P, Q, A₂} : Finset (ZMod E.q × ZMod E.q)) =
+              insert P (insert Q ({A₂} : Finset _)) from rfl]
+    rw [Finset.sum_insert hP_notin_QA2, Finset.sum_insert hQ_notin_PA2]
+    simp [f]; ring
+  -- Now hSum says LHS = 3 and hSplit3 says LHS = f P + f Q + f A₂.
+  have hThree : f P + f Q + f A₂ = 3 := by
+    rw [← hSplit3]; exact hSum
+  -- Each f at P, Q, A₂ ≥ 1; sum = 3 ⇒ each = 1.
+  -- f S = ordAt ... S definitionally; show equates them for omega.
+  have hfP : f P = ordAt E (chordCoordRingElt E P Q) P := rfl
+  have hfQ : f Q = ordAt E (chordCoordRingElt E P Q) Q := rfl
+  have hfA₂ : f A₂ = ordAt E (chordCoordRingElt E P Q) A₂ := rfl
+  refine ⟨?_, ?_, ?_⟩
+  all_goals
+    rw [show ordAt E (chordCoordRingElt E P Q) _ = f _ from rfl]
+    omega
+
 /-! ## Multiplication of `CoordRingElt`s in `F_q[E]`
 
 `F_q[E] = F_q[X,Y]/(Y² - X³ - AX - B)` admits multiplication by reducing
