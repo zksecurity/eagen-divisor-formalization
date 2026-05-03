@@ -99,12 +99,24 @@ landed in `Divisor/ChordFiberMultiplicativity.lean`:
   (taking the resultant natDegree formula
   `Res(chordCubic, p.map C, 3, p.natDegree).natDegree = 2 · p.natDegree`
   as a hypothesis).
+* The resultant natDegree formula for any monic `p` is now a theorem
+  (`resultant_chordCubicBiv_pmap_C_natDegree_of_monic`) via the
+  `SplittingField p` lift, so the inductive structure is fully closed
+  modulo the gcd-1 base case.
+* Inequality form
+  `chord_fiber_product_concrete_natDegree_le_normPoly_natDegree_step_monic`
+  reduces the bound `(chord_fiber_product D).natDegree ≤ (normPoly D).natDegree`
+  to the same statement on `D'` after extracting any monic common
+  divisor of `D.a, D.b`.
 
-The remaining gap is the resultant natDegree formula for general
-monic `p`, provable via splitting field of `p` over `ZMod q` plus
-`resultant_comm` + `resultant_eq_prod_eval` (each linear factor over
-the splitting field contributing natDegree 2 by
-`resultant_chordCubicBiv_X_sub_C_natDegree`). -/
+The remaining substantive gap is the **gcd(D.a, D.b) = 1 base case**
+of the natDegree inequality. The recommended Lean route is a
+weighted-Sylvester degree bound with `wt(x)=2`, `wt(Z)=3`: each
+Sylvester-determinant monomial picks `n = deg_x DLineBiv` entries from
+DLine rows and 3 entries from chord-cubic rows, and the weight identity
+forces `degZ ≤ w` where `w = max(2 deg a, 2 deg b + 3) = (normPoly).natDegree`.
+This avoids any deep function-field theorem and uses only mathlib's
+`Matrix.det_apply` + `natDegree_sum_le` + `natDegree_prod_le`. -/
 
 /-- **Stub 1**: fibrewise divisibility for the chord-fibre product.
 
