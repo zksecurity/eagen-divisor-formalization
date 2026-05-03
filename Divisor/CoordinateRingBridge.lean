@@ -25,6 +25,8 @@
   and the local-order ↔ recursive-`ordAt` compatibility theorem.
 -/
 import Divisor.Defs
+import Divisor.BetaConstructive
+import Divisor.CubicIntersection
 import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 
 open Polynomial Polynomial.Bivariate
@@ -199,5 +201,26 @@ theorem toClass_affine_eq_mk_xyIdealOfPoint
       = Additive.ofMul (ClassGroup.mk (xyIdealOfPoint E hP)) := by
   rw [ECPoint.affine_of_nonsingular E (nonsing_of_mem E hP)]
   rfl
+
+/-! ### `Algebra.norm` of `D.toCoordinateRing E` equals `normPoly E D`
+
+For our setup `W' = E.toW.toAffine` (with `a₁ = a₂ = a₃ = 0`,
+`a₄ = curveA`, `a₆ = curveB`), mathlib's `norm_smul_basis` computes
+`Algebra.norm R[X] (p • 1 + q • mk W' Y) = p² − q²·(X³ + curveA·X + curveB)`.
+For our `D = a − b·Y`, the basis decomposition gives `p = D.a`,
+`q = -D.b`, and the formula collapses to `D.a² − D.b² · curveX`,
+which is exactly `normPoly E D`. -/
+
+theorem norm_toCoordinateRing_eq_normPoly
+    (D : CoordRingElt E.q) :
+    Algebra.norm (Polynomial (ZMod E.q)) (D.toCoordinateRing E)
+      = normPoly E D := by
+  rw [CoordRingElt.toCoordinateRing_eq_smul_basis,
+      CoordinateRing.norm_smul_basis,
+      ECSetup.toW_a₁, ECSetup.toW_a₂, ECSetup.toW_a₃,
+      ECSetup.toW_a₄, ECSetup.toW_a₆,
+      normPoly_eq, curveX]
+  simp only [Polynomial.C_0, zero_mul, mul_zero, zero_add, add_zero]
+  ring
 
 end Divisor
