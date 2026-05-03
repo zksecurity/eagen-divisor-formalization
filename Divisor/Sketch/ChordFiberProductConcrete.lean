@@ -27,6 +27,7 @@
   the production-namespace decl; the accompanying note
   `docs/chord-fiber-product-concrete-sketch.md` categorises them. -/
 import Divisor.Axioms.AxiomChordFiberDivisibility
+import Divisor.Axioms.AxiomChordFiberProductBarFactored
 import Divisor.ChordFiberMultiplicativity
 import Divisor.ChordFiberProductConcrete
 import Divisor.ChordFiberWeightedDegree
@@ -66,8 +67,11 @@ theorem chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber
     ∀ z : Fqbar E,
       (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
         (chord_fiber_product_concrete E lam D)).rootMultiplicity z =
-        ∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q := by
-  sorry
+        ∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q :=
+  -- Discharged via the production theorem
+  -- (`AxiomChordFiberProductBarFactored.lean` makes this a theorem
+  -- using the new divisibility axiom + weighted-Sylvester natDegree).
+  Divisor.chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber E D lam hD gd
 
 /-! ### Discharge plan via the multiplicity squeeze helper
 
