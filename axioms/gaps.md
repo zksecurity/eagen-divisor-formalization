@@ -5,7 +5,7 @@ Axiom-by-axiom status of textbook coverage in `/Users/rot256/paper/crypto-books/
 | Axiom | Status |
 |---|---|
 | `principal_divisor_iff` | Covered — Silverman AEC Cor III.3.5 |
-| `CoordRingElt.divisorClass_eq_zero_of_not_const_unit` | Open bridge — zero-class replacement for the former `ordAt_divisor_isPrincipal`/`principal_divisor_iff` path on MA extraction. Refactored from the previous `_isPrincipal_of_not_const_unit` shape into the cleaner Abel-Jacobi-style zero-class form (the two are equivalent via `ClassGroup.mk_eq_one_iff` and `I = 1`). The trivial constant-unit case `(D.a = C c, D.b = 0, c ≠ 0)` is a theorem (since `divisorOfD = 0`); the older `_isPrincipal_of_not_const_unit` form, the unrestricted `CoordRingElt.divisorClass_isPrincipal`, and `ordAt_divisorClass_zero` are all re-exported theorems derived from this axiom. Stage-1 bridge primitives `D.toBivar`, `D.toCoordinateRing`, `xyIdealOfPoint`, `XYIdeal`-membership iff vanishing, and the `Stage-2` non-vanishing → `ordAt = 0` corollary are landed in `Divisor/CoordinateRingBridge.lean` and `Divisor/OrdP/Uniformizer.lean`; the discharge plan continues in `docs/divisorClass-discharge-plan.md`. See `divisorClass_isPrincipal.md`. |
+| `CoordRingElt.divisorClass_eq_zero_of_b_ne_zero` | Open bridge — Abel-Jacobi zero-class statement, narrowed further to `D.b ≠ 0` (`D` actually has a `Y`-component). The `D.b = 0` case (polynomial-in-X) is now a *theorem* `divisorClass_eq_zero_of_b_zero`, proven via the y-flip involution `σ(x, y) = (x, -y)` plus fiber-cancellation primitives — without using the divisor-class axiom or `splitsOnE`. The trivial constant-unit case `(D.a = C c, D.b = 0, c ≠ 0)` falls under the `D.b = 0` theorem. Multiple re-exports as theorems: `_eq_zero_of_not_const_unit` (case-splits on D.b), `_isPrincipal_of_not_const_unit` (uses `I = 1`), `divisorClass_isPrincipal`, `ordAt_divisorClass_zero`. Stage-1 bridge primitives in `Divisor/CoordinateRingBridge.lean` and fiber-cancellation primitives in `Divisor/Defs.lean`; discharge plan in `docs/divisorClass-discharge-plan.md`. See `divisorClass_isPrincipal.md`. |
 | `hasse_weil` | Covered — Silverman AEC Thm V.1.1 + Stichtenoth Thm 5.2.3 |
 | `ECPoint.add_comm` | Covered — Silverman AEC Prop III.2.2(c) |
 | `ECPoint.add_assoc` | Covered — Silverman AEC Prop III.2.2(e) |
@@ -33,10 +33,10 @@ closure has four narrow axioms:
 3. `Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`
    — Lang's trace-of-log-derivative formula at a split specialisation,
    narrowed to `2 ≤ f.natDegree`, `0 < g.natDegree`, and `Monic f`.
-4. `Divisor.CoordRingElt.divisorClass_eq_zero_of_not_const_unit`
+4. `Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero`
    — Abel-Jacobi zero-class statement for the regular function `D`,
-   narrowed to the non-constant-unit case (equivalent to the older
-   `_isPrincipal_of_not_const_unit` form, now a theorem).
+   narrowed to `D.b ≠ 0` (D has a Y-component). The `D.b = 0` case
+   is a theorem (`divisorClass_eq_zero_of_b_zero`).
 
 The exact closure is pinned in `Tests/AxiomClosurePin.lean`.
 

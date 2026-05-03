@@ -71,7 +71,7 @@ propext, Classical.choice, Quot.sound,
 Divisor.hasse_weil,
 Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
 Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g,
-Divisor.CoordRingElt.divisorClass_eq_zero_of_not_const_unit
+Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
 ```
 
 No `sorryAx`. Production paths build with no in-flight obligations.
@@ -94,14 +94,18 @@ the build log catches drift from the expected set.
 
 ### Textbook Axioms
 
-#### `CoordRingElt.divisorClass_eq_zero_of_not_const_unit` — Silverman AEC III Cor 3.5, p. 63 (Abel's theorem)
+#### `CoordRingElt.divisorClass_eq_zero_of_b_ne_zero` — Silverman AEC III Cor 3.5, p. 63 (Abel's theorem)
 
 Zero-class statement for the regular function `D = a - b·y` on `E`,
-narrowed to the non-constant-unit case (constant-unit case already a
-theorem; the older `_isPrincipal_of_not_const_unit` form is now a
-re-exported theorem via the trivial principal `I = 1`). Says: under
-`splitsOnE E D`, the divisor class attached to `D` in mathlib's
-class group is zero (equivalently, principal-class via Abel-Jacobi).
+narrowed to `D.b ≠ 0` (i.e., `D` actually has a `Y`-component). The
+`D.b = 0` case (polynomial-in-X) is now a *theorem*
+(`divisorClass_eq_zero_of_b_zero`), proven via the y-flip involution
+`σ(x, y) = (x, -y)` and fiber-cancellation primitives in
+`Divisor/Defs.lean` — without using the divisor-class axiom or
+`splitsOnE`. The unrestricted `_eq_zero_of_not_const_unit` form is
+also a re-exported theorem (case-splits on `D.b`). Says: under
+`splitsOnE E D` and `D.b ≠ 0`, the divisor class attached to `D` in
+mathlib's class group is zero.
 
 This replaces the older direct `CoordRingElt.exists_divisor_multiplicity`
 axiom (which is now a *theorem* derived from this principal-class
