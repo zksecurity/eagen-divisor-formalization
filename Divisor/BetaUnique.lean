@@ -48,19 +48,22 @@
 
   ### Consequences for `polyG_zero_trace_formula`
 
-  The axiom `polyG_zero_trace_formula` (in `ExtractorBridge.lean`)
-  quantifies over *arbitrary* β_fun satisfying the four conditions.
-  Since pointwise uniqueness fails, the polyG-vanishing for an
-  arbitrary β_fun CANNOT be reduced to the betaConstructive case
-  via a uniqueness argument: the ZMod E.q-casts of the multiplicities
-  genuinely differ (5 ≠ 3 in ZMod 17), and polyG is linear in those
-  casts.
+  The theorem `polyG_zero_trace_formula` (in `ExtractorBridge.lean`)
+  is now stated for the canonical decomposition `betaCanonical` only,
+  not universally over arbitrary β_fun. The original axiom shape
+  was unsound for that universal quantification: pointwise
+  uniqueness fails (the `ZMod E.q`-casts of multiplicities can
+  differ — 5 ≠ 3 in ZMod 17 — and polyG is linear in those casts),
+  so the polyG-vanishing cannot reduce from one decomposition to
+  another via uniqueness.
 
-  The correct proof of `polyG_zero_trace_formula` must appeal to the
-  function-field trace-of-log-derivative identity (Lang *Algebra*
-  §VI.5 + Stichtenoth §III.1–5 + Silverman ATAEC III §1) applied
-  to each valid β_fun independently. This is the content the axiom
-  captures; no uniqueness shortcut exists.
+  The current narrowed theorem is fully proved (no `sorry`), with
+  classical content drawn from the function-field trace-of-log-
+  derivative identity (Lang *Algebra* §VI.5 + Stichtenoth §III.1–5
+  + Silverman ATAEC III §1). It is no longer the active extractor
+  proof path: the headline `ma_extractable` route now goes through
+  the geometric residue-matching argument in
+  `Divisor/GeometricSoundness.lean` instead.
 
   ### Weaker true statements
 
@@ -170,12 +173,16 @@ theorem sum_le_degE_of_principal_conditions
 --       multAt E β_fun D k = multAt E (betaConstructive E D) D k
 -- -/
 
-/-! ## Path forward for `polyG_zero_trace_formula`
+/-! ## Historical note on `polyG_zero_trace_formula`
 
-    The axiom `polyG_zero_trace_formula` (ExtractorBridge.lean)
-    quantifies over arbitrary β_fun. Since pointwise uniqueness
-    fails, eliminating that axiom requires the full function-field
-    trace-of-log-derivative argument:
+    The former axiom `polyG_zero_trace_formula` (ExtractorBridge.lean)
+    quantified over arbitrary β_fun. That shape was unsound (see
+    above). The current theorem is restricted to `betaCanonical`
+    and fully proved; it is preserved as legacy infrastructure but
+    is no longer the active extractor proof path. The headline
+    extractor proof goes through `geometric_residue_match` in
+    `Divisor/GeometricSoundness.lean`, which uses a different
+    argument:
 
     1. For any nonzero D ∈ F_q[E] and any principal-divisor
        decomposition β_fun, the residue identity (`\ref{lem:log-derivative}` /
