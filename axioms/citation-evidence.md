@@ -47,7 +47,7 @@ Book PDFs used for snippets are present outside this Lean repo at:
     `snippets/lang-VI.5-thm-5.1-norm-trace-300.png`,
     `snippets/lang-VIII.5-thm-5.1-derivations-385.png`.
 
-* `Divisor.CoordRingElt.divisorClass_isPrincipal_of_not_const_unit`
+* `Divisor.CoordRingElt.divisorClass_eq_zero_of_not_const_unit`
   * Citation: Silverman II.3 and III.3.5, with Stichtenoth 1.4.1 /
     1.4.2 / 1.4.11 as function-field divisor background.
   * Snippets:

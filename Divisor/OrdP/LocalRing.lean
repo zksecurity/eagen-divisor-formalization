@@ -1004,28 +1004,43 @@ theorem CoordRingElt.divisorClass_isPrincipal_const_unit
     -- LHS = 1; RHS = ClassGroup.mk 1 = 1 by `map_one`.
     exact (map_one ClassGroup.mk).symm
 
-/-- **Citable principal-class boundary axiom — narrowed.**
+/-- **Citable boundary axiom — cleaner zero-class form.**
 
     The divisor class of the concrete rational function
-    `D = a - b*y ∈ F_q[E]^×` is represented by a principal fractional
-    ideal in mathlib's class group, provided all geometric divisor mass is
+    `D = a - b*y ∈ F_q[E]^×` is *zero* in mathlib's class group of the
+    affine coordinate ring, provided all geometric divisor mass is
     visible over `F_q`. The trivial constant-unit case
     `(D.a = C c, D.b = 0, c ≠ 0)` is excluded — it is handled by the
-    theorem `CoordRingElt.divisorClass_isPrincipal_const_unit` above.
+    theorem `CoordRingElt.divisorClass_isPrincipal_const_unit` (which
+    folds through the same zero) above.
 
-    This is the remaining function-field bridge retained in this file.
-    It is phrased in mathlib's `ClassGroup` / `FractionalIdeal` /
-    `IsPrincipal` language; the older zero-class statement
-    `ordAt_divisorClass_zero` is derived below using
-    `ClassGroup.mk_eq_one_iff`.
+    This replaces the older `_isPrincipal_of_not_const_unit` form
+    (which packaged the same content via the existential
+    `∃ I principal, divisorClass = ClassGroup.mk I`). The two
+    statements are equivalent (both directions are immediate via
+    `ClassGroup.mk_eq_one_iff`); the zero-class form is strictly
+    cleaner and matches the Abel-Jacobi statement directly.
 
-    Citation boundary: Silverman AEC Corollary III.3.5, together with
-    the local-order compatibility between `ordAt` and the affine prime
-    ideals of `E.toW.toAffine.CoordinateRing`. -/
-axiom CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
+    The `_isPrincipal_of_not_const_unit` form is now a re-exported
+    theorem (using `I = 1`); see below.
+
+    Citation boundary: Silverman AEC Corollary III.3.5 (Abel-Jacobi),
+    together with the local-order compatibility between `ordAt` and
+    the affine prime ideals of `E.toW.toAffine.CoordinateRing`. -/
+axiom CoordRingElt.divisorClass_eq_zero_of_not_const_unit
     (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0))
     (_hSplit : splitsOnE E D)
     (_hNotConstUnit :
+      ¬ ∃ c : ZMod E.q, c ≠ 0 ∧ D.a = Polynomial.C c ∧ D.b = 0) :
+    divisorClass E (divisorOfD E D) (divisorOfD_finiteSupport E D) = 0
+
+/-- **Re-export of the older `_isPrincipal_of_not_const_unit` shape**,
+now a theorem derived from the cleaner zero-class axiom by picking
+`I = 1` (the trivial principal fractional ideal). -/
+theorem CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hSplit : splitsOnE E D)
+    (hNotConstUnit :
       ¬ ∃ c : ZMod E.q, c ≠ 0 ∧ D.a = Polynomial.C c ∧ D.b = 0) :
     ∃ I : (FractionalIdeal (nonZeroDivisors E.toW.toAffine.CoordinateRing)
               (FractionRing E.toW.toAffine.CoordinateRing))ˣ,
@@ -1034,10 +1049,17 @@ axiom CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
       Additive.toMul
         (divisorClass E (divisorOfD E D)
           (divisorOfD_finiteSupport E D)) =
-      ClassGroup.mk I
+      ClassGroup.mk I := by
+  classical
+  refine ⟨1, ?_, ?_⟩
+  · rw [Units.val_one, FractionalIdeal.coe_one, Submodule.one_eq_span]
+    exact ⟨1, rfl⟩
+  · rw [CoordRingElt.divisorClass_eq_zero_of_not_const_unit E D hD hSplit
+          hNotConstUnit]
+    exact (map_one ClassGroup.mk).symm
 
 /-- **Re-export — unrestricted principal-class statement**, now a
-theorem derived from the narrowed axiom plus the constant-unit case. -/
+theorem derived from the cleaner axiom plus the constant-unit case. -/
 theorem CoordRingElt.divisorClass_isPrincipal
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (hSplit : splitsOnE E D) :

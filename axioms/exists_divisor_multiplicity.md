@@ -84,7 +84,7 @@ It sums over `ECPoint.affinePoints E`, uses
 except at the protocol boundary.
 
 The remaining axiom in its dependency closure is the narrower
-`Divisor.CoordRingElt.divisorClass_isPrincipal_of_not_const_unit`,
+`Divisor.CoordRingElt.divisorClass_eq_zero_of_not_const_unit`,
 documented separately in
 [`divisorClass_isPrincipal.md`](divisorClass_isPrincipal.md). The
 old `Divisor.ordAt_divisorClass_zero` statement is now a theorem
@@ -97,10 +97,10 @@ The closure is pinned in `Tests/AxiomClosurePin.lean`:
 ```lean
 #print axioms Divisor.CoordRingElt.exists_divisor_multiplicity
 -- propext, Classical.choice, Quot.sound,
--- Divisor.CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
+-- Divisor.CoordRingElt.divisorClass_eq_zero_of_not_const_unit
 #print axioms Divisor.CoordRingElt.exists_divisor_multiplicity_ecpoint
 -- propext, Classical.choice, Quot.sound,
--- Divisor.CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
+-- Divisor.CoordRingElt.divisorClass_eq_zero_of_not_const_unit
 ```
 
 ## Citation

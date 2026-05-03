@@ -1,22 +1,15 @@
-# `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit`
+# `CoordRingElt.divisorClass_eq_zero_of_not_const_unit`
 
 - **Lean source**: `Divisor/OrdP/LocalRing.lean`
-- **Re-exported as theorem**: `CoordRingElt.divisorClass_isPrincipal` (the unrestricted form, derived from this narrowed axiom plus the trivial constant-unit case).
+- **Re-exported as theorems**: `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit` (the older `∃ I principal` shape, derived using `I = 1`), `CoordRingElt.divisorClass_isPrincipal` (the unrestricted form, derived by case-split with the constant-unit theorem).
 
 ```lean
-axiom CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
+axiom CoordRingElt.divisorClass_eq_zero_of_not_const_unit
     (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0))
     (_hSplit : splitsOnE E D)
     (_hNotConstUnit :
       ¬ ∃ c : ZMod E.q, c ≠ 0 ∧ D.a = Polynomial.C c ∧ D.b = 0) :
-    ∃ I : (FractionalIdeal (nonZeroDivisors E.toW.toAffine.CoordinateRing)
-              (FractionRing E.toW.toAffine.CoordinateRing))ˣ,
-      (I : Submodule E.toW.toAffine.CoordinateRing
-            (FractionRing E.toW.toAffine.CoordinateRing)).IsPrincipal ∧
-      Additive.toMul
-        (divisorClass E (divisorOfD E D)
-          (divisorOfD_finiteSupport E D)) =
-      ClassGroup.mk I
+    divisorClass E (divisorOfD E D) (divisorOfD_finiteSupport E D) = 0
 ```
 
 This is the remaining function-field bridge behind the proved theorem
@@ -29,9 +22,12 @@ It says that the concrete divisor attached to the regular function
 sum_P ord_P(D) * (P) - natDegree(normPoly E D) * (infinity),
 ```
 
-is represented in mathlib's class group by a principal fractional
-ideal, once `splitsOnE E D` ensures all relevant geometric divisor
-mass is visible over `F_q`.
+has trivial class in mathlib's class group of the affine coordinate
+ring, once `splitsOnE E D` ensures all relevant geometric divisor mass
+is visible over `F_q`. Equivalently (via the trivial principal
+fractional ideal `1`), the divisor is represented by a principal
+fractional ideal — this is the older `_isPrincipal_of_not_const_unit`
+form, now a re-exported theorem.
 
 ## Why this is the current boundary
 
@@ -49,7 +45,7 @@ Pinned closure:
 ```lean
 #print axioms Divisor.CoordRingElt.exists_divisor_multiplicity
 -- propext, Classical.choice, Quot.sound,
--- Divisor.CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
+-- Divisor.CoordRingElt.divisorClass_eq_zero_of_not_const_unit
 ```
 
 ## Citation

@@ -47,7 +47,7 @@ Pinned closure now names the underlying axiom:
 ```lean
 #print axioms Divisor.CoordRingElt.exists_divisor_multiplicity
 -- propext, Classical.choice, Quot.sound,
--- Divisor.CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
+-- Divisor.CoordRingElt.divisorClass_eq_zero_of_not_const_unit
 ```
 
 ## Citation

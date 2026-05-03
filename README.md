@@ -71,7 +71,7 @@ propext, Classical.choice, Quot.sound,
 Divisor.hasse_weil,
 Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
 Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g,
-Divisor.CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
+Divisor.CoordRingElt.divisorClass_eq_zero_of_not_const_unit
 ```
 
 No `sorryAx`. Production paths build with no in-flight obligations.
@@ -94,13 +94,14 @@ the build log catches drift from the expected set.
 
 ### Textbook Axioms
 
-#### `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit` — Silverman AEC III Cor 3.5, p. 63 (Abel's theorem)
+#### `CoordRingElt.divisorClass_eq_zero_of_not_const_unit` — Silverman AEC III Cor 3.5, p. 63 (Abel's theorem)
 
-Principal-divisor class statement for the regular function `D = a - b·y`
-on `E`, narrowed to the non-constant-unit case (constant-unit case
-already a theorem). Says: under `splitsOnE E D`, the divisor class
-attached to `D` in mathlib's class group is represented by some
-principal fractional ideal.
+Zero-class statement for the regular function `D = a - b·y` on `E`,
+narrowed to the non-constant-unit case (constant-unit case already a
+theorem; the older `_isPrincipal_of_not_const_unit` form is now a
+re-exported theorem via the trivial principal `I = 1`). Says: under
+`splitsOnE E D`, the divisor class attached to `D` in mathlib's
+class group is zero (equivalently, principal-class via Abel-Jacobi).
 
 This replaces the older direct `CoordRingElt.exists_divisor_multiplicity`
 axiom (which is now a *theorem* derived from this principal-class

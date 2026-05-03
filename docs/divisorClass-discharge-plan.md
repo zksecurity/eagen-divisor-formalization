@@ -1,16 +1,19 @@
-# Discharge plan for `divisorClass_isPrincipal_of_not_const_unit`
+# Discharge plan for `divisorClass_eq_zero_of_not_const_unit`
 
-The headline target is
+The headline target (after the recent refactor from
+`_isPrincipal_of_not_const_unit` into the cleaner zero-class shape) is
 
 ```lean
-axiom CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
+axiom CoordRingElt.divisorClass_eq_zero_of_not_const_unit
     (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0))
     (_hSplit : splitsOnE E D)
     (_hNotConstUnit :
       ¬ ∃ c : ZMod E.q, c ≠ 0 ∧ D.a = Polynomial.C c ∧ D.b = 0) :
-    ∃ I : (FractionalIdeal _ _)ˣ, I.val.IsPrincipal ∧
-      Additive.toMul (divisorClass E (divisorOfD E D) _) = ClassGroup.mk I
+    divisorClass E (divisorOfD E D) (divisorOfD_finiteSupport E D) = 0
 ```
+
+The older `_isPrincipal_of_not_const_unit` form is now a re-exported
+theorem using the trivial principal `I = 1`.
 
 ## Stage 1 (landed in `Divisor/CoordinateRingBridge.lean`)
 

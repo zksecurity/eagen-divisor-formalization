@@ -5,7 +5,7 @@ Axiom-by-axiom status of textbook coverage in `/Users/rot256/paper/crypto-books/
 | Axiom | Status |
 |---|---|
 | `principal_divisor_iff` | Covered — Silverman AEC Cor III.3.5 |
-| `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit` | Open bridge — principal fractional-ideal replacement for the former `ordAt_divisor_isPrincipal`/`principal_divisor_iff` path on MA extraction. Now narrowed: the trivial constant-unit case `(D.a = C c, D.b = 0, c ≠ 0)` is a theorem (since `divisorOfD = 0`), and the unrestricted form `CoordRingElt.divisorClass_isPrincipal` is a re-exported theorem. The old `ordAt_divisorClass_zero` statement is also a theorem derived from this axiom. See `divisorClass_isPrincipal.md`. |
+| `CoordRingElt.divisorClass_eq_zero_of_not_const_unit` | Open bridge — zero-class replacement for the former `ordAt_divisor_isPrincipal`/`principal_divisor_iff` path on MA extraction. Refactored from the previous `_isPrincipal_of_not_const_unit` shape into the cleaner Abel-Jacobi-style zero-class form (the two are equivalent via `ClassGroup.mk_eq_one_iff` and `I = 1`). The trivial constant-unit case `(D.a = C c, D.b = 0, c ≠ 0)` is a theorem (since `divisorOfD = 0`); the older `_isPrincipal_of_not_const_unit` form, the unrestricted `CoordRingElt.divisorClass_isPrincipal`, and `ordAt_divisorClass_zero` are all re-exported theorems derived from this axiom. Stage-1 bridge primitives `D.toBivar`, `D.toCoordinateRing`, `xyIdealOfPoint`, `XYIdeal`-membership iff vanishing, and the `Stage-2` non-vanishing → `ordAt = 0` corollary are landed in `Divisor/CoordinateRingBridge.lean` and `Divisor/OrdP/Uniformizer.lean`; the discharge plan continues in `docs/divisorClass-discharge-plan.md`. See `divisorClass_isPrincipal.md`. |
 | `hasse_weil` | Covered — Silverman AEC Thm V.1.1 + Stichtenoth Thm 5.2.3 |
 | `ECPoint.add_comm` | Covered — Silverman AEC Prop III.2.2(c) |
 | `ECPoint.add_assoc` | Covered — Silverman AEC Prop III.2.2(e) |
@@ -33,9 +33,10 @@ closure has four narrow axioms:
 3. `Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`
    — Lang's trace-of-log-derivative formula at a split specialisation,
    narrowed to `2 ≤ f.natDegree`, `0 < g.natDegree`, and `Monic f`.
-4. `Divisor.CoordRingElt.divisorClass_isPrincipal_of_not_const_unit`
-   — Abel-style principal-class statement for the regular function `D`,
-   narrowed to the non-constant-unit case.
+4. `Divisor.CoordRingElt.divisorClass_eq_zero_of_not_const_unit`
+   — Abel-Jacobi zero-class statement for the regular function `D`,
+   narrowed to the non-constant-unit case (equivalent to the older
+   `_isPrincipal_of_not_const_unit` form, now a theorem).
 
 The exact closure is pinned in `Tests/AxiomClosurePin.lean`.
 
