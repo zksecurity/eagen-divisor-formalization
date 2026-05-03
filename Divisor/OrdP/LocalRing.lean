@@ -1087,25 +1087,31 @@ theorem CoordRingElt.divisorClass_isPrincipal
 
 /-- **Derived zero-class bridge.**
 
-    This is the former class-group bridge axiom's statement, now proved
-    from `CoordRingElt.divisorClass_isPrincipal` and mathlib's
-    `ClassGroup.mk_eq_one_iff`. -/
+    Direct corollary of the cleaner zero-class axiom
+    `CoordRingElt.divisorClass_eq_zero_of_not_const_unit` plus the
+    constant-unit theorem (the divisor of a constant unit is identically
+    zero, so its class is trivially zero). -/
 theorem ordAt_divisorClass_zero
-    (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (_hSplit : splitsOnE E D)
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hSplit : splitsOnE E D)
     (hFinSup : Set.Finite (Function.support (divisorOfD E D))) :
     divisorClass E (divisorOfD E D) hFinSup = 0 := by
+  classical
   rw [divisorClass_canonical E (divisorOfD E D) hFinSup
         (divisorOfD_finiteSupport E D)]
-  obtain ⟨I, hPrin, hEq⟩ :=
-    CoordRingElt.divisorClass_isPrincipal E D _hD _hSplit
-  have hMkOne : ClassGroup.mk I = 1 := ClassGroup.mk_eq_one_iff.mpr hPrin
-  have hToMulOne :
-      Additive.toMul
-        (divisorClass E (divisorOfD E D)
-          (divisorOfD_finiteSupport E D)) = 1 :=
-    hEq.trans hMkOne
-  exact hToMulOne
+  by_cases hConstUnit :
+      ∃ c : ZMod E.q, c ≠ 0 ∧ D.a = Polynomial.C c ∧ D.b = 0
+  · obtain ⟨c, _hc, hCa, hCb⟩ := hConstUnit
+    have hDeq : D = ({ a := Polynomial.C c, b := 0 } : CoordRingElt E.q) := by
+      rcases D with ⟨a, b⟩
+      simp only at hCa hCb
+      subst hCa; subst hCb
+      rfl
+    rw [hDeq]
+    exact divisorClass_eq_zero_of_eq_zero E _
+      (divisorOfD_const_unit_eq_zero E _hc) _
+  · exact CoordRingElt.divisorClass_eq_zero_of_not_const_unit
+      E D hD hSplit hConstUnit
 
 /-! ### Bridging helpers for the group-sum proof.
 
