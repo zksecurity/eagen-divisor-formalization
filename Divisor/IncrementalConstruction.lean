@@ -153,6 +153,28 @@ theorem chordCoordRingElt_eval_right
     field_simp
     ring
 
+/-! ## `chordCoordRingElt` agrees with `lineThrough` (non-vertical case) -/
+
+/-- For `P.1 ≠ Q.1`, `chordCoordRingElt P Q` evaluates the same as
+    `(lineThrough P.1 P.2 Q.1 Q.2).eval` — both encode the line
+    `y − λx − μ`. -/
+theorem chordCoordRingElt_eval_eq_lineThrough_chord
+    {P Q : ZMod E.q × ZMod E.q} (hxx : P.1 ≠ Q.1)
+    (S : ZMod E.q × ZMod E.q) :
+    (chordCoordRingElt E P Q).eval S.1 S.2
+      = (lineThrough P.1 P.2 Q.1 Q.2).eval S.1 S.2 := by
+  classical
+  unfold chordCoordRingElt
+  rw [dif_neg hxx]
+  rw [chordCoordRingElt_eval_nonvertical]
+  show -((Q.2 - P.2) * (Q.1 - P.1)⁻¹ * S.1) -
+        (P.2 - (Q.2 - P.2) * (Q.1 - P.1)⁻¹ * P.1) + S.2
+      = S.2 - (Line.lam (lineThrough P.1 P.2 Q.1 Q.2)) * S.1
+        - (Line.mu (lineThrough P.1 P.2 Q.1 Q.2))
+  unfold lineThrough slopeOf
+  simp only []
+  ring
+
 /-! ## `normPoly` of the chord-line `CoordRingElt`
 
 The norm polynomial `N(D) = D.a² − D.b²·(X³+AX+B)` factors cleanly
@@ -248,6 +270,30 @@ theorem natDegree_normPoly_chordCoordRingElt_nonvertical (lam mu : ZMod E.q) :
     omega
   rw [hCoeff3] at this
   simp at this
+
+/-! ## Vanishing of `chordCoordRingElt` at the chord's third intersection -/
+
+/-- Chord case: `chordCoordRingElt P Q` vanishes at `thirdPoint`. -/
+theorem chordCoordRingElt_eval_thirdPoint_chord
+    {P Q : ZMod E.q × ZMod E.q}
+    (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (hxx : P.1 ≠ Q.1) :
+    let lam := slopeOf P.1 P.2 Q.1 Q.2
+    let x₂ := lam ^ 2 - P.1 - Q.1
+    let y₂ := lam * x₂ + (P.2 - lam * P.1)
+    (chordCoordRingElt E P Q).eval x₂ y₂ = 0 := by
+  intro lam x₂ y₂
+  rw [chordCoordRingElt_eval_eq_lineThrough_chord E hxx (x₂, y₂)]
+  show (lineThrough P.1 P.2 Q.1 Q.2).eval x₂ y₂ = 0
+  -- (lineThrough P Q).eval (x, y) = y - lam·x - mu, with mu = P.2 - lam·P.1.
+  -- By construction y₂ = lam·x₂ + (P.2 − lam·P.1).
+  unfold Line.eval lineThrough
+  show y₂ - (slopeOf P.1 P.2 Q.1 Q.2) * x₂
+        - (P.2 - (slopeOf P.1 P.2 Q.1 Q.2) * P.1) = 0
+  show (slopeOf P.1 P.2 Q.1 Q.2 * x₂ + (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1))
+        - slopeOf P.1 P.2 Q.1 Q.2 * x₂
+        - (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1) = 0
+  ring
 
 /-! ## Multiplication of `CoordRingElt`s in `F_q[E]`
 
