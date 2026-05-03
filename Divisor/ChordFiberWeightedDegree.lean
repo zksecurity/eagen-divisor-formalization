@@ -141,4 +141,79 @@ theorem chordCubicBiv_coeff_natDegree_weighted_bound
     have hbound : (1 : Polynomial (ZMod E.q)).natDegree = 0 := Polynomial.natDegree_one
     omega
 
+/-! ### DLineBiv coefficient structure
+
+The DLineBiv coefficient at outer-X index `k` lives in the inner ring
+`(ZMod E.q)[Z]` and has the explicit form
+
+    DLineBiv.coeff k = (D.a.coeff k - λ · D.b.coeff(k-1)) − D.b.coeff(k) · Z
+
+(treating `D.b.coeff(-1) = 0`). In particular, its natDegree as an
+inner polynomial is at most 1, and is 0 whenever `D.b.coeff k = 0`. -/
+
+/-- **Bound on natDegree of `DLineBiv.coeff k`.**
+
+The DLineBiv coefficient at outer x^k is a polynomial in inner Z of
+natDegree ≤ 1, with the leading-Z coefficient determined by
+`D.b.coeff k`. Specifically, when `D.b.coeff k ≠ 0`, the natDegree is
+exactly 1; otherwise it is at most 0. -/
+private lemma DLineBiv_coeff_natDegree_le_one
+    (lam : ZMod E.q) (D : CoordRingElt E.q) (k : ℕ) :
+    ((DLineBiv E lam D).coeff k).natDegree ≤ 1 := by
+  classical
+  -- Helper: a sum of polynomials with each term of natDegree ≤ 1 has natDegree ≤ 1.
+  have hsum_le : ∀ s : Finset (ℕ × ℕ), ∀ f : ℕ × ℕ → Polynomial (ZMod E.q),
+      (∀ p ∈ s, (f p).natDegree ≤ 1) →
+      (∑ p ∈ s, f p).natDegree ≤ 1 := by
+    intro s f hbnd
+    classical
+    induction s using Finset.induction_on with
+    | empty => simp
+    | @insert p t hpt ih =>
+        rw [Finset.sum_insert hpt]
+        refine (Polynomial.natDegree_add_le _ _).trans (max_le ?_ ?_)
+        · exact hbnd p (Finset.mem_insert_self _ _)
+        · exact ih (fun q hq => hbnd q (Finset.mem_insert_of_mem hq))
+  -- DLineBiv.coeff k = (D.a.map C).coeff k - (D.b.map C * (C(Cλ)X + CX)).coeff k.
+  have hsplit :
+      ((DLineBiv E lam D).coeff k).natDegree
+        ≤ max ((D.a.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X])).coeff k).natDegree
+              ((D.b.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X])
+                  * (Polynomial.C (Polynomial.C lam) * Polynomial.X
+                      + Polynomial.C Polynomial.X)).coeff k).natDegree := by
+    show (((D.a.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
+          - (D.b.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
+              * ((Polynomial.C (Polynomial.C lam) * Polynomial.X)
+                  + Polynomial.C Polynomial.X)).coeff k).natDegree ≤ _
+    rw [Polynomial.coeff_sub]
+    exact Polynomial.natDegree_sub_le _ _
+  refine hsplit.trans (max_le ?_ ?_)
+  · -- (D.a.map C).coeff k = C(D.a.coeff k), natDegree = 0 ≤ 1.
+    rw [Polynomial.coeff_map]
+    exact (Polynomial.natDegree_C _).le.trans (by omega)
+  · -- (D.b.map C * Q).coeff k = sum_{i+j=k} (D.b.map C).coeff i * Q.coeff j.
+    -- Each Q.coeff j has natDegree ≤ 1; (D.b.map C).coeff i = C(D.b.coeff i) is a
+    -- constant, so each summand has natDegree ≤ 1.
+    rw [Polynomial.coeff_mul]
+    refine hsum_le _ _ ?_
+    rintro ⟨i, j⟩ _
+    refine Polynomial.natDegree_mul_le.trans ?_
+    -- (D.b.map C).coeff i = C(D.b.coeff i): natDegree = 0.
+    rw [Polynomial.coeff_map, Polynomial.natDegree_C, zero_add]
+    -- Q.coeff j has natDegree ≤ 1.
+    show ((Polynomial.C (Polynomial.C lam) * Polynomial.X
+            + Polynomial.C Polynomial.X).coeff j).natDegree ≤ 1
+    rw [Polynomial.coeff_add]
+    refine (Polynomial.natDegree_add_le _ _).trans (max_le ?_ ?_)
+    · -- (C(Cλ) · X).coeff j = (Cλ if j = 1 else 0). natDegree = 0.
+      rw [Polynomial.coeff_C_mul, Polynomial.coeff_X]
+      split_ifs
+      · rw [mul_one]; exact (Polynomial.natDegree_C _).le.trans (by omega)
+      · rw [mul_zero]; simp
+    · -- (C X).coeff j = (X if j = 0 else 0). natDegree ≤ 1.
+      rw [Polynomial.coeff_C]
+      split_ifs
+      · exact Polynomial.natDegree_X_le
+      · simp
+
 end Divisor
