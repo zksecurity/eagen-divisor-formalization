@@ -11,7 +11,8 @@ Axiom-by-axiom status of textbook coverage in `/Users/rot256/paper/crypto-books/
 | `ECPoint.add_assoc` | Covered — Silverman AEC Prop III.2.2(e) |
 | `ECPoint.neg_add_cancel` | Covered — Silverman AEC Prop III.2.2(d) |
 | `chord_fiber_product_eq_normZ_under_split` | **Legacy temporary bridge** — mathematically covered by Stichtenoth Prop 3.1.9 + Thm 3.7.1, but the statement is proof-specific (`chord_fiber_product`, `normZ`, `splitsOnE`). It now explicitly requires `β_fun = betaTrue` pointwise, avoiding the older too-broad arbitrary-β shape. It is no longer in the MA/IP headline closure. |
-| `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image` | **Narrow remaining norm/divisor axiom** — coefficientwise push-forward of the zero divisor under the chord projection *restricted to intercepts that actually appear in `gd.support`*. The off-image case is now a theorem, derived from the existing `chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image` root-set bridge plus `Polynomial.rootMultiplicity_eq_zero`; the unrestricted form `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber` is a re-exported theorem. Covered by Stichtenoth Prop 3.1.9, with coordinate/resultant plumbing still formalized locally. |
+| `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image` | **Now a theorem** (no longer an axiom). Discharged via the squeeze argument from the strictly weaker divisibility axiom `chord_fiber_product_concrete_bar_zfiber_pow_dvd` plus the just-landed weighted-Sylvester upper bound `chord_fiber_product_concrete_natDegree_le_normPoly_natDegree`. |
+| `chord_fiber_product_concrete_bar_zfiber_pow_dvd` | **Narrow remaining divisibility axiom** — coefficientwise *lower bound* of the divisor pushforward under the chord projection: `(X − C z)^(fibre_sum) ∣ chord_fiber_product`. This *replaces* the older multiplicity-equality axiom. Stacks Project [02RS](https://stacks.math.columbia.edu/tag/02RS) lower-bound coefficient form; the matching upper bound (the natDegree inequality) is a coordinate-native theorem via the weighted-Sylvester analysis in `Divisor/ChordFiberWeightedDegree.lean`. Detailed write-up in `axioms/chord_fiber_product_concrete_bar_zfiber_pow_dvd.md`. |
 | `chord_fiber_product_bar_eq_geom_prod` | **Theorem from the narrow multiplicity axiom** — no longer an independent axiom. |
 | `chord_fiber_product_logDeriv_eq_logDerivTerm_trace` | **Theorem** — derived from the strictly narrower generic axiom `Polynomial.resultant_logDeriv_at_split_specialization` plus chord-cubic-specific algebra. No longer in the headline closure. |
 | `Polynomial.resultant_logDeriv_at_split_specialization_of_pos_natDegree` | **Temporary generic trace bridge** — replaces the older project-shaped chord-specific axiom, but is still a composed polynomial/resultant specialisation. Now carries an explicit `Monic f` hypothesis that brings the statement in line with mathlib's `Polynomial.resultant_eq_prod_eval` (without monicity the per-root sum picks up an extra `d/dT log(lc(f)^{deg g})` term), and the trivial `f.natDegree = 0` case is now a theorem (since `Monic + natDegree = 0` forces `f = 1`, both sides collapse to `0`). The unrestricted form `Polynomial.resultant_logDeriv_at_split_specialization` is a re-exported theorem. The final target is to prove the remaining `0 < f.natDegree` axiom from the already-proved Galois theorem `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois` plus resultant and specialisation algebra. See `axioms/resultant_logDeriv_at_split.md`. |
@@ -22,23 +23,32 @@ Axiom-by-axiom status of textbook coverage in `/Users/rot256/paper/crypto-books/
 ## Status
 
 The old false divisor-group axiom is removed. The current MA extraction
-closure has one explicit class-group bridge,
-`CoordRingElt.divisorClass_isPrincipal_of_not_const_unit` (the
-unrestricted theorem `CoordRingElt.divisorClass_isPrincipal` is a
-re-exported case-split derivation), plus Hasse-Weil, the narrow
-in-image root-multiplicity norm/divisor axiom, and the temporary
-generic resultant log-derivative bridge (now narrowed to
-`0 < f.natDegree`). The exact closure is pinned in
-`Tests/AxiomClosurePin.lean`.
+closure has four narrow axioms:
+
+1. `Divisor.hasse_weil` — Hasse-Weil bound (textbook).
+2. `Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd` — chord
+   pushforward divisibility (Stacks 02RS lower bound). Replaces the
+   older multiplicity-equality axiom: the matching upper bound is now
+   a coordinate-native theorem via the weighted-Sylvester analysis.
+3. `Polynomial.resultant_logDeriv_at_split_specialization_of_pos_natDegree`
+   — Lang's trace-of-log-derivative formula at a split specialisation,
+   narrowed to `0 < f.natDegree` and `Monic f`.
+4. `Divisor.CoordRingElt.divisorClass_isPrincipal_of_not_const_unit`
+   — Abel-style principal-class statement for the regular function `D`,
+   narrowed to the non-constant-unit case.
+
+The exact closure is pinned in `Tests/AxiomClosurePin.lean`.
 
 The desired final boundary is tracked in
 [`docs/axiom-boundary-target.md`](../docs/axiom-boundary-target.md):
-Hasse-Weil is in the desired shape. The trace/log-derivative boundary has
-made one step: the chord-specific axiom is now a theorem, and the Galois
-norm/trace/log-derivative identity is proved from mathlib, but the generic
-resultant specialisation is still an axiom. The remaining norm/divisor and
-principal-class assumptions are narrow, but still need the project-specific
-coordinate statements proved downstream.
+Hasse-Weil is in the desired shape. The chord pushforward is now in
+divisibility-only Stacks-02RS shape. The trace/log-derivative boundary
+has made progress: the chord-specific axiom is a theorem, and the
+Galois norm/trace/log-derivative identity is proved from mathlib;
+remaining is the generic resultant-specialisation plumbing connecting
+`Polynomial.derivative` to mathlib's `Differential` typeclass (the
+typeclass instance for `K[T]` is now provided in
+`Divisor/PolynomialDifferential.lean`).
 
 ### `weil_reciprocity_honest`
 
