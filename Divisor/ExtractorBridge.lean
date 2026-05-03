@@ -3071,7 +3071,7 @@ theorem polyG_zero_trace_formula
                 have hCompl : (E.points.filter (fun A₁ => A₁.1 = A₀.1)).card +
                     (E.points.filter (fun A₁ => ¬A₁.1 = A₀.1)).card =
                     E.points.card :=
-                  Finset.filter_card_add_filter_neg_card_eq_card (s := E.points)
+                  Finset.card_filter_add_card_filter_not (s := E.points)
                     (p := fun A₁ => A₁.1 = A₀.1)
                 have hEq : E.points.filter (fun A₁ => A₀.1 ≠ A₁.1) =
                     E.points.filter (fun A₁ => ¬A₁.1 = A₀.1) := by
@@ -3237,7 +3237,7 @@ theorem polyG_zero_trace_formula
                 Nat.add_le_add hVert hRestBound
             _ ≤ 21 * (D.degE + stmt.k + 2) + 72 := by omega
         have hGoodCount := Finset.card_le_card hGoodSub
-        have hSplitCard := Finset.filter_card_add_filter_neg_card_eq_card
+        have hSplitCard := Finset.card_filter_add_card_filter_not
           (fun A₁ => A₀.1 ≠ A₁.1 ∧
             logDerivCheckFnDefined E D stmt.target (baseAt E stmt msg hkm) A₀ A₁ ∧
             (∀ Q ∈ zerosFinset E D,
@@ -3348,7 +3348,7 @@ theorem polyG_zero_trace_formula
                 · exact hj
           · linarith
         have hGoodCount := Finset.card_le_card hGoodSub
-        have hSplitCard := Finset.filter_card_add_filter_neg_card_eq_card
+        have hSplitCard := Finset.card_filter_add_card_filter_not
           (fun A₁ => A₁ ∉ zerosFinset E D ∧ (∀ j, R_fn j ≠ A₁) ∧ A₀.1 ≠ A₁.1)
           (s := E.points)
         omega
@@ -3435,7 +3435,7 @@ theorem polyG_zero_trace_formula
           calc _ ≤ _ := Finset.card_le_card hBadUnion
             _ ≤ _ := Finset.card_union_le _ _
             _ ≤ _ := Nat.add_le_add hBadZ hBadX
-        have := Finset.filter_card_add_filter_neg_card_eq_card
+        have := Finset.card_filter_add_card_filter_not
           (fun A₁ => decide (A₁ ∉ zerosFinset E D) = true ∧ A₀.1 ≠ A₁.1) (s := E.points)
         omega
       -- Combine with hGoodSub and hLargeQ
