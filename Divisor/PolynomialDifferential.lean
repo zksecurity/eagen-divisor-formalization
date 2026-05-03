@@ -32,4 +32,21 @@ theorem deriv_eq_derivative (p : Polynomial K) :
     Differential.deriv p = derivative p := by
   rfl
 
+/-- The derivative of a constant polynomial vanishes. -/
+@[simp]
+theorem deriv_C (c : K) : Differential.deriv (Polynomial.C c) = 0 := by
+  simp [deriv_eq_derivative]
+
+/-- The derivative of `X` is `1`. -/
+@[simp]
+theorem deriv_X : Differential.deriv (X : Polynomial K) = 1 := by
+  simp [deriv_eq_derivative]
+
+/-- The derivative is a derivation: Leibniz rule. -/
+theorem deriv_mul (p q : Polynomial K) :
+    Differential.deriv (p * q) = Differential.deriv p * q + p * Differential.deriv q := by
+  show derivative (p * q) = derivative p * q + p * derivative q
+  rw [derivative_mul, add_comm]
+
 end Polynomial
+
