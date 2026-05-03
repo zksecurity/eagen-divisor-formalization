@@ -951,4 +951,68 @@ theorem chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_monic
     (resultant_chordCubicBiv_pmap_C_natDegree_of_monic E lam p hpm)
     hIH
 
+/-! ### Gcd-extraction reduction to the coprime base case
+
+For the natDegree inequality, the inductive `_le_step_monic` lets us
+peel off any monic common divisor of `D.a, D.b`. Choosing
+`p = GCDMonoid.gcd D.a D.b` (which is monic — `Polynomial K` is a
+`NormalizedGCDMonoid` and `normalize` of a polynomial is its monic
+representative), the divided pair is coprime by
+`isCoprime_div_gcd_div_gcd_of_gcd_ne_zero`. This reduces the general-D
+inequality to the gcd-1 base case in one step.
+
+The base case (gcd-1) remains the substantive content; once supplied,
+this combinator closes the natDegree bound for arbitrary D. -/
+
+/-- **Gcd extraction → coprime base case** for the natDegree inequality.
+Given the coprime base case as a hypothesis, the general-D inequality
+follows by extracting the monic gcd and applying `_le_step_monic`. -/
+theorem chord_fiber_product_concrete_natDegree_le_normPoly_natDegree_of_coprime_base
+    (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hCoprimeBase :
+      ∀ D' : CoordRingElt E.q, ¬ (D'.a = 0 ∧ D'.b = 0) →
+        IsCoprime D'.a D'.b →
+        (chord_fiber_product_concrete E lam D').natDegree
+          ≤ (normPoly E D').natDegree) :
+    (chord_fiber_product_concrete E lam D).natDegree
+      ≤ (normPoly E D).natDegree := by
+  classical
+  set p := GCDMonoid.gcd D.a D.b with hp_def
+  -- p ≠ 0 since at least one of D.a, D.b is nonzero.
+  have hp_ne : p ≠ 0 := by
+    rcases not_and_or.mp hD with hane | hbne
+    · exact gcd_ne_zero_of_left hane
+    · exact gcd_ne_zero_of_right hbne
+  -- p is monic (gcd in NormalizedGCDMonoid is normalized; Polynomial
+  -- normalize of nonzero is monic).
+  have hp_normalize : normalize p = p := normalize_gcd D.a D.b
+  have hpm : p.Monic := by
+    have hmon : (normalize p).Monic := monic_normalize hp_ne
+    rwa [hp_normalize] at hmon
+  have hpa : p ∣ D.a := gcd_dvd_left _ _
+  have hpb : p ∣ D.b := gcd_dvd_right _ _
+  -- (D.a /ₘ p, D.b /ₘ p) is coprime.
+  have hdiv_a : D.a /ₘ p = D.a / p := by
+    rw [Polynomial.divByMonic_eq_div _ hpm]
+  have hdiv_b : D.b /ₘ p = D.b / p := by
+    rw [Polynomial.divByMonic_eq_div _ hpm]
+  have hcop : IsCoprime (D.a /ₘ p) (D.b /ₘ p) := by
+    rw [hdiv_a, hdiv_b]
+    exact isCoprime_div_gcd_div_gcd_of_gcd_ne_zero hp_ne
+  -- D' is not the zero pair.
+  have hD'ne : ¬ ((D.a /ₘ p) = 0 ∧ (D.b /ₘ p) = 0) := by
+    rcases not_and_or.mp hD with hane | hbne
+    · -- D.a ≠ 0 ⇒ D.a /ₘ p = D.a / p ≠ 0.
+      rw [hdiv_a]
+      intro h
+      exact (left_div_gcd_ne_zero hane) h.1
+    · rw [hdiv_b]
+      intro h
+      exact (right_div_gcd_ne_zero hbne) h.2
+  -- Apply the inductive step + the coprime base.
+  exact chord_fiber_product_concrete_natDegree_le_normPoly_natDegree_step_monic
+    E lam D p hpm hpa hpb hD'ne
+    (hCoprimeBase { a := D.a /ₘ p, b := D.b /ₘ p } hD'ne hcop)
+
 end Divisor
