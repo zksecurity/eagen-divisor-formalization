@@ -724,38 +724,8 @@ theorem target_eq_weightedSum_of_zero_sum
                       (extractorBases E stmt msg hkm i).2)) with hX_def
   -- The `-P` affine point is the ECPoint negation of `P_aff`.
   have hPneg : (ECPoint.affine E stmt.target.1 (-stmt.target.2) : ECPoint E) =
-               -P_aff := by
-    show ECPoint.affine E stmt.target.1 (-stmt.target.2) =
-         -(ECPoint.affine E stmt.target.1 stmt.target.2)
-    -- `affine E x (-y) = -(affine E x y)` since on our curve `negY x y = -y`.
-    have hNegYAff : ∀ y' : ZMod E.q, E.toW.toAffine.negY stmt.target.1 y' = -y' := by
-      intro y'; show -y' - E.toW.a₁ * stmt.target.1 - E.toW.a₃ = -y'
-      rw [E.toW_a₁, E.toW_a₃]; ring
-    by_cases hns : E.toW.toAffine.Nonsingular stmt.target.1 stmt.target.2
-    · have hns' : E.toW.toAffine.Nonsingular stmt.target.1 (-stmt.target.2) := by
-        have := (WeierstrassCurve.Affine.nonsingular_neg
-                  (W' := E.toW.toAffine) stmt.target.1 stmt.target.2).mpr hns
-        rwa [hNegYAff] at this
-      rw [ECPoint.affine_of_nonsingular E hns,
-          ECPoint.affine_of_nonsingular E hns']
-      show (WeierstrassCurve.Affine.Point.some hns' : ECPoint E) =
-           -(WeierstrassCurve.Affine.Point.some hns)
-      rw [WeierstrassCurve.Affine.Point.neg_some,
-          WeierstrassCurve.Affine.Point.some.injEq]
-      refine ⟨rfl, ?_⟩
-      rw [hNegYAff]
-    · have hns' : ¬ E.toW.toAffine.Nonsingular stmt.target.1 (-stmt.target.2) := by
-        intro h
-        apply hns
-        have := (WeierstrassCurve.Affine.nonsingular_neg
-                  (W' := E.toW.toAffine) stmt.target.1 (-stmt.target.2)).mpr h
-        rw [hNegYAff] at this
-        rwa [neg_neg] at this
-      have h0 : (ECPoint.affine E stmt.target.1 stmt.target.2 : ECPoint E) = 0 := by
-        unfold ECPoint.affine; rw [dif_neg hns]
-      have h0' : (ECPoint.affine E stmt.target.1 (-stmt.target.2) : ECPoint E) = 0 := by
-        unfold ECPoint.affine; rw [dif_neg hns']
-      rw [h0, h0', neg_zero]
+               -P_aff :=
+    (ECPoint.affine_neg E stmt.target.1 stmt.target.2).symm
   rw [hPneg] at hZeroSum
   -- `(-P_aff) + P_aff = 0` by `neg_add_cancel`.
   have hNegCancel : (-P_aff) + P_aff = 0 := neg_add_cancel P_aff
