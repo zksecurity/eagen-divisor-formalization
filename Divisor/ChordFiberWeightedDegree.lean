@@ -731,6 +731,12 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
     exact Nat.zero_le _
   · -- Case 2: all entries nonzero. Apply weighted-Sylvester sum-bound.
     push_neg at hzero
+    -- TODO: Sylvester sum-bound. The key steps:
+    --   1. ∀ j, sylvesterOff (chordCubicBiv.natDegree) (DLineBiv.natDegree) j ≤ (σ j).val
+    --      (entries nonzero forces (σ j).val to be in row range).
+    --   2. Apply Polynomial.natDegree_prod_le, then bound Σ natDeg via the
+    --      weighted inequalities (Lemma A on f-cols, Lemma B on g-cols).
+    --   3. Combine with sum_sylvester_idx_eq to get Σ natDeg ≤ w.
     sorry
 
 theorem chord_fiber_product_concrete_natDegree_le_normPoly_natDegree
