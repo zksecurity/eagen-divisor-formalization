@@ -153,6 +153,14 @@ future axiom-1 discharge can build on:
    - `_step_monic` — composes the general-monic (no splits) natDegree
      with the general-monic step. This is the no-hypothesis form
      needed for the gcd-extraction induction.
+   - `chord_fiber_product_concrete_natDegree_le_normPoly_natDegree_step_monic`
+     — the `≤` (inequality) form of `_step_monic`. Uses
+     `Polynomial.natDegree_mul_le` instead of `natDegree_mul`, which
+     avoids the resultant-non-vanishing side-conditions the equality
+     form needs. This is the form the squeeze helper consumes; it
+     reduces the bound `(chord_fiber_product D).natDegree ≤
+     (normPoly D).natDegree` to the same statement on `D'` after
+     extracting any monic common divisor of `D.a, D.b`.
 
    The linear case includes the resultant-against-linear-factor
    natDegree calculation
