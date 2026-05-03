@@ -1874,8 +1874,7 @@ private theorem splitsOnE_of_gd_support_rational
           rw [Multiset.count_map]
           apply Multiset.card_eq_zero.mpr
           rw [Multiset.filter_eq_nil]
-          intro α' _
-          intro hαβ
+          intro α' _ hαβ
           exact hβImg ⟨α', hαβ⟩
         rw [hLHS, hRHS]
     -- card LHS = card RHS = card normPoly.roots.
@@ -2726,9 +2725,7 @@ private theorem hasse_q_le_sharp_nat :
     -- Convert to ℕ.
     have hQ_le : E.points.card + 2 ≤ E.q := le_of_lt hQ
     have hSubInt : ((E.q - E.points.card - 2 : ℕ) : ℤ) = (E.q : ℤ) - E.points.card - 2 := by
-      push_cast [Nat.cast_sub hQ_le]
       have : E.q - E.points.card ≥ 2 := by omega
-      push_cast [Nat.cast_sub (Nat.le_of_lt (by omega : E.points.card < E.q))]
       omega
     have hSqNat : (E.q - E.points.card - 2)^2 ≤ 4 * (E.points.card + 1) := by
       have hCastLhs : (((E.q - E.points.card - 2 : ℕ) : ℤ))^2
