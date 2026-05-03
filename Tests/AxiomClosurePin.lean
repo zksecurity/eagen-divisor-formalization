@@ -110,3 +110,5 @@ example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
           (fun P => Divisor.ECPoint.nsmul E (β P)
                       (Divisor.ECPoint.affine E P.1 P.2)) = 0) :=
   Divisor.CoordRingElt.exists_divisor_multiplicity E D hD
+
+#print axioms Divisor.ma_extractable_unconditional

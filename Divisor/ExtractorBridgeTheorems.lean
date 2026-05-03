@@ -130,6 +130,77 @@ theorem ma_extractable
       rw [hEmpty]
       simp
 
+/-! ## Unconditional MA extractability
+
+The headline `ma_extractable` carries `hDenomNZ` as a precondition
+(see `docs/hDenomNZ-discharge-plan.md`). The form below removes that
+precondition by replacing it with a third disjunctive option:
+"there exists a verifier-bad `A₀`" (denomScaledPoly mod curveEq = 0).
+
+This makes the theorem genuinely unconditional on the prover message,
+at the cost of a weaker conclusion (`A` ∨ `B` ∨ `C` rather than
+`A` ∨ `B`). The "C" branch (`badA₀_exists`) corresponds exactly to
+the paper's `event_deg` (`paper/divisor/sections/ip.tex:396`), which
+the paper charges to the error bound; closing the conditional/
+unconditional gap requires the full `badA₂Mod` count argument from
+`Divisor/HDenomNZBound.lean`. -/
+
+/-- **MA extractability — unconditional disjunction**.
+
+    Either:
+    1. The extractor outputs a valid witness (`relDlog` holds), OR
+    2. The accept-set has size bounded by the standard SZ-on-(E×E)
+       count (the "good prover" case), OR
+    3. There exists a verifier-bad `A₀ ∈ E.points` (paper's
+       `event_deg`): an `A₀` that's not a `D`-zero and not a
+       distinct-base-image root, yet `denomScaledPoly` mod
+       `curveEqPoly` vanishes — the verifier's totalised
+       expression evaluates ill-definedly there.
+
+    The case-split is by classical decidability of `hDenomNZ`. The
+    paper's analysis charges the third branch to the error bound via
+    a count of bad `A₀`'s; the Lean discharge plan in
+    `Divisor/HDenomNZBound.lean` provides the count
+    (`badA₂Mod_card_mul_card_sub_two_le`) needed to absorb it. -/
+theorem ma_extractable_unconditional
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
+    (hkm : stmt.k = msg.k)
+    (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg.toD.degE + stmt.k + 2) + 72) :
+    (∃ wit : DlogWitness E.q,
+        maExtractor E stmt msg stmt.degBound hd hkm = some wit
+        ∧ relDlog E stmt wit) ∨
+    ((validPairs E).filter
+        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ 18 * (stmt.degBound + stmt.k) * E.q +
+        (3 * stmt.degBound + 9 * stmt.k + 71) * E.points.card ∨
+    (∃ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD ∧
+        (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
+            distinctR E stmt msg hkm j ≠ A₀) ∧
+        denomScaledPoly (E := E) msg.toD stmt.target
+          (baseImageCount E stmt msg hkm)
+          (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E = 0) := by
+  classical
+  by_cases hDNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
+      (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
+          distinctR E stmt msg hkm j ≠ A₀) →
+      denomScaledPoly (E := E) msg.toD stmt.target
+        (baseImageCount E stmt msg hkm)
+        (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E ≠ 0
+  · rcases ma_extractable E stmt hd hd2 msg hDeg hkm hSmooth hDNZ
+            hTargetOnE hBasesOnE hLargeQ with hwit | hsmall
+    · exact Or.inl hwit
+    · exact Or.inr (Or.inl hsmall)
+  · -- hDNZ fails: extract the bad A₀.
+    push_neg at hDNZ
+    obtain ⟨A₀, hA₀_pts, hA₀_nz, hA₀_nr, hbadDenom⟩ := hDNZ
+    exact Or.inr (Or.inr ⟨A₀, hA₀_pts, hA₀_nz, hA₀_nr, hbadDenom⟩)
+
 /-! ## `\ref{thm:ip}`: Knowledge-Sound IP -/
 
 /-- **`\ref{thm:ip}` (IP knowledge soundness).**

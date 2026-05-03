@@ -76,12 +76,27 @@ theorem admSetHash_excludes_zero (r : ℕ → ZMod q) :
   apply h
   simp
 
-/-- Witness for the discrete-log relation. Scalars are signed integers so
-    that the paper's extractor special case `n_{j*} = -1` (for
-    `-P ∈ {B_j}`) can be represented natively. The range condition
-    `|scalars i| < degBound` bounds the absolute value by the divisor
-    degree (paper requires `n_i ∈ F_p` with `Σ n_i ≤ degBound`; for the
-    soundness analysis the looser `|n_i| < degBound` is what matters). -/
+/-- Witness for the discrete-log relation.
+
+**Paper-vs-Lean modeling note** (paper §IP, `relDlog`):
+the paper writes scalars `n_i ∈ F_p` where `p` is the group order
+`p = |E(F_q)| = E.numPoints` (typically chosen prime in cryptographic
+settings — but the Lean `ECSetup` does not bake in `Nat.Prime numPoints`).
+Lean instead uses `scalars : Fin k → ℤ` with bound `|scalars i| < degBound`.
+The two formulations are equivalent for soundness analysis:
+
+1. The scalar action `n • P` on the elliptic curve group factors
+   through `ℤ / numPoints` (additive group of order `numPoints`), so
+   `n ∈ ℤ` and `(n mod numPoints) ∈ ℤ/numPoints` give identical
+   `n • P`. When `numPoints` is prime, `ℤ/numPoints = F_p` exactly.
+
+2. The bound `|n_i| < degBound` matches the soundness analysis (which
+   needs `|n_i| < degBound ≤ q < numPoints + 2√q + 1` via Hasse-Weil).
+   The paper's `Σ n_i ≤ degBound` is a stronger condition not needed
+   for the extraction direction.
+
+Signed integers (rather than `ℕ` or `ZMod numPoints`) capture the
+extractor's special case `n_{j*} = -1` (for `-P ∈ {B_j}`) natively. -/
 structure DlogWitness (q : ℕ) [Fact (Nat.Prime q)] where
   k : ℕ
   scalars : Fin k → ℤ
