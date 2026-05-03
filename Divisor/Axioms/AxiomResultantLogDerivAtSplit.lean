@@ -113,6 +113,79 @@ theorem resultant_eq_pow_of_g_natDegree_eq_zero
       = (g.coeff 0) ^ f.natDegree := by
   rw [hg_zero, Polynomial.resultant_zero_right_deg]
 
+/-- **Partial discharge** of the resultant log-derivative identity for
+the case where `g` is constant in the outer (resultant) variable.
+
+For `g` with `g.natDegree = 0`, write `h := g.coeff 0`. Then the LHS
+equals `m · h'(t₀)/h(t₀)` (logarithmic derivative of `h^m`), and each
+RHS summand collapses to the constant `h'(t₀)/h(t₀)`, summed over
+`m = f.natDegree` chord roots. -/
+theorem resultant_logDeriv_at_split_specialization_of_g_natDegree_eq_zero
+    {K : Type*} [Field K]
+    (f g : K[X][X]) (t₀ : K)
+    (hMonic : f.Monic)
+    (hg_zero : g.natDegree = 0)
+    (hSplit : (f.map (Polynomial.evalRingHom t₀)).Splits)
+    (hh_ne : (g.coeff 0).eval t₀ ≠ 0)
+    (hf_X_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
+        ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x ≠ 0) :
+    resultantLogDerivConclusion f g t₀ := by
+  classical
+  -- Setup: h = g.coeff 0; g = C h; F = h^m.
+  set h : K[X] := g.coeff 0 with hh_def
+  have hg_eq : g = Polynomial.C h := by
+    rw [hh_def]; exact Polynomial.eq_C_of_natDegree_eq_zero hg_zero
+  -- Roots-card identity (for monic f, splits + natDegree_map_monic).
+  have hf_mapNatDeg : (f.map (Polynomial.evalRingHom t₀)).natDegree = f.natDegree :=
+    hMonic.natDegree_map _
+  have hroots_card :
+      (f.map (Polynomial.evalRingHom t₀)).roots.card = f.natDegree := by
+    rw [← hf_mapNatDeg, ← Polynomial.Splits.natDegree_eq_card_roots hSplit]
+  -- Define the constant summand value.
+  set ν : K := h.derivative.eval t₀ / h.eval t₀ with hν_def
+  -- Show RHS multiset equals constant ν repeated, then sum.
+  have hsum_const : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
+      (let f_X := ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x
+       let f_T := ((f.eval (Polynomial.C x)).derivative).eval t₀
+       let g_X := ((g.map (Polynomial.evalRingHom t₀)).derivative).eval x
+       let g_T := ((g.eval (Polynomial.C x)).derivative).eval t₀
+       let g_val := (g.map (Polynomial.evalRingHom t₀)).eval x
+       (g_T * f_X - g_X * f_T) / (f_X * g_val)) = ν := by
+    intro x hx
+    simp only [hg_eq, Polynomial.map_C, Polynomial.derivative_C,
+               Polynomial.eval_C, Polynomial.eval_zero, zero_mul, sub_zero]
+    have hfX := hf_X_def x hx
+    rw [hν_def]
+    rw [show (Polynomial.evalRingHom t₀) h = h.eval t₀ from rfl]
+    field_simp
+  -- Compute the LHS via resultant_eq_pow_of_g_natDegree_eq_zero.
+  unfold resultantLogDerivConclusion
+  rw [resultant_eq_pow_of_g_natDegree_eq_zero f g hg_zero, ← hh_def]
+  -- The RHS multiset map is constant on the support; rewrite.
+  rw [show ((f.map (Polynomial.evalRingHom t₀)).roots.map (fun x =>
+        let f_X := ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x
+        let f_T := ((f.eval (Polynomial.C x)).derivative).eval t₀
+        let g_X := ((g.map (Polynomial.evalRingHom t₀)).derivative).eval x
+        let g_T := ((g.eval (Polynomial.C x)).derivative).eval t₀
+        let g_val := (g.map (Polynomial.evalRingHom t₀)).eval x
+        (g_T * f_X - g_X * f_T) / (f_X * g_val)))
+        = (f.map (Polynomial.evalRingHom t₀)).roots.map (fun _ => ν) from
+    Multiset.map_congr rfl hsum_const]
+  rw [Multiset.map_const', Multiset.sum_replicate, hroots_card]
+  -- Goal: F'(t₀)/F(t₀) = (f.natDegree : K) • ν.
+  -- Compute F = h^m and its derivative.
+  rw [Polynomial.derivative_pow, Polynomial.eval_mul, Polynomial.eval_mul,
+      Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_pow]
+  rcases Nat.eq_zero_or_pos f.natDegree with hm0 | hmpos
+  · simp [hm0, hν_def]
+  · rw [show f.natDegree = (f.natDegree - 1) + 1 from
+        (Nat.succ_pred_eq_of_pos hmpos).symm,
+      pow_succ, hν_def, nsmul_eq_mul]
+    field_simp
+    have : f.natDegree - 1 + 1 - 1 = f.natDegree - 1 := by omega
+    rw [this]
+    ring
+
 /-- **Logarithmic derivative of a bivariate resultant at a split
 specialization** — narrowed to `0 < f.natDegree`.
 
