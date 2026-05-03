@@ -27,6 +27,33 @@ Bridge between the project's `CoordRingElt` and mathlib's affine
 * `D.toCoordinateRing E ≠ 0` whenever `(D.a, D.b) ≠ (0, 0)`
 * `D.toCoordinateRing E ∈ XYIdeal x (C y) ↔ D.eval x y = 0` for
   `(x, y) ∈ E.points`
+* `algebraMap _ _ (D.toCoordinateRing E) ≠ 0` in `FunctionField`
+* `Algebra.norm _ (D.toCoordinateRing E) = normPoly E D` (via
+  `CoordinateRing.norm_smul_basis` specialised to
+  `a₁ = a₂ = a₃ = 0`); plus `_ne_zero` and `natDegree ≤ D.degE`
+  corollaries
+* `xyIdealOfPoint`, `nonsing_of_mem`, `toClass_affine_eq_mk_xyIdealOfPoint`
+* `principalFracIdeal D = toPrincipalIdeal _ _ (Units.mk0 ...)`
+  with `ClassGroup.mk principalFracIdeal = 1` (principal class trivial)
+
+## Stage 1 reduction (landed in `Divisor/OrdP/LocalRing.lean`)
+
+* `divisorClass_eq_zero_of_eq_principalFracIdeal_class
+   (hEq : Additive.toMul (divisorClass E (divisorOfD E D) _)
+     = ClassGroup.mk (D.principalFracIdeal E hD)) :
+   divisorClass E (divisorOfD E D) _ = 0`
+
+The discharge of the headline axiom **reduces to producing the
+factorization-style identity `hEq`**: that the project's accountancy
+matches the principal-fractional-ideal class of `D.toCoordinateRing`.
+
+## Stage 2 — partial (landed)
+
+* Non-vanishing → ordAt = 0 (for both 2-torsion and non-2-torsion
+  cases) — already redundant with the existing `ordAt_pos_iff_zero`,
+  but now also stated as `ordAt_eq_zero_of_eval_ne_zero`.
+* `divisorClass_eq_zero_of_ordAt_all_zero` — the "no F_q-rational
+  zeros" sub-case is provable without local-order machinery.
 
 These give the algebraic-geometry side of the project's vanishing
 condition.
@@ -73,13 +100,19 @@ with the standard pole order. Use the norm relation
 coordinate ring (where `D̄ = a + b·Y`), plus the rank-2 freeness over
 `F_q[X]` to read off the pole order from `natDegree(normPoly)`.
 
-## Stage 4: principal-class conclusion
+## Stage 4: principal-class conclusion (landed Stage 1 piece)
 
-Construct the principal fractional ideal
-`(D.toCoordinateRing E) ∈ FractionalIdeal _ _` (nonzero by Stage 1's
-`toCoordinateRing_ne_zero`). Show its class equals
-`divisorClass E (divisorOfD E D)` using Stages 2-3 plus
-`Point.toClass`'s additivity.
+The principal fractional ideal `D.principalFracIdeal E hD` is
+`toPrincipalIdeal _ _ (Units.mk0 (algebraMap _ _ (D.toCoordinateRing E)) _)`
+and has class `1` in `ClassGroup` by
+`ClassGroup.mk_eq_one_iff` + the underlying `spanSingleton.IsPrincipal`.
+
+The remaining work is to identify
+`Additive.toMul (divisorClass E (divisorOfD E D))` with
+`ClassGroup.mk (D.principalFracIdeal E hD)`. Given that identification,
+the reduction lemma
+`divisorClass_eq_zero_of_eq_principalFracIdeal_class` finishes the
+discharge.
 
 Mathlib API expected to slot in:
 
