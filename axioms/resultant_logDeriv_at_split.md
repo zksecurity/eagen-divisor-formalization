@@ -1,17 +1,22 @@
-# `Polynomial.resultant_logDeriv_at_split_specialization_of_pos_natDegree_pos_g`
+# `Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`
 
 - **Lean source**: `Divisor/Axioms/AxiomResultantLogDerivAtSplit.lean`
 - **Downstream consumer**: `chord_fiber_product_logDeriv_eq_logDerivTerm_trace` in `Divisor/Axioms/AxiomChordSumEqChordFiberProductLogDeriv.lean` (now a theorem). The downstream consumer uses the unrestricted name `Polynomial.resultant_logDeriv_at_split_specialization`, which is a theorem that case-splits on `f.natDegree` and `g.natDegree` and dispatches to either a trivial-case theorem or to this narrower axiom.
 - **Status**: temporary generic bridge axiom. It is intentionally less
   project-specific than the old chord axiom, but it is still a composed
   polynomial/resultant specialization and is not the final trust boundary.
-  Now narrowed to the case `0 < f.natDegree ∧ 0 < g.natDegree`. The
+  Now narrowed to the case `2 ≤ f.natDegree ∧ 0 < g.natDegree`. The
   trivial `f.natDegree = 0` case is a theorem (under `Monic`,
   `f.natDegree = 0 ⇒ f = 1`, so the resultant is 1 and both sides of the
-  identity are 0). The trivial `g.natDegree = 0` case is a theorem
-  (`g = C h`, `Res_X(f, g) = h^{f.natDegree}`, log-derivative is
-  `f.natDegree · h'(t₀)/h(t₀)`, matching the chord-root multiset sum
-  with `f.natDegree` constant summands).
+  identity are 0). The `f.natDegree = 1` case is a theorem
+  (`f = X - C α`, `Res_X(f, g, 1, n) = g.eval α` via mathlib's
+  `resultant_X_sub_C_left`; the chord-root multiset is the singleton
+  `{α.eval t₀}` and the identity follows from the chain rule for
+  `g.eval α` derived from `Differential.deriv_aeval_eq` instantiated
+  at the trivial algebra `K[X] / K[X]`). The trivial `g.natDegree = 0`
+  case is a theorem (`g = C h`, `Res_X(f, g) = h^{f.natDegree}`,
+  log-derivative is `f.natDegree · h'(t₀)/h(t₀)`, matching the
+  chord-root multiset sum with `f.natDegree` constant summands).
 
 ## Statement
 

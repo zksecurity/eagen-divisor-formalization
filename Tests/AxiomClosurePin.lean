@@ -10,7 +10,7 @@
   * `ma_extractable`, `ip_knowledge_sound`:
       propext, Classical.choice, Quot.sound,
       Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
-      Polynomial.resultant_logDeriv_at_split_specialization_of_pos_natDegree_pos_g,
+      Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g,
       Divisor.hasse_weil,
       Divisor.CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
 

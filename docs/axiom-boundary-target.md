@@ -34,14 +34,16 @@ from a chord-specific axiom, but it has not yet reached the final
 boundary:
 
 - The trace/log-derivative step is now a generic, chord-agnostic
-  axiom `Polynomial.resultant_logDeriv_at_split_specialization_of_pos_natDegree_pos_g`
+  axiom `Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`
   about the logarithmic derivative of `Res_X(f, g)` at a split
   inner-specialisation of `f`. The axiom carries an explicit
   `Monic f` hypothesis (added after a code review caught that the
   non-monic case picks up an extra `d/dT log(lc(f)^{deg g})` term per
-  mathlib's `Polynomial.resultant_eq_prod_eval`) and both
-  `0 < f.natDegree` and `0 < g.natDegree` hypotheses (both trivial
-  degree-zero cases are now theorems). The
+  mathlib's `Polynomial.resultant_eq_prod_eval`) and the strengthened
+  hypotheses `2 ≤ f.natDegree` and `0 < g.natDegree`. Three sub-cases
+  are now theorems and excluded from the axiom: `f.natDegree = 0`,
+  `f.natDegree = 1` (via `resultant_X_sub_C_left` plus the chain rule
+  for `g.eval α`), and `g.natDegree = 0`. The
   project caller `chordCubicBiv` is monic of degree 3. This is a
   useful intermediate bridge, not the final trust boundary. The final target is to prove it from the
   Galois norm/trace/log-derivative theorem

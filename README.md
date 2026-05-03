@@ -70,7 +70,7 @@ where `N = numZeros(D)` and `E_aff` is the set of affine `F_q`-points of `E`. Pr
 propext, Classical.choice, Quot.sound,
 Divisor.hasse_weil,
 Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
-Polynomial.resultant_logDeriv_at_split_specialization_of_pos_natDegree_pos_g,
+Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g,
 Divisor.CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
 ```
 
@@ -136,14 +136,18 @@ combines the divisibility axiom with the natDegree theorem to derive
 multiplicity equality at every fibre. Detailed write-up in
 `axioms/chord_fiber_product_concrete_bar_zfiber_pow_dvd.md`.
 
-#### `Polynomial.resultant_logDeriv_at_split_specialization_of_pos_natDegree_pos_g` — Lang *Algebra* §VI.5 + §VIII.5
+#### `Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g` — Lang *Algebra* §VI.5 + §VIII.5
 
 Logarithmic derivative of a bivariate resultant at a split
-specialisation, with `0 < f.natDegree`, `0 < g.natDegree`, and
-`f.Monic`. Both trivial degree-zero cases are now theorems
-(`f.natDegree = 0` collapses both sides to `0`; `g.natDegree = 0`
-discharged via `derivative_pow` and a constant logarithmic derivative
-on the chord-root multiset).
+specialisation, with `2 ≤ f.natDegree`, `0 < g.natDegree`, and
+`f.Monic`. Three sub-cases are now theorems:
+* `f.natDegree = 0`: collapses both sides to `0`.
+* `f.natDegree = 1`: `f = X - C α` reduces the resultant to `g.eval α`
+  via mathlib's `resultant_X_sub_C_left`, and the identity follows from
+  the chain rule for `g.eval α` (`Differential.deriv_aeval_eq`
+  instantiated at the trivial algebra `K[X] / K[X]`).
+* `g.natDegree = 0`: discharged via `derivative_pow` and a constant
+  logarithmic derivative on the chord-root multiset.
 
 The Galois case of Lang's underlying trace-of-log-derivative identity
 `Tr_{L/K}(dα/α) = d N_{L/K}(α) / N_{L/K}(α)` is fully formalised as

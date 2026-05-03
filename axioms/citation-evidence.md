@@ -39,7 +39,7 @@ Book PDFs used for snippets are present outside this Lean repo at:
     `snippets/stichtenoth-prop-3.1.9-conorm-principal-084.png`,
     `snippets/stichtenoth-thm-3.1.11-fundamental-equality-074.png`.
 
-* `Polynomial.resultant_logDeriv_at_split_specialization_of_pos_natDegree_pos_g`
+* `Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`
   * Citation: Lang IV.8, VI.5, VIII.5.
   * Snippets:
     `snippets/lang-IV.8-prop-8.1-8.3-resultant-202.png`,

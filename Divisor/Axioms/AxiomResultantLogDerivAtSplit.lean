@@ -22,6 +22,7 @@
 import Mathlib.RingTheory.Polynomial.Resultant.Basic
 import Mathlib.Algebra.Polynomial.Derivative
 import Divisor.Axioms.AxiomTraceLogDeriv
+import Divisor.PolynomialDifferential
 
 namespace Polynomial
 
@@ -186,17 +187,170 @@ theorem resultant_logDeriv_at_split_specialization_of_g_natDegree_eq_zero
     rw [this]
     ring
 
-/-- **Logarithmic derivative of a bivariate resultant at a split
-specialization** — narrowed to `0 < f.natDegree` and `0 < g.natDegree`.
+/-! ### Partial discharge: `f.natDegree = 1` (monic linear)
 
-The `f.natDegree = 0` and `g.natDegree = 0` cases are both handled
-separately by the theorems
-`resultant_logDeriv_at_split_specialization_of_natDegree_eq_zero` and
-`resultant_logDeriv_at_split_specialization_of_g_natDegree_eq_zero`
-above. The unrestricted form
-(`resultant_logDeriv_at_split_specialization`) is a theorem that
-case-splits on `f.natDegree` and `g.natDegree` and dispatches to the
-appropriate trivial-case theorem or to this narrower axiom.
+When `f` is monic of degree 1, `f = X - C α` for some `α : K[X]`, and
+mathlib's `Polynomial.resultant_X_sub_C_left` collapses
+`Res_X(f, g, 1, n)` to `g.eval α`. The log-derivative identity at
+`t₀ : K` reduces to the chain rule for `g.eval α` along the moving
+chord-root `α(T)`. The chain rule comes from
+`Differential.deriv_aeval_eq` applied to the polynomial-as-derivation
+`Polynomial.derivative` on `K[T]` (instance from
+`Divisor.PolynomialDifferential`). -/
+
+/-- "Eval-then-eval = map-then-eval" for bivariate polynomials at a
+specialization point. For `p : K[X][X]`, `α : K[X]`, `t₀ : K`:
+`(p.eval α).eval t₀ = (p.map (evalRingHom t₀)).eval (α.eval t₀)`.
+This is the standard `eval₂_at_apply` route through the inner-coeff
+ring hom `evalRingHom t₀ : K[X] → K`. -/
+private lemma eval_eval_eq_map_eval
+    {K : Type*} [Field K] (p : K[X][X]) (α : K[X]) (t₀ : K) :
+    (p.eval α).eval t₀
+      = (p.map (Polynomial.evalRingHom t₀)).eval (α.eval t₀) := by
+  rw [Polynomial.eval_map]
+  exact (Polynomial.eval₂_at_apply (Polynomial.evalRingHom t₀) α).symm
+
+/-- Inner derivative of `g` evaluated at a constant `C t : K[X]`
+equals `Differential.mapCoeffs g` evaluated at the same constant.
+
+Reason: when `t : K` is a scalar (so `(C t)^n = C (t^n)` is constant
+in the inner variable `T`), the only non-vanishing contribution to
+the inner derivative of `(monomial n a).eval (C t) = a * (C t)^n` is
+the coefficient derivative `a.derivative * (C t)^n`. This matches
+`(monomial n a.derivative).eval (C t)` term-by-term via polynomial
+induction. -/
+private lemma derivative_eval_C_const_eq_mapCoeffs_eval_C
+    {K : Type*} [Field K] (g : K[X][X]) (t : K) :
+    (g.eval (Polynomial.C t)).derivative
+      = (Differential.mapCoeffs g).eval (Polynomial.C t) := by
+  induction g using Polynomial.induction_on' with
+  | add p q ihp ihq =>
+    simp only [Polynomial.eval_add, ihp, ihq, map_add]
+  | monomial n a =>
+    simp only [Polynomial.eval_monomial, Polynomial.derivative_mul,
+               Polynomial.derivative_pow, Polynomial.derivative_C, mul_zero,
+               add_zero, Differential.mapCoeffs_monomial,
+               Polynomial.deriv_eq_derivative]
+
+/-- Chain rule for the outer evaluation `g.eval α` of a bivariate
+polynomial `g : K[X][X]` along a moving curve `α : K[X]`, expressed
+as the inner formal derivative of `g.eval α : K[X]`. Derived from
+`Differential.deriv_aeval_eq` instantiated at the trivial algebra
+`K[X] / K[X]` with `Differential` instance from
+`Divisor.PolynomialDifferential`. -/
+private lemma derivative_eval_chain
+    {K : Type*} [Field K] (g : K[X][X]) (α : K[X]) :
+    (g.eval α).derivative
+      = (Differential.mapCoeffs g).eval α
+        + (g.derivative).eval α * α.derivative := by
+  have h_ae : ∀ p : K[X][X], Polynomial.aeval (R := K[X]) α p = p.eval α := by
+    intro p
+    show (Polynomial.aeval α : K[X][X] → K[X]) p = _
+    rw [Polynomial.coe_aeval_eq_eval]
+  have hkey :=
+    Differential.deriv_aeval_eq (R := K[X]) (A := K[X]) α g
+  rw [h_ae g, h_ae (Differential.mapCoeffs g), h_ae g.derivative] at hkey
+  exact hkey
+
+/-- **Eval-then-derivative chain rule** in the form used by the
+log-derivative identity: the inner derivative of `g.eval α`
+evaluated at `t₀` decomposes as
+`g_T(α(t₀), t₀) + g_X(α(t₀), t₀) * α'(t₀)`. -/
+private lemma derivative_eval_at_chain
+    {K : Type*} [Field K] (g : K[X][X]) (α : K[X]) (t₀ : K) :
+    ((g.eval α).derivative).eval t₀
+      = ((g.eval (Polynomial.C (α.eval t₀))).derivative).eval t₀
+        + ((g.map (Polynomial.evalRingHom t₀)).derivative).eval (α.eval t₀)
+            * α.derivative.eval t₀ := by
+  rw [derivative_eval_chain g α, Polynomial.eval_add, Polynomial.eval_mul]
+  have hgT : ((Differential.mapCoeffs g).eval α).eval t₀
+      = ((g.eval (Polynomial.C (α.eval t₀))).derivative).eval t₀ := by
+    rw [eval_eval_eq_map_eval, derivative_eval_C_const_eq_mapCoeffs_eval_C,
+        eval_eval_eq_map_eval, Polynomial.eval_C]
+  have hgX : ((g.derivative).eval α).eval t₀
+      = ((g.map (Polynomial.evalRingHom t₀)).derivative).eval (α.eval t₀) := by
+    rw [eval_eval_eq_map_eval, Polynomial.derivative_map]
+  rw [hgT, hgX]
+
+/-- **Partial discharge** of the resultant log-derivative identity for
+the case `f.natDegree = 1` (with `f.Monic`).
+
+Set `α := -f.coeff 0`; then `f = X - C α` and
+`Res_X(f, g, 1, n) = g.eval α` by mathlib's `resultant_X_sub_C_left`.
+The chord-root multiset is `{α.eval t₀}` (singleton), so the RHS
+collapses to a single summand. The chain-rule identity
+`(g.eval α)'(t₀) = g_T(α(t₀), t₀) + g_X(α(t₀), t₀) * α'(t₀)` matches
+the RHS numerator after simplifying `f_X = 1` and
+`f_T = -α'(t₀)`. -/
+theorem resultant_logDeriv_at_split_specialization_of_f_natDegree_eq_one
+    {K : Type*} [Field K]
+    (f g : K[X][X]) (t₀ : K)
+    (hMonic : f.Monic)
+    (hf_one : f.natDegree = 1)
+    (hg_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
+        (g.map (Polynomial.evalRingHom t₀)).eval x ≠ 0) :
+    resultantLogDerivConclusion f g t₀ := by
+  classical
+  -- f = X - C α with α := -f.coeff 0.
+  set α : K[X] := -f.coeff 0 with hα_def
+  have hf_eq : f = Polynomial.X - Polynomial.C α := by
+    rw [hα_def, map_neg, sub_neg_eq_add]
+    exact hMonic.eq_X_add_C hf_one
+  -- f.map (evalRingHom t₀) = X - C (α.eval t₀).
+  have hf_map :
+      f.map (Polynomial.evalRingHom t₀)
+        = Polynomial.X - Polynomial.C (α.eval t₀) := by
+    rw [hf_eq, Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C]
+    rfl
+  -- Roots: singleton {α.eval t₀}.
+  have hroots :
+      (f.map (Polynomial.evalRingHom t₀)).roots = {α.eval t₀} := by
+    rw [hf_map, Polynomial.roots_X_sub_C]
+  have ht_mem : α.eval t₀ ∈ (f.map (Polynomial.evalRingHom t₀)).roots := by
+    rw [hroots]; exact Multiset.mem_singleton.mpr rfl
+  have hg_t :
+      (g.map (Polynomial.evalRingHom t₀)).eval (α.eval t₀) ≠ 0 :=
+    hg_def _ ht_mem
+  -- F = Res(f, g, 1, n) = g.eval α.
+  have hF_eq : Polynomial.resultant f g f.natDegree g.natDegree = g.eval α := by
+    rw [hf_one, hf_eq]
+    exact Polynomial.resultant_X_sub_C_left g g.natDegree α le_rfl
+  -- f_X = 1; f_T = -α.derivative.eval t₀.
+  have hf_X_val :
+      ((f.map (Polynomial.evalRingHom t₀)).derivative).eval (α.eval t₀) = 1 := by
+    rw [hf_map, Polynomial.derivative_sub, Polynomial.derivative_X,
+        Polynomial.derivative_C, sub_zero, Polynomial.eval_one]
+  have hf_T_val :
+      ((f.eval (Polynomial.C (α.eval t₀))).derivative).eval t₀
+        = -α.derivative.eval t₀ := by
+    rw [hf_eq, Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C,
+        Polynomial.derivative_sub, Polynomial.derivative_C, zero_sub,
+        Polynomial.eval_neg]
+  -- Chain rule.
+  have h_chain := derivative_eval_at_chain g α t₀
+  -- Expand the conclusion.
+  unfold resultantLogDerivConclusion
+  rw [hF_eq, hroots, Multiset.map_singleton, Multiset.sum_singleton]
+  rw [eval_eval_eq_map_eval g α t₀, h_chain]
+  simp only [hf_X_val, hf_T_val]
+  field_simp
+  ring
+
+/-- **Logarithmic derivative of a bivariate resultant at a split
+specialization** — narrowed to `2 ≤ f.natDegree` and `0 < g.natDegree`.
+
+Three sub-cases are now theorems and excluded from this axiom:
+* `f.natDegree = 0`:
+  `resultant_logDeriv_at_split_specialization_of_natDegree_eq_zero`.
+* `g.natDegree = 0`:
+  `resultant_logDeriv_at_split_specialization_of_g_natDegree_eq_zero`.
+* `f.natDegree = 1`:
+  `resultant_logDeriv_at_split_specialization_of_f_natDegree_eq_one`.
+
+The unrestricted form (`resultant_logDeriv_at_split_specialization`)
+is a theorem that case-splits on `f.natDegree` and `g.natDegree` and
+dispatches to the appropriate trivial-case theorem or to this
+narrower axiom.
 
 Setup: `f, g : K[X][X]` (i.e. polynomials in the outer `Polynomial.X`
 with coefficients in `K[X]` for the inner `Polynomial.X`); `t₀ : K` the
@@ -210,9 +364,10 @@ Hypotheses:
   picks up the corresponding logarithmic derivative
   `d/dT log(lc(f)^{deg g})` term. The project-side caller
   (`chordCubicBiv`) is monic, so we keep the simpler statement.
-* `hf_pos` — `0 < f.natDegree`. The degree-zero case is provable from
-  polynomial identities (see the theorem above) and is handled by the
-  unrestricted re-export.
+* `hf_two_le` — `2 ≤ f.natDegree`. The cases `f.natDegree = 0` and
+  `f.natDegree = 1` are handled by separate theorems above (the
+  degree-1 case via `resultant_X_sub_C_left` and the chain rule for
+  `g.eval α`).
 * `hg_pos` — `0 < g.natDegree`. The degree-zero case for `g` is
   proved from `derivative_pow` plus the fact that the constant
   `g.coeff 0`'s logarithmic derivative is constant on the chord-root
@@ -246,11 +401,11 @@ moving chord root `x(t)` defined by `f(x(t), t) = 0`.
 Reference: Lang, *Algebra* GTM 211, §VI.5 Theorem 5.1
 (product-of-embeddings / norm-trace) + §VIII.5 Theorem 5.1 Case 1
 (extension of derivations to separable algebraic extensions). -/
-axiom resultant_logDeriv_at_split_specialization_of_pos_natDegree_pos_g
+axiom resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
     {K : Type*} [Field K]
     (f g : K[X][X]) (t₀ : K)
     (hMonic : f.Monic)
-    (hf_pos : 0 < f.natDegree)
+    (hf_two_le : 2 ≤ f.natDegree)
     (hg_pos : 0 < g.natDegree)
     (hF_ne : (Polynomial.resultant f g f.natDegree g.natDegree).eval t₀ ≠ 0)
     (hSplit : (f.map (Polynomial.evalRingHom t₀)).Splits)
@@ -261,16 +416,19 @@ axiom resultant_logDeriv_at_split_specialization_of_pos_natDegree_pos_g
   resultantLogDerivConclusion f g t₀
 
 /-- **Re-export — the unrestricted resultant log-derivative identity**,
-a theorem derived from the narrowed `_of_pos_natDegree_pos_g` axiom
-plus the two trivial degree-zero theorems above.
+a theorem derived from the narrowed `_of_two_le_natDegree_pos_g`
+axiom plus the three trivial-case theorems above.
 
-Three cases:
+Cases:
 * `f.natDegree = 0`: `_of_natDegree_eq_zero`.
-* `0 < f.natDegree, g.natDegree = 0`: `_of_g_natDegree_eq_zero`. The
+* `f.natDegree = 1`: `_of_f_natDegree_eq_one` (via the
+  `resultant_X_sub_C_left` collapse and the chain rule for
+  `g.eval α`).
+* `2 ≤ f.natDegree, g.natDegree = 0`: `_of_g_natDegree_eq_zero`. The
   hypothesis `(g.coeff 0).eval t₀ ≠ 0` follows from `hg_def` applied to
   any chord root; such a root exists because `0 < f.natDegree` and
   `Splits` together force at least one root.
-* `0 < f.natDegree, 0 < g.natDegree`: the narrowed axiom.
+* `2 ≤ f.natDegree, 0 < g.natDegree`: the narrowed axiom.
 
 This is the form that downstream consumers
 (`chord_fiber_product_logDeriv_eq_logDerivTerm_trace` in
@@ -288,14 +446,20 @@ theorem resultant_logDeriv_at_split_specialization
         ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x ≠ 0) :
     resultantLogDerivConclusion f g t₀ := by
   classical
-  rcases Nat.eq_zero_or_pos f.natDegree with hf_zero | hf_pos
-  · exact resultant_logDeriv_at_split_specialization_of_natDegree_eq_zero
-      f g t₀ hMonic hf_zero
+  rcases Nat.lt_or_ge f.natDegree 2 with hf_lt | hf_two_le
+  · -- `f.natDegree ∈ {0, 1}`: dispatch to the trivial-case or linear theorem.
+    have h_or : f.natDegree = 0 ∨ f.natDegree = 1 := by omega
+    rcases h_or with hf_zero | hf_one
+    · exact resultant_logDeriv_at_split_specialization_of_natDegree_eq_zero
+        f g t₀ hMonic hf_zero
+    · exact resultant_logDeriv_at_split_specialization_of_f_natDegree_eq_one
+        f g t₀ hMonic hf_one hg_def
   rcases Nat.eq_zero_or_pos g.natDegree with hg_zero | hg_pos
-  · -- `g.natDegree = 0`: g is constant in the outer variable. The
-    -- hypothesis `(g.coeff 0).eval t₀ ≠ 0` follows from `hg_def`
-    -- applied to any chord root; such a root exists because
-    -- `0 < f.natDegree` and `Splits` give `roots.card = f.natDegree > 0`.
+  · -- `g.natDegree = 0`: g is constant. The hypothesis
+    -- `(g.coeff 0).eval t₀ ≠ 0` follows from `hg_def` applied to any
+    -- chord root; such a root exists because `0 < f.natDegree` and
+    -- `Splits` give `roots.card = f.natDegree > 0`.
+    have hf_pos : 0 < f.natDegree := lt_of_lt_of_le (by decide) hf_two_le
     have hf_map_natDeg : (f.map (Polynomial.evalRingHom t₀)).natDegree
         = f.natDegree := hMonic.natDegree_map _
     have hroot_card_pos : 0 < (f.map (Polynomial.evalRingHom t₀)).roots.card := by
@@ -311,7 +475,7 @@ theorem resultant_logDeriv_at_split_specialization
       exact this
     exact resultant_logDeriv_at_split_specialization_of_g_natDegree_eq_zero
       f g t₀ hMonic hg_zero hSplit hh_ne hf_X_def
-  · exact resultant_logDeriv_at_split_specialization_of_pos_natDegree_pos_g
-      f g t₀ hMonic hf_pos hg_pos hF_ne hSplit hg_def hf_X_def
+  · exact resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
+      f g t₀ hMonic hf_two_le hg_pos hF_ne hSplit hg_def hf_X_def
 
 end Polynomial
