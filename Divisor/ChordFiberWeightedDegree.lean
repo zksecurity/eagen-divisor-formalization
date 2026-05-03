@@ -216,4 +216,62 @@ private lemma DLineBiv_coeff_natDegree_le_one
       · exact Polynomial.natDegree_X_le
       · simp
 
+/-- **Sharper structural bound on `DLineBiv.coeff k` when `D.b.coeff k = 0`.**
+
+When `D.b.coeff k = 0`, the leading-Z term in `DLineBiv.coeff k`
+vanishes and the natDegree is at most 0 (i.e. the coefficient is a
+constant in `Z`). This is the case-split that the weight inequality
+needs to be tight in the `k > deg D.b` direction.
+
+TODO: prove via direct coefficient-of-coefficient analysis. The key
+identity is
+
+    (DLineBiv).coeff k = C(D.a.coeff k - λ · D.b.coeff(k-1))
+                            - C(D.b.coeff k) · Z
+
+(with `D.b.coeff(-1) = 0`), so when `D.b.coeff k = 0` only the
+constant `C(D.a.coeff k - λ · D.b.coeff(k-1))` remains, of natDegree 0. -/
+private lemma DLineBiv_coeff_natDegree_le_zero_of_b_coeff_zero
+    (lam : ZMod E.q) (D : CoordRingElt E.q) (k : ℕ)
+    (_hbz : D.b.coeff k = 0) :
+    ((DLineBiv E lam D).coeff k).natDegree ≤ 0 := by
+  -- This follows from the explicit form of DLineBiv.coeff k, which has X-coefficient
+  -- (in inner ring) = -D.b.coeff k. When that is zero, the whole coefficient is a
+  -- constant in inner ring.
+  sorry
+
+/-- **Lemma B (target): DLineBiv per-coefficient weight bound.**
+
+For `k ≤ (DLineBiv E lam D).natDegree`,
+
+    3 · ((DLineBiv E lam D).coeff k).natDegree + 2 · k ≤ (normPoly E D).natDegree.
+
+This is the G-row weight bound feeding into the Sylvester determinant
+analysis, completing the per-coefficient ingredient list for the
+weighted-Sylvester proof of the natDegree bound
+
+    (chord_fiber_product_concrete E lam D).natDegree ≤ (normPoly E D).natDegree
+
+(which is stub 2a-coprime — actually unconditional once Lemma B is
+established).
+
+Proof sketch (case-split on whether `D.b.coeff k = 0`):
+
+* `D.b.coeff k ≠ 0`: then `k ≤ D.b.natDegree`, so
+  `2k ≤ 2 D.b.natDegree`. The coefficient natDegree is ≤ 1, so
+  `3·1 + 2k = 3 + 2k ≤ 2 D.b.natDegree + 3 ≤ (normPoly).natDegree`.
+
+* `D.b.coeff k = 0`: the coefficient natDegree drops to ≤ 0
+  (`DLineBiv_coeff_natDegree_le_zero_of_b_coeff_zero`), so the
+  bound becomes `2k ≤ (normPoly).natDegree`. Since
+  `k ≤ DLineBiv.natDegree ≤ max(D.a.natDegree, D.b.natDegree + 1)`,
+  case-split on which `max` branch wins. -/
+private lemma DLineBiv_coeff_natDegree_weighted_bound
+    (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (k : ℕ) (_hk : k ≤ (DLineBiv E lam D).natDegree) :
+    3 * ((DLineBiv E lam D).coeff k).natDegree + 2 * k
+      ≤ (normPoly E D).natDegree :=
+  sorry
+
 end Divisor
