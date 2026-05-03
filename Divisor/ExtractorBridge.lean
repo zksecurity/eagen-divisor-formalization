@@ -922,10 +922,7 @@ noncomputable def distinctR
     (hkm : stmt.k = msg.k) :
     distinctR E stmt msg hkm ⟨0, by omega⟩ = (stmt.target.1, -stmt.target.2) := by
   unfold distinctR
-  have : (finCongr (Nat.add_comm 1 (baseImageCount E stmt msg hkm))
-            ⟨0, by omega⟩ : Fin (baseImageCount E stmt msg hkm + 1))
-         = 0 := rfl
-  simp [Function.comp_apply, this, distinctRCons_zero]
+  simp [Function.comp_apply, distinctRCons_zero]
 
 @[simp] theorem distinctR_succ
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -1071,10 +1068,7 @@ noncomputable def distinctM'
     (hkm : stmt.k = msg.k) :
     distinctM' E stmt msg hkm ⟨0, by omega⟩ = (-1 : ZMod E.q) := by
   unfold distinctM'
-  have : (finCongr (Nat.add_comm 1 (baseImageCount E stmt msg hkm))
-            ⟨0, by omega⟩ : Fin (baseImageCount E stmt msg hkm + 1))
-         = 0 := rfl
-  simp [Function.comp_apply, this, distinctMCons_zero]
+  simp [Function.comp_apply, distinctMCons_zero]
 
 @[simp] theorem distinctM'_succ
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -2712,7 +2706,7 @@ set_option maxHeartbeats 1600000 in
 theorem polyG_zero_trace_formula
     {E : ECSetup} (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
-    (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
+    (_hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
     (hSplit : splitsOnE E msg.toD)
     (hAllZero : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
@@ -3423,8 +3417,8 @@ theorem polyG_zero_trace_formula
             ⊆ E.points.filter (fun A₁ => A₁ ∈ zerosFinset E D) ∪
               E.points.filter (fun A₁ => A₁.1 = A₀.1) := by
           intro x hx
-          simp only [Finset.mem_filter, not_and, Bool.not_eq_true,
-            decide_eq_false_iff_not, Decidable.not_not] at hx
+          simp only [Finset.mem_filter, not_and,
+            Decidable.not_not] at hx
           rw [Finset.mem_union, Finset.mem_filter, Finset.mem_filter]
           by_cases hxz : x ∈ zerosFinset E D
           · left; exact ⟨hx.1, hxz⟩
