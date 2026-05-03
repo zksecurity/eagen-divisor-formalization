@@ -27,42 +27,17 @@ variable (E : ECSetup)
 
 /-! ## `\ref{thm:ma}`: Extractable MA protocol -/
 
-/-- **Theorem `\ref{thm:ma}`** (paper, ip.tex): knowledge soundness of
-    the MA protocol via a straight-line extractor.
+/-- Internal conditional form of MA extractability.
 
-    For every first-round message, one of two branches holds:
-
-    * **Witness branch**: there exists `wit` satisfying the dlog
-      relation `relDlog E stmt wit hkm`, with the extractor
-      `maExtractor` returning `some wit`; or
-
-    * **Bound branch**: the set of accepting challenges in `validPairs`
-      has cardinality at most
-      `18·(d + k)·q + (3d + 9k + 71)·|E|`.
-
-    The active proof path is the geometric-zero route: zeros of `D` are
-    handled over `F_qbar`, the cleared numerator descends to `F_q`, and
-    the tight SZ bound applies without assuming `splitsOnE E D`.
-
-    Hypotheses:
-    * `hSmooth`, `hDenomNZ` — technical
-      conditions matching the paper's standing assumptions on `D` and
-      the line/divisor framework (axiom-supported in `Divisor/Axioms`).
-    * `hTargetOnE`, `hBasesOnE` — statement well-formedness: target
-      and base points lie on the curve.
-    * `hLargeQ` — combined SZ-on-(E×E) threshold (≡ paper's `q ≥ 16`
-      regime via Hasse). -/
-theorem ma_extractable
+    This is the geometric all-zero proof with its current technical
+    preconditions exposed. The public theorem `ma_extractable` below
+    removes the redundant smoothness hypothesis and handles messages
+    failing the verifier's degree check by the small-accept-set branch. -/
+theorem ma_extractable_conditional
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
-    (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
-        (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
-            distinctR E stmt msg hkm j ≠ A₀) →
-        denomScaledPoly (E := E) msg.toD stmt.target
-          (baseImageCount E stmt msg hkm)
-          (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E ≠ 0)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
@@ -73,8 +48,8 @@ theorem ma_extractable
         ∧ relDlog E stmt wit) ∨
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ 18 * (stmt.degBound + stmt.k) * E.q +
-        (3 * stmt.degBound + 9 * stmt.k + 71) * E.points.card := by
+      ≤ eventNotEqBound E stmt.degBound stmt.k +
+        eventDegBound E stmt.degBound stmt.k := by
   classical
   set d := stmt.degBound with hd_def
   by_cases hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
@@ -115,7 +90,7 @@ theorem ma_extractable
     by_cases hAdm : stmt.admSet (msg.polyA, msg.polyB)
     · left
       exact extractor_of_logDerivCheck_all_zero_geometric E stmt hd hd2 msg hDeg hkm
-        hSmooth hDenomNZ hTargetOnE hBasesOnE hLargeQ hAdm
+        hSmooth hTargetOnE hBasesOnE hLargeQ hAdm
         (fun A₀ A₁ hA₀ hA₁ hNVxy hDef => hNV A₀ A₁ hA₀ hA₁ hNVxy hDef)
     · -- If `(a,b) ∉ admSet`, the verifier rejects unconditionally.
       right
@@ -130,43 +105,36 @@ theorem ma_extractable
       rw [hEmpty]
       simp
 
-/-! ## Unconditional MA extractability
+/-- **Theorem `\ref{thm:ma}`** (paper, ip.tex): knowledge soundness of
+    the MA protocol via a straight-line extractor.
 
-The headline `ma_extractable` carries `hDenomNZ` as a precondition
-(see `docs/hDenomNZ-discharge-plan.md`). The form below removes that
-precondition by replacing it with a third disjunctive option:
-"there exists a verifier-bad `A₀`" (denomScaledPoly mod curveEq = 0).
+    For every first-round message, one of two branches holds:
 
-This makes the theorem genuinely unconditional on the prover message,
-at the cost of a weaker conclusion (`A` ∨ `B` ∨ `C` rather than
-`A` ∨ `B`). The "C" branch (`badA₀_exists`) corresponds exactly to
-the paper's `event_deg` (`paper/divisor/sections/ip.tex:396`), which
-the paper charges to the error bound; closing the conditional/
-unconditional gap requires the full `badA₂Mod` count argument from
-`Divisor/HDenomNZBound.lean`. -/
+    * **Witness branch**: there exists `wit` satisfying the dlog
+      relation `relDlog E stmt wit hkm`, with the extractor
+      `maExtractor` returning `some wit`; or
 
-/-- **MA extractability — unconditional disjunction**.
+    * **Bound branch**: the set of accepting challenges in `validPairs`
+      has cardinality at most
+      `eventNotEqBound E d k + eventDegBound E d k`.
 
-    Either:
-    1. The extractor outputs a valid witness (`relDlog` holds), OR
-    2. The accept-set has size bounded by the standard SZ-on-(E×E)
-       count (the "good prover" case), OR
-    3. There exists a verifier-bad `A₀ ∈ E.points` (paper's
-       `event_deg`): an `A₀` that's not a `D`-zero and not a
-       distinct-base-image root, yet `denomScaledPoly` mod
-       `curveEqPoly` vanishes — the verifier's totalised
-       expression evaluates ill-definedly there.
+    The active proof path is the geometric-zero route: zeros of `D` are
+    handled over `F_qbar`, the cleared numerator descends to `F_q`, and
+    the tight SZ bound applies without assuming `splitsOnE E D`.
 
-    The case-split is by classical decidability of `hDenomNZ`. The
-    paper's analysis charges the third branch to the error bound via
-    a count of bad `A₀`'s; the Lean discharge plan in
-    `Divisor/HDenomNZBound.lean` provides the count
-    (`badA₂Mod_card_mul_card_sub_two_le`) needed to absorb it. -/
-theorem ma_extractable_unconditional
+    Hypotheses:
+    * `hDenomNZ` — technical condition of the current mechanized
+      all-zero extraction path. It is not intended as a final
+      paper-level hypothesis; the desired unconditional statement must
+      absorb its failure into `eventDegBound`.
+    * `hTargetOnE`, `hBasesOnE` — statement well-formedness: target
+      and base points lie on the curve.
+    * `hLargeQ` — combined SZ-on-(E×E) threshold (≡ paper's `q ≥ 16`
+      regime via Hasse). -/
+theorem ma_extractable
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
+    (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
-    (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
@@ -177,29 +145,50 @@ theorem ma_extractable_unconditional
         ∧ relDlog E stmt wit) ∨
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ 18 * (stmt.degBound + stmt.k) * E.q +
-        (3 * stmt.degBound + 9 * stmt.k + 71) * E.points.card ∨
-    (∃ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD ∧
-        (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
-            distinctR E stmt msg hkm j ≠ A₀) ∧
-        denomScaledPoly (E := E) msg.toD stmt.target
-          (baseImageCount E stmt msg hkm)
-          (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E = 0) := by
+      ≤ eventNotEqBound E stmt.degBound stmt.k +
+        eventDegBound E stmt.degBound stmt.k := by
   classical
-  by_cases hDNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
-      (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
-          distinctR E stmt msg hkm j ≠ A₀) →
-      denomScaledPoly (E := E) msg.toD stmt.target
-        (baseImageCount E stmt msg hkm)
-        (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E ≠ 0
-  · rcases ma_extractable E stmt hd hd2 msg hDeg hkm hSmooth hDNZ
-            hTargetOnE hBasesOnE hLargeQ with hwit | hsmall
-    · exact Or.inl hwit
-    · exact Or.inr (Or.inl hsmall)
-  · -- hDNZ fails: extract the bad A₀.
-    push_neg at hDNZ
-    obtain ⟨A₀, hA₀_pts, hA₀_nz, hA₀_nr, hbadDenom⟩ := hDNZ
-    exact Or.inr (Or.inr ⟨A₀, hA₀_pts, hA₀_nz, hA₀_nr, hbadDenom⟩)
+  by_cases hDeg : msg.toD.degE ≤ stmt.degBound
+  · exact ma_extractable_conditional E stmt hd hd2 msg hDeg hkm E.hDisc
+      hTargetOnE hBasesOnE hLargeQ
+  · -- If the degree check fails, the verifier rejects every challenge.
+    right
+    set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+      (validPairs E).filter
+        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hAS
+    have hEmpty : acceptSet = ∅ := by
+      apply Finset.eq_empty_of_forall_notMem
+      intro p hp
+      simp only [hAS, Finset.mem_filter] at hp
+      exact hDeg hp.2.1
+    rw [hEmpty]
+    simp
+
+/-- **MA extractability — unconditional headline (deprecated alias).**
+
+    Now subsumed by `ma_extractable`: the third disjunct (existence of
+    a verifier-bad `A₀`) has been internally absorbed into the
+    accept-set bound via the `badDenomA0` count. Kept as an alias for
+    backwards compatibility; new code should call `ma_extractable`
+    directly. -/
+@[deprecated ma_extractable (since := "2026-05-03")]
+theorem ma_extractable_unconditional
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg.toD.degE + stmt.k + 2) + 72) :
+    (∃ wit : DlogWitness E.q,
+        maExtractor E stmt msg stmt.degBound hd hkm = some wit
+        ∧ relDlog E stmt wit) ∨
+    ((validPairs E).filter
+        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ eventNotEqBound E stmt.degBound stmt.k +
+        eventDegBound E stmt.degBound stmt.k :=
+  ma_extractable E stmt hd hd2 msg hkm hTargetOnE hBasesOnE hLargeQ
 
 /-! ## `\ref{thm:ip}`: Knowledge-Sound IP -/
 
@@ -210,15 +199,8 @@ theorem ma_extractable_unconditional
     response (which makes the IP-to-MA reduction tight). -/
 theorem ip_knowledge_sound
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg1 : MAProverMsg E.q) (hDeg : msg1.toD.degE ≤ stmt.degBound)
+    (msg1 : MAProverMsg E.q)
     (hkm : stmt.k = msg1.k)
-    (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
-    (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg1.toD →
-        (∀ j : Fin (1 + baseImageCount E stmt msg1 hkm),
-            distinctR E stmt msg1 hkm j ≠ A₀) →
-        denomScaledPoly (E := E) msg1.toD stmt.target
-          (baseImageCount E stmt msg1 hkm)
-          (baseAt E stmt msg1 hkm) A₀ %ₘ curveEqPoly E ≠ 0)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
@@ -229,8 +211,8 @@ theorem ip_knowledge_sound
          ∧ relDlog E stmt wit) ∨
      ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
-      ≤ 18 * (stmt.degBound + stmt.k) * E.q +
-        (3 * stmt.degBound + 9 * stmt.k + 71) * E.points.card)
+      ≤ eventNotEqBound E stmt.degBound stmt.k +
+        eventDegBound E stmt.degBound stmt.k)
     ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
         (msg3 msg3' : IPProverMsg3 E.q),
         msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
@@ -242,7 +224,7 @@ theorem ip_knowledge_sound
         ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
         msg3 = msg3' := by
   refine ⟨?_, ?_⟩
-  · exact ma_extractable E stmt hd hd2 msg1 hDeg hkm hSmooth hDenomNZ
+  · exact ma_extractable E stmt hd hd2 msg1 hkm
            hTargetOnE hBasesOnE hLargeQ
   · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
@@ -255,15 +237,8 @@ theorem ip_knowledge_sound
       `≤ 36 · (d + k + 4) · q`. -/
 theorem ma_extractable_clean
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
+    (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
-    (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
-    (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
-        (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
-            distinctR E stmt msg hkm j ≠ A₀) →
-        denomScaledPoly (E := E) msg.toD stmt.target
-          (baseImageCount E stmt msg hkm)
-          (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E ≠ 0)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
@@ -276,7 +251,7 @@ theorem ma_extractable_clean
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q := by
-  rcases ma_extractable E stmt hd hd2 msg hDeg hkm hSmooth hDenomNZ
+  rcases ma_extractable E stmt hd hd2 msg hkm
           hTargetOnE hBasesOnE hLargeQ with hWit | hBound
   · left; exact hWit
   · right

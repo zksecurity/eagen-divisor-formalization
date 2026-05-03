@@ -6200,12 +6200,6 @@ private theorem geometric_residue_match
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
-    (_hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
-        (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
-            distinctR E stmt msg hkm j ≠ A₀) →
-        denomScaledPoly (E := E) msg.toD stmt.target
-          (baseImageCount E stmt msg hkm)
-          (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E ≠ 0)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
@@ -6258,12 +6252,6 @@ private theorem geometric_sigma_matching
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
-    (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
-        (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
-            distinctR E stmt msg hkm j ≠ A₀) →
-        denomScaledPoly (E := E) msg.toD stmt.target
-          (baseImageCount E stmt msg hkm)
-          (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E ≠ 0)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
@@ -6284,7 +6272,7 @@ private theorem geometric_sigma_matching
       (∀ k, ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q)
             + distinctM' E stmt msg hkm (σ k) = 0) ∧
       (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) :=
-  geometric_residue_match E stmt hd hd2 msg hDeg hkm hSmooth hDenomNZ
+  geometric_residue_match E stmt hd hd2 msg hDeg hkm hSmooth
     hTargetOnE hBasesOnE hLargeQ hAdm hNoNegP hAllZero
 
 set_option maxHeartbeats 800000 in
@@ -6293,12 +6281,6 @@ theorem extractor_of_logDerivCheck_all_zero_geometric_general
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
-    (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
-        (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
-            distinctR E stmt msg hkm j ≠ A₀) →
-        denomScaledPoly (E := E) msg.toD stmt.target
-          (baseImageCount E stmt msg hkm)
-          (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E ≠ 0)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
@@ -6319,7 +6301,7 @@ theorem extractor_of_logDerivCheck_all_zero_geometric_general
   have hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg hAdm
   obtain ⟨hSplit, σ, hσ_eq, hσ_betam, hσ_off⟩ :=
-    geometric_sigma_matching E stmt hd hd2 msg hDeg hkm hSmooth hDenomNZ
+    geometric_sigma_matching E stmt hd hd2 msg hDeg hkm hSmooth
       hTargetOnE hBasesOnE hLargeQ hAdm hNoNegP hAllZero
   have hβsup := betaCanonical_support E msg.toD
   have hβcov := betaCanonical_covers E msg.toD hDnz
@@ -6385,12 +6367,6 @@ theorem extractor_of_logDerivCheck_all_zero_geometric
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
-    (hDenomNZ : ∀ A₀ ∈ E.points, A₀ ∉ zerosFinset E msg.toD →
-        (∀ j : Fin (1 + baseImageCount E stmt msg hkm),
-            distinctR E stmt msg hkm j ≠ A₀) →
-        denomScaledPoly (E := E) msg.toD stmt.target
-          (baseImageCount E stmt msg hkm)
-          (baseAt E stmt msg hkm) A₀ %ₘ curveEqPoly E ≠ 0)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
@@ -6416,6 +6392,6 @@ theorem extractor_of_logDerivCheck_all_zero_geometric
       rw [dif_pos hSucc]
     · exact extracted_scalars_valid_special E stmt msg hkm hNegP
   · exact extractor_of_logDerivCheck_all_zero_geometric_general E stmt hd hd2
-      msg hDeg hkm hSmooth hDenomNZ hTargetOnE hBasesOnE hLargeQ hAdm hNegP hAllZero
+      msg hDeg hkm hSmooth hTargetOnE hBasesOnE hLargeQ hAdm hNegP hAllZero
 
 end Divisor
