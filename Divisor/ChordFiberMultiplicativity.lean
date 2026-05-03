@@ -637,6 +637,77 @@ theorem resultant_chordCubicBiv_pmap_C_natDegree_of_splits
     (fun x => resultant_chordCubicBiv_X_sub_C_natDegree E lam x)
     p hpm hsplit
 
+/-! ### K-version: chord cubic over an extension field
+
+To handle monic `p : (ZMod E.q)[X]` with non-`F_q`-rational factors, we
+lift `chordCubicBiv` along an extension `K / F_q` (later `K =
+SplittingField p`) and re-prove the linear-case natDegree-of-eval
+hypothesis over `K`. Everything else flows through the generic
+splits-over-`R` theorem `resultant_pmap_C_natDegree_of_splits_generic`. -/
+
+/-- **Explicit form of `chordCubicBiv` after coefficient lift to `K[X][X]`.**
+
+Pushing the coefficient ring map `ψ : ZMod E.q →+* K` through the inner
+polynomial ring gives a polynomial in `K[X][X]` of the same shape as
+`chordCubicBiv`. -/
+private lemma chordCubicBiv_map_eq
+    {K : Type*} [Field K] (ψ : ZMod E.q →+* K) (lam : ZMod E.q) :
+    (chordCubicBiv E lam).map (Polynomial.mapRingHom ψ)
+      = Polynomial.X ^ 3
+          - Polynomial.C (Polynomial.C (ψ (lam ^ 2))) * Polynomial.X ^ 2
+          + Polynomial.C (Polynomial.C (ψ E.curveA)
+                          - Polynomial.C (ψ (2 * lam)) * Polynomial.X)
+              * Polynomial.X
+          + Polynomial.C (Polynomial.C (ψ E.curveB) - Polynomial.X ^ 2) := by
+  classical
+  unfold chordCubicBiv
+  simp [Polynomial.map_add, Polynomial.map_sub, Polynomial.map_mul,
+        Polynomial.map_pow, Polynomial.map_C, Polynomial.map_X,
+        Polynomial.coe_mapRingHom]
+
+/-- **K-version of `chordCubicBiv_eval_C_natDegree`.** After lifting
+coefficients to `K` and evaluating the outer chord variable at
+`Polynomial.C α` for `α : K`, the resulting polynomial in `K[X]` has
+natDegree exactly 2. The leading inner-X² coefficient is `-1`, which
+is nonzero in any field. -/
+private lemma chordCubicBivMapped_eval_C_natDegree
+    {K : Type*} [Field K] (ψ : ZMod E.q →+* K) (lam : ZMod E.q) (α : K) :
+    (((chordCubicBiv E lam).map (Polynomial.mapRingHom ψ)).eval
+        (Polynomial.C α)).natDegree = 2 := by
+  classical
+  rw [chordCubicBiv_map_eq E ψ lam]
+  simp only [Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_mul,
+             Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X]
+  compute_degree!
+
+/-- **K-version of `resultant_chordCubicBiv_X_sub_C_natDegree`.** The
+linear-case resultant with respect to `K`-coefficients, used as the
+`hF_lin` hypothesis for `resultant_pmap_C_natDegree_of_splits_generic`
+applied to `chordCubicBiv` lifted to `K`. -/
+private lemma resultant_chordCubicBivMapped_X_sub_C_natDegree
+    {K : Type*} [Field K] (ψ : ZMod E.q →+* K) (lam : ZMod E.q) (α : K) :
+    (Polynomial.resultant
+        ((chordCubicBiv E lam).map (Polynomial.mapRingHom ψ))
+        (Polynomial.X - Polynomial.C (Polynomial.C α))
+        ((chordCubicBiv E lam).map (Polynomial.mapRingHom ψ)).natDegree
+        1).natDegree = 2 := by
+  classical
+  set F := (chordCubicBiv E lam).map (Polynomial.mapRingHom ψ) with hF
+  have hres :
+      Polynomial.resultant F
+          (Polynomial.X - Polynomial.C (Polynomial.C α))
+          F.natDegree 1
+        = (-1) ^ F.natDegree * F.eval (Polynomial.C α) :=
+    Polynomial.resultant_X_sub_C_right (f := F) (m := F.natDegree)
+      (r := Polynomial.C α) le_rfl
+  have hF_natDegree : F.natDegree = 3 := by
+    rw [hF, chordCubicBiv_map_eq E ψ lam]
+    compute_degree!
+  rw [hres, hF_natDegree]
+  rw [show ((-1 : Polynomial K) ^ 3) = -1 by ring,
+      neg_one_mul, Polynomial.natDegree_neg]
+  exact chordCubicBivMapped_eval_C_natDegree E ψ lam α
+
 /-! ### Streamlined inductive steps with auto-derived non-vanishing
 
 The `_step` theorems above take both `hDLne` and `hCFPne` as explicit
