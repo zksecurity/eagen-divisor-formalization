@@ -31,6 +31,7 @@
 import Divisor.Defs
 import Divisor.CubicIntersection
 import Divisor.BetaConstructive
+import Divisor.ChordCubicSymmetric
 import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.Algebra.Polynomial.Degree.Defs
 import Mathlib.Algebra.Polynomial.Eval.Defs
@@ -270,6 +271,31 @@ theorem natDegree_normPoly_chordCoordRingElt_nonvertical (lam mu : ZMod E.q) :
     omega
   rw [hCoeff3] at this
   simp at this
+
+/-! ## Chord-line zero set on `E`
+
+For the chord branch (`P.1 ≠ Q.1`), the only on-curve zeros of
+`chordCoordRingElt P Q` are exactly `P`, `Q`, and the third
+intersection. Direct corollary of the existing
+`chord_line_support_in_E` (`Divisor/ChordCubicSymmetric.lean:168`) once
+we observe that `chordCoordRingElt`'s evaluation matches
+`lineThrough.eval`. -/
+
+/-- Chord case: the on-curve zeros of `chordCoordRingElt P Q` lie in
+    `{P, Q, A₂}` where `A₂` is the third chord intersection. -/
+theorem chordCoordRingElt_zeros_on_E_chord
+    {P Q : ZMod E.q × ZMod E.q}
+    (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (hxx : P.1 ≠ Q.1)
+    {S : ZMod E.q × ZMod E.q} (hS : S ∈ E.points)
+    (hZero : (chordCoordRingElt E P Q).eval S.1 S.2 = 0) :
+    S = P ∨ S = Q ∨
+      S = (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1,
+           slopeOf P.1 P.2 Q.1 Q.2 *
+             (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) +
+           (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1)) := by
+  rw [chordCoordRingElt_eval_eq_lineThrough_chord E hxx S] at hZero
+  exact chord_line_support_in_E E P Q hP hQ hxx S hS hZero
 
 /-! ## Vanishing of `chordCoordRingElt` at the chord's third intersection -/
 
