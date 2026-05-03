@@ -364,6 +364,48 @@ theorem chordCoordRingElt_eval_thirdPoint_chord
         - (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1) = 0
   ring
 
+/-! ## `splitsOnE` for the vertical chord-line case
+
+For `D = (X − C x₀, 0)` with `x₀` the x-coordinate of some F_q-point
+on `E`, the norm polynomial `(X − x₀)²` splits over `F_q` (the only
+root is `x₀`, with multiplicity 2) and the root lifts. -/
+
+theorem splitsOnE_chordCoordRingElt_vertical
+    (P Q : ZMod E.q × ZMod E.q) (hP : P ∈ E.points)
+    (hxx : P.1 = Q.1)
+    (hCase : P.2 ≠ Q.2 ∨ (P.2 = Q.2 ∧ P.2 = 0)) :
+    splitsOnE E (chordCoordRingElt E P Q) := by
+  classical
+  -- D = (X - C P.1, 0) in both vertical sub-branches.
+  have hD : chordCoordRingElt E P Q
+      = ({ a := X - C P.1, b := 0 } : CoordRingElt E.q) := by
+    unfold chordCoordRingElt
+    rw [dif_pos hxx]
+    rcases hCase with hyy | ⟨hyy, h2t⟩
+    · rw [dif_neg hyy]
+    · rw [dif_pos hyy, if_pos h2t]
+  rw [hD]
+  refine ⟨?_, ?_⟩
+  · -- normPoly_splits_over_Fq: card roots = natDegree
+    show Multiset.card (normPoly E _).roots = (normPoly E _).natDegree
+    rw [normPoly_chordCoordRingElt_vertical, natDegree_pow, natDegree_X_sub_C]
+    rw [Polynomial.roots_pow, Polynomial.roots_X_sub_C]
+    simp
+  · -- Every root of normPoly is the x-coord of an F_q-point
+    intro α hα
+    rw [normPoly_chordCoordRingElt_vertical] at hα
+    rw [Polynomial.roots_pow, Polynomial.roots_X_sub_C] at hα
+    -- hα : α ∈ 2 • ({P.1} : Multiset _)
+    have : α = P.1 := by
+      have h_eq : (2 • ({P.1} : Multiset (ZMod E.q))) = {P.1, P.1} := by
+        rfl
+      rw [h_eq] at hα
+      rcases Multiset.mem_cons.mp hα with h | h
+      · exact h
+      · simpa using h
+    rw [this]
+    exact ⟨P.2, hP⟩
+
 /-! ## Multiplication of `CoordRingElt`s in `F_q[E]`
 
 `F_q[E] = F_q[X,Y]/(Y² - X³ - AX - B)` admits multiplication by reducing
