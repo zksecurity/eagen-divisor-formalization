@@ -690,11 +690,70 @@ private lemma sum_sylvester_idx_eq
   have hc_eq : c = a + b + m * n := by linarith
   linarith
 
+/-! ### Per-permutation product bound
+
+For each permutation σ of the Sylvester matrix index set, the product
+`∏ j, M[σ j, j]` has natDegree ≤ w (the normPoly natDegree). Combined
+with `Matrix.det_apply` and `natDegree_sum_le_of_forall_le`, this
+gives the determinant natDegree bound. -/
+
+/-- **Per-permutation product bound** for the chord/DLine Sylvester matrix.
+
+For any permutation σ of `Fin (3 + DLineBiv.natDegree)`,
+
+    (∏ j, M[σ j, j]).natDegree ≤ (normPoly).natDegree
+
+where M is the Sylvester matrix of `chordCubicBiv` and `DLineBiv`.
+
+The proof case-splits on whether some entry vanishes (in which case the
+product is zero) or all entries are nonzero (the weighted-Sylvester
+sum-bound applies). -/
+private lemma sylvester_chord_DLine_perm_prod_natDegree_le
+    (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (σ : Equiv.Perm (Fin ((chordCubicBiv E lam).natDegree
+                              + (DLineBiv E lam D).natDegree))) :
+    (∏ i, Polynomial.sylvester (chordCubicBiv E lam) (DLineBiv E lam D)
+            (chordCubicBiv E lam).natDegree (DLineBiv E lam D).natDegree
+            (σ i) i).natDegree
+      ≤ (normPoly E D).natDegree := by
+  classical
+  -- Case 1: some entry is zero ⇒ product = 0.
+  by_cases hzero : ∃ j,
+      Polynomial.sylvester (chordCubicBiv E lam) (DLineBiv E lam D)
+        (chordCubicBiv E lam).natDegree (DLineBiv E lam D).natDegree (σ j) j = 0
+  · obtain ⟨j₀, hj₀⟩ := hzero
+    have hprodzero :
+        (∏ i, Polynomial.sylvester (chordCubicBiv E lam) (DLineBiv E lam D)
+              (chordCubicBiv E lam).natDegree (DLineBiv E lam D).natDegree (σ i) i) = 0 :=
+      Finset.prod_eq_zero (Finset.mem_univ j₀) hj₀
+    rw [hprodzero, Polynomial.natDegree_zero]
+    exact Nat.zero_le _
+  · -- Case 2: all entries nonzero. Apply weighted-Sylvester sum-bound.
+    push_neg at hzero
+    sorry
+
 theorem chord_fiber_product_concrete_natDegree_le_normPoly_natDegree
     (lam : ZMod E.q) (D : CoordRingElt E.q)
-    (_hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     (chord_fiber_product_concrete E lam D).natDegree
-      ≤ (normPoly E D).natDegree :=
-  sorry
+      ≤ (normPoly E D).natDegree := by
+  classical
+  -- chord_fiber_product = (sylvester chordCubicBiv DLineBiv 3 n).det.
+  unfold chord_fiber_product_concrete
+  rw [Polynomial.resultant, Matrix.det_apply]
+  -- Goal: (Σ σ : Perm, sgn σ • ∏ i, M (σ i) i).natDegree ≤ ...
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ ?_
+  intro σ _
+  -- Extract sgn σ as ±1, so it doesn't affect natDegree.
+  rcases Int.units_eq_one_or (Equiv.Perm.sign σ) with hsign | hsign
+  · -- sgn = 1.
+    rw [hsign]
+    simp only [one_smul]
+    exact sylvester_chord_DLine_perm_prod_natDegree_le E lam D hD σ
+  · -- sgn = -1.
+    rw [hsign]
+    simp only [Units.neg_smul, one_smul, Polynomial.natDegree_neg]
+    exact sylvester_chord_DLine_perm_prod_natDegree_le E lam D hD σ
 
 end Divisor
