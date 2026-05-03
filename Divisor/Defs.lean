@@ -214,6 +214,30 @@ theorem ECPoint.affine_y_zero_add_self_eq_zero (E : ECSetup) (x : ZMod E.q) :
   rw [add_eq_zero_iff_eq_neg]
   exact (ECPoint.affine_y_zero_eq_neg E x).symm
 
+/-- `nsmul n (0 : ECPoint E) = 0` for any natural `n`. -/
+private theorem ECPoint.nsmul_zero_eq_zero (E : ECSetup) (n : ℕ) :
+    (n : ℕ) • (0 : ECPoint E) = 0 := by
+  induction n with
+  | zero => exact zero_smul ℕ (0 : ECPoint E)
+  | succ k ih =>
+    rw [add_smul, one_smul, ih, add_zero]
+
+/-- For any `n : ℕ`, `nsmul (2 * n) (affine x 0) = 0`. The
+`affine E x 0` point is 2-torsion (`2 • P = 0`), so any even multiple
+`(2n) • P = n • (2 • P) = n • 0 = 0`. -/
+theorem ECPoint.nsmul_two_mul_affine_y_zero_eq_zero (E : ECSetup)
+    (n : ℕ) (x : ZMod E.q) :
+    ECPoint.nsmul E (2 * n) (ECPoint.affine E x 0) = 0 := by
+  rw [ECPoint.nsmul_def, show (2 * n : ℕ) = n * 2 from by ring, mul_smul]
+  have h2 : (2 : ℕ) • (ECPoint.affine E x 0 : ECPoint E) = 0 := by
+    show (1 + 1 : ℕ) • (ECPoint.affine E x 0 : ECPoint E) = 0
+    rw [add_smul, one_smul]
+    exact ECPoint.affine_y_zero_add_self_eq_zero E x
+  rw [h2]
+  exact ECPoint.nsmul_zero_eq_zero E n
+
+
+
 /-- Left cancellation. -/
 theorem ECPoint.add_left_cancel (E : ECSetup) {p a b : ECPoint E}
     (h : p + a = p + b) : a = b :=
