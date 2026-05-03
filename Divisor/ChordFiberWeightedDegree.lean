@@ -470,7 +470,32 @@ private lemma normPoly_natDegree_ge_a_sq
         exact hprod_lead
       omega
 
-/-- **Lemma B (target): DLineBiv per-coefficient weight bound.**
+/-- **`DLineBiv.natDegree ≤ max(D.a.natDegree, D.b.natDegree + 1)`.** -/
+private lemma DLineBiv_natDegree_le
+    (lam : ZMod E.q) (D : CoordRingElt E.q) :
+    (DLineBiv E lam D).natDegree ≤ max D.a.natDegree (D.b.natDegree + 1) := by
+  classical
+  -- DLineBiv = D.a.map C - D.b.map C * Q with Q = C(C λ) X + C X.
+  show ((D.a.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
+        - D.b.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X])
+            * (Polynomial.C (Polynomial.C lam) * Polynomial.X
+                + Polynomial.C Polynomial.X)).natDegree ≤ _
+  refine (Polynomial.natDegree_sub_le _ _).trans (max_le ?_ ?_)
+  · -- D.a.map C: natDegree ≤ D.a.natDegree.
+    refine Polynomial.natDegree_map_le.trans ?_
+    omega
+  · refine Polynomial.natDegree_mul_le.trans ?_
+    have hQ : (Polynomial.C (Polynomial.C lam) * Polynomial.X
+                + Polynomial.C (Polynomial.X : Polynomial (ZMod E.q))).natDegree ≤ 1 := by
+      refine (Polynomial.natDegree_add_le _ _).trans (max_le ?_ ?_)
+      · refine (Polynomial.natDegree_C_mul_le _ _).trans ?_
+        exact Polynomial.natDegree_X_le
+      · exact (Polynomial.natDegree_C _).le.trans (by omega)
+    have hbmap : (D.b.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X])).natDegree
+                  ≤ D.b.natDegree := Polynomial.natDegree_map_le
+    omega
+
+/-- **Lemma B: DLineBiv per-coefficient weight bound.**
 
 For `k ≤ (DLineBiv E lam D).natDegree`,
 
@@ -483,10 +508,55 @@ weighted-Sylvester proof of the natDegree bound
     (chord_fiber_product_concrete E lam D).natDegree ≤ (normPoly E D).natDegree. -/
 private lemma DLineBiv_coeff_natDegree_weighted_bound
     (lam : ZMod E.q) (D : CoordRingElt E.q)
-    (_hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (k : ℕ) (_hk : k ≤ (DLineBiv E lam D).natDegree) :
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (k : ℕ) (hk : k ≤ (DLineBiv E lam D).natDegree) :
     3 * ((DLineBiv E lam D).coeff k).natDegree + 2 * k
-      ≤ (normPoly E D).natDegree :=
-  sorry
+      ≤ (normPoly E D).natDegree := by
+  classical
+  by_cases hbz : D.b.coeff k = 0
+  · -- D.b.coeff k = 0: natDegree(coeff) ≤ 0.
+    have hcoeff_le := DLineBiv_coeff_natDegree_le_zero_of_b_coeff_zero E lam D k hbz
+    -- Need: 0·3 + 2k ≤ (normPoly).natDegree, i.e., 2k ≤ (normPoly).natDegree.
+    -- Use DLineBiv.natDegree bound: k ≤ max(D.a.natDegree, D.b.natDegree + 1).
+    have hk_max : k ≤ max D.a.natDegree (D.b.natDegree + 1) :=
+      hk.trans (DLineBiv_natDegree_le E lam D)
+    -- Case: D.a ≠ 0 ∨ D.b ≠ 0.
+    rcases not_and_or.mp hD with hane | hbne
+    · -- D.a ≠ 0: use 2·D.a.natDegree ≤ (normPoly).natDegree.
+      have hbnd_a := normPoly_natDegree_ge_a_sq E D hane
+      by_cases hb : D.b = 0
+      · -- D.b = 0: DLineBiv = D.a.map C, natDegree = D.a.natDegree (sharp).
+        have hdline_eq : DLineBiv E lam D
+            = D.a.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]) := by
+          show D.a.map _ - D.b.map _ * _ = _
+          rw [hb]; simp
+        have hk_a : k ≤ D.a.natDegree := by
+          have : (DLineBiv E lam D).natDegree ≤ D.a.natDegree := by
+            rw [hdline_eq]; exact Polynomial.natDegree_map_le
+          omega
+        omega
+      · -- D.b ≠ 0: also have b-bound.
+        have hbnd_b := normPoly_natDegree_ge_b_curveX E D hb
+        omega
+    · -- D.b ≠ 0: use 2·D.b.natDegree + 3 ≤ (normPoly).natDegree.
+      have hbnd_b := normPoly_natDegree_ge_b_curveX E D hbne
+      by_cases ha : D.a = 0
+      · -- D.a = 0: D.a.natDegree = 0. From hk_max: k ≤ max(0, D.b.natDegree + 1) = D.b.natDegree + 1.
+        rw [ha] at hk_max
+        simp at hk_max
+        omega
+      · -- D.a ≠ 0: also have a-bound.
+        have hbnd_a := normPoly_natDegree_ge_a_sq E D ha
+        omega
+  · -- D.b.coeff k ≠ 0: natDegree(coeff) ≤ 1, k ≤ D.b.natDegree.
+    have hcoeff_le := DLineBiv_coeff_natDegree_le_one E lam D k
+    have hk_le : k ≤ D.b.natDegree :=
+      Polynomial.le_natDegree_of_ne_zero hbz
+    have hb : D.b ≠ 0 := by
+      intro hb0
+      apply hbz
+      rw [hb0, Polynomial.coeff_zero]
+    have hbnd_b := normPoly_natDegree_ge_b_curveX E D hb
+    omega
 
 end Divisor
