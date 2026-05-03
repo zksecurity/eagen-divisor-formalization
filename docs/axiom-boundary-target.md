@@ -200,25 +200,32 @@ future axiom-1 discharge can build on:
      is now a *theorem*
      (`resultant_chordCubicBiv_pmap_C_natDegree_of_monic`) via the
      splitting-field lift, so the inductive `_step_monic` combinator
-     can compose all of D's `divLin`-recursive steps. The remaining
-     gap is the **base case** (`gcd(D.a, D.b) = 1`) of the natDegree
-     inequality, which the inductive structure cannot reduce further.
+     can compose all of D's `divLin`-recursive steps.
 
-     **Recommended Lean route for the gcd-1 base case** (no deep
-     function-field machinery): direct weighted-Sylvester degree
-     bound. Assign weights `wt(x) = 2`, `wt(Z) = 3`. Then in
-     `(ZMod E.q)[Z][x]`:
-     - `wt(chordCubicBiv) = 6` (matched by both `x³` and `Z²`).
-     - `wt(DLineBiv) = w` where, in the coprime / not-both-zero case,
-       `w = max(2·D.a.natDegree, 2·D.b.natDegree + 3) =
-        (normPoly E D).natDegree`.
-     The Sylvester matrix `S(chordCubic, DLineBiv)` is square. By
-     `Matrix.det_apply`, `det(S)` is a sum of products; each product
-     selects 3 entries of weight ≤ 6 (chord-cubic rows) and `n` entries
-     of weight ≤ w (DLine rows), where `n = deg_x DLineBiv`. The
-     selected x-degrees sum to `3·n`, and the weight identity gives
-     `3·degZ(term) ≤ 6n + 3w − 2·(3n) = 3w`, i.e. `degZ(term) ≤ w`.
-     Then `natDegree_sum_le` and `natDegree_prod_le` close the bound.
-     This stays coordinate-native and uses only mathlib's matrix /
-     polynomial degree lemmas, avoiding any norm/divisor pushforward
-     theorem.
+     **Stub 2a is now a theorem.**
+     `chord_fiber_product_concrete_natDegree_le_normPoly_natDegree` in
+     `Divisor/ChordFiberWeightedDegree.lean` directly proves the
+     natDegree inequality
+     `(chord_fiber_product_concrete E lam D).natDegree ≤ (normPoly E D).natDegree`
+     for any `D` with `¬(D.a = 0 ∧ D.b = 0)` — no coprime hypothesis
+     needed. The proof uses the weighted-Sylvester argument with
+     weights `wt(x) = 2`, `wt(Z) = 3`:
+
+     - `Lemma A` (`chordCubicBiv_coeff_natDegree_weighted_bound`):
+       `3·natDeg(chordCubicBiv.coeff k) + 2k ≤ 6` for `k ≤ 3`.
+     - `Lemma B` (`DLineBiv_coeff_natDegree_weighted_bound`):
+       `3·natDeg(DLineBiv.coeff k) + 2k ≤ (normPoly).natDeg`
+       for `k ≤ DLineBiv.natDegree`, under `¬(D.a = 0 ∧ D.b = 0)`.
+     - Combinatorial helpers: `sylvesterOff`, `sum_sylvesterOff_eq`,
+       `sum_perm_val`, `sum_sylvester_idx_eq` (the latter giving
+       `Σ_j ((σ j).val − sylvesterOff j) = m·n` for any permutation
+       with full support).
+     - Per-permutation product bound: case-split on whether some entry
+       vanishes (product zero) or all are nonzero (weighted sum closes).
+     - Main theorem: `Matrix.det_apply` + `natDegree_sum_le_of_forall_le`
+       + `Equiv.Perm.sign σ ∈ {±1}` + per-perm bound.
+
+     The bar-level wrapper
+     `chord_fiber_product_concrete_bar_natDegree_le_normPoly` (sketch
+     stub 2a) is now a theorem, derived from the unmapped version via
+     `Polynomial.natDegree_map_eq_of_injective` for `algebraMap (ZMod E.q) (Fqbar E)`.
