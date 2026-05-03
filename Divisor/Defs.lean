@@ -203,6 +203,11 @@ theorem ECPoint.nsmul_affine_pair_eq_zero (E : ECSetup)
   rw [ECPoint.nsmul_def, ECPoint.nsmul_def, neg_nsmul]
   exact add_neg_cancel _
 
+/-- An affine point at `(x, 0)` is its own negation in `ECPoint E`. -/
+theorem ECPoint.affine_y_zero_eq_neg (E : ECSetup) (x : ZMod E.q) :
+    -(ECPoint.affine E x 0 : ECPoint E) = ECPoint.affine E x 0 := by
+  rw [ECPoint.affine_neg E x 0, neg_zero]
+
 /-- Left cancellation. -/
 theorem ECPoint.add_left_cancel (E : ECSetup) {p a b : ECPoint E}
     (h : p + a = p + b) : a = b :=
