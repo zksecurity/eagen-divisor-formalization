@@ -371,4 +371,32 @@ noncomputable def divideByXSubX0
   { a := D.a /ₘ (X - C x₀),
     b := D.b /ₘ (X - C x₀) }
 
+/-- When `(X − x₀)` divides both `a` and `b`, evaluation of the
+    cancelled `D` agrees with `D.eval / (x − x₀)`. -/
+theorem divideByXSubX0_eval
+    (D : CoordRingElt E.q) (x₀ : ZMod E.q)
+    (haDvd : (X - C x₀) ∣ D.a) (hbDvd : (X - C x₀) ∣ D.b)
+    (x y : ZMod E.q) (hx : x ≠ x₀) :
+    (divideByXSubX0 E D x₀).eval x y * (x - x₀) = D.eval x y := by
+  unfold divideByXSubX0 CoordRingElt.eval
+  show ((D.a /ₘ (X - C x₀)).eval x - (D.b /ₘ (X - C x₀)).eval x * y) * (x - x₀)
+      = D.a.eval x - D.b.eval x * y
+  -- Use the identity `p = (X − C x₀) * (p /ₘ (X − C x₀))` when monic divisor divides p.
+  have hMonic : (X - C x₀ : (ZMod E.q)[X]).Monic := monic_X_sub_C _
+  obtain ⟨qa, hqa⟩ := haDvd
+  obtain ⟨qb, hqb⟩ := hbDvd
+  have ha_eq : D.a /ₘ (X - C x₀) = qa := by
+    have : D.a = (X - C x₀) * qa := hqa
+    rw [this]
+    exact mul_divByMonic_cancel_left _ hMonic
+  have hb_eq : D.b /ₘ (X - C x₀) = qb := by
+    have : D.b = (X - C x₀) * qb := hqb
+    rw [this]
+    exact mul_divByMonic_cancel_left _ hMonic
+  rw [ha_eq, hb_eq]
+  -- Goal: (qa.eval x - qb.eval x * y) * (x - x₀) = D.a.eval x - D.b.eval x * y
+  rw [hqa, hqb]
+  simp only [eval_mul, eval_sub, eval_C, eval_X]
+  ring
+
 end Divisor
