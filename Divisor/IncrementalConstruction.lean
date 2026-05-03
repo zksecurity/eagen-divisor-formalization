@@ -30,6 +30,7 @@
 -/
 import Divisor.Defs
 import Divisor.CubicIntersection
+import Divisor.BetaConstructive
 import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.Algebra.Polynomial.Degree.Defs
 import Mathlib.Algebra.Polynomial.Eval.Defs
@@ -151,5 +152,101 @@ theorem chordCoordRingElt_eval_right
     have hxne : (Q.1 - P.1 : ZMod E.q) ≠ 0 := sub_ne_zero.mpr (Ne.symm hxx)
     field_simp
     ring
+
+/-! ## `normPoly` of the chord-line `CoordRingElt`
+
+The norm polynomial `N(D) = D.a² − D.b²·(X³+AX+B)` factors cleanly
+in each branch.
+
+* **Vertical** (`a = X − x₀`, `b = 0`): `N(D) = (X − x₀)²`. This is a
+  direct calculation.
+* **Non-vertical** (`a = −λX − μ`, `b = −1`): `N(D) = (λX+μ)² − (X³+AX+B)`,
+  a cubic of leading coefficient `−1`.
+-/
+
+/-- `normPoly` of the vertical chord line `D = (X − x₀, 0)`. -/
+theorem normPoly_chordCoordRingElt_vertical (x₀ : ZMod E.q) :
+    normPoly E ({ a := X - C x₀, b := 0 } : CoordRingElt E.q) = (X - C x₀) ^ 2 := by
+  rw [normPoly_eq]
+  show (X - C x₀) ^ 2 - 0 ^ 2 * curveX E = (X - C x₀) ^ 2
+  ring
+
+/-- `normPoly` of a non-vertical chord/tangent line
+    `D = (−λX − μ, −1)`. Equal to `(λX+μ)² − (X³+AX+B)`. -/
+theorem normPoly_chordCoordRingElt_nonvertical (lam mu : ZMod E.q) :
+    normPoly E ({ a := -(C lam) * X - C mu, b := -1 } : CoordRingElt E.q) =
+      (C lam * X + C mu) ^ 2 - curveX E := by
+  rw [normPoly_eq]
+  show (-(C lam) * X - C mu) ^ 2 - (-1 : (ZMod E.q)[X]) ^ 2 * curveX E
+      = (C lam * X + C mu) ^ 2 - curveX E
+  ring
+
+/-- The `natDegree` of `normPoly` for the vertical chord line is `2`
+    (matching the actual pole order at infinity in the divisor of the
+    vertical line through a 2-torsion or `±P` pair). -/
+theorem natDegree_normPoly_chordCoordRingElt_vertical (x₀ : ZMod E.q) :
+    (normPoly E ({ a := X - C x₀, b := 0 } : CoordRingElt E.q)).natDegree = 2 := by
+  rw [normPoly_chordCoordRingElt_vertical]
+  rw [natDegree_pow, natDegree_X_sub_C]
+
+/-- The `natDegree` of `normPoly` for a non-vertical chord/tangent line
+    is `3`. Argument: the subtracted `curveX E = X³ + AX + B` has natDegree
+    exactly 3 with leading coefficient 1, while `(λX+μ)²` has natDegree
+    at most 2. -/
+theorem natDegree_normPoly_chordCoordRingElt_nonvertical (lam mu : ZMod E.q) :
+    (normPoly E ({ a := -(C lam) * X - C mu, b := -1 } : CoordRingElt E.q)).natDegree = 3 := by
+  rw [normPoly_chordCoordRingElt_nonvertical]
+  -- Goal: ((C lam * X + C mu)^2 - curveX E).natDegree = 3
+  have hLin : (C lam * X + C mu).natDegree ≤ 1 := by
+    refine (natDegree_add_le _ _).trans ?_
+    refine max_le ?_ ?_
+    · exact (natDegree_C_mul_le _ _).trans (natDegree_X.le)
+    · exact (natDegree_C _).le.trans (by omega)
+  have hSquare : ((C lam * X + C mu) ^ 2).natDegree ≤ 2 := by
+    refine (Polynomial.natDegree_pow_le).trans ?_
+    omega
+  have hCurveDeg : (curveX E).natDegree = 3 := by
+    unfold curveX
+    -- X^3 + C A · X + C B has degree 3
+    have h1 : (X ^ 3 + C E.curveA * X : (ZMod E.q)[X]).natDegree = 3 := by
+      rw [natDegree_add_eq_left_of_natDegree_lt]
+      · exact natDegree_X_pow 3
+      · rw [natDegree_X_pow]
+        refine lt_of_le_of_lt ?_ (by omega : 1 < 3)
+        exact (natDegree_C_mul_le _ _).trans natDegree_X.le
+    rw [show X ^ 3 + C E.curveA * X + C E.curveB =
+              (X ^ 3 + C E.curveA * X) + C E.curveB by ring]
+    rw [natDegree_add_eq_left_of_natDegree_lt]
+    · exact h1
+    · rw [h1, natDegree_C]; omega
+  have hSubLE : (((C lam * X + C mu) ^ 2 - curveX E : (ZMod E.q)[X])).natDegree ≤ 3 := by
+    refine (natDegree_sub_le _ _).trans (max_le ?_ hCurveDeg.le)
+    omega
+  -- Show natDegree ≥ 3 by checking coefficient at index 3.
+  have hCoeff3 :
+      ((C lam * X + C mu) ^ 2 - curveX E : (ZMod E.q)[X]).coeff 3 = -1 := by
+    rw [coeff_sub]
+    have hSqCoeff3 : ((C lam * X + C mu) ^ 2 : (ZMod E.q)[X]).coeff 3 = 0 := by
+      apply coeff_eq_zero_of_natDegree_lt
+      omega
+    have hCurveCoeff3 : (curveX E).coeff 3 = 1 := by
+      unfold curveX
+      simp [coeff_add, coeff_X_pow, coeff_C_mul, coeff_X, coeff_C]
+    rw [hSqCoeff3, hCurveCoeff3]; ring
+  -- Use leadingCoeff non-zero ⇒ natDegree exact via coeff_natDegree.
+  have hNonzero : (((C lam * X + C mu) ^ 2 - curveX E : (ZMod E.q)[X])) ≠ 0 := by
+    intro hZero
+    have := congrArg (fun p => Polynomial.coeff p 3) hZero
+    simp only at this
+    rw [hCoeff3] at this
+    simp at this
+  apply le_antisymm hSubLE
+  by_contra hLt
+  push_neg at hLt
+  have : ((C lam * X + C mu) ^ 2 - curveX E : (ZMod E.q)[X]).coeff 3 = 0 := by
+    apply coeff_eq_zero_of_natDegree_lt
+    omega
+  rw [hCoeff3] at this
+  simp at this
 
 end Divisor
