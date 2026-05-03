@@ -540,27 +540,35 @@ theorem resultant_chordCubicBiv_pmap_C_natDegree_of_eq_X_sub_C_pow
   rw [Polynomial.natDegree_pow, chordCubicBiv_eval_C_natDegree]
   ring
 
-theorem resultant_chordCubicBiv_pmap_C_natDegree_of_splits
-    (lam : ZMod E.q) (p : Polynomial (ZMod E.q))
-    (hpm : p.Monic) (hsplit : p.Splits) :
-    (Polynomial.resultant (chordCubicBiv E lam)
-      (p.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
-      (chordCubicBiv E lam).natDegree p.natDegree).natDegree
-    = 2 * p.natDegree := by
+/-- **Generic splits-natDegree lemma.** Given any `F : R[X][X]` (R a field)
+with the property that `Res(F, X − C(C x), F.natDegree, 1).natDegree = 2`
+for every `x : R`, and any monic `p : R[X]` that splits over `R`, the
+resultant `Res(F, p.map C, F.natDegree, p.natDegree)` has natDegree
+`2 · p.natDegree`. The proof is multiset induction on `p.roots`, using
+mathlib's `resultant_mul_right` plus `Splits.eq_prod_roots_of_monic`.
+
+This generic form is parameterised over `F` and the linear-case
+natDegree hypothesis, allowing future extension to non-`ZMod E.q`
+base rings (e.g. lifting to a splitting field of `p`). -/
+theorem resultant_pmap_C_natDegree_of_splits_generic
+    {R : Type*} [Field R] [DecidableEq R]
+    (F : Polynomial (Polynomial R))
+    (hF_lin : ∀ x : R,
+      (Polynomial.resultant F (Polynomial.X - Polynomial.C (Polynomial.C x))
+        F.natDegree 1).natDegree = 2)
+    (p : Polynomial R) (hpm : p.Monic) (hsplit : p.Splits) :
+    (Polynomial.resultant F
+      (p.map (Polynomial.C : R →+* R[X]))
+      F.natDegree p.natDegree).natDegree = 2 * p.natDegree := by
   classical
-  let F := chordCubicBiv E lam
-  let L : ZMod E.q → Polynomial (Polynomial (ZMod E.q)) :=
+  let L : R → Polynomial (Polynomial R) :=
     fun x => Polynomial.X - Polynomial.C (Polynomial.C x)
-  have hL_natDegree : ∀ x : ZMod E.q, (L x).natDegree = 1 := by
-    intro x
-    simp [L]
-  have hL_monic : ∀ x : ZMod E.q, (L x).Monic := by
-    intro x
-    exact Polynomial.monic_X_sub_C _
-  have hprod_monic : ∀ s : Multiset (ZMod E.q), ((s.map L).prod).Monic := by
-    intro s
-    exact Polynomial.monic_multiset_prod_of_monic s L (fun x _ => hL_monic x)
-  have hprod_natDegree : ∀ s : Multiset (ZMod E.q),
+  have hL_natDegree : ∀ x : R, (L x).natDegree = 1 := by
+    intro x; simp [L]
+  have hL_monic : ∀ x : R, (L x).Monic := fun x => Polynomial.monic_X_sub_C _
+  have hprod_monic : ∀ s : Multiset R, ((s.map L).prod).Monic :=
+    fun s => Polynomial.monic_multiset_prod_of_monic s L (fun x _ => hL_monic x)
+  have hprod_natDegree : ∀ s : Multiset R,
       ((s.map L).prod).natDegree = s.card := by
     intro s
     rw [Polynomial.natDegree_multiset_prod_of_monic]
@@ -568,36 +576,32 @@ theorem resultant_chordCubicBiv_pmap_C_natDegree_of_splits
     · intro q hq
       rcases Multiset.mem_map.mp hq with ⟨x, _, rfl⟩
       exact hL_monic x
-  have hlin_deg : ∀ x : ZMod E.q,
+  have hlin_deg : ∀ x : R,
       (Polynomial.resultant F (L x) F.natDegree).natDegree = 2 := by
-    intro x
-    simpa [F, L, hL_natDegree x] using
-      resultant_chordCubicBiv_X_sub_C_natDegree E lam x
-  have hlin_ne : ∀ x : ZMod E.q,
+    intro x; simpa [L, hL_natDegree x] using hF_lin x
+  have hlin_ne : ∀ x : R,
       Polynomial.resultant F (L x) F.natDegree ≠ 0 := by
     intro x h
     have hdeg := hlin_deg x
-    rw [h, Polynomial.natDegree_zero] at hdeg
-    omega
-  have hres : ∀ s : Multiset (ZMod E.q),
+    rw [h, Polynomial.natDegree_zero] at hdeg; omega
+  have hres : ∀ s : Multiset R,
       Polynomial.resultant F (s.map L).prod F.natDegree ≠ 0 ∧
       (Polynomial.resultant F (s.map L).prod F.natDegree).natDegree = 2 * s.card := by
     intro s
     induction s using Multiset.induction_on with
-    | empty =>
-        simp
+    | empty => simp
     | cons x s ih =>
         have hmul_natDegree :
             (L x * (s.map L).prod).natDegree =
               (L x).natDegree + ((s.map L).prod).natDegree :=
           Polynomial.natDegree_mul (hL_monic x).ne_zero (hprod_monic s).ne_zero
         rw [Multiset.map_cons, Multiset.prod_cons, Multiset.card_cons,
-          hmul_natDegree,
-          Polynomial.resultant_mul_right F (L x) (s.map L).prod F.natDegree le_rfl]
+            hmul_natDegree,
+            Polynomial.resultant_mul_right F (L x) (s.map L).prod F.natDegree le_rfl]
         exact ⟨mul_ne_zero (hlin_ne x) ih.1, by
           rw [Polynomial.natDegree_mul (hlin_ne x) ih.1, hlin_deg x, ih.2]
           omega⟩
-  have hres_deg_card : ∀ s : Multiset (ZMod E.q),
+  have hres_deg_card : ∀ s : Multiset R,
       (Polynomial.resultant F (s.map L).prod F.natDegree s.card).natDegree
         = 2 * s.card := by
     intro s
@@ -607,21 +611,31 @@ theorem resultant_chordCubicBiv_pmap_C_natDegree_of_splits
   rw [hp, Polynomial.map_multiset_prod, Multiset.map_map]
   rw [Polynomial.natDegree_multiset_prod_X_sub_C_eq_card]
   change (Polynomial.resultant F
-      (Multiset.map (fun x : ZMod E.q =>
-        (Polynomial.X - Polynomial.C x : Polynomial (ZMod E.q)).map
-          (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X])) p.roots).prod
+      (Multiset.map (fun x : R =>
+        (Polynomial.X - Polynomial.C x : Polynomial R).map
+          (Polynomial.C : R →+* R[X])) p.roots).prod
       F.natDegree p.roots.card).natDegree = 2 * p.roots.card
   have hmap :
-      (Multiset.map (fun x : ZMod E.q =>
-        (Polynomial.X - Polynomial.C x : Polynomial (ZMod E.q)).map
-          (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X])) p.roots).prod
+      (Multiset.map (fun x : R =>
+        (Polynomial.X - Polynomial.C x : Polynomial R).map
+          (Polynomial.C : R →+* R[X])) p.roots).prod
         = (p.roots.map L).prod := by
     congr 1
     apply Multiset.map_congr rfl
-    intro x _
-    simp [L]
+    intro x _; simp [L]
   rw [hmap]
   exact hres_deg_card p.roots
+
+theorem resultant_chordCubicBiv_pmap_C_natDegree_of_splits
+    (lam : ZMod E.q) (p : Polynomial (ZMod E.q))
+    (hpm : p.Monic) (hsplit : p.Splits) :
+    (Polynomial.resultant (chordCubicBiv E lam)
+      (p.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
+      (chordCubicBiv E lam).natDegree p.natDegree).natDegree
+    = 2 * p.natDegree :=
+  resultant_pmap_C_natDegree_of_splits_generic (chordCubicBiv E lam)
+    (fun x => resultant_chordCubicBiv_X_sub_C_natDegree E lam x)
+    p hpm hsplit
 
 /-! ### Streamlined inductive steps with auto-derived non-vanishing
 
