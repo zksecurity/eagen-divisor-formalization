@@ -363,6 +363,82 @@ def eventDeg
     (A₀ A₁ : ZMod E.q × ZMod E.q) : Prop :=
   ¬ logDerivCheckFnDefined E D P B A₀ A₁
 
+/-- Cardinality contribution of the paper's `event_NotEq` branch in
+    the MA knowledge-error numerator. This is the nonzero-discrepancy
+    Schwartz-Zippel/DKL term. -/
+def eventNotEqBound (d k : ℕ) : ℕ :=
+  18 * (d + k) * E.q
+
+/-- Cardinality contribution of the paper's `event_deg` branch in the
+    MA knowledge-error numerator. This is the accumulated denominator /
+    undefined-expression term. -/
+def eventDegBound (d k : ℕ) : ℕ :=
+  (3 * d + 9 * k + 71) * E.points.card
+
+/-! ### Paper-clean bad-challenge sets
+
+Two disjoint refinements of `eventNotEq`, restricted to `validPairs`:
+
+* `eventDegSet`: pairs where the verifier's denominator is **undefined**
+  (`logDerivCheckFnDefined` fails). Paper's `event_deg`, restricted to
+  the verifier's challenge space.
+* `eventNotEqDefinedSet`: pairs where the denominator **is** defined yet
+  the discrepancy still evaluates to zero. Paper's `event_NotEq` on the
+  defined cone — the genuine Schwartz–Zippel/log-derivative event.
+
+Their union is `badChallenges`, used by the headline accept-set bound. -/
+
+/-- Pairs `(A₀, A₁) ∈ validPairs E` where the verifier check is
+*undefined* (some denominator factor of `logDerivCheckFnDenom`
+vanishes). Paper's `event_deg`, restricted to the validPairs space. -/
+noncomputable def eventDegSet
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :
+    Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+  (validPairs E).filter (fun p => ¬ logDerivCheckFnDefined E D P B p.1 p.2)
+
+/-- Pairs `(A₀, A₁) ∈ validPairs E` where the verifier check **is
+defined** *and* the discrepancy `logDerivCheckFn` evaluates to zero.
+Paper's `event_NotEq` on the defined cone (the genuine SZ event). -/
+noncomputable def eventNotEqDefinedSet
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q) :
+    Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+  (validPairs E).filter (fun p =>
+    logDerivCheckFnDefined E D P B p.1 p.2 ∧
+    logDerivCheckFn E D P k B m p.1 p.2 = 0)
+
+/-- Paper-clean bad-challenge set: union of the undefined-denominator
+event and the defined-zero-discrepancy event.
+
+Headline accept-set bound: `acceptSet ⊆ badChallenges`. Cardinality
+bound: `|badChallenges| ≤ eventNotEqBound + eventDegBound`
+(see `badChallenges_card_le`). -/
+noncomputable def badChallenges
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q) :
+    Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+  eventDegSet E D P B ∪ eventNotEqDefinedSet E D P B m
+
+/-- `eventNotEq ⊆ badChallenges`: any validPairs entry with totalised
+discrepancy zero is either undefined (in `eventDegSet`) or defined
+with zero discrepancy (in `eventNotEqDefinedSet`). -/
+theorem eventNotEq_subset_badChallenges
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q) :
+    eventNotEq E D P B m ⊆ badChallenges E D P B m := by
+  classical
+  intro p hp
+  simp only [eventNotEq, Finset.mem_filter] at hp
+  obtain ⟨hVP, hCheck⟩ := hp
+  by_cases hDef : logDerivCheckFnDefined E D P B p.1 p.2
+  · refine Finset.mem_union.mpr (Or.inr ?_)
+    simp only [eventNotEqDefinedSet, Finset.mem_filter]
+    exact ⟨hVP, hDef, hCheck⟩
+  · refine Finset.mem_union.mpr (Or.inl ?_)
+    simp only [eventDegSet, Finset.mem_filter]
+    exact ⟨hVP, hDef⟩
+
 /-- The `\relation^{dlog-honest}` completeness relation from paper
     (`ip.tex \ref{thm:ma}`): `(stmt, wit) ∈ relDlog` together with an
     honest first-round message `msg` (whose divisor is principal and

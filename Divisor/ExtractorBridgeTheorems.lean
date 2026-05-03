@@ -25,6 +25,85 @@ namespace Divisor
 
 variable (E : ECSetup)
 
+/-! ## Cardinality bounds on the paper-clean bad-challenge sets
+
+These bounds package the headline accept-set count via two
+disjoint events: the undefined-denominator set `eventDegSet`
+(bounded by `eventDegBound`) and the defined-zero-discrepancy set
+`eventNotEqDefinedSet` (bounded by `eventNotEqBound` under a
+defined nonzero witness `hNV`). Their union, `badChallenges`,
+gets the sum `eventNotEqBound + eventDegBound`. -/
+
+/-- `|eventDegSet| ≤ eventDegBound`: the validPairs-restricted
+undefined set is bounded by the standard
+`(3·d + 9·k + 71)·|E|` count. Unconditional. -/
+theorem eventDegSet_card_le
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    (eventDegSet E D P B).card ≤ eventDegBound E D.degE k := by
+  classical
+  have hSub : eventDegSet E D P B ⊆
+      (E.points ×ˢ E.points).filter
+        (fun p => ¬ logDerivCheckFnDefined E D P B p.1 p.2) := by
+    intro p hp
+    simp only [eventDegSet, validPairs, distinctPairs, Finset.mem_filter] at hp
+    simp only [Finset.mem_filter]
+    exact ⟨hp.1.1.1, hp.2⟩
+  exact (Finset.card_le_card hSub).trans
+    (logDerivCheckFn_undefined_set_bound_tight E D P k B hD)
+
+/-- `|eventNotEqDefinedSet| ≤ eventNotEqBound`: the
+validPairs-restricted defined-zero-discrepancy set is bounded by
+the SZ/log-derivative term `18·(d+k)·q`, under the standing
+defined nonzero witness `hNV`. -/
+theorem eventNotEqDefinedSet_card_le
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (hDeg : D.degE < E.q)
+    (hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
+        logDerivCheckFnDefined E D P B A₀ A₁ ∧
+        logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
+    (eventNotEqDefinedSet E D P B m).card ≤ eventNotEqBound E D.degE k := by
+  classical
+  -- eventNotEqDefinedSet ⊆ A₀ne_A₁x_cleared_pair set on E×E.
+  have hSub : eventNotEqDefinedSet E D P B m ⊆
+      (E.points ×ˢ E.points).filter
+        (fun p => A₀ne_A₁x_cleared_pair E D P B m p) := by
+    intro p hp
+    simp only [eventNotEqDefinedSet, validPairs, distinctPairs,
+               Finset.mem_filter] at hp
+    obtain ⟨⟨⟨hPair, _hNeq⟩, hVNeq, _⟩, hDef, hCheck⟩ := hp
+    simp only [Finset.mem_filter, A₀ne_A₁x_cleared_pair]
+    -- A₀ne_A₁x_cleared_pair: p.1.1 ≠ p.2.1 ∧ denom ≠ 0 ∧ check = 0.
+    exact ⟨hPair, hVNeq, hDef, hCheck⟩
+  exact (Finset.card_le_card hSub).trans
+    (log_deriv_sz_paper_core_tight_geometric E D P B m hDeg hNV)
+
+/-- `|badChallenges| ≤ eventNotEqBound + eventDegBound`. Headline
+sum bound on the paper-clean bad-challenge set. Combines
+`eventDegSet_card_le` and `eventNotEqDefinedSet_card_le` via
+`Finset.card_union_le`. -/
+theorem badChallenges_card_le
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (hDeg : D.degE < E.q)
+    (hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
+        logDerivCheckFnDefined E D P B A₀ A₁ ∧
+        logDerivCheckFn E D P k B m A₀ A₁ ≠ 0)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    (badChallenges E D P B m).card
+      ≤ eventNotEqBound E D.degE k + eventDegBound E D.degE k := by
+  classical
+  calc (badChallenges E D P B m).card
+      = (eventDegSet E D P B ∪ eventNotEqDefinedSet E D P B m).card := rfl
+    _ ≤ (eventDegSet E D P B).card + (eventNotEqDefinedSet E D P B m).card :=
+        Finset.card_union_le _ _
+    _ ≤ eventDegBound E D.degE k + eventNotEqBound E D.degE k :=
+        Nat.add_le_add (eventDegSet_card_le E D P B hD)
+          (eventNotEqDefinedSet_card_le E D P B m hDeg hNV)
+    _ = eventNotEqBound E D.degE k + eventDegBound E D.degE k := by ring
+
 /-! ## `\ref{thm:ma}`: Extractable MA protocol -/
 
 /-- Internal conditional form of MA extractability.
@@ -163,6 +242,32 @@ theorem ma_extractable
       exact hDeg hp.2.1
     rw [hEmpty]
     simp
+
+/-- **Paper-tight accept-set inclusion** (unconditional).
+
+For any first-round message and degree-check-passing entry, the
+verifier's accepting challenges are contained in `badChallenges`:
+either the verifier check is undefined at the pair, or it is
+defined and the discrepancy `logDerivCheckFn` evaluates to zero.
+
+Combined with `badChallenges_card_le`, this gives the
+numerical headline of `ma_extractable` as a corollary. -/
+theorem maAcceptSet_subset_badChallenges
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) :
+    ((validPairs E).filter
+        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm))
+      ⊆ badChallenges E msg.toD stmt.target stmt.bases
+          (fun i => msg.m (hkm ▸ i)) := by
+  classical
+  intro p hp
+  simp only [Finset.mem_filter] at hp
+  obtain ⟨hVP, hAcc⟩ := hp
+  -- maVerifierAccepts ⇒ logDerivCheckFn = 0.
+  obtain ⟨_hDeg, _hAdm, hCheck⟩ := hAcc
+  exact eventNotEq_subset_badChallenges E msg.toD stmt.target stmt.bases
+    (fun i => msg.m (hkm ▸ i))
+    (Finset.mem_filter.mpr ⟨hVP, hCheck⟩)
 
 /-- **MA extractability — unconditional headline (deprecated alias).**
 
