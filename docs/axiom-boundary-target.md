@@ -66,9 +66,13 @@ The remaining bridges are:
   natDegree inequality) is now a theorem
   (`chord_fiber_product_concrete_natDegree_le_normPoly_natDegree` via
   weighted-Sylvester analysis), so only the lower-bound divisibility
-  content remains as an axiom. This is the "ord_v(N(D)) ≥ Σ_w
-  ramification·ord_w(D)" half of Stacks 02RS, narrow and citable.
-  The previous multiplicity-equality form
+  content remains as an axiom. This is the lower-bound coefficient
+  form of the pushforward identity `π_* div(f) = div(Nm(f))`
+  ([Stacks 02RS](https://stacks.math.columbia.edu/tag/02RS)). Over
+  `F_qbar` (algebraically closed) the residue-degree factor is 1,
+  matching the plain `Σ_Q gd.mult Q` sum in the Lean statement; the
+  general (non-algebraically-closed) form would carry a residue-degree
+  multiplier per place. The previous multiplicity-equality form
   `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image`
   is now a derived theorem.
 - `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit`, the
