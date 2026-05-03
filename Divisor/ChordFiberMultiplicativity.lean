@@ -592,4 +592,28 @@ theorem chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_genera
     (chord_fiber_product_concrete_ne_zero E lam _ hD'ne)
     hRES_natDegree hIH
 
+/-- **Combinator**: inductive natDegree-equality step for the
+`(X − C x₀)^k` factor case. Combines `_step_general'` with the
+closed-form natDegree theorem
+`resultant_chordCubicBiv_pmap_C_natDegree_of_eq_X_sub_C_pow`. -/
+theorem chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_X_sub_C_pow
+    (lam : ZMod E.q) (D : CoordRingElt E.q) (x₀ : ZMod E.q) (k : ℕ)
+    (hda : ((Polynomial.X - Polynomial.C x₀) ^ k) ∣ D.a)
+    (hdb : ((Polynomial.X - Polynomial.C x₀) ^ k) ∣ D.b)
+    (hD'ne : ¬ ((D.a /ₘ ((Polynomial.X - Polynomial.C x₀) ^ k)) = 0
+                ∧ (D.b /ₘ ((Polynomial.X - Polynomial.C x₀) ^ k)) = 0))
+    (hIH : (chord_fiber_product_concrete E lam
+              { a := D.a /ₘ ((Polynomial.X - Polynomial.C x₀) ^ k),
+                b := D.b /ₘ ((Polynomial.X - Polynomial.C x₀) ^ k) }).natDegree
+            = (normPoly E
+                { a := D.a /ₘ ((Polynomial.X - Polynomial.C x₀) ^ k),
+                  b := D.b /ₘ ((Polynomial.X - Polynomial.C x₀) ^ k) }).natDegree) :
+    (chord_fiber_product_concrete E lam D).natDegree
+      = (normPoly E D).natDegree :=
+  chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_general'
+    E lam D ((Polynomial.X - Polynomial.C x₀) ^ k)
+    ((Polynomial.monic_X_sub_C x₀).pow k) hda hdb hD'ne
+    (resultant_chordCubicBiv_pmap_C_natDegree_of_eq_X_sub_C_pow E lam x₀ k _ rfl)
+    hIH
+
 end Divisor
