@@ -181,4 +181,80 @@ theorem ordAt_eq_dispatch
   unfold ordAt
   rw [if_pos ⟨hP, hD⟩]
 
+/-! ## Stage-2 lemma: non-vanishing implies `ordAt = 0`
+
+This is the easy case of the local-order ↔ recursive-`ordAt`
+compatibility (Stage 2 of the discharge plan in
+`docs/divisorClass-discharge-plan.md`). On the project side,
+non-vanishing of `D` at `P` collapses both branches of the
+trichotomy: 2-torsion via `rootMultiplicity = 0`, non-2-torsion via
+the early return `if D.eval ≠ 0 then 0`. -/
+
+/-- For `P = (x₀, 0)` (2-torsion) with `D.eval x₀ 0 ≠ 0`,
+`ordAt_twoTorsion` is `0`. -/
+theorem ordAt_twoTorsion_eq_zero_of_eval_ne_zero
+    (D : CoordRingElt E.q) {x₀ : ZMod E.q}
+    (h : D.eval x₀ 0 ≠ 0) :
+    ordAt_twoTorsion E D (x₀, 0) = 0 := by
+  classical
+  have ha_ne : D.a.eval x₀ ≠ 0 := by
+    have := h
+    unfold CoordRingElt.eval at this
+    simpa using this
+  have hRootA : Polynomial.rootMultiplicity x₀ D.a = 0 :=
+    Polynomial.rootMultiplicity_eq_zero ha_ne
+  have ha_poly_ne : D.a ≠ 0 := by
+    intro hzero
+    apply ha_ne
+    rw [hzero]; simp
+  unfold ordAt_twoTorsion
+  by_cases hb : D.b = 0
+  · simp [ha_poly_ne, hb, hRootA]
+  · simp [ha_poly_ne, hb, hRootA]
+
+/-- For `P` non-2-torsion (`P.2 ≠ 0`) with `D.eval P.1 P.2 ≠ 0`,
+`ordAt_nonTwoTorsion` is `0`. -/
+theorem ordAt_nonTwoTorsion_eq_zero_of_eval_ne_zero
+    (D : CoordRingElt E.q) {P : ZMod E.q × ZMod E.q}
+    (h : D.eval P.1 P.2 ≠ 0) :
+    ordAt_nonTwoTorsion E D P = 0 := by
+  classical
+  unfold ordAt_nonTwoTorsion ordAt_nonTwoTorsion_aux
+  -- Fuel ≥ 1 here, so the recursion takes one step and returns 0
+  -- via the second branch.
+  by_cases hZero : D.a = 0 ∧ D.b = 0
+  · -- D = 0: but then D.eval = 0, contradicting h.
+    exfalso
+    apply h
+    obtain ⟨ha, hb⟩ := hZero
+    unfold CoordRingElt.eval
+    rw [ha, hb]; simp
+  · simp [hZero, h]
+
+/-- **Combined non-vanishing case**: `D.eval P.1 P.2 ≠ 0` forces
+`ordAt E D P = 0`. -/
+theorem ordAt_eq_zero_of_eval_ne_zero
+    (D : CoordRingElt E.q) {P : ZMod E.q × ZMod E.q}
+    (hP : P ∈ E.points)
+    (hEval : D.eval P.1 P.2 ≠ 0) :
+    ordAt E D P = 0 := by
+  classical
+  have hD : ¬ (D.a = 0 ∧ D.b = 0) := by
+    intro ⟨ha, hb⟩
+    apply hEval
+    unfold CoordRingElt.eval
+    rw [ha, hb]; simp
+  rw [ordAt_eq_dispatch E D hP hD]
+  by_cases h2 : P.2 = 0
+  · rw [if_pos h2]
+    -- P = (P.1, 0); apply 2-torsion lemma.
+    have hPeq : P = (P.1, 0) := by
+      ext <;> simp [h2]
+    rw [hPeq]
+    apply ordAt_twoTorsion_eq_zero_of_eval_ne_zero E D
+    rw [show D.eval P.1 0 = D.eval P.1 P.2 from by rw [h2]]
+    exact hEval
+  · rw [if_neg h2]
+    exact ordAt_nonTwoTorsion_eq_zero_of_eval_ne_zero E D hEval
+
 end Divisor
