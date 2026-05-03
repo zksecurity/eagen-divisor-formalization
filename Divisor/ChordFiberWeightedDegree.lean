@@ -731,12 +731,58 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
     exact Nat.zero_le _
   · -- Case 2: all entries nonzero. Apply weighted-Sylvester sum-bound.
     push_neg at hzero
-    -- TODO: Sylvester sum-bound. The key steps:
-    --   1. ∀ j, sylvesterOff (chordCubicBiv.natDegree) (DLineBiv.natDegree) j ≤ (σ j).val
-    --      (entries nonzero forces (σ j).val to be in row range).
-    --   2. Apply Polynomial.natDegree_prod_le, then bound Σ natDeg via the
-    --      weighted inequalities (Lemma A on f-cols, Lemma B on g-cols).
-    --   3. Combine with sum_sylvester_idx_eq to get Σ natDeg ≤ w.
+    -- Step 1: support — each (σ j).val is in the row range.
+    have hsupp : ∀ j : Fin ((chordCubicBiv E lam).natDegree
+                              + (DLineBiv E lam D).natDegree),
+        sylvesterOff (chordCubicBiv E lam).natDegree
+          (DLineBiv E lam D).natDegree j ≤ (σ j).val := by
+      intro j
+      have hne := hzero j
+      -- Decompose j via addCases: j is castAdd of some j₁ : Fin m, or natAdd of j₁ : Fin n.
+      obtain ⟨j₁, rfl⟩ | ⟨j₁, rfl⟩ :
+          (∃ j₁ : Fin (chordCubicBiv E lam).natDegree,
+              j = Fin.castAdd (DLineBiv E lam D).natDegree j₁) ∨
+          (∃ j₁ : Fin (DLineBiv E lam D).natDegree,
+              j = Fin.natAdd (chordCubicBiv E lam).natDegree j₁) := by
+        rcases Nat.lt_or_ge j.val (chordCubicBiv E lam).natDegree with hjm | hjm
+        · left
+          refine ⟨⟨j.val, hjm⟩, ?_⟩
+          ext; rfl
+        · right
+          have hjm_le : (chordCubicBiv E lam).natDegree ≤ j.val := hjm
+          refine ⟨⟨j.val - (chordCubicBiv E lam).natDegree, ?_⟩, ?_⟩
+          · have := j.isLt
+            omega
+          · ext; simp [Fin.natAdd]; omega
+      · -- j is castAdd j₁ (g-col case).
+        unfold sylvesterOff
+        rw [Fin.addCases_left]
+        unfold Polynomial.sylvester at hne
+        rw [Matrix.of_apply, Fin.addCases_left] at hne
+        by_contra hlt
+        push_neg at hlt
+        have hnotin :
+            ¬ (σ (Fin.castAdd _ j₁)).val ∈
+              Set.Icc j₁.val (j₁.val + (DLineBiv E lam D).natDegree) := by
+          simp only [Set.mem_Icc, not_and_or]
+          left; omega
+        rw [if_neg hnotin] at hne
+        exact hne rfl
+      · -- j is natAdd j₁ (f-col case).
+        unfold sylvesterOff
+        rw [Fin.addCases_right]
+        unfold Polynomial.sylvester at hne
+        rw [Matrix.of_apply, Fin.addCases_right] at hne
+        by_contra hlt
+        push_neg at hlt
+        have hnotin :
+            ¬ (σ (Fin.natAdd _ j₁)).val ∈
+              Set.Icc j₁.val (j₁.val + (chordCubicBiv E lam).natDegree) := by
+          simp only [Set.mem_Icc, not_and_or]
+          left; omega
+        rw [if_neg hnotin] at hne
+        exact hne rfl
+    -- TODO: combine with weighted bounds (Lemmas A, B) and index-sum identity.
     sorry
 
 theorem chord_fiber_product_concrete_natDegree_le_normPoly_natDegree
