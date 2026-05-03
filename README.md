@@ -67,13 +67,14 @@ where `N = numZeros(D)` and `E_aff` is the set of affine `F_q`-points of `E`. Pr
 `#print axioms Divisor.ma_extractable` (same for `Divisor.ip_knowledge_sound`):
 
 ```
-propext, sorryAx, Classical.choice, Divisor.hasse_weil, Quot.sound
+propext, Classical.choice, Quot.sound,
+Divisor.hasse_weil,
+Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
+Polynomial.resultant_logDeriv_at_split_specialization_of_pos_natDegree,
+Divisor.CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
 ```
 
-`sorryAx` is intentional on the `geom-polyG-skeleton` branch. The named
-obligations are isolated in `Divisor/GeomLocalOrder.lean` and
-`Divisor/GeometricSoundness.lean`; discharging them replaces the older
-split-gated rational-zero path.
+No `sorryAx`. Production paths build with no in-flight obligations.
 
 `#print axioms Divisor.ma_completeness`:
 
@@ -88,55 +89,66 @@ Divisor.weil_reciprocity_honest
 Divisor.hasse_weil
 ```
 
+The pinned closure is verified at `Tests/AxiomClosurePin.lean`; reading
+the build log catches drift from the expected set.
+
 ### Textbook Axioms
 
-#### `CoordRingElt.exists_divisor_multiplicity` — Silverman AEC III Cor 3.5, p. 63 + II §1, p. 21–24
+#### `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit` — Silverman AEC III Cor 3.5, p. 63 (Abel's theorem)
 
-Existence of a "true" divisor multiplicity function (the local
-`ord_P(D)` of `D = a − b·y` viewed as a rational function on `E`)
-satisfying: support, coverage, the unconditional total-degree
-bound, and — under the **`splitsOnE`** predicate (univariate
-splitting of `normPoly E D` AND fiber-rationality of every root)
-— pole-at-∞ accounting and Abel's group-sum-zero.
+Principal-divisor class statement for the regular function `D = a - b·y`
+on `E`, narrowed to the non-constant-unit case (constant-unit case
+already a theorem). Says: under `splitsOnE E D`, the divisor class
+attached to `D` in mathlib's class group is represented by some
+principal fractional ideal.
 
-The fiber-rationality clause is essential: `normPoly_splits_over_Fq`
-(splitting in `X` alone) is *not* sufficient for the F_q-restricted
-sum to track `natDeg N(D)`. Counterexample: `E : y² = x³ + 1 / F_5`
-with `D = X − 1`. `normPoly D = (X − 1)²` splits over F_5 with
-`natDeg = 2`, but `1³ + 1 = 2` is not a quadratic residue mod 5,
-so no F_5-points lie above `x = 1` and the F_q-restricted β must
-vanish there. Strengthening the precondition to `splitsOnE` (the
-auditor's recommendation) restores soundness.
-
-The axiom replaces the retired (and provably false) `CoordRingElt.divisor_group_sum_zero`
-axiom (which had hard-coded `betaConstructive` as the multiplicity
-function — non-faithful to `ord_P` at twin sheets; see the F_5
-counterexample at `Divisor/Axioms/AxiomExistsDivisorMultiplicity.lean`).
+This replaces the older direct `CoordRingElt.exists_divisor_multiplicity`
+axiom (which is now a *theorem* derived from this principal-class
+axiom via mathlib's `ClassGroup.mk_eq_one_iff` plus existing
+geometric-data plumbing).
 
 The axiom is intended to be discharged in Phase 1 of the trust-
 closure plan by mechanising `ord_P` from local uniformizers
 (Silverman II §1) and applying `principal_divisor_iff.mp` from
 Cor 3.5.
 
-#### `chord_fiber_product_eq_normZ_under_split` — Stichtenoth Prop 3.1.9, p. 73 + Thm 3.7.1, p. 121
+#### `chord_fiber_product_concrete_bar_zfiber_pow_dvd` — Stacks Project [02RS](https://stacks.math.columbia.edu/tag/02RS) (lower bound)
 
-Function-field norm identity for the degree-3 extension `F_q(E) / F_q(z)` where `z = y - λ x`. Let `A_0, A_1, A_2` be the three chord-fiber sheets of the chord with slope `λ`. Then there exists a nonzero constant `c` in `F_q` with
+Coefficientwise *divisibility* lower bound for the chord-projection
+norm. For each chord-intercept `z`, the chord-fibre product has
+multiplicity at least `Σ_{Q ∈ gd.support, π(Q) = z} gd.mult(Q)` at `z`.
 
-$$\prod_{i=0}^{2} D\bigl(A_i(z)\bigr) = c \cdot N_D(z) \qquad \text{in } F_q[z],$$
+Strict shape improvement: the previous chord-specific multiplicity-
+*equality* axiom is now a derived theorem, since the matching upper
+bound (the global natDegree inequality) is fully formalised via the
+weighted-Sylvester proof in `Divisor/ChordFiberWeightedDegree.lean`:
 
-where the left side is the Galois norm from `F_q(E)` to `F_q(z)` applied to `D`, and `N_D(z) = normZ(z)` is the `z`-coordinate norm polynomial. Stichtenoth 3.1.9 gives the conorm identity `Con(div(x)) = div(x)`; Thm 3.7.1 gives Galois-transitive action on place extensions.
+```lean
+theorem chord_fiber_product_concrete_natDegree_le_normPoly_natDegree
+    (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (_hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    (chord_fiber_product_concrete E lam D).natDegree
+      ≤ (normPoly E D).natDegree
+```
 
-#### `chord_sum_eq_chord_fiber_product_logDeriv` — Lang *Algebra* §VI.5, p. 285 + §VIII.5, p. 370
+Squeeze argument (`rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le`)
+combines the divisibility axiom with the natDegree theorem to derive
+multiplicity equality at every fibre. Detailed write-up in
+`axioms/chord_fiber_product_concrete_bar_zfiber_pow_dvd.md`.
 
-Trace-of-log-derivative identity, specialized to `L/K = F_q(E)/F_q(z)` and evaluated at the chord intercept `μ = z_λ(A_0)`:
+#### `Polynomial.resultant_logDeriv_at_split_specialization_of_pos_natDegree` — Lang *Algebra* §VI.5 + §VIII.5
 
-$$\sum_{i=0}^{2} \frac{dD}{D}\bigl(A_i\bigr) = \frac{d\,N(D)}{N(D)}(\mu).$$
+Logarithmic derivative of a bivariate resultant at a split
+specialisation, with `0 < f.natDegree` and `f.Monic`. The trivial
+`f.natDegree = 0` case is now a theorem.
 
-Equivalently, in general extensions `L/K`:
-
-$$\mathrm{Tr}_{L/K}\bigl(dg/g\bigr) = \frac{d\bigl(N_{L/K}(g)\bigr)}{N_{L/K}(g)}.$$
-
-Follows from differentiating the product-of-embeddings formula `N(g) = ∏_σ σ(g)` (Lang VI.5 Thm 5.1) with the derivation uniquely extended to the Galois closure (Lang VIII.5 Thm 5.1 Case 1).
+The Galois case of Lang's underlying trace-of-log-derivative identity
+`Tr_{L/K}(dα/α) = d N_{L/K}(α) / N_{L/K}(α)` is fully formalised as
+`Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`
+(in `Divisor/Axioms/AxiomTraceLogDeriv.lean`). Discharging this
+remaining axiom requires the splitting-field/resultant/specialisation
+plumbing connecting `Polynomial.derivative` to mathlib's `Differential`
+typeclass; see `axioms/resultant_logDeriv_at_split.md` for the plan.
 
 #### `weil_reciprocity_honest` — Silverman AEC II Exercise 2.11, p. 39
 
