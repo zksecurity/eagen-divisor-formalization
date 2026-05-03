@@ -42,10 +42,17 @@
   Hence `deg_Z(det) ≤ w = (normPoly).natDegree`, which is the
   required bound on `chord_fiber_product_concrete`.
 
-  This file lays the groundwork: per-coefficient weight bounds
-  (Lemmas A, B). The main determinant analysis is the substantive
-  remaining work; the per-coefficient bounds here are mechanical
-  coefficient computations.
+  Status: **complete**. The main theorem
+  `chord_fiber_product_concrete_natDegree_le_normPoly_natDegree`
+  is fully proved (no sorries) via:
+  - Per-coefficient weight bounds (Lemmas A and B).
+  - Sylvester column-offset and index-sum identities.
+  - Per-permutation product bound (case-split on whether some entry
+    is zero or all are nonzero).
+  - Determinant-via-`Matrix.det_apply` aggregation.
+
+  Discharges sketch stub 2a coprime case (in fact unconditionally,
+  for any D with `¬ (D.a = 0 ∧ D.b = 0)`).
 -/
 import Divisor.ChordFiberProductConcrete
 
