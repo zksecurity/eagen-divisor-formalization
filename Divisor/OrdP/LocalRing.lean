@@ -1330,6 +1330,92 @@ theorem ordAt_group_sum_zero_under_split
   rw [← weightedSum_divisorOfD_cover_eq E D]
   exact hCoverSum
 
+/-! ## Section 7.5: D.b = 0 sub-case of group-sum-zero (axiom-free) -/
+
+/-- For `D.b = 0` (polynomial-in-X), `ordAt_twoTorsion` is even
+(specifically `2 * rootMult P.1 D.a`), so applying it to
+`ECPoint.affine E P.1 0` gives 0 via 2-torsion. -/
+private theorem ordAt_nsmul_affine_y_zero_eq_zero_of_b_zero
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hb : D.b = 0) (x : ZMod E.q) (hP : (x, 0) ∈ E.points) :
+    ECPoint.nsmul E (ordAt E D (x, 0))
+        (ECPoint.affine E x 0) = 0 := by
+  classical
+  -- ordAt at (x, 0) for D.b = 0 dispatches to ordAt_twoTorsion = 2 * rootMult x D.a.
+  have hDispatch :
+      ordAt E D (x, 0) = ordAt_twoTorsion E D (x, 0) := by
+    rw [ordAt_eq_dispatch E D hP hD, if_pos rfl]
+  have hTwoTorEq :
+      ordAt_twoTorsion E D (x, 0)
+        = 2 * Polynomial.rootMultiplicity x D.a := by
+    unfold ordAt_twoTorsion
+    rw [if_neg hD]
+    have ha_ne : D.a ≠ 0 := fun h => hD ⟨h, hb⟩
+    rw [if_neg ha_ne, if_pos hb]
+  rw [hDispatch, hTwoTorEq]
+  exact ECPoint.nsmul_two_mul_affine_y_zero_eq_zero E _ x
+
+/-- **Affine weighted-sum cancellation for `D.b = 0`** (axiom-free,
+sub-case): when `D = (a, 0)` is a polynomial in `X`, the affine
+`ordAt`-weighted sum on `E.points` cancels via the y-flip involution
+`σ(x, y) = (x, -y)`. The `splitsOnE` hypothesis is *not needed* —
+this case sidesteps the divisor-class axiom entirely. -/
+theorem ordAt_group_sum_zero_of_b_zero
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hb : D.b = 0) :
+    ECPoint.weightedSum E E.points
+      (fun P => ECPoint.nsmul E (ordAt E D P)
+                  (ECPoint.affine E P.1 P.2)) = 0 := by
+  classical
+  unfold ECPoint.weightedSum
+  refine Finset.sum_involution
+    (g := fun P _ => ((P.1, -P.2) : ZMod E.q × ZMod E.q))
+    ?_ ?_ ?_ ?_
+  · -- Pair sum equals 0: f P + f (σ P) = 0.
+    intro P _hP
+    have hSym : ordAt E D P = ordAt E D (P.1, -P.2) :=
+      ordAt_symm_b_zero E D hb P
+    rw [show ECPoint.nsmul E (ordAt E D (P.1, -P.2))
+              (ECPoint.affine E (P.1, -P.2).1 (P.1, -P.2).2)
+            = ECPoint.nsmul E (ordAt E D P)
+                (ECPoint.affine E P.1 (-P.2)) from by
+        rw [← hSym]]
+    exact ECPoint.nsmul_affine_pair_eq_zero E (ordAt E D P) P.1 P.2
+  · -- No fixed-point with non-zero contribution.
+    intro P hP hf hSigEq
+    apply hf
+    -- σP = P forces P.2 = 0 (since 2 ≠ 0 in ZMod E.q for q ≥ 5).
+    have hYneg : -P.2 = P.2 := by
+      have := Prod.mk.inj hSigEq
+      exact this.2
+    have hY0 : P.2 = 0 := by
+      have h2 : (2 : ZMod E.q) * P.2 = 0 := by
+        have : P.2 + P.2 = 0 := by
+          rw [show P.2 + P.2 = -(-P.2) + P.2 from by ring,
+              hYneg, neg_add_cancel]
+        linear_combination this
+      have h2NZ : (2 : ZMod E.q) ≠ 0 := ZMod_two_ne_zero_of_E E
+      rcases mul_eq_zero.mp h2 with h | h
+      · exact absurd h h2NZ
+      · exact h
+    -- P.2 = 0 and P ∈ E.points: apply the 2-torsion eq-zero helper.
+    rw [show P = (P.1, 0) from by rcases P with ⟨x, y⟩; simp at hY0 ⊢; exact hY0]
+    apply ordAt_nsmul_affine_y_zero_eq_zero_of_b_zero E D hD hb P.1
+    rw [show (P.1, (0 : ZMod E.q)) = P from by
+          rcases P with ⟨x, y⟩; simp at hY0 ⊢; exact hY0.symm]
+    exact hP
+  · -- σ P ∈ E.points (curve symmetry y ↦ -y).
+    intro P hP
+    apply E.hComplete
+    have := E.hOnCurve P hP
+    show (-P.2)^2 = P.1^3 + E.curveA * P.1 + E.curveB
+    rw [show (-P.2)^2 = P.2^2 from by ring]
+    exact this
+  · -- σ ∘ σ = id.
+    intro P _hP
+    show ((P.1, -P.2).1, -(P.1, -P.2).2) = P
+    simp
+
 /-! ## Section 8: discharge `exists_divisor_multiplicity` -/
 
 /-- ECPoint-indexed version of the true affine divisor multiplicity.
