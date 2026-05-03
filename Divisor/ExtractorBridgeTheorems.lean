@@ -104,6 +104,34 @@ theorem badChallenges_card_le
           (eventNotEqDefinedSet_card_le E D P B m hDeg hNV)
     _ = eventNotEqBound E D.degE k + eventDegBound E D.degE k := by ring
 
+/-- Hasse-clean form of `badChallenges_card_le`: under `q ≥ 5` and
+the standard hypotheses, `|badChallenges| ≤ 36 · (d + k + 4) · q`. -/
+theorem badChallenges_card_le_clean
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
+    (hDeg : D.degE < E.q)
+    (hNV : ∃ A₀ A₁, A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ A₀.1 ≠ A₁.1 ∧
+        logDerivCheckFnDefined E D P B A₀ A₁ ∧
+        logDerivCheckFn E D P k B m A₀ A₁ ≠ 0)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hQ : 5 ≤ E.q) :
+    (badChallenges E D P B m).card ≤ 36 * (D.degE + k + 4) * E.q := by
+  classical
+  have hHasse : E.points.card ≤ 2 * E.q := points_card_le_two_q E hQ
+  have hSum := badChallenges_card_le E D P B m hDeg hNV hD
+  unfold eventNotEqBound eventDegBound at hSum
+  calc (badChallenges E D P B m).card
+      ≤ 18 * (D.degE + k) * E.q +
+        (3 * D.degE + 9 * k + 71) * E.points.card := hSum
+    _ ≤ 18 * (D.degE + k) * E.q +
+        (3 * D.degE + 9 * k + 71) * (2 * E.q) :=
+        Nat.add_le_add_left
+          (Nat.mul_le_mul_left _ hHasse)
+          (18 * (D.degE + k) * E.q)
+    _ = (18 * (D.degE + k) + 2 * (3 * D.degE + 9 * k + 71)) * E.q := by ring
+    _ ≤ 36 * (D.degE + k + 4) * E.q := by
+        apply Nat.mul_le_mul_right; omega
+
 /-! ## `\ref{thm:ma}`: Extractable MA protocol -/
 
 /-- Internal conditional form of MA extractability.
@@ -297,32 +325,6 @@ theorem ma_extractable_paper
       ⊆ badChallenges E msg.toD stmt.target stmt.bases
           (fun i => msg.m (hkm ▸ i)) :=
   Or.inr (maAcceptSet_subset_badChallenges E stmt msg hkm)
-
-/-- **MA extractability — unconditional headline (deprecated alias).**
-
-    Now subsumed by `ma_extractable`: the third disjunct (existence of
-    a verifier-bad `A₀`) has been internally absorbed into the
-    accept-set bound via the `badDenomA0` count. Kept as an alias for
-    backwards compatibility; new code should call `ma_extractable`
-    directly. -/
-@[deprecated ma_extractable (since := "2026-05-03")]
-theorem ma_extractable_unconditional
-    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k)
-    (hTargetOnE : stmt.target ∈ E.points)
-    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hLargeQ : E.points.card >
-        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg.toD.degE + stmt.k + 2) + 72) :
-    (∃ wit : DlogWitness E.q,
-        maExtractor E stmt msg stmt.degBound hd hkm = some wit
-        ∧ relDlog E stmt wit) ∨
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ eventNotEqBound E stmt.degBound stmt.k +
-        eventDegBound E stmt.degBound stmt.k :=
-  ma_extractable E stmt hd hd2 msg hkm hTargetOnE hBasesOnE hLargeQ
 
 /-! ## `\ref{thm:ip}`: Knowledge-Sound IP -/
 
