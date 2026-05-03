@@ -3268,7 +3268,7 @@ theorem logDerivCheckFn_zero_set_bound
     set badZ := defZ.filter (fun p => p.1 ∈ bad_A₀_set) with hbadZ
     have hZsplit : defZ.card = goodZ.card + badZ.card := by
       rw [hgoodZ, hbadZ, Nat.add_comm,
-          Finset.filter_card_add_filter_neg_card_eq_card]
+          Finset.card_filter_add_card_filter_not]
     have hBadZcard : badZ.card ≤ K' * E.points.card := by
       have hSub : badZ ⊆ bad_A₀_set ×ˢ E.points := by
         intro p hp

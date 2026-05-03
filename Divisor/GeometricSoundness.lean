@@ -5136,7 +5136,7 @@ private theorem card_logDerivCheckFnDefined_complement_le
       have hCompl : (E.points.filter (fun A₁ => A₁.1 = A₀.1)).card +
           (E.points.filter (fun A₁ => ¬A₁.1 = A₀.1)).card =
           E.points.card :=
-        Finset.filter_card_add_filter_neg_card_eq_card (s := E.points)
+        Finset.card_filter_add_card_filter_not (s := E.points)
           (p := fun A₁ => A₁.1 = A₀.1)
       have hVertCard := card_points_with_fst_eq_le E A₀.1
       have hEq : E.points.filter (fun A₁ => A₀.1 ≠ A₁.1) =

@@ -2252,7 +2252,7 @@ theorem DAtA₂_zero_pairs_card_le (D : CoordRingElt E.q)
   set Snv := S.filter (fun p => p.1.1 ≠ p.2.1) with hSnvdef
   have hSplit : Svert.card + Snv.card = S.card := by
     rw [hSvertdef, hSnvdef]
-    exact Finset.filter_card_add_filter_neg_card_eq_card _
+    exact Finset.card_filter_add_card_filter_not _
   -- Svert bound: Svert ⊆ {A₀.1 = A₁.1}, fiberwise ≤ 2 per A₀ ⇒ ≤ 2·|E|.
   have hSvert_bd : Svert.card ≤ 2 * E.points.card := by
     set T := (E.points ×ˢ E.points).filter
