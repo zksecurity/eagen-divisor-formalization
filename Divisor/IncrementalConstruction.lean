@@ -780,6 +780,74 @@ theorem splitsOnE_chordCoordRingElt
   · -- chord
     exact splitsOnE_chordCoordRingElt_chord E P Q hP hQ hxx
 
+/-! ## Total `ordAt` mass for chord-line `CoordRingElt`s
+
+Combining `splitsOnE_chordCoordRingElt` with
+`sum_ordAt_eq_natDegree_under_split` gives the total ordAt mass on
+`E.points` exactly. For vertical lines this is 2; for non-vertical
+chord/tangent lines this is 3. -/
+
+theorem sum_ordAt_chordCoordRingElt_chord
+    (P Q : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (hxx : P.1 ≠ Q.1) :
+    (∑ S ∈ E.points, ordAt E (chordCoordRingElt E P Q) S) = 3 := by
+  classical
+  have hSplit := splitsOnE_chordCoordRingElt_chord E P Q hP hQ hxx
+  have hNZ := chordCoordRingElt_ne_zero E P Q
+  rw [sum_ordAt_eq_natDegree_under_split E _ hNZ hSplit]
+  -- natDegree of the chord normPoly = 3
+  have hD : (chordCoordRingElt E P Q).a = -(C (slopeOf P.1 P.2 Q.1 Q.2)) * X
+              - C (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1) ∧
+            (chordCoordRingElt E P Q).b = -1 := by
+    unfold chordCoordRingElt
+    rw [dif_neg hxx]
+    refine ⟨rfl, rfl⟩
+  have hNDClassical :
+      ({ a := -(C (slopeOf P.1 P.2 Q.1 Q.2)) * X
+              - C (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1),
+          b := -1 } : CoordRingElt E.q) =
+        chordCoordRingElt E P Q := by
+    unfold chordCoordRingElt
+    rw [dif_neg hxx]
+    rfl
+  rw [← hNDClassical]
+  exact natDegree_normPoly_chordCoordRingElt_nonvertical E _ _
+
+theorem sum_ordAt_chordCoordRingElt_tangent
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (h2t : P.2 ≠ 0) :
+    (∑ S ∈ E.points, ordAt E (chordCoordRingElt E P P) S) = 3 := by
+  classical
+  have hSplit := splitsOnE_chordCoordRingElt_tangent E hP h2t
+  have hNZ := chordCoordRingElt_ne_zero E P P
+  rw [sum_ordAt_eq_natDegree_under_split E _ hNZ hSplit]
+  have hNDClassical :
+      ({ a := -(C ((3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹)) * X
+              - C (P.2 - (3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹ * P.1),
+          b := -1 } : CoordRingElt E.q) =
+        chordCoordRingElt E P P := by
+    unfold chordCoordRingElt
+    rw [dif_pos rfl, dif_pos rfl, if_neg h2t]
+  rw [← hNDClassical]
+  exact natDegree_normPoly_chordCoordRingElt_nonvertical E _ _
+
+theorem sum_ordAt_chordCoordRingElt_vertical
+    (P Q : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hxx : P.1 = Q.1)
+    (hCase : P.2 ≠ Q.2 ∨ (P.2 = Q.2 ∧ P.2 = 0)) :
+    (∑ S ∈ E.points, ordAt E (chordCoordRingElt E P Q) S) = 2 := by
+  classical
+  have hSplit := splitsOnE_chordCoordRingElt_vertical E P Q hP hxx hCase
+  have hNZ := chordCoordRingElt_ne_zero E P Q
+  rw [sum_ordAt_eq_natDegree_under_split E _ hNZ hSplit]
+  have hD : chordCoordRingElt E P Q
+      = ({ a := X - C P.1, b := 0 } : CoordRingElt E.q) := by
+    unfold chordCoordRingElt
+    rw [dif_pos hxx]
+    rcases hCase with hyy | ⟨hyy, h2t⟩
+    · rw [dif_neg hyy]
+    · rw [dif_pos hyy, if_pos h2t]
+  rw [hD]
+  exact natDegree_normPoly_chordCoordRingElt_vertical E _
+
 /-! ## Multiplication of `CoordRingElt`s in `F_q[E]`
 
 `F_q[E] = F_q[X,Y]/(Y² - X³ - AX - B)` admits multiplication by reducing
