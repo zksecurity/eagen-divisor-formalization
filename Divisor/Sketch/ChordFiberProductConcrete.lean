@@ -26,6 +26,7 @@
   `chord_fiber_product_concrete_logDeriv`. Each is restated against
   the production-namespace decl; the accompanying note
   `docs/chord-fiber-product-concrete-sketch.md` categorises them. -/
+import Divisor.Axioms.AxiomChordFiberDivisibility
 import Divisor.ChordFiberMultiplicativity
 import Divisor.ChordFiberProductConcrete
 import Divisor.ChordFiberWeightedDegree
@@ -137,13 +138,18 @@ is the local divisor-of-norm / local-intersection content. -/
 theorem chord_fiber_product_concrete_bar_zfiber_pow_dvd
     [DecidableEq (Fqbar E)]
     (lam : ZMod E.q) (D : CoordRingElt E.q)
-    (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D) (z : Fqbar E) :
     (Polynomial.X - Polynomial.C z) ^
       (∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q)
       ∣ (chord_fiber_product_concrete E lam D).map
           (algebraMap (ZMod E.q) (Fqbar E)) :=
-  sorry
+  -- The same statement is now exposed as a production axiom
+  -- (`Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd` in
+  -- `Divisor/Axioms/AxiomChordFiberDivisibility.lean`). The sketch
+  -- stub here previously bridged the proof; it now delegates to the
+  -- production axiom directly.
+  Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd E D lam hD gd z
 
 /-! **Stub 2a**: natDegree bound for the chord-fibre product against the
 norm polynomial's natDegree.
