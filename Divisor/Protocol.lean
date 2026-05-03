@@ -79,24 +79,30 @@ theorem admSetHash_excludes_zero (r : ℕ → ZMod q) :
 /-- Witness for the discrete-log relation.
 
 **Paper-vs-Lean modeling note** (paper §IP, `relDlog`):
-the paper writes scalars `n_i ∈ F_p` where `p` is the group order
-`p = |E(F_q)| = E.numPoints` (typically chosen prime in cryptographic
-settings — but the Lean `ECSetup` does not bake in `Nat.Prime numPoints`).
-Lean instead uses `scalars : Fin k → ℤ` with bound `|scalars i| < degBound`.
-The two formulations are equivalent for soundness analysis:
+the paper writes scalars `n_i ∈ F_p^k` where `p` is the scalar-field
+parameter for the elliptic-curve group. The Lean formalization is
+agnostic about what `p` means — it could be the full group order
+`|E(F_q)|`, a prime subgroup order (cofactor case), or any parameter
+chosen by the protocol — and instead uses `scalars : Fin k → ℤ` with
+bound `|scalars i| < degBound`.
+
+The Lean form is equivalent for soundness analysis modulo a lift:
 
 1. The scalar action `n • P` on the elliptic curve group factors
-   through `ℤ / numPoints` (additive group of order `numPoints`), so
-   `n ∈ ℤ` and `(n mod numPoints) ∈ ℤ/numPoints` give identical
-   `n • P`. When `numPoints` is prime, `ℤ/numPoints = F_p` exactly.
+   through `ℤ / N` for whatever order `N` annihilates `B_i` and `P`.
+   Concretely, any `n_i ∈ F_p` lifts to a representative in `ℤ` with
+   `|n_i| ≤ p / 2`, and the `n • P` action is the same.
 
-2. The bound `|n_i| < degBound` matches the soundness analysis (which
-   needs `|n_i| < degBound ≤ q < numPoints + 2√q + 1` via Hasse-Weil).
-   The paper's `Σ n_i ≤ degBound` is a stronger condition not needed
-   for the extraction direction.
+2. The bound `|n_i| < degBound` is the soundness-analysis-relevant
+   range condition; the paper's `Σ n_i ≤ degBound` (or its analog) is
+   stronger but not needed for the extraction direction.
 
-Signed integers (rather than `ℕ` or `ZMod numPoints`) capture the
-extractor's special case `n_{j*} = -1` (for `-P ∈ {B_j}`) natively. -/
+Signed integers (rather than `ℕ` or `ZMod p`) capture the extractor's
+special case `n_{j*} = -1` (for `-P ∈ {B_j}`) natively, and avoid
+committing to a specific group/subgroup order at the type level. The
+formal code never asserts `p = E.numPoints` or any other specific
+identification — the relation is stated directly via the integer
+scalar action. -/
 structure DlogWitness (q : ℕ) [Fact (Nat.Prime q)] where
   k : ℕ
   scalars : Fin k → ℤ
