@@ -390,6 +390,86 @@ private lemma normPoly_natDegree_ge_b_curveX
       exact hDa_sq_lead_ne
     omega
 
+/-- **`(normPoly).natDegree ≥ 2·D.a.natDegree`** when `D.a ≠ 0`.
+Analogous to `normPoly_natDegree_ge_b_curveX` but for the
+`D.a^2` summand. -/
+private lemma normPoly_natDegree_ge_a_sq
+    (D : CoordRingElt E.q) (ha : D.a ≠ 0) :
+    2 * D.a.natDegree ≤ (normPoly E D).natDegree := by
+  classical
+  rw [normPoly_eq]
+  have hcurveX_natDeg : (curveX E).natDegree = 3 := by
+    refine le_antisymm (curveX_natDegree_le_three E) ?_
+    refine Polynomial.le_natDegree_of_ne_zero ?_
+    show (curveX E).coeff 3 ≠ 0
+    unfold curveX
+    simp [Polynomial.coeff_add, Polynomial.coeff_X_pow,
+          Polynomial.coeff_C_mul, Polynomial.coeff_X, Polynomial.coeff_C]
+  have hDa_sq_natDeg : (D.a ^ 2).natDegree = 2 * D.a.natDegree :=
+    Polynomial.natDegree_pow _ _
+  have hDa_sq_lead :
+      (D.a ^ 2).coeff (2 * D.a.natDegree) = D.a.leadingCoeff ^ 2 := by
+    rw [show 2 * D.a.natDegree = (D.a ^ 2).natDegree from hDa_sq_natDeg.symm,
+        ← Polynomial.leadingCoeff, Polynomial.leadingCoeff_pow]
+  have hDa_sq_lead_ne : (D.a.leadingCoeff : ZMod E.q) ^ 2 ≠ 0 :=
+    pow_ne_zero _ ((Polynomial.leadingCoeff_ne_zero).mpr ha)
+  -- Case-split on whether D.b² · curveX dominates the target index 2·D.a.natDegree.
+  by_cases hb : D.b = 0
+  · rw [hb]
+    simp only [zero_pow, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true,
+               zero_mul, sub_zero]
+    rw [hDa_sq_natDeg]
+  · have hcurveX_ne : (curveX E) ≠ 0 := by
+      intro h
+      have := hcurveX_natDeg
+      rw [h, Polynomial.natDegree_zero] at this
+      omega
+    have hbsq_ne : D.b ^ 2 ≠ 0 := pow_ne_zero _ hb
+    have hprod_natDeg : (D.b ^ 2 * curveX E).natDegree = 2 * D.b.natDegree + 3 := by
+      rw [Polynomial.natDegree_mul hbsq_ne hcurveX_ne, hcurveX_natDeg,
+          Polynomial.natDegree_pow]
+    by_cases hdeg : 2 * D.b.natDegree + 3 < 2 * D.a.natDegree
+    · -- D.a² dominates: use (normPoly).coeff(2·D.a.natDegree) ≠ 0.
+      refine Polynomial.le_natDegree_of_ne_zero ?_
+      rw [Polynomial.coeff_sub, hDa_sq_lead]
+      have hprod_zero :
+          (D.b ^ 2 * curveX E).coeff (2 * D.a.natDegree) = 0 := by
+        apply Polynomial.coeff_eq_zero_of_natDegree_lt
+        rw [hprod_natDeg]; exact hdeg
+      rw [hprod_zero, sub_zero]
+      exact hDa_sq_lead_ne
+    · -- D.b² · curveX dominates: 2·D.b.natDegree + 3 ≥ 2·D.a.natDegree, by parity ≥ +1.
+      push_neg at hdeg
+      -- (D.b² · curveX).natDegree ≥ 2·D.a.natDegree.
+      have hprod_lead :
+          (D.b ^ 2 * curveX E).coeff (2 * D.b.natDegree + 3) ≠ 0 := by
+        rw [show 2 * D.b.natDegree + 3 = (D.b ^ 2 * curveX E).natDegree from
+              hprod_natDeg.symm]
+        rw [← Polynomial.leadingCoeff]
+        exact (Polynomial.leadingCoeff_ne_zero).mpr (mul_ne_zero hbsq_ne hcurveX_ne)
+      -- Note 2·D.b.natDegree + 3 ≠ 2·D.a.natDegree by parity (odd vs even).
+      have hparity : 2 * D.b.natDegree + 3 ≠ 2 * D.a.natDegree := by
+        rcases Nat.even_or_odd (2 * D.a.natDegree) with hev | hod
+        · -- 2·D.a.natDegree even, 2·D.b.natDegree + 3 odd.
+          intro heq
+          have : Even (2 * D.b.natDegree + 3) := heq.symm ▸ hev
+          have : Odd (2 * D.b.natDegree + 3) := ⟨D.b.natDegree + 1, by ring⟩
+          omega
+        · have : Even (2 * D.a.natDegree) := ⟨_, two_mul _⟩
+          exact absurd this (Nat.not_even_iff_odd.mpr hod)
+      have : 2 * D.b.natDegree + 3 ≥ 2 * D.a.natDegree + 1 := by omega
+      -- (D.a^2 - D.b^2 · curveX).natDegree ≥ 2·D.b.natDegree + 3 ≥ 2·D.a.natDegree + 1.
+      have hge : 2 * D.b.natDegree + 3 ≤ (D.a^2 - D.b^2 * curveX E).natDegree := by
+        refine Polynomial.le_natDegree_of_ne_zero ?_
+        rw [Polynomial.coeff_sub]
+        have hDa_zero :
+            (D.a ^ 2).coeff (2 * D.b.natDegree + 3) = 0 := by
+          apply Polynomial.coeff_eq_zero_of_natDegree_lt
+          rw [hDa_sq_natDeg]; omega
+        rw [hDa_zero, zero_sub, neg_ne_zero]
+        exact hprod_lead
+      omega
+
 /-- **Lemma B (target): DLineBiv per-coefficient weight bound.**
 
 For `k ≤ (DLineBiv E lam D).natDegree`,
