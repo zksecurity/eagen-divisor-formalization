@@ -139,12 +139,20 @@ future axiom-1 discharge can build on:
    - `resultant_chordCubicBiv_pmap_C_natDegree_of_eq_X_sub_C_pow` — `p = (X − C x₀)^k`.
    - `resultant_chordCubicBiv_pmap_C_natDegree_of_splits` — any monic `p`
      splitting over `ZMod E.q` (multiset induction on `p.roots`).
+   - `resultant_chordCubicBiv_pmap_C_natDegree_of_monic` — any monic `p`
+     (no splits hypothesis), via lifting along
+     `K = SplittingField p`, applying the splits-generic theorem over
+     `K`, then descending the natDegree along `Polynomial.resultant_map_map`
+     plus `Polynomial.natDegree_map_eq_of_injective`.
 
    Inductive-step combinators for the natDegree-equality recurrence:
    - `_step_X_sub_C_pow` — composes `(X − C x₀)^k` natDegree with the
      general-monic step.
    - `_step_splits` — composes the general splits-over-ZMod-q natDegree
      with the general-monic step.
+   - `_step_monic` — composes the general-monic (no splits) natDegree
+     with the general-monic step. This is the no-hypothesis form
+     needed for the gcd-extraction induction.
 
    The linear case includes the resultant-against-linear-factor
    natDegree calculation
@@ -169,9 +177,11 @@ future axiom-1 discharge can build on:
      either to axiomatise the general norm/divisor pushforward (a
      textbook-shape replacement for axiom 1) or to prove it via a
      weighted-leading-term Sylvester analysis with `wt(T) = 3`,
-     `wt(X) = 2`. The remaining gap for closing the natDegree
-     comparison via the inductive infrastructure (item 3) is the
-     resultant natDegree formula
+     `wt(X) = 2`. The arbitrary-monic resultant natDegree formula
      `Res(chordCubic, p.map C, 3, p.natDegree).natDegree = 2 · p.natDegree`
-     for arbitrary monic `p`, provable via splitting field of `p`
-     over `ZMod q` plus `resultant_comm` + `resultant_eq_prod_eval`.
+     is now a *theorem*
+     (`resultant_chordCubicBiv_pmap_C_natDegree_of_monic`) via the
+     splitting-field lift, so the inductive `_step_monic` combinator
+     can compose all of D's `divLin`-recursive steps. The remaining
+     gap is the **base case** (`gcd(D.a, D.b) = 1`) of the natDegree
+     equality, which the inductive structure cannot reduce further.
