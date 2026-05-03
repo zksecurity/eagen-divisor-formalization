@@ -277,6 +277,121 @@ theorem badDenomA0_card_mul_card_sub_two_le
           Finset.sum_le_sum (fun A₀ _ => hfiber A₀)
   exact hT_card_ge.trans (hT_le_S.trans hS_bound)
 
+/-! ### Linear bound on `badDenomA0` under the standard `hLargeQ` -/
+
+/-- Under the standard `hLargeQ` regime
+`|E.points| ≥ 31·d + 31·k + 141`, the multiplicative
+`|badDenomA0|·(|E|−2) ≤ (3d+9k+71)·|E|` collapses to the linear bound
+
+  `|badDenomA0| ≤ |E.points| − 11·d − 11·k − 20`.
+
+Algebraic verification: substituting `n = 31d + 31k + 141 + m` (with
+`m ≥ 0`) and expanding yields a polynomial in `m, d, k` with all
+non-negative coefficients (see comments in proof). -/
+theorem badDenomA0_card_le_linear
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (hLargeQ : E.points.card ≥ 31 * D.degE + 31 * k + 141) :
+    (badDenomA0 E D P k B).card ≤ E.points.card - 11 * D.degE - 11 * k - 20 := by
+  classical
+  set bad := (badDenomA0 E D P k B).card with hbaddef
+  set n := E.points.card with hndef
+  have hMul : bad * (n - 2) ≤ (3 * D.degE + 9 * k + 71) * n :=
+    badDenomA0_card_mul_card_sub_two_le E D hD P k B
+  -- Cast to ℤ for clean polynomial reasoning.
+  have hLargeZ : (n : ℤ) ≥ 31 * D.degE + 31 * k + 141 := by exact_mod_cast hLargeQ
+  have hMulZ : (bad : ℤ) * ((n : ℤ) - 2) ≤ (3 * D.degE + 9 * k + 71) * n := by
+    have hge : 2 ≤ n := by omega
+    have h := hMul
+    have hsub : ((n - 2 : ℕ) : ℤ) = (n : ℤ) - 2 := by
+      push_cast; omega
+    have := h
+    -- Cast both sides.
+    have : (bad * (n - 2) : ℕ) ≤ ((3 * D.degE + 9 * k + 71) * n : ℕ) := h
+    exact_mod_cast this
+  -- Goal in ℤ: bad ≤ n - 11d - 11k - 20.
+  -- By contradiction: if bad ≥ n - 11d - 11k - 19, then
+  -- bad * (n-2) ≥ (n - 11d - 11k - 19)(n-2) > (3d+9k+71)n at n ≥ 31d+31k+141.
+  have hd_nn : (0 : ℤ) ≤ D.degE := by exact_mod_cast Nat.zero_le _
+  have hk_nn : (0 : ℤ) ≤ k := by exact_mod_cast Nat.zero_le _
+  have hn_ge : (n : ℤ) - (31 * D.degE + 31 * k + 141) ≥ 0 := by linarith
+  -- Key polynomial inequality:
+  -- (n - 11d - 11k - 20)(n-2) - (3d+9k+71)n ≥ (algebraic non-neg expression)
+  -- Equivalent: at n = 31d + 31k + 141 + m, polynomial is ≥ 0.
+  -- Use nlinarith with sq_nonneg hint for (n - 31d - 31k - 141).
+  have hPoly :
+      ((n : ℤ) - 11 * D.degE - 11 * k - 20) * ((n : ℤ) - 2)
+        ≥ (3 * D.degE + 9 * k + 71) * n := by
+    nlinarith [hLargeZ, hd_nn, hk_nn, hn_ge,
+      mul_nonneg hd_nn hk_nn,
+      mul_nonneg hd_nn hn_ge,
+      mul_nonneg hk_nn hn_ge,
+      mul_nonneg hn_ge hn_ge,
+      mul_nonneg hd_nn hd_nn, mul_nonneg hk_nn hk_nn,
+      sq_nonneg ((n : ℤ) - 31 * D.degE - 31 * k - 141)]
+  -- Conclude bad ≤ n - 11d - 11k - 20 in ℤ.
+  have hBoundZ : (bad : ℤ) ≤ (n : ℤ) - 11 * D.degE - 11 * k - 20 := by
+    have hn2pos : (0 : ℤ) < (n : ℤ) - 2 := by linarith
+    -- bad * (n-2) ≤ (3d+9k+71)n ≤ (n - 11d - 11k - 20)(n-2)
+    have : (bad : ℤ) * ((n : ℤ) - 2) ≤ ((n : ℤ) - 11 * D.degE - 11 * k - 20) * ((n : ℤ) - 2) :=
+      le_trans hMulZ hPoly
+    exact le_of_mul_le_mul_right this hn2pos
+  -- Cast back to ℕ.
+  have hPos_ℕ : 11 * D.degE + 11 * k + 20 ≤ n := by
+    have : (11 * D.degE + 11 * k + 20 : ℤ) ≤ n := by linarith
+    exact_mod_cast this
+  omega
+
+/-- Variant of `badDenomA0_card_le_linear` with the bound stated in terms
+of an external `k_stmt ≥ k_param`. Used when the consumer's resultantX
+bound is in terms of `stmt.k` (statement-level) but the bad set is
+parameterised by `baseImageCount ≤ stmt.k`. -/
+theorem badDenomA0_card_le_linear_relax
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (P : ZMod E.q × ZMod E.q) (k : ℕ) (B : Fin k → ZMod E.q × ZMod E.q)
+    (k_stmt : ℕ) (hk_le : k ≤ k_stmt)
+    (hLargeQ : E.points.card ≥ 31 * D.degE + 31 * k_stmt + 141) :
+    (badDenomA0 E D P k B).card
+      ≤ E.points.card - 11 * D.degE - 11 * k_stmt - 20 := by
+  classical
+  set bad := (badDenomA0 E D P k B).card with hbaddef
+  set n := E.points.card with hndef
+  have hMul : bad * (n - 2) ≤ (3 * D.degE + 9 * k + 71) * n :=
+    badDenomA0_card_mul_card_sub_two_le E D hD P k B
+  have hMul_relax : bad * (n - 2) ≤ (3 * D.degE + 9 * k_stmt + 71) * n := by
+    refine hMul.trans ?_
+    apply Nat.mul_le_mul_right
+    omega
+  have hLargeZ : (n : ℤ) ≥ 31 * D.degE + 31 * k_stmt + 141 := by exact_mod_cast hLargeQ
+  have hge : 2 ≤ n := by omega
+  have hMulZ : (bad : ℤ) * ((n : ℤ) - 2) ≤ (3 * D.degE + 9 * k_stmt + 71) * n := by
+    have h := hMul_relax
+    have : (bad * (n - 2) : ℕ) ≤ ((3 * D.degE + 9 * k_stmt + 71) * n : ℕ) := h
+    exact_mod_cast this
+  have hd_nn : (0 : ℤ) ≤ D.degE := by exact_mod_cast Nat.zero_le _
+  have hk_nn : (0 : ℤ) ≤ k_stmt := by exact_mod_cast Nat.zero_le _
+  have hn_ge : (n : ℤ) - (31 * D.degE + 31 * k_stmt + 141) ≥ 0 := by linarith
+  have hPoly :
+      ((n : ℤ) - 11 * D.degE - 11 * k_stmt - 20) * ((n : ℤ) - 2)
+        ≥ (3 * D.degE + 9 * k_stmt + 71) * n := by
+    nlinarith [hLargeZ, hd_nn, hk_nn, hn_ge,
+      mul_nonneg hd_nn hk_nn,
+      mul_nonneg hd_nn hn_ge,
+      mul_nonneg hk_nn hn_ge,
+      mul_nonneg hn_ge hn_ge,
+      mul_nonneg hd_nn hd_nn, mul_nonneg hk_nn hk_nn,
+      sq_nonneg ((n : ℤ) - 31 * D.degE - 31 * k_stmt - 141)]
+  have hBoundZ : (bad : ℤ) ≤ (n : ℤ) - 11 * D.degE - 11 * k_stmt - 20 := by
+    have hn2pos : (0 : ℤ) < (n : ℤ) - 2 := by linarith
+    have : (bad : ℤ) * ((n : ℤ) - 2) ≤
+        ((n : ℤ) - 11 * D.degE - 11 * k_stmt - 20) * ((n : ℤ) - 2) :=
+      le_trans hMulZ hPoly
+    exact le_of_mul_le_mul_right this hn2pos
+  have hPos_ℕ : 11 * D.degE + 11 * k_stmt + 20 ≤ n := by
+    have : (11 * D.degE + 11 * k_stmt + 20 : ℤ) ≤ n := by linarith
+    exact_mod_cast this
+  omega
+
 /-! ### Existence of a "good" `A₀`
 
 A counting lemma that, under a sufficient large-`q` condition, produces
