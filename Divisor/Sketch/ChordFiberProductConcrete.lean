@@ -26,6 +26,7 @@
   `chord_fiber_product_concrete_logDeriv`. Each is restated against
   the production-namespace decl; the accompanying note
   `docs/chord-fiber-product-concrete-sketch.md` categorises them. -/
+import Divisor.ChordFiberMultiplicativity
 import Divisor.ChordFiberProductConcrete
 import Divisor.FunctionFieldZ
 import Divisor.GeomLocalOrder
@@ -143,7 +144,7 @@ theorem chord_fiber_product_concrete_bar_zfiber_pow_dvd
           (algebraMap (ZMod E.q) (Fqbar E)) :=
   sorry
 
-/-- **Stub 2a**: natDegree bound for the chord-fibre product against the
+/-! **Stub 2a**: natDegree bound for the chord-fibre product against the
 norm polynomial's natDegree.
 
 Mathematically this should be an *equality*, not just `≤`: both
@@ -188,14 +189,50 @@ Two Lean-tractable proof routes for the *general* (non-splitting) p:
    `DLineBiv` matches `normPoly`'s leading-coefficient structure.
 
 Stated as `≤` (rather than `=`) because that is the form the squeeze
-helper consumes; the equality itself is not needed for the discharge. -/
-theorem chord_fiber_product_concrete_bar_natDegree_le_normPoly
+helper consumes; the equality itself is not needed for the discharge.
+
+**Discharge plan** (now wired up to the gcd-extraction reduction):
+
+* The mapped natDegree is preserved by `algebraMap (ZMod E.q) (Fqbar E)`'s
+  injectivity, so the bound is equivalent to
+  `(chord_fiber_product_concrete E lam D).natDegree ≤ (normPoly E D).natDegree`.
+* The general-D case reduces in one step to the coprime case via
+  `chord_fiber_product_concrete_natDegree_le_normPoly_natDegree_of_coprime_base`
+  in `Divisor/ChordFiberMultiplicativity.lean`.
+* The remaining substantive content is the coprime base case
+  `chord_fiber_product_concrete_natDegree_le_of_coprime` below. -/
+
+
+/-- **Stub 2a-coprime**: gcd-1 base case for the natDegree bound.
+This is the only remaining substantive content for stub 2 after the
+gcd-extraction reduction has been applied.
+
+Recommended Lean route: weighted-Sylvester degree bound with
+`wt(x)=2`, `wt(Z)=3`. -/
+theorem chord_fiber_product_concrete_natDegree_le_of_coprime
     (lam : ZMod E.q) (D : CoordRingElt E.q)
-    (_hD : ¬ (D.a = 0 ∧ D.b = 0)) :
-    ((chord_fiber_product_concrete E lam D).map
-        (algebraMap (ZMod E.q) (Fqbar E))).natDegree
+    (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (_hcop : IsCoprime D.a D.b) :
+    (chord_fiber_product_concrete E lam D).natDegree
       ≤ (normPoly E D).natDegree :=
   sorry
+
+theorem chord_fiber_product_concrete_bar_natDegree_le_normPoly
+    (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    ((chord_fiber_product_concrete E lam D).map
+        (algebraMap (ZMod E.q) (Fqbar E))).natDegree
+      ≤ (normPoly E D).natDegree := by
+  classical
+  -- Strip off the algebraMap (ZMod E.q) → (Fqbar E) lift via injective natDegree preservation.
+  rw [Polynomial.natDegree_map_eq_of_injective
+        (algebraMap (ZMod E.q) (Fqbar E)).injective
+        (chord_fiber_product_concrete E lam D)]
+  -- Reduce to the coprime base case via gcd extraction.
+  exact chord_fiber_product_concrete_natDegree_le_normPoly_natDegree_of_coprime_base
+    E lam D hD
+    (fun D' hD' hcop =>
+      chord_fiber_product_concrete_natDegree_le_of_coprime E lam D' hD' hcop)
 
 /-- **Stub 2b**: natDegree bound restated against `∑ Q gd.mult Q`, using
 the `mult_sum_eq_normPoly_natDegree` identity from
