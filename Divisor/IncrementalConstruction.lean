@@ -249,4 +249,54 @@ theorem natDegree_normPoly_chordCoordRingElt_nonvertical (lam mu : ZMod E.q) :
   rw [hCoeff3] at this
   simp at this
 
+/-! ## Multiplication of `CoordRingElt`s in `F_q[E]`
+
+`F_q[E] = F_q[X,Y]/(Y² - X³ - AX - B)` admits multiplication by reducing
+`Y²` to `X³ + AX + B`. For `D₁ = a₁ − b₁·Y` and `D₂ = a₂ − b₂·Y`:
+
+  D₁ · D₂ = (a₁·a₂ + b₁·b₂·(X³+AX+B)) − (a₁·b₂ + a₂·b₁)·Y
+
+So `(D₁ · D₂).a = a₁·a₂ + b₁·b₂·curveX` and
+`(D₁ · D₂).b = a₁·b₂ + a₂·b₁`. -/
+
+/-- Multiplication of `CoordRingElt`s in `F_q[E]`. -/
+noncomputable def mulCoordRingElt
+    (D₁ D₂ : CoordRingElt E.q) : CoordRingElt E.q :=
+  { a := D₁.a * D₂.a + D₁.b * D₂.b * curveX E,
+    b := D₁.a * D₂.b + D₂.a * D₁.b }
+
+/-- Pointwise evaluation of a product equals the product of evaluations
+    on `E.points` (the curve relation `y² = x³+Ax+B` reduces the cross
+    `y²` term). -/
+theorem mulCoordRingElt_eval_on_E
+    (D₁ D₂ : CoordRingElt E.q) {P : ZMod E.q × ZMod E.q}
+    (hP : P ∈ E.points) :
+    (mulCoordRingElt E D₁ D₂).eval P.1 P.2 =
+      D₁.eval P.1 P.2 * D₂.eval P.1 P.2 := by
+  have hOC : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := E.hOnCurve P hP
+  show (D₁.a * D₂.a + D₁.b * D₂.b * curveX E).eval P.1
+      - (D₁.a * D₂.b + D₂.a * D₁.b).eval P.1 * P.2
+    = (D₁.a.eval P.1 - D₁.b.eval P.1 * P.2)
+      * (D₂.a.eval P.1 - D₂.b.eval P.1 * P.2)
+  unfold curveX
+  simp only [eval_add, eval_mul, eval_sub, eval_pow, eval_X, eval_C]
+  have hRw : P.1 ^ 3 + E.curveA * P.1 + E.curveB = P.2 ^ 2 := by
+    rw [hOC]
+  rw [hRw]
+  ring
+
+/-! ## Polynomial cancellation `(X − x₀)`
+
+When `(X − x₀)` divides both `D.a` and `D.b`, dividing it out gives a
+new `CoordRingElt`. We use mathlib's `Polynomial.divByMonic` (whose
+result is `0` when the divisor doesn't divide). -/
+
+/-- Divide `D = a − b·Y` by the polynomial `X − x₀`. When `(X − x₀) ∣ a`
+    and `(X − x₀) ∣ b`, the result is `D / (X − x₀)` — a genuine
+    `CoordRingElt` with the divisor reduced by `(±(x₀, y₀))` pair. -/
+noncomputable def divideByXSubX0
+    (D : CoordRingElt E.q) (x₀ : ZMod E.q) : CoordRingElt E.q :=
+  { a := D.a /ₘ (X - C x₀),
+    b := D.b /ₘ (X - C x₀) }
+
 end Divisor
