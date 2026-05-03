@@ -184,4 +184,23 @@ future axiom-1 discharge can build on:
      splitting-field lift, so the inductive `_step_monic` combinator
      can compose all of D's `divLin`-recursive steps. The remaining
      gap is the **base case** (`gcd(D.a, D.b) = 1`) of the natDegree
-     equality, which the inductive structure cannot reduce further.
+     inequality, which the inductive structure cannot reduce further.
+
+     **Recommended Lean route for the gcd-1 base case** (no deep
+     function-field machinery): direct weighted-Sylvester degree
+     bound. Assign weights `wt(x) = 2`, `wt(Z) = 3`. Then in
+     `(ZMod E.q)[Z][x]`:
+     - `wt(chordCubicBiv) = 6` (matched by both `x³` and `Z²`).
+     - `wt(DLineBiv) = w` where, in the coprime / not-both-zero case,
+       `w = max(2·D.a.natDegree, 2·D.b.natDegree + 3) =
+        (normPoly E D).natDegree`.
+     The Sylvester matrix `S(chordCubic, DLineBiv)` is square. By
+     `Matrix.det_apply`, `det(S)` is a sum of products; each product
+     selects 3 entries of weight ≤ 6 (chord-cubic rows) and `n` entries
+     of weight ≤ w (DLine rows), where `n = deg_x DLineBiv`. The
+     selected x-degrees sum to `3·n`, and the weight identity gives
+     `3·degZ(term) ≤ 6n + 3w − 2·(3n) = 3w`, i.e. `degZ(term) ≤ w`.
+     Then `natDegree_sum_le` and `natDegree_prod_le` close the bound.
+     This stays coordinate-native and uses only mathlib's matrix /
+     polynomial degree lemmas, avoiding any norm/divisor pushforward
+     theorem.
