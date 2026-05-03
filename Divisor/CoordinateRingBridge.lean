@@ -164,3 +164,40 @@ theorem toCoordinateRing_mem_XYIdeal_iff
              Polynomial.eval_X, Polynomial.eval_C, sub_self,
              mul_zero, zero_add, h_curveEval, toBivar_evalEval] at h_eval
   exact h_eval
+
+end CoordRingElt
+
+/-! ## Helpers for `XYIdeal'` indexed by `E.points`
+
+`WeierstrassCurve.Affine.CoordinateRing.XYIdeal'` is mathlib's unit
+fractional ideal at a nonsingular affine point, indexed by a
+`Nonsingular` hypothesis. The `nonsing_of_mem` and
+`xyIdealOfPoint` aliases below wrap the nonsing-extraction and the
+`XYIdeal'` constructor for the project's `(x, y) ∈ E.points` form,
+giving a cleaner index in the upcoming factorization theorem
+`spanSingleton (D.toCoordinateRing) = ∏_P (xyIdealOfPoint P)^(ordAt D P)`. -/
+
+/-- Extract `Nonsingular` from `(x, y) ∈ E.points`. -/
+noncomputable def nonsing_of_mem {P : ZMod E.q × ZMod E.q}
+    (hP : P ∈ E.points) :
+    E.toW.toAffine.Nonsingular P.1 P.2 :=
+  E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP))
+
+/-- The unit fractional ideal `XYIdeal'(h)` at an `E.points` member. -/
+noncomputable def xyIdealOfPoint
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) :
+    (FractionalIdeal
+        (nonZeroDivisors E.toW.toAffine.CoordinateRing)
+        E.toW.toAffine.FunctionField)ˣ :=
+  CoordinateRing.XYIdeal' (nonsing_of_mem E hP)
+
+/-- `Point.toClass` of the `ECPoint`-affine lift of `(x, y) ∈ E.points`
+equals `ClassGroup.mk (xyIdealOfPoint hP)`. -/
+theorem toClass_affine_eq_mk_xyIdealOfPoint
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) :
+    Point.toClass (ECPoint.affine E P.1 P.2)
+      = Additive.ofMul (ClassGroup.mk (xyIdealOfPoint E hP)) := by
+  rw [ECPoint.affine_of_nonsingular E (nonsing_of_mem E hP)]
+  rfl
+
+end Divisor
