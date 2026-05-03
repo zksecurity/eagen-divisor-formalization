@@ -220,7 +220,7 @@ theorem norm_toCoordinateRing_eq_normPoly
       ECSetup.toW_a₁, ECSetup.toW_a₂, ECSetup.toW_a₃,
       ECSetup.toW_a₄, ECSetup.toW_a₆,
       normPoly_eq, curveX]
-  simp only [Polynomial.C_0, zero_mul, mul_zero, zero_add, add_zero]
+  simp only [Polynomial.C_0, zero_mul, mul_zero, add_zero]
   ring
 
 /-- `Algebra.norm` of `D.toCoordinateRing` is nonzero whenever `D` is. -/
