@@ -708,6 +708,75 @@ private lemma resultant_chordCubicBivMapped_X_sub_C_natDegree
       neg_one_mul, Polynomial.natDegree_neg]
   exact chordCubicBivMapped_eval_C_natDegree E ψ lam α
 
+/-- **General-monic-`p` natDegree formula.** Without the
+`p.Splits`-over-`ZMod E.q` hypothesis, by lifting to the splitting
+field of `p` over `ZMod E.q`. The argument is:
+
+1. Let `K := p.SplittingField`, `ψ := algebraMap (ZMod E.q) K`. Then
+   `p.map ψ` is monic and splits over `K`.
+2. Apply `resultant_pmap_C_natDegree_of_splits_generic` to
+   `chordCubicBiv.map (mapRingHom ψ)` over `K`, using the K-version of
+   the linear-case natDegree hypothesis. This gives the natDegree
+   identity over `K`.
+3. By `Polynomial.resultant_map_map`, the resultant on the `K`-side is
+   the image of the original resultant under `mapRingHom ψ`. Injectivity
+   of `mapRingHom ψ` (since `ψ` is injective on a field embedding)
+   pulls the natDegree back to `(ZMod E.q)`. -/
+theorem resultant_chordCubicBiv_pmap_C_natDegree_of_monic
+    (lam : ZMod E.q) (p : Polynomial (ZMod E.q)) (hpm : p.Monic) :
+    (Polynomial.resultant (chordCubicBiv E lam)
+      (p.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
+      (chordCubicBiv E lam).natDegree p.natDegree).natDegree
+    = 2 * p.natDegree := by
+  classical
+  set K := p.SplittingField with hK
+  let ψ : ZMod E.q →+* K := algebraMap (ZMod E.q) K
+  have hψ_inj : Function.Injective ψ := ψ.injective
+  let φ : (ZMod E.q)[X] →+* K[X] := Polynomial.mapRingHom ψ
+  have hφ_inj : Function.Injective φ := Polynomial.map_injective _ hψ_inj
+  have hpK_split : (p.map ψ).Splits := Polynomial.SplittingField.splits p
+  have hpK_monic : (p.map ψ).Monic := hpm.map ψ
+  have hpK_natDegree : (p.map ψ).natDegree = p.natDegree :=
+    Polynomial.natDegree_map_eq_of_injective hψ_inj p
+  -- Apply the generic splits theorem over K to chordCubicBiv lifted via φ.
+  have key :=
+    resultant_pmap_C_natDegree_of_splits_generic
+      (F := (chordCubicBiv E lam).map φ)
+      (fun x => resultant_chordCubicBivMapped_X_sub_C_natDegree E ψ lam x)
+      (p.map ψ) hpK_monic hpK_split
+  -- key : (Res(F_K, (p.map ψ).map C, F_K.natDegree, (p.map ψ).natDegree)).natDegree
+  --       = 2 * (p.map ψ).natDegree
+  -- Bookkeeping: relate the K-resultant to the F_q-resultant via resultant_map_map.
+  -- First, identify (p.map ψ).map C with (p.map C).map φ.
+  have hpmapC_commute :
+      (p.map ψ).map (Polynomial.C : K →+* K[X])
+        = (p.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X])).map φ := by
+    ext n
+    simp [φ, Polynomial.coeff_map, Polynomial.coe_mapRingHom,
+          Polynomial.map_C]
+  -- Identify F.natDegree with F_K.natDegree.
+  have hF_natDegree_eq :
+      ((chordCubicBiv E lam).map φ).natDegree = (chordCubicBiv E lam).natDegree :=
+    Polynomial.natDegree_map_eq_of_injective hφ_inj _
+  rw [hpmapC_commute] at key
+  rw [hF_natDegree_eq, hpK_natDegree] at key
+  -- Now key has the form: (Res(F.map φ, G.map φ, F.natDegree, p.natDegree)).natDegree
+  --                       = 2 * p.natDegree.
+  -- Apply resultant_map_map and natDegree_map_eq_of_injective.
+  rw [Polynomial.resultant_map_map] at key
+  -- After resultant_map_map, the K-resultant becomes φ (resultant ...).
+  -- φ = mapRingHom ψ on K[X], and natDegree under .map ψ-injective is preserved.
+  rw [show (φ (Polynomial.resultant (chordCubicBiv E lam)
+              (p.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
+              (chordCubicBiv E lam).natDegree p.natDegree)).natDegree
+        = (Polynomial.resultant (chordCubicBiv E lam)
+              (p.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
+              (chordCubicBiv E lam).natDegree p.natDegree).natDegree from ?_] at key
+  · exact key
+  · -- φ a = a.map ψ; natDegree preserved under map of injective.
+    show (Polynomial.map ψ _).natDegree = _
+    exact Polynomial.natDegree_map_eq_of_injective hψ_inj _
+
 /-! ### Streamlined inductive steps with auto-derived non-vanishing
 
 The `_step` theorems above take both `hDLne` and `hCFPne` as explicit
@@ -800,6 +869,24 @@ theorem chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_splits
   chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_general'
     E lam D p hpm hpa hpb hD'ne
     (resultant_chordCubicBiv_pmap_C_natDegree_of_splits E lam p hpm hsplit)
+    hIH
+
+/-- **Combinator**: inductive natDegree-equality step for *any* monic `p`
+(no splits hypothesis). Combines `_step_general'` with the
+splitting-field-derived natDegree formula `_of_monic`. -/
+theorem chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_monic
+    (lam : ZMod E.q) (D : CoordRingElt E.q) (p : Polynomial (ZMod E.q))
+    (hpm : p.Monic) (hpa : p ∣ D.a) (hpb : p ∣ D.b)
+    (hD'ne : ¬ ((D.a /ₘ p) = 0 ∧ (D.b /ₘ p) = 0))
+    (hIH : (chord_fiber_product_concrete E lam
+              { a := D.a /ₘ p, b := D.b /ₘ p }).natDegree
+            = (normPoly E
+                { a := D.a /ₘ p, b := D.b /ₘ p }).natDegree) :
+    (chord_fiber_product_concrete E lam D).natDegree
+      = (normPoly E D).natDegree :=
+  chord_fiber_product_concrete_natDegree_eq_normPoly_natDegree_step_general'
+    E lam D p hpm hpa hpb hD'ne
+    (resultant_chordCubicBiv_pmap_C_natDegree_of_monic E lam p hpm)
     hIH
 
 end Divisor
