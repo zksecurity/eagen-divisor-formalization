@@ -187,12 +187,16 @@ theorem resultant_logDeriv_at_split_specialization_of_g_natDegree_eq_zero
     ring
 
 /-- **Logarithmic derivative of a bivariate resultant at a split
-specialization** — narrowed to `0 < f.natDegree`.
+specialization** — narrowed to `0 < f.natDegree` and `0 < g.natDegree`.
 
-The `f.natDegree = 0` case is handled separately by the theorem
-`resultant_logDeriv_at_split_specialization_of_natDegree_eq_zero` above.
-The unrestricted form is recovered as a theorem via case split:
-see `resultant_logDeriv_at_split_specialization` below.
+The `f.natDegree = 0` and `g.natDegree = 0` cases are both handled
+separately by the theorems
+`resultant_logDeriv_at_split_specialization_of_natDegree_eq_zero` and
+`resultant_logDeriv_at_split_specialization_of_g_natDegree_eq_zero`
+above. The unrestricted form
+(`resultant_logDeriv_at_split_specialization`) is a theorem that
+case-splits on `f.natDegree` and `g.natDegree` and dispatches to the
+appropriate trivial-case theorem or to this narrower axiom.
 
 Setup: `f, g : K[X][X]` (i.e. polynomials in the outer `Polynomial.X`
 with coefficients in `K[X]` for the inner `Polynomial.X`); `t₀ : K` the
@@ -209,6 +213,10 @@ Hypotheses:
 * `hf_pos` — `0 < f.natDegree`. The degree-zero case is provable from
   polynomial identities (see the theorem above) and is handled by the
   unrestricted re-export.
+* `hg_pos` — `0 < g.natDegree`. The degree-zero case for `g` is
+  proved from `derivative_pow` plus the fact that the constant
+  `g.coeff 0`'s logarithmic derivative is constant on the chord-root
+  multiset (see `_of_g_natDegree_eq_zero` above).
 * `hF_ne` — the resultant evaluation `F(t₀) ≠ 0`.
 * `hSplit` — the inner-specialised polynomial `f(X, t₀)` splits
   over `K`.
@@ -238,11 +246,12 @@ moving chord root `x(t)` defined by `f(x(t), t) = 0`.
 Reference: Lang, *Algebra* GTM 211, §VI.5 Theorem 5.1
 (product-of-embeddings / norm-trace) + §VIII.5 Theorem 5.1 Case 1
 (extension of derivations to separable algebraic extensions). -/
-axiom resultant_logDeriv_at_split_specialization_of_pos_natDegree
+axiom resultant_logDeriv_at_split_specialization_of_pos_natDegree_pos_g
     {K : Type*} [Field K]
     (f g : K[X][X]) (t₀ : K)
     (hMonic : f.Monic)
     (hf_pos : 0 < f.natDegree)
+    (hg_pos : 0 < g.natDegree)
     (hF_ne : (Polynomial.resultant f g f.natDegree g.natDegree).eval t₀ ≠ 0)
     (hSplit : (f.map (Polynomial.evalRingHom t₀)).Splits)
     (hg_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
@@ -252,8 +261,16 @@ axiom resultant_logDeriv_at_split_specialization_of_pos_natDegree
   resultantLogDerivConclusion f g t₀
 
 /-- **Re-export — the unrestricted resultant log-derivative identity**,
-now a theorem derived from the narrowed `0 < f.natDegree` axiom plus
-the trivial degree-zero theorem above.
+a theorem derived from the narrowed `_of_pos_natDegree_pos_g` axiom
+plus the two trivial degree-zero theorems above.
+
+Three cases:
+* `f.natDegree = 0`: `_of_natDegree_eq_zero`.
+* `0 < f.natDegree, g.natDegree = 0`: `_of_g_natDegree_eq_zero`. The
+  hypothesis `(g.coeff 0).eval t₀ ≠ 0` follows from `hg_def` applied to
+  any chord root; such a root exists because `0 < f.natDegree` and
+  `Splits` together force at least one root.
+* `0 < f.natDegree, 0 < g.natDegree`: the narrowed axiom.
 
 This is the form that downstream consumers
 (`chord_fiber_product_logDeriv_eq_logDerivTerm_trace` in
@@ -270,10 +287,31 @@ theorem resultant_logDeriv_at_split_specialization
     (hf_X_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
         ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x ≠ 0) :
     resultantLogDerivConclusion f g t₀ := by
-  by_cases hd : f.natDegree = 0
+  classical
+  rcases Nat.eq_zero_or_pos f.natDegree with hf_zero | hf_pos
   · exact resultant_logDeriv_at_split_specialization_of_natDegree_eq_zero
-      f g t₀ hMonic hd
-  · exact resultant_logDeriv_at_split_specialization_of_pos_natDegree
-      f g t₀ hMonic (Nat.pos_of_ne_zero hd) hF_ne hSplit hg_def hf_X_def
+      f g t₀ hMonic hf_zero
+  rcases Nat.eq_zero_or_pos g.natDegree with hg_zero | hg_pos
+  · -- `g.natDegree = 0`: g is constant in the outer variable. The
+    -- hypothesis `(g.coeff 0).eval t₀ ≠ 0` follows from `hg_def`
+    -- applied to any chord root; such a root exists because
+    -- `0 < f.natDegree` and `Splits` give `roots.card = f.natDegree > 0`.
+    have hf_map_natDeg : (f.map (Polynomial.evalRingHom t₀)).natDegree
+        = f.natDegree := hMonic.natDegree_map _
+    have hroot_card_pos : 0 < (f.map (Polynomial.evalRingHom t₀)).roots.card := by
+      rw [← Polynomial.Splits.natDegree_eq_card_roots hSplit, hf_map_natDeg]
+      exact hf_pos
+    obtain ⟨x, hx⟩ :=
+      Multiset.card_pos_iff_exists_mem.mp hroot_card_pos
+    have hg_eq : g = Polynomial.C (g.coeff 0) :=
+      Polynomial.eq_C_of_natDegree_eq_zero hg_zero
+    have hh_ne : (g.coeff 0).eval t₀ ≠ 0 := by
+      have := hg_def x hx
+      rw [hg_eq, Polynomial.map_C, Polynomial.eval_C] at this
+      exact this
+    exact resultant_logDeriv_at_split_specialization_of_g_natDegree_eq_zero
+      f g t₀ hMonic hg_zero hSplit hh_ne hf_X_def
+  · exact resultant_logDeriv_at_split_specialization_of_pos_natDegree_pos_g
+      f g t₀ hMonic hf_pos hg_pos hF_ne hSplit hg_def hf_X_def
 
 end Polynomial
