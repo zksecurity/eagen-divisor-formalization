@@ -137,6 +137,14 @@ future axiom-1 discharge can build on:
    - `resultant_chordCubicBiv_pmap_C_natDegree_of_eq_one` — `p = 1`.
    - `resultant_chordCubicBiv_pmap_C_natDegree_of_eq_X_sub_C` — `p = X − C x₀`.
    - `resultant_chordCubicBiv_pmap_C_natDegree_of_eq_X_sub_C_pow` — `p = (X − C x₀)^k`.
+   - `resultant_chordCubicBiv_pmap_C_natDegree_of_splits` — any monic `p`
+     splitting over `ZMod E.q` (multiset induction on `p.roots`).
+
+   Inductive-step combinators for the natDegree-equality recurrence:
+   - `_step_X_sub_C_pow` — composes `(X − C x₀)^k` natDegree with the
+     general-monic step.
+   - `_step_splits` — composes the general splits-over-ZMod-q natDegree
+     with the general-monic step.
 
    The linear case includes the resultant-against-linear-factor
    natDegree calculation
