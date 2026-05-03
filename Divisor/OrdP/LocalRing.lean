@@ -978,6 +978,42 @@ private theorem divisorClass_eq_zero_of_eq_zero
   intro P _hP
   simp [hcoeffs]
 
+/-- **No-affine-zeros sub-case**: if `ordAt E D P = 0` for every
+`P ∈ E.points`, then `divisorClass E (divisorOfD E D) = 0`.
+
+The infinity contribution `(−natDegree (normPoly E D)) • Point.toClass 0`
+vanishes by `Point.toClass_zero = 0`; the affine contributions are
+all `0 • _` by hypothesis. -/
+theorem divisorClass_eq_zero_of_ordAt_all_zero
+    (D : CoordRingElt E.q)
+    (h_all_zero : ∀ P ∈ E.points, ordAt E D P = 0) :
+    divisorClass E (divisorOfD E D) (divisorOfD_finiteSupport E D) = 0 := by
+  classical
+  unfold divisorClass
+  apply Finset.sum_eq_zero
+  intro P hP_mem
+  rw [Set.Finite.mem_toFinset] at hP_mem
+  -- hP_mem : divisorOfD E D P ≠ 0 (P is in the support).
+  rw [Function.mem_support] at hP_mem
+  match P, hP_mem with
+  | WeierstrassCurve.Affine.Point.zero, _hP =>
+      -- Infinity: WeierstrassCurve.Affine.Point.toClass = 0.
+      rw [show (WeierstrassCurve.Affine.Point.toClass
+              (WeierstrassCurve.Affine.Point.zero : ECPoint E)) = 0 from rfl]
+      simp
+  | WeierstrassCurve.Affine.Point.some (x := x) (y := y) hns, hP =>
+      -- Affine: ordAt = 0 by hypothesis, so divisorOfD = 0,
+      -- contradicting hP.
+      exfalso
+      apply hP
+      have hOC : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB :=
+        (E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hns)
+      have hMem : (x, y) ∈ E.points := E.hComplete x y hOC
+      have hOrd : ordAt E D (x, y) = 0 := h_all_zero (x, y) hMem
+      show divisorOfD E D (.some hns) = 0
+      unfold divisorOfD
+      simp [hOrd]
+
 /-- **Trivial case as a theorem**: for `D = (C c, 0)` with `c ≠ 0`, the
 principal-class conclusion holds via the trivial unit `1`. -/
 theorem CoordRingElt.divisorClass_isPrincipal_const_unit
