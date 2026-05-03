@@ -126,6 +126,10 @@ properties.
 
 ![Silverman Cor III.3.5](snippets/silverman-cor-III.3.5-principal-divisor-081.png)
 
+![Silverman II.3 divisors](snippets/silverman-II.3-divisors-027.png)
+
+![Silverman II.3 principal divisors](snippets/silverman-II.3-principal-divisors-028.png)
+
 ## Discharge history
 
 The former axiom was discharged in Phase 1 of the trust-closure plan:

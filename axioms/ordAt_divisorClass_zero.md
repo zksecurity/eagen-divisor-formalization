@@ -63,6 +63,14 @@ Mathlib supplies the class-group interface used by the replacement:
 * `WeierstrassCurve.Affine.Point.toClass`;
 * `WeierstrassCurve.Affine.Point.toClass_eq_zero`.
 
+## Snippets
+
+![Silverman II.3 divisors](snippets/silverman-II.3-divisors-027.png)
+
+![Silverman II.3 principal divisors](snippets/silverman-II.3-principal-divisors-028.png)
+
+![Silverman Cor III.3.5](snippets/silverman-cor-III.3.5-principal-divisor-081.png)
+
 ## Discharge target
 
 To remove this axiom, prove that `divisorOfD E D` is the divisor class

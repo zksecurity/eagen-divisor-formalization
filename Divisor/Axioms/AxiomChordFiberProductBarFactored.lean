@@ -9,11 +9,11 @@
   geometric support of `D`. Local multiplicities are the geometric
   divisor multiplicities.
 
-  Reference: same as `AxiomChordFiberProductEqNormZUnderSplit`
-  (Stichtenoth, *Algebraic Function Fields and Codes*, GTM 254,
-  Proposition 3.1.9 + Theorem 3.7.1). Mathematically: the divisor of
-  the norm equals the push-forward of the divisor of `D`. Over an
-  algebraically closed base, the push-forward zero divisor unfolds
+  Reference: Stacks Project Lemma 42.18.1 (principal divisors and
+  pushforward), with Stichtenoth Prop. 3.1.9 and Thm. 3.1.11 as
+  supporting function-field divisor/place accounting. Mathematically:
+  the divisor of the norm equals the push-forward of the divisor of
+  `D`. Over an algebraically closed base, the push-forward zero divisor unfolds
   into linear factors with multiplicities equal to `gd.mult Q`. The
   remaining unit is a nonzero leading scalar.
 

@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+
+
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="theme-color" content="#d9d8d1">
+
+<title>Section 42.18 (02RS): Principal divisors and pushforward&mdash;The Stacks project</title>
+
+<meta name="description" content="an open source textbook and reference work on algebraic geometry">
+
+<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+<link rel="stylesheet" type="text/css" href="/static/css/style.css">
+<link rel="stylesheet" type="text/css" href="/static/css/print.css">
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    extensions: ['tex2jax.js'],
+    jax: ['input/TeX','output/HTML-CSS'],
+    TeX: {
+      extensions: ['AMSmath.js', 'AMSsymbols.js', '/static/XyJax/extensions/TeX/xypic.js'],
+      Macros: {
+        linebreak: ["", 1, ""],
+        },
+      TagSide: 'left'
+    },
+    tex2jax: {
+      inlineMath: [['$','$']],
+      displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+    },
+    'HTML-CSS': {
+    	scale: 100,
+	availableFonts: [],
+    }
+  });
+</script>
+
+<script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js" integrity="sha384-crwIf/BuaWM9rM65iM+dWFldgQ1Un8jWZMuh3puxb8TOY9+linwLoI7ZHZT+aekW" crossorigin="anonymous"></script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+<link rel="stylesheet" type="text/css" href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" integrity="sha384-yBEPaZw444dClEfen526Q6x4nwuzGO6PreKpbRVSLFCci3oYGE5DnD1pNsubCxYW" crossorigin="anonymous">
+<script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js" integrity="sha384-cd07Jx5KAMCf7qM+DveFKIzHXeCSYUrai+VWCPIXbYL7JraHMFL/IXaCKbLtsxyB" crossorigin="anonymous"></script>
+
+<link rel="icon" type="image/vnd.microsoft.icon" href="/static/stacks.ico">
+<link rel="shortcut icon" type="image/vnd.microsoft.icon" href="/static/stacks.ico">
+
+
+  <script type="text/javascript" src="/static/js/toggle.js"></script>
+  <script type="text/javascript" src="/static/js/comments.js"></script>
+
+  <link rel="stylesheet" type="text/css" href="https://unpkg.com/easymde@2.0.1/dist/easymde.min.css" integrity="sha384-IRbzB9px0sfIx90vkN+geaX3F4LVcg/M+k5vmVkfjs5TnRX3MIhGS8Ma06ALKVYp" crossorigin="anonymous">
+  <script src="https://unpkg.com/easymde@2.0.1/dist/easymde.min.js" integrity="sha384-v06sb0t0ToY1YRtVlfD/GCGpIZ/QHYyeH2Gzjvr0ZJI62/50DIzT8XRgQ6JvptVu" crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/jquery-bonsai@2.1.3/jquery.bonsai.css" integrity="sha384-8xTxM5sJRAUB0ckdBghB5am+aw+0kC5FfSUzMI+KI+UD8uBCNeSkdi8I1J4+Wjwu" crossorigin="anonymous">
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/jquery-bonsai@2.1.3/jquery.bonsai.js" integrity="sha384-gE5xOW4MVOjJL1A2SbxwvQw/qet6h8Vdv06j3JQGhBW4d1H5hXYB12WsrUBgU439" crossorigin="anonymous"></script>
+
+
+</head>
+
+<body>
+<div class="container-fluid bounded">
+  <div id="first-bar" class="row topbar inner-top top">
+    <header class="col">
+      <h1><a href="/">The Stacks project</a></h1>
+    </header>
+
+    <nav id="header">
+      <ul id="quicklinks">
+        <li><a href="/bibliography">bibliography</a>
+        <li><a href="https://www.math.columbia.edu/~dejong/wordpress/">blog</a>
+      </ul>
+
+      <form id="quicksearch" action="/search">
+        <span id="search-icon"><img src="/static/images/search.svg"></span>
+        <input type="search" name="query" size="16" placeholder="keywords or a tag" value="">
+      </form>
+    </nav>
+  </div>
+
+  <nav id="second-bar" class="row topbar sticky-top">
+    
+      <ul class="col-11 col-sm-11 col-md-11 col-lg-12 col-xl-12" id="crumbs">
+        <li><a href="/browse">Table of contents</a></li>
+        
+  
+  
+    <li>Part <a href="/tag/0ELV" data-tag="0ELV">3</a>: Topics in Scheme Theory
+    
+  
+    <li>Chapter <a href="/tag/02P3" data-tag="02P3">42</a>: Chow Homology and Chern Classes
+    
+  
+    <li class="active">Section <a href="/tag/02RS" data-tag="02RS">42.18</a>: Principal divisors and pushforward
+    <span id="citation">(<a href="/tag/02RS/cite">cite</a>)</span>
+  
+
+
+      </ul>
+    
+
+    
+      <div class="col-1 col-sm-1 col-md-1" id="burger">
+        <input type="checkbox" id="burger-input"></input>
+
+        <label id="burger-icon" for="burger-input">
+          <span id="top-bun"></span>
+          <span id="meat"></span>
+          <span id="bottom-bun"></span>
+        </label>
+
+        <div id="burger-content">
+          
+  
+  <div class="interaction">
+    
+  
+
+  <ul class="neighbours">
+  
+    <li class="left"><a href="/tag/02RN">previous section</a>
+  
+  
+    <li class="right"><a href="/tag/02RV">next section</a>
+  
+  </ul>
+  <br style="clear:both">
+
+  </div>
+
+  
+
+
+        </div>
+      </div>
+    
+
+    
+  </nav>
+
+  <div class="row" id="content">
+    <section id="main" class="col-xs-12 col-sm-12 col-md-12 col-lg-8 col-xl-8">
+      
+<div class="html" id="tag">
+  
+
+  
+
+  
+
+  <h2 id="chow-section-two-fun" class="tex-section"><span data-tag="02RS">42.18</span> Principal divisors and pushforward</h2>
+
+<p>
+The first lemma implies that the pushforward of a principal divisor along a generically finite morphism is a principal divisor. 
+</p>
+<p>
+<article class="env-lemma" id="02RT">
+  <p><a class="environment-identifier" href="/tag/02RT">Lemma <span data-tag="02RT">42.18.1</span>.</a> Let $(S, \delta )$ be as in Situation <a href="/tag/02QL" data-tag="02QL">42.7.1</a>. Let $X$, $Y$ be locally of finite type over $S$. Assume $X$, $Y$ are integral and $n = \dim _\delta (X) = \dim _\delta (Y)$. Let $p : X \to Y$ be a dominant proper morphism. Let $f \in R(X)^*$. Set </p>
+  <div class="equation">
+  \[  g = \text{Nm}_{R(X)/R(Y)}(f).  \]
+</div>
+  <p> Then we have $p_*\text{div}(f) = \text{div}(g)$. </p>
+</article> 
+</p>
+<article class="env-proof">
+    <p>
+      <strong>Proof.</strong>
+      Let $Z \subset Y$ be an integral closed subscheme of $\delta $-dimension $n - 1$. We want to show that the coefficient of $[Z]$ in $p_*\text{div}(f)$ and $\text{div}(g)$ are equal. We may apply Lemma <a href="/tag/02RM" data-tag="02RM">42.16.2</a> to the morphism $p : X \to Y$ and the generic point $\xi \in Z$. Hence we may replace $Y$ by an affine open neighbourhood of $\xi $ and assume that $p : X \to Y$ is finite. Write $Y = \mathop{\mathrm{Spec}}(R)$ and $X = \mathop{\mathrm{Spec}}(A)$ with $p$ induced by a finite homomorphism $R \to A$ of Noetherian domains which induces an finite field extension $L/K$ of fraction fields. Now we have $f \in L$, $g = \text{Nm}(f) \in K$, and a prime $\mathfrak p \subset R$ with $\dim (R_{\mathfrak p}) = 1$. The coefficient of $[Z]$ in $\text{div}_ Y(g)$ is $\text{ord}_{R_\mathfrak p}(g)$. The coefficient of $[Z]$ in $p_*\text{div}_ X(f)$ is 
+    <p>
+      <div class="equation">
+  \[  \sum \nolimits _{\mathfrak q\text{ lying over }\mathfrak p} [\kappa (\mathfrak q) : \kappa (\mathfrak p)] \text{ord}_{A_{\mathfrak q}}(f)  \]
+</div>
+    <p>
+       The desired equality therefore follows from Algebra, Lemma <a href="/tag/02MJ" data-tag="02MJ">10.121.8</a>. 
+      <span class="qed">$\square$</span>
+    </p>
+</article>
+<p>
+An important role in the discussion of principal divisors is played by the “universal” principal divisor $[0] - [\infty ]$ on $\mathbf{P}^1_ S$. To make this more precise, let us denote 
+</p>
+<div class="equation" id="0F93">
+    <span class="equation-label"><a href="/tag/0F93" data-tag="0F93">42.18.1.1</a></span>
+  <div>\begin{equation}  \label{chow-equation-zero-infty} D_0, D_\infty \subset \mathbf{P}^1_ S = \underline{\text{Proj}}_ S(\mathcal{O}_ S[T_0, T_1]) \end{equation}</div>
+</div>
+<p>
+ the closed subscheme cut out by the section $T_1$, resp. $T_0$ of $\mathcal{O}(1)$. These are effective Cartier divisors, see Divisors, Definition <a href="/tag/01WR" data-tag="01WR">31.13.1</a> and Lemma <a href="/tag/01X0" data-tag="01X0">31.14.10</a>. The following lemma says that loosely speaking we have “$\text{div}(T_1/T_0) = [D_0] - [D_1]$” and that this is the universal principal divisor. 
+</p>
+<p>
+<article class="env-lemma" id="02RQ">
+  <p><a class="environment-identifier" href="/tag/02RQ">Lemma <span data-tag="02RQ">42.18.2</span>.</a> Let $(S, \delta )$ be as in Situation <a href="/tag/02QL" data-tag="02QL">42.7.1</a>. Let $X$ be locally of finite type over $S$. Assume $X$ is integral and $n = \dim _\delta (X)$. Let $f \in R(X)^*$. Let $U \subset X$ be a nonempty open such that $f$ corresponds to a section $f \in \Gamma (U, \mathcal{O}_ X^*)$. Let $Y \subset X \times _ S \mathbf{P}^1_ S$ be the closure of the graph of $f : U \to \mathbf{P}^1_ S$. Then </p>
+  <p><ol>
+  <li><p>
+the projection morphism $p : Y \to X$ is proper, 
+</p>
+</li><li><p>
+$p|_{p^{-1}(U)} : p^{-1}(U) \to U$ is an isomorphism, 
+</p>
+</li><li><p>
+the pullbacks $Y_0 = q^{-1}D_0$ and $Y_\infty = q^{-1}D_\infty $ via the morphism $q : Y \to \mathbf{P}^1_ S$ are defined (Divisors, Definition <a href="/tag/01WV" data-tag="01WV">31.13.12</a>), 
+</p>
+</li><li><p>
+we have 
+</p>
+<div class="equation">
+  \[  \text{div}_ Y(f) = [Y_0]_{n - 1} - [Y_\infty ]_{n - 1}  \]
+</div>
+</li><li><p>
+we have 
+</p>
+<div class="equation">
+  \[  \text{div}_ X(f) = p_*\text{div}_ Y(f)  \]
+</div>
+</li><li><p>
+if we view $Y_0$ and $Y_\infty $ as closed subschemes of $X$ via the morphism $p$ then we have 
+</p>
+<div class="equation">
+  \[  \text{div}_ X(f) = [Y_0]_{n - 1} - [Y_\infty ]_{n - 1}  \]
+</div>
+</li>
+</ol></p>
+</article> 
+</p>
+<article class="env-proof">
+    <p>
+      <strong>Proof.</strong>
+      Since $X$ is integral, we see that $U$ is integral. Hence $Y$ is integral, and $(1, f)(U) \subset Y$ is an open dense subscheme. Also, note that the closed subscheme $Y \subset X \times _ S \mathbf{P}^1_ S$ does not depend on the choice of the open $U$, since after all it is the closure of the one point set $\{ \eta '\}  = \{ (1, f)(\eta )\} $ where $\eta \in X$ is the generic point. Having said this let us prove the assertions of the lemma. 
+    <p>
+      For (1) note that $p$ is the composition of the closed immersion $Y \to X \times _ S \mathbf{P}^1_ S = \mathbf{P}^1_ X$ with the proper morphism $\mathbf{P}^1_ X \to X$. As a composition of proper morphisms is proper (Morphisms, Lemma <a href="/tag/01W3" data-tag="01W3">29.41.4</a>) we conclude. 
+    <p>
+      It is clear that $Y \cap U \times _ S \mathbf{P}^1_ S = (1, f)(U)$. Thus (2) follows. It also follows that $\dim _\delta (Y) = n$. 
+    <p>
+      Note that $q(\eta ') = f(\eta )$ is not contained in $D_0$ or $D_\infty $ since $f \in R(X)^*$. Hence (3) by Divisors, Lemma <a href="/tag/02OO" data-tag="02OO">31.13.13</a>. We obtain $\dim _\delta (Y_0) = n - 1$ and $\dim _\delta (Y_\infty ) = n - 1$ from Lemma <a href="/tag/02RK" data-tag="02RK">42.16.1</a>. 
+    <p>
+      Consider the effective Cartier divisor $Y_0$. At every point $\xi \in Y_0$ we have $f \in \mathcal{O}_{Y, \xi }$ and the local equation for $Y_0$ is given by $f$. In particular, if $\delta (\xi ) = n - 1$ so $\xi $ is the generic point of an integral closed subscheme $Z$ of $\delta $-dimension $n - 1$, then we see that the coefficient of $[Z]$ in $\text{div}_ Y(f)$ is 
+    <p>
+      <div class="equation">
+  \[  \text{ord}_ Z(f) = \text{length}_{\mathcal{O}_{Y, \xi }} (\mathcal{O}_{Y, \xi }/f\mathcal{O}_{Y, \xi }) = \text{length}_{\mathcal{O}_{Y, \xi }} (\mathcal{O}_{Y_0, \xi })  \]
+</div>
+    <p>
+       which is the coefficient of $[Z]$ in $[Y_0]_{n - 1}$. A similar argument using the rational function $1/f$ shows that $-[Y_\infty ]$ agrees with the terms with negative coefficients in the expression for $\text{div}_ Y(f)$. Hence (4) follows. 
+    <p>
+      Note that $D_0 \to S$ is an isomorphism. Hence we see that $X \times _ S D_0 \to X$ is an isomorphism as well. Clearly we have $Y_0 = Y \cap X \times _ S D_0$ (scheme theoretic intersection) inside $X \times _ S \mathbf{P}^1_ S$. Hence it is really the case that $Y_0 \to X$ is a closed immersion. It follows that 
+    <p>
+      <div class="equation">
+  \[  p_*\mathcal{O}_{Y_0} = \mathcal{O}_{Y'_0}  \]
+</div>
+    <p>
+       where $Y'_0 \subset X$ is the image of $Y_0 \to X$. By Lemma <a href="/tag/02R6" data-tag="02R6">42.12.4</a> we have $p_*[Y_0]_{n - 1} = [Y'_0]_{n - 1}$. The same is true for $D_\infty $ and $Y_\infty $. Hence (6) is a consequence of (5). Finally, (5) follows immediately from Lemma <a href="/tag/02RT" data-tag="02RT">42.18.1</a>. 
+      <span class="qed">$\square$</span>
+    </p>
+</article>
+<p>
+The following lemma says that the degree of a principal divisor on a proper curve is zero. 
+</p>
+<p>
+<article class="env-lemma" id="02RU">
+  <p><a class="environment-identifier" href="/tag/02RU">Lemma <span data-tag="02RU">42.18.3</span>.</a> Let $K$ be any field. Let $X$ be a $1$-dimensional integral scheme endowed with a proper morphism $c : X \to \mathop{\mathrm{Spec}}(K)$. Let $f \in K(X)^*$ be an invertible rational function. Then </p>
+  <div class="equation">
+  \[  \sum \nolimits _{x \in X \text{ closed}} [\kappa (x) : K] \text{ord}_{\mathcal{O}_{X, x}}(f) = 0  \]
+</div>
+  <p> where $\text{ord}$ is as in Algebra, Definition <a href="/tag/02MD" data-tag="02MD">10.121.2</a>. In other words, $c_*\text{div}(f) = 0$. </p>
+</article> 
+</p>
+<article class="env-proof">
+    <p>
+      <strong>Proof.</strong>
+      Consider the diagram 
+    <p>
+      <div class="equation">
+  \[  \xymatrix{ Y \ar[r]_ p \ar[d]_ q &  X \ar[d]^ c \\  \mathbf{P}^1_ K \ar[r]^-{c'} &  \mathop{\mathrm{Spec}}(K) }  \]
+</div>
+    <p>
+       that we constructed in Lemma <a href="/tag/02RQ" data-tag="02RQ">42.18.2</a> starting with $X$ and the rational function $f$ over $S = \mathop{\mathrm{Spec}}(K)$. We will use all the results of this lemma without further mention. We have to show that $c_*\text{div}_ X(f) = c_*p_*\text{div}_ Y(f) = 0$. This is the same as proving that $c'_*q_*\text{div}_ Y(f) = 0$. If $q(Y)$ is a closed point of $\mathbf{P}^1_ K$ then we see that $\text{div}_ X(f) = 0$ and the lemma holds. Thus we may assume that $q$ is dominant. Suppose we can show that $q : Y \to \mathbf{P}^1_ K$ is finite locally free of degree $d$ (see Morphisms, Definition <a href="/tag/02KA" data-tag="02KA">29.48.1</a>). Since $\text{div}_ Y(f) = [q^{-1}D_0]_0 - [q^{-1}D_\infty ]_0$ we see (by definition of flat pullback) that $\text{div}_ Y(f) = q^*([D_0]_0 - [D_\infty ]_0)$. Then by Lemma <a href="/tag/02RH" data-tag="02RH">42.15.2</a> we get $q_*\text{div}_ Y(f) = d([D_0]_0 - [D_\infty ]_0)$. Since clearly $c'_*[D_0]_0 = c'_*[D_\infty ]_0$ we win. 
+    <p>
+      It remains to show that $q$ is finite locally free. (It will automatically have some given degree as $\mathbf{P}^1_ K$ is connected.) Since $\dim (\mathbf{P}^1_ K) = 1$ we see that $q$ is finite for example by Lemma <a href="/tag/02RM" data-tag="02RM">42.16.2</a>. All local rings of $\mathbf{P}^1_ K$ at closed points are regular local rings of dimension $1$ (in other words discrete valuation rings), since they are localizations of $K[T]$ (see Algebra, Lemma <a href="/tag/00OP" data-tag="00OP">10.114.1</a>). Hence for $y\in Y$ closed the local ring $\mathcal{O}_{Y, y}$ will be flat over $\mathcal{O}_{\mathbf{P}^1_ K, q(y)}$ as soon as it is torsion free (More on Algebra, Lemma <a href="/tag/0AUW" data-tag="0AUW">15.22.11</a>). This is obviously the case as $\mathcal{O}_{Y, y}$ is a domain and $q$ is dominant. Thus $q$ is flat. Hence $q$ is finite locally free by Morphisms, Lemma <a href="/tag/02KB" data-tag="02KB">29.48.2</a>. 
+      <span class="qed">$\square$</span>
+    </p>
+</article>
+
+
+  <script type="text/javascript">
+$(document).ready(function() {
+  // move extras from parent element to after environment name and number
+  $("article a[data-toggle]").each(function(index, element) {
+    $(element).insertAfter(($(element).parent().find("a.environment-identifier")));
+  });
+
+  $('article a[data-toggle="popover"]').popover()
+
+  // render mathematics in popovers
+  $("[data-toggle=popover]").on('shown.bs.popover', function () {
+    MathJax.Hub.Queue(["Typeset", MathJax.Hub, $("div.popover-body").html()]);
+  });
+});
+  </script>
+
+  
+
+  
+</div>
+
+
+<hr>
+
+<section id="comments">
+  <h2>Comments (0)</h2>
+
+  
+
+  
+</section>
+
+<hr>
+
+<section id="post-comment">
+  <h2>Post a comment</h2>
+  <p>Your email address will not be published. Required fields are marked.
+  <p>In your comment you can use <a href="/markdown">Markdown</a> and LaTeX style mathematics (enclose it like <code>$\pi$</code>). A preview option is available if you wish to see how it works out (just click on the eye in the toolbar).
+  <noscript><p>Unfortunately JavaScript is disabled in your browser, so the comment preview function will not work.</p></noscript>
+
+  <p>All contributions are licensed under the <a href="https://github.com/stacks/stacks-project/blob/master/COPYING">GNU Free Documentation License</a>.
+
+  <form name="comment" id="comment-form" action="/post-comment" method="post">
+    <label for="name">Name<sup>*</sup>:</label>
+    <input type="text" name="name" id="name" required><br>
+
+    <label for="mail">E-mail<sup>*</sup>:</label>
+    <input type="email" name="mail" id="mail" required><br>
+
+    <label for="site">Site:</label>
+    <input type="url" name="site" id="site"><br>
+
+    <label>Comment:</label>
+    <textarea name="comment" id="comment-textarea" cols="80" rows="10" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+    <script type="text/javascript">
+var easymde = new EasyMDE({
+  autosave: {
+    enabled: true,
+    delay: 1000,
+    uniqueId: "comment-02RS",
+  },
+  element: $("#comment")[0],
+  forceSync: true,
+  insertTexts: { link: ["\\ref{", "}"], table: ["$", "$"], image: ["\\begin{equation}\n", "\n\\end{equation}\n"] }, // we hack into these insertion methods, I couldn't figure out how to write your own...
+  placeholder: "You can type your comment here, use the preview option to see what it will look like. If your comment is on a lemma, please leave your comment on the page of the lemma. Same with remarks, propositions, theorems, etc.",
+  previewRender: function(plaintext, preview) {
+    // deal with references
+    plaintext = plaintext.replace(/\\ref\{([0-9A-Z]{4})\}/g, "<span class=\"tag\">[$1](/tag/$1)</span>");
+    // deal with \[\] getting replaced to []
+    plaintext = plaintext.replace(/\\\[/g, "\\begin{equation}");
+    plaintext = plaintext.replace(/\\\]/g, "\\end{equation}");
+
+    output = this.parent.markdown(plaintext);
+
+    setTimeout(function() {
+      preview.innerHTML = output;
+      MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+    }, 0);
+
+    return "";
+  },
+  spellChecker: false,
+  status: false,
+  toolbar: [
+    "link", {name: "inline", action: EasyMDE.drawTable, className: "fa fa-usd"}, {name: "block", action: EasyMDE.drawImage, className: "fa fa-square"}, "|",
+    "bold", "italic", "|",
+    "ordered-list", "unordered-list", "|",
+    "preview"
+  ],
+});
+
+// make sure to show tags, not numbers
+var tagToggleHappened = false; // only do this once to not annoy the user too much
+easymde.codemirror.on("change", function() {
+  // if data-tag elements do not have tag attribute we need to make tags visible
+  if (!$("*[data-tag]").hasClass("tag") && !tagToggleHappened)
+    $("section#meta input.toggle").bootstrapToggle("toggle");
+  tagToggleHappened = true;
+});
+
+// prevent form submit when the captcha isn't correct
+// it's a bit silly to use HTML5 validation for this, as bots can figure that out
+// also save the author information to localStorage
+easymde.element.form.addEventListener("submit", function(event) {
+  if ($("#check").val() != $("#hidden-tag").val()) {
+    // explain captcha
+    $("#captcha-message").toggle();
+
+    // stop submit
+    event.preventDefault();
+    return false;
+  }
+
+  // save author information
+  localStorage.setItem("name", $("input#name").val());
+  localStorage.setItem("mail", $("input#mail").val());
+  localStorage.setItem("site", $("input#site").val());
+});
+    </script>
+
+    <p>In order to prevent bots from posting comments, we would like you to prove that you are human. You can do this by <em>filling in the name of the current tag</em> in the following input field. As a reminder, this is tag <span class="tag">02RS</span>. Beware of the difference between the letter&nbsp;'<span class="tag">O</span>' and the digit&nbsp;'<span class="tag">0</span>'.</p>
+    <!--<p>This <abbr title="Completely Automated Public Turing test to tell Computers and Humans Apart">captcha</abbr> seems more appropriate than the usual illegible gibberish, right?<br>-->
+    <label for="check">Tag:</label>
+    <input type="text" name="check" id="check" required autocomplete="off">
+    <button type="submit" class="btn btn-primary">Post comment</button>
+    <input type="hidden" name="tag" id="hidden-tag" value="02RS"><br>
+
+    <p id="captcha-message" style="display: none" class="alert alert-warning" role="alert">The tag you filled in for the captcha is wrong. You need to write <span class="tag">02RS</span>, in case you are confused.</p>
+
+    <script type="text/javascript">
+// enter in captcha fields causes \ref to appear (?!)
+$("input#check").on("keypress", function(e) {
+  if (e.which == 13) {
+    // always stop the event
+    e.preventDefault();
+
+    // perform clientside check as for actual submit
+    if ($("#check").val() != $("#hidden-tag").val()) {
+      // explain captcha
+      $("#captcha-message").toggle();
+    }
+    else {
+      $("form#comment-form").submit();
+    }
+  }
+});
+    </script>
+  </form>
+</section>
+
+
+
+
+    </section>
+	  <div class="col-lg-4 col-xl-4">
+	    <section id="meta" class="row topbar sticky-top">
+        
+  
+  <div class="interaction">
+    
+  
+
+  <ul class="neighbours">
+  
+    <li class="left"><a href="/tag/02RN">previous section</a>
+  
+  
+    <li class="right"><a href="/tag/02RV">next section</a>
+  
+  </ul>
+  <br style="clear:both">
+
+  </div>
+
+  <hr>
+  
+    <a href="https://stacks.math.columbia.edu/download/chow.pdf#nameddest=02RS">View Section <span data-tag="02RS">42.18</span> as pdf</a>
+  
+
+  
+
+
+      </section>
+    </div>
+  </div>
+  <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.bundle.min.js" integrity="sha384-3ziFidFTgxJXHMDttyPJKDuTlmxJlwbSkojudK/CkRqKDOmeSbN6KLrGdrBQnT2n" crossorigin="anonymous"></script>
+</div>
+</body>
+</html>

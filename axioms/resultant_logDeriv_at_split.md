@@ -47,6 +47,16 @@ Lang, *Algebra* (3rd ed., GTM 211):
 
 The identity is the trace-of-log-derivative formula `Tr_{L/K}(dα/α) = d N_{L/K}(α) / N_{L/K}(α)` specialised to the bivariate resultant: `F = Res_X(f, g)` is the norm of `g` from the splitting field `L = K(T)[ξ_1, …, ξ_n]/(f)` down to `K(T)` (via Lang IV.8), and the per-root sum is the trace of the log-derivative of `g` along the moving roots. The needed Galois norm/trace/log-derivative identity is already proved in Lean as `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`.
 
+## Snippets
+
+![Lang IV.8 Prop 8.1 / 8.3](snippets/lang-IV.8-prop-8.1-8.3-resultant-202.png)
+
+![Lang IV.8 Prop 8.3 proof](snippets/lang-IV.8-prop-8.3-resultant-product-proof-203.png)
+
+![Lang VI.5 Thm 5.1](snippets/lang-VI.5-thm-5.1-norm-trace-300.png)
+
+![Lang VIII.5 Thm 5.1](snippets/lang-VIII.5-thm-5.1-derivations-385.png)
+
 ## Discharge plan
 
 The mathlib infrastructure for mechanizing the discharge exists modulo plumbing:

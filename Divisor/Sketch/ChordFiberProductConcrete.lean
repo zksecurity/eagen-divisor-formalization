@@ -57,8 +57,9 @@ resultant equals the sum of the local multiplicities of the geometric
 
 Mathematically this is the divisor-of-norm identity
 `div(N_{F_qbar(E)/F_qbar(z)} D) = π_*(div D)` for the chord projection
-`π = zLambdaBar`, with the right-hand side written fibrewise
-(Stichtenoth Prop. 3.1.9 and Thm. 3.7.1). -/
+`π = zLambdaBar`, with the right-hand side written fibrewise. The direct
+pushforward citation is Stacks 02RS; Stichtenoth Prop. 3.1.9 and
+Thm. 3.1.11 provide supporting function-field divisor accounting. -/
 theorem chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber
     [DecidableEq (Fqbar E)]
     (lam : ZMod E.q) (D : CoordRingElt E.q)
@@ -377,8 +378,9 @@ through `Q` (with the prescribed local order). The leading coefficient
 matches `(normPoly E D).leadingCoeff` after passing through Hasse +
 geom-divisor accounting. This is the divisor-of-norm formula
 `div(N(D)) = π_*(div D)` for the cover
-`F_qbar(E) / F_qbar(zLambdaBar lam)` (Stichtenoth Prop 3.1.9 +
-Thm 3.7.1). Provable in mathlib once we have:
+`F_qbar(E) / F_qbar(zLambdaBar lam)` (Stacks 02RS, with Stichtenoth
+Prop 3.1.9 and Thm 3.1.11 as supporting function-field accounting).
+Provable in mathlib once we have:
   (a) the inertial-degree / ramification computation for the chord
       projection (already encoded by `gd.mult` via the local-order
       machinery in `GeomLocalOrder`);

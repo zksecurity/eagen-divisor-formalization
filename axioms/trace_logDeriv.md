@@ -24,6 +24,12 @@ Lang, *Algebra* (3rd ed., GTM 211):
 
 The trace-of-log-derivative formula is the one-line corollary: differentiate `N(α) = ∏_σ σα`, use the product rule + Galois-equivariance of the extended derivation (§VIII.5 Case 1), recognize the resulting sum as `Tr(α'/α)`.
 
+## Snippets
+
+![Lang VI.5 Thm 5.1](snippets/lang-VI.5-thm-5.1-norm-trace-300.png)
+
+![Lang VIII.5 Thm 5.1](snippets/lang-VIII.5-thm-5.1-derivations-385.png)
+
 ## Lean status
 
 The case needed by the splitting-field route is now a theorem:

@@ -27,16 +27,29 @@ coefficientwise.
 ## Citation
 
 * **Stacks Project**, [Lemma 42.18.1 (Principal divisors and pushforward)](https://stacks.math.columbia.edu/tag/02RS).
-  The statement here is the lower-bound coefficient form of the
-  pushforward identity `div(N(D)) = π_* div(D)` at the place `(z)` of
-  `F_qbar(zLambdaBar lam)`.
+  This is the primary citation. It states
+  `p_* div(f) = div(Nm(f))` for a dominant proper morphism of integral
+  schemes. The Lean axiom is the lower-bound coefficient form of this
+  equality at the place `(z)` of the chord projection base.
 
 * **Stichtenoth**, *Algebraic Function Fields and Codes* (GTM 254, 2nd ed.):
-  - Proposition 3.1.9 (conorm of a principal divisor is principal)
-  - Theorem 3.7.1 (Hasse-Arf-style ramification for cyclic extensions).
+  - Proposition 3.1.9, p. 73: conorm of a principal divisor is principal.
+  - Theorem 3.1.11, p. 74: the fundamental equality
+    `Σ_i e_i f_i = [F' : F]`, used for finite-extension place accounting.
 
-  The norm pushforward at unramified places gives equality; at
-  ramified places the local ramification index controls the difference.
+  These Stichtenoth references are supporting background for the
+  function-field divisor calculus. They are not a substitute for Stacks
+  02RS, which is the direct pushforward-of-norm statement.
+
+## Archived sources and snippets
+
+* Downloaded local Stacks source: `axioms/papers/stacks-02RS.html`.
+* Stacks canonical URL: <https://stacks.math.columbia.edu/tag/02RS>.
+* Local book PDFs are available under `/Users/rot256/paper/crypto-books/`.
+
+![Stichtenoth Prop 3.1.9](snippets/stichtenoth-prop-3.1.9-conorm-principal-084.png)
+
+![Stichtenoth Thm 3.1.11](snippets/stichtenoth-thm-3.1.11-fundamental-equality-074.png)
 
 ## Why this remains an axiom
 

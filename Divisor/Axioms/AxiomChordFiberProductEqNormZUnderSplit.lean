@@ -4,8 +4,10 @@
   Divisor-of-norm identity: under splitting + accounting, the chord-
   fiber product equals a nonzero constant multiple of `normZ`.
 
-  Reference: Stichtenoth, *Algebraic Function Fields and Codes* (GTM
-  254, 2nd ed.), Proposition 3.1.9 (p. 73) + Theorem 3.7.1 (p. 121).
+  Reference: Stacks Project Lemma 42.18.1 (principal divisors and
+  pushforward), with Stichtenoth, *Algebraic Function Fields and Codes*
+  (GTM 254, 2nd ed.), Proposition 3.1.9 (p. 73) and Theorem 3.1.11
+  (p. 74) as supporting function-field divisor/place accounting.
   See `axioms/chord_fiber_product_eq_normZ_under_split.md`.
 -/
 import Divisor.Defs
@@ -29,7 +31,7 @@ noncomputable def chord_fiber_product
     (E : ECSetup) (lam : ZMod E.q) (D : CoordRingElt E.q) : (ZMod E.q)[X] :=
   chord_fiber_product_concrete E lam D
 
-/-! ## Divisor-of-norm formula (Stichtenoth Prop 3.1.9 + Thm 3.7.1)
+/-! ## Divisor-of-norm formula (Stacks 02RS / Stichtenoth 3.1.9)
 
 Under the splitting and pointwise true-multiplicity hypotheses, the
 chord-fiber product ∏ᵢ D(Aᵢ(z)) (the function-field norm) equals a
@@ -37,14 +39,15 @@ nonzero constant times normZ(z). Both polynomials have the same roots
 with the same multiplicities: the norm's roots are the z-coordinates of
 D's zeros on E, with multiplicities matching `betaTrue`.
 
-**Citation**: Stichtenoth, *Algebraic Function Fields and Codes*,
-2nd ed., GTM 254, Proposition 3.1.9 (p. 73) — the conorm of a
+**Primary citation**: Stacks Project Lemma 42.18.1 (Principal divisors
+and pushforward), which states `p_* div(f) = div(Nm(f))`.
+
+**Supporting citation**: Stichtenoth, *Algebraic Function Fields and
+Codes*, 2nd ed., GTM 254, Proposition 3.1.9 (p. 73) — the conorm of a
 principal divisor is a principal divisor:
   `Con_{F'/F}(div(x)) = div_{F'}(x)`,
-together with the norm map `N_{F'/F}` (defined in Appendix A, used in
-§3.7 Theorem 3.7.1, p. 121) which sends a function in F' to its
-product of Galois conjugates in F. The divisor-of-norm identity, for
-`y ∈ F'`,
+together with place accounting from Theorem 3.1.11 (p. 74). The
+divisor-of-norm identity, for `y ∈ F'`,
   `div_F(N_{F'/F}(y)) = "Tr on divisors"(div_{F'}(y))`,
 identifies (under the splitting hypothesis) the roots and
 multiplicities of N(D)(z) with those of normZ(z), establishing
@@ -60,7 +63,7 @@ proportionality.
 >   Con_{F′/F}((x)∞^F) = (x)∞^{F′},   and
 >   Con_{F′/F}((x)^F)  = (x)^{F′}."
 
-**Textbook statement (verbatim), Stichtenoth Theorem 3.7.1, p. 121:**
+**Supporting statement, Stichtenoth Theorem 3.7.1, p. 121:**
 
 > "Theorem 3.7.1. Let F′/K′ be a Galois extension of F/K and
 > P₁, P₂ ∈ IP_{F′} be extensions of P ∈ IP_F. Then P₂ = σ(P₁) for

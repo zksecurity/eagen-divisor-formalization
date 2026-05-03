@@ -71,7 +71,7 @@ sorry`.
 | 4 | `chord_fiber_product_concrete_ne_zero` | **Done** | Proved by evaluating over `Fqbar`, choosing an intercept outside the finite set `gd.support.image (zLambdaBar E lam)`, and using the resultant product formula. |
 | 4a | `chord_fiber_product_concrete_bar_eval_eq_zero_iff_support` | **Done** | Multiplicity-free zero-locus bridge: bar evaluation at `μ` is zero iff some `Q ∈ gd.support` has `zLambdaBar Q = μ`. |
 | 4b | `chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image` | **Done** | Root-set consequence of 4a and non-vanishing. This pins support before multiplicities. |
-| 5a | `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber` | **Hard math (deepest)** | The divisor-of-norm identity `div(N(D)) = π_*(div D)` for the chord projection, stated as the exact root-multiplicity formula `mult_at_z(resultant) = ∑_{Q : zLambdaBar Q = z} gd.mult Q`. This is the narrow citable core (Stichtenoth Prop. 3.1.9 + Thm. 3.7.1). |
+| 5a | `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber` | **Hard math (deepest)** | The divisor-of-norm identity `div(N(D)) = π_*(div D)` for the chord projection, stated as the exact root-multiplicity formula `mult_at_z(resultant) = ∑_{Q : zLambdaBar Q = z} gd.mult Q`. This is the narrow citable core: Stacks 02RS directly states pushforward of principal divisors, while Stichtenoth Prop. 3.1.9 and Thm. 3.1.11 provide supporting function-field divisor/place accounting. |
 | 5b | `chord_fiber_product_concrete_bar_eq_geom_prod_of_rootMultiplicity` | **Done** | Given 5a plus the proved root-set bridge, derive the factored form by polynomial factorisation over `Fqbar`. This is a finite-product/root-count argument, not a new mathematical axiom. |
 | 6 | `chord_fiber_product_concrete_eq_normZ_under_split` | **Plumbing** | Once obligation 5 is in hand, this is a "match factored forms over `Fqbar`, scalar descends to `ZMod E.q`" argument. |
 | 7 | `chord_fiber_product_concrete_logDeriv` | **Medium math** | Logarithmic derivative of `∏_i D(x_i(μ), λx_i(μ) + μ)` via product rule + implicit-function differentiation of the chord cubic. The cancellation that produces the `logDerivTerm` formula is the substantive step; `hDen` rules out the cusp where the implicit-function argument fails. Mathlib has `Polynomial.derivative_*` and `aeval` machinery for the formal-derivative side; the chain rule is `Polynomial.derivative_comp` plus algebra. |
@@ -130,7 +130,8 @@ sits in step 5.
 ## Counter-suggestion: keep the axiom, narrow it
 
 Obligation 5 is the only genuine math, and its content (`div(N(D)) = π_*(div D)`)
-is a textbook fact (Stichtenoth Prop 3.1.9 + Thm 3.7.1, exactly as the existing
+is a textbook fact (Stacks 02RS, with Stichtenoth Prop 3.1.9 and
+Thm 3.1.11 as supporting function-field divisor/place accounting, exactly as the existing
 axiom citation reads). The question is whether the project wants to *carry*
 this proof inside Lean or *cite* it as an axiom.
 

@@ -84,6 +84,20 @@ the equality; it does not prove that the coefficients in
 `divisorOfD E D` are the divisor of `(a - b·y)` in the first place.
 The local-order bridge (item 1 below) is unavoidable.
 
+## Snippets
+
+![Silverman II.3 divisors](snippets/silverman-II.3-divisors-027.png)
+
+![Silverman II.3 principal divisors](snippets/silverman-II.3-principal-divisors-028.png)
+
+![Silverman Cor III.3.5](snippets/silverman-cor-III.3.5-principal-divisor-081.png)
+
+![Stichtenoth Def 1.4.1](snippets/stichtenoth-def-1.4.1-divisors-015.png)
+
+![Stichtenoth Def 1.4.2](snippets/stichtenoth-def-1.4.2-principal-divisor-016.png)
+
+![Stichtenoth Thm 1.4.11](snippets/stichtenoth-thm-1.4.11-principal-degree-zero-019.png)
+
 ## Discharge target
 
 To remove this axiom, prove that `divisorOfD E D` is the divisor class

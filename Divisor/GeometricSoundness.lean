@@ -959,9 +959,10 @@ Rational non-vanishing of the chord-fiber product.
 axiom. Its non-vanishing for nonzero `D` is the function-field
 statement that the norm `N_{F_q(E)/F_q(z)}(D)` of a nonzero rational
 function in the upper field is a nonzero rational function in the
-base field. Stichtenoth Prop 3.1.9 / Thm 3.7.1: a function-field
-extension is integral, so the norm vanishes iff the original
-function does.
+base field. This is the basic field-norm nonvanishing fact for finite
+extensions. The divisor-accounting citations for the surrounding
+fiber-product bridge are Stacks 02RS plus Stichtenoth Prop. 3.1.9 /
+Thm. 3.1.11.
 
 This is the smallest sharp obligation isolating the rational
 nonvanishing half of the bar fiber-accounting bundle.
