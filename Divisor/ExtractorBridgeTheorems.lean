@@ -600,3 +600,67 @@ theorem ma_soundness_probability_q_form
       _ ≤ (36 * (stmt.degBound + stmt.k + 4) * E.q) * (4 * (validPairs E).card) :=
           Nat.mul_le_mul_left _ hVP
       _ = 144 * (stmt.degBound + stmt.k + 4) * E.q * (validPairs E).card := by ring
+
+/-! ## Auditing-friendly contrapositive forms
+
+If a prover's accept-set strictly exceeds the soundness bound, the
+extractor is guaranteed to produce a witness. These are
+the contrapositive shapes a verifier or auditor would actually use:
+"observed acceptance > bound ⟹ extraction succeeds". -/
+
+/-- **Auditing-friendly ratio form** (contrapositive of
+`ma_soundness_probability`). If a prover's accept-set exceeds
+`36·(d+k+4)·q · |validPairs| / (n·(n−3))`, the extractor returns a
+witness.
+
+Stated multiplicatively to avoid division: `|accept|·(n² − 3n) >
+36·(d+k+4)·q · |validPairs|` ⟹ extractor succeeds. -/
+theorem ma_extractable_witness_of_excess_ratio
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (hQ : 5 ≤ E.q)
+    (hExcess :
+      ((validPairs E).filter
+          (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+        * (E.points.card * E.points.card - 3 * E.points.card)
+        > 36 * (stmt.degBound + stmt.k + 4) * E.q * (validPairs E).card) :
+    ∃ wit : DlogWitness E.q,
+      maExtractor E stmt msg stmt.degBound hd hkm = some wit
+      ∧ relDlog E stmt wit := by
+  rcases ma_soundness_probability E stmt hd hd2 msg hkm
+          hTargetOnE hBasesOnE hLargeQ hQ with hWit | hBound
+  · exact hWit
+  · exact absurd hBound (Nat.not_le.mpr hExcess)
+
+/-- **Auditing-friendly Hasse-clean form** (contrapositive of
+`ma_extractable_clean`). If accept-count exceeds `36·(d+k+4)·q`, the
+extractor returns a witness. Cheap corollary of the ratio form for
+local counting arguments where `|validPairs|` cancellation isn't
+needed. -/
+theorem ma_extractable_witness_of_excess_clean
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (hQ : 5 ≤ E.q)
+    (hExcess :
+      ((validPairs E).filter
+          (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+        > 36 * (stmt.degBound + stmt.k + 4) * E.q) :
+    ∃ wit : DlogWitness E.q,
+      maExtractor E stmt msg stmt.degBound hd hkm = some wit
+      ∧ relDlog E stmt wit := by
+  rcases ma_extractable_clean E stmt hd hd2 msg hkm
+          hTargetOnE hBasesOnE hLargeQ hQ with hWit | hBound
+  · exact hWit
+  · exact absurd hBound (Nat.not_le.mpr hExcess)
