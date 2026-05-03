@@ -178,6 +178,47 @@ theorem chordCoordRingElt_eval_eq_lineThrough_chord
   simp only []
   ring
 
+/-! ## Non-zero-ness of `chordCoordRingElt`
+
+The chord-line `CoordRingElt` is never the zero element of `F_q[E]`:
+
+* In the chord and tangent branches, `b = -1 ≠ 0`.
+* In the vertical branches, `a = X - C x₀ ≠ 0` (a degree-1 polynomial).
+
+Required for invoking `normPoly_ne_zero`, `ordAt_pos_iff_zero`, and any
+`splitsOnE`-based accounting. -/
+
+theorem chordCoordRingElt_ne_zero
+    (P Q : ZMod E.q × ZMod E.q) :
+    ¬ ((chordCoordRingElt E P Q).a = 0 ∧ (chordCoordRingElt E P Q).b = 0) := by
+  classical
+  unfold chordCoordRingElt
+  by_cases hxx : P.1 = Q.1
+  · rw [dif_pos hxx]
+    by_cases hyy : P.2 = Q.2
+    · rw [dif_pos hyy]
+      by_cases h2t : P.2 = 0
+      · rw [if_pos h2t]
+        intro ⟨ha, _⟩
+        -- ha : X - C P.1 = 0, but natDegree(X - C P.1) = 1.
+        have hd : (X - C P.1 : (ZMod E.q)[X]).natDegree = 1 := natDegree_X_sub_C _
+        have : (0 : (ZMod E.q)[X]).natDegree = 1 := by rw [← ha]; exact hd
+        rw [natDegree_zero] at this; omega
+      · rw [if_neg h2t]
+        intro ⟨_, hb⟩
+        -- hb : -1 = 0
+        have h1 : (1 : (ZMod E.q)[X]) ≠ 0 := one_ne_zero
+        exact h1 (neg_eq_zero.mp hb)
+    · rw [dif_neg hyy]
+      intro ⟨ha, _⟩
+      have hd : (X - C P.1 : (ZMod E.q)[X]).natDegree = 1 := natDegree_X_sub_C _
+      have : (0 : (ZMod E.q)[X]).natDegree = 1 := by rw [← ha]; exact hd
+      rw [natDegree_zero] at this; omega
+  · rw [dif_neg hxx]
+    intro ⟨_, hb⟩
+    have h1 : (1 : (ZMod E.q)[X]) ≠ 0 := one_ne_zero
+    exact h1 (neg_eq_zero.mp hb)
+
 /-! ## `normPoly` of the chord-line `CoordRingElt`
 
 The norm polynomial `N(D) = D.a² − D.b²·(X³+AX+B)` factors cleanly
