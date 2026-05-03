@@ -782,7 +782,107 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
           left; omega
         rw [if_neg hnotin] at hne
         exact hne rfl
-    -- TODO: combine with weighted bounds (Lemmas A, B) and index-sum identity.
+    -- Step 2: per-column weighted bound. For each j, define
+    --   idx j := (σ j).val - sylvesterOff j
+    -- and bound natDegree(entry) via Lemmas A or B based on whether j is f-col or g-col.
+    have hper_col : ∀ j : Fin ((chordCubicBiv E lam).natDegree
+                                + (DLineBiv E lam D).natDegree),
+        3 * (Polynomial.sylvester (chordCubicBiv E lam) (DLineBiv E lam D)
+                (chordCubicBiv E lam).natDegree (DLineBiv E lam D).natDegree
+                (σ j) j).natDegree
+        + 2 * ((σ j).val - sylvesterOff (chordCubicBiv E lam).natDegree
+                                          (DLineBiv E lam D).natDegree j)
+          ≤ j.addCases (motive := fun _ => ℕ)
+              (fun _ : Fin (chordCubicBiv E lam).natDegree => (normPoly E D).natDegree)
+              (fun _ : Fin (DLineBiv E lam D).natDegree => 6) := by
+      intro j
+      obtain ⟨j₁, rfl⟩ | ⟨j₁, rfl⟩ :
+          (∃ j₁ : Fin (chordCubicBiv E lam).natDegree,
+              j = Fin.castAdd (DLineBiv E lam D).natDegree j₁) ∨
+          (∃ j₁ : Fin (DLineBiv E lam D).natDegree,
+              j = Fin.natAdd (chordCubicBiv E lam).natDegree j₁) := by
+        rcases Nat.lt_or_ge j.val (chordCubicBiv E lam).natDegree with hjm | hjm
+        · left
+          exact ⟨⟨j.val, hjm⟩, by ext; rfl⟩
+        · right
+          refine ⟨⟨j.val - (chordCubicBiv E lam).natDegree, ?_⟩, ?_⟩
+          · have := j.isLt; omega
+          · ext; simp [Fin.natAdd]; omega
+      · -- g-col case: entry is DLineBiv.coeff((σ j).val - j₁.val).
+        rw [Fin.addCases_left]
+        unfold sylvesterOff
+        rw [Fin.addCases_left]
+        unfold Polynomial.sylvester
+        rw [Matrix.of_apply, Fin.addCases_left]
+        -- Entry uses if-condition; we have hzero showing the entry is nonzero,
+        -- so the condition is true and the entry is DLineBiv.coeff (...).
+        have hsupp_j := hsupp (Fin.castAdd _ j₁)
+        unfold sylvesterOff at hsupp_j
+        rw [Fin.addCases_left] at hsupp_j
+        -- For Lemma B, need k ≤ DLineBiv.natDegree.
+        have hne_j := hzero (Fin.castAdd _ j₁)
+        unfold Polynomial.sylvester at hne_j
+        rw [Matrix.of_apply, Fin.addCases_left] at hne_j
+        -- Extract: (σ ...).val ≤ j₁.val + DLineBiv.natDegree (else entry would be 0).
+        have hupper : (σ (Fin.castAdd _ j₁)).val ≤ j₁.val + (DLineBiv E lam D).natDegree := by
+          by_contra hgt
+          push_neg at hgt
+          have hnotin :
+              ¬ (σ (Fin.castAdd _ j₁)).val ∈
+                Set.Icc j₁.val (j₁.val + (DLineBiv E lam D).natDegree) := by
+            simp only [Set.mem_Icc, not_and_or]
+            right; omega
+          rw [if_neg hnotin] at hne_j
+          exact hne_j rfl
+        have hin_range :
+            (σ (Fin.castAdd _ j₁)).val ∈
+              Set.Icc j₁.val (j₁.val + (DLineBiv E lam D).natDegree) := by
+          simp only [Set.mem_Icc]; exact ⟨hsupp_j, hupper⟩
+        rw [if_pos hin_range]
+        -- Apply Lemma B with k = (σ ...).val - j₁.val ≤ DLineBiv.natDegree.
+        have hk_le : (σ (Fin.castAdd _ j₁)).val - j₁.val ≤ (DLineBiv E lam D).natDegree := by
+          omega
+        have hbnd := DLineBiv_coeff_natDegree_weighted_bound E lam D hD
+                      ((σ (Fin.castAdd _ j₁)).val - j₁.val) hk_le
+        -- hbnd: 3 * natDeg(coeff) + 2*k ≤ normPoly.natDegree.
+        omega
+      · -- f-col case: entry is chordCubicBiv.coeff((σ j).val - j₁.val).
+        rw [Fin.addCases_right]
+        unfold sylvesterOff
+        rw [Fin.addCases_right]
+        unfold Polynomial.sylvester
+        rw [Matrix.of_apply, Fin.addCases_right]
+        have hsupp_j := hsupp (Fin.natAdd _ j₁)
+        unfold sylvesterOff at hsupp_j
+        rw [Fin.addCases_right] at hsupp_j
+        have hne_j := hzero (Fin.natAdd _ j₁)
+        unfold Polynomial.sylvester at hne_j
+        rw [Matrix.of_apply, Fin.addCases_right] at hne_j
+        have hupper : (σ (Fin.natAdd _ j₁)).val ≤ j₁.val + (chordCubicBiv E lam).natDegree := by
+          by_contra hgt
+          push_neg at hgt
+          have hnotin :
+              ¬ (σ (Fin.natAdd _ j₁)).val ∈
+                Set.Icc j₁.val (j₁.val + (chordCubicBiv E lam).natDegree) := by
+            simp only [Set.mem_Icc, not_and_or]
+            right; omega
+          rw [if_neg hnotin] at hne_j
+          exact hne_j rfl
+        have hin_range :
+            (σ (Fin.natAdd _ j₁)).val ∈
+              Set.Icc j₁.val (j₁.val + (chordCubicBiv E lam).natDegree) := by
+          simp only [Set.mem_Icc]; exact ⟨hsupp_j, hupper⟩
+        rw [if_pos hin_range]
+        -- Apply Lemma A with k = (σ ...).val - j₁.val ≤ chordCubicBiv.natDegree = 3.
+        have h3 : (chordCubicBiv E lam).natDegree = 3 := chordCubicBiv_natDegree E lam
+        have hk_le : (σ (Fin.natAdd _ j₁)).val - j₁.val ≤ 3 := by omega
+        have hbnd := chordCubicBiv_coeff_natDegree_weighted_bound E lam
+                      ((σ (Fin.natAdd _ j₁)).val - j₁.val) hk_le
+        -- hbnd: 3 * natDeg(coeff) + 2*k ≤ 6.
+        omega
+    -- Step 3: aggregate via Σ_j to get Σ natDeg ≤ w.
+    -- TODO: sum the per-column inequalities + use sum_sylvester_idx_eq +
+    -- sum of (j.addCases) which evaluates to 3*w + n*6.
     sorry
 
 theorem chord_fiber_product_concrete_natDegree_le_normPoly_natDegree
