@@ -325,4 +325,63 @@ theorem ordAt_nonTwoTorsion_aux_symm_b_zero
         have hVan' : D.eval P.1 (-P.2) ≠ 0 := by rw [← hEvalEq]; exact hVan
         rw [if_pos hVan, if_pos hVan']
 
+/-- For `D.b = 0`, `ordAt_nonTwoTorsion D P = ordAt_nonTwoTorsion D (P.1, -P.2)`.
+The wrapper inherits y-flip symmetry from the aux symmetry. -/
+theorem ordAt_nonTwoTorsion_symm_b_zero
+    (D : CoordRingElt E.q) (hb : D.b = 0) (P : ZMod E.q × ZMod E.q) :
+    ordAt_nonTwoTorsion E D P
+      = ordAt_nonTwoTorsion E D (P.1, -P.2) := by
+  unfold ordAt_nonTwoTorsion
+  exact ordAt_nonTwoTorsion_aux_symm_b_zero E _ D hb P
+
+/-- For `D.b = 0`, `ordAt D P = ordAt D (P.1, -P.2)`. Combines the
+non-2-torsion case (via `ordAt_nonTwoTorsion_symm_b_zero`) with the
+2-torsion case (where `P.2 = 0` makes `(P.1, -P.2) = (P.1, 0) = P`,
+so equality is trivial). -/
+theorem ordAt_symm_b_zero
+    (D : CoordRingElt E.q) (hb : D.b = 0) (P : ZMod E.q × ZMod E.q) :
+    ordAt E D P = ordAt E D (P.1, -P.2) := by
+  classical
+  by_cases hP : P ∈ E.points
+  · -- P on E. Then so is (P.1, -P.2) (E is symmetric in y for our setup).
+    have hP' : (P.1, -P.2) ∈ E.points := by
+      apply E.hComplete
+      have hEq := E.hOnCurve P hP
+      show (-P.2) ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB
+      rw [show (-P.2)^2 = P.2^2 from by ring]
+      exact hEq
+    by_cases hD : (D.a = 0 ∧ D.b = 0)
+    · rw [ordAt_eq_zero_of_offE_or_zero E D P (fun h => h.2 hD),
+          ordAt_eq_zero_of_offE_or_zero E D (P.1, -P.2)
+            (fun h => h.2 hD)]
+    · rw [ordAt_eq_dispatch E D hP hD,
+          ordAt_eq_dispatch E D hP' hD]
+      by_cases h2 : P.2 = 0
+      · rw [if_pos h2]
+        have h2neg : (-P.2 : ZMod E.q) = 0 := by rw [h2]; simp
+        rw [if_pos h2neg]
+        -- Both sides are ordAt_twoTorsion D P and D (P.1, -P.2).
+        -- Since P.2 = 0, -P.2 = 0, so (P.1, -P.2) = (P.1, 0) = P.
+        have : (P.1, -P.2) = P := by
+          rcases P with ⟨x, y⟩; simp at h2 ⊢; rw [h2]; simp
+        rw [this]
+      · rw [if_neg h2]
+        have h2' : (-P.2) ≠ 0 := by
+          intro h; apply h2; exact neg_eq_zero.mp h
+        rw [if_neg h2']
+        exact ordAt_nonTwoTorsion_symm_b_zero E D hb P
+  · -- P not on E. (P.1, -P.2) also not (by symmetry: if it were, P would be).
+    have hPNot' : (P.1, -P.2) ∉ E.points := by
+      intro h
+      apply hP
+      apply E.hComplete
+      have hEq := E.hOnCurve _ h
+      show P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB
+      have : (-P.2) ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := hEq
+      rw [show (-P.2)^2 = P.2^2 from by ring] at this
+      exact this
+    rw [ordAt_eq_zero_of_offE_or_zero E D P (fun h => hP h.1),
+        ordAt_eq_zero_of_offE_or_zero E D (P.1, -P.2)
+          (fun h => hPNot' h.1)]
+
 end Divisor
