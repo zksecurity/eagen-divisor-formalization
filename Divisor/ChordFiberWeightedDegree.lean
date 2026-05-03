@@ -559,4 +559,45 @@ private lemma DLineBiv_coeff_natDegree_weighted_bound
     have hbnd_b := normPoly_natDegree_ge_b_curveX E D hb
     omega
 
+/-! ## Main theorem (target): the natDegree inequality
+
+The weighted-Sylvester result: for any `D` with `¬ (D.a = 0 ∧ D.b = 0)`,
+
+    (chord_fiber_product_concrete E lam D).natDegree ≤ (normPoly E D).natDegree.
+
+Proof outline:
+
+Let `f = chordCubicBiv E lam`, `g = DLineBiv E lam D`, `m = 3`,
+`n = g.natDegree`, `w = (normPoly E D).natDegree`. We have:
+
+* `chord_fiber_product = Polynomial.resultant f g m n
+                       = (Polynomial.sylvester f g m n).det`.
+* From `Matrix.det_apply`: `det = Σ σ : Equiv.Perm, sgn σ · ∏ i, M[σ i, i]`.
+* For each permutation σ, the product `∏_i M[σ i, i]` is a product of
+  `m + n` entries, each either an f-coeff or g-coeff (or zero).
+* By Lemma A (chordCubicBiv) and Lemma B (DLineBiv), each entry has
+  weighted natDegree bounded:
+  - f-entries (at the `n` f-columns, with index `i - j_f`):
+    `3·natDeg(f.coeff(i-j_f)) + 2·(i-j_f) ≤ 6`.
+  - g-entries (at the `m` g-columns, with index `i - j_g`):
+    `3·natDeg(g.coeff(i-j_g)) + 2·(i-j_g) ≤ w`.
+* Summing the weighted inequalities over all `m + n` columns:
+  `3·Σ_j natDeg(M[σ j, j]) + 2·Σ_j (σ j - j_offset) ≤ 6n + 3w`.
+* `Σ_j (σ j - j_offset) = m·n = 3n` (standard Sylvester fact).
+* So `3·Σ natDeg ≤ 6n + 3w − 2·3n = 3w`, hence `Σ natDeg ≤ w`.
+* By `Polynomial.natDegree_prod_le`: `natDeg(prod) ≤ Σ natDeg ≤ w`.
+* By `Polynomial.natDegree_sum_le_of_forall_le` over permutations:
+  `natDeg(det) ≤ w`.
+
+The Sylvester sum-bound is the substantive remaining work: a
+`Matrix.det_apply`-style expansion that tracks the index sum
+`Σ_j (σ j - j_offset) = m·n` and applies the per-column weight bounds. -/
+
+theorem chord_fiber_product_concrete_natDegree_le_normPoly_natDegree
+    (lam : ZMod E.q) (D : CoordRingElt E.q)
+    (_hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    (chord_fiber_product_concrete E lam D).natDegree
+      ≤ (normPoly E D).natDegree :=
+  sorry
+
 end Divisor
