@@ -481,6 +481,33 @@ theorem ip_knowledge_sound_clean
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
 
+/-- Hasse-based lower bound on `|validPairs|` in terms of `q` only.
+For `q ≥ 9`: `(q − 3)·(q − 9) ≤ 4·|validPairs|`, equivalently
+`|validPairs| ≥ (q − 3)·(q − 9)/4 ≈ q²/4` for moderate `q`. -/
+theorem validPairs_card_ge_q (hQ : 9 ≤ E.q) :
+    (E.q - 3) * (E.q - 9) ≤ 4 * (validPairs E).card := by
+  classical
+  have hLB := card_validPairs_lb E
+  have hHasse := Divisor.BivariateZerosOnExE.hasse_points_bound_lb E
+  unfold ECSetup.numAffine at hLB
+  set n := E.points.card with hn
+  -- From hasse_points_bound_lb: q ≤ 2n + 3, so q - 3 ≤ 2n and q - 9 ≤ 2n - 6.
+  -- card_validPairs_lb: n² - 3n ≤ |validPairs|, so 4(n² - 3n) = (2n)(2n-6) ≤ 4|validPairs|.
+  -- Need: (q-3)(q-9) ≤ (2n)(2n-6).
+  have hn_ge : 3 ≤ n := by omega
+  have h1 : E.q - 3 ≤ 2 * n := by omega
+  have h2 : E.q - 9 ≤ 2 * n - 6 := by omega
+  have h3 : (E.q - 3) * (E.q - 9) ≤ (2 * n) * (2 * n - 6) :=
+    Nat.mul_le_mul h1 h2
+  -- (2n)(2n-6) = 4(n*n - 3n) (in ℕ for n ≥ 3).
+  have hn2 : 6 ≤ 2 * n := by omega
+  have h3n : 3 * n ≤ n * n := Nat.mul_le_mul_right n hn_ge
+  have h4 : (2 * n) * (2 * n - 6) = 4 * (n * n - 3 * n) := by
+    zify [hn2, h3n]
+    ring
+  rw [h4] at h3
+  omega
+
 /-- **Soundness probability bound** in natural-number form.
 
 Multiplied form of `|accept|/|validPairs| ≤ 36·(d + k + 4)·q /
@@ -530,3 +557,46 @@ theorem ma_soundness_probability
       unfold ECSetup.numAffine at h
       exact h
     exact hStep1.trans hStep2
+
+/-- **Single-`q` soundness probability bound.** Hasse-clean form of
+`ma_soundness_probability` with `|validPairs|` lower-bounded by
+`(q − 3)·(q − 9)/4`:
+
+```
+|accept| · (q − 3)·(q − 9) ≤ 144·(d + k + 4)·q · |validPairs|
+```
+
+Equivalently `|accept|/|validPairs| ≤ 144·(d + k + 4)·q / ((q-3)(q-9))`,
+which is `O((d+k)/q)` for `q` of moderate size. -/
+theorem ma_soundness_probability_q_form
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (hQ : 9 ≤ E.q) :
+    (∃ wit : DlogWitness E.q,
+        maExtractor E stmt msg stmt.degBound hd hkm = some wit
+        ∧ relDlog E stmt wit) ∨
+    ((validPairs E).filter
+        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      * ((E.q - 3) * (E.q - 9))
+      ≤ 144 * (stmt.degBound + stmt.k + 4) * E.q * (validPairs E).card := by
+  have hQ5 : 5 ≤ E.q := by omega
+  rcases ma_extractable_clean E stmt hd hd2 msg hkm
+          hTargetOnE hBasesOnE hLargeQ hQ5 with hWit | hBound
+  · left; exact hWit
+  · right
+    have hVP := validPairs_card_ge_q E hQ
+    -- |accept| * (q-3)(q-9) ≤ 36(d+k+4)q * (q-3)(q-9) ≤ 36(d+k+4)q * 4|validPairs|.
+    calc ((validPairs E).filter
+            (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+              * ((E.q - 3) * (E.q - 9))
+        ≤ (36 * (stmt.degBound + stmt.k + 4) * E.q) * ((E.q - 3) * (E.q - 9)) :=
+          Nat.mul_le_mul_right _ hBound
+      _ ≤ (36 * (stmt.degBound + stmt.k + 4) * E.q) * (4 * (validPairs E).card) :=
+          Nat.mul_le_mul_left _ hVP
+      _ = 144 * (stmt.degBound + stmt.k + 4) * E.q * (validPairs E).card := by ring

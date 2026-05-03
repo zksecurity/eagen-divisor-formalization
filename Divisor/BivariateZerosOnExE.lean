@@ -175,6 +175,22 @@ lemma hasse_points_bound : 2 * E.points.card ≤ 3 * E.q + 3 := by
   have h2m : 2 * m ≤ (E.q : ℤ) + 3 := hasse_int_bound E.q m hqge hm_sq
   omega
 
+/-- From Hasse-Weil: `q − 3 ≤ 2 * |E.points|`. The lower-side dual of
+`hasse_points_bound`. Apply `hasse_int_bound` to `m = q − numAffine`. -/
+lemma hasse_points_bound_lb : E.q ≤ 2 * E.points.card + 3 := by
+  have hw := Divisor.hasse_weil E
+  have hnum := E.hNumPoints
+  have hqge := E.hq_ge
+  -- Use m' = q + 1 - numPoints (so m'² = (numPoints - q - 1)² ≤ 4q).
+  set m' := (E.q : ℤ) + 1 - E.numPoints with hm'_def
+  have hm'_sq : m' ^ 2 ≤ 4 * (E.q : ℤ) := by
+    have h := hw
+    -- (numPoints - q - 1)² = (q + 1 - numPoints)² = m'²
+    have : ((E.numPoints : ℤ) - E.q - 1) ^ 2 = m' ^ 2 := by ring
+    linarith [this ▸ h]
+  have h2m' : 2 * m' ≤ (E.q : ℤ) + 3 := hasse_int_bound E.q m' hqge hm'_sq
+  omega
+
 lemma arith_bound (D q n : ℕ) (hD : D ≥ 1) (hn : 2 * n ≤ 3 * q + 3) :
     6 * D * n ≤ 9 * D * q + 9 * D * D := by
   nlinarith
