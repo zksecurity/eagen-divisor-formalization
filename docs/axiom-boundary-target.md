@@ -161,6 +161,16 @@ future axiom-1 discharge can build on:
      reduces the bound `(chord_fiber_product D).natDegree ≤
      (normPoly D).natDegree` to the same statement on `D'` after
      extracting any monic common divisor of `D.a, D.b`.
+   - `chord_fiber_product_concrete_natDegree_le_normPoly_natDegree_of_coprime_base`
+     — full gcd-extraction reduction: takes the gcd-1 (coprime) base
+     case as a hypothesis and discharges the natDegree bound for
+     **arbitrary** `D` in one step. Uses `GCDMonoid.gcd D.a D.b` (monic
+     via `NormalizedGCDMonoid.normalize_gcd` + `monic_normalize`) and
+     `isCoprime_div_gcd_div_gcd_of_gcd_ne_zero`. The sketch's stub 2a
+     `chord_fiber_product_concrete_bar_natDegree_le_normPoly` is now
+     wired through this combinator, narrowing the only remaining
+     substantive content to the coprime base case
+     `chord_fiber_product_concrete_natDegree_le_of_coprime`.
 
    The linear case includes the resultant-against-linear-factor
    natDegree calculation
