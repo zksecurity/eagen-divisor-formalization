@@ -58,11 +58,19 @@ boundary:
 
 The remaining bridges are:
 
-- `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image`,
-  the coefficientwise norm/divisor push-forward statement for the
-  concrete resultant, *narrowed to the in-image case* (off-image
-  multiplicity = 0 is now a theorem). This is narrow and citable, but
-  still coordinate-level.
+- `chord_fiber_product_concrete_bar_zfiber_pow_dvd`, the per-fibre
+  *divisibility* lower bound for the concrete resultant: for each
+  chord-intercept `z`, the fiber sum `(X − C z)^(Σ_Q gd.mult Q) ∣
+  chord_fiber_product`. This *replaced* the previous
+  multiplicity-equality axiom: the upper-bound half (the global
+  natDegree inequality) is now a theorem
+  (`chord_fiber_product_concrete_natDegree_le_normPoly_natDegree` via
+  weighted-Sylvester analysis), so only the lower-bound divisibility
+  content remains as an axiom. This is the "ord_v(N(D)) ≥ Σ_w
+  ramification·ord_w(D)" half of Stacks 02RS, narrow and citable.
+  The previous multiplicity-equality form
+  `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image`
+  is now a derived theorem.
 - `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit`, the
   concrete principal-class bridge for the divisor of `D`, *narrowed
   to the non-constant-unit case* (constant-unit case is now a
