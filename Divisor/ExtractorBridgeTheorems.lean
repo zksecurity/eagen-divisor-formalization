@@ -269,6 +269,35 @@ theorem maAcceptSet_subset_badChallenges
     (fun i => msg.m (hkm ▸ i))
     (Finset.mem_filter.mpr ⟨hVP, hCheck⟩)
 
+/-- **Paper-tight headline disjunction** (`\ref{thm:ma}` clean form).
+
+For every prover first-round message:
+
+* Either the extractor outputs a valid `dlog` witness, or
+* The accepting challenges are contained in `badChallenges`.
+
+The right disjunct is in fact unconditional (see
+`maAcceptSet_subset_badChallenges`); this theorem packages it in the
+witness-or-bound shape mirroring the paper. The numeric bound on
+`|badChallenges|` follows from `badChallenges_card_le`. -/
+theorem ma_extractable_paper
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (_hd2 : 2 ≤ stmt.degBound)
+    (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (_hTargetOnE : stmt.target ∈ E.points)
+    (_hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (_hLargeQ : E.points.card >
+        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg.toD.degE + stmt.k + 2) + 72) :
+    (∃ wit : DlogWitness E.q,
+        maExtractor E stmt msg stmt.degBound hd hkm = some wit
+        ∧ relDlog E stmt wit) ∨
+    ((validPairs E).filter
+        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm))
+      ⊆ badChallenges E msg.toD stmt.target stmt.bases
+          (fun i => msg.m (hkm ▸ i)) :=
+  Or.inr (maAcceptSet_subset_badChallenges E stmt msg hkm)
+
 /-- **MA extractability — unconditional headline (deprecated alias).**
 
     Now subsumed by `ma_extractable`: the third disjunct (existence of
