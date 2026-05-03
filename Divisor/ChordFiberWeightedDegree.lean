@@ -233,12 +233,82 @@ identity is
 constant `C(D.a.coeff k - λ · D.b.coeff(k-1))` remains, of natDegree 0. -/
 private lemma DLineBiv_coeff_natDegree_le_zero_of_b_coeff_zero
     (lam : ZMod E.q) (D : CoordRingElt E.q) (k : ℕ)
-    (_hbz : D.b.coeff k = 0) :
+    (hbz : D.b.coeff k = 0) :
     ((DLineBiv E lam D).coeff k).natDegree ≤ 0 := by
-  -- This follows from the explicit form of DLineBiv.coeff k, which has X-coefficient
-  -- (in inner ring) = -D.b.coeff k. When that is zero, the whole coefficient is a
-  -- constant in inner ring.
-  sorry
+  classical
+  -- Strategy: combine `natDegree ≤ 1` with `coeff 1 = 0` to get `natDegree ≤ 0`.
+  -- The inner-X coefficient at degree 1 of (DLineBiv).coeff k is exactly
+  -- `-D.b.coeff k`, which vanishes by hypothesis.
+  have hdeg_le_one := DLineBiv_coeff_natDegree_le_one E lam D k
+  refine Polynomial.natDegree_le_iff_coeff_eq_zero.mpr ?_
+  intro N hN
+  -- Either N = 1 or N ≥ 2. For N ≥ 2, use natDegree ≤ 1.
+  rcases (Nat.lt_or_ge 1 N) with hN2 | hN1
+  · -- N ≥ 2: by natDegree ≤ 1, coeff N = 0.
+    exact Polynomial.coeff_eq_zero_of_natDegree_lt
+      (lt_of_le_of_lt hdeg_le_one hN2)
+  · -- N = 1: compute (DLineBiv.coeff k).coeff 1 = -D.b.coeff k.
+    have hN1' : N = 1 := by omega
+    subst hN1'
+    -- Compute the coefficient.
+    show (((D.a.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X]))
+          - (D.b.map (Polynomial.C : ZMod E.q →+* (ZMod E.q)[X])
+              * (Polynomial.C (Polynomial.C lam) * Polynomial.X
+                  + Polynomial.C Polynomial.X))).coeff k).coeff 1 = 0
+    rw [Polynomial.coeff_sub, Polynomial.coeff_sub]
+    -- (D.a.map C).coeff k = C(D.a.coeff k); .coeff 1 = 0.
+    rw [Polynomial.coeff_map, Polynomial.coeff_C_succ]
+    rw [zero_sub, neg_eq_zero]
+    -- Need: ((D.b.map C * Q).coeff k).coeff 1 = D.b.coeff k.
+    rw [Polynomial.coeff_mul]
+    rw [Polynomial.finset_sum_coeff]
+    -- Sum over (i, j) ∈ antidiagonal k of (D.b.map C).coeff i .coeff (1 - 0) ·
+    --   Q.coeff j .coeff 0 + similar
+    -- The only nonzero contribution is (i, j) = (k, 0): (D.b.map C).coeff k = C(D.b.coeff k),
+    -- .coeff 0 = D.b.coeff k. Q.coeff 0 = X, .coeff 1 = 1. So term = D.b.coeff k · 1.
+    -- For (i, j) = (k-1, 1): (D.b.map C).coeff (k-1) = C(D.b.coeff (k-1)). Q.coeff 1 = Cλ.
+    -- coeff 1 of (C(D.b.coeff(k-1)) · Cλ) = C(D.b.coeff(k-1) · λ).coeff 1 = 0.
+    apply Finset.sum_eq_zero
+    rintro ⟨i, j⟩ hij
+    have hsum : i + j = k := Finset.mem_antidiagonal.mp hij
+    rw [Polynomial.coeff_mul]
+    -- C(D.b.coeff i).coeff l = D.b.coeff i if l = 0 else 0.
+    rw [Polynomial.coeff_map]
+    -- The term at l: (C(D.b.coeff i)).coeff l · (Q.coeff j).coeff (1-l).
+    rw [Finset.sum_eq_single ⟨0, 1⟩]
+    · -- Main term: (C(D.b.coeff i)).coeff 0 · (Q.coeff j).coeff 1 = D.b.coeff i · (Q.coeff j).coeff 1.
+      rw [Polynomial.coeff_C_zero]
+      -- Compute (Q.coeff j).coeff 1.
+      have hqcoeff_succ :
+          ((Polynomial.C (Polynomial.C lam) * Polynomial.X
+              + Polynomial.C (Polynomial.X : Polynomial (ZMod E.q))).coeff j).coeff 1
+            = if j = 0 then 1 else 0 := by
+        rw [Polynomial.coeff_add, Polynomial.coeff_add,
+            Polynomial.coeff_C_mul, Polynomial.coeff_X, Polynomial.coeff_C]
+        split_ifs with hj1 hj0 hj1' hj0' <;>
+          simp_all [Polynomial.coeff_X, Polynomial.coeff_C]
+      rw [hqcoeff_succ]
+      split_ifs with hj0
+      · -- j = 0, so i = k. Term = D.b.coeff k · 1 = D.b.coeff k = 0 by hbz.
+        subst hj0
+        have hi : i = k := by simpa using hsum
+        subst hi
+        rw [hbz, mul_one]
+      · -- j ≠ 0. Term = D.b.coeff i · 0 = 0.
+        rw [mul_zero]
+    · intro b hbmem hbne
+      -- For b ≠ (0, 1): C(D.b.coeff i) only has nonzero coeff at index 0.
+      rcases Finset.mem_antidiagonal.mp hbmem with hb_sum
+      have hb1 : b.1 ≠ 0 := by
+        rintro h0
+        apply hbne
+        ext
+        · exact h0
+        · omega
+      rw [Polynomial.coeff_C, if_neg hb1, zero_mul]
+    · intro hne
+      -- (0, 1) ∈ antidiagonal 1 always.
+      exact absurd (Finset.mem_antidiagonal.mpr (by simp)) hne
 
 /-- **Lemma B (target): DLineBiv per-coefficient weight bound.**
 
