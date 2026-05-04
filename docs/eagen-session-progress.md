@@ -140,6 +140,51 @@ so cannot be proven correct without the cross-case piece above.
 All of B1–B5 are blocked on A6 (eagenBuild correctness), which is
 blocked on the cross-case ordAt-additivity.
 
+## Cross-case algebraic analysis (additional notes)
+
+This session's analysis worked out the cross-case structure
+algebraically:
+
+For non-2-torsion `P = (x_0, P.2)`, when `D₁` is lone at `P` (so
+`D₁.b(x_0) ≠ 0` and `D₁.a(x_0) = D₁.b(x_0)·P.2`) and `D₂` is lone at
+`-P` (so `D₂.b(x_0) ≠ 0` and `D₂.a(x_0) = -D₂.b(x_0)·P.2`):
+
+**Both `(D₁·D₂).a` and `(D₁·D₂).b` vanish at `x_0`** (verified by
+direct substitution and using `P.2² = curveX(x_0)` from the curve
+equation). So `(D₁·D₂).divLin x_0` makes sense.
+
+`(D₁·D₂).divLin.eval(P) = D₂.b(x_0) · ∇_curve(D₁)(P)`
+
+where `∇_curve(D₁)(P) = -2·P.2·∂x(D₁)|_P + D₁.b(x_0)·(3x_0² + A)`
+is the directional derivative of `D₁` along the curve at `P`. This
+vanishes iff `D₁` has order `≥ 2` at `P` (in the local ring).
+
+Symmetrically, `(D₁·D₂).divLin.eval(-P) = D₁.b(x_0) · ∇_curve(D₂)(-P)`,
+vanishing iff `D₂` has order `≥ 2` at `-P`.
+
+So the recursion structure at `P` for `D₁·D₂`:
+* Level 0: twin (both `(D₁·D₂)(±P) = 0`).
+* Level 1 at `P`: vanishes iff `m = ord(D₁)(P) ≥ 2`.
+* Level 1 at `-P`: vanishes iff `n = ord(D₂)(-P) ≥ 2`.
+* ... and so on, with `m + n - 2k` rootMult after `k` levels.
+
+The recursion expends `m` levels at `P` (one per "directional
+derivative order of `D₁`"), then bottoms out. Total
+`ord(D₁·D₂)(P) = m = ord(D₁)(P) + ord(D₂)(P) = m + 0`.
+
+This is the underlying reason additivity holds — but proving it
+formally requires either:
+1. Establishing the local-ring valuation `v_P` and the equivalence
+   `ordAt = v_P` via mathlib's `IsLocalization.AtPrime` infrastructure
+   (clean but heavy);
+2. A direct induction on (`m + n`) tracking "directional derivative
+   structure" through each `divLin` step (concrete but messy);
+3. A more clever mathematical observation tying the cross-case
+   structure to a known identity.
+
+The `Tests/CrossCaseSmokeTest.lean` regression check confirms the
+formula at concrete F_5 configurations.
+
 ## Picking up
 
 The `Tests/CrossCaseSmokeTest.lean` provides regression checks any
