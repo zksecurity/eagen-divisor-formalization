@@ -1119,6 +1119,22 @@ theorem splitsOnE_of_isHonestForExplicit
   ⟨normPoly_splits_of_isHonestForExplicit E stmt wit hk msg hkm h_honest hD,
    fiber_rationality_of_isHonestForExplicit E stmt wit hk msg hkm h_honest hD⟩
 
+/-! ## Bridge: IsHonestForLength4Simple → IsHonestForExplicit
+
+The bridge requires proving divisorOfD eagenBuild_length4_explicit = honestDivisorCoeffs
+at every R : ECPoint E. Building blocks:
+
+* At infinity: divisorOfD = -(natDegree(normPoly D) : ℤ);
+  honestDivisorCoeffs = -(D.degE : ℤ). Need natDegree = degE.
+* At affine R = P_i: divisorOfD = 1 (per per-ECPoint cases); honestDivisorCoeffs
+  = 1 (indicator at P_0 = -P_target, base-sum at P_i = B_{i-1}).
+* At affine R ∉ {P_i}: divisorOfD = 0 (zero-iff-input contrapositive);
+  honestDivisorCoeffs = 0 (no indicator/base match).
+
+Substantial case analysis. The infinity case requires a length-4-specific
+`degE_eq_four` lemma; the affine cases require splitting per the
+length-4 ECPoint characterization. Multi-firing work; deferred. -/
+
 /-! ## Hypothesis-light any-k completeness
 
 `splitsOnE` and `hAccount` are now both derived from `IsHonestForExplicit`.
