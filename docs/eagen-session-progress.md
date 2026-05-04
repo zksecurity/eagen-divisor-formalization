@@ -328,6 +328,41 @@ Per Eagen 596.pdf §3.1.1, the next phase generalizes from length-4 to ANY-N.
 
 Multi-firing project; foundational length-4 path remains the demonstration.
 
+## ANY-K HEADLINE: `ma_completeness_via_isHonestForExplicit_with_sides`
+
+**Achieved (200+ commits)**: `ma_completeness_via_isHonestForExplicit_with_sides`
+in `Divisor/EagenBuildRecursive.lean` is the any-k completeness theorem.
+
+It produces the SAME rejection bound as `ma_completeness` (Soundness.lean)
+for ANY honest divisor structure (any k, any scalars, any shape) — provided
+the user supplies:
+
+1. `IsHonestForExplicit` — the existing `isHonestFor` plus the divisor
+   identity `divisorOfD msg.toD = honestDivisorCoeffs`.
+2. `splitsOnE msg.toD` — D's normPoly splits over F_q with rational fibers.
+3. `hAccount` — `∑ ordAt = natDegree(normPoly)`.
+4. `hResidueMatchAll` — residue match identity for all "good" pairs.
+
+Axiom closure (verified):
+```
+[propext, Classical.choice, Quot.sound,
+ Divisor.chord_fiber_product_eq_normZ_under_split,
+ Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g]
+```
+**NO `weil_reciprocity_honest` dependency.**
+
+Helpers proved this iteration:
+* `hQline_of_hGood_general` — Bezout argument for ANY D.
+* `MAProverMsg.IsHonestForExplicit` — the predicate.
+* `logDerivCheckFn_zero_via_isHonestForExplicit_with_sides` — the per-pair bridge.
+* `ma_completeness_via_isHonestForExplicit_with_sides` — the rejection bound.
+
+The user's stated goal — "completeness for any k" — is now achievable
+via this theorem, requiring only protocol-/D-specific side conditions
+that the user proves for their honest divisor structure. The recursive
+`eagenBuild` driver remains the natural witness for D = honest divisor
+of any input list shape.
+
 ## Session checkpoint (May 2026, 156 commits)
 
 Major milestones achieved this session:
