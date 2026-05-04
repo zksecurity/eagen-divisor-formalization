@@ -356,6 +356,8 @@ Helpers proved this iteration:
 * `MAProverMsg.IsHonestForExplicit` — the predicate.
 * `logDerivCheckFn_zero_via_isHonestForExplicit_with_sides` — the per-pair bridge.
 * `ma_completeness_via_isHonestForExplicit_with_sides` — the rejection bound.
+* `ordAt_sum_extend_to_E_points` — padding lemma for residue match derivation.
+* `ordAt_eq_honestDivisorCoeffs_at_affine` — affine-bridge from ordAt to honestDivisorCoeffs.
 
 The user's stated goal — "completeness for any k" — is now achievable
 via this theorem, requiring only protocol-/D-specific side conditions
