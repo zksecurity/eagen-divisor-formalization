@@ -486,6 +486,22 @@ eagenBuild for non-tangent inputs.
 For eagenBuild's GENERIC recursion (no tangent doubling), the chord-line
 hypothesis suffices and the additivity is fully proven.
 
+**Tangent doubling limitation (Codex consultation #5, May 2026):**
+Codex confirmed `eagenBuild` does NOT intrinsically keep the accumulator
+simple at -P when later multiplying by a tangent at P. Concrete
+counterexample: input `[P, P, -P, -P]` with P non-2-torsion produces
+two tangent lines (at P and at -P) whose product hits the m₂ = 2
+cross case at x(P).
+
+For full coverage we'd need:
+* m₂ ≥ 2 cross-case proof (substantial), OR
+* restrict eagenBuild driver to inputs without tangent doubling
+  (e.g., distinct points, or first deduplicate via group law).
+
+Practical workaround: the prover for `weil_reciprocity_honest`
+typically uses distinct basis points B_i. If we restrict to that
+setting (no doubling), the chord-line theorem is fully sufficient.
+
 ### Cross-case progress (May 2026, multiple firings)
 
 The cross case for `min(m₁, m₂) = 1` is now FULLY proved:
