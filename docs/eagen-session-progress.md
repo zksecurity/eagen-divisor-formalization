@@ -13,9 +13,31 @@ STRONG-BAD-SET PASS shows 0 failures over 7542 challenges. The
 F_5 doubling counterexample is now in the bad set, so the axiom
 doesn't claim anything about it.
 
-The audit's second goal — replacing the axiom with a constructive
-`eagenBuild`-based theorem (B5) — is still pending, blocked on the
-cross-case ordAt-additivity (Codex's `v_P` valuation construction).
+**ordAt-additivity at every ECPoint under chord-line multiplication
+is FULLY PROVEN.** This includes the cross-case (D₁ lone at P, D₂
+lone at -P) which previously appeared to require substantial
+local-ring infrastructure. Achieved via:
+
+* Closed-form `ordAt_nonTwoTorsion` via `commonRootMultRat` and
+  `iterDivLin`.
+* Codex's polynomial derivative identity
+  `B₁·T'(x₀) = -B₂·N(D₁)'(x₀)`.
+* `cross_iterDivLin_invariant_when_min_eq_one` (base case for chord
+  lines, sufficient for eagenBuild).
+* Composition with existing nonvan-fiber, lone-sheet, twin-descent
+  lemmas via case dispatch + induction.
+
+Final theorem: `divisorOfD_mul_add_when_chord_line_D2` covers all
+chord lines through distinct affine points and vertical lines through
+(P, -P) pairs.
+
+Remaining for full B5 (axiom replacement):
+* eagenBuild driver definition (recursion on lists of ECPoints).
+* eagenBuild correctness theorem (`eagenBuild_div_eq`).
+* Tangent line case extension (m₂ = 2; deferred — most eagenBuild
+  uses don't hit this).
+* B1 (constructive `isHonestFor`), B2 (resultant identity),
+  B3 (logDerivCheckFn = 0), B5 (axiom delete + rewire).
 
 ## Final session summary
 
