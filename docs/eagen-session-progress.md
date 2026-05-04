@@ -356,6 +356,45 @@ Helpers proved this iteration:
 * `ordAt_sum_extend_to_E_points` — padding lemma for residue match derivation.
 * `ordAt_eq_honestDivisorCoeffs_at_affine` — affine-bridge from ordAt to honestDivisorCoeffs.
 
+## Hypothesis-light any-k completeness (May 2026, 230+ commits)
+
+`ma_completeness_via_isHonestForExplicit` (in `Divisor/EagenBuildRecursive.lean`)
+produces the rejection bound for any honest divisor structure. The user
+provides only:
+* `IsHonestForExplicit` (msg.isHonestFor + divisor identity).
+* D ≠ 0 (from admSet via `admSet_implies_toD_nonzero`).
+* on-curve targets/bases (protocol invariants).
+* degree + admSet (protocol checks).
+
+`splitsOnE` and `hAccount` are derived from the divisor identity:
+
+* `splitsOnE_of_isHonestForExplicit` — pinching argument (`∑ ordAt ≤ ∑ rootMult ≤ natDegree ≤ degE`, with `∑ ordAt = degE` from `IsPrincipal` deg-zero) gives `Multiset.card .roots = natDegree`, plus fiber rationality from divisor identity.
+* `hAccount_of_isHonestForExplicit` — from `∑ ordAt = degE` + `natDegree = degE`.
+
+Axiom closure (verified):
+```
+[propext, Classical.choice, Quot.sound,
+ Divisor.chord_fiber_product_eq_normZ_under_split,
+ Divisor.principal_divisor_iff,
+ Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g]
+```
+All Divisor-specific axioms already in `ma_extractable`'s closure.
+**No `weil_reciprocity_honest` dependency.**
+
+## Remaining work toward dropping `weil_reciprocity_honest` from `ma_completeness`
+
+Per Codex consultation:
+
+1. `IsHonestForLength4Simple → IsHonestForExplicit` (bridge): show
+   `divisorOfD eagenBuild_length4_explicit = honestDivisorCoeffs`
+   at every R. By case analysis on R using existing per-ECPoint divisor
+   characterization for length-4 + zero-iff-input characterization.
+   Substantial bookkeeping but mechanical.
+2. Wire existing `ma_completeness` through `ma_completeness_via_isHonestForExplicit`
+   for cases where the divisor identity is provided.
+3. Recursive `eagenBuild` correctness: provides the divisor identity
+   for general k. Big proof; tackle after length-4 bridge.
+
 ## Tighter any-k completeness (May 2026, 211 commits)
 
 **`ma_completeness_via_isHonestForExplicit_splitsOnE_only`** — discharges
