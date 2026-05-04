@@ -31,7 +31,18 @@ variable (E : ECSetup)
 def numZeros (D : CoordRingElt E.q) : ℕ :=
   (zeros D E.points).card
 
-/-- Predicate form of the completeness bad event for a given pair. -/
+/-- Predicate form of the completeness bad event for a given pair.
+
+Strengthened (per the soundness audit) to also exclude:
+* the *diagonal* `A₀ = A₁` (Lean's `slopeOf` gives `0/0 = 0` here, not
+  the geometric tangent slope);
+* `thirdPoint E A₀ A₁ = some A₀` (chord tangent at A₀, where the
+  `dx/dz` denominator at A₂ = A₀ vanishes);
+* `thirdPoint E A₀ A₁ = some A₁` (chord tangent at A₁, similar).
+
+These three additional graphs each contribute at most `|E.points|`
+to the bad-set cardinality, so the union-bound shape becomes
+`(3N + 4) · |E.points|`. -/
 noncomputable def badPairCompletenessPred (D : CoordRingElt E.q)
     (p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) : Prop :=
   D.eval p.1.1 p.1.2 = 0
@@ -39,6 +50,9 @@ noncomputable def badPairCompletenessPred (D : CoordRingElt E.q)
   ∨ (match thirdPoint E p.1 p.2 with
       | none => True
       | some (x, y) => D.eval x y = 0)
+  ∨ p.1 = p.2  -- diagonal
+  ∨ thirdPoint E p.1 p.2 = some p.1  -- tangent collision at A₀
+  ∨ thirdPoint E p.1 p.2 = some p.2  -- tangent collision at A₁
 
 /-- The completeness bad set: pairs `(A₀, A₁)` where
     `D(A₀) = 0`, `D(A₁) = 0`, `A₂ = ∞`, or `A₂ = (x, y)` with `D(x, y) = 0`. -/
@@ -741,7 +755,7 @@ theorem card_thirdPoint_affine_D_zero_pairs_le (D : CoordRingElt E.q) :
     S₀, S₁, S₂, S₃ and sum via `Finset.card_union_le`. -/
 theorem support_disjointness (D : CoordRingElt E.q)
     (N : ℕ) (hN : numZeros E D ≤ N) :
-    (badChallengesCompleteness E D).card ≤ (3 * N + 1) * E.numAffine := by
+    (badChallengesCompleteness E D).card ≤ (3 * N + 4) * E.numAffine := by
   set S₀ : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
     (E.points ×ˢ E.points).filter (fun p => D.eval p.1.1 p.1.2 = 0) with hS0def
   set S₁ : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
@@ -754,32 +768,69 @@ theorem support_disjointness (D : CoordRingElt E.q)
       match thirdPoint E p.1 p.2 with
       | none => False
       | some (x, y) => D.eval x y = 0) with hS3def
-  -- Subset inclusion.
-  have hsub : badChallengesCompleteness E D ⊆ S₀ ∪ S₁ ∪ S₂ ∪ S₃ := by
+  set S₄ := diagonalChallenges E with hS4def
+  set S₅ := tangentCollisionAtA₀ E with hS5def
+  set S₆ := tangentCollisionAtA₁ E with hS6def
+  -- Subset inclusion (extended to 6 disjuncts).
+  have hsub : badChallengesCompleteness E D ⊆
+      S₀ ∪ S₁ ∪ S₂ ∪ S₃ ∪ S₄ ∪ S₅ ∪ S₆ := by
     intro p hp
     simp only [badChallengesCompleteness, Finset.mem_filter,
                badPairCompletenessPred] at hp
     obtain ⟨hmem, hbad⟩ := hp
-    rcases hbad with h | h | h
+    rcases hbad with h | h | h | h | h | h
     · refine Finset.mem_union.mpr (Or.inl ?_)
+      refine Finset.mem_union.mpr (Or.inl ?_)
+      refine Finset.mem_union.mpr (Or.inl ?_)
+      refine Finset.mem_union.mpr (Or.inl ?_)
       refine Finset.mem_union.mpr (Or.inl ?_)
       refine Finset.mem_union.mpr (Or.inl ?_)
       exact Finset.mem_filter.mpr ⟨hmem, h⟩
     · refine Finset.mem_union.mpr (Or.inl ?_)
+      refine Finset.mem_union.mpr (Or.inl ?_)
+      refine Finset.mem_union.mpr (Or.inl ?_)
+      refine Finset.mem_union.mpr (Or.inl ?_)
       refine Finset.mem_union.mpr (Or.inl ?_)
       refine Finset.mem_union.mpr (Or.inr ?_)
       exact Finset.mem_filter.mpr ⟨hmem, h⟩
     · cases hT : thirdPoint E p.1 p.2 with
       | none =>
         refine Finset.mem_union.mpr (Or.inl ?_)
+        refine Finset.mem_union.mpr (Or.inl ?_)
+        refine Finset.mem_union.mpr (Or.inl ?_)
+        refine Finset.mem_union.mpr (Or.inl ?_)
         refine Finset.mem_union.mpr (Or.inr ?_)
         exact Finset.mem_filter.mpr ⟨hmem, hT⟩
       | some xy =>
+        refine Finset.mem_union.mpr (Or.inl ?_)
+        refine Finset.mem_union.mpr (Or.inl ?_)
+        refine Finset.mem_union.mpr (Or.inl ?_)
         refine Finset.mem_union.mpr (Or.inr ?_)
         refine Finset.mem_filter.mpr ⟨hmem, ?_⟩
         rw [hT] at h
         rw [hT]
         exact h
+    · -- Diagonal.
+      refine Finset.mem_union.mpr (Or.inl ?_)
+      refine Finset.mem_union.mpr (Or.inl ?_)
+      refine Finset.mem_union.mpr (Or.inr ?_)
+      show p ∈ S₄
+      rw [hS4def]
+      unfold diagonalChallenges
+      exact Finset.mem_filter.mpr ⟨hmem, h⟩
+    · -- Tangent at A_0.
+      refine Finset.mem_union.mpr (Or.inl ?_)
+      refine Finset.mem_union.mpr (Or.inr ?_)
+      show p ∈ S₅
+      rw [hS5def]
+      unfold tangentCollisionAtA₀
+      exact Finset.mem_filter.mpr ⟨hmem, h⟩
+    · -- Tangent at A_1.
+      refine Finset.mem_union.mpr (Or.inr ?_)
+      show p ∈ S₆
+      rw [hS6def]
+      unfold tangentCollisionAtA₁
+      exact Finset.mem_filter.mpr ⟨hmem, h⟩
   -- Cardinality of each piece.
   have hS0_card : S₀.card = numZeros E D * E.numAffine := by
     have : S₀ = (zeros D E.points) ×ˢ E.points := by
@@ -818,15 +869,25 @@ theorem support_disjointness (D : CoordRingElt E.q)
   have hS3_card : S₃.card ≤ E.numAffine * numZeros E D :=
     card_thirdPoint_affine_D_zero_pairs_le E D
   have hCombine : (badChallengesCompleteness E D).card ≤
-      S₀.card + S₁.card + S₂.card + S₃.card := by
+      S₀.card + S₁.card + S₂.card + S₃.card + S₄.card + S₅.card + S₆.card := by
     calc (badChallengesCompleteness E D).card
-        ≤ (S₀ ∪ S₁ ∪ S₂ ∪ S₃).card := Finset.card_le_card hsub
-      _ ≤ (S₀ ∪ S₁ ∪ S₂).card + S₃.card := Finset.card_union_le _ _
-      _ ≤ (S₀ ∪ S₁).card + S₂.card + S₃.card :=
+        ≤ (S₀ ∪ S₁ ∪ S₂ ∪ S₃ ∪ S₄ ∪ S₅ ∪ S₆).card := Finset.card_le_card hsub
+      _ ≤ (S₀ ∪ S₁ ∪ S₂ ∪ S₃ ∪ S₄ ∪ S₅).card + S₆.card := Finset.card_union_le _ _
+      _ ≤ (S₀ ∪ S₁ ∪ S₂ ∪ S₃ ∪ S₄).card + S₅.card + S₆.card :=
           Nat.add_le_add_right (Finset.card_union_le _ _) _
-      _ ≤ S₀.card + S₁.card + S₂.card + S₃.card :=
-          Nat.add_le_add_right
-            (Nat.add_le_add_right (Finset.card_union_le _ _) _) _
+      _ ≤ (S₀ ∪ S₁ ∪ S₂ ∪ S₃).card + S₄.card + S₅.card + S₆.card :=
+          Nat.add_le_add_right (Nat.add_le_add_right
+            (Finset.card_union_le _ _) _) _
+      _ ≤ (S₀ ∪ S₁ ∪ S₂).card + S₃.card + S₄.card + S₅.card + S₆.card :=
+          Nat.add_le_add_right (Nat.add_le_add_right
+            (Nat.add_le_add_right (Finset.card_union_le _ _) _) _) _
+      _ ≤ (S₀ ∪ S₁).card + S₂.card + S₃.card + S₄.card + S₅.card + S₆.card :=
+          Nat.add_le_add_right (Nat.add_le_add_right (Nat.add_le_add_right
+            (Nat.add_le_add_right (Finset.card_union_le _ _) _) _) _) _
+      _ ≤ S₀.card + S₁.card + S₂.card + S₃.card + S₄.card + S₅.card + S₆.card :=
+          Nat.add_le_add_right (Nat.add_le_add_right (Nat.add_le_add_right
+            (Nat.add_le_add_right (Nat.add_le_add_right
+              (Finset.card_union_le _ _) _) _) _) _) _
   -- Plug in numeric bounds.
   have h0N : S₀.card ≤ N * E.numAffine := by
     rw [hS0_card]; exact Nat.mul_le_mul_right _ hN
@@ -834,11 +895,15 @@ theorem support_disjointness (D : CoordRingElt E.q)
     rw [hS1_card]; exact Nat.mul_le_mul_left _ hN
   have h3N : S₃.card ≤ E.numAffine * N :=
     le_trans hS3_card (Nat.mul_le_mul_left _ hN)
+  have h4N : S₄.card ≤ E.numAffine := card_diagonalChallenges_le E
+  have h5N : S₅.card ≤ E.numAffine := card_tangentCollisionAtA₀_le E
+  have h6N : S₆.card ≤ E.numAffine := card_tangentCollisionAtA₁_le E
   calc (badChallengesCompleteness E D).card
-      ≤ S₀.card + S₁.card + S₂.card + S₃.card := hCombine
-    _ ≤ N * E.numAffine + E.numAffine * N + E.numAffine + E.numAffine * N := by
-        gcongr
-    _ = (3 * N + 1) * E.numAffine := by ring
+      ≤ S₀.card + S₁.card + S₂.card + S₃.card + S₄.card + S₅.card + S₆.card :=
+          hCombine
+    _ ≤ N * E.numAffine + E.numAffine * N + E.numAffine + E.numAffine * N
+        + E.numAffine + E.numAffine + E.numAffine := by gcongr
+    _ = (3 * N + 4) * E.numAffine := by ring
 
 /-- **Hasse-derived `|E| ≤ 2q`** (for `q ≥ 5`).
     From the integer-squared form `(|E.points| − q)² ≤ 4q`, derive

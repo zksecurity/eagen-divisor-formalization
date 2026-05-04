@@ -286,7 +286,7 @@ theorem ma_completeness
     (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm) :
     ((E.points ×ˢ E.points).filter
         (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (3 * numZeros E msg.toD + 1) * E.numAffine := by
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   let _ := hValid
   let _ := hDeg
   set rejectSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
@@ -322,16 +322,16 @@ theorem ma_completeness_clean
     (hQ : 5 ≤ E.q) :
     ((E.points ×ˢ E.points).filter
         (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ 6 * (stmt.degBound + 1) * E.q := by
+      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
   have hMA := ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm hHonestDivisor
   have hNZ : numZeros E msg.toD ≤ stmt.degBound := by
     have h1 := numZeros_le_degE E msg.toD hD
     omega
   have hHasse : E.numAffine ≤ 2 * E.q := points_card_le_two_q E hQ
-  calc _ ≤ (3 * numZeros E msg.toD + 1) * E.numAffine := hMA
-    _ ≤ (3 * stmt.degBound + 1) * (2 * E.q) := by
+  calc _ ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := hMA
+    _ ≤ (3 * stmt.degBound + 4) * (2 * E.q) := by
         apply Nat.mul_le_mul (by omega) hHasse
-    _ ≤ 6 * (stmt.degBound + 1) * E.q := by ring_nf; omega
+    _ ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by ring_nf; omega
 
 /-! ## Paper-Lean naming correspondence
 
