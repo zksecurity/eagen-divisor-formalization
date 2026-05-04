@@ -2157,6 +2157,29 @@ theorem bases_on_curve_for_length4Simple
   rw [h_eq]
   exact bases_at_cast_index_for_length4Simple E h_simple j
 
+/-! ## Bridge: IsHonestForLength4Simple → isHonestFor (full assembly)
+
+Combines all 5 helper components into the full bridge theorem.
+Given a `IsHonestForLength4Simple` plus a `DlogWitness` with all
+scalars = 1, produces the strengthened `isHonestFor` predicate.
+
+This is the construction-side validation that the strengthened
+`isHonestFor` is satisfiable for the length-4 simple case. -/
+
+theorem isHonestFor_of_isHonestForLength4Simple
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    {wit : DlogWitness E.q} (hk : stmt.k = wit.k)
+    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1) :
+    msg.isHonestFor E stmt wit hk
+      (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm) := by
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · exact scalar_reduction_for_length4Simple E h_simple hk h_scalars
+  · exact isPrincipal_honestDivisorCoeffs_for_length4Simple E h_simple hk h_scalars
+  · exact divisor_identity_for_length4Simple E h_simple hk h_scalars
+  · exact negTarget_on_curve_for_length4Simple E h_simple
+  · exact bases_on_curve_for_length4Simple E h_simple
+
 /-! ## Hypothesis-light any-k completeness
 
 `splitsOnE` and `hAccount` are now both derived from `IsHonestForExplicit`.
