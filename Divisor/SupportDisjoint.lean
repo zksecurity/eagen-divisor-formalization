@@ -578,6 +578,30 @@ noncomputable def tangentCollisionAtA₁ :
     Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
   (E.points ×ˢ E.points).filter (fun p => thirdPoint E p.1 p.2 = some p.2)
 
+/-- Diagonal Finset: pairs `(A, A)` with `A ∈ E.points`. -/
+noncomputable def diagonalChallenges :
+    Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+  (E.points ×ˢ E.points).filter (fun p => p.1 = p.2)
+
+/-- Cardinality bound: `|diagonalChallenges| ≤ |E.points|`. -/
+theorem card_diagonalChallenges_le :
+    (diagonalChallenges E).card ≤ E.numAffine := by
+  classical
+  have hImg : diagonalChallenges E = E.points.image (fun a => (a, a)) := by
+    ext p
+    simp only [diagonalChallenges, Finset.mem_filter, Finset.mem_product,
+               Finset.mem_image]
+    constructor
+    · rintro ⟨⟨h1, _h2⟩, hEq⟩
+      refine ⟨p.1, h1, ?_⟩
+      rw [Prod.mk.injEq]
+      exact ⟨rfl, hEq⟩
+    · rintro ⟨a, ha, hEq⟩
+      rw [← hEq]
+      exact ⟨⟨ha, ha⟩, rfl⟩
+  rw [hImg]
+  exact Finset.card_image_le
+
 /-- Cardinality bound: `|tangentCollisionAtA₁| ≤ |E.points|`. Via swap
     bijection from `tangentCollisionAtA₀` (using `thirdPoint_symm`). -/
 theorem card_tangentCollisionAtA₁_le :
