@@ -2200,4 +2200,83 @@ theorem divisorOfD_chordCoordRingElt_2torsion
     rfl
   · exact divisorOfD_chordCoordRingElt_at_infinity_vertical E P P rfl (Or.inr ⟨rfl, h2t⟩)
 
+/-! ## Total degree zero for chord-line divisor
+
+The divisor of any chord-line `CoordRingElt` has total degree zero
+(i.e. summed over all of `ECPoint E`, the integer-valued coefficient
+function sums to zero). This is the standard property of principal
+divisors on smooth curves; here it follows directly from the per-branch
+support analysis: total `ordAt` mass on `E.points` equals
+`natDegree(normPoly)`, which is exactly the negation of the infinity
+coefficient. -/
+
+theorem chordCoordRingElt_degree_zero_chord
+    (P Q : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (hxx : P.1 ≠ Q.1) :
+    (∑ S ∈ E.points, divisorOfD E (chordCoordRingElt E P Q)
+        (ECPoint.affine E S.1 S.2))
+      + divisorOfD E (chordCoordRingElt E P Q) (0 : ECPoint E) = 0 := by
+  classical
+  have hSum := sum_ordAt_chordCoordRingElt_chord E P Q hP hQ hxx
+  have hInf := divisorOfD_chordCoordRingElt_at_infinity_nonvertical E P Q hxx
+  -- Translate ordAt sum to divisorOfD sum at affine.
+  have hAff : ∀ S ∈ E.points,
+      divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E S.1 S.2)
+        = (ordAt E (chordCoordRingElt E P Q) S : ℤ) := by
+    intro S hS
+    rw [show divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E S.1 S.2)
+        = (ordAtPoint E (chordCoordRingElt E P Q)
+            (ECPoint.affine E S.1 S.2) : ℤ) from ?_,
+        ordAtPoint_affine E _ hS]
+    rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff S.1 S.2).mpr (E.hOnCurve _ hS)))]
+    rfl
+  rw [Finset.sum_congr rfl hAff, ← Nat.cast_sum, hSum, hInf]
+  norm_num
+
+theorem chordCoordRingElt_degree_zero_tangent
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (h2t : P.2 ≠ 0) :
+    (∑ S ∈ E.points, divisorOfD E (chordCoordRingElt E P P)
+        (ECPoint.affine E S.1 S.2))
+      + divisorOfD E (chordCoordRingElt E P P) (0 : ECPoint E) = 0 := by
+  classical
+  have hSum := sum_ordAt_chordCoordRingElt_tangent E hP h2t
+  have hInf := divisorOfD_chordCoordRingElt_at_infinity_tangent E h2t
+  have hAff : ∀ S ∈ E.points,
+      divisorOfD E (chordCoordRingElt E P P) (ECPoint.affine E S.1 S.2)
+        = (ordAt E (chordCoordRingElt E P P) S : ℤ) := by
+    intro S hS
+    rw [show divisorOfD E (chordCoordRingElt E P P) (ECPoint.affine E S.1 S.2)
+        = (ordAtPoint E (chordCoordRingElt E P P)
+            (ECPoint.affine E S.1 S.2) : ℤ) from ?_,
+        ordAtPoint_affine E _ hS]
+    rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff S.1 S.2).mpr (E.hOnCurve _ hS)))]
+    rfl
+  rw [Finset.sum_congr rfl hAff, ← Nat.cast_sum, hSum, hInf]
+  norm_num
+
+theorem chordCoordRingElt_degree_zero_vertical
+    (P Q : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hxx : P.1 = Q.1)
+    (hCase : P.2 ≠ Q.2 ∨ (P.2 = Q.2 ∧ P.2 = 0)) :
+    (∑ S ∈ E.points, divisorOfD E (chordCoordRingElt E P Q)
+        (ECPoint.affine E S.1 S.2))
+      + divisorOfD E (chordCoordRingElt E P Q) (0 : ECPoint E) = 0 := by
+  classical
+  have hSum := sum_ordAt_chordCoordRingElt_vertical E P Q hP hxx hCase
+  have hInf := divisorOfD_chordCoordRingElt_at_infinity_vertical E P Q hxx hCase
+  have hAff : ∀ S ∈ E.points,
+      divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E S.1 S.2)
+        = (ordAt E (chordCoordRingElt E P Q) S : ℤ) := by
+    intro S hS
+    rw [show divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E S.1 S.2)
+        = (ordAtPoint E (chordCoordRingElt E P Q)
+            (ECPoint.affine E S.1 S.2) : ℤ) from ?_,
+        ordAtPoint_affine E _ hS]
+    rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff S.1 S.2).mpr (E.hOnCurve _ hS)))]
+    rfl
+  rw [Finset.sum_congr rfl hAff, ← Nat.cast_sum, hSum, hInf]
+  norm_num
+
 end Divisor
