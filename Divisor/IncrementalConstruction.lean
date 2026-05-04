@@ -2574,4 +2574,126 @@ theorem commonRootMultRat_dvd_b
       (pow_dvd_pow _ (commonRootMultRat_le_rootMult_b E D x₀ hb))
       (pow_rootMultiplicity_dvd D.b x₀)
 
+/-- `commonRootMultRat E D x₀ > 0` iff both `D.a` and `D.b` evaluate to
+zero at `x₀` (allowing for the zero-polynomial cases). Equivalently,
+`(X − x₀)` divides both. -/
+theorem commonRootMultRat_pos_iff
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) (x₀ : ZMod E.q) :
+    0 < commonRootMultRat E D x₀ ↔
+      D.a.eval x₀ = 0 ∧ D.b.eval x₀ = 0 := by
+  unfold commonRootMultRat
+  by_cases ha : D.a = 0
+  · rw [if_pos ha]
+    have hb : D.b ≠ 0 := fun h => hD ⟨ha, h⟩
+    rw [Polynomial.rootMultiplicity_pos hb]
+    constructor
+    · intro hRoot
+      refine ⟨?_, hRoot⟩
+      rw [ha]; simp
+    · rintro ⟨_, hb_root⟩; exact hb_root
+  · rw [if_neg ha]
+    by_cases hb : D.b = 0
+    · rw [if_pos hb]
+      rw [Polynomial.rootMultiplicity_pos ha]
+      constructor
+      · intro hRoot
+        refine ⟨hRoot, ?_⟩
+        rw [hb]; simp
+      · rintro ⟨ha_root, _⟩; exact ha_root
+    · rw [if_neg hb]
+      rw [Nat.lt_min, Polynomial.rootMultiplicity_pos ha,
+          Polynomial.rootMultiplicity_pos hb]
+      simp [Polynomial.IsRoot]
+
+/-- When `commonRootMultRat E D x₀ = k + 1` (positive), `(D.divLin x₀)`
+has `commonRootMultRat = k`. Proof: dividing both `D.a` and `D.b` by
+`(X − x₀)` strips one common factor. -/
+theorem commonRootMultRat_divLin
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) (x₀ : ZMod E.q)
+    (hPos : 0 < commonRootMultRat E D x₀) :
+    commonRootMultRat E (D.divLin x₀) x₀ + 1 = commonRootMultRat E D x₀ := by
+  classical
+  -- Both D.a and D.b have (X - x₀) as factor.
+  obtain ⟨haEval, hbEval⟩ :=
+    (commonRootMultRat_pos_iff E D hD x₀).mp hPos
+  -- Divisor's rootMult shifts by 1 when dividing by (X - x_0) | D, for a nonzero D.
+  have rootMult_shift : ∀ (P : Polynomial (ZMod E.q)),
+      P ≠ 0 → P.eval x₀ = 0 →
+      P.rootMultiplicity x₀
+        = 1 + (P /ₘ (Polynomial.X - Polynomial.C x₀)).rootMultiplicity x₀ := by
+    intro P hP_ne hP_root
+    have hP_eq : P = (Polynomial.X - Polynomial.C x₀)
+                        * (P /ₘ (Polynomial.X - Polynomial.C x₀)) :=
+      (Polynomial.mul_divByMonic_eq_iff_isRoot.mpr hP_root).symm
+    conv_lhs => rw [hP_eq]
+    rw [Polynomial.rootMultiplicity_mul (hP_eq ▸ hP_ne)]
+    rw [Polynomial.rootMultiplicity_X_sub_C_self]
+  -- Helper: if D.a = 0 then divLin .a = 0; analogously for b.
+  have div_a_eq_zero_iff : (D.a /ₘ (Polynomial.X - Polynomial.C x₀)) = 0 ↔ D.a = 0 := by
+    constructor
+    · intro hdiv
+      have : D.a = (Polynomial.X - Polynomial.C x₀) * 0 := by
+        rw [← hdiv]
+        exact (Polynomial.mul_divByMonic_eq_iff_isRoot.mpr haEval).symm
+      simpa using this
+    · intro h; rw [h]; exact Polynomial.zero_divByMonic _
+  have div_b_eq_zero_iff : (D.b /ₘ (Polynomial.X - Polynomial.C x₀)) = 0 ↔ D.b = 0 := by
+    constructor
+    · intro hdiv
+      have : D.b = (Polynomial.X - Polynomial.C x₀) * 0 := by
+        rw [← hdiv]
+        exact (Polynomial.mul_divByMonic_eq_iff_isRoot.mpr hbEval).symm
+      simpa using this
+    · intro h; rw [h]; exact Polynomial.zero_divByMonic _
+  -- Now case-split on D.a, D.b zero/nonzero.
+  -- Show LHS in terms of rootMult of divLin's a, b.
+  -- Goal: commonRootMultRat E (D.divLin x₀) x₀ + 1 = commonRootMultRat E D x₀
+  by_cases ha : D.a = 0
+  · -- D.a = 0, so divLin .a = 0 too.
+    have hb : D.b ≠ 0 := fun h => hD ⟨ha, h⟩
+    have hdiv_a : (D.divLin x₀).a = 0 := div_a_eq_zero_iff.mpr ha
+    have hdiv_b : (D.divLin x₀).b ≠ 0 := by
+      rw [CoordRingElt.divLin_b]; exact div_b_eq_zero_iff.not.mpr hb
+    have h_lhs_eq : commonRootMultRat E (D.divLin x₀) x₀
+        = (D.divLin x₀).b.rootMultiplicity x₀ := by
+      unfold commonRootMultRat
+      rw [if_pos hdiv_a]
+    have h_rhs_eq : commonRootMultRat E D x₀ = D.b.rootMultiplicity x₀ := by
+      unfold commonRootMultRat
+      rw [if_pos ha]
+    rw [h_lhs_eq, h_rhs_eq, CoordRingElt.divLin_b]
+    have := rootMult_shift D.b hb hbEval; omega
+  · -- D.a ≠ 0, so divLin .a ≠ 0.
+    have hdiv_a : (D.divLin x₀).a ≠ 0 := by
+      rw [CoordRingElt.divLin_a]; exact div_a_eq_zero_iff.not.mpr ha
+    by_cases hb : D.b = 0
+    · -- D.b = 0, divLin .b = 0.
+      have hdiv_b : (D.divLin x₀).b = 0 := by
+        rw [CoordRingElt.divLin_b]; exact div_b_eq_zero_iff.mpr hb
+      have h_lhs_eq : commonRootMultRat E (D.divLin x₀) x₀
+          = (D.divLin x₀).a.rootMultiplicity x₀ := by
+        unfold commonRootMultRat
+        rw [if_neg hdiv_a, if_pos hdiv_b]
+      have h_rhs_eq : commonRootMultRat E D x₀ = D.a.rootMultiplicity x₀ := by
+        unfold commonRootMultRat
+        rw [if_neg ha, if_pos hb]
+      rw [h_lhs_eq, h_rhs_eq, CoordRingElt.divLin_a]
+      have := rootMult_shift D.a ha haEval; omega
+    · -- Both D.a, D.b ≠ 0.
+      have hdiv_b : (D.divLin x₀).b ≠ 0 := by
+        rw [CoordRingElt.divLin_b]; exact div_b_eq_zero_iff.not.mpr hb
+      have h_lhs_eq : commonRootMultRat E (D.divLin x₀) x₀
+          = min ((D.divLin x₀).a.rootMultiplicity x₀)
+                ((D.divLin x₀).b.rootMultiplicity x₀) := by
+        unfold commonRootMultRat
+        rw [if_neg hdiv_a, if_neg hdiv_b]
+      have h_rhs_eq : commonRootMultRat E D x₀
+          = min (D.a.rootMultiplicity x₀) (D.b.rootMultiplicity x₀) := by
+        unfold commonRootMultRat
+        rw [if_neg ha, if_neg hb]
+      rw [h_lhs_eq, h_rhs_eq, CoordRingElt.divLin_a, CoordRingElt.divLin_b]
+      have hMulA := rootMult_shift D.a ha haEval
+      have hMulB := rootMult_shift D.b hb hbEval
+      omega
+
 end Divisor
