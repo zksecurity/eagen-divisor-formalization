@@ -1589,12 +1589,80 @@ theorem ordAt_mul_add_at_lone_sheet_swap
   rw [mulCoordRingElt_comm, Nat.add_comm]
   exact ordAt_mul_add_at_lone_sheet E h₂ h₁ hP hY hD₂P hD₂negP hD₁P hD₁negP
 
--- TODO: ordAt_aux_fuel_irrelevant — at non-2-torsion P (P.2 ≠ 0), padding fuel
--- beyond the natDegree-sum bound doesn't change the recursion result. Strong
--- induction on D.a.natDegree + D.b.natDegree, using Da_Db_eval_zero_of_both_sheets_zero
--- at the twin-sheet branch for divLin natDegree-decrease. Once this is in place,
--- the wrapper-level twin-recursive identity ordAt = 1 + ordAt(D.divLin) follows,
--- which closes the twin × non-vanishing-fiber sub-case of ordAt_mul_add.
+/-! ## Fuel-irrelevance for `ordAt_nonTwoTorsion_aux`
+
+Padding fuel beyond `D.a.natDegree + D.b.natDegree + 1` doesn't change the
+recursion result, at non-2-torsion `P`. Strong induction on the
+natDegree-sum measure, using `divLin_natDegree_sum_lt` for the strict
+decrease and `Da_Db_eval_zero_of_both_sheets_zero` at the twin-sheet
+branch. -/
+
+private theorem ordAt_aux_fuel_irrelevant
+    {P : ZMod E.q × ZMod E.q} (hY : P.2 ≠ 0)
+    (s : ℕ) :
+    ∀ (D : CoordRingElt E.q),
+      D.a.natDegree + D.b.natDegree ≤ s →
+      ∀ (n m : ℕ), s + 1 ≤ n → s + 1 ≤ m →
+        ordAt_nonTwoTorsion_aux E n D P = ordAt_nonTwoTorsion_aux E m D P := by
+  classical
+  induction s with
+  | zero =>
+    intro D hMeas n m hn hm
+    obtain ⟨n', rfl⟩ : ∃ n', n = n' + 1 := ⟨n - 1, by omega⟩
+    obtain ⟨m', rfl⟩ : ∃ m', m = m' + 1 := ⟨m - 1, by omega⟩
+    show (if D.a = 0 ∧ D.b = 0 then 0
+          else if D.eval P.1 P.2 ≠ 0 then 0
+          else if D.eval P.1 (-P.2) ≠ 0 then Polynomial.rootMultiplicity P.1 (normPoly E D)
+          else 1 + ordAt_nonTwoTorsion_aux E n' (D.divLin P.1) P)
+        = (if D.a = 0 ∧ D.b = 0 then 0
+            else if D.eval P.1 P.2 ≠ 0 then 0
+            else if D.eval P.1 (-P.2) ≠ 0 then Polynomial.rootMultiplicity P.1 (normPoly E D)
+            else 1 + ordAt_nonTwoTorsion_aux E m' (D.divLin P.1) P)
+    by_cases hD : D.a = 0 ∧ D.b = 0
+    · rw [if_pos hD, if_pos hD]
+    · rw [if_neg hD, if_neg hD]
+      by_cases h1 : D.eval P.1 P.2 ≠ 0
+      · rw [if_pos h1, if_pos h1]
+      · rw [if_neg h1, if_neg h1]
+        by_cases h2 : D.eval P.1 (-P.2) ≠ 0
+        · rw [if_pos h2, if_pos h2]
+        · rw [if_neg h2, if_neg h2]
+          push_neg at h1 h2
+          obtain ⟨hax, hbx⟩ : D.a.eval P.1 = 0 ∧ D.b.eval P.1 = 0 :=
+            Da_Db_eval_zero_of_both_sheets_zero E D hY h1 h2
+          have hMeas' :=
+            divLin_natDegree_sum_lt E D hD hax hbx
+          omega
+  | succ s' IH =>
+    intro D hMeas n m hn hm
+    obtain ⟨n', rfl⟩ : ∃ n', n = n' + 1 := ⟨n - 1, by omega⟩
+    obtain ⟨m', rfl⟩ : ∃ m', m = m' + 1 := ⟨m - 1, by omega⟩
+    show (if D.a = 0 ∧ D.b = 0 then 0
+          else if D.eval P.1 P.2 ≠ 0 then 0
+          else if D.eval P.1 (-P.2) ≠ 0 then Polynomial.rootMultiplicity P.1 (normPoly E D)
+          else 1 + ordAt_nonTwoTorsion_aux E n' (D.divLin P.1) P)
+        = (if D.a = 0 ∧ D.b = 0 then 0
+            else if D.eval P.1 P.2 ≠ 0 then 0
+            else if D.eval P.1 (-P.2) ≠ 0 then Polynomial.rootMultiplicity P.1 (normPoly E D)
+            else 1 + ordAt_nonTwoTorsion_aux E m' (D.divLin P.1) P)
+    by_cases hD : D.a = 0 ∧ D.b = 0
+    · rw [if_pos hD, if_pos hD]
+    · rw [if_neg hD, if_neg hD]
+      by_cases h1 : D.eval P.1 P.2 ≠ 0
+      · rw [if_pos h1, if_pos h1]
+      · rw [if_neg h1, if_neg h1]
+        by_cases h2 : D.eval P.1 (-P.2) ≠ 0
+        · rw [if_pos h2, if_pos h2]
+        · rw [if_neg h2, if_neg h2]
+          push_neg at h1 h2
+          obtain ⟨hax, hbx⟩ : D.a.eval P.1 = 0 ∧ D.b.eval P.1 = 0 :=
+            Da_Db_eval_zero_of_both_sheets_zero E D hY h1 h2
+          have hMeas' :=
+            divLin_natDegree_sum_lt E D hD hax hbx
+          have hMeas'' :
+              (D.divLin P.1).a.natDegree + (D.divLin P.1).b.natDegree ≤ s' := by
+            omega
+          rw [IH (D.divLin P.1) hMeas'' n' m' (by omega) (by omega)]
 
 /-! ## `divisorOfD` additivity at infinity
 
