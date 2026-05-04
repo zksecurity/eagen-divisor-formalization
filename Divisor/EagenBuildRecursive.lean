@@ -507,6 +507,67 @@ theorem honestDivisorCoeffs_at_affine_split
   rcases Q with ⟨x, y⟩
   rfl
 
+/-! ## Indicator-term reduction
+
+The "indicator" component of `honestDivisorCoeffs` (the `(if (x,y) = -P_target then 1 else 0)`
+term), summed over E.points and weighted by L(Q)^{-1}, reduces to `L(-P_target)^{-1}`. -/
+
+theorem indicator_sum_eq_eval_at_negTarget
+    (target : ZMod E.q × ZMod E.q) (h_negT : (target.1, -target.2) ∈ E.points)
+    (f : ZMod E.q × ZMod E.q → ZMod E.q) :
+    (∑ Q ∈ E.points,
+        ((if Q = (target.1, -target.2) then (1 : ℤ) else 0) : ZMod E.q) * f Q)
+      = f (target.1, -target.2) := by
+  classical
+  rw [Finset.sum_eq_single (target.1, -target.2)]
+  · simp
+  · intro b _ hb
+    rw [if_neg hb]
+    push_cast
+    ring
+  · intro h
+    exact absurd h_negT h
+
+/-! ## Bases-term reduction
+
+The "bases-sum" component of `honestDivisorCoeffs`, summed over E.points
+and weighted by L(Q)^{-1}, reduces to `∑_i (scalars i) · L(bases i)^{-1}`.
+Requires bases i ∈ E.points for all i. -/
+
+theorem bases_sum_eq_index_sum
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (h_bases : ∀ i : Fin stmt.k, stmt.bases i ∈ E.points)
+    (f : ZMod E.q × ZMod E.q → ZMod E.q) :
+    (∑ Q ∈ E.points, ((∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
+      (fun i => stmt.bases i = Q), (wit.scalars (hk ▸ i) : ℤ)) : ZMod E.q) * f Q)
+      = (Finset.univ : Finset (Fin stmt.k)).sum
+          (fun i => ((wit.scalars (hk ▸ i) : ℤ) : ZMod E.q) * f (stmt.bases i)) := by
+  classical
+  -- Convert the inner filter-sum to an indicator sum.
+  rw [show (∑ Q ∈ E.points, ((∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
+    (fun i => stmt.bases i = Q), (wit.scalars (hk ▸ i) : ℤ)) : ZMod E.q) * f Q)
+    = (∑ Q ∈ E.points, ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)),
+        ((if stmt.bases i = Q then (wit.scalars (hk ▸ i) : ℤ) else 0) : ZMod E.q) * f Q) from by
+    apply Finset.sum_congr rfl
+    intro Q _
+    rw [Finset.sum_filter]
+    push_cast
+    rw [Finset.sum_mul]]
+  -- Swap the sums (inner is now Q-dependent only via the if-branch, but the index set is fixed).
+  rw [Finset.sum_comm]
+  -- Now: ∑_i ∑_Q (if bases i = Q then scalars i else 0 : ZMod) · f Q.
+  apply Finset.sum_congr rfl
+  intro i _
+  -- For each i, only Q = bases i contributes.
+  rw [Finset.sum_eq_single (stmt.bases i)]
+  · simp
+  · intro b _ hb
+    rw [if_neg (Ne.symm hb)]
+    push_cast
+    ring
+  · intro h
+    exact absurd (h_bases i) h
+
 /-! ## Notes on remaining infrastructure for any-k completeness
 
 To prove `ma_completeness_via_isHonestForExplicit` for ANY k, we need:
