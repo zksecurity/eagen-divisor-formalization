@@ -1132,14 +1132,19 @@ theorem ma_completeness_via_isHonestForExplicit
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
     (h_negT : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases : ∀ i : Fin stmt.k, stmt.bases i ∈ E.points)
-    (h_m_eq_scalars : ∀ i : Fin stmt.k,
-      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ℤ) : ZMod E.q))
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+  -- The scalar reduction (`isHonestFor`'s first conjunct) gives us h_m_eq_scalars.
+  have h_m_eq_scalars : ∀ i : Fin stmt.k,
+      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ℤ) : ZMod E.q) := by
+    intro i
+    have := h_honest.1.1 i
+    push_cast at this
+    convert this
   apply ma_completeness_via_isHonestForExplicit_no_residue_match E stmt wit hk msg hkm
     h_honest hD
     (splitsOnE_of_isHonestForExplicit E stmt wit hk msg hkm h_honest hD)
