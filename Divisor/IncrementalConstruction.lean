@@ -3070,4 +3070,25 @@ theorem cross_case_commonRootMult_pos
   obtain ⟨hax, hbx⟩ := cross_case_mul_a_b_vanish E hP hY hD₁P hD₂negP
   exact (commonRootMultRat_pos_iff E _ hMul_NZ P.1).mpr ⟨hax, hbx⟩
 
+/-! ## "Specialize Y to y₀" identity
+
+For any `D = a − b·Y` and any constant `y₀`, define `D⁺ := D.a − D.b · C y₀`
+(treat as polynomial in X, with Y replaced by y₀). The product
+`D₁ · D₂` (in the coordinate ring with `Y² = curveX`) satisfies:
+
+  `(D₁·D₂)⁺ = D₁⁺ · D₂⁺ + D₁.b · D₂.b · (curveX − C (y₀²))`
+
+This is the algebraic core of the cross-case derivative formula. Used
+via differentiation to relate `T'(x₀)` to `(normPoly D₁)'(x₀)`. -/
+
+theorem mulCoordRingElt_specialY_identity
+    (D₁ D₂ : CoordRingElt E.q) (y₀ : ZMod E.q) :
+    (mulCoordRingElt E D₁ D₂).a - (mulCoordRingElt E D₁ D₂).b * Polynomial.C y₀
+      = (D₁.a - D₁.b * Polynomial.C y₀) * (D₂.a - D₂.b * Polynomial.C y₀)
+        + D₁.b * D₂.b * (curveX E - Polynomial.C (y₀ ^ 2)) := by
+  show D₁.a * D₂.a + D₁.b * D₂.b * curveX E
+        - (D₁.a * D₂.b + D₂.a * D₁.b) * Polynomial.C y₀ = _
+  rw [Polynomial.C_pow]
+  ring
+
 end Divisor
