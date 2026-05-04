@@ -99,6 +99,46 @@ theorem chord_deriv_denom_factor_at_A₀
   have h_A2x : A₂x = lam ^ 2 - A₀.1 - A₁.1 := rfl
   linear_combination -hVieta'
 
+theorem chord_deriv_denom_factor_at_A₁
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
+    (hNV : A₀.1 ≠ A₁.1) :
+    let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
+    let A₂x := lam ^ 2 - A₀.1 - A₁.1
+    3 * A₁.1 ^ 2 + E.curveA - 2 * lam * A₁.2
+      = (A₁.1 - A₀.1) * (A₁.1 - A₂x) := by
+  intro lam A₂x
+  have hVieta := chord_x_pairwise_sum E A₀ A₁ hA₀ hA₁ hNV
+  simp only [show (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 : ZMod E.q) = lam from rfl] at hVieta
+  have hVieta' : A₀.1 * A₁.1 + A₀.1 * A₂x + A₁.1 * A₂x
+      = E.curveA - 2 * lam * (A₀.2 - lam * A₀.1) := hVieta
+  have h_A2x : A₂x = lam ^ 2 - A₀.1 - A₁.1 := rfl
+  -- Slope: lam · (A_1.x - A_0.x) = A_1.y - A_0.y.
+  have hSlope : lam * (A₁.1 - A₀.1) = A₁.2 - A₀.2 := by
+    show slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (A₁.1 - A₀.1) = A₁.2 - A₀.2
+    unfold slopeOf
+    have hne : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm hNV)
+    field_simp
+  linear_combination -hVieta' + 2 * lam * hSlope
+
+theorem chord_deriv_denom_factor_at_A₂
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
+    (hNV : A₀.1 ≠ A₁.1) :
+    let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
+    let A₂x := lam ^ 2 - A₀.1 - A₁.1
+    let A₂y := lam * A₂x + (A₀.2 - lam * A₀.1)
+    3 * A₂x ^ 2 + E.curveA - 2 * lam * A₂y
+      = (A₂x - A₀.1) * (A₂x - A₁.1) := by
+  intro lam A₂x A₂y
+  have hVieta := chord_x_pairwise_sum E A₀ A₁ hA₀ hA₁ hNV
+  simp only [show (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 : ZMod E.q) = lam from rfl] at hVieta
+  have hVieta' : A₀.1 * A₁.1 + A₀.1 * A₂x + A₁.1 * A₂x
+      = E.curveA - 2 * lam * (A₀.2 - lam * A₀.1) := hVieta
+  have h_A2x : A₂x = lam ^ 2 - A₀.1 - A₁.1 := rfl
+  have h_A2y : A₂y = lam * A₂x + (A₀.2 - lam * A₀.1) := rfl
+  linear_combination -hVieta'
+
 /-! ## hQline derivation: chord doesn't pass through any zero
 
 For length-4 `D = eagenBuild_length4`, `zerosFinset = {P_0..P_3}`. A
