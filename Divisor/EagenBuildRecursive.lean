@@ -1034,4 +1034,89 @@ theorem normPoly_splits_of_isHonestForExplicit
   rw [← sum_rootMultiplicity_eq_card_roots]
   exact hSum_rootMult_eq
 
+/-! ## Step 6: fiber rationality
+
+Every root α of normPoly E msg.toD has a y-lift in E.points.
+Reason: rootMult > 0 + fiber sum equality from pinching ⇒ fiber non-empty. -/
+
+theorem fiber_rationality_of_isHonestForExplicit
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
+    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
+    ∀ α ∈ (normPoly E msg.toD).roots, ∃ y : ZMod E.q, (α, y) ∈ E.points := by
+  classical
+  intro α hα
+  -- α has rootMult > 0.
+  have hRootMult_pos : 0 < rootMultiplicity α (normPoly E msg.toD) := by
+    rw [Polynomial.mem_roots (normPoly_ne_zero E msg.toD hD)] at hα
+    exact (Polynomial.rootMultiplicity_pos (normPoly_ne_zero E msg.toD hD)).mpr hα
+  -- From the pinching equality (proved in normPoly_splits_of_isHonestForExplicit),
+  -- ∑ x₀, fiber_sum x₀ = ∑ x₀, rootMult x₀.
+  -- With pointwise fiber_sum ≤ rootMult, and total equality, pointwise equality holds.
+  have hSum := hAccount_of_isHonestForExplicit E stmt wit hk msg hkm h_honest
+  have hFiber_sum_eq_total : (∑ x₀ : ZMod E.q,
+      ∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E msg.toD P)
+        = ∑ Q ∈ E.points, ordAt E msg.toD Q := by
+    rw [sum_E_points_eq_sum_fiberwise E (fun P => ordAt E msg.toD P)]
+  have hFiber_le : ∀ x₀ : ZMod E.q,
+      (∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E msg.toD P)
+        ≤ rootMultiplicity x₀ (normPoly E msg.toD) :=
+    fun x₀ => sum_ordAt_fst_eq_le E msg.toD hD x₀
+  have hRootMult_le_natDegree :
+      ∑ x₀ : ZMod E.q, rootMultiplicity x₀ (normPoly E msg.toD)
+        ≤ (normPoly E msg.toD).natDegree :=
+    sum_rootMultiplicity_le_natDegree E (normPoly E msg.toD)
+  have hSum_eq : ∑ x₀ : ZMod E.q, rootMultiplicity x₀ (normPoly E msg.toD)
+        = (normPoly E msg.toD).natDegree := by
+    have h1 : (∑ Q ∈ E.points, ordAt E msg.toD Q)
+            ≤ ∑ x₀ : ZMod E.q, rootMultiplicity x₀ (normPoly E msg.toD) := by
+      rw [← hFiber_sum_eq_total]
+      exact Finset.sum_le_sum (fun x₀ _ => hFiber_le x₀)
+    omega
+  -- Pointwise equality: fiber_sum = rootMult at each x₀.
+  have hFiber_eq_rootMult : ∀ x₀ : ZMod E.q,
+      (∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E msg.toD P)
+        = rootMultiplicity x₀ (normPoly E msg.toD) := by
+    -- Total equality + pointwise inequality ⇒ pointwise equality.
+    have h_total_fiber : (∑ x₀ : ZMod E.q,
+        ∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E msg.toD P)
+          = ∑ x₀ : ZMod E.q, rootMultiplicity x₀ (normPoly E msg.toD) := by
+      rw [hFiber_sum_eq_total, hSum, hSum_eq]
+    intro x₀
+    by_contra h_ne
+    have h_lt : (∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E msg.toD P)
+                < rootMultiplicity x₀ (normPoly E msg.toD) :=
+      lt_of_le_of_ne (hFiber_le x₀) h_ne
+    have h_strict : (∑ x₀ : ZMod E.q,
+        ∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E msg.toD P)
+          < ∑ x₀ : ZMod E.q, rootMultiplicity x₀ (normPoly E msg.toD) :=
+      Finset.sum_lt_sum (fun x₀ _ => hFiber_le x₀) ⟨x₀, Finset.mem_univ _, h_lt⟩
+    omega
+  -- At α, fiber_sum = rootMult > 0, so fiber is nonempty.
+  have hFiber_pos : 0 <
+      ∑ P ∈ E.points.filter (fun P => P.1 = α), ordAt E msg.toD P := by
+    rw [hFiber_eq_rootMult α]
+    exact hRootMult_pos
+  have hFiber_nonempty : (E.points.filter (fun P => P.1 = α)).Nonempty := by
+    by_contra h
+    rw [Finset.not_nonempty_iff_eq_empty] at h
+    rw [h, Finset.sum_empty] at hFiber_pos
+    exact lt_irrefl 0 hFiber_pos
+  obtain ⟨P, hP⟩ := hFiber_nonempty
+  refine ⟨P.2, ?_⟩
+  rw [show α = P.1 from (Finset.mem_filter.mp hP).2.symm]
+  exact (Finset.mem_filter.mp hP).1
+
+/-! ## Final: splitsOnE from IsHonestForExplicit -/
+
+theorem splitsOnE_of_isHonestForExplicit
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
+    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
+    splitsOnE E msg.toD :=
+  ⟨normPoly_splits_of_isHonestForExplicit E stmt wit hk msg hkm h_honest hD,
+   fiber_rationality_of_isHonestForExplicit E stmt wit hk msg hkm h_honest hD⟩
+
 end Divisor
