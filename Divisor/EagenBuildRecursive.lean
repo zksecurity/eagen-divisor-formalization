@@ -79,6 +79,18 @@ noncomputable def EagenAccum.fromChordPair_distinct
   -- Third intersection is (Qx, Qy). The "next-level input" is its negation.
   { point := (Qx, -Qy), poly := chord }
 
+/-- Build a level-1 accumulator from two points that are negatives of
+    each other (`P = -Q`, so same x, opposite y, sum-zero in group law).
+    The chord through `(P, -P)` is the vertical line `(X - x(P))`, which
+    has divisor `(P) + (-P) - 2·O`. The "third intersection" is `O`;
+    the new accumulator carries the vertical line as polynomial and `P`
+    as point (sentinel — actual contribution is at infinity). -/
+noncomputable def EagenAccum.fromChordPair_vertical
+    (P Q : ZMod E.q × ZMod E.q) (_h_xx : P.1 = Q.1) (_h_yy : P.2 = -Q.2) :
+    EagenAccum E :=
+  { point := P,  -- Sentinel; level transitions handle this.
+    poly := { a := Polynomial.X - Polynomial.C P.1, b := 0 } }
+
 /-- Process the initial input list, pairing adjacent points and building
     chord lines. Returns the level-1 accumulator list. Odd input lengths
     carry the last point forward as `(P_last, 1)`. -/
@@ -90,9 +102,13 @@ noncomputable def eagenBuild_level0 (Ps : List (ZMod E.q × ZMod E.q)) :
   | P :: Q :: rest =>
       if h : P.1 ≠ Q.1 then
         EagenAccum.fromChordPair_distinct E P Q h :: eagenBuild_level0 rest
+      else if hYY : P.2 = -Q.2 then
+        -- Vertical chord case: P = -Q.
+        EagenAccum.fromChordPair_vertical E P Q
+          (Classical.byContradiction (fun h_neq => h h_neq)) hYY ::
+          eagenBuild_level0 rest
       else
-        -- Tangent doubling or vertical chord: handled separately.
-        -- For now, fail-safely return a placeholder.
+        -- Tangent doubling case (P = Q): deferred.
         { point := P, poly := { a := 1, b := 0 } } :: eagenBuild_level0 rest
 
 /-! ## Level-(k+1) step (k ≥ 1): combine two level-k accumulators
