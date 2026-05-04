@@ -401,6 +401,54 @@ This subsumes the cross case and is the cleanest formulation: it says
 `mulCoordRingElt_comm`), the same holds when `D₁(P) ≠ 0`. Combined,
 this gives ordAt-additivity in all cases except both factors vanishing
 at P (which is then handled via mulCoordRingElt_divLin_left descent).
+
+### Cross-case sub-lemma needed
+
+The cross case (D₁ lone at P, D₂ lone at -P) requires a structural
+invariant about iterDivLin's progression. Codex's exact statement:
+
+```lean
+theorem cross_iterDivLin_invariant
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (h₁P : D₁.eval P.1 P.2 = 0) (h₁n : D₁.eval P.1 (-P.2) ≠ 0)
+    (h₂P : D₂.eval P.1 P.2 ≠ 0) (h₂n : D₂.eval P.1 (-P.2) = 0) :
+    let m₁ := rootMultiplicity P.1 (normPoly E D₁)
+    let m₂ := rootMultiplicity P.1 (normPoly E D₂)
+    let D₁₂ := mulCoordRingElt E D₁ D₂
+    commonRootMultRat E D₁₂ P.1 = min m₁ m₂ ∧
+      ((iterDivLin E D₁₂ P.1 (min m₁ m₂)).eval P.1 P.2 = 0 ↔ m₂ < m₁)
+```
+
+Then the cross case in `ordAt_mul_of_right_eval_ne_zero` follows by
+`lt_trichotomy` on `m₁` vs `m₂`. (Codex's tactic sketch in the
+consultation log.)
+
+#### Proof outline for cross_iterDivLin_invariant
+
+The proof uses the **derivative formula** for iterated divLin: for a
+polynomial `Q ∈ Polynomial (ZMod E.q)` with `Q(x₀) = 0`, we have
+`(Q /ₘ (X - C x₀))(x₀) = Q'(x₀)`. Iterating: T_r(P) = (D₀⁺)^(r)(x₀),
+where D₀⁺ := (D₁·D₂).a - (D₁·D₂).b·y₀.
+
+Hence T_r(P) = 0 iff `r < rootMult x₀ D₀⁺`. The crux: in cross case,
+**rootMult x₀ D₀⁺ = m₁** (the multiplicity of D₁ at P). Similarly
+rootMult x₀ D₀⁻ = m₂.
+
+This isn't obvious because D₀⁺ = D₁⁺·D₂⁺ + D₁.b·D₂.b·(X-x₀)·g, where
+`g := (curveX - y₀²)/(X - x₀)`. In the special case where D₁⁺ = 0 as
+a polynomial (degenerate; D₁.a = y₀·D₁.b), the correction term carries
+all the rootMult — and luckily it equals m₁ via the formula
+`m₁ = 1 + 2·rootMult D₁.b + rootMult g`.
+
+In the non-degenerate case, the rootMult of D₀⁺ is governed by the
+structure of D₁'s vanishing at P together with the base curve's
+local geometry.
+
+**Pragmatic alternative:** prove the claim via the closed-form on
+both `D₁` and `D₁·D₂`, using `ordAt_nonTwoTorsion_pair_eq_rootMult`
+(pair-sum) and the existing structure to constrain k₁₂ + branch.
 6. Then proceed with eagenBuild driver + correctness:
    - Define `eagenBuild` recursively on lists of `ECPoint E`.
    - Base cases (length 2, 3) reuse existing `chordCoordRingElt`.
