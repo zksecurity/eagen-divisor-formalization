@@ -2075,4 +2075,129 @@ theorem divisorOfD_chordCoordRingElt_chord_distinct
     rfl
   · exact divisorOfD_chordCoordRingElt_at_infinity_nonvertical E P Q hxx
 
+/-- Tangent case: divisorOfD at P is 2, at A₂ is 1, at infinity is -3. -/
+theorem divisorOfD_chordCoordRingElt_tangent
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (h2t : P.2 ≠ 0)
+    (hP_neq_A2 : P.1 ≠ ((3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹) ^ 2 - 2 * P.1) :
+    let lam := (3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹
+    let mu := P.2 - lam * P.1
+    let x₂ := lam ^ 2 - 2 * P.1
+    let A₂ := (x₂, lam * x₂ + mu)
+    divisorOfD E (chordCoordRingElt E P P) (ECPoint.affine E P.1 P.2) = 2
+    ∧ divisorOfD E (chordCoordRingElt E P P) (ECPoint.affine E A₂.1 A₂.2) = 1
+    ∧ divisorOfD E (chordCoordRingElt E P P) (0 : ECPoint E) = -3 := by
+  intro lam mu x₂ A₂
+  have hOrdP := chord_ordAt_eq_two_at_tangent E hP h2t hP_neq_A2
+  have hOrdA₂ := chord_ordAt_eq_one_at_tangent_third E hP h2t hP_neq_A2
+  -- A₂ is on E.
+  have hA₂ : A₂ ∈ E.points := by
+    apply E.hComplete
+    -- Use the proven tangent normPoly factorisation: x₂ is a root.
+    have hF := normPoly_chord_factor_tangent E hP h2t
+    simp only at hF
+    have hN : normPoly E (chordCoordRingElt E P P) =
+        (C lam * X + C mu) ^ 2 - curveX E := by
+      rw [normPoly_eq]
+      unfold chordCoordRingElt
+      rw [dif_pos rfl, dif_pos rfl, if_neg h2t]
+      ring
+    have hRoot : ((C lam * X + C mu) ^ 2 - curveX E).eval x₂ = 0 := by
+      rw [← hN, hF]
+      simp only [Polynomial.eval_neg, Polynomial.eval_mul, Polynomial.eval_pow,
+                 Polynomial.eval_sub, Polynomial.eval_C, Polynomial.eval_X]
+      have hzz : x₂ - (((3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹) ^ 2 - 2 * P.1) = 0 := by
+        show (((3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹) ^ 2 - 2 * P.1)
+              - (((3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹) ^ 2 - 2 * P.1) = 0
+        ring
+      rw [hzz]
+      ring
+    unfold curveX at hRoot
+    simp only [Polynomial.eval_sub, Polynomial.eval_pow, Polynomial.eval_add,
+               Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_X] at hRoot
+    show A₂.2 ^ 2 = A₂.1 ^ 3 + E.curveA * A₂.1 + E.curveB
+    show (lam * x₂ + mu) ^ 2 = x₂ ^ 3 + E.curveA * x₂ + E.curveB
+    linear_combination hRoot
+  refine ⟨?_, ?_, ?_⟩
+  · rw [show divisorOfD E (chordCoordRingElt E P P) (ECPoint.affine E P.1 P.2)
+        = (ordAtPoint E (chordCoordRingElt E P P)
+            (ECPoint.affine E P.1 P.2) : ℤ) from ?_,
+        ordAtPoint_affine E _ hP, hOrdP]
+    rfl
+    rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP)))]
+    rfl
+  · rw [show divisorOfD E (chordCoordRingElt E P P) (ECPoint.affine E A₂.1 A₂.2)
+        = (ordAtPoint E (chordCoordRingElt E P P)
+            (ECPoint.affine E A₂.1 A₂.2) : ℤ) from ?_,
+        ordAtPoint_affine E _ hA₂, hOrdA₂]
+    rfl
+    rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff A₂.1 A₂.2).mpr (E.hOnCurve _ hA₂)))]
+    rfl
+  · exact divisorOfD_chordCoordRingElt_at_infinity_tangent E h2t
+
+/-- Vertical-inverse case: divisorOfD at P is 1, at Q = (P.1,-P.2) is 1,
+    at infinity is -2. -/
+theorem divisorOfD_chordCoordRingElt_vertical_inverse
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (h2t : P.2 ≠ 0) :
+    let Q : ZMod E.q × ZMod E.q := (P.1, -P.2)
+    Q ∈ E.points ∧
+    divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E P.1 P.2) = 1
+    ∧ divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E Q.1 Q.2) = 1
+    ∧ divisorOfD E (chordCoordRingElt E P Q) (0 : ECPoint E) = -2 := by
+  intro Q
+  obtain ⟨hQ, hOrdP, hOrdQ⟩ := chord_ordAt_eq_one_at_vertical_inverse E P hP h2t
+  refine ⟨hQ, ?_, ?_, ?_⟩
+  · rw [show divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E P.1 P.2)
+        = (ordAtPoint E (chordCoordRingElt E P Q)
+            (ECPoint.affine E P.1 P.2) : ℤ) from ?_,
+        ordAtPoint_affine E _ hP, hOrdP]
+    rfl
+    rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP)))]
+    rfl
+  · rw [show divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E Q.1 Q.2)
+        = (ordAtPoint E (chordCoordRingElt E P Q)
+            (ECPoint.affine E Q.1 Q.2) : ℤ) from ?_,
+        ordAtPoint_affine E _ hQ, hOrdQ]
+    rfl
+    rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff Q.1 Q.2).mpr (E.hOnCurve _ hQ)))]
+    rfl
+  · refine divisorOfD_chordCoordRingElt_at_infinity_vertical E P Q rfl
+      (Or.inl ?_)
+    show P.2 ≠ Q.2
+    intro h
+    -- Q.2 = -P.2, so P.2 = -P.2 hence 2 P.2 = 0.
+    have h' : P.2 = -P.2 := h
+    have h2 : (2 : ZMod E.q) * P.2 = 0 := by linear_combination h'
+    have h2NZ : (2 : ZMod E.q) ≠ 0 := by
+      have hq5 : E.q ≥ 5 := E.hq_ge
+      have hcast : (2 : ZMod E.q) = ((2 : ℕ) : ZMod E.q) := by norm_cast
+      rw [hcast, Ne, CharP.cast_eq_zero_iff (ZMod E.q) E.q]
+      intro hdvd
+      have : E.q ≤ 2 := Nat.le_of_dvd (by norm_num) hdvd
+      omega
+    apply h2t
+    rcases mul_eq_zero.mp h2 with hh | hh
+    · exact absurd hh h2NZ
+    · exact hh
+
+/-- 2-torsion vertical case: divisorOfD at P is 2, at infinity is -2. -/
+theorem divisorOfD_chordCoordRingElt_2torsion
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (h2t : P.2 = 0) :
+    divisorOfD E (chordCoordRingElt E P P) (ECPoint.affine E P.1 P.2) = 2
+    ∧ divisorOfD E (chordCoordRingElt E P P) (0 : ECPoint E) = -2 := by
+  have hOrdP := chord_ordAt_eq_two_at_2torsion_doubling E hP h2t
+  refine ⟨?_, ?_⟩
+  · rw [show divisorOfD E (chordCoordRingElt E P P) (ECPoint.affine E P.1 P.2)
+        = (ordAtPoint E (chordCoordRingElt E P P)
+            (ECPoint.affine E P.1 P.2) : ℤ) from ?_,
+        ordAtPoint_affine E _ hP, hOrdP]
+    rfl
+    rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP)))]
+    rfl
+  · exact divisorOfD_chordCoordRingElt_at_infinity_vertical E P P rfl (Or.inr ⟨rfl, h2t⟩)
+
 end Divisor
