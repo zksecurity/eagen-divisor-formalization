@@ -500,10 +500,60 @@ theorem card_filter_product_fiber_eq
     simp only [Finset.mem_coe, Finset.mem_filter, Finset.mem_product] at hp
     exact hp.1.1
 
--- TODO: thirdPoint_symm — at the chord branch, both chord coordinates
--- and slope are symmetric in (A₀, A₁) (slopeOf is symmetric per
--- ClearedPolyForm.slopeOf_symm). Once proven, gives S_6 = swap of S_5
--- as a Finset, hence |S_6| ≤ |E.numAffine|.
+/-! ## Symmetry of `thirdPoint`
+
+For the chord branch (`A₀.1 ≠ A₁.1`), `slopeOf` is symmetric in
+`(A₀, A₁)` (just sign-twiddling on the inverse). The chord-line third
+intersection is uniquely determined by the chord, hence symmetric. -/
+
+private theorem slopeOf_symm_local (x₀ y₀ x₁ y₁ : ZMod E.q) :
+    slopeOf x₀ y₀ x₁ y₁ = slopeOf x₁ y₁ x₀ y₀ := by
+  unfold slopeOf
+  by_cases h : x₀ = x₁
+  · subst h
+    have : (x₀ - x₀ : ZMod E.q) = 0 := sub_self x₀
+    rw [this]; simp
+  · rw [show (x₀ - x₁ : ZMod E.q) = -(x₁ - x₀) from by ring, inv_neg]
+    ring
+
+theorem thirdPoint_symm (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    thirdPoint E A₀ A₁ = thirdPoint E A₁ A₀ := by
+  unfold thirdPoint
+  by_cases hxx : A₀.1 = A₁.1
+  · rw [if_pos hxx, if_pos hxx.symm]
+    by_cases hyy : A₀.2 = A₁.2
+    · rw [if_pos hyy, if_pos hyy.symm]
+      by_cases h2t0 : A₀.2 = 0
+      · rw [if_pos h2t0, if_pos (hyy ▸ h2t0)]
+      · rw [if_neg h2t0, if_neg (fun h => h2t0 (hyy ▸ h))]
+        -- Both sides are tangent at coincident point. A₀ = A₁, so identical.
+        have : A₀ = A₁ := Prod.ext hxx hyy
+        rw [this]
+    · rw [if_neg hyy, if_neg (Ne.symm hyy)]
+  · rw [if_neg hxx, if_neg (Ne.symm hxx)]
+    -- Chord case. Use slopeOf symmetry.
+    have hsl : (A₁.2 - A₀.2) * (A₁.1 - A₀.1)⁻¹
+              = (A₀.2 - A₁.2) * (A₀.1 - A₁.1)⁻¹ :=
+      slopeOf_symm_local E A₀.1 A₀.2 A₁.1 A₁.2
+    set lam := (A₁.2 - A₀.2) * (A₁.1 - A₀.1)⁻¹ with hlam
+    have hsym : (A₀.2 - A₁.2) * (A₀.1 - A₁.1)⁻¹ = lam := hsl.symm
+    rw [hsym]
+    -- Now both sides have the same `lam`. Need: x₂ and y₂ symmetric in inputs.
+    rw [Option.some.injEq, Prod.mk.injEq]
+    refine ⟨by ring, ?_⟩
+    -- y₂ symmetric: lam·x₂ + (A₀.2 - lam·A₀.1) = lam·x₂' + (A₁.2 - lam·A₁.1)
+    -- where x₂ = lam² - A₀.1 - A₁.1, x₂' = lam² - A₁.1 - A₀.1 (= same).
+    -- So just need: A₀.2 - lam·A₀.1 = A₁.2 - lam·A₁.1.
+    -- I.e., A₁.2 - A₀.2 = lam·(A₁.1 - A₀.1).
+    -- This is the slope identity (cleared of inverse).
+    have hxne : (A₁.1 - A₀.1 : ZMod E.q) ≠ 0 := sub_ne_zero.mpr (Ne.symm hxx)
+    have hsl_clear : lam * (A₁.1 - A₀.1) = A₁.2 - A₀.2 := by
+      rw [hlam]
+      field_simp
+    -- Need: lam·x₂ + (A₀.2 - lam·A₀.1) = lam·(lam² - A₁.1 - A₀.1) + (A₁.2 - lam·A₁.1).
+    have hx2_eq : lam ^ 2 - A₀.1 - A₁.1 = lam ^ 2 - A₁.1 - A₀.1 := by ring
+    rw [hx2_eq]
+    linear_combination hsl_clear
 
 /-- Cardinality bound for the tangent-collision-at-A₀ set:
     `|tangentCollisionAtA₀| ≤ |E.points|`. -/
@@ -522,6 +572,41 @@ theorem card_tangentCollisionAtA₀_le :
         Finset.sum_le_sum (fun A₀ hA₀ => card_thirdPoint_eq_self_fiber E hA₀)
     _ = E.points.card := by rw [Finset.sum_const, smul_eq_mul]; ring
     _ = E.numAffine := rfl
+
+/-- Tangent-collision-at-A₁ Finset (the symmetric counterpart). -/
+noncomputable def tangentCollisionAtA₁ :
+    Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+  (E.points ×ˢ E.points).filter (fun p => thirdPoint E p.1 p.2 = some p.2)
+
+/-- Cardinality bound: `|tangentCollisionAtA₁| ≤ |E.points|`. Via swap
+    bijection from `tangentCollisionAtA₀` (using `thirdPoint_symm`). -/
+theorem card_tangentCollisionAtA₁_le :
+    (tangentCollisionAtA₁ E).card ≤ E.numAffine := by
+  classical
+  -- Bijection: (A_0, A_1) ↔ (A_1, A_0) maps tangentCollisionAtA₁ to tangentCollisionAtA₀.
+  have hbij : (tangentCollisionAtA₁ E).card = (tangentCollisionAtA₀ E).card := by
+    apply Finset.card_bij (fun (p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) _ =>
+      (p.2, p.1))
+    · -- Map preserves membership.
+      intro p hp
+      simp only [tangentCollisionAtA₁, Finset.mem_filter, Finset.mem_product] at hp
+      simp only [tangentCollisionAtA₀, Finset.mem_filter, Finset.mem_product]
+      refine ⟨⟨hp.1.2, hp.1.1⟩, ?_⟩
+      rw [thirdPoint_symm]; exact hp.2
+    · -- Injectivity.
+      intro p _ q _ heq
+      apply Prod.ext
+      · exact congrArg Prod.snd heq
+      · exact congrArg Prod.fst heq
+    · -- Surjectivity.
+      intro p hp
+      simp only [tangentCollisionAtA₀, Finset.mem_filter, Finset.mem_product] at hp
+      refine ⟨(p.2, p.1), ?_, rfl⟩
+      simp only [tangentCollisionAtA₁, Finset.mem_filter, Finset.mem_product]
+      refine ⟨⟨hp.1.2, hp.1.1⟩, ?_⟩
+      rw [thirdPoint_symm]; exact hp.2
+  rw [hbij]
+  exact card_tangentCollisionAtA₀_le E
 
 /-! ## Standalone: third-point-affine zeros of D on E × E
 
