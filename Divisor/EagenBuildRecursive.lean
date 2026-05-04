@@ -220,6 +220,27 @@ proof requires careful unfolding of the recursive structure and
 matching against the explicit length-4 formula. Substantial bookkeeping
 deferred to subsequent firings. -/
 
+/-! ## `IsHonestForExplicit` predicate (any-k completeness path)
+
+Per Codex's guidance: rather than deriving completeness from a specific
+constructive `eagenBuild` build, take the divisor identity as a stronger
+hypothesis. This handles ANY honest divisor structure (any k, any scalars)
+provided the user proves the identity.
+
+For length-4 simple, `eagenBuild_length4_explicit` provides the witness
+(via `IsHonestForLength4Simple`). For general k, the witness is the
+recursive `eagenBuild` (proof of correctness pending).
+
+The predicate adds to existing `isHonestFor`:
+* All conditions of `isHonestFor` (scalar reduction, IsPrincipal).
+* PLUS: `∀ R : ECPoint E, divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R`. -/
+
+def MAProverMsg.IsHonestForExplicit (E : ECSetup) (msg : MAProverMsg E.q)
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k) (hkm : stmt.k = msg.k) : Prop :=
+  msg.isHonestFor E stmt wit hk hkm
+  ∧ ∀ R : ECPoint E, divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R
+
 /-! ## Future work
 
 The skeleton above defines the construction; correctness proofs require:
