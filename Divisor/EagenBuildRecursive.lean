@@ -1001,4 +1001,37 @@ theorem hAccount_of_isHonestForExplicit
   rw [ordAt_sum_eq_degE_nat_of_isHonestForExplicit E stmt wit hk msg hkm h_honest,
       natDegree_normPoly_eq_degE_of_isHonestForExplicit E stmt wit hk msg hkm h_honest]
 
+/-! ## Step 5: normPoly splits — `Multiset.card .roots = natDegree` -/
+
+theorem normPoly_splits_of_isHonestForExplicit
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
+    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
+    normPoly_splits_over_Fq E msg.toD := by
+  classical
+  -- Pinching: ∑ ordAt ≤ ∑ rootMult ≤ natDegree, with ∑ ordAt = natDegree.
+  have hSum := hAccount_of_isHonestForExplicit E stmt wit hk msg hkm h_honest
+  have hFiber : ∀ x₀ : ZMod E.q,
+      (∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E msg.toD P)
+        ≤ rootMultiplicity x₀ (normPoly E msg.toD) :=
+    fun x₀ => sum_ordAt_fst_eq_le E msg.toD hD x₀
+  have hFiber_sum : (∑ x₀ : ZMod E.q,
+      ∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E msg.toD P)
+        = ∑ Q ∈ E.points, ordAt E msg.toD Q := by
+    rw [sum_E_points_eq_sum_fiberwise E (fun P => ordAt E msg.toD P)]
+  have hRootMult_sum_le : ∑ x₀ : ZMod E.q, rootMultiplicity x₀ (normPoly E msg.toD)
+        ≤ (normPoly E msg.toD).natDegree :=
+    sum_rootMultiplicity_le_natDegree E (normPoly E msg.toD)
+  have hSum_rootMult_eq : ∑ x₀ : ZMod E.q, rootMultiplicity x₀ (normPoly E msg.toD)
+        = (normPoly E msg.toD).natDegree := by
+    have h1 : (∑ Q ∈ E.points, ordAt E msg.toD Q)
+            ≤ ∑ x₀ : ZMod E.q, rootMultiplicity x₀ (normPoly E msg.toD) := by
+      rw [← hFiber_sum]
+      exact Finset.sum_le_sum (fun x₀ _ => hFiber x₀)
+    omega
+  unfold normPoly_splits_over_Fq
+  rw [← sum_rootMultiplicity_eq_card_roots]
+  exact hSum_rootMult_eq
+
 end Divisor
