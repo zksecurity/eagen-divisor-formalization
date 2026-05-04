@@ -17,6 +17,46 @@ The audit's second goal — replacing the axiom with a constructive
 `eagenBuild`-based theorem (B5) — is still pending, blocked on the
 cross-case ordAt-additivity (Codex's `v_P` valuation construction).
 
+## Final session summary
+
+This branch (`work/completeness`) lands ~3450 lines of new Lean
+across two main files plus 4 test files, in 60 commits. Verification:
+
+* `lake build Divisor`: 8098 jobs, success.
+* `Tests/AxiomClosurePin.lean`: `ma_extractable` and `ip_knowledge_sound`
+  axiom closures byte-for-byte unchanged from `master`. `ma_completeness*`
+  still depends on `weil_reciprocity_honest` (now sound under the
+  strengthened precondition; B5 will replace it with a theorem once
+  eagenBuild correctness is in place).
+* `Tests/RegressionDoublingChallenge.lean`: F_5 doubling counterexample
+  preserved (`claim_F5 = 2`).
+* `Tests/IncrementalSmokeTest.lean` and `Tests/CrossCaseSmokeTest.lean`
+  confirm chord-line algebra and cross-case ordAt-additivity at
+  concrete F_5 configurations.
+* `divisors-axiom-tests` (SageMath): STRONG-BAD-SET PASS shows
+  7542 good challenges, 0 failures over 28 curves at q ∈ {5..23}.
+
+## Key files modified / added
+
+* `Divisor/IncrementalConstruction.lean` (NEW, 2522 lines) —
+  chord-line foundations, multiplication, divLin, recursive
+  identities, sub-cases of ordAt-additivity, eagenBuild base cases
+  for lengths 2 and 3.
+* `Divisor/SupportDisjoint.lean` (extended to 928 lines) — strengthened
+  `badPairCompletenessPred` with diagonal + tangent-collision
+  exclusions; new card-bounds via `thirdPoint_inj_on_A_1` + swap
+  bijection; updated `support_disjointness` to `(3N+4)·|E_aff|`;
+  `thirdPoint_symm`.
+* `Divisor/Soundness.lean` — bumped `ma_completeness` and
+  `ma_completeness_clean` constants to match.
+* `Tests/RegressionDoublingChallenge.lean` (renamed from `AxiomCheck.lean`)
+  — F_5 doubling counterexample regression.
+* `Tests/IncrementalSmokeTest.lean`, `Tests/CrossCaseSmokeTest.lean`
+  (NEW) — concrete F_5 verifications.
+* `divisors-axiom-tests/test_weil_reciprocity_honest.py` — extended
+  with strengthened-bad-set test (STRONG-BAD-SET PASS).
+* `axioms/weil_reciprocity_honest.md` — annotated with audit-fix status.
+
 ## Summary
 
 This session built out the foundation layer for Eagen's algorithmic
