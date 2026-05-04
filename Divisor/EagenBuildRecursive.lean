@@ -191,6 +191,27 @@ noncomputable def eagenBuild (Ps : List (ZMod E.q × ZMod E.q)) : CoordRingElt E
   | [single] => single.poly
   | _ => { a := 1, b := 0 }  -- shouldn't happen if iterations sufficient
 
+/-! ## Sanity check: length-2 sum-zero base case
+
+For input `[P, -P]` (the simplest sum-zero case), `eagenBuild` produces
+the vertical line `(X - x(P))`, whose divisor is `(P) + (-P) - 2·O`. -/
+
+theorem eagenBuild_length2_neg_eq_vertical
+    (P : ZMod E.q × ZMod E.q) (hY : P.2 ≠ 0) :
+    eagenBuild E [P, (P.1, -P.2)]
+      = ({ a := Polynomial.X - Polynomial.C P.1, b := 0 } : CoordRingElt E.q) := by
+  unfold eagenBuild eagenBuild_level0
+  simp only [List.map]
+  -- The pattern matches `P :: Q :: rest` with rest = [].
+  -- The condition `P.1 ≠ (P.1, -P.2).1 = P.1` is false.
+  have h_xx : ¬ (P.1 ≠ (P.1, -P.2).1) := fun h => h rfl
+  have h_yy : P.2 = -((P.1, -P.2).2) := by simp
+  -- Level 0 gives a single vertical accumulator; iteration is trivial.
+  simp only [eagenBuild_level0, dif_neg h_xx, dif_pos h_yy,
+    EagenAccum.fromChordPair_vertical]
+  unfold eagenBuild_iterate
+  simp
+
 /-! ## Future work
 
 The skeleton above defines the construction; correctness proofs require:
