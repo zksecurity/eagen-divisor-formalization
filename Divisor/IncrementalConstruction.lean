@@ -3246,4 +3246,65 @@ theorem cross_case_T_poly_deriv_ne_zero
     linear_combination -this
   · exact hNder h
 
+/-! ## Cross-case base case: commonRootMultRat = 1 when m₁ = 1
+
+In cross case at non-2-torsion P with `m₁ := rootMult P.1 (normPoly D₁) = 1`:
+`commonRootMultRat E (mulCoordRingElt E D₁ D₂) P.1 = 1`.
+
+This is half of the `cross_iterDivLin_invariant` for `min(m₁, m₂) = 1`. -/
+
+theorem cross_case_commonRootMult_eq_one_when_m1_eq_one
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₁negP : D₁.eval P.1 (-P.2) ≠ 0)
+    (hD₂P : D₂.eval P.1 P.2 ≠ 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0)
+    (hm₁ : Polynomial.rootMultiplicity P.1 (normPoly E D₁) = 1) :
+    commonRootMultRat E (mulCoordRingElt E D₁ D₂) P.1 = 1 := by
+  -- Lower bound: commonRootMult ≥ 1.
+  have hLower : 0 < commonRootMultRat E (mulCoordRingElt E D₁ D₂) P.1 :=
+    cross_case_commonRootMult_pos E h₁ h₂ hP hY hD₁P hD₂negP
+  -- Upper bound: rootMult x_0 T_poly = 1.
+  -- T_poly := (D₁·D₂).a - (D₁·D₂).b * C P.2.
+  have hT_at_x0 : ((mulCoordRingElt E D₁ D₂).a -
+      (mulCoordRingElt E D₁ D₂).b * Polynomial.C P.2).eval P.1 = 0 := by
+    obtain ⟨hax, hbx⟩ := cross_case_mul_a_b_vanish E hP hY hD₁P hD₂negP
+    simp [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C, hax, hbx]
+  -- T_poly'(x_0) ≠ 0 (from cross_case_T_poly_deriv_ne_zero).
+  have hT_der : ((mulCoordRingElt E D₁ D₂).a -
+      (mulCoordRingElt E D₁ D₂).b * Polynomial.C P.2).derivative.eval P.1 ≠ 0 :=
+    cross_case_T_poly_deriv_ne_zero E hP hY hD₁P hD₁negP hD₂P hD₂negP hm₁
+  -- T_poly ≠ 0 (else derivative would be 0).
+  have hT_NZ : (mulCoordRingElt E D₁ D₂).a -
+      (mulCoordRingElt E D₁ D₂).b * Polynomial.C P.2 ≠ 0 := by
+    intro hZ
+    apply hT_der
+    rw [hZ]; simp
+  -- rootMult x_0 T_poly = 1.
+  have hT_rootMult : Polynomial.rootMultiplicity P.1
+      ((mulCoordRingElt E D₁ D₂).a -
+       (mulCoordRingElt E D₁ D₂).b * Polynomial.C P.2) = 1 := by
+    -- ≥ 1: T_poly is a root.
+    have hRoot : ((mulCoordRingElt E D₁ D₂).a -
+        (mulCoordRingElt E D₁ D₂).b * Polynomial.C P.2).IsRoot P.1 := hT_at_x0
+    have hGe1 : 1 ≤ Polynomial.rootMultiplicity P.1
+        ((mulCoordRingElt E D₁ D₂).a -
+         (mulCoordRingElt E D₁ D₂).b * Polynomial.C P.2) := by
+      rw [Nat.one_le_iff_ne_zero, ← Nat.pos_iff_ne_zero,
+          Polynomial.rootMultiplicity_pos hT_NZ]
+      exact hRoot
+    -- ≤ 1: derivative ≠ 0 ⟹ NOT (1 < rootMult).
+    have hLe1 : ¬ (1 < Polynomial.rootMultiplicity P.1
+        ((mulCoordRingElt E D₁ D₂).a -
+         (mulCoordRingElt E D₁ D₂).b * Polynomial.C P.2)) := by
+      rw [Polynomial.one_lt_rootMultiplicity_iff_isRoot hT_NZ]
+      intro ⟨_, hDerRoot⟩
+      exact hT_der hDerRoot
+    omega
+  -- Bridge: commonRootMult ≤ rootMult T_poly = 1.
+  have hUpper :=
+    commonRootMultRat_le_T_poly_rootMult E (mulCoordRingElt E D₁ D₂) P.1 P.2 hT_NZ
+  rw [hT_rootMult] at hUpper
+  omega
+
 end Divisor
