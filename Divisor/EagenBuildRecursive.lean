@@ -446,6 +446,46 @@ theorem ordAt_eq_honestDivisorCoeffs_at_affine
           (E.equation_iff_nonsingular.mp ((E.equation_iff Q.1 Q.2).mpr (E.hOnCurve _ hQ)))]
     rfl
 
+/-! ## ZMod-cast of the affine bridge
+
+In ZMod E.q: `(ordAt : ZMod) = (honestDivisorCoeffs : ZMod)` at affine points,
+via the ℤ→ZMod cast. -/
+
+theorem ordAt_cast_eq_honestDivisorCoeffs_cast_at_affine
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q)
+    (h_div : ∀ R : ECPoint E,
+      divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R)
+    {Q : ZMod E.q × ZMod E.q} (hQ : Q ∈ E.points) :
+    ((ordAt E msg.toD Q : ℤ) : ZMod E.q)
+      = ((honestDivisorCoeffs E stmt wit hk msg (ECPoint.affine E Q.1 Q.2) : ℤ)
+          : ZMod E.q) := by
+  rw [ordAt_eq_honestDivisorCoeffs_at_affine E stmt wit hk msg h_div hQ]
+
+/-! ## Residue match identity from divisor identity
+
+Combines the padding lemma and affine-bridge to derive the residue-sum
+identity from `IsHonestForExplicit`. -/
+
+theorem residue_sum_eq_honest_via_isHonestForExplicit
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q)
+    (h_div : ∀ R : ECPoint E,
+      divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R)
+    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
+    (f : ZMod E.q × ZMod E.q → ZMod E.q) :
+    (∑ Q ∈ zerosFinset E msg.toD, (ordAt E msg.toD Q : ZMod E.q) * f Q)
+      = ∑ Q ∈ E.points,
+          ((honestDivisorCoeffs E stmt wit hk msg (ECPoint.affine E Q.1 Q.2) : ℤ)
+            : ZMod E.q) * f Q := by
+  classical
+  rw [ordAt_sum_extend_to_E_points E hD f]
+  apply Finset.sum_congr rfl
+  intro Q hQ
+  rw [show ((ordAt E msg.toD Q : ZMod E.q))
+      = ((ordAt E msg.toD Q : ℤ) : ZMod E.q) from by push_cast; rfl]
+  rw [ordAt_cast_eq_honestDivisorCoeffs_cast_at_affine E stmt wit hk msg h_div hQ]
+
 /-! ## Notes on remaining infrastructure for any-k completeness
 
 To prove `ma_completeness_via_isHonestForExplicit` for ANY k, we need:
