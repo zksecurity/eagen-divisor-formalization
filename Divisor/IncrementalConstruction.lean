@@ -5045,6 +5045,25 @@ theorem divisorOfD_vertical_at_off_x₀_affine (x₀ : ZMod E.q)
           (E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP)))]
     rfl
 
+/-- Vertical line `(X − x₀)` has `divisorOfD = 1` at the affine point
+    `(x₀, y₀)` when the point is non-2-torsion (`y₀ ≠ 0`). -/
+theorem divisorOfD_vertical_at_x₀_nonTwoTorsion_affine (x₀ y₀ : ZMod E.q)
+    (hP : (x₀, y₀) ∈ E.points) (hY : y₀ ≠ 0) :
+    divisorOfD E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                  : CoordRingElt E.q) (ECPoint.affine E x₀ y₀) = 1 := by
+  have hOrd : ordAt E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                       : CoordRingElt E.q) (x₀, y₀) = 1 :=
+    ord_vertical_at_x₀_nonTwoTorsion E x₀ y₀ hP hY
+  rw [show divisorOfD E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                          : CoordRingElt E.q) (ECPoint.affine E x₀ y₀)
+      = (ordAtPoint E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                        : CoordRingElt E.q) (ECPoint.affine E x₀ y₀) : ℤ) from ?_,
+      ordAtPoint_affine E _ hP, hOrd]
+  · rfl
+  · rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff x₀ y₀).mpr (E.hOnCurve _ hP)))]
+    rfl
+
 /-! ## eagenBuild_length4 divisor at P_0 = 1 -/
 
 theorem eagenBuild_length4_div_at_P₀
@@ -5285,6 +5304,92 @@ theorem eagenBuild_length4_div_at_P₃
         (ECPoint.affine E P₃.1 P₃.2) = 0 :=
     divisorOfD_vertical_at_off_x₀_affine E _ hP₃ hP₃_ne_Q₀x
   rw [hLv_at_P₃]
+  ring
+
+/-! ## eagenBuild_length4 divisorOfD = 0 at Q_0 (the third intersection of L_1) -/
+
+/-- Q_0 = -(P_0+P_1) sits on L_1 (third intersection) and on L_v (vertical at
+    x_{Q_0}), but not on L_2 (whose third intersection is -Q_0). Net: 1 + 0 - 1 = 0. -/
+theorem eagenBuild_length4_div_at_Q₀
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_P₀_ne_A2_01 : P₀.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₁_ne_A2_01 : P₁.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₂_ne_A2_23 : P₂.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₃_ne_A2_23 : P₃.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_Q₀_off_L₂ :
+      let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+      let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+      (Q₀x, Q₀y) ≠ P₂ ∧ (Q₀x, Q₀y) ≠ P₃ ∧ (Q₀x, Q₀y) ≠ (Q₀x, -Q₀y))
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                        * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                        + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0) :
+    let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+    let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+    divisorOfD E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+        (ECPoint.affine E Q₀x Q₀y) = 0 := by
+  intro Q₀x Q₀y
+  -- Q_0 is on E (third intersection on E).
+  have hQ₀_on_E : (Q₀x, Q₀y) ∈ E.points := by
+    have hOC := chord_third_point_on_E E P₀ P₁ hP₀ hP₁ h_xx_01
+    exact E.hComplete Q₀x Q₀y hOC
+  -- Q_0y ≠ 0.
+  have hQ₀y_ne_zero : Q₀y ≠ 0 := h_Q₀_nontorsion
+  -- Universal identity.
+  rw [divisorOfD_eagenBuild_length4_eq_chord_pair_minus_vertical E
+      P₀ P₁ P₂ P₃ hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23
+      h_third_match h_y_match h_Q₀_nontorsion]
+  rw [divisorOfD_mul_add_by_chordCoordRingElt_distinct E
+      (chordCoordRingElt_ne_zero E P₀ P₁) P₂ P₃ hP₂ hP₃ h_xx_23
+      h_P₂_ne_A2_23 h_P₃_ne_A2_23 (ECPoint.affine E Q₀x Q₀y)]
+  -- divisorOfD L_1 at Q_0 = 1 (third intersection).
+  obtain ⟨_, _, hQ₀_div_L₁, _⟩ :=
+    divisorOfD_chordCoordRingElt_chord_distinct E P₀ P₁ hP₀ hP₁ h_xx_01
+      h_P₀_ne_A2_01 h_P₁_ne_A2_01
+  rw [hQ₀_div_L₁]
+  -- divisorOfD L_2 at Q_0 = 0 (off support: Q_0 ≠ P_2, ≠ P_3, ≠ -Q_0 = A_2_23).
+  have hL₂_at_Q₀ : divisorOfD E (chordCoordRingElt E P₂ P₃)
+                    (ECPoint.affine E Q₀x Q₀y) = 0 := by
+    obtain ⟨h1, h2, h3⟩ := h_Q₀_off_L₂
+    have h_pw := divisorOfD_chordCoordRingElt_chord_pointwise E P₂ P₃ hP₂ hP₃ h_xx_23
+                  h_P₂_ne_A2_23 h_P₃_ne_A2_23
+    -- A_2_23 in pointwise lemma: x = slopeOf P_2 P_3 ^ 2 - P_2.1 - P_3.1, y = slopeOf*A_2_23.x + (P_2.2 - slopeOf*P_2.1).
+    -- By h_third_match: A_2_23.x = Q_0x. By h_y_match: A_2_23.y = -Q_0y.
+    -- So Q_0 ≠ A_2_23 reduces to (Q_0x, Q_0y) ≠ (Q_0x, -Q_0y).
+    have h3' : (Q₀x, Q₀y) ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+                  * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+                  + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)) := by
+      rw [show (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+                  * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+                  + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)) = (Q₀x, -Q₀y) by
+        ext
+        · simp [Q₀x, h_third_match]
+        · simp [Q₀y]; linear_combination h_y_match]
+      exact h3
+    exact h_pw (Q₀x, Q₀y) hQ₀_on_E h1 h2 h3'
+  rw [hL₂_at_Q₀]
+  -- divisorOfD L_v at Q_0 = 1 (vertical line at x=Q_0x, y=Q_0y nonzero).
+  have hLv_at_Q₀ : divisorOfD E
+        ({ a := Polynomial.X - Polynomial.C
+                (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1), b := 0 }
+          : CoordRingElt E.q)
+        (ECPoint.affine E Q₀x Q₀y) = 1 :=
+    divisorOfD_vertical_at_x₀_nonTwoTorsion_affine E Q₀x Q₀y hQ₀_on_E hQ₀y_ne_zero
+  rw [hLv_at_Q₀]
   ring
 
 end Divisor
