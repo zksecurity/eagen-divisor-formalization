@@ -1976,4 +1976,38 @@ theorem ordAt_mul_add_when_D2_nonvanish_fiber
   · exact ordAt_mul_add_at_nonTwoTorsion_when_D2_nonvanish E
       (D₁.a.natDegree + D₁.b.natDegree) D₁ D₂ h₁ h₂ (le_refl _) hP hY hD₂P hD₂negP
 
+/-! ## divisorOfD additivity at affine points (under D₂ nonvanish-fiber)
+
+Combining ordAt-additivity at affine P with the definition of
+`divisorOfD` at the corresponding ECPoint. -/
+
+theorem divisorOfD_mul_add_affine_when_D2_nonvanish_fiber
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points)
+    (hD₂P : D₂.eval P.1 P.2 ≠ 0) (hD₂negP : D₂.eval P.1 (-P.2) ≠ 0) :
+    divisorOfD E (mulCoordRingElt E D₁ D₂) (ECPoint.affine E P.1 P.2)
+      = divisorOfD E D₁ (ECPoint.affine E P.1 P.2)
+        + divisorOfD E D₂ (ECPoint.affine E P.1 P.2) := by
+  classical
+  -- divisorOfD at affine = ordAt (cast to ℤ).
+  have hAddOrd := ordAt_mul_add_when_D2_nonvanish_fiber E h₁ h₂ hP hD₂P hD₂negP
+  -- Use ordAtPoint_affine to bridge.
+  rw [show divisorOfD E (mulCoordRingElt E D₁ D₂) (ECPoint.affine E P.1 P.2)
+      = (ordAtPoint E (mulCoordRingElt E D₁ D₂) (ECPoint.affine E P.1 P.2) : ℤ) from ?_,
+      show divisorOfD E D₁ (ECPoint.affine E P.1 P.2)
+      = (ordAtPoint E D₁ (ECPoint.affine E P.1 P.2) : ℤ) from ?_,
+      show divisorOfD E D₂ (ECPoint.affine E P.1 P.2)
+      = (ordAtPoint E D₂ (ECPoint.affine E P.1 P.2) : ℤ) from ?_,
+      ordAtPoint_affine E _ hP, ordAtPoint_affine E _ hP, ordAtPoint_affine E _ hP,
+      hAddOrd]
+  push_cast; ring
+  -- Three identities: divisorOfD = ordAtPoint.
+  all_goals
+    show divisorOfD E _ (ECPoint.affine E P.1 P.2)
+        = (ordAtPoint E _ (ECPoint.affine E P.1 P.2) : ℤ)
+    rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP)))]
+    rfl
+
 end Divisor
