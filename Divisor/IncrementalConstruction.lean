@@ -1446,6 +1446,44 @@ theorem ordAt_mul_add_twoTorsion
   apply Polynomial.rootMultiplicity_mul
   exact mul_ne_zero (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂)
 
+/-! ## `ordAt` is additive when D₁ doesn't vanish at P
+
+A simple but useful corollary: when neither factor vanishes at `P`, both
+sides are zero, so additivity is trivial. -/
+
+theorem ordAt_mul_add_at_nonvanish
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points)
+    (hD₁P : D₁.eval P.1 P.2 ≠ 0) (hD₂P : D₂.eval P.1 P.2 ≠ 0) :
+    ordAt E (mulCoordRingElt E D₁ D₂) P
+      = ordAt E D₁ P + ordAt E D₂ P := by
+  classical
+  have hMul_NZ : ¬ ((mulCoordRingElt E D₁ D₂).a = 0 ∧ (mulCoordRingElt E D₁ D₂).b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E (mulCoordRingElt E D₁ D₂) = 0 := by
+      rw [normPoly_eq, ha, hb]; ring
+    rw [normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂)) hN
+  -- (D₁ · D₂).eval P ≠ 0 follows from mulCoordRingElt_eval_on_E.
+  have hMulP : (mulCoordRingElt E D₁ D₂).eval P.1 P.2 ≠ 0 := by
+    rw [mulCoordRingElt_eval_on_E E D₁ D₂ hP]
+    exact mul_ne_zero hD₁P hD₂P
+  -- All three ordAts are 0 by ordAt_pos_iff_zero (negative direction).
+  have h1 : ordAt E D₁ P = 0 := by
+    by_contra h
+    apply hD₁P
+    exact (ordAt_pos_iff_zero E _ h₁ P hP).mp (Nat.pos_of_ne_zero h)
+  have h2 : ordAt E D₂ P = 0 := by
+    by_contra h
+    apply hD₂P
+    exact (ordAt_pos_iff_zero E _ h₂ P hP).mp (Nat.pos_of_ne_zero h)
+  have hMul : ordAt E (mulCoordRingElt E D₁ D₂) P = 0 := by
+    by_contra h
+    apply hMulP
+    exact (ordAt_pos_iff_zero E _ hMul_NZ P hP).mp (Nat.pos_of_ne_zero h)
+  rw [hMul, h1, h2]
+
 /-! ## Polynomial cancellation `(X − x₀)`
 
 When `(X − x₀)` divides both `D.a` and `D.b`, dividing it out gives a
