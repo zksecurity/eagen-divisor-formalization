@@ -6008,4 +6008,120 @@ theorem ECPoints_same_x_y_eq_or_neg
   · left; linear_combination h
   · right; linear_combination h
 
+/-! ## Characterization: zeros of `eagenBuild_length4_explicit` are inputs
+
+Combines per-ECPoint divisor characterization with curve y-uniqueness
+to show that any point Q ∈ E.points with D.eval Q = 0 is one of the
+four input points P_0, P_1, P_2, P_3 (under appropriate genericity
+hypotheses). -/
+
+theorem eagenBuild_length4_explicit_zero_iff_input
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_P₀_ne_A2_01 : P₀.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₁_ne_A2_01 : P₁.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₂_ne_A2_23 : P₂.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₃_ne_A2_23 : P₃.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₀_off_L₂ : P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₀ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                    slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+                      * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+                      + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)))
+    (h_P₁_off_L₂ : P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₁ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                    slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+                      * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+                      + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)))
+    (h_P₂_off_L₁ : P₂ ≠ P₀ ∧ P₂ ≠ P₁ ∧ P₂ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+                    slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                      * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                      + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_P₃_off_L₁ : P₃ ≠ P₀ ∧ P₃ ≠ P₁ ∧ P₃ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+                    slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                      * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                      + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                        * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                        + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0)
+    -- Q_0 and -Q_0 not equal to inputs (needed for Q_0/-Q_0 cases):
+    (h_Q₀_off_L₂_inputs :
+      let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+      let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+      (Q₀x, Q₀y) ≠ P₂ ∧ (Q₀x, Q₀y) ≠ P₃ ∧ (Q₀x, Q₀y) ≠ (Q₀x, -Q₀y))
+    (h_negQ₀_off_L₁_inputs :
+      let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+      let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+      (Q₀x, -Q₀y) ≠ P₀ ∧ (Q₀x, -Q₀y) ≠ P₁ ∧ (Q₀x, -Q₀y) ≠ (Q₀x, Q₀y))
+    (Q : ZMod E.q × ZMod E.q) (hQ : Q ∈ E.points)
+    (h_eval_zero : (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃).eval Q.1 Q.2 = 0) :
+    Q = P₀ ∨ Q = P₁ ∨ Q = P₂ ∨ Q = P₃ := by
+  classical
+  -- Q_0 = (Q_0x, Q_0y) is on E.
+  set Q₀x : ZMod E.q := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1 with hQ₀x
+  set Q₀y : ZMod E.q := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x +
+                        (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) with hQ₀y
+  have hQ₀_on_E : (Q₀x, Q₀y) ∈ E.points := by
+    have hOC := chord_third_point_on_E E P₀ P₁ hP₀ hP₁ h_xx_01
+    exact E.hComplete Q₀x Q₀y hOC
+  -- Case-split: Q.1 = Q_0x or Q.1 ≠ Q_0x.
+  by_cases hQx : Q.1 = Q₀x
+  · -- Case: Q.1 = Q_0x. By y-uniqueness, Q.2 = Q_0y or Q.2 = -Q_0y.
+    have hQ_on_E' : (Q₀x, Q.2) ∈ E.points := by rw [← hQx]; exact hQ
+    have h_yu := ECPoints_same_x_y_eq_or_neg E hQ_on_E' hQ₀_on_E
+    rcases h_yu with hQy | hQy
+    · -- Q = (Q_0x, Q_0y). Apply Q_0 eval ne_zero.
+      have hQeq : Q = (Q₀x, Q₀y) := Prod.ext hQx hQy
+      have h_Q₀_ne := eagenBuild_length4_explicit_eval_ne_zero_at_Q₀ E P₀ P₁ P₂ P₃
+        hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
+        h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_Q₀_off_L₂_inputs h_third_match h_y_match h_Q₀_nontorsion
+      simp only [] at h_Q₀_ne
+      rw [hQeq] at h_eval_zero
+      exact absurd h_eval_zero h_Q₀_ne
+    · -- Q = (Q_0x, -Q_0y). Apply -Q_0 eval ne_zero.
+      have hQeq : Q = (Q₀x, -Q₀y) := Prod.ext hQx hQy
+      have h_negQ₀_ne := eagenBuild_length4_explicit_eval_ne_zero_at_negQ₀ E P₀ P₁ P₂ P₃
+        hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
+        h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_negQ₀_off_L₁_inputs h_third_match h_y_match h_Q₀_nontorsion
+      simp only [] at h_negQ₀_ne
+      rw [hQeq] at h_eval_zero
+      exact absurd h_eval_zero h_negQ₀_ne
+  · -- Case: Q.1 ≠ Q_0x. Q falls in generic_R unless Q ∈ {P_0..P_3}.
+    by_cases hP₀ne : Q = P₀
+    · left; exact hP₀ne
+    by_cases hP₁ne : Q = P₁
+    · right; left; exact hP₁ne
+    by_cases hP₂ne : Q = P₂
+    · right; right; left; exact hP₂ne
+    by_cases hP₃ne : Q = P₃
+    · right; right; right; exact hP₃ne
+    -- Q ∉ {P_0..P_3} and Q.1 ≠ Q_0x. Apply generic_R.
+    -- Need: Q ≠ A_2_01 = (Q_0x, Q_0y) and Q ≠ A_2_23 = (Q_0x, -Q_0y).
+    -- Both have x = Q_0x. Since Q.1 ≠ Q_0x, both are excluded by x-coordinate.
+    have hQ_ne_A2_01 : Q ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+                        slopeOf P₀.1 P₀.2 P₁.1 P₁.2 *
+                          (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) +
+                        (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)) := by
+      intro h; apply hQx; rw [h]
+    have hQ_ne_A2_23 : Q ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                        slopeOf P₂.1 P₂.2 P₃.1 P₃.2 *
+                          (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) +
+                        (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)) := by
+      intro h; apply hQx; rw [h]; exact h_third_match
+    have hQx' : Q.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1 := hQx
+    have h_gen_ne := eagenBuild_length4_explicit_eval_ne_zero_at_generic_R E P₀ P₁ P₂ P₃
+      hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
+      h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_third_match h_y_match h_Q₀_nontorsion
+      Q hQ hP₀ne hP₁ne hP₂ne hP₃ne hQ_ne_A2_01 hQ_ne_A2_23 hQx'
+    exact absurd h_eval_zero h_gen_ne
+
 end Divisor
