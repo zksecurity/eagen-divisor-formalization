@@ -194,6 +194,36 @@ so cannot be proven correct without the cross-case piece above.
 All of B1–B5 are blocked on A6 (eagenBuild correctness), which is
 blocked on the cross-case ordAt-additivity.
 
+## Why even length-4 eagenBuild correctness needs the cross case
+
+A natural hope is that eagenBuild correctness for short lists
+(length 4, 5, etc.) might bypass the cross case under generic
+assumptions on the input. **It does not**: Eagen's recursion
+inherently produces cross-case configurations.
+
+Concretely, for `[P_0, P_1, P_2, P_3]` with `P_0+P_1+P_2+P_3 = 0`:
+
+* `L_1 = chord(P_0, P_1)` supports `{P_0, P_1, Q_0}` where
+  `Q_0 = -(P_0+P_1)`.
+* `L_2 = chord(P_2, P_3)` supports `{P_2, P_3, Q_1}` where
+  `Q_1 = -(P_2+P_3)`.
+* By assumption `Q_0 + Q_1 = 0`, so `Q_1 = -Q_0`.
+* `L_3 = chord(-Q_0, -Q_1) = chord(-Q_0, Q_0)` is **vertical** at
+  `x = x(Q_0)`, with support `{Q_0, -Q_0}`.
+
+Now at `Q_0`:
+* `L_1` is **lone at Q_0** (L_1(Q_0)=0, L_1(-Q_0) ≠ 0 generically).
+* `L_3` **vanishes at both sheets** {Q_0, -Q_0} (since it's the
+  vertical line through them).
+
+So the product `L_1 · L_3` at Q_0 has D₁=L_1 lone at Q_0 and D₂=L_3
+not non-vanishing on the fiber `{Q_0, -Q_0}` — exactly the cross
+case. There's no generic configuration that avoids this.
+
+Therefore **eagenBuild correctness for length ≥ 4 fundamentally
+requires the cross-case ordAt-additivity**, which in turn requires
+the local valuation v_P construction.
+
 ## Why strong-induction on natDegree-sum stalls (negative result)
 
 A natural attempt is to prove submultiplicativity
