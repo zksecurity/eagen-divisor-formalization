@@ -46,7 +46,7 @@ import Divisor.IncrementalConstruction
 import Divisor.LogDerivEagenLength4
 import Divisor.WeilReciprocityDescent
 
-open Polynomial Finset
+open Polynomial Finset Classical
 
 namespace Divisor
 
@@ -354,6 +354,43 @@ theorem logDerivCheckFn_zero_via_isHonestForExplicit_with_sides
     stmt.bases (fun i => msg.m (hkm ▸ i)) (ordAt E msg.toD)
     hD hSplit hβsup hβcov hAccount hβtrue
     A₀ A₁ hA₀ hA₁ hNV hGood hQline hDen hResidueMatch
+
+/-! ## Any-k MA completeness via IsHonestForExplicit + side conditions
+
+This is the any-k analog of `ma_completeness_via_isHonestForLength4Simple`.
+Takes the protocol-level side conditions (splitsOnE, hAccount, residue
+match) as user-provided hypotheses. -/
+
+theorem ma_completeness_via_isHonestForExplicit_with_sides
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
+    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
+    (hSplit : splitsOnE E msg.toD)
+    (hAccount : (∑ Q ∈ E.points, ordAt E msg.toD Q) = (normPoly E msg.toD).natDegree)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hResidueMatchAll : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
+      A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
+      (A₀, A₁) ∉ badChallengesCompleteness E msg.toD →
+      (∑ Q ∈ zerosFinset E msg.toD, (ordAt E msg.toD Q : ZMod E.q) *
+          ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2)⁻¹)
+        = ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval stmt.target.1 (-stmt.target.2))⁻¹
+          + (Finset.univ : Finset (Fin stmt.k)).sum
+              (fun j => msg.m (hkm ▸ j) *
+                ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (stmt.bases j).1
+                  (stmt.bases j).2)⁻¹)) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+  apply ma_completeness_parameterized E stmt msg hkm hDegK hAdm
+  intro A₀ A₁ hA₀ hA₁ hGood
+  have hNV : A₀.1 ≠ A₁.1 := hNV_of_hGood E hA₀ hA₁ hGood
+  exact logDerivCheckFn_zero_via_isHonestForExplicit_with_sides E
+    stmt wit hk msg hkm h_honest hD hSplit hAccount A₀ A₁ hA₀ hA₁ hNV hGood
+    (hResidueMatchAll A₀ A₁ hA₀ hA₁ hNV hGood)
 
 /-! ## Notes on remaining infrastructure for any-k completeness
 
