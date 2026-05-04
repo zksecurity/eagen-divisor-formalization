@@ -1023,4 +1023,16 @@ structure MAProverMsg.IsHonestForLength4Simple (E : ECSetup)
     (Q₀x, -Q₀y) ≠ P₀ ∧ (Q₀x, -Q₀y) ≠ P₁ ∧ (Q₀x, -Q₀y) ≠ (Q₀x, Q₀y)
   h_inputs_distinct : P₀ ≠ P₁ ∧ P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₂ ≠ P₃
 
+/-! ## Bridge theorem: deferred
+
+The bridge theorem `logDerivCheckFn_zero_via_isHonestForLength4Simple`
+that connects `IsHonestForLength4Simple` to the conclusion of
+`weil_reciprocity_honest` (with `stmt.k`-cast handling) is non-trivial
+due to cast bookkeeping (stmt.k = 3, msg.k = 3, hkm : stmt.k = msg.k).
+
+The structure `IsHonestForLength4Simple` itself is in place and
+captures all needed data. The bridge can be added in a follow-up,
+or one can directly use `weil_reciprocity_honest_length4_simple`
+with the structure's fields manually unpacked. -/
+
 end Divisor
