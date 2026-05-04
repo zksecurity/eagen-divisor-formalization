@@ -699,6 +699,23 @@ theorem ma_completeness_via_isHonestForExplicit_splitsOnE_only
   · exact hDegK
   · exact hAdm
 
+/-! ## Sum of ordAt as ℤ via divisor identity
+
+Cast the natural-number `∑ ordAt` to ℤ, using `divisorOfD = honestDivisorCoeffs`. -/
+
+theorem ordAt_sum_eq_honestDivisorCoeffs_sum_at_affines
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q)
+    (h_div : ∀ R : ECPoint E,
+      divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R) :
+    ((∑ Q ∈ E.points, ordAt E msg.toD Q : ℕ) : ℤ)
+      = ∑ Q ∈ E.points,
+          honestDivisorCoeffs E stmt wit hk msg (ECPoint.affine E Q.1 Q.2) := by
+  push_cast
+  apply Finset.sum_congr rfl
+  intro Q hQ
+  exact ordAt_eq_honestDivisorCoeffs_at_affine E stmt wit hk msg h_div hQ
+
 /-! ## Notes on remaining infrastructure for any-k completeness
 
 To prove `ma_completeness_via_isHonestForExplicit` for ANY k, we need:
