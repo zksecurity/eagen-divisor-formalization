@@ -1119,4 +1119,31 @@ theorem splitsOnE_of_isHonestForExplicit
   ⟨normPoly_splits_of_isHonestForExplicit E stmt wit hk msg hkm h_honest hD,
    fiber_rationality_of_isHonestForExplicit E stmt wit hk msg hkm h_honest hD⟩
 
+/-! ## Hypothesis-light any-k completeness
+
+`splitsOnE` and `hAccount` are now both derived from `IsHonestForExplicit`.
+The remaining hypotheses are just protocol-level invariants. -/
+
+theorem ma_completeness_via_isHonestForExplicit
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
+    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
+    (h_negT : (stmt.target.1, -stmt.target.2) ∈ E.points)
+    (h_bases : ∀ i : Fin stmt.k, stmt.bases i ∈ E.points)
+    (h_m_eq_scalars : ∀ i : Fin stmt.k,
+      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ℤ) : ZMod E.q))
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+  apply ma_completeness_via_isHonestForExplicit_no_residue_match E stmt wit hk msg hkm
+    h_honest hD
+    (splitsOnE_of_isHonestForExplicit E stmt wit hk msg hkm h_honest hD)
+    (hAccount_of_isHonestForExplicit E stmt wit hk msg hkm h_honest)
+    h_negT h_bases h_m_eq_scalars hDegK hAdm
+
 end Divisor
