@@ -3350,4 +3350,32 @@ theorem cross_case_commonRootMult_eq_one_when_m2_eq_one
   rw [mulCoordRingElt_comm E D₁ D₂]
   exact hCommon
 
+/-- Unified base case: commonRootMultRat = 1 when `min(m₁, m₂) = 1` in cross case. -/
+theorem cross_case_commonRootMult_eq_one_when_min_eq_one
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₁negP : D₁.eval P.1 (-P.2) ≠ 0)
+    (hD₂P : D₂.eval P.1 P.2 ≠ 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0)
+    (hMin : min (Polynomial.rootMultiplicity P.1 (normPoly E D₁))
+                (Polynomial.rootMultiplicity P.1 (normPoly E D₂)) = 1) :
+    commonRootMultRat E (mulCoordRingElt E D₁ D₂) P.1 = 1 := by
+  by_cases hm₁ : Polynomial.rootMultiplicity P.1 (normPoly E D₁) = 1
+  · exact cross_case_commonRootMult_eq_one_when_m1_eq_one E h₁ h₂ hP hY
+      hD₁P hD₁negP hD₂P hD₂negP hm₁
+  · -- m₁ ≠ 1, so the min must come from m₂.
+    -- min(m₁, m₂) = 1 + m₁ ≠ 1 means m₂ = 1 AND m₁ ≥ 1.
+    -- Need m₁ ≥ 1: follows from D₁(P) = 0 (D₁ has root in normPoly).
+    have hm₂ : Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 1 := by
+      rcases Nat.lt_or_ge (Polynomial.rootMultiplicity P.1 (normPoly E D₁))
+              (Polynomial.rootMultiplicity P.1 (normPoly E D₂)) with hlt | hge
+      · -- m₁ < m₂: min = m₁ = 1, but hm₁ says ≠ 1. Contradiction.
+        rw [Nat.min_eq_left (le_of_lt hlt)] at hMin
+        exact absurd hMin hm₁
+      · -- m₁ ≥ m₂: min = m₂ = 1.
+        rw [Nat.min_eq_right hge] at hMin
+        exact hMin
+    exact cross_case_commonRootMult_eq_one_when_m2_eq_one E h₁ h₂ hP hY
+      hD₁P hD₁negP hD₂P hD₂negP hm₂
+
 end Divisor
