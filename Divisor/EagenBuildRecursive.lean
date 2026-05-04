@@ -1447,6 +1447,106 @@ private theorem bases_filter_singleton_for_length4Simple
     intro h_eq
     rw [h_eq]
 
+/-- For (x, y) = P_0: filter (bases i = (x, y)) is empty (P_0 ∉ bases). -/
+private theorem bases_filter_empty_at_P0
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt) :
+    (Finset.univ : Finset (Fin stmt.k)).filter
+        (fun i => stmt.bases i = h_simple.P₀) = ∅ := by
+  classical
+  rw [Finset.filter_eq_empty_iff]
+  intro i _
+  -- Cast i to Fin 3 and case-split.
+  have h3 := h_simple.hk_eq_3
+  have h_dist := h_simple.h_inputs_distinct
+  obtain ⟨ji, hji⟩ : ∃ ji : Fin 3, ji = Fin.cast h3 i := ⟨Fin.cast h3 i, rfl⟩
+  have h_i_eq : stmt.bases i = stmt.bases (h3 ▸ ji) := by
+    congr 1
+    apply Fin.ext
+    rw [cast_subst_val_l4 (E := E) h3 ji, hji]
+    rfl
+  rw [h_i_eq]
+  fin_cases ji
+  · -- ji = 0: bases (h3 ▸ 0) = P_1 ≠ P_0.
+    simp only [show (⟨0, by decide⟩ : Fin 3) = 0 from rfl]
+    rw [← h_simple.h_P₁_eq]
+    exact (Ne.symm h_dist.1)
+  · simp only [show (⟨1, by decide⟩ : Fin 3) = 1 from rfl]
+    rw [← h_simple.h_P₂_eq]
+    exact (Ne.symm h_dist.2.1)
+  · simp only [show (⟨2, by decide⟩ : Fin 3) = 2 from rfl]
+    rw [← h_simple.h_P₃_eq]
+    exact (Ne.symm h_dist.2.2.1)
+
+/-- Helper: at any (x, y) = P_k for k ∈ {0, 1, 2, 3}, honestDivisorCoeffs = 1. -/
+private theorem honestCoeffs_eq_one_at_P_for_length4Simple
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    {wit : DlogWitness E.q} (hk : stmt.k = wit.k)
+    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
+    {x y : ZMod E.q} (hns : E.toW.toAffine.Nonsingular x y)
+    (h_xy : (x, y) = h_simple.P₀ ∨ (x, y) = h_simple.P₁ ∨
+            (x, y) = h_simple.P₂ ∨ (x, y) = h_simple.P₃) :
+    honestDivisorCoeffs E stmt wit hk msg
+        (WeierstrassCurve.Affine.Point.some hns) = 1 := by
+  classical
+  rw [show (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+        = ECPoint.affine E x y from (ECPoint.affine_of_nonsingular E hns).symm]
+  rw [show honestDivisorCoeffs E stmt wit hk msg (ECPoint.affine E x y)
+        = (if (x, y) = (stmt.target.1, -stmt.target.2) then (1 : ℤ) else 0) +
+          ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
+            (fun i => stmt.bases i = (x, y)),
+            (wit.scalars (hk ▸ i)) by
+        rw [ECPoint.affine_of_nonsingular E hns]; rfl]
+  have h_negT : (stmt.target.1, -stmt.target.2) = h_simple.P₀ := h_simple.h_P₀_eq.symm
+  have h_dist := h_simple.h_inputs_distinct
+  rcases h_xy with h0 | h1 | h2 | h3'
+  · -- (x, y) = P_0. Indicator = 1, filter = ∅, sum = 0. Total = 1.
+    have h_eq_negT : (x, y) = (stmt.target.1, -stmt.target.2) := by
+      rw [h_negT]; exact h0
+    rw [if_pos h_eq_negT]
+    -- Filter is empty.
+    have h_filter_eq : (Finset.univ : Finset (Fin stmt.k)).filter
+        (fun i => stmt.bases i = (x, y)) =
+        (Finset.univ : Finset (Fin stmt.k)).filter
+        (fun i => stmt.bases i = h_simple.P₀) := by
+      rw [h0]
+    rw [h_filter_eq, bases_filter_empty_at_P0 E h_simple]
+    simp
+  · -- (x, y) = P_1. Indicator = 0, filter = {h3 ▸ 0}, sum = 1. Total = 1.
+    have h_ne_negT : (x, y) ≠ (stmt.target.1, -stmt.target.2) := by
+      rw [h_negT, h1]; exact (Ne.symm h_dist.1)
+    rw [if_neg h_ne_negT, zero_add]
+    have h_filter_eq : (Finset.univ : Finset (Fin stmt.k)).filter
+        (fun i => stmt.bases i = (x, y)) =
+        (Finset.univ : Finset (Fin stmt.k)).filter
+        (fun i => stmt.bases i = stmt.bases (h_simple.hk_eq_3 ▸ (0 : Fin 3))) := by
+      rw [h1, ← h_simple.h_P₁_eq]
+    rw [h_filter_eq, bases_filter_singleton_for_length4Simple E h_simple 0]
+    rw [Finset.sum_singleton, h_scalars]
+  · -- (x, y) = P_2.
+    have h_ne_negT : (x, y) ≠ (stmt.target.1, -stmt.target.2) := by
+      rw [h_negT, h2]; exact (Ne.symm h_dist.2.1)
+    rw [if_neg h_ne_negT, zero_add]
+    have h_filter_eq : (Finset.univ : Finset (Fin stmt.k)).filter
+        (fun i => stmt.bases i = (x, y)) =
+        (Finset.univ : Finset (Fin stmt.k)).filter
+        (fun i => stmt.bases i = stmt.bases (h_simple.hk_eq_3 ▸ (1 : Fin 3))) := by
+      rw [h2, ← h_simple.h_P₂_eq]
+    rw [h_filter_eq, bases_filter_singleton_for_length4Simple E h_simple 1]
+    rw [Finset.sum_singleton, h_scalars]
+  · -- (x, y) = P_3.
+    have h_ne_negT : (x, y) ≠ (stmt.target.1, -stmt.target.2) := by
+      rw [h_negT, h3']; exact (Ne.symm h_dist.2.2.1)
+    rw [if_neg h_ne_negT, zero_add]
+    have h_filter_eq : (Finset.univ : Finset (Fin stmt.k)).filter
+        (fun i => stmt.bases i = (x, y)) =
+        (Finset.univ : Finset (Fin stmt.k)).filter
+        (fun i => stmt.bases i = stmt.bases (h_simple.hk_eq_3 ▸ (2 : Fin 3))) := by
+      rw [h3', ← h_simple.h_P₃_eq]
+    rw [h_filter_eq, bases_filter_singleton_for_length4Simple E h_simple 2]
+    rw [Finset.sum_singleton, h_scalars]
+
 /-- Scalar reduction for the length-4 simple case (with `wit.scalars = 1`). -/
 theorem scalar_reduction_for_length4Simple
     {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
