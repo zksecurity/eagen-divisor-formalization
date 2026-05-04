@@ -5874,4 +5874,61 @@ theorem eagenBuild_length4_explicit_eval_ne_zero_at_generic_R
     (ordAt_pos_iff_zero E _ hNZ R hR).mpr h_eval_zero
   omega
 
+/-- `D.eval` is nonzero at `Q_0` (third intersection of `L_1`).
+    Follows from `divisorOfD = 0` at `Q_0`. -/
+theorem eagenBuild_length4_explicit_eval_ne_zero_at_Q₀
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_P₀_ne_A2_01 : P₀.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₁_ne_A2_01 : P₁.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₂_ne_A2_23 : P₂.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₃_ne_A2_23 : P₃.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_Q₀_off_L₂ :
+      let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+      let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+      (Q₀x, Q₀y) ≠ P₂ ∧ (Q₀x, Q₀y) ≠ P₃ ∧ (Q₀x, Q₀y) ≠ (Q₀x, -Q₀y))
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                        * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                        + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0) :
+    let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+    let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+    (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃).eval Q₀x Q₀y ≠ 0 := by
+  intro Q₀x Q₀y
+  have hQ₀_on_E : (Q₀x, Q₀y) ∈ E.points := by
+    have hOC := chord_third_point_on_E E P₀ P₁ hP₀ hP₁ h_xx_01
+    exact E.hComplete Q₀x Q₀y hOC
+  have hDiv := eagenBuild_length4_div_at_Q₀ E P₀ P₁ P₂ P₃
+    hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
+    h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_Q₀_off_L₂ h_third_match h_y_match h_Q₀_nontorsion
+  simp only [] at hDiv
+  have hNZ := eagenBuild_length4_explicit_ne_zero E P₀ P₁ P₂ P₃
+    hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_third_match h_y_match h_Q₀_nontorsion
+  have h_eq : divisorOfD E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+                (ECPoint.affine E Q₀x Q₀y)
+        = (ordAtPoint E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+            (ECPoint.affine E Q₀x Q₀y) : ℤ) := by
+    rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff Q₀x Q₀y).mpr (E.hOnCurve _ hQ₀_on_E)))]
+    rfl
+  rw [h_eq, ordAtPoint_affine E _ hQ₀_on_E] at hDiv
+  have h_ord_zero : ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) (Q₀x, Q₀y) = 0 := by
+    have : (ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) (Q₀x, Q₀y) : ℤ) = 0 := hDiv
+    omega
+  intro h_eval_zero
+  have h_pos : 0 < ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) (Q₀x, Q₀y) :=
+    (ordAt_pos_iff_zero E _ hNZ (Q₀x, Q₀y) hQ₀_on_E).mpr h_eval_zero
+  omega
+
 end Divisor
