@@ -17,6 +17,40 @@
   This is the length-4 specialization of the (currently axiomatic)
   `weil_reciprocity_honest`, with the formerly-unsound axiom statement
   replaced by a constructive theorem about `eagenBuild_length4_explicit`.
+
+  ## Axiom closure
+
+  `#print axioms logDerivCheckFn_zero_for_eagenBuild_length4` shows:
+    propext, Classical.choice, Quot.sound,
+    Divisor.chord_fiber_product_eq_normZ_under_split,
+    Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
+
+  Both Divisor-specific axioms are already in `ma_extractable`'s closure
+  (soundness side). NO `weil_reciprocity_honest` dependency.
+
+  ## Remaining gaps to fully discharge `weil_reciprocity_honest`
+
+  1. `hDen` (denominator non-vanishing for chord-derivative formula at
+     A_0, A_1, A_2) — currently explicit. Mathematically follows from
+     B4-strengthened `¬badPairCompletenessPred` via:
+       3·pt.x² + A − 2λ·pt.y = 0 ⟺ pt.x is a double root of the chord
+       cubic ⟺ A_2.x = A_0.x or A_2.x = A_1.x ⟺ A_2 = A_0 or A_2 = A_1
+       (chord determines y from x) ⟺ tangentCollisionAtA_i — excluded
+       by B4. Lean derivation pending (~100 LOC algebraic chain via
+       `chord_x_pairwise_sum`, `chord_x_triple_product`).
+
+  2. `hResidueMatch` (protocol-level identification of the four eagenBuild
+     inputs `{P_0..P_3}` with the honest message structure
+     `{(-P), B_j with multiplicities}`) — genuinely application-specific.
+     For length-4 with k=3 distinct bases at scalars 1, this is the
+     identification `[P_0, P_1, P_2, P_3] = [(-P), B_1, B_2, B_3]`
+     after a permutation determined by `wit.scalars`.
+
+  3. General-N `eagenBuild` — currently only length-4. Honest divisors
+     for general k bases + scalars require the recursive driver from
+     Eagen §3.1.1 (paper p. 4). Length-4 only handles the special case
+     where the input list has exactly 4 elements with all distinct
+     x-coordinates (so no doublings, no repeats).
 -/
 
 import Divisor.IncrementalConstruction
