@@ -2279,4 +2279,43 @@ theorem chordCoordRingElt_degree_zero_vertical
   rw [Finset.sum_congr rfl hAff, ← Nat.cast_sum, hSum, hInf]
   norm_num
 
+/-! ## Pointwise divisor equation for chord-line CoordRingElt (chord case)
+
+For the chord branch with three distinct support points P, Q, A₂, the
+divisorOfD function on `ECPoint E` is exactly the formal divisor
+`δ_P + δ_Q + δ_{A₂} − 3·δ_O`. -/
+
+theorem divisorOfD_chordCoordRingElt_chord_pointwise
+    (P Q : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (hxx : P.1 ≠ Q.1)
+    (hP_neq_A2 : P.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
+    (hQ_neq_A2 : Q.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) :
+    let A₂ := (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1,
+               slopeOf P.1 P.2 Q.1 Q.2 *
+                 (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) +
+               (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1))
+    (∀ S ∈ E.points, S ≠ P → S ≠ Q → S ≠ A₂ →
+        divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E S.1 S.2) = 0) := by
+  classical
+  intro A₂ S hS hSP hSQ hSA₂
+  have hNZ := chordCoordRingElt_ne_zero E P Q
+  -- ordAt = 0 at S since S not in {P, Q, A₂} (chord_line_support_in_E).
+  have hOrdS : ordAt E (chordCoordRingElt E P Q) S = 0 := by
+    by_contra h
+    have hOrdSPos : 0 < ordAt E (chordCoordRingElt E P Q) S := Nat.pos_of_ne_zero h
+    have hZS : (chordCoordRingElt E P Q).eval S.1 S.2 = 0 :=
+      (ordAt_pos_iff_zero E _ hNZ S hS).mp hOrdSPos
+    rcases chordCoordRingElt_zeros_on_E_chord E hP hQ hxx hS hZS with h | h | h
+    · exact hSP h
+    · exact hSQ h
+    · exact hSA₂ h
+  rw [show divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E S.1 S.2)
+        = (ordAtPoint E (chordCoordRingElt E P Q)
+            (ECPoint.affine E S.1 S.2) : ℤ) from ?_,
+      ordAtPoint_affine E _ hS, hOrdS]
+  rfl
+  rw [ECPoint.affine_of_nonsingular E
+        (E.equation_iff_nonsingular.mp ((E.equation_iff S.1 S.2).mpr (E.hOnCurve _ hS)))]
+  rfl
+
 end Divisor
