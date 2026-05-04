@@ -392,6 +392,38 @@ theorem ma_completeness_via_isHonestForExplicit_with_sides
     stmt wit hk msg hkm h_honest hD hSplit hAccount A₀ A₁ hA₀ hA₁ hNV hGood
     (hResidueMatchAll A₀ A₁ hA₀ hA₁ hNV hGood)
 
+/-! ## Padding lemma: extend zerosFinset sum to E.points
+
+For any function f, the sum `∑ Q ∈ zerosFinset E D, ordAt(Q) * f(Q)` equals
+`∑ Q ∈ E.points, ordAt(Q) * f(Q)`, since ordAt is zero outside zerosFinset
+on E.points. -/
+
+theorem ordAt_sum_extend_to_E_points
+    {D : CoordRingElt E.q} (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (f : ZMod E.q × ZMod E.q → ZMod E.q) :
+    (∑ Q ∈ zerosFinset E D, (ordAt E D Q : ZMod E.q) * f Q)
+      = ∑ Q ∈ E.points, (ordAt E D Q : ZMod E.q) * f Q := by
+  classical
+  -- zerosFinset = E.points.filter (D.eval = 0).
+  have hSub : zerosFinset E D ⊆ E.points := by
+    unfold zerosFinset zeros; exact Finset.filter_subset _ _
+  -- Off zerosFinset, ordAt = 0.
+  rw [← Finset.sum_subset hSub]
+  intro Q hQE hQnZ
+  -- Q ∈ E.points, Q ∉ zerosFinset → D.eval Q ≠ 0 → ordAt Q = 0.
+  have hQnZ' : ¬ (D.eval Q.1 Q.2 = 0) := by
+    intro h; apply hQnZ
+    unfold zerosFinset zeros
+    rw [Finset.mem_filter]
+    exact ⟨hQE, h⟩
+  have h_ord : ordAt E D Q = 0 := by
+    by_contra h
+    apply hQnZ'
+    exact (ordAt_pos_iff_zero E D hD Q hQE).mp (Nat.pos_of_ne_zero h)
+  rw [h_ord]
+  push_cast
+  ring
+
 /-! ## Notes on remaining infrastructure for any-k completeness
 
 To prove `ma_completeness_via_isHonestForExplicit` for ANY k, we need:
