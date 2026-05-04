@@ -486,6 +486,27 @@ theorem residue_sum_eq_honest_via_isHonestForExplicit
       = ((ordAt E msg.toD Q : ℤ) : ZMod E.q) from by push_cast; rfl]
   rw [ordAt_cast_eq_honestDivisorCoeffs_cast_at_affine E stmt wit hk msg h_div hQ]
 
+/-! ## honestDivisorCoeffs unfolding at affine
+
+The honest divisor coefficient at an affine point splits into:
+* An indicator `(if (x,y) = -P_target then 1 else 0)`.
+* A bases-sum `Σ_{i: bases i = (x,y)} scalars i`.
+
+Sum over E.points + L-evaluation produces the protocol RHS form. -/
+
+theorem honestDivisorCoeffs_at_affine_split
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) {Q : ZMod E.q × ZMod E.q} (hQ : Q ∈ E.points) :
+    honestDivisorCoeffs E stmt wit hk msg (ECPoint.affine E Q.1 Q.2)
+      = (if Q = (stmt.target.1, -stmt.target.2) then 1 else 0) +
+        ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
+          (fun i => stmt.bases i = Q),
+          (wit.scalars (hk ▸ i) : ℤ) := by
+  rw [ECPoint.affine_of_nonsingular E
+        (E.equation_iff_nonsingular.mp ((E.equation_iff Q.1 Q.2).mpr (E.hOnCurve _ hQ)))]
+  rcases Q with ⟨x, y⟩
+  rfl
+
 /-! ## Notes on remaining infrastructure for any-k completeness
 
 To prove `ma_completeness_via_isHonestForExplicit` for ANY k, we need:
