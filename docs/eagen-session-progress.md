@@ -122,8 +122,30 @@ Both axioms it depends on are already in `ma_extractable`'s closure
 What remains to fully discharge `weil_reciprocity_honest` for length-4:
 * `hResidueMatch` — protocol-level identification of `{P_0..P_3}` with
   the honest message's structure `{(-P), B_j with multiplicities}`.
-* `hQline`, `hDen` — derivable from `¬badPairCompletenessPred` via
-  Bezout (chord ∩ E ⊆ {A_0, A_1, A_2}) + curve denominator analysis.
+* `hQline` — **DISCHARGED** via `hQline_of_hGood_eagenBuild_length4`
+  (Bezout-style argument: chord ∩ E ⊆ {A_0, A_1, A_2}, all of which
+  have D ≠ 0 by `¬badPairCompletenessPred`). Derived internally.
+* `hDen` — derivable from strengthened bad-set predicate via
+  chord-tangent algebraic identity: `3·pt.x² + A - 2λ·pt.y = 0` ⟺
+  pt is a double root of chord cubic ⟺ A_2 = A_0 or A_2 = A_1 ⟺
+  configurations excluded by B4 strengthening. Derivation pending
+  (modest algebraic work).
+
+## ma_completeness path forward
+
+Length-4 alone is insufficient to discharge `weil_reciprocity_honest`
+in `ma_completeness`'s closure: the honest divisor for general k bases
++ scalars requires general-N `eagenBuild`, not just length-4.
+
+The length-4 theorem demonstrates THE PATTERN works:
+* Constructive D from `eagenBuild_length4_explicit` is sound.
+* Chord-residue machinery applies for length-4 inputs.
+* Output `logDerivCheckFn = 0` modulo (i) protocol-level residue match
+  and (ii) hDen (derivable from B4).
+
+Next: extend `eagenBuild` to recursive general-N driver. Estimate:
+~500 LOC for the driver + per-step divisor characterization +
+generalized closures of all length-4 corollaries.
 
 ## Static prerequisites for `chord_sum_eq_residue_sum` — COMPLETE
 
