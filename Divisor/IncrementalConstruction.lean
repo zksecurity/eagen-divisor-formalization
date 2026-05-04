@@ -4300,4 +4300,27 @@ theorem divisorOfD_mul_add_when_chord_line_D2
     · exact this
     · rw [ECPoint.affine_of_nonsingular E hOnCurve]
 
+/-! ## Final wrapper: divisorOfD-additivity by chord line in distinct chord case
+
+Combines `chordCoordRingElt_normPoly_rootMult_le_one_at_distinct_chord`
+(bridge) with `divisorOfD_mul_add_when_chord_line_D2` (chord-line
+additivity) into a single user-facing additivity statement for
+multiplications by `chordCoordRingElt P Q` in the distinct chord
+case (P.1 ≠ Q.1, A₂ distinct from P, Q).
+
+This is the workhorse for eagenBuild's recursive chord-step. -/
+
+theorem divisorOfD_mul_add_by_chordCoordRingElt_distinct
+    {D : CoordRingElt E.q} (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (P Q : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (hxx : P.1 ≠ Q.1)
+    (hP_neq_A2 : P.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
+    (hQ_neq_A2 : Q.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
+    (R : ECPoint E) :
+    divisorOfD E (mulCoordRingElt E D (chordCoordRingElt E P Q)) R
+      = divisorOfD E D R + divisorOfD E (chordCoordRingElt E P Q) R := by
+  apply divisorOfD_mul_add_when_chord_line_D2 E hD (chordCoordRingElt_ne_zero E P Q)
+  exact chordCoordRingElt_normPoly_rootMult_le_one_at_distinct_chord
+    E P Q hP hQ hxx hP_neq_A2 hQ_neq_A2
+
 end Divisor
