@@ -4350,11 +4350,11 @@ noncomputable def eagenBuild_length4_explicit
   let L₁ := chordCoordRingElt E P₀ P₁
   let L₂ := chordCoordRingElt E P₂ P₃
   let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
-  -- L_3 is the vertical line at x_{Q_0}.
-  let L₃ : CoordRingElt E.q := { a := Polynomial.X - Polynomial.C Q₀x, b := 0 }
-  let D_temp := mulCoordRingElt E (mulCoordRingElt E L₁ L₂) L₃
-  -- Divide by (X - C Q₀x)² via two divLin steps.
-  ((D_temp.divLin Q₀x).divLin Q₀x)
+  -- Direct simplification: L_3 (vertical) and two divLin steps reduce
+  -- to just (L_1 · L_2).divLin Q_0x via mulCoordRingElt_vertical_divLin_eq_self.
+  -- But L_1·L_2 is twin at Q_0 directly (L_1 vanishes at Q_0, L_2 at -Q_0),
+  -- so divLin is valid.
+  (mulCoordRingElt E L₁ L₂).divLin Q₀x
 
 /-! ## Multiplication by vertical line: clean form
 
