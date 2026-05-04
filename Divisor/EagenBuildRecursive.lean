@@ -212,6 +212,14 @@ theorem eagenBuild_length2_neg_eq_vertical
   unfold eagenBuild_iterate
   simp
 
+/-! ## Length-4 reduction (deferred)
+
+For length-4 sum-zero distinct inputs, the recursive `eagenBuild`
+produces the same polynomial as `eagenBuild_length4_explicit`. The
+proof requires careful unfolding of the recursive structure and
+matching against the explicit length-4 formula. Substantial bookkeeping
+deferred to subsequent firings. -/
+
 /-! ## Future work
 
 The skeleton above defines the construction; correctness proofs require:
