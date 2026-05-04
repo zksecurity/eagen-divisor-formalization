@@ -445,6 +445,25 @@ This subsumes the cross case and is the cleanest formulation: it says
 this gives ordAt-additivity in all cases except both factors vanishing
 at P (which is then handled via mulCoordRingElt_divLin_left descent).
 
+### eagenBuild infrastructure status (May 2026)
+
+**Multiplication-additivity at every ECPoint under chord-line hypothesis: COMPLETE.**
+
+```lean
+divisorOfD_mul_add_when_chord_line_D2:
+    rootMult x (normPoly D_2) ≤ 1 ∀ x ⟹
+    divisorOfD (D_1·D_2) = divisorOfD D_1 + divisorOfD D_2 (pointwise)
+```
+
+This handles ALL chord lines through 3 distinct points (and vertical
+lines through P, -P pairs). The tangent line case (multiplicity 2 at
+the tangent point) requires extending to an `m₂ = 2` cross-case
+handler — substantial but not blocking the recursive definition of
+eagenBuild for non-tangent inputs.
+
+For eagenBuild's GENERIC recursion (no tangent doubling), the chord-line
+hypothesis suffices and the additivity is fully proven.
+
 ### Cross-case progress (May 2026, multiple firings)
 
 The cross case for `min(m₁, m₂) = 1` is now FULLY proved:
