@@ -4323,4 +4323,32 @@ theorem divisorOfD_mul_add_by_chordCoordRingElt_distinct
   exact chordCoordRingElt_normPoly_rootMult_le_one_at_distinct_chord
     E P Q hP hQ hxx hP_neq_A2 hQ_neq_A2
 
+/-! ## Multiplication by vertical line: clean form
+
+For `L = (X − C x₀, 0)` (vertical line at x₀), `D · L` has the simple
+form `(D.a · (X − x₀), D.b · (X − x₀))`. Hence `(D · L).divLin x₀ = D`. -/
+
+theorem mulCoordRingElt_vertical_eq
+    (D : CoordRingElt E.q) (x₀ : ZMod E.q) :
+    mulCoordRingElt E D ({ a := Polynomial.X - Polynomial.C x₀, b := 0 } : CoordRingElt E.q)
+      = { a := D.a * (Polynomial.X - Polynomial.C x₀),
+          b := D.b * (Polynomial.X - Polynomial.C x₀) } := by
+  unfold mulCoordRingElt
+  refine CoordRingElt.mk.injEq _ _ _ _ |>.mpr ?_
+  refine ⟨?_, ?_⟩ <;> ring
+
+theorem mulCoordRingElt_vertical_divLin_eq_self
+    (D : CoordRingElt E.q) (x₀ : ZMod E.q) :
+    (mulCoordRingElt E D
+      ({ a := Polynomial.X - Polynomial.C x₀, b := 0 } : CoordRingElt E.q)).divLin x₀ = D := by
+  rw [mulCoordRingElt_vertical_eq]
+  show { a := D.a * (Polynomial.X - Polynomial.C x₀)
+                /ₘ (Polynomial.X - Polynomial.C x₀),
+         b := D.b * (Polynomial.X - Polynomial.C x₀)
+                /ₘ (Polynomial.X - Polynomial.C x₀) } = D
+  refine CoordRingElt.mk.injEq _ _ _ _ |>.mpr ?_
+  refine ⟨?_, ?_⟩
+  · rw [mul_comm]; exact Polynomial.mul_divByMonic_cancel_left _ (Polynomial.monic_X_sub_C x₀)
+  · rw [mul_comm]; exact Polynomial.mul_divByMonic_cancel_left _ (Polynomial.monic_X_sub_C x₀)
+
 end Divisor
