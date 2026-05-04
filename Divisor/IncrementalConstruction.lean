@@ -4323,6 +4323,39 @@ theorem divisorOfD_mul_add_by_chordCoordRingElt_distinct
   exact chordCoordRingElt_normPoly_rootMult_le_one_at_distinct_chord
     E P Q hP hQ hxx hP_neq_A2 hQ_neq_A2
 
+/-! ## Length-4 eagenBuild construction
+
+For a length-4 list `[P_0, P_1, P_2, P_3]` of (affine) ECPoints summing
+to zero, with all four distinct in x-coordinates and the chord through
+P_0, P_1 passing through Q_0 = -(P_0+P_1) (with x_{Q_0} distinct from
+x_{P_0}, x_{P_1}), we build:
+
+  D = L_1 · L_2 · L_3 / (X - x_{Q_0})²
+
+where:
+* L_1 = chord through (P_0, P_1), with third intersection at Q_0.
+* L_2 = chord through (P_2, P_3), with third intersection at Q_1 = -Q_0
+  (since sum is zero).
+* L_3 = chord through (-Q_0, Q_0) = vertical line at x_{Q_0}.
+
+The divisor of `L_1·L_2·L_3` includes 2(Q_0) + 2(-Q_0); dividing by
+(X - x_{Q_0})² (= vertical line squared) cancels exactly these
+contributions, leaving the formal divisor (P_0)+(P_1)+(P_2)+(P_3) − 4(O).
+
+Below: the explicit construction of `D` as a `CoordRingElt`.
+The correctness theorem (`eagenBuild_length4_div_eq`) is the next step. -/
+
+noncomputable def eagenBuild_length4_explicit
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q) : CoordRingElt E.q :=
+  let L₁ := chordCoordRingElt E P₀ P₁
+  let L₂ := chordCoordRingElt E P₂ P₃
+  let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+  -- L_3 is the vertical line at x_{Q_0}.
+  let L₃ : CoordRingElt E.q := { a := Polynomial.X - Polynomial.C Q₀x, b := 0 }
+  let D_temp := mulCoordRingElt E (mulCoordRingElt E L₁ L₂) L₃
+  -- Divide by (X - C Q₀x)² via two divLin steps.
+  ((D_temp.divLin Q₀x).divLin Q₀x)
+
 /-! ## Multiplication by vertical line: clean form
 
 For `L = (X − C x₀, 0)` (vertical line at x₀), `D · L` has the simple
