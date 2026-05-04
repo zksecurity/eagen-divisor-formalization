@@ -1,7 +1,14 @@
 # `weil_reciprocity_honest`
 
-- **Lean source**: `Divisor/Axioms/AxiomWeilReciprocityHonest.lean`
-- **Status (post-audit)**: precondition strengthened in
+- **Lean source**: deleted (was `Divisor/Axioms/AxiomWeilReciprocityHonest.lean`).
+- **Status (post-discharge)**: **discharged**. The axiom is no longer in
+  the closure of `ma_completeness` or `ma_completeness_clean`. Replaced
+  by routing through `Divisor.ma_completeness_via_isHonestForExplicit`
+  (in `Divisor/EagenBuildRecursive.lean`), which derives the residue
+  identity from the strengthened `MAProverMsg.isHonestFor` predicate
+  using `principal_divisor_iff` (Silverman III.3.5) plus the
+  chord-resultant axioms already in the soundness-side closure.
+- **Status (pre-discharge)**: precondition strengthened in
   `Divisor/SupportDisjoint.lean` to make the axiom statement sound.
   Empirical verification: `divisors-axiom-tests/test_weil_reciprocity_honest.py`
   STRONG-BAD-SET PASS shows 0 failures across 28 curves.
