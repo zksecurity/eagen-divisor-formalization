@@ -1143,4 +1143,35 @@ theorem logDerivCheckFn_zero_via_isHonestForLength4Simple
     h_honest.h_toD_eq
     (fun _ => rfl) A₀ A₁ hA₀ hA₁ hNV hGood
 
+/-! ## Structure-level rejection bound
+
+Take a `IsHonestForLength4Simple` structure and produce the rejection
+set cardinality bound. Combines the structure's data with
+`rejectSet_bound_length4_simple`. -/
+
+theorem rejectSet_bound_via_isHonestForLength4Simple
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (h_honest : MAProverMsg.IsHonestForLength4Simple E msg stmt) :
+    let B := fun i : Fin 3 => stmt.bases (h_honest.hk_eq_3 ▸ i)
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          p.1.1 ≠ p.2.1 ∧
+          logDerivCheckFn E msg.toD stmt.target 3 B
+              (fun _ : Fin 3 => 1) p.1 p.2 ≠ 0)).card
+      ≤ (3 * 4 + 4) * E.numAffine := by
+  rw [h_honest.h_toD_eq]
+  exact rejectSet_bound_length4_simple E stmt.target
+    (fun i : Fin 3 => stmt.bases (h_honest.hk_eq_3 ▸ i))
+    h_honest.P₀ h_honest.P₁ h_honest.P₂ h_honest.P₃
+    h_honest.h_P₀_eq h_honest.h_P₁_eq h_honest.h_P₂_eq h_honest.h_P₃_eq
+    h_honest.hP₀ h_honest.hP₁ h_honest.hP₂ h_honest.hP₃
+    h_honest.h_xx_01 h_honest.h_xx_23
+    h_honest.h_P₀_ne_A2_01 h_honest.h_P₁_ne_A2_01
+    h_honest.h_P₂_ne_A2_23 h_honest.h_P₃_ne_A2_23
+    h_honest.h_P₀_off_L₂ h_honest.h_P₁_off_L₂
+    h_honest.h_P₂_off_L₁ h_honest.h_P₃_off_L₁
+    h_honest.h_third_match h_honest.h_y_match h_honest.h_Q₀_nontorsion
+    h_honest.h_Q₀_off_L₂_inputs h_honest.h_negQ₀_off_L₁_inputs
+    h_honest.h_inputs_distinct
+
 end Divisor
