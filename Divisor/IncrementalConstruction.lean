@@ -4381,6 +4381,55 @@ theorem mulCoordRingElt_chord_pair_eval_at_thirdPoint_of_left_chord
       from chordCoordRingElt_eval_thirdPoint_chord E hP₀ hP₁ h_xx_01]
   ring
 
+/-- When `Q₁` (third intersection of L₂) equals `-Q₀`, the chord-pair
+product vanishes at `-Q₀`. This holds when `P₀+P₁+P₂+P₃ = 0` on `E`. -/
+theorem mulCoordRingElt_chord_pair_eval_at_neg_thirdPoint
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1))) :
+    let lam := slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+    let Q₀x := lam ^ 2 - P₀.1 - P₁.1
+    let Q₀y := lam * Q₀x + (P₀.2 - lam * P₀.1)
+    (mulCoordRingElt E (chordCoordRingElt E P₀ P₁)
+        (chordCoordRingElt E P₂ P₃)).eval Q₀x (-Q₀y) = 0 := by
+  intro lam Q₀x Q₀y
+  -- -Q_0 on E.
+  have hQ₀_on : (Q₀x, Q₀y) ∈ E.points := by
+    apply E.hComplete
+    show Q₀y ^ 2 = Q₀x ^ 3 + E.curveA * Q₀x + E.curveB
+    exact chord_third_point_on_E E P₀ P₁ hP₀ hP₁ h_xx_01
+  have hNegQ₀_on : (Q₀x, -Q₀y) ∈ E.points := by
+    apply E.hComplete
+    have hOC : Q₀y ^ 2 = Q₀x ^ 3 + E.curveA * Q₀x + E.curveB :=
+      E.hOnCurve _ hQ₀_on
+    show (-Q₀y) ^ 2 = Q₀x ^ 3 + E.curveA * Q₀x + E.curveB
+    linear_combination hOC
+  -- L_2 vanishes at -Q_0 (which equals L_2's third intersection).
+  have hL₂_vanish_at_negQ₀ : (chordCoordRingElt E P₂ P₃).eval Q₀x (-Q₀y) = 0 := by
+    have h := chordCoordRingElt_eval_thirdPoint_chord E hP₂ hP₃ h_xx_23
+    -- h says L_2 vanishes at Q_1 = (Q_1.x, Q_1.y).
+    -- Q_1.x = Q_0.x by h_third_match, and Q_1.y = -Q_0.y by h_y_match.
+    convert h using 2
+    · exact h_third_match.symm
+    · -- Need: -Q_0.y = lam_2 * Q_1.x + (P_2.2 - lam_2 * P_2.1).
+      -- h_y_match: lam_2 * Q_1.x + (P_2.2 - lam_2 * P_2.1) = -Q_0.y. (with appropriate eq).
+      have := h_y_match
+      simp only [Q₀y, Q₀x, lam] at *
+      linear_combination -this
+  -- (L_1·L_2)(-Q_0) = L_1(-Q_0) · L_2(-Q_0) = ... · 0 = 0.
+  rw [mulCoordRingElt_eval_on_E E _ _ hNegQ₀_on, hL₂_vanish_at_negQ₀, mul_zero]
+
 /-! ## Multiplication by vertical line: clean form
 
 For `L = (X − C x₀, 0)` (vertical line at x₀), `D · L` has the simple
