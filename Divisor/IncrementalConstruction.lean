@@ -1291,6 +1291,68 @@ theorem chord_ordAt_eq_two_at_2torsion_doubling
   rw [hDeq, normPoly_chordCoordRingElt_vertical,
       Polynomial.rootMultiplicity_X_sub_C_pow]
 
+/-! ## Divisor at infinity for chord-line `CoordRingElt`s
+
+By the definition of `divisorOfD` at infinity (`-natDegree(normPoly)`), the
+infinity coefficient is `-3` for non-vertical and `-2` for vertical
+chord lines. -/
+
+theorem divisorOfD_chordCoordRingElt_at_infinity_nonvertical
+    (P Q : ZMod E.q × ZMod E.q) (hxx : P.1 ≠ Q.1) :
+    divisorOfD E (chordCoordRingElt E P Q) (0 : ECPoint E) = -3 := by
+  classical
+  unfold divisorOfD
+  -- At infinity (P = WeierstrassCurve.Affine.Point.zero), the value is
+  -- -((normPoly E D).natDegree : ℤ).
+  show -((normPoly E (chordCoordRingElt E P Q)).natDegree : ℤ) = -3
+  -- For chord case, natDegree(normPoly) = 3.
+  have hNDClassical :
+      ({ a := -(C (slopeOf P.1 P.2 Q.1 Q.2)) * X
+              - C (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1),
+          b := -1 } : CoordRingElt E.q) =
+        chordCoordRingElt E P Q := by
+    unfold chordCoordRingElt
+    rw [dif_neg hxx]
+    rfl
+  rw [← hNDClassical]
+  rw [natDegree_normPoly_chordCoordRingElt_nonvertical E _ _]
+  rfl
+
+theorem divisorOfD_chordCoordRingElt_at_infinity_tangent
+    {P : ZMod E.q × ZMod E.q} (h2t : P.2 ≠ 0) :
+    divisorOfD E (chordCoordRingElt E P P) (0 : ECPoint E) = -3 := by
+  classical
+  unfold divisorOfD
+  show -((normPoly E (chordCoordRingElt E P P)).natDegree : ℤ) = -3
+  have hNDClassical :
+      ({ a := -(C ((3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹)) * X
+              - C (P.2 - (3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹ * P.1),
+          b := -1 } : CoordRingElt E.q) =
+        chordCoordRingElt E P P := by
+    unfold chordCoordRingElt
+    rw [dif_pos rfl, dif_pos rfl, if_neg h2t]
+  rw [← hNDClassical]
+  rw [natDegree_normPoly_chordCoordRingElt_nonvertical E _ _]
+  rfl
+
+theorem divisorOfD_chordCoordRingElt_at_infinity_vertical
+    (P Q : ZMod E.q × ZMod E.q) (hxx : P.1 = Q.1)
+    (hCase : P.2 ≠ Q.2 ∨ (P.2 = Q.2 ∧ P.2 = 0)) :
+    divisorOfD E (chordCoordRingElt E P Q) (0 : ECPoint E) = -2 := by
+  classical
+  unfold divisorOfD
+  show -((normPoly E (chordCoordRingElt E P Q)).natDegree : ℤ) = -2
+  have hD : chordCoordRingElt E P Q
+      = ({ a := X - C P.1, b := 0 } : CoordRingElt E.q) := by
+    unfold chordCoordRingElt
+    rw [dif_pos hxx]
+    rcases hCase with hyy | ⟨hyy, h2t⟩
+    · rw [dif_neg hyy]
+    · rw [dif_pos hyy, if_pos h2t]
+  rw [hD]
+  rw [natDegree_normPoly_chordCoordRingElt_vertical E _]
+  rfl
+
 /-! ## Multiplication of `CoordRingElt`s in `F_q[E]`
 
 `F_q[E] = F_q[X,Y]/(Y² - X³ - AX - B)` admits multiplication by reducing
