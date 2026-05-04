@@ -2948,4 +2948,64 @@ theorem iterDivLin_mul_left (k : ℕ) :
     rw [IH (D₁.divLin x₀) D₂ x₀ ha' hb']
     rw [iterDivLin_succ]
 
+/-! ## `normPoly` of `iterDivLin` factors
+
+When `(X − x₀)^k` divides both `D.a` and `D.b` (i.e.,
+`commonRootMultRat E D x₀ ≥ k`), we have
+`normPoly E D = (X − x₀)^(2k) · normPoly E (iterDivLin E D x₀ k)`.
+
+Hence `rootMult x₀ (normPoly E D) = 2k + rootMult x₀ (normPoly E (iterDivLin E D x₀ k))`.
+
+This is the iterated lift of `normPoly_divLin_factor`. Used to relate
+the rootMult of normPoly at the "fully reduced" level back to the
+original. -/
+
+theorem normPoly_iterDivLin_factor (k : ℕ) :
+    ∀ (D : CoordRingElt E.q) (x₀ : ZMod E.q),
+      (Polynomial.X - Polynomial.C x₀) ^ k ∣ D.a →
+      (Polynomial.X - Polynomial.C x₀) ^ k ∣ D.b →
+      normPoly E D = ((Polynomial.X - Polynomial.C x₀) ^ k) ^ 2
+                       * normPoly E (iterDivLin E D x₀ k) := by
+  induction k with
+  | zero =>
+    intro D x₀ _ _
+    simp [iterDivLin_zero]
+  | succ k IH =>
+    intro D x₀ ha hb
+    -- (X - x₀) | D.a and D.b.
+    have ha1 : (Polynomial.X - Polynomial.C x₀) ∣ D.a := by
+      exact dvd_trans (dvd_pow_self _ (by omega)) ha
+    have hb1 : (Polynomial.X - Polynomial.C x₀) ∣ D.b := by
+      exact dvd_trans (dvd_pow_self _ (by omega)) hb
+    have hax : D.a.eval x₀ = 0 := Polynomial.dvd_iff_isRoot.mp ha1
+    have hbx : D.b.eval x₀ = 0 := Polynomial.dvd_iff_isRoot.mp hb1
+    -- normPoly_divLin_factor: normPoly D = (X-x₀)² * normPoly (D.divLin).
+    rw [normPoly_divLin_factor E D hax hbx]
+    -- (X - x₀)^k | (D.divLin x₀).a and .b.
+    have ha' : (Polynomial.X - Polynomial.C x₀) ^ k ∣ (D.divLin x₀).a := by
+      rw [CoordRingElt.divLin_a]
+      have hEq : D.a = (Polynomial.X - Polynomial.C x₀)
+                          * (D.a /ₘ (Polynomial.X - Polynomial.C x₀)) :=
+        (Polynomial.mul_divByMonic_eq_iff_isRoot.mpr hax).symm
+      have hDvd : (Polynomial.X - Polynomial.C x₀) ^ (k + 1)
+                    ∣ (Polynomial.X - Polynomial.C x₀)
+                       * (D.a /ₘ (Polynomial.X - Polynomial.C x₀)) := hEq ▸ ha
+      rw [pow_succ, mul_comm ((Polynomial.X - Polynomial.C x₀) ^ k)] at hDvd
+      exact (mul_dvd_mul_iff_left (X_sub_C_ne_zero x₀)).mp hDvd
+    have hb' : (Polynomial.X - Polynomial.C x₀) ^ k ∣ (D.divLin x₀).b := by
+      rw [CoordRingElt.divLin_b]
+      have hEq : D.b = (Polynomial.X - Polynomial.C x₀)
+                          * (D.b /ₘ (Polynomial.X - Polynomial.C x₀)) :=
+        (Polynomial.mul_divByMonic_eq_iff_isRoot.mpr hbx).symm
+      have hDvd : (Polynomial.X - Polynomial.C x₀) ^ (k + 1)
+                    ∣ (Polynomial.X - Polynomial.C x₀)
+                       * (D.b /ₘ (Polynomial.X - Polynomial.C x₀)) := hEq ▸ hb
+      rw [pow_succ, mul_comm ((Polynomial.X - Polynomial.C x₀) ^ k)] at hDvd
+      exact (mul_dvd_mul_iff_left (X_sub_C_ne_zero x₀)).mp hDvd
+    -- Apply IH on D.divLin x₀.
+    rw [IH (D.divLin x₀) x₀ ha' hb']
+    -- Combine: (X-x₀)² · ((X-x₀)^k)² · normPoly = ((X-x₀)^(k+1))² · normPoly.
+    rw [iterDivLin_succ]
+    ring
+
 end Divisor
