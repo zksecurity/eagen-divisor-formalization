@@ -4356,6 +4356,31 @@ noncomputable def eagenBuild_length4_explicit
   -- so divLin is valid.
   (mulCoordRingElt E L₁ L₂).divLin Q₀x
 
+/-! ## eagenBuild_length4 helper: chord-pair product vanishes at the
+chord's third intersection -/
+
+theorem mulCoordRingElt_chord_pair_eval_at_thirdPoint_of_left_chord
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) :
+    let lam := slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+    let Q₀x := lam ^ 2 - P₀.1 - P₁.1
+    let Q₀y := lam * Q₀x + (P₀.2 - lam * P₀.1)
+    (mulCoordRingElt E (chordCoordRingElt E P₀ P₁)
+        (chordCoordRingElt E P₂ P₃)).eval Q₀x Q₀y = 0 := by
+  intro lam Q₀x Q₀y
+  -- Q₀ on E.
+  have hQ₀_on : (Q₀x, Q₀y) ∈ E.points := by
+    apply E.hComplete
+    show Q₀y ^ 2 = Q₀x ^ 3 + E.curveA * Q₀x + E.curveB
+    exact chord_third_point_on_E E P₀ P₁ hP₀ hP₁ h_xx_01
+  -- (L_1 · L_2).eval Q_0 = L_1.eval Q_0 · L_2.eval Q_0 (via mulCoordRingElt_eval_on_E).
+  rw [mulCoordRingElt_eval_on_E E _ _ hQ₀_on]
+  -- L_1 vanishes at Q_0.
+  rw [show (chordCoordRingElt E P₀ P₁).eval Q₀x Q₀y = 0
+      from chordCoordRingElt_eval_thirdPoint_chord E hP₀ hP₁ h_xx_01]
+  ring
+
 /-! ## Multiplication by vertical line: clean form
 
 For `L = (X − C x₀, 0)` (vertical line at x₀), `D · L` has the simple
