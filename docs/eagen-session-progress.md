@@ -3,6 +3,41 @@
 **Branch:** `work/completeness`
 **Plan file:** `~/.claude/plans/we-want-to-fix-steady-cocke.md`
 
+## Next firing focus: bridge `chordCoordRingElt` to `divisorOfD_mul_add_when_chord_line_D2`
+
+The `divisorOfD_mul_add_when_chord_line_D2` theorem (proved at 100
+commits) requires the hypothesis `∀ x, rootMult x (normPoly D₂) ≤ 1`.
+This holds for `chordCoordRingElt P Q` in the distinct-chord case
+(P.1 ≠ Q.1, no tangent collision with third intersection). The
+required bridge lemma:
+
+```lean
+theorem chordCoordRingElt_normPoly_rootMult_le_one_at_distinct_chord
+    (P Q : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (hxx : P.1 ≠ Q.1)
+    (hP_neq_A2 : P.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
+    (hQ_neq_A2 : Q.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) :
+    ∀ x : ZMod E.q,
+      Polynomial.rootMultiplicity x
+        (normPoly E (chordCoordRingElt E P Q)) ≤ 1
+```
+
+Proof sketch:
+1. `natDegree (normPoly chord) = 3` (existing
+   `natDegree_normPoly_chordCoordRingElt_nonvertical`).
+2. Three distinct x-roots: `P.1, Q.1, A₂x` (via existing eval lemmas
+   + `normPoly_eval_eq_D_mul_D_neg`).
+3. As a Finset of size 3 contained in `(normPoly).roots.toFinset`.
+4. `Polynomial.card_le_degree_of_subset_roots`: card of roots ≤ 3.
+5. Since card of `roots` = sum of `rootMultiplicity`, and we have 3
+   distinct elements each contributing ≥ 1, sum = 3 exactly.
+6. Each x ∈ {P.1, Q.1, A₂x} has rootMultiplicity = 1; all others = 0.
+
+Once this bridge lands, eagenBuild's chord step (multiplication of
+the accumulator F by `chordCoordRingElt P Q` for distinct-chord pairs)
+can directly invoke `divisorOfD_mul_add_when_chord_line_D2` for
+divisorOfD-additivity.
+
 ## Branch state at firing (May 2026)
 
 **99 commits since master, all building cleanly (8098 jobs).**
