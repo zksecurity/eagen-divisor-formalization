@@ -5480,4 +5480,77 @@ theorem eagenBuild_length4_div_at_negQ₀
   rw [hLv_at_negQ₀]
   ring
 
+/-! ## eagenBuild_length4 divisorOfD = 0 at generic R -/
+
+/-- For any affine R on E with R distinct from all six on-support points
+    (P_0, P_1, P_2, P_3, ±Q_0) and R.x ≠ x_{Q_0}, the divisor of
+    `eagenBuild_length4_explicit` vanishes at R. -/
+theorem eagenBuild_length4_div_at_generic_R
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_P₀_ne_A2_01 : P₀.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₁_ne_A2_01 : P₁.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₂_ne_A2_23 : P₂.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₃_ne_A2_23 : P₃.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                        * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                        + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0)
+    (R : ZMod E.q × ZMod E.q) (hR : R ∈ E.points)
+    (hR_ne_P₀ : R ≠ P₀) (hR_ne_P₁ : R ≠ P₁)
+    (hR_ne_P₂ : R ≠ P₂) (hR_ne_P₃ : R ≠ P₃)
+    (hR_ne_A2_01 : R ≠
+      (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+        slopeOf P₀.1 P₀.2 P₁.1 P₁.2 *
+          (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) +
+        (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (hR_ne_A2_23 : R ≠
+      (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+        slopeOf P₂.1 P₂.2 P₃.1 P₃.2 *
+          (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) +
+        (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)))
+    (hR_x_ne_Q₀x : R.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) :
+    divisorOfD E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+        (ECPoint.affine E R.1 R.2) = 0 := by
+  rw [divisorOfD_eagenBuild_length4_eq_chord_pair_minus_vertical E
+      P₀ P₁ P₂ P₃ hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23
+      h_third_match h_y_match h_Q₀_nontorsion]
+  rw [divisorOfD_mul_add_by_chordCoordRingElt_distinct E
+      (chordCoordRingElt_ne_zero E P₀ P₁) P₂ P₃ hP₂ hP₃ h_xx_23
+      h_P₂_ne_A2_23 h_P₃_ne_A2_23 (ECPoint.affine E R.1 R.2)]
+  -- divisorOfD L_1 at R = 0.
+  have hL₁_at_R : divisorOfD E (chordCoordRingElt E P₀ P₁)
+                    (ECPoint.affine E R.1 R.2) = 0 := by
+    have h_pw := divisorOfD_chordCoordRingElt_chord_pointwise E P₀ P₁ hP₀ hP₁ h_xx_01
+                  h_P₀_ne_A2_01 h_P₁_ne_A2_01
+    exact h_pw R hR hR_ne_P₀ hR_ne_P₁ hR_ne_A2_01
+  rw [hL₁_at_R]
+  -- divisorOfD L_2 at R = 0.
+  have hL₂_at_R : divisorOfD E (chordCoordRingElt E P₂ P₃)
+                    (ECPoint.affine E R.1 R.2) = 0 := by
+    have h_pw := divisorOfD_chordCoordRingElt_chord_pointwise E P₂ P₃ hP₂ hP₃ h_xx_23
+                  h_P₂_ne_A2_23 h_P₃_ne_A2_23
+    exact h_pw R hR hR_ne_P₂ hR_ne_P₃ hR_ne_A2_23
+  rw [hL₂_at_R]
+  -- divisorOfD L_v at R = 0 (R.x ≠ Q_0x).
+  have hLv_at_R : divisorOfD E
+        ({ a := Polynomial.X - Polynomial.C
+                (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1), b := 0 }
+          : CoordRingElt E.q)
+        (ECPoint.affine E R.1 R.2) = 0 :=
+    divisorOfD_vertical_at_off_x₀_affine E _ hR hR_x_ne_Q₀x
+  rw [hLv_at_R]
+  ring
+
 end Divisor
