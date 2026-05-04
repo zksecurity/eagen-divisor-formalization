@@ -194,10 +194,11 @@ theorem logDerivCheckFn_zero_of_explicit_divisor_data
       D.eval x₂ y₂ ≠ 0 := by
     intro lam x₂ y₂ h
     apply h_unbad
-    refine Or.inr (Or.inr ?_)
-    show (match thirdPoint E A₀ A₁ with
+    refine Or.inr (Or.inr (Or.inl ?_))
+    show (match thirdPoint E (A₀, A₁).1 (A₀, A₁).2 with
       | none => True
       | some (x, y) => D.eval x y = 0)
+    rw [show (A₀, A₁).1 = A₀ from rfl, show (A₀, A₁).2 = A₁ from rfl]
     rw [hThirdEq]
     exact h
   exact logDerivCheckFn_zero_of_chord_residue_match E D P B m β_fun
