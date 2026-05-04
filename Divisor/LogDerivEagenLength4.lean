@@ -1025,14 +1025,16 @@ structure MAProverMsg.IsHonestForLength4Simple (E : ECSetup)
 
 /-! ## Bridge theorem: deferred
 
-The bridge theorem `logDerivCheckFn_zero_via_isHonestForLength4Simple`
-that connects `IsHonestForLength4Simple` to the conclusion of
-`weil_reciprocity_honest` (with `stmt.k`-cast handling) is non-trivial
-due to cast bookkeeping (stmt.k = 3, msg.k = 3, hkm : stmt.k = msg.k).
+The bridge `logDerivCheckFn_zero_via_isHonestForLength4Simple` (matching
+the conclusion shape of the formerly-axiomatic `weil_reciprocity_honest`)
+requires `subst` on `stmt.k`/`msg.k` projections, which Lean's `subst`
+doesn't directly handle. The `cases` destructuring approach leaves
+projections in the goal.
 
-The structure `IsHonestForLength4Simple` itself is in place and
-captures all needed data. The bridge can be added in a follow-up,
-or one can directly use `weil_reciprocity_honest_length4_simple`
-with the structure's fields manually unpacked. -/
+The structure `IsHonestForLength4Simple` is in place. Users can apply
+`weil_reciprocity_honest_length4_simple` directly with the structure's
+fields by passing explicit B = ![P_1, P_2, P_3] and unpacking the
+hypotheses. The bridge wrapper would just save lookup/cast pain at
+the protocol-API boundary; not blocking other progress. -/
 
 end Divisor
