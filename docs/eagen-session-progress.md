@@ -120,16 +120,15 @@ Both axioms it depends on are already in `ma_extractable`'s closure
 (soundness side), so they're "allowed".
 
 What remains to fully discharge `weil_reciprocity_honest` for length-4:
-* `hResidueMatch` — protocol-level identification of `{P_0..P_3}` with
-  the honest message's structure `{(-P), B_j with multiplicities}`.
+* `hResidueMatch` — **REMAINING**: protocol-level identification of
+  `{P_0..P_3}` with the honest message's structure
+  `{(-P), B_j with multiplicities}`.
 * `hQline` — **DISCHARGED** via `hQline_of_hGood_eagenBuild_length4`
   (Bezout-style argument: chord ∩ E ⊆ {A_0, A_1, A_2}, all of which
   have D ≠ 0 by `¬badPairCompletenessPred`). Derived internally.
-* `hDen` — derivable from strengthened bad-set predicate via
-  chord-tangent algebraic identity: `3·pt.x² + A - 2λ·pt.y = 0` ⟺
-  pt is a double root of chord cubic ⟺ A_2 = A_0 or A_2 = A_1 ⟺
-  configurations excluded by B4 strengthening. Derivation pending
-  (modest algebraic work).
+* `hDen` — **DISCHARGED** via `hDen_of_hGood` (chord-derivative-denominator
+  factorization at A_0, A_1, A_2). Derived internally from
+  strengthened bad set.
 
 ## ma_completeness path forward
 
