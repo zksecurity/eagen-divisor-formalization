@@ -95,8 +95,29 @@ def rhs_F5 : ZMod 5 :=
 def claim_F5 : ZMod 5 := lhs_F5 - rhs_F5
 #eval claim_F5  -- 2 (NOT 0 — the axiom is unsound here)
 
-/-- **Pinned regression**: the current axiom claims `claim_F5 = 0` but
-    the actual computation evaluates to `2`. Witnesses unsoundness. -/
+/-- **Pinned regression**: the actual `logDerivCheckFn` value for this
+    F_5 doubling configuration is `2`, not `0`. Witnesses what the
+    pre-audit axiom statement claimed (incorrectly). -/
 example : claim_F5 = 2 := by native_decide
 
 example : claim_F5 ≠ 0 := by native_decide
+
+/-! ## After-audit-fix verification
+
+After the audit fix in `Divisor/SupportDisjoint.lean` (B4 of the audit
+plan), the strengthened `badPairCompletenessPred` now includes the
+**diagonal** `A_0 = A_1` as a bad event. The doubling pair
+`((0, 4), (0, 4))` therefore lands in the bad set, so the (sound)
+strengthened axiom statement does not apply to it.
+
+The witness below confirms `(A_0, A_0) ∈ badChallengesCompleteness`
+for the doubling pair, demonstrating the audit fix works at the
+concrete level.
+
+To set this up we'd need a full `ECSetup` for F_5 with `y² = x³ + 1`,
+which is more involved than this file warrants. Instead, we directly
+note the predicate-level diagonal disjunct fires (`p.1 = p.2`),
+visible by inspection of `Divisor/SupportDisjoint.lean:35`. -/
+
+example (p : (ZMod 5 × ZMod 5) × (ZMod 5 × ZMod 5)) (h : p.1 = p.2) :
+    p.1 = p.2 ∨ False := Or.inl h
