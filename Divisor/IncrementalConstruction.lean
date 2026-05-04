@@ -2397,4 +2397,37 @@ theorem ordAt_twoTorsion_divLin_rec
     · exact pow_ne_zero _ (X_sub_C_ne_zero _)
     · exact normPoly_ne_zero E _ hD'
 
+/-! ## Length-3 eagenBuild base case (chord branch)
+
+For three distinct on-curve points `P, Q, R` with `P + Q + R = 0` in the
+group law, the chord line through `P` and `Q` produces the expected
+divisor `δ_{P_ec} + δ_{Q_ec} + δ_{R_ec} − 3·δ_O` on `ECPoint E`. This
+is the simplest non-trivial `eagenBuild` case. -/
+
+-- Skeleton-level statement, parameterised by pairwise distinctness of
+-- (P, Q, R) on E and the chord-case condition.
+
+theorem eagenBuild_length3_chord_correctness
+    (P Q : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (hxx : P.1 ≠ Q.1)
+    (hP_neq_A2 : P.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
+    (hQ_neq_A2 : Q.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) :
+    let A₂ := (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1,
+               slopeOf P.1 P.2 Q.1 Q.2 *
+                 (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) +
+               (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1))
+    -- The divisor matches the formal divisor:
+    divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E P.1 P.2) = 1
+    ∧ divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E Q.1 Q.2) = 1
+    ∧ divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E A₂.1 A₂.2) = 1
+    ∧ divisorOfD E (chordCoordRingElt E P Q) (0 : ECPoint E) = -3
+    -- Off-support: divisor is zero.
+    ∧ (∀ S ∈ E.points, S ≠ P → S ≠ Q → S ≠ A₂ →
+        divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E S.1 S.2) = 0) := by
+  intro A₂
+  obtain ⟨hP_div, hQ_div, hA₂_div, hO_div⟩ :=
+    divisorOfD_chordCoordRingElt_chord_distinct E P Q hP hQ hxx hP_neq_A2 hQ_neq_A2
+  exact ⟨hP_div, hQ_div, hA₂_div, hO_div,
+    divisorOfD_chordCoordRingElt_chord_pointwise E P Q hP hQ hxx hP_neq_A2 hQ_neq_A2⟩
+
 end Divisor
