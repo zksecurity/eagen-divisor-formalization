@@ -913,4 +913,36 @@ theorem honestDivisorCoeffs_affine_sum_eq_degE
       honestDivisorCoeffs_at_infinity E stmt wit hk msg] at h_ext_sum
   linarith
 
+/-! ## Bridge: `∑_{R ∈ affinePoints E} f R = ∑_{Q ∈ E.points} f (affine E Q.1 Q.2)` -/
+
+theorem affinePoints_sum_eq_image_sum {α : Type*} [AddCommMonoid α]
+    (f : ECPoint E → α) :
+    (∑ R ∈ ECPoint.affinePoints E, f R)
+      = ∑ Q ∈ E.points, f (ECPoint.affine E Q.1 Q.2) := by
+  classical
+  unfold ECPoint.affinePoints
+  rw [Finset.sum_image]
+  intro P hP Q hQ h_eq
+  simp only at h_eq
+  have hPns : E.toW.toAffine.Nonsingular P.1 P.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP))
+  have hQns : E.toW.toAffine.Nonsingular Q.1 Q.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff Q.1 Q.2).mpr (E.hOnCurve _ hQ))
+  rw [ECPoint.affine_of_nonsingular E hPns,
+      ECPoint.affine_of_nonsingular E hQns] at h_eq
+  -- .some hPns = .some hQns implies the implicit x, y match.
+  injection h_eq with hx_some hy_some
+  exact Prod.ext hx_some hy_some
+
+/-! ## Step 3: ∑ ordAt = degE from divisor identity -/
+
+theorem ordAt_sum_eq_degE_of_isHonestForExplicit
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm) :
+    ((∑ Q ∈ E.points, ordAt E msg.toD Q : ℕ) : ℤ) = (msg.toD.degE : ℤ) := by
+  rw [ordAt_sum_eq_honestDivisorCoeffs_sum_at_affines E stmt wit hk msg h_honest.2]
+  rw [← affinePoints_sum_eq_image_sum E (honestDivisorCoeffs E stmt wit hk msg)]
+  exact honestDivisorCoeffs_affine_sum_eq_degE E stmt wit hk msg hkm h_honest
+
 end Divisor
