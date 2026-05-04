@@ -1101,4 +1101,46 @@ theorem logDerivCheckFn_zero_via_isHonestForLength4Simple_raw
     h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs h_inputs_distinct
     A₀ A₁ hA₀ hA₁ hNV hGood
 
+/-! ## Structure-level bridge
+
+Take a `IsHonestForLength4Simple` structure and produce
+`logDerivCheckFn = 0` via the raw bridge. Internally destructures
+the structure and applies the raw bridge. -/
+
+theorem logDerivCheckFn_zero_via_isHonestForLength4Simple
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (h_honest : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
+    (hNV : A₀.1 ≠ A₁.1)
+    (hGood : (A₀, A₁) ∉ badChallengesCompleteness E msg.toD) :
+    logDerivCheckFn E msg.toD stmt.target 3
+      (fun i : Fin 3 => stmt.bases (h_honest.hk_eq_3 ▸ i))
+      (fun _ : Fin 3 => (1 : ZMod E.q)) A₀ A₁ = 0 := by
+  -- Apply the raw bridge with B = (fun i => stmt.bases (hk_eq_3 ▸ i)).
+  have h_P₁_eq : h_honest.P₁ = (fun i : Fin 3 => stmt.bases (h_honest.hk_eq_3 ▸ i)) 0 :=
+    h_honest.h_P₁_eq
+  have h_P₂_eq : h_honest.P₂ = (fun i : Fin 3 => stmt.bases (h_honest.hk_eq_3 ▸ i)) 1 :=
+    h_honest.h_P₂_eq
+  have h_P₃_eq : h_honest.P₃ = (fun i : Fin 3 => stmt.bases (h_honest.hk_eq_3 ▸ i)) 2 :=
+    h_honest.h_P₃_eq
+  exact logDerivCheckFn_zero_via_isHonestForLength4Simple_raw E
+    stmt.target
+    (fun i : Fin 3 => stmt.bases (h_honest.hk_eq_3 ▸ i))
+    msg.toD
+    (fun _ : Fin 3 => 1)
+    h_honest.P₀ h_honest.P₁ h_honest.P₂ h_honest.P₃
+    h_honest.h_P₀_eq h_P₁_eq h_P₂_eq h_P₃_eq
+    h_honest.hP₀ h_honest.hP₁ h_honest.hP₂ h_honest.hP₃
+    h_honest.h_xx_01 h_honest.h_xx_23
+    h_honest.h_P₀_ne_A2_01 h_honest.h_P₁_ne_A2_01
+    h_honest.h_P₂_ne_A2_23 h_honest.h_P₃_ne_A2_23
+    h_honest.h_P₀_off_L₂ h_honest.h_P₁_off_L₂
+    h_honest.h_P₂_off_L₁ h_honest.h_P₃_off_L₁
+    h_honest.h_third_match h_honest.h_y_match h_honest.h_Q₀_nontorsion
+    h_honest.h_Q₀_off_L₂_inputs h_honest.h_negQ₀_off_L₁_inputs
+    h_honest.h_inputs_distinct
+    h_honest.h_toD_eq
+    (fun _ => rfl) A₀ A₁ hA₀ hA₁ hNV hGood
+
 end Divisor
