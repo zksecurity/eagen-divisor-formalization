@@ -5589,4 +5589,41 @@ theorem eagenBuild_length4_normPoly_natDegree_eq_four
     linarith
   exact_mod_cast this
 
+/-! ## Corollary: `eagenBuild_length4_explicit` is nonzero -/
+
+theorem eagenBuild_length4_explicit_ne_zero
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                        * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                        + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0) :
+    ¬ ((eagenBuild_length4_explicit E P₀ P₁ P₂ P₃).a = 0
+       ∧ (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃).b = 0) := by
+  have hL₁L₂_NZ : ¬ ((mulCoordRingElt E (chordCoordRingElt E P₀ P₁)
+        (chordCoordRingElt E P₂ P₃)).a = 0
+      ∧ (mulCoordRingElt E (chordCoordRingElt E P₀ P₁)
+        (chordCoordRingElt E P₂ P₃)).b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E (mulCoordRingElt E (chordCoordRingElt E P₀ P₁)
+        (chordCoordRingElt E P₂ P₃)) = 0 := by
+      rw [normPoly_eq, ha, hb]; ring
+    rw [normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E _ (chordCoordRingElt_ne_zero E P₀ P₁))
+           (normPoly_ne_zero E _ (chordCoordRingElt_ne_zero E P₂ P₃))) hN
+  obtain ⟨hax, hbx⟩ := mulCoordRingElt_chord_pair_a_b_vanish_at_Q₀ E P₀ P₁ P₂ P₃
+    hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_third_match h_y_match h_Q₀_nontorsion
+  exact divLin_not_both_zero E _ hL₁L₂_NZ hax hbx
+
 end Divisor
