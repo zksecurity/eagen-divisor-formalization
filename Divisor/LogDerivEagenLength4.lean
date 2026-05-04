@@ -1192,15 +1192,49 @@ theorem logDerivCheckFn_eq_under_stmt_k_eq_three
   funext i
   exact h_m_one i
 
+/-! ## hNV derivation from ¬bad set
+
+For any `(A_0, A_1) ∉ badChallengesCompleteness E D`, we have
+`A_0.1 ≠ A_1.1`. The strengthened bad set excludes:
+* diagonal A_0 = A_1 (covers A_0.1 = A_1.1 ∧ A_0.2 = A_1.2 ∧ y ≠ 0);
+* thirdPoint = none cases (A_0.1 = A_1.1 ∧ A_0.2 ≠ A_1.2 vertical chord;
+  A_0 = A_1 = (x, 0) 2-torsion doubling).
+Hence A_0.1 = A_1.1 cannot hold for a "good" pair. -/
+
+theorem hNV_of_hGood {D : CoordRingElt E.q}
+    {A₀ A₁ : ZMod E.q × ZMod E.q}
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
+    (hGood : (A₀, A₁) ∉ badChallengesCompleteness E D) :
+    A₀.1 ≠ A₁.1 := by
+  classical
+  intro hVert
+  apply hGood
+  refine Finset.mem_filter.mpr ⟨Finset.mk_mem_product hA₀ hA₁, ?_⟩
+  -- A_0.1 = A_1.1. Two subcases: A_0 = A_1 (diagonal) or thirdPoint = none.
+  by_cases hY : A₀.2 = A₁.2
+  · -- Diagonal: A_0 = A_1.
+    refine Or.inr (Or.inr (Or.inr (Or.inl ?_)))
+    show (A₀, A₁).1 = (A₀, A₁).2
+    rw [show (A₀, A₁).1 = A₀ from rfl, show (A₀, A₁).2 = A₁ from rfl]
+    exact Prod.ext hVert hY
+  · -- A_0.1 = A_1.1, A_0.2 ≠ A_1.2 → vertical chord, thirdPoint = none.
+    refine Or.inr (Or.inr (Or.inl ?_))
+    show (match thirdPoint E (A₀, A₁).1 (A₀, A₁).2 with
+      | none => True
+      | some (x, y) => D.eval x y = 0)
+    rw [show (A₀, A₁).1 = A₀ from rfl, show (A₀, A₁).2 = A₁ from rfl]
+    have hThirdNone : thirdPoint E A₀ A₁ = none := by
+      unfold thirdPoint
+      rw [if_pos hVert]
+      rw [if_neg hY]
+    rw [hThirdNone]
+    trivial
+
 /-! ## Note on ma_completeness instantiation
 
-The cast bridge above lets us instantiate `ma_completeness_parameterized`
-(Soundness.lean) with `IsHonestForLength4Simple`. The remaining step is
-deriving `A_0.1 ≠ A_1.1` from `¬badPairCompletenessPred`, which the
-strengthened bad set (post B4) handles via the diagonal + vertical-chord
-exclusions.
-
-Full instantiation `ma_completeness_via_isHonestForLength4Simple` is a
-follow-up combining: cast bridge + hNV derivation + structure bridge. -/
+With both helpers in place (`logDerivCheckFn_eq_under_stmt_k_eq_three`
+cast bridge and `hNV_of_hGood` non-vertical extractor), the full
+`ma_completeness_via_isHonestForLength4Simple` is now mechanically
+constructible. -/
 
 end Divisor
