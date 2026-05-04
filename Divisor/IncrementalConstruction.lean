@@ -3091,4 +3091,63 @@ theorem mulCoordRingElt_specialY_identity
   rw [Polynomial.C_pow]
   ring
 
+/-! ## Cross-case derivative identity
+
+In cross case (D₁ lone at P, D₂ lone at -P) at non-2-torsion P:
+
+  `B₁ · T'(x₀) = -B₂ · N(D₁)'(x₀)`
+
+where `T := (D₁·D₂).a − (D₁·D₂).b · C(y₀)` (the "specialize Y to y₀"
+poly), `N(D₁) := normPoly E D₁`, `B₁ := D₁.b(x₀)`, `B₂ := D₂.b(x₀)`.
+
+This is the key Codex-suggested identity that bridges the cross-case
+multiplicity to the original. When `m₁ = 1` (i.e. `N(D₁)'(x₀) ≠ 0`),
+this gives `T'(x₀) ≠ 0`, hence `rootMult x₀ T = 1`. -/
+
+theorem cross_case_T_deriv_eq_normPoly_deriv
+    (D₁ D₂ : CoordRingElt E.q)
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0) :
+    D₁.b.eval P.1 *
+      ((mulCoordRingElt E D₁ D₂).a -
+        (mulCoordRingElt E D₁ D₂).b * Polynomial.C P.2).derivative.eval P.1
+      = -(D₂.b.eval P.1) * (normPoly E D₁).derivative.eval P.1 := by
+  -- D₁(P) = 0 ⟺ D₁.a(x₀) = D₁.b(x₀) · y₀.
+  have hax₁ : D₁.a.eval P.1 = D₁.b.eval P.1 * P.2 := by
+    have heq : D₁.a.eval P.1 - D₁.b.eval P.1 * P.2 = 0 := hD₁P
+    linear_combination heq
+  -- D₂(-P) = 0 ⟺ D₂.a(x₀) = -D₂.b(x₀) · y₀.
+  have hax₂ : D₂.a.eval P.1 = -(D₂.b.eval P.1 * P.2) := by
+    have heq : D₂.a.eval P.1 - D₂.b.eval P.1 * (-P.2) = 0 := hD₂negP
+    linear_combination heq
+  -- curveX(x₀) = y₀².
+  have hOC : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := E.hOnCurve P hP
+  have hCurveX : (curveX E).eval P.1 = P.2 ^ 2 := by
+    unfold curveX
+    simp [Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_mul,
+          Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X, hOC]
+  -- Expand both derivatives.
+  -- LHS: T = (D₁·D₂).a - (D₁·D₂).b * C P.2
+  --     = (D₁.a*D₂.a + D₁.b*D₂.b*curveX) - (D₁.a*D₂.b + D₂.a*D₁.b)*C P.2
+  -- T.derivative is computed by polynomial product rule.
+  -- Expand (mulCoordRingElt E D₁ D₂).a, .b, then take derivative.
+  show D₁.b.eval P.1 *
+      (D₁.a * D₂.a + D₁.b * D₂.b * curveX E -
+        (D₁.a * D₂.b + D₂.a * D₁.b) * Polynomial.C P.2).derivative.eval P.1
+      = -(D₂.b.eval P.1) * (normPoly E D₁).derivative.eval P.1
+  rw [normPoly_eq]
+  -- Now RHS is -(D₂.b.eval P.1) * (D₁.a^2 - D₁.b^2 * curveX).derivative.eval P.1
+  -- Take derivatives. Use Polynomial.derivative_add, _sub, _mul, _pow.
+  simp only [Polynomial.derivative_add, Polynomial.derivative_sub,
+             Polynomial.derivative_mul, Polynomial.derivative_pow,
+             Polynomial.derivative_C, mul_zero, add_zero, zero_add,
+             mul_one, one_mul, zero_mul]
+  -- Evaluate.
+  simp only [Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_mul,
+             Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X,
+             Polynomial.eval_natCast, Polynomial.eval_ofNat]
+  -- Substitute hax₁, hax₂, hCurveX.
+  rw [hax₁, hax₂, hCurveX]
+  ring
+
 end Divisor
