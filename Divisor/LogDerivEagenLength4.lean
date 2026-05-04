@@ -416,12 +416,6 @@ theorem logDerivCheckFn_zero_for_eagenBuild_length4
     (hNV : A₀.1 ≠ A₁.1)
     (hGood : (A₀, A₁) ∉ badChallengesCompleteness E
               (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃))
-    (hDen : let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
-            ∀ pt : ZMod E.q × ZMod E.q,
-              pt = A₀ ∨ pt = A₁ ∨
-              pt = (lam ^ 2 - A₀.1 - A₁.1,
-                    lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
-              → 3 * pt.1 ^ 2 + E.curveA - 2 * lam * pt.2 ≠ 0)
     (hResidueMatch :
       (∑ Q ∈ zerosFinset E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃),
           (ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) Q : ZMod E.q) *
@@ -465,6 +459,8 @@ theorem logDerivCheckFn_zero_for_eagenBuild_length4
     h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
     h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs
     A₀ A₁ hA₀ hA₁ hNV hGood
+  -- hDen: derived from hGood via chord-derivative-denominator factorization.
+  have hDen := hDen_of_hGood E D A₀ A₁ hA₀ hA₁ hNV hGood
   -- Apply logDerivCheckFn_zero_of_explicit_divisor_data.
   exact logDerivCheckFn_zero_of_explicit_divisor_data E D P_target B m
     (ordAt E D) hNZ hSplit hβsup hβcov hAccount hβtrue
