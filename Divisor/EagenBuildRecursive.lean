@@ -991,4 +991,14 @@ theorem natDegree_normPoly_eq_degE_of_isHonestForExplicit
     normPoly_natDegree_le E msg.toD
   omega
 
+/-! ## hAccount from isHonestForExplicit (no splitsOnE needed) -/
+
+theorem hAccount_of_isHonestForExplicit
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm) :
+    (∑ Q ∈ E.points, ordAt E msg.toD Q) = (normPoly E msg.toD).natDegree := by
+  rw [ordAt_sum_eq_degE_nat_of_isHonestForExplicit E stmt wit hk msg hkm h_honest,
+      natDegree_normPoly_eq_degE_of_isHonestForExplicit E stmt wit hk msg hkm h_honest]
+
 end Divisor
