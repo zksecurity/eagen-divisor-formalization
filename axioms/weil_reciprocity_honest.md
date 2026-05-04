@@ -1,8 +1,25 @@
 # `weil_reciprocity_honest`
 
-- **Lean source**: `Divisor/Soundness.lean:286`
+- **Lean source**: `Divisor/Axioms/AxiomWeilReciprocityHonest.lean`
+- **Status (post-audit)**: precondition strengthened in
+  `Divisor/SupportDisjoint.lean` to make the axiom statement sound.
+  Empirical verification: `divisors-axiom-tests/test_weil_reciprocity_honest.py`
+  STRONG-BAD-SET PASS shows 0 failures across 28 curves.
 
-Completeness form of Weil reciprocity: for an honest prover's divisor, `logDerivCheckFn` vanishes at every challenge pair off the bad set.
+Completeness form of Weil reciprocity: for an honest prover's
+divisor, `logDerivCheckFn` vanishes at every challenge pair off the
+(strengthened) bad set. The bad set excludes:
+* `D` vanishing at `A_0`, `A_1`, or `A_2`;
+* `A_2 = ∞` (vertical chord);
+* **diagonal `A_0 = A_1`** (added in audit fix; Lean's `slopeOf`
+  returns `0/0 = 0` here instead of the geometric tangent);
+* **tangent collisions `A_2 ∈ {A_0, A_1}`** (added in audit fix; the
+  `dx/dz` denominator vanishes at the affected sheet).
+
+The original (pre-fix) axiom statement was unsound at the diagonal
+and tangent-collision configurations — concretely demonstrated by
+the F_5 doubling counterexample in
+`Tests/RegressionDoublingChallenge.lean`.
 
 ## Citation
 
