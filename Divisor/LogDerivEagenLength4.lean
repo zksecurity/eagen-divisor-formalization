@@ -79,6 +79,26 @@ the trivial `lam² = A_0.x + A_1.x + A_2.x` (`e_1`) substitution.
 Derivation pending — once landed, hDen at all three points (A_0, A_1, A_2)
 follows by symmetric/trivial application. -/
 
+theorem chord_deriv_denom_factor_at_A₀
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
+    (hNV : A₀.1 ≠ A₁.1) :
+    let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
+    let A₂x := lam ^ 2 - A₀.1 - A₁.1
+    3 * A₀.1 ^ 2 + E.curveA - 2 * lam * A₀.2
+      = (A₀.1 - A₁.1) * (A₀.1 - A₂x) := by
+  intro lam A₂x
+  -- Vieta `e_2 = A - 2λμ`: A_0.x · A_1.x + A_0.x · A_2.x + A_1.x · A_2.x = A - 2λμ.
+  -- where μ = A_0.y - λ · A_0.x.
+  have hVieta := chord_x_pairwise_sum E A₀ A₁ hA₀ hA₁ hNV
+  simp only [show (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 : ZMod E.q) = lam from rfl] at hVieta
+  -- Unfold lets in hVieta:
+  have hVieta' : A₀.1 * A₁.1 + A₀.1 * A₂x + A₁.1 * A₂x
+      = E.curveA - 2 * lam * (A₀.2 - lam * A₀.1) := hVieta
+  -- Now ring:
+  have h_A2x : A₂x = lam ^ 2 - A₀.1 - A₁.1 := rfl
+  linear_combination -hVieta'
+
 /-! ## hQline derivation: chord doesn't pass through any zero
 
 For length-4 `D = eagenBuild_length4`, `zerosFinset = {P_0..P_3}`. A
