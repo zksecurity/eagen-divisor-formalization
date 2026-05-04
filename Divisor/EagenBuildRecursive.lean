@@ -1547,6 +1547,40 @@ private theorem honestCoeffs_eq_one_at_P_for_length4Simple
     rw [h_filter_eq, bases_filter_singleton_for_length4Simple E h_simple 2]
     rw [Finset.sum_singleton, h_scalars]
 
+/-! ### Full divisor identity ∀ R for length-4 simple
+
+Combines the infinity case, the affine on-support case (R ∈ {P_0..P_3}),
+and the affine off-support case (R ∉ {P_0..P_3}). -/
+
+/-- Universal divisor identity: `∀ R : ECPoint E, divisorOfD msg.toD R = honestDivisorCoeffs R`. -/
+theorem divisor_identity_for_length4Simple
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    {wit : DlogWitness E.q} (hk : stmt.k = wit.k)
+    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1) :
+    ∀ R : ECPoint E,
+      divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R := by
+  classical
+  intro R
+  match R with
+  | WeierstrassCurve.Affine.Point.zero =>
+    exact divisor_identity_at_infinity_for_length4Simple E h_simple hk
+  | WeierstrassCurve.Affine.Point.some (x := x) (y := y) hns =>
+    have hOC : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB :=
+      (E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hns)
+    have hP : (x, y) ∈ E.points := E.hComplete x y hOC
+    -- Case-split on (x, y) ∈ {P_0..P_3} or not.
+    by_cases h_in : (x, y) = h_simple.P₀ ∨ (x, y) = h_simple.P₁ ∨
+                    (x, y) = h_simple.P₂ ∨ (x, y) = h_simple.P₃
+    · -- On support.
+      rw [div_eq_one_at_P_for_length4Simple E h_simple hns h_in]
+      rw [honestCoeffs_eq_one_at_P_for_length4Simple E h_simple hk h_scalars hns h_in]
+    · -- Off support.
+      push_neg at h_in
+      obtain ⟨h0, h1, h2, h3⟩ := h_in
+      exact divisor_identity_at_affine_off_support_for_length4Simple E h_simple hk h_scalars
+        hns hP ⟨h0, h1, h2, h3⟩
+
 /-- Scalar reduction for the length-4 simple case (with `wit.scalars = 1`). -/
 theorem scalar_reduction_for_length4Simple
     {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
