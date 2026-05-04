@@ -56,12 +56,28 @@
 
   * `ma_completeness`:
       propext, Classical.choice, Quot.sound,
-      Divisor.weil_reciprocity_honest
+      Divisor.chord_fiber_product_eq_normZ_under_split,
+      Divisor.principal_divisor_iff,
+      Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
 
   * `ma_completeness_clean`:
       propext, Classical.choice, Quot.sound,
-      Divisor.weil_reciprocity_honest,
+      Divisor.chord_fiber_product_eq_normZ_under_split,
+      Divisor.principal_divisor_iff,
+      Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g,
       Divisor.hasse_weil
+
+  The unsound `Divisor.weil_reciprocity_honest` axiom (which falsely
+  claimed Eagen's eq. (1) on the diagonal `A_0 = A_1` where `slopeOf`
+  totalises to `0/0`) is no longer reachable from `ma_completeness*`.
+  The new closure replaces it with `principal_divisor_iff`
+  (Silverman III.3.5) and the same sound axioms already used in
+  `ma_extractable`'s closure (`chord_fiber_product_eq_normZ_under_split`,
+  `resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`).
+  The bridge: strengthened `MAProverMsg.isHonestFor` requires the
+  extensional divisor identity `divisorOfD msg.toD R = honestDivisorCoeffs R`
+  at every `R : ECPoint E`; the residue-side Weil identity is then a
+  theorem of the chord-resultant infrastructure.
 
   * `CoordRingElt.exists_divisor_multiplicity`,
     `CoordRingElt.exists_divisor_multiplicity_ecpoint`,

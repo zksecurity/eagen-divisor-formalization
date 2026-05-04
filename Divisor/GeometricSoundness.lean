@@ -3240,7 +3240,7 @@ private theorem rootMult_normPolyBar_at_fqToBar
   exact (Polynomial.eq_rootMultiplicity_map (fqToBar_injective E) β).symm
 
 /-- Rational counterpart of `commonRootMultiplicity`. -/
-private noncomputable def commonRootMultRat
+private noncomputable def commonRootMultRatGS
     (D : CoordRingElt E.q) (β : ZMod E.q) : ℕ :=
   if D.a = 0 then D.b.rootMultiplicity β
   else if D.b = 0 then D.a.rootMultiplicity β
@@ -3249,9 +3249,9 @@ private noncomputable def commonRootMultRat
 private theorem commonRootMultiplicity_at_fqToBar_eq
     (D : CoordRingElt E.q) (β : ZMod E.q) :
     commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) (fqToBar E β)
-      = commonRootMultRat E D β := by
+      = commonRootMultRatGS E D β := by
   classical
-  unfold commonRootMultiplicity commonRootMultRat
+  unfold commonRootMultiplicity commonRootMultRatGS
   have ha : (geomAPoly E D = 0) ↔ (D.a = 0) := by
     unfold geomAPoly
     exact Polynomial.map_eq_zero_iff (fqToBar_injective E)
@@ -3276,12 +3276,12 @@ private theorem commonRootMultiplicity_at_fqToBar_eq
 /-- Rational a-tilde: `D.a` after removing the common `(X - C β)`-factor. -/
 private noncomputable def aTildeRat (D : CoordRingElt E.q) (β : ZMod E.q) :
     Polynomial (ZMod E.q) :=
-  D.a /ₘ (Polynomial.X - Polynomial.C β) ^ commonRootMultRat E D β
+  D.a /ₘ (Polynomial.X - Polynomial.C β) ^ commonRootMultRatGS E D β
 
 /-- Rational b-tilde: `D.b` after removing the common `(X - C β)`-factor. -/
 private noncomputable def bTildeRat (D : CoordRingElt E.q) (β : ZMod E.q) :
     Polynomial (ZMod E.q) :=
-  D.b /ₘ (Polynomial.X - Polynomial.C β) ^ commonRootMultRat E D β
+  D.b /ₘ (Polynomial.X - Polynomial.C β) ^ commonRootMultRatGS E D β
 
 /-- Rational branch value: residual `D`-evaluation after exhausting the
 common factor at `P.1`. -/
@@ -3295,7 +3295,7 @@ private theorem geomATilde_at_fqToBar
       = Polynomial.map (algebraMap (ZMod E.q) (Fqbar E)) (aTildeRat E D β) := by
   unfold geomATilde aTildeRat
   rw [commonRootMultiplicity_at_fqToBar_eq E D β]
-  set k := commonRootMultRat E D β
+  set k := commonRootMultRatGS E D β
   have hpm : ((Polynomial.X - Polynomial.C β : (ZMod E.q)[X]) ^ k).Monic :=
     (monic_X_sub_C _).pow _
   have hmap_pow :
@@ -3313,7 +3313,7 @@ private theorem geomBTilde_at_fqToBar
       = Polynomial.map (algebraMap (ZMod E.q) (Fqbar E)) (bTildeRat E D β) := by
   unfold geomBTilde bTildeRat
   rw [commonRootMultiplicity_at_fqToBar_eq E D β]
-  set k := commonRootMultRat E D β
+  set k := commonRootMultRatGS E D β
   have hpm : ((Polynomial.X - Polynomial.C β : (ZMod E.q)[X]) ^ k).Monic :=
     (monic_X_sub_C _).pow _
   have hmap_pow :
@@ -3357,7 +3357,7 @@ private theorem geomLocalOrder_rationalLift_non_two_torsion
     (D : CoordRingElt E.q)
     (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hY : P.2 ≠ 0) :
     geomLocalOrder E D (rationalLift E P hP)
-      = (let k := commonRootMultRat E D P.1
+      = (let k := commonRootMultRatGS E D P.1
          let m := (normPoly E D).rootMultiplicity P.1
          if branchRat E D P = 0 then m - k else k) := by
   classical
@@ -3372,7 +3372,7 @@ private theorem geomLocalOrder_rationalLift_non_two_torsion
     exact rootMult_normPolyBar_at_fqToBar E D P.1
   have hk : commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D)
               (rationalLift E P hP).x
-      = commonRootMultRat E D P.1 := by
+      = commonRootMultRatGS E D P.1 := by
     show commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) (fqToBar E P.1) = _
     exact commonRootMultiplicity_at_fqToBar_eq E D P.1
   have hbranch_eq : ((geomATilde E D (rationalLift E P hP).x).eval
@@ -3403,12 +3403,12 @@ private theorem geomLocalOrder_rationalLift_non_two_torsion
 
 /-! #### Common-factor count and branch value under `divLin` -/
 
-private theorem one_le_commonRootMultRat_of_both_eval_zero
+private theorem one_le_commonRootMultRatGS_of_both_eval_zero
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (β : ZMod E.q) (ha : D.a.eval β = 0) (hb : D.b.eval β = 0) :
-    1 ≤ commonRootMultRat E D β := by
+    1 ≤ commonRootMultRatGS E D β := by
   classical
-  unfold commonRootMultRat
+  unfold commonRootMultRatGS
   by_cases h_a : D.a = 0
   · rw [if_pos h_a]
     have hbz : D.b ≠ 0 := fun h => hDnz ⟨h_a, h⟩
@@ -3529,14 +3529,14 @@ private theorem divByMonic_pow_succ
     exact max_lt h_mul_deg h_mod_pq_deg
   exact (Polynomial.div_modByMonic_unique d r hqp1 ⟨hp_eq, hr_deg⟩).1.symm
 
-/-- `commonRootMultRat` of `D.divLin β` is one less than that of `D`,
+/-- `commonRootMultRatGS` of `D.divLin β` is one less than that of `D`,
 when both `a` and `b` vanish at `β`. -/
-private theorem commonRootMultRat_divLin
+private theorem commonRootMultRatGS_divLin
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     {β : ZMod E.q} (ha : D.a.eval β = 0) (hb : D.b.eval β = 0) :
-    commonRootMultRat E (D.divLin β) β = commonRootMultRat E D β - 1 := by
+    commonRootMultRatGS E (D.divLin β) β = commonRootMultRatGS E D β - 1 := by
   classical
-  unfold commonRootMultRat
+  unfold commonRootMultRatGS
   have hDdivLnz : ¬ ((D.divLin β).a = 0 ∧ (D.divLin β).b = 0) :=
     divLin_not_both_zero E D hDnz ha hb
   by_cases h_a : D.a = 0
@@ -3639,9 +3639,9 @@ private theorem aTildeRat_divLin
     aTildeRat E (D.divLin β) β = aTildeRat E D β := by
   classical
   unfold aTildeRat
-  rw [commonRootMultRat_divLin E D hDnz ha hb]
-  set k := commonRootMultRat E D β with hk_def
-  have hk_pos : 1 ≤ k := one_le_commonRootMultRat_of_both_eval_zero E D hDnz β ha hb
+  rw [commonRootMultRatGS_divLin E D hDnz ha hb]
+  set k := commonRootMultRatGS E D β with hk_def
+  have hk_pos : 1 ≤ k := one_le_commonRootMultRatGS_of_both_eval_zero E D hDnz β ha hb
   show D.a /ₘ (Polynomial.X - Polynomial.C β)
       /ₘ (Polynomial.X - Polynomial.C β) ^ (k - 1)
     = D.a /ₘ (Polynomial.X - Polynomial.C β) ^ k
@@ -3656,9 +3656,9 @@ private theorem bTildeRat_divLin
     bTildeRat E (D.divLin β) β = bTildeRat E D β := by
   classical
   unfold bTildeRat
-  rw [commonRootMultRat_divLin E D hDnz ha hb]
-  set k := commonRootMultRat E D β with hk_def
-  have hk_pos : 1 ≤ k := one_le_commonRootMultRat_of_both_eval_zero E D hDnz β ha hb
+  rw [commonRootMultRatGS_divLin E D hDnz ha hb]
+  set k := commonRootMultRatGS E D β with hk_def
+  have hk_pos : 1 ≤ k := one_le_commonRootMultRatGS_of_both_eval_zero E D hDnz β ha hb
   show D.b /ₘ (Polynomial.X - Polynomial.C β)
       /ₘ (Polynomial.X - Polynomial.C β) ^ (k - 1)
     = D.b /ₘ (Polynomial.X - Polynomial.C β) ^ k
@@ -3704,14 +3704,14 @@ private theorem rootMult_normPoly_divLin
 
 /-! #### Geometric local order: recursion under `divLin` for non-2-torsion -/
 
-/-- In the lone case, the rational `commonRootMultRat` is zero. -/
-private theorem commonRootMultRat_eq_zero_of_lone
+/-- In the lone case, the rational `commonRootMultRatGS` is zero. -/
+private theorem commonRootMultRatGS_eq_zero_of_lone
     (D : CoordRingElt E.q)
     {P : ZMod E.q × ZMod E.q} (hY : P.2 ≠ 0)
     (hZero : D.eval P.1 P.2 = 0) (hZneg : D.eval P.1 (-P.2) ≠ 0) :
-    commonRootMultRat E D P.1 = 0 := by
+    commonRootMultRatGS E D P.1 = 0 := by
   classical
-  unfold commonRootMultRat
+  unfold commonRootMultRatGS
   have h_a_ne : D.a.eval P.1 ≠ 0 := by
     intro ha
     apply hZneg
@@ -3739,22 +3739,22 @@ private theorem branchRat_eq_zero_of_lone
     (hZero : D.eval P.1 P.2 = 0) (hZneg : D.eval P.1 (-P.2) ≠ 0) :
     branchRat E D P = 0 := by
   unfold branchRat aTildeRat bTildeRat
-  rw [commonRootMultRat_eq_zero_of_lone E D hY hZero hZneg]
+  rw [commonRootMultRatGS_eq_zero_of_lone E D hY hZero hZneg]
   rw [pow_zero, Polynomial.divByMonic_one, Polynomial.divByMonic_one]
   exact hZero
 
 /-- The rational analogue of `rootMultiplicity_normPolyBar_ge_twice_common`:
 twice the common-factor count is at most the rational `normPoly` root
 multiplicity at the same point. -/
-private theorem rootMultiplicity_normPoly_ge_twice_commonRootMultRat
+private theorem rootMultiplicity_normPoly_ge_twice_commonRootMultRatGS
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0)) (β : ZMod E.q) :
-    2 * commonRootMultRat E D β ≤ (normPoly E D).rootMultiplicity β := by
+    2 * commonRootMultRatGS E D β ≤ (normPoly E D).rootMultiplicity β := by
   classical
   -- Show (X - C β)^(2k) ∣ normPoly E D.
   have hN_ne : normPoly E D ≠ 0 := normPoly_ne_zero E D hDnz
-  set k := commonRootMultRat E D β
+  set k := commonRootMultRatGS E D β
   have h_dvd_a : (Polynomial.X - Polynomial.C β) ^ k ∣ D.a := by
-    unfold commonRootMultRat at *
+    unfold commonRootMultRatGS at *
     by_cases h_a : D.a = 0
     · rw [h_a]; exact dvd_zero _
     · exact dvd_trans (pow_dvd_pow _
@@ -3769,7 +3769,7 @@ private theorem rootMultiplicity_normPoly_ge_twice_commonRootMultRat
           · rw [if_neg h_b]; exact min_le_left _ _))
         (Polynomial.pow_rootMultiplicity_dvd D.a β)
   have h_dvd_b : (Polynomial.X - Polynomial.C β) ^ k ∣ D.b := by
-    unfold commonRootMultRat at *
+    unfold commonRootMultRatGS at *
     by_cases h_a : D.a = 0
     · -- k = D.b.rootMultiplicity β.
       show (Polynomial.X - Polynomial.C β) ^ k ∣ D.b
@@ -3813,19 +3813,19 @@ private theorem geomLocalOrder_rationalLift_divLin
   classical
   rw [geomLocalOrder_rationalLift_non_two_torsion E D P hP hY]
   rw [geomLocalOrder_rationalLift_non_two_torsion E (D.divLin P.1) P hP hY]
-  have hk : commonRootMultRat E (D.divLin P.1) P.1 = commonRootMultRat E D P.1 - 1 :=
-    commonRootMultRat_divLin E D hDnz ha hb
+  have hk : commonRootMultRatGS E (D.divLin P.1) P.1 = commonRootMultRatGS E D P.1 - 1 :=
+    commonRootMultRatGS_divLin E D hDnz ha hb
   have hm : (normPoly E (D.divLin P.1)).rootMultiplicity P.1
       = (normPoly E D).rootMultiplicity P.1 - 2 :=
     rootMult_normPoly_divLin E D hDnz ha hb
   have hbranch : branchRat E (D.divLin P.1) P = branchRat E D P :=
     branchRat_divLin E D hDnz P ha hb
-  have hk_pos : 1 ≤ commonRootMultRat E D P.1 :=
-    one_le_commonRootMultRat_of_both_eval_zero E D hDnz P.1 ha hb
+  have hk_pos : 1 ≤ commonRootMultRatGS E D P.1 :=
+    one_le_commonRootMultRatGS_of_both_eval_zero E D hDnz P.1 ha hb
   -- 2 k_D ≤ m_D.
-  have hm_ge_2k : 2 * commonRootMultRat E D P.1
+  have hm_ge_2k : 2 * commonRootMultRatGS E D P.1
       ≤ (normPoly E D).rootMultiplicity P.1 :=
-    rootMultiplicity_normPoly_ge_twice_commonRootMultRat E D hDnz P.1
+    rootMultiplicity_normPoly_ge_twice_commonRootMultRatGS E D hDnz P.1
   rw [hbranch]
   by_cases hB : branchRat E D P = 0
   · simp only [hB, if_true, hk, hm]
@@ -3882,8 +3882,8 @@ private theorem ordAt_nonTwoTorsion_aux_eq_geomLocalOrder
         push_neg at hEvalNegP
         rw [if_pos hEvalNegP]
         rw [geomLocalOrder_rationalLift_non_two_torsion E D P hP hY]
-        have hk : commonRootMultRat E D P.1 = 0 :=
-          commonRootMultRat_eq_zero_of_lone E D hY hEvalP hEvalNegP
+        have hk : commonRootMultRatGS E D P.1 = 0 :=
+          commonRootMultRatGS_eq_zero_of_lone E D hY hEvalP hEvalNegP
         have hbr : branchRat E D P = 0 :=
           branchRat_eq_zero_of_lone E D hY hEvalP hEvalNegP
         simp only [hbr, if_true, hk, Nat.sub_zero]

@@ -16,6 +16,7 @@ import Divisor.LogDeriv
 import Divisor.ClearedPolyForm
 import Divisor.Protocol
 import Divisor.MACompletenessCore
+import Divisor.EagenBuildRecursive
 
 namespace Divisor
 
@@ -299,10 +300,17 @@ theorem ma_completeness
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   let _ := hValid
   let _ := hDeg
-  exact ma_completeness_parameterized E stmt msg hkm hDegK hAdm
-    (fun A₀ A₁ hA₀ hA₁ hGood =>
-      weil_reciprocity_honest E stmt wit hk msg hkm hHonestDivisor
-        A₀ A₁ hA₀ hA₁ hGood)
+  -- Derive D ≠ 0 from the admSet check + admSet_excludes_zero.
+  have hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
+    admSet_implies_toD_nonzero stmt msg hAdm
+  -- Extract on-curve invariants from the strengthened isHonestFor.
+  have h_negT : (stmt.target.1, -stmt.target.2) ∈ E.points :=
+    hHonestDivisor.2.2.2.1
+  have h_bases : ∀ i : Fin stmt.k, stmt.bases i ∈ E.points :=
+    hHonestDivisor.2.2.2.2
+  -- Route through the explicit honest-divisor bridge (no axiom).
+  exact ma_completeness_via_isHonestForExplicit E stmt wit hk msg hkm
+    hHonestDivisor hD h_negT h_bases hDegK hAdm
 
 /-- **MA completeness, Hasse-clean form.** Applying Hasse (`|E| ≤ 2q`
     for `q ≥ 5`) and the paper-tight `numZeros ≤ degE ≤ degBound`,
