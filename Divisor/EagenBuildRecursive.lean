@@ -1177,6 +1177,123 @@ private theorem bases_at_cast_index_for_length4Simple
     have : (⟨2, by decide⟩ : Fin 3) = (2 : Fin 3) := rfl
     rw [this, ← h_simple.h_P₃_eq]; exact h_simple.hP₃
 
+/-- Affine divisor identity at points in `{P_0..P_3}`: at any of the
+    four sum-zero affine points (each appearing with multiplicity 1),
+    `divisorOfD = 1` and `honestDivisorCoeffs = 1` (under the simple-case
+    hypotheses with `wit.scalars = 1`). -/
+theorem divisor_identity_at_affine_off_support_for_length4Simple
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    {wit : DlogWitness E.q} (hk : stmt.k = wit.k)
+    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
+    {x y : ZMod E.q} (hns : E.toW.toAffine.Nonsingular x y)
+    (hP : (x, y) ∈ E.points)
+    (h_off : (x, y) ≠ h_simple.P₀ ∧ (x, y) ≠ h_simple.P₁ ∧
+             (x, y) ≠ h_simple.P₂ ∧ (x, y) ≠ h_simple.P₃) :
+    divisorOfD E msg.toD (WeierstrassCurve.Affine.Point.some hns)
+      = honestDivisorCoeffs E stmt wit hk msg
+          (WeierstrassCurve.Affine.Point.some hns) := by
+  classical
+  -- divisorOfD = ordAt (cast to ℤ) at affine.
+  rw [show (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+        = ECPoint.affine E x y from (ECPoint.affine_of_nonsingular E hns).symm]
+  -- Step 1: divisorOfD = 0. Use zerosFinset characterization.
+  have h_zeros := zerosFinset_eagenBuild_length4_eq E
+    h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
+    h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
+    h_simple.h_xx_01 h_simple.h_xx_23
+    h_simple.h_P₀_ne_A2_01 h_simple.h_P₁_ne_A2_01
+    h_simple.h_P₂_ne_A2_23 h_simple.h_P₃_ne_A2_23
+    h_simple.h_P₀_off_L₂ h_simple.h_P₁_off_L₂ h_simple.h_P₂_off_L₁ h_simple.h_P₃_off_L₁
+    h_simple.h_third_match h_simple.h_y_match h_simple.h_Q₀_nontorsion
+    h_simple.h_Q₀_off_L₂_inputs h_simple.h_negQ₀_off_L₁_inputs
+  have h_notin : (x, y) ∉ zerosFinset E msg.toD := by
+    rw [h_simple.h_toD_eq, h_zeros]
+    simp only [Finset.mem_insert, Finset.mem_singleton]
+    push_neg
+    exact ⟨h_off.1, h_off.2.1, h_off.2.2.1, h_off.2.2.2⟩
+  have h_eval_ne : msg.toD.eval x y ≠ 0 := by
+    intro h
+    apply h_notin
+    unfold zerosFinset zeros
+    rw [Finset.mem_filter]
+    exact ⟨hP, h⟩
+  have hD_NZ : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) := by
+    rw [h_simple.h_toD_eq]
+    exact eagenBuild_length4_explicit_ne_zero E
+      h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
+      h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
+      h_simple.h_xx_01 h_simple.h_xx_23
+      h_simple.h_third_match h_simple.h_y_match h_simple.h_Q₀_nontorsion
+  have h_ord_zero : ordAt E msg.toD (x, y) = 0 := by
+    by_contra h_ne
+    have h_pos : 0 < ordAt E msg.toD (x, y) := Nat.pos_of_ne_zero h_ne
+    have := (ordAt_pos_iff_zero E msg.toD hD_NZ (x, y) hP).mp h_pos
+    exact h_eval_ne this
+  -- Step 2: honestDivisorCoeffs = 0. (x, y) ≠ -target = P_0, no base = (x, y).
+  have h_negT : (stmt.target.1, -stmt.target.2) = h_simple.P₀ := h_simple.h_P₀_eq.symm
+  have h_indic_zero : ((x, y) = (stmt.target.1, -stmt.target.2)) = False := by
+    apply propext
+    constructor
+    · intro h; rw [h_negT] at h; exact h_off.1 h
+    · intro h; exact False.elim h
+  -- Bases at h_simple.hk_eq_3 ▸ (0,1,2) are P_1, P_2, P_3, none equal (x, y).
+  have h_bases_ne : ∀ i : Fin stmt.k, stmt.bases i ≠ (x, y) := by
+    intro i
+    have h3 := h_simple.hk_eq_3
+    -- Helper: stmt.bases (h3 ▸ j) ≠ (x, y) for any j : Fin 3.
+    have h_b_ne_at : ∀ (j : Fin 3), stmt.bases (h3 ▸ j) ≠ (x, y) := by
+      intro j
+      fin_cases j
+      · show stmt.bases (h3 ▸ (⟨0, by decide⟩ : Fin 3)) ≠ (x, y)
+        have heq3 : (⟨0, by decide⟩ : Fin 3) = (0 : Fin 3) := rfl
+        rw [heq3, ← h_simple.h_P₁_eq]
+        intro h; exact h_off.2.1 h.symm
+      · show stmt.bases (h3 ▸ (⟨1, by decide⟩ : Fin 3)) ≠ (x, y)
+        have heq3 : (⟨1, by decide⟩ : Fin 3) = (1 : Fin 3) := rfl
+        rw [heq3, ← h_simple.h_P₂_eq]
+        intro h; exact h_off.2.2.1 h.symm
+      · show stmt.bases (h3 ▸ (⟨2, by decide⟩ : Fin 3)) ≠ (x, y)
+        have heq3 : (⟨2, by decide⟩ : Fin 3) = (2 : Fin 3) := rfl
+        rw [heq3, ← h_simple.h_P₃_eq]
+        intro h; exact h_off.2.2.2 h.symm
+    -- Cast i to Fin 3 and apply.
+    have h_eq : stmt.bases i = stmt.bases (h3 ▸ Fin.cast h3 i) := by
+      congr 1
+      apply Fin.ext
+      have h_subst_val : ∀ (h : stmt.k = 3) (jj : Fin 3),
+          ((h ▸ jj : Fin stmt.k)).val = jj.val := by
+        intro h jj
+        generalize stmt.k = k at h jj
+        cases h
+        rfl
+      rw [h_subst_val h3]
+      rfl
+    rw [h_eq]
+    exact h_b_ne_at (Fin.cast h3 i)
+  -- Now compute both sides.
+  -- divisorOfD at affine = (ordAt : ℤ).
+  rw [show divisorOfD E msg.toD (ECPoint.affine E x y)
+        = (ordAt E msg.toD (x, y) : ℤ) by
+      rw [ECPoint.affine_of_nonsingular E hns]; rfl]
+  rw [h_ord_zero]
+  show (0 : ℤ) = honestDivisorCoeffs E stmt wit hk msg (ECPoint.affine E x y)
+  rw [show honestDivisorCoeffs E stmt wit hk msg (ECPoint.affine E x y)
+        = (if (x, y) = (stmt.target.1, -stmt.target.2) then (1 : ℤ) else 0) +
+          ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
+            (fun i => stmt.bases i = (x, y)),
+            (wit.scalars (hk ▸ i)) by
+        rw [ECPoint.affine_of_nonsingular E hns]; rfl]
+  rw [if_neg (by intro h; rw [h_negT] at h; exact h_off.1 h)]
+  -- The bases-filter is empty since no base = (x, y).
+  have h_filter_empty : (Finset.univ : Finset (Fin stmt.k)).filter
+        (fun i => stmt.bases i = (x, y)) = ∅ := by
+    rw [Finset.filter_eq_empty_iff]
+    intro i _
+    exact h_bases_ne i
+  rw [h_filter_empty]
+  simp
+
 /-- Scalar reduction for the length-4 simple case (with `wit.scalars = 1`). -/
 theorem scalar_reduction_for_length4Simple
     {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
