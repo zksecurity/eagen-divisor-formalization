@@ -937,4 +937,90 @@ theorem rejectSet_bound_length4_simple
         support_disjointness E D (numZeros E D) (le_refl _)
     _ = (3 * 4 + 4) * E.numAffine := by rw [hNZ]
 
+/-! ## Stronger constructive honesty predicate: `isHonestForLength4Simple`
+
+Per Codex D-option-1: add a predicate stronger than `isHonestFor` that
+captures the explicit length-4 simple construction. Proves the
+implication into the existing API (provides `isHonestFor`) and into
+the rejection-set bound (axiom-free).
+
+This bridges the constructive length-4 work to the existing protocol
+structures without requiring invasive changes to `isHonestFor` itself. -/
+
+/-- The length-4 simple honest construction: msg.toD is built from
+    `eagenBuild_length4_explicit` on the inputs `[(-P_target), B 0, B 1, B 2]`,
+    with k=3 bases all at scalar 1. Captures all the genericity
+    hypotheses needed for the length-4 simple discharge. -/
+structure MAProverMsg.IsHonestForLength4Simple (E : ECSetup)
+    (msg : MAProverMsg E.q) (stmt : DlogStatement E.q) where
+  /-- stmt has k=3 bases. -/
+  hk_eq_3 : stmt.k = 3
+  /-- msg has k=3 scalar slots. -/
+  hkm_eq_3 : msg.k = 3
+  /-- The four eagenBuild input points. -/
+  P₀ : ZMod E.q × ZMod E.q
+  P₁ : ZMod E.q × ZMod E.q
+  P₂ : ZMod E.q × ZMod E.q
+  P₃ : ZMod E.q × ZMod E.q
+  /-- P_0 = -P_target. -/
+  h_P₀_eq : P₀ = (stmt.target.1, -stmt.target.2)
+  /-- P_1, P_2, P_3 are the three bases (using hk_eq_3 cast). -/
+  h_P₁_eq : P₁ = stmt.bases (hk_eq_3 ▸ (0 : Fin 3))
+  h_P₂_eq : P₂ = stmt.bases (hk_eq_3 ▸ (1 : Fin 3))
+  h_P₃_eq : P₃ = stmt.bases (hk_eq_3 ▸ (2 : Fin 3))
+  /-- msg.toD is the constructive eagenBuild_length4 D. -/
+  h_toD_eq : msg.toD = eagenBuild_length4_explicit E P₀ P₁ P₂ P₃
+  /-- All scalars in msg.m equal 1. -/
+  h_m_eq_one : ∀ i : Fin msg.k, msg.m i = 1
+  /-- Each input is on E. -/
+  hP₀ : P₀ ∈ E.points
+  hP₁ : P₁ ∈ E.points
+  hP₂ : P₂ ∈ E.points
+  hP₃ : P₃ ∈ E.points
+  /-- Genericity hypotheses for eagenBuild_length4 input. -/
+  h_xx_01 : P₀.1 ≠ P₁.1
+  h_xx_23 : P₂.1 ≠ P₃.1
+  h_P₀_ne_A2_01 : P₀.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+  h_P₁_ne_A2_01 : P₁.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+  h_P₂_ne_A2_23 : P₂.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+  h_P₃_ne_A2_23 : P₃.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+  h_P₀_off_L₂ : P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₀ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                  slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+                    * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+                    + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1))
+  h_P₁_off_L₂ : P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₁ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                  slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+                    * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+                    + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1))
+  h_P₂_off_L₁ : P₂ ≠ P₀ ∧ P₂ ≠ P₁ ∧ P₂ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+                  slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                    * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                    + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1))
+  h_P₃_off_L₁ : P₃ ≠ P₀ ∧ P₃ ≠ P₁ ∧ P₃ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+                  slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                    * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                    + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1))
+  h_third_match :
+    slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+      = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+  h_y_match :
+    slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+      * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+      + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+        = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+            * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+            + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1))
+  h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                      * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                      + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0
+  h_Q₀_off_L₂_inputs :
+    let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+    let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+    (Q₀x, Q₀y) ≠ P₂ ∧ (Q₀x, Q₀y) ≠ P₃ ∧ (Q₀x, Q₀y) ≠ (Q₀x, -Q₀y)
+  h_negQ₀_off_L₁_inputs :
+    let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+    let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+    (Q₀x, -Q₀y) ≠ P₀ ∧ (Q₀x, -Q₀y) ≠ P₁ ∧ (Q₀x, -Q₀y) ≠ (Q₀x, Q₀y)
+  h_inputs_distinct : P₀ ≠ P₁ ∧ P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₂ ≠ P₃
+
 end Divisor
