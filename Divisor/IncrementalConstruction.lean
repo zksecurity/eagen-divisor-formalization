@@ -4955,4 +4955,59 @@ theorem eagenBuild_length4_div_at_infinity
   rw [hLv_inf] at hProd
   linarith
 
+/-! ## eagenBuild_length4 universal divisor identity
+
+At every ECPoint R, divisorOfD eagenBuild_length4 = divisorOfD (L_1*L_2) - divisorOfD L_v. -/
+
+theorem divisorOfD_eagenBuild_length4_eq_chord_pair_minus_vertical
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                        * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                        + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0)
+    (R : ECPoint E) :
+    divisorOfD E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) R
+      = divisorOfD E (mulCoordRingElt E (chordCoordRingElt E P₀ P₁)
+                                        (chordCoordRingElt E P₂ P₃)) R
+      - divisorOfD E ({ a := Polynomial.X - Polynomial.C
+                              (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1),
+                        b := 0 } : CoordRingElt E.q) R := by
+  have hL₁L₂_NZ : ¬ ((mulCoordRingElt E (chordCoordRingElt E P₀ P₁)
+        (chordCoordRingElt E P₂ P₃)).a = 0
+      ∧ (mulCoordRingElt E (chordCoordRingElt E P₀ P₁)
+        (chordCoordRingElt E P₂ P₃)).b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E (mulCoordRingElt E (chordCoordRingElt E P₀ P₁)
+        (chordCoordRingElt E P₂ P₃)) = 0 := by
+      rw [normPoly_eq, ha, hb]; ring
+    rw [normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E _ (chordCoordRingElt_ne_zero E P₀ P₁))
+           (normPoly_ne_zero E _ (chordCoordRingElt_ne_zero E P₂ P₃))) hN
+  obtain ⟨hax, hbx⟩ := mulCoordRingElt_chord_pair_a_b_vanish_at_Q₀ E P₀ P₁ P₂ P₃
+    hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_third_match h_y_match h_Q₀_nontorsion
+  have hBuildNZ : ¬ ((eagenBuild_length4_explicit E P₀ P₁ P₂ P₃).a = 0
+                    ∧ (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃).b = 0) :=
+    divLin_not_both_zero E _ hL₁L₂_NZ hax hbx
+  have hRec := mulCoordRingElt_chord_pair_recompose_at_Q₀ E P₀ P₁ P₂ P₃
+    hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_third_match h_y_match h_Q₀_nontorsion
+  have hVadd := divisorOfD_mul_vertical_add E
+    (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) hBuildNZ
+    (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) R
+  unfold eagenBuild_length4_explicit at hVadd
+  unfold eagenBuild_length4_explicit
+  rw [hRec, hVadd]
+  ring
+
 end Divisor
