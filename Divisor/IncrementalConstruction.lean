@@ -1446,6 +1446,23 @@ theorem ordAt_mul_add_twoTorsion
   apply Polynomial.rootMultiplicity_mul
   exact mul_ne_zero (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂)
 
+/-! ## `divisorOfD` additivity at infinity
+
+The infinity coefficient of `divisorOfD` is `-natDegree(normPoly)`. By
+`natDegree_normPoly_mul_eq`, this is additive under `mulCoordRingElt`. -/
+
+theorem divisorOfD_mul_add_at_infinity
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0)) :
+    divisorOfD E (mulCoordRingElt E D₁ D₂) (0 : ECPoint E)
+      = divisorOfD E D₁ (0 : ECPoint E) + divisorOfD E D₂ (0 : ECPoint E) := by
+  unfold divisorOfD
+  show -((normPoly E (mulCoordRingElt E D₁ D₂)).natDegree : ℤ)
+      = -((normPoly E D₁).natDegree : ℤ) + -((normPoly E D₂).natDegree : ℤ)
+  rw [natDegree_normPoly_mul_eq E D₁ D₂ h₁ h₂]
+  push_cast
+  ring
+
 /-! ## `ordAt` is additive when D₁ doesn't vanish at P
 
 A simple but useful corollary: when neither factor vanishes at `P`, both
