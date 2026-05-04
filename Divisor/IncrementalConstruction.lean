@@ -5392,4 +5392,92 @@ theorem eagenBuild_length4_div_at_Q₀
   rw [hLv_at_Q₀]
   ring
 
+/-! ## eagenBuild_length4 divisorOfD = 0 at -Q_0 (the third intersection of L_2) -/
+
+/-- -Q_0 sits on L_2 (third intersection by h_y_match) and on L_v (vertical at
+    x_{Q_0}), but not on L_1. Net: 0 + 1 - 1 = 0. -/
+theorem eagenBuild_length4_div_at_negQ₀
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_P₀_ne_A2_01 : P₀.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₁_ne_A2_01 : P₁.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₂_ne_A2_23 : P₂.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₃_ne_A2_23 : P₃.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_negQ₀_off_L₁ :
+      let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+      let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+      (Q₀x, -Q₀y) ≠ P₀ ∧ (Q₀x, -Q₀y) ≠ P₁ ∧ (Q₀x, -Q₀y) ≠ (Q₀x, Q₀y))
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                        * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                        + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0) :
+    let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+    let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+    divisorOfD E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+        (ECPoint.affine E Q₀x (-Q₀y)) = 0 := by
+  intro Q₀x Q₀y
+  -- Q_0 is on E (third intersection of L_1 on E), hence -Q_0 is too.
+  have hQ₀_on_E : (Q₀x, Q₀y) ∈ E.points := by
+    have hOC := chord_third_point_on_E E P₀ P₁ hP₀ hP₁ h_xx_01
+    exact E.hComplete Q₀x Q₀y hOC
+  have hNegQ₀_on_E : (Q₀x, -Q₀y) ∈ E.points := by
+    apply E.hComplete
+    have := E.hOnCurve _ hQ₀_on_E
+    simp only at this
+    linear_combination this
+  have hQ₀y_ne_zero : Q₀y ≠ 0 := h_Q₀_nontorsion
+  have hNegQ₀y_ne_zero : -Q₀y ≠ 0 := by
+    intro h; apply hQ₀y_ne_zero; linear_combination -h
+  -- Universal identity.
+  rw [divisorOfD_eagenBuild_length4_eq_chord_pair_minus_vertical E
+      P₀ P₁ P₂ P₃ hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23
+      h_third_match h_y_match h_Q₀_nontorsion]
+  rw [divisorOfD_mul_add_by_chordCoordRingElt_distinct E
+      (chordCoordRingElt_ne_zero E P₀ P₁) P₂ P₃ hP₂ hP₃ h_xx_23
+      h_P₂_ne_A2_23 h_P₃_ne_A2_23 (ECPoint.affine E Q₀x (-Q₀y))]
+  -- divisorOfD L_1 at -Q_0 = 0 (off support).
+  have hL₁_at_negQ₀ : divisorOfD E (chordCoordRingElt E P₀ P₁)
+                        (ECPoint.affine E Q₀x (-Q₀y)) = 0 := by
+    obtain ⟨h1, h2, h3⟩ := h_negQ₀_off_L₁
+    have h_pw := divisorOfD_chordCoordRingElt_chord_pointwise E P₀ P₁ hP₀ hP₁ h_xx_01
+                  h_P₀_ne_A2_01 h_P₁_ne_A2_01
+    -- A_2_01 is at (Q_0x, Q_0y) by definition.
+    exact h_pw (Q₀x, -Q₀y) hNegQ₀_on_E h1 h2 h3
+  rw [hL₁_at_negQ₀]
+  -- divisorOfD L_2 at -Q_0 = 1 (third intersection of L_2 is -Q_0 by h_y_match).
+  obtain ⟨_, _, hNegQ₀_div_L₂, _⟩ :=
+    divisorOfD_chordCoordRingElt_chord_distinct E P₂ P₃ hP₂ hP₃ h_xx_23
+      h_P₂_ne_A2_23 h_P₃_ne_A2_23
+  -- L_2's third intersection is (slopeOf P_2 P_3^2 - P_2.1 - P_3.1, slopeOf*x_2 + (P_2.2 - slopeOf*P_2.1)).
+  -- By h_third_match this x = Q_0x. By h_y_match this y = -Q_0y.
+  have h_eq_neg : (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                    slopeOf P₂.1 P₂.2 P₃.1 P₃.2 *
+                      (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) +
+                    (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)) = (Q₀x, -Q₀y) := by
+    ext
+    · simp [Q₀x, h_third_match]
+    · simp [Q₀y]; linear_combination h_y_match
+  rw [h_eq_neg] at hNegQ₀_div_L₂
+  rw [hNegQ₀_div_L₂]
+  -- divisorOfD L_v at -Q_0 = 1 (vertical line, -Q_0y ≠ 0).
+  have hLv_at_negQ₀ : divisorOfD E
+        ({ a := Polynomial.X - Polynomial.C
+                (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1), b := 0 }
+          : CoordRingElt E.q)
+        (ECPoint.affine E Q₀x (-Q₀y)) = 1 :=
+    divisorOfD_vertical_at_x₀_nonTwoTorsion_affine E Q₀x (-Q₀y) hNegQ₀_on_E hNegQ₀y_ne_zero
+  rw [hLv_at_negQ₀]
+  ring
+
 end Divisor
