@@ -1705,22 +1705,10 @@ theorem ordAt_nonTwoTorsion_twin_rec
     (by omega) (by omega)
   rw [hFuel]
 
-/-! ## `divisorOfD` additivity at infinity
-
-The infinity coefficient of `divisorOfD` is `-natDegree(normPoly)`. By
-`natDegree_normPoly_mul_eq`, this is additive under `mulCoordRingElt`. -/
-
-theorem divisorOfD_mul_add_at_infinity
-    {D₁ D₂ : CoordRingElt E.q}
-    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0)) :
-    divisorOfD E (mulCoordRingElt E D₁ D₂) (0 : ECPoint E)
-      = divisorOfD E D₁ (0 : ECPoint E) + divisorOfD E D₂ (0 : ECPoint E) := by
-  unfold divisorOfD
-  show -((normPoly E (mulCoordRingElt E D₁ D₂)).natDegree : ℤ)
-      = -((normPoly E D₁).natDegree : ℤ) + -((normPoly E D₂).natDegree : ℤ)
-  rw [natDegree_normPoly_mul_eq E D₁ D₂ h₁ h₂]
-  push_cast
-  ring
+-- TODO: ordAt_mul_add_at_nonTwoTorsion_when_D2_nonvanish — combines lone-sheet,
+-- nonvanish, and twin-rec. Induction on D₁.natDegree-sum descends through the
+-- twin-sheet recursion using mulCoordRingElt_divLin_left. Was attempted but ran
+-- into ordering issues (the helpers needed are defined later in the file).
 
 /-! ## Compatibility of `divLin` with multiplication
 
