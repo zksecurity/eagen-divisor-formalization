@@ -3307,4 +3307,47 @@ theorem cross_case_commonRootMult_eq_one_when_m1_eq_one
   rw [hT_rootMult] at hUpper
   omega
 
+/-- Symmetric m₂ = 1 case: commonRootMultRat = 1 via P ↔ -P + D₁ ↔ D₂ swap. -/
+theorem cross_case_commonRootMult_eq_one_when_m2_eq_one
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₁negP : D₁.eval P.1 (-P.2) ≠ 0)
+    (hD₂P : D₂.eval P.1 P.2 ≠ 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0)
+    (hm₂ : Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 1) :
+    commonRootMultRat E (mulCoordRingElt E D₁ D₂) P.1 = 1 := by
+  -- Apply the m₁ = 1 lemma at -P with (D₂, D₁).
+  have hMP : (P.1, -P.2) ∈ E.points := by
+    apply E.hComplete
+    have hOC : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := E.hOnCurve P hP
+    show (-P.2) ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB
+    linear_combination hOC
+  have hY' : (P.1, -P.2).2 ≠ 0 := by
+    show -P.2 ≠ 0
+    intro h
+    apply hY
+    linear_combination -h
+  -- D₂ lone at P_new = -P (D₂(P_new) = 0, D₂(-P_new) = D₂(P) ≠ 0).
+  have hD₂_at_P' : D₂.eval (P.1, -P.2).1 (P.1, -P.2).2 = 0 := hD₂negP
+  have hD₂_at_negP' : D₂.eval (P.1, -P.2).1 (-(P.1, -P.2).2) ≠ 0 := by
+    show D₂.eval P.1 (-(-P.2)) ≠ 0
+    have : -(-P.2) = P.2 := neg_neg _
+    rw [this]; exact hD₂P
+  -- D₁ unit at P_new = -P, lone at -P_new = P.
+  have hD₁_at_P' : D₁.eval (P.1, -P.2).1 (P.1, -P.2).2 ≠ 0 := hD₁negP
+  have hD₁_at_negP' : D₁.eval (P.1, -P.2).1 (-(P.1, -P.2).2) = 0 := by
+    show D₁.eval P.1 (-(-P.2)) = 0
+    have : -(-P.2) = P.2 := neg_neg _
+    rw [this]; exact hD₁P
+  -- m₂ = 1 corresponds to "m_1" in the lemma applied with D₂.
+  have hm₂' : Polynomial.rootMultiplicity (P.1, -P.2).1 (normPoly E D₂) = 1 := hm₂
+  -- Apply the lemma.
+  have hCommon : commonRootMultRat E (mulCoordRingElt E D₂ D₁) (P.1, -P.2).1 = 1 :=
+    cross_case_commonRootMult_eq_one_when_m1_eq_one E h₂ h₁ hMP hY'
+      hD₂_at_P' hD₂_at_negP' hD₁_at_P' hD₁_at_negP' hm₂'
+  -- Convert via mulCoordRingElt_comm and (P.1, -P.2).1 = P.1.
+  rw [show (P.1, -P.2).1 = P.1 from rfl] at hCommon
+  rw [mulCoordRingElt_comm E D₁ D₂]
+  exact hCommon
+
 end Divisor
