@@ -4759,4 +4759,60 @@ theorem ordAt_mul_vertical_add
         exact h2
       exact ordAt_mul_add_when_normPoly_D2_le_one E hD hLv_NZ hP (by omega)
 
+/-- Affine version: divisorOfD-additivity for vertical mul at affine ECPoints. -/
+theorem divisorOfD_mul_vertical_add_affine
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) (x₀ : ZMod E.q)
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) :
+    divisorOfD E (mulCoordRingElt E D
+        ({ a := Polynomial.X - Polynomial.C x₀, b := 0 } : CoordRingElt E.q))
+        (ECPoint.affine E P.1 P.2)
+      = divisorOfD E D (ECPoint.affine E P.1 P.2)
+      + divisorOfD E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                      : CoordRingElt E.q) (ECPoint.affine E P.1 P.2) := by
+  classical
+  have hAddOrd := ordAt_mul_vertical_add E D hD x₀ hP
+  rw [show divisorOfD E (mulCoordRingElt E D
+            ({ a := Polynomial.X - Polynomial.C x₀, b := 0 } : CoordRingElt E.q))
+            (ECPoint.affine E P.1 P.2)
+        = (ordAtPoint E (mulCoordRingElt E D
+              ({ a := Polynomial.X - Polynomial.C x₀, b := 0 } : CoordRingElt E.q))
+              (ECPoint.affine E P.1 P.2) : ℤ) from ?_,
+      show divisorOfD E D (ECPoint.affine E P.1 P.2)
+        = (ordAtPoint E D (ECPoint.affine E P.1 P.2) : ℤ) from ?_,
+      show divisorOfD E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                          : CoordRingElt E.q) (ECPoint.affine E P.1 P.2)
+        = (ordAtPoint E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                          : CoordRingElt E.q) (ECPoint.affine E P.1 P.2) : ℤ) from ?_,
+      ordAtPoint_affine E _ hP, ordAtPoint_affine E _ hP, ordAtPoint_affine E _ hP,
+      hAddOrd]
+  push_cast; ring
+  all_goals
+    show divisorOfD E _ (ECPoint.affine E P.1 P.2)
+        = (ordAtPoint E _ (ECPoint.affine E P.1 P.2) : ℤ)
+    rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP)))]
+    rfl
+
+/-- Full divisorOfD-additivity for vertical multiplication at every ECPoint. -/
+theorem divisorOfD_mul_vertical_add
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) (x₀ : ZMod E.q)
+    (R : ECPoint E) :
+    divisorOfD E (mulCoordRingElt E D
+        ({ a := Polynomial.X - Polynomial.C x₀, b := 0 } : CoordRingElt E.q)) R
+      = divisorOfD E D R
+      + divisorOfD E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                      : CoordRingElt E.q) R := by
+  match R with
+  | WeierstrassCurve.Affine.Point.zero =>
+    exact divisorOfD_mul_vertical_add_at_infinity E D hD x₀
+  | WeierstrassCurve.Affine.Point.some (x := x) (y := y) hOnCurve =>
+    have hEq : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB :=
+      (E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hOnCurve)
+    have hP : (x, y) ∈ E.points := E.hComplete x y hEq
+    have := divisorOfD_mul_vertical_add_affine E D hD x₀ hP
+    rw [show (WeierstrassCurve.Affine.Point.some hOnCurve : ECPoint E)
+        = ECPoint.affine E x y from ?_]
+    · exact this
+    · rw [ECPoint.affine_of_nonsingular E hOnCurve]
+
 end Divisor
