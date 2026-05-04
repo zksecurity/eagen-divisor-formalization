@@ -3350,6 +3350,35 @@ theorem cross_case_commonRootMult_eq_one_when_m2_eq_one
   rw [mulCoordRingElt_comm E D₁ D₂]
   exact hCommon
 
+/-! ## Cross-case: `m₁ ≥ 1` always (D₁ lone at P implies non-zero rootMult of normPoly) -/
+
+theorem cross_case_m1_pos
+    {D₁ : CoordRingElt E.q} (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points)
+    (hD₁P : D₁.eval P.1 P.2 = 0) :
+    0 < Polynomial.rootMultiplicity P.1 (normPoly E D₁) := by
+  rw [Polynomial.rootMultiplicity_pos (normPoly_ne_zero E D₁ h₁)]
+  rw [Polynomial.IsRoot, normPoly_eval_eq_D_mul_D_neg E D₁ hP, hD₁P]
+  simp
+
+theorem cross_case_m2_pos
+    {D₂ : CoordRingElt E.q} (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points)
+    (hD₂negP : D₂.eval P.1 (-P.2) = 0) :
+    0 < Polynomial.rootMultiplicity P.1 (normPoly E D₂) := by
+  -- Use neg_sheet_on_E to get (P.1, -P.2) ∈ E.points.
+  have hMP : (P.1, -P.2) ∈ E.points := by
+    apply E.hComplete
+    have hOC : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := E.hOnCurve P hP
+    show (-P.2) ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB
+    linear_combination hOC
+  rw [Polynomial.rootMultiplicity_pos (normPoly_ne_zero E D₂ h₂)]
+  rw [Polynomial.IsRoot]
+  -- normPolyE.eval P.1 = D₂.eval P.1 P.2 * D₂.eval P.1 (-P.2) (via normPoly_eval_eq_D_mul_D_neg).
+  rw [show P.1 = (P.1, -P.2).1 from rfl,
+      normPoly_eval_eq_D_mul_D_neg E D₂ hMP]
+  simp [hD₂negP]
+
 /-- Unified base case: commonRootMultRat = 1 when `min(m₁, m₂) = 1` in cross case. -/
 theorem cross_case_commonRootMult_eq_one_when_min_eq_one
     {D₁ D₂ : CoordRingElt E.q}
