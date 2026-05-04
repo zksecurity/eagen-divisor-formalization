@@ -4815,4 +4815,28 @@ theorem divisorOfD_mul_vertical_add
     · exact this
     · rw [ECPoint.affine_of_nonsingular E hOnCurve]
 
+/-! ## Recompose: `D = (D.divLin x₀) · L_v` when (X - C x₀) divides both .a and .b -/
+
+theorem mulCoordRingElt_divLin_vertical_recompose
+    (D : CoordRingElt E.q) (x₀ : ZMod E.q)
+    (ha : (Polynomial.X - Polynomial.C x₀) ∣ D.a)
+    (hb : (Polynomial.X - Polynomial.C x₀) ∣ D.b) :
+    D = mulCoordRingElt E (D.divLin x₀)
+        ({ a := Polynomial.X - Polynomial.C x₀, b := 0 } : CoordRingElt E.q) := by
+  rw [mulCoordRingElt_vertical_eq]
+  -- Goal: D = { a := (D.divLin x₀).a · (X - C x₀), b := (D.divLin x₀).b · (X - C x₀) }
+  refine CoordRingElt.mk.injEq _ _ _ _ |>.mpr ?_
+  refine ⟨?_, ?_⟩
+  · -- D.a = (D.a /ₘ (X - C x₀)) · (X - C x₀).
+    show D.a = (D.a /ₘ (Polynomial.X - Polynomial.C x₀))
+                * (Polynomial.X - Polynomial.C x₀)
+    have := Polynomial.mul_divByMonic_eq_iff_isRoot.mpr
+              (Polynomial.dvd_iff_isRoot.mp ha)
+    linear_combination -this
+  · show D.b = (D.b /ₘ (Polynomial.X - Polynomial.C x₀))
+                * (Polynomial.X - Polynomial.C x₀)
+    have := Polynomial.mul_divByMonic_eq_iff_isRoot.mpr
+              (Polynomial.dvd_iff_isRoot.mp hb)
+    linear_combination -this
+
 end Divisor
