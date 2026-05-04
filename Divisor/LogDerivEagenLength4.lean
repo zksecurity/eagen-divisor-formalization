@@ -139,6 +139,98 @@ theorem chord_deriv_denom_factor_at_A₂
   have h_A2y : A₂y = lam * A₂x + (A₀.2 - lam * A₀.1) := rfl
   linear_combination -hVieta'
 
+/-! ## hDen derivation from hGood (strengthened bad set)
+
+Combine the chord-derivative-denominator factorization identities with
+the B4-strengthened `¬badPairCompletenessPred` to discharge `hDen`. -/
+
+theorem hDen_of_hGood
+    (D : CoordRingElt E.q)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
+    (hNV : A₀.1 ≠ A₁.1)
+    (hGood : (A₀, A₁) ∉ badChallengesCompleteness E D) :
+    let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
+    ∀ pt : ZMod E.q × ZMod E.q,
+      pt = A₀ ∨ pt = A₁ ∨
+      pt = (lam ^ 2 - A₀.1 - A₁.1,
+            lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
+      → 3 * pt.1 ^ 2 + E.curveA - 2 * lam * pt.2 ≠ 0 := by
+  classical
+  intro lam
+  set A₂x : ZMod E.q := lam ^ 2 - A₀.1 - A₁.1 with hA₂x_def
+  set A₂y : ZMod E.q := lam * A₂x + (A₀.2 - lam * A₀.1) with hA₂y_def
+  have hMem : (A₀, A₁) ∈ E.points ×ˢ E.points := Finset.mk_mem_product hA₀ hA₁
+  have h_unbad : ¬ badPairCompletenessPred E D (A₀, A₁) := fun hbad =>
+    hGood (Finset.mem_filter.mpr ⟨hMem, hbad⟩)
+  -- thirdPoint formula.
+  have hThirdEq : thirdPoint E A₀ A₁ = some (A₂x, A₂y) := by
+    unfold thirdPoint
+    rw [if_neg hNV]
+    rfl
+  have hNotDiag : A₀ ≠ A₁ := fun h => h_unbad (by
+    refine Or.inr (Or.inr (Or.inr (Or.inl ?_)))
+    show (A₀, A₁).1 = (A₀, A₁).2
+    rw [show (A₀, A₁).1 = A₀ from rfl, show (A₀, A₁).2 = A₁ from rfl]
+    exact h)
+  -- ¬tangentCollisionAtA_0: thirdPoint ≠ some A_0.
+  have hNotTangent_A₀ : (A₂x, A₂y) ≠ A₀ := fun h => h_unbad (by
+    refine Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ?_))))
+    show thirdPoint E (A₀, A₁).1 (A₀, A₁).2 = some (A₀, A₁).1
+    rw [show (A₀, A₁).1 = A₀ from rfl, show (A₀, A₁).2 = A₁ from rfl]
+    rw [hThirdEq, h])
+  -- ¬tangentCollisionAtA_1: thirdPoint ≠ some A_1.
+  have hNotTangent_A₁ : (A₂x, A₂y) ≠ A₁ := fun h => h_unbad (by
+    refine Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ?_))))
+    show thirdPoint E (A₀, A₁).1 (A₀, A₁).2 = some (A₀, A₁).2
+    rw [show (A₀, A₁).1 = A₀ from rfl, show (A₀, A₁).2 = A₁ from rfl]
+    rw [hThirdEq, h])
+  -- A_2.x ≠ A_0.x.
+  have hA₂x_ne_A₀x : A₂x ≠ A₀.1 := by
+    intro h
+    apply hNotTangent_A₀
+    -- From A_2.x = A_0.x and chord-line, A_2.y = A_0.y, so A_2 = A_0.
+    have hA₂y : A₂y = A₀.2 := by
+      rw [hA₂y_def, h]; ring
+    exact Prod.ext h hA₂y
+  -- A_2.x ≠ A_1.x.
+  have hA₂x_ne_A₁x : A₂x ≠ A₁.1 := by
+    intro h
+    apply hNotTangent_A₁
+    -- From A_2.x = A_1.x, A_2.y = lam·A_1.x + μ = lam·A_1.x + A_0.y - lam·A_0.x
+    --                          = A_0.y + lam·(A_1.x - A_0.x) = A_1.y (by slope identity).
+    have hSlope : lam * (A₁.1 - A₀.1) = A₁.2 - A₀.2 := by
+      show slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (A₁.1 - A₀.1) = A₁.2 - A₀.2
+      unfold slopeOf
+      have hne : A₁.1 - A₀.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm hNV)
+      field_simp
+    have hA₂y : A₂y = A₁.2 := by
+      rw [hA₂y_def, h]
+      linear_combination hSlope
+    exact Prod.ext h hA₂y
+  intro pt hpt
+  rcases hpt with h | h | h
+  · -- pt = A_0.
+    rw [h, chord_deriv_denom_factor_at_A₀ E A₀ A₁ hA₀ hA₁ hNV]
+    intro hMul
+    rcases mul_eq_zero.mp hMul with h₁ | h₂
+    · exact (sub_ne_zero.mpr hNV) h₁
+    · exact (sub_ne_zero.mpr (Ne.symm hA₂x_ne_A₀x)) h₂
+  · -- pt = A_1.
+    rw [h, chord_deriv_denom_factor_at_A₁ E A₀ A₁ hA₀ hA₁ hNV]
+    intro hMul
+    rcases mul_eq_zero.mp hMul with h₁ | h₂
+    · exact (sub_ne_zero.mpr (Ne.symm hNV)) h₁
+    · exact (sub_ne_zero.mpr (Ne.symm hA₂x_ne_A₁x)) h₂
+  · -- pt = A_2.
+    rw [h]
+    show 3 * A₂x ^ 2 + E.curveA - 2 * lam * A₂y ≠ 0
+    rw [chord_deriv_denom_factor_at_A₂ E A₀ A₁ hA₀ hA₁ hNV]
+    intro hMul
+    rcases mul_eq_zero.mp hMul with h₁ | h₂
+    · exact (sub_ne_zero.mpr hA₂x_ne_A₀x) h₁
+    · exact (sub_ne_zero.mpr hA₂x_ne_A₁x) h₂
+
 /-! ## hQline derivation: chord doesn't pass through any zero
 
 For length-4 `D = eagenBuild_length4`, `zerosFinset = {P_0..P_3}`. A
