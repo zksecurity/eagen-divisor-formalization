@@ -194,6 +194,33 @@ so cannot be proven correct without the cross-case piece above.
 All of B1–B5 are blocked on A6 (eagenBuild correctness), which is
 blocked on the cross-case ordAt-additivity.
 
+## Why strong-induction on natDegree-sum stalls (negative result)
+
+A natural attempt is to prove submultiplicativity
+`ord(D₁·D₂)(P) ≥ ord(D₁)(P) + ord(D₂)(P)` by strong induction on
+`D₁.natDegree-sum + D₂.natDegree-sum`. Combined with the same at `-P`
+and the pair-sum identity, additivity follows.
+
+The induction handles three of four sub-cases cleanly:
+* Non-vanish at P → both ords are 0.
+* Lone × non-vanish-fiber → covered by the existing
+  `ordAt_mul_add_at_lone_sheet`.
+* Twin × anything → use `mulCoordRingElt_divLin_left` to reduce
+  `(D₁·D₂).divLin` to `D₁.divLin · D₂`; IH on D₁'s reduced
+  natDegree-sum closes.
+
+But the cross case (`D₁` lone at `P`, `D₂` lone at `-P`, neither twin)
+**stalls**: `(D₁·D₂).divLin` exists (both `(D₁·D₂).a` and
+`(D₁·D₂).b` vanish at `x₀` — algebraic identity verified) but does
+NOT factor as `D₁' · D₂'` for any smaller `D₁'`, `D₂'`. The IH would
+need to be a statement about ARBITRARY CoordRingElt, but
+submultiplicativity is itself a statement about products, not
+arbitrary elements. Circularity.
+
+The `v_P` valuation construction (Codex's recommendation) bypasses
+this by working directly in the local ring, where multiplicativity
+is built into the valuation axioms.
+
 ## Cross-case algebraic analysis (additional notes)
 
 This session's analysis worked out the cross-case structure
