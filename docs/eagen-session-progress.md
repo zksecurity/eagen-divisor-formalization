@@ -3,6 +3,20 @@
 **Branch:** `work/completeness`
 **Plan file:** `~/.claude/plans/we-want-to-fix-steady-cocke.md`
 
+## Headline achievement
+
+**The originally-defective `weil_reciprocity_honest` axiom is now
+empirically sound** (B4 complete). The audit's first goal — "the
+current axiom used is untrue" — has been addressed by strengthening
+the bad-set predicate in `Divisor/SupportDisjoint.lean`. The Sage
+STRONG-BAD-SET PASS shows 0 failures over 7542 challenges. The
+F_5 doubling counterexample is now in the bad set, so the axiom
+doesn't claim anything about it.
+
+The audit's second goal — replacing the axiom with a constructive
+`eagenBuild`-based theorem (B5) — is still pending, blocked on the
+cross-case ordAt-additivity (Codex's `v_P` valuation construction).
+
 ## Summary
 
 This session built out the foundation layer for Eagen's algorithmic
