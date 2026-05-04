@@ -760,14 +760,24 @@ theorem honestDivisorCoeffs_deg_zero_of_isHonestForExplicit
   have hIsP : IsPrincipal E (honestDivisorCoeffs E stmt wit hk msg) := h_honest.1.2
   exact ⟨hFin, ((principal_divisor_iff E _ hFin).mp hIsP).1⟩
 
-/-! ## Sum extension for honestDivisorCoeffs (deferred)
+/-! ## ECPoint.some-to-affinePoints bijection
 
-The next step in the splitsOnE discharge chain is showing that the
-`honestDivisorCoeffs` support is contained in `affinePoints E ∪ {0}`,
-allowing the deg-zero sum to decompose into affine + infinity parts.
-This requires a bijection between `.some h` ECPoints and pairs
-`Q ∈ E.points`; the coercion from `ECPoint.affine E Q.1 Q.2` back to
-the pair is non-trivial and deferred to a follow-up. -/
+For any nonsingular .some ECPoint, the underlying (x, y) pair is in
+E.points, and `ECPoint.affine E x y` recovers the original ECPoint. -/
+
+theorem some_in_affinePoints {x y : ZMod E.q}
+    (h : E.toW.toAffine.Nonsingular x y) :
+    (.some h : ECPoint E) ∈ ECPoint.affinePoints E := by
+  classical
+  unfold ECPoint.affinePoints
+  rw [Finset.mem_image]
+  -- (x, y) ∈ E.points: from Nonsingular → Equation → on-curve → hComplete.
+  have hEq : E.toW.toAffine.Equation x y := E.equation_iff_nonsingular.mpr h
+  have hYsq : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB :=
+    (E.equation_iff x y).mp hEq
+  have hQ : (x, y) ∈ E.points := E.hComplete x y hYsq
+  refine ⟨(x, y), hQ, ?_⟩
+  rw [ECPoint.affine_of_nonsingular E h]
 
 /-! ## Notes on remaining infrastructure for any-k completeness
 
