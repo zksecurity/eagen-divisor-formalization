@@ -743,6 +743,23 @@ theorem honestDivisorCoeffs_finiteSupport_of_divisor_identity
   rw [h_eq]
   exact divisorOfD_finiteSupport E msg.toD
 
+/-! ## Deg-zero from IsPrincipal (via principal_divisor_iff)
+
+Combines `IsPrincipal honestDivisorCoeffs` (from `isHonestFor`) with
+`principal_divisor_iff` to extract the degree-zero condition. -/
+
+theorem honestDivisorCoeffs_deg_zero_of_isHonestForExplicit
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm) :
+    ∃ hFinSupp : Set.Finite (Function.support
+        (honestDivisorCoeffs E stmt wit hk msg)),
+      ∑ P ∈ hFinSupp.toFinset, honestDivisorCoeffs E stmt wit hk msg P = 0 := by
+  have hFin := honestDivisorCoeffs_finiteSupport_of_divisor_identity E
+    stmt wit hk msg h_honest.2
+  have hIsP : IsPrincipal E (honestDivisorCoeffs E stmt wit hk msg) := h_honest.1.2
+  exact ⟨hFin, ((principal_divisor_iff E _ hFin).mp hIsP).1⟩
+
 /-! ## Notes on remaining infrastructure for any-k completeness
 
 To prove `ma_completeness_via_isHonestForExplicit` for ANY k, we need:
