@@ -4519,4 +4519,47 @@ theorem divisorOfD_mul_vertical_add_at_infinity
     exact (X_sub_C_ne_zero x₀) ha
   exact divisorOfD_mul_add_at_infinity E hD hLv_NZ
 
+/-! ## Vertical multiplication additivity at affine points away from x₀ -/
+
+theorem divisorOfD_mul_vertical_add_affine_off_x₀
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) (x₀ : ZMod E.q)
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (h_off : P.1 ≠ x₀) :
+    divisorOfD E (mulCoordRingElt E D
+        ({ a := Polynomial.X - Polynomial.C x₀, b := 0 } : CoordRingElt E.q))
+        (ECPoint.affine E P.1 P.2)
+      = divisorOfD E D (ECPoint.affine E P.1 P.2)
+      + divisorOfD E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                      : CoordRingElt E.q) (ECPoint.affine E P.1 P.2) := by
+  have hLv_NZ : ¬ (({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                    : CoordRingElt E.q).a = 0
+                  ∧ ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                      : CoordRingElt E.q).b = 0) := by
+    intro ⟨ha, _⟩
+    exact (X_sub_C_ne_zero x₀) ha
+  -- rootMult P.1 (normPoly L_v) = 0 when P.1 ≠ x₀.
+  have hRootMult : Polynomial.rootMultiplicity P.1
+      (normPoly E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                    : CoordRingElt E.q)) = 0 := by
+    rw [show normPoly E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                          : CoordRingElt E.q) = (Polynomial.X - Polynomial.C x₀) ^ 2
+        from normPoly_chordCoordRingElt_vertical E x₀]
+    -- rootMultiplicity of (X - C x₀)^2 at P.1: 2 if P.1 = x₀, else 0.
+    apply Polynomial.rootMultiplicity_eq_zero
+    intro hRoot
+    apply h_off
+    have : (Polynomial.X - Polynomial.C x₀ : (ZMod E.q)[X]).IsRoot P.1 := by
+      have hPow_NZ : ((Polynomial.X - Polynomial.C x₀) ^ 2 : (ZMod E.q)[X]) ≠ 0 :=
+        pow_ne_zero 2 (X_sub_C_ne_zero x₀)
+      rw [Polynomial.IsRoot] at hRoot ⊢
+      have : ((Polynomial.X - Polynomial.C x₀) ^ 2 : (ZMod E.q)[X]).eval P.1 = 0 := hRoot
+      rw [Polynomial.eval_pow] at this
+      have h2 : (Polynomial.X - Polynomial.C x₀ : (ZMod E.q)[X]).eval P.1 = 0 :=
+        pow_eq_zero_iff (n := 2) (by omega) |>.mp this
+      exact h2
+    rw [Polynomial.IsRoot] at this
+    simp [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C, sub_eq_zero] at this
+    exact this
+  exact divisorOfD_mul_add_affine_when_normPoly_D2_le_one E hD hLv_NZ hP
+    (by omega)
+
 end Divisor
