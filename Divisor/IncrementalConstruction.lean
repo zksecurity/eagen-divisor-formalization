@@ -6375,4 +6375,149 @@ theorem ordAt_sum_eagenBuild_length4_eq_four
     rw [ord_P₀, ord_P₁, ord_P₂, ord_P₃]
     rfl
 
+/-! ## splitsOnE for `eagenBuild_length4_explicit` -/
+
+/-- `eagenBuild_length4_explicit` satisfies `splitsOnE`: its `normPoly`
+    splits over F_q (root-multiset cardinality matches natDegree) and
+    every root has an F_q-y-lift on E.
+
+    Proof: combine `ordAt_sum = 4 = natDegree` with the pointwise
+    `sum_ordAt_fst_eq_le ≤ rootMultiplicity` and
+    `sum_rootMultiplicity ≤ natDegree`. The chain pinches at every
+    inequality, giving rootMult α = 0 for any α off the input x-coords,
+    and hence `Multiset.card roots = natDegree`. Fiber rationality
+    follows from the input points being on E. -/
+theorem splitsOnE_eagenBuild_length4
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_P₀_ne_A2_01 : P₀.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₁_ne_A2_01 : P₁.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₂_ne_A2_23 : P₂.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₃_ne_A2_23 : P₃.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₀_off_L₂ : P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₀ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                    slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+                      * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+                      + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)))
+    (h_P₁_off_L₂ : P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₁ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                    slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+                      * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+                      + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)))
+    (h_P₂_off_L₁ : P₂ ≠ P₀ ∧ P₂ ≠ P₁ ∧ P₂ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+                    slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                      * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                      + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_P₃_off_L₁ : P₃ ≠ P₀ ∧ P₃ ≠ P₁ ∧ P₃ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+                    slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                      * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                      + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                        * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                        + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0)
+    (h_Q₀_off_L₂_inputs :
+      let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+      let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+      (Q₀x, Q₀y) ≠ P₂ ∧ (Q₀x, Q₀y) ≠ P₃ ∧ (Q₀x, Q₀y) ≠ (Q₀x, -Q₀y))
+    (h_negQ₀_off_L₁_inputs :
+      let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+      let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+      (Q₀x, -Q₀y) ≠ P₀ ∧ (Q₀x, -Q₀y) ≠ P₁ ∧ (Q₀x, -Q₀y) ≠ (Q₀x, Q₀y))
+    (h_inputs_distinct : P₀ ≠ P₁ ∧ P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₂ ≠ P₃) :
+    splitsOnE E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) := by
+  classical
+  have hNZ := eagenBuild_length4_explicit_ne_zero E P₀ P₁ P₂ P₃
+    hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_third_match h_y_match h_Q₀_nontorsion
+  have hNatDeg := eagenBuild_length4_normPoly_natDegree_eq_four E P₀ P₁ P₂ P₃
+    hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₂_ne_A2_23 h_P₃_ne_A2_23
+    h_third_match h_y_match h_Q₀_nontorsion
+  have hOrdSum := ordAt_sum_eagenBuild_length4_eq_four E P₀ P₁ P₂ P₃
+    hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
+    h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
+    h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs
+    h_inputs_distinct
+  set D := eagenBuild_length4_explicit E P₀ P₁ P₂ P₃ with hD_def
+  refine ⟨?_, ?_⟩
+  · -- normPoly_splits_over_Fq: Multiset.card (normPoly D).roots = natDegree.
+    -- Use sum_E_points_eq_sum_fiberwise, sum_ordAt_fst_eq_le, sum_rootMult_le_natDegree.
+    have hSumFiber : (∑ x₀ : ZMod E.q,
+        ∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E D P) = 4 := by
+      rw [← sum_E_points_eq_sum_fiberwise E (fun P => ordAt E D P)]
+      exact hOrdSum
+    have hPointwiseLE : ∀ x₀ : ZMod E.q,
+        (∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E D P)
+          ≤ rootMultiplicity x₀ (normPoly E D) :=
+      fun x₀ => sum_ordAt_fst_eq_le E D hNZ x₀
+    have hSumRootMult_LE : ∑ x₀ : ZMod E.q, rootMultiplicity x₀ (normPoly E D)
+        ≤ (normPoly E D).natDegree :=
+      sum_rootMultiplicity_le_natDegree E (normPoly E D)
+    have hSumLE : 4 ≤ ∑ x₀ : ZMod E.q, rootMultiplicity x₀ (normPoly E D) := by
+      rw [← hSumFiber]
+      exact Finset.sum_le_sum (fun x₀ _ => hPointwiseLE x₀)
+    have hSumEq : ∑ x₀ : ZMod E.q, rootMultiplicity x₀ (normPoly E D)
+        = (normPoly E D).natDegree := by
+      rw [hNatDeg]; omega
+    -- Multiset.card roots = sum rootMultiplicity (over F_q).
+    unfold normPoly_splits_over_Fq
+    rw [sum_rootMultiplicity_eq_card_roots] at hSumEq
+    exact hSumEq
+  · -- Fiber rationality: every root has y-lift on E.
+    intro α hα
+    -- α is a root of normPoly E D. Show α ∈ {P_i.1}.
+    have hRoot_pos : 0 < rootMultiplicity α (normPoly E D) :=
+      (rootMultiplicity_pos (normPoly_ne_zero E D hNZ)).mpr
+        ((Polynomial.mem_roots (normPoly_ne_zero E D hNZ)).mp hα)
+    -- From the equality chain, fiber_sum(α) = rootMult α > 0.
+    -- So ∃ P with P.1 = α, ordAt P > 0, hence P ∈ zerosFinset.
+    have hFiberPos : 0 < ∑ P ∈ E.points.filter (fun P => P.1 = α), ordAt E D P := by
+      -- Same chain: pinching equality gives pointwise equality.
+      have hSumLE_α : (∑ P ∈ E.points.filter (fun P => P.1 = α), ordAt E D P)
+          ≤ rootMultiplicity α (normPoly E D) := sum_ordAt_fst_eq_le E D hNZ α
+      -- The total fiber sum is 4 and total rootMult sum is 4 with pointwise ≤,
+      -- so equality must hold pointwise.
+      by_contra hLE
+      push_neg at hLE
+      have hLT : (∑ P ∈ E.points.filter (fun P => P.1 = α), ordAt E D P)
+          < rootMultiplicity α (normPoly E D) := by
+        have h0 : (∑ P ∈ E.points.filter (fun P => P.1 = α), ordAt E D P) = 0 := by omega
+        rw [h0]; exact hRoot_pos
+      -- Strict inequality at α, but ≤ everywhere gives sum_fiber < sum_rootMult.
+      have hSumFiber : (∑ x₀ : ZMod E.q,
+          ∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E D P) = 4 := by
+        rw [← sum_E_points_eq_sum_fiberwise E (fun P => ordAt E D P)]
+        exact hOrdSum
+      have hPointwiseLE : ∀ x₀ : ZMod E.q,
+          (∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E D P)
+            ≤ rootMultiplicity x₀ (normPoly E D) :=
+        fun x₀ => sum_ordAt_fst_eq_le E D hNZ x₀
+      have hSumStrictLE : (∑ x₀ : ZMod E.q,
+          ∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E D P)
+          < ∑ x₀ : ZMod E.q, rootMultiplicity x₀ (normPoly E D) :=
+        Finset.sum_lt_sum (fun x₀ _ => hPointwiseLE x₀) ⟨α, Finset.mem_univ _, hLT⟩
+      rw [hSumFiber] at hSumStrictLE
+      have hSumRootMult_LE : ∑ x₀ : ZMod E.q, rootMultiplicity x₀ (normPoly E D)
+          ≤ (normPoly E D).natDegree :=
+        sum_rootMultiplicity_le_natDegree E (normPoly E D)
+      omega
+    -- hFiberPos: filter is nonempty; some P with P.1 = α and ordAt > 0.
+    have hFilterNonempty : (E.points.filter (fun P => P.1 = α)).Nonempty := by
+      by_contra h
+      rw [Finset.not_nonempty_iff_eq_empty] at h
+      rw [h, Finset.sum_empty] at hFiberPos
+      exact lt_irrefl 0 hFiberPos
+    obtain ⟨P, hPmem⟩ := hFilterNonempty
+    have hPE : P ∈ E.points := (Finset.mem_filter.mp hPmem).1
+    have hPx : P.1 = α := (Finset.mem_filter.mp hPmem).2
+    exact ⟨P.2, by rw [← hPx]; exact hPE⟩
+
 end Divisor
