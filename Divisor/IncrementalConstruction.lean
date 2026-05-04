@@ -4577,4 +4577,21 @@ theorem divLin_of_vertical (x₀ : ZMod E.q) :
   · show (0 : (ZMod E.q)[X]) /ₘ (Polynomial.X - Polynomial.C x₀) = 0
     exact Polynomial.zero_divByMonic _
 
+/-- The unit element `(1, 0)` has `ord = 0` at any non-2-torsion P. -/
+theorem ord_const_one_at_nonTwoTorsion
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0) :
+    ordAt E ({ a := 1, b := 0 } : CoordRingElt E.q) P = 0 := by
+  have h1NZ : ¬ (({ a := 1, b := 0 } : CoordRingElt E.q).a = 0
+                 ∧ ({ a := 1, b := 0 } : CoordRingElt E.q).b = 0) := by
+    intro ⟨h1, _⟩
+    exact one_ne_zero h1
+  have h1_eval : ({ a := 1, b := 0 } : CoordRingElt E.q).eval P.1 P.2 ≠ 0 := by
+    unfold CoordRingElt.eval
+    simp
+  apply Nat.eq_zero_of_le_zero
+  by_contra h
+  push_neg at h
+  apply h1_eval
+  exact (ordAt_pos_iff_zero E _ h1NZ P hP).mp h
+
 end Divisor
