@@ -1177,6 +1177,20 @@ private theorem bases_at_cast_index_for_length4Simple
     have : (⟨2, by decide⟩ : Fin 3) = (2 : Fin 3) := rfl
     rw [this, ← h_simple.h_P₃_eq]; exact h_simple.hP₃
 
+/-- Scalar reduction for the length-4 simple case (with `wit.scalars = 1`). -/
+theorem scalar_reduction_for_length4Simple
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    {wit : DlogWitness E.q} (hk : stmt.k = wit.k)
+    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1) :
+    let hkm : stmt.k = msg.k := h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm
+    ∀ i : Fin stmt.k,
+      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)) := by
+  intro hkm i
+  rw [h_simple.h_m_eq_one (hkm ▸ i)]
+  rw [h_scalars (hk ▸ i)]
+  push_cast; rfl
+
 /-- On-curve invariant: every `bases i` is on E. -/
 theorem bases_on_curve_for_length4Simple
     {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
