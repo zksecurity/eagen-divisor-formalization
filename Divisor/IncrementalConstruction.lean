@@ -3180,4 +3180,54 @@ theorem cross_case_T_deriv_eq_normPoly_deriv
   rw [hax₁, hax₂, hCurveX]
   ring
 
+/-! ## Cross-case base case: when m₁ = 1, T_poly has rootMult exactly 1
+
+When `D₁` lone at P with multiplicity 1 (i.e. `(normPoly E D₁)` has
+rootMult 1 at `P.1`), the polynomial `T_poly := (D₁·D₂)⁺` has rootMult
+exactly 1 at `P.1`. This is the base case of the cross-case structure:
+after 1 divLin step on `(D₁·D₂)`, the residual no longer vanishes at P. -/
+
+theorem cross_case_T_poly_deriv_ne_zero
+    {D₁ D₂ : CoordRingElt E.q}
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₁negP : D₁.eval P.1 (-P.2) ≠ 0)
+    (hD₂P : D₂.eval P.1 P.2 ≠ 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0)
+    (hm₁ : Polynomial.rootMultiplicity P.1 (normPoly E D₁) = 1) :
+    ((mulCoordRingElt E D₁ D₂).a -
+      (mulCoordRingElt E D₁ D₂).b * Polynomial.C P.2).derivative.eval P.1 ≠ 0 := by
+  -- B₁, B₂ non-zero.
+  have hB₁ : D₁.b.eval P.1 ≠ 0 := cross_case_D1_b_eval_ne_zero E hY hD₁P hD₁negP
+  have hB₂ : D₂.b.eval P.1 ≠ 0 := cross_case_D2_b_eval_ne_zero E hY hD₂P hD₂negP
+  -- D₁ non-zero (since D₁.b non-zero at x_0 implies D₁.b ≠ 0).
+  have hD₁nz : ¬ (D₁.a = 0 ∧ D₁.b = 0) := by
+    intro ⟨_, hb⟩
+    apply hB₁
+    rw [hb]; simp
+  -- normPoly D₁ non-zero.
+  have hN₁nz : normPoly E D₁ ≠ 0 := normPoly_ne_zero E D₁ hD₁nz
+  -- m₁ = 1 ⟹ (normPoly D₁).derivative.eval P.1 ≠ 0.
+  have hNder : (normPoly E D₁).derivative.eval P.1 ≠ 0 := by
+    intro hd
+    have hRoot : (normPoly E D₁).IsRoot P.1 := by
+      rw [Polynomial.IsRoot]
+      have hPos : 0 < (normPoly E D₁).rootMultiplicity P.1 := by omega
+      rw [Polynomial.rootMultiplicity_pos hN₁nz] at hPos
+      exact hPos
+    have h2 : 1 < (normPoly E D₁).rootMultiplicity P.1 := by
+      rw [Polynomial.one_lt_rootMultiplicity_iff_isRoot hN₁nz]
+      exact ⟨hRoot, hd⟩
+    omega
+  -- Apply derivative identity.
+  intro hT
+  have hId := cross_case_T_deriv_eq_normPoly_deriv E D₁ D₂ hP hD₁P hD₂negP
+  rw [hT, mul_zero] at hId
+  -- hId: 0 = -(D₂.b.eval P.1) * (normPoly E D₁).derivative.eval P.1.
+  -- Both factors on RHS are non-zero, contradiction.
+  have : -(D₂.b.eval P.1) * (normPoly E D₁).derivative.eval P.1 = 0 := hId.symm
+  rcases mul_eq_zero.mp this with h | h
+  · apply hB₂
+    have : -D₂.b.eval P.1 = 0 := h
+    linear_combination -this
+  · exact hNder h
+
 end Divisor
