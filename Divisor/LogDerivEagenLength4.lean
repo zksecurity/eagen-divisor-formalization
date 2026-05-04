@@ -58,8 +58,9 @@
 
 import Divisor.IncrementalConstruction
 import Divisor.WeilReciprocityDescent
+import Divisor.Soundness
 
-open Polynomial Finset
+open Polynomial Finset Classical
 
 namespace Divisor
 
@@ -1230,11 +1231,34 @@ theorem hNV_of_hGood {D : CoordRingElt E.q}
     rw [hThirdNone]
     trivial
 
-/-! ## Note on ma_completeness instantiation
+/-! ## Full instantiation: `ma_completeness_via_isHonestForLength4Simple`
 
-With both helpers in place (`logDerivCheckFn_eq_under_stmt_k_eq_three`
-cast bridge and `hNV_of_hGood` non-vertical extractor), the full
-`ma_completeness_via_isHonestForLength4Simple` is now mechanically
-constructible. -/
+The headline integration: takes a `IsHonestForLength4Simple` structure
+and produces the `ma_completeness` rejection bound. Combines the cast
+bridge, hNV extractor, and structure bridge to instantiate
+`ma_completeness_parameterized` (Soundness.lean) without using
+`weil_reciprocity_honest`.
+
+Verified axiom closure: clean of `weil_reciprocity_honest`. -/
+
+theorem ma_completeness_via_isHonestForLength4Simple
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_honest : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    ((E.points ×ˢ E.points).filter
+        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+  apply ma_completeness_parameterized E stmt msg hkm hDegK hAdm
+  intro A₀ A₁ hA₀ hA₁ hGood
+  -- Extract hNV.
+  have hNV : A₀.1 ≠ A₁.1 := hNV_of_hGood E hA₀ hA₁ hGood
+  -- Apply the cast bridge: align stmt.k with 3.
+  rw [logDerivCheckFn_eq_under_stmt_k_eq_three E msg.toD stmt.target
+      h_honest.hk_eq_3 stmt.bases (fun i => msg.m (hkm ▸ i))
+      (fun i => h_honest.h_m_eq_one (hkm ▸ i)) A₀ A₁]
+  -- Now apply the structure bridge.
+  exact logDerivCheckFn_zero_via_isHonestForLength4Simple E stmt msg
+    h_honest A₀ A₁ hA₀ hA₁ hNV hGood
 
 end Divisor
