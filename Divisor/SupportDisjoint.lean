@@ -46,6 +46,21 @@ noncomputable def badChallengesCompleteness (D : CoordRingElt E.q) :
     Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
   (E.points ×ˢ E.points).filter (badPairCompletenessPred E D)
 
+/-! ## Tangent-collision bad-pair set
+
+The "tangent at A₀" pairs: `{(A₀, A₁) ∈ E.points × E.points :
+thirdPoint E A₀ A₁ = some A₀}`. This is the configuration where
+the chord through `A₀` and `A₁` is tangent to `E` at `A₀`. Lean's
+`logDerivCheckFn` uses the chord (not the geometric tangent) slope
+in this case, leading to incorrect values.
+
+Codex-confirmed bound: `|S₅| ≤ |E.points|` via `thirdPoint_inj_on_A₁`
+(group-law: `A₀ + A₁ = -A₀` ⟹ `A₁ = -2A₀`, unique). -/
+
+noncomputable def tangentCollisionAtA₀ :
+    Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+  (E.points ×ˢ E.points).filter (fun p => thirdPoint E p.1 p.2 = some p.1)
+
 /-! ## A2 = O iff A1 = -A0
 
 For fixed A0 = (x0, y0), the condition A1 = -A0 means A1 = (x0, -y0).
@@ -363,6 +378,25 @@ theorem thirdPoint_inj_on_A₁ (A₀ : ZMod E.q × ZMod E.q) (hA₀ : A₀ ∈ E
   rw [WeierstrassCurve.Affine.Point.some.injEq] at h_some
   exact Prod.ext h_some.1 h_some.2
 
+/-- For each `A₀ ∈ E.points`, at most one `A₁ ∈ E.points` satisfies
+    `thirdPoint E A₀ A₁ = some A₀` (i.e., the chord is tangent at `A₀`).
+    Direct consequence of `thirdPoint_inj_on_A₁`: equal outputs force
+    equal inputs on the affine branch. -/
+theorem card_thirdPoint_eq_self_fiber
+    {A₀ : ZMod E.q × ZMod E.q} (hA₀ : A₀ ∈ E.points) :
+    (E.points.filter (fun A₁ => thirdPoint E A₀ A₁ = some A₀)).card ≤ 1 := by
+  classical
+  rw [Finset.card_le_one]
+  intro a ha b hb
+  simp only [Finset.mem_filter] at ha hb
+  obtain ⟨ha_mem, ha_eq⟩ := ha
+  obtain ⟨hb_mem, hb_eq⟩ := hb
+  have ha_ne : thirdPoint E A₀ a ≠ none := by rw [ha_eq]; simp
+  have hb_ne : thirdPoint E A₀ b ≠ none := by rw [hb_eq]; simp
+  have hAB : thirdPoint E A₀ a = thirdPoint E A₀ b := by rw [ha_eq, hb_eq]
+  exact thirdPoint_inj_on_A₁ E A₀ hA₀ ⟨ha_mem, ha_ne⟩ ⟨hb_mem, hb_ne⟩ hAB
+
+
 /-! ## Auxiliary: fiberwise decomposition -/
 
 /-- For each `A₀ ∈ E.points`, the number of `A₁ ∈ E.points` with
@@ -465,6 +499,24 @@ theorem card_filter_product_fiber_eq
   · intro p hp
     simp only [Finset.mem_coe, Finset.mem_filter, Finset.mem_product] at hp
     exact hp.1.1
+
+/-- Cardinality bound for the tangent-collision-at-A₀ set:
+    `|tangentCollisionAtA₀| ≤ |E.points|`. -/
+theorem card_tangentCollisionAtA₀_le :
+    (tangentCollisionAtA₀ E).card ≤ E.numAffine := by
+  classical
+  have hfib : (tangentCollisionAtA₀ E).card =
+      ∑ A₀ ∈ E.points,
+        (E.points.filter (fun A₁ => thirdPoint E A₀ A₁ = some A₀)).card :=
+    card_filter_product_fiber_eq E E.points E.points
+      (fun a b => thirdPoint E a b = some a)
+  rw [hfib]
+  calc ∑ A₀ ∈ E.points,
+          (E.points.filter (fun A₁ => thirdPoint E A₀ A₁ = some A₀)).card
+      ≤ ∑ A₀ ∈ E.points, 1 :=
+        Finset.sum_le_sum (fun A₀ hA₀ => card_thirdPoint_eq_self_fiber E hA₀)
+    _ = E.points.card := by rw [Finset.sum_const, smul_eq_mul]; ring
+    _ = E.numAffine := rfl
 
 /-! ## Standalone: third-point-affine zeros of D on E × E
 
