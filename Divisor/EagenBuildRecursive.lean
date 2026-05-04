@@ -878,4 +878,39 @@ theorem zero_notMem_affinePoints : (0 : ECPoint E) ∉ ECPoint.affinePoints E :=
   rw [ECPoint.affine_of_nonsingular E hNs] at hEq
   cases hEq
 
+/-! ## Affine sum = degE for honest divisor
+
+Combines deg-zero (from IsPrincipal) with the support subset and the
+infinity coefficient unfolding. -/
+
+theorem honestDivisorCoeffs_affine_sum_eq_degE
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm) :
+    (∑ R ∈ ECPoint.affinePoints E, honestDivisorCoeffs E stmt wit hk msg R)
+      = (msg.toD.degE : ℤ) := by
+  classical
+  obtain ⟨hFin, hSum_zero⟩ :=
+    honestDivisorCoeffs_deg_zero_of_isHonestForExplicit E stmt wit hk msg hkm h_honest
+  have hSubset := honestDivisorCoeffs_support_subset_affineAndInfinity E stmt wit hk msg
+  have hZeroNotIn := zero_notMem_affinePoints E
+  have h_ext_sum : (∑ R ∈ insert (0 : ECPoint E) (ECPoint.affinePoints E),
+      honestDivisorCoeffs E stmt wit hk msg R) = 0 := by
+    rw [show (∑ R ∈ insert (0 : ECPoint E) (ECPoint.affinePoints E),
+              honestDivisorCoeffs E stmt wit hk msg R)
+        = ∑ R ∈ hFin.toFinset, honestDivisorCoeffs E stmt wit hk msg R from ?_]
+    · exact hSum_zero
+    · apply (Finset.sum_subset (s₁ := hFin.toFinset)
+              (s₂ := insert (0 : ECPoint E) (ECPoint.affinePoints E)) ?_ ?_).symm
+      · intro R hR
+        rw [Set.Finite.mem_toFinset] at hR
+        exact hSubset hR
+      · intro R _hR_in hR_notIn
+        rw [Set.Finite.mem_toFinset] at hR_notIn
+        by_contra h
+        exact hR_notIn h
+  rw [Finset.sum_insert hZeroNotIn,
+      honestDivisorCoeffs_at_infinity E stmt wit hk msg] at h_ext_sum
+  linarith
+
 end Divisor
