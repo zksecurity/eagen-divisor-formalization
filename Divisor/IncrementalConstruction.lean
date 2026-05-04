@@ -3531,4 +3531,32 @@ theorem cross_case_commonRootMult_eq_one_when_min_eq_one
     exact cross_case_commonRootMult_eq_one_when_m2_eq_one E h₁ h₂ hP hY
       hD₁P hD₁negP hD₂P hD₂negP hm₂
 
+/-! ## Full base case of `cross_iterDivLin_invariant`: min = 1
+
+Combines `commonRootMultRat = 1` and the branch condition `(iterDivLin 1).eval = 0 iff m₂ < m₁`. -/
+
+theorem cross_iterDivLin_invariant_when_min_eq_one
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₁negP : D₁.eval P.1 (-P.2) ≠ 0)
+    (hD₂P : D₂.eval P.1 P.2 ≠ 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0)
+    (hMin : min (Polynomial.rootMultiplicity P.1 (normPoly E D₁))
+                (Polynomial.rootMultiplicity P.1 (normPoly E D₂)) = 1) :
+    commonRootMultRat E (mulCoordRingElt E D₁ D₂) P.1
+        = min (Polynomial.rootMultiplicity P.1 (normPoly E D₁))
+              (Polynomial.rootMultiplicity P.1 (normPoly E D₂))
+    ∧ ((iterDivLin E (mulCoordRingElt E D₁ D₂) P.1
+        (min (Polynomial.rootMultiplicity P.1 (normPoly E D₁))
+             (Polynomial.rootMultiplicity P.1 (normPoly E D₂)))).eval P.1 P.2 = 0
+        ↔ Polynomial.rootMultiplicity P.1 (normPoly E D₂) <
+          Polynomial.rootMultiplicity P.1 (normPoly E D₁)) := by
+  refine ⟨?_, ?_⟩
+  · rw [hMin]
+    exact cross_case_commonRootMult_eq_one_when_min_eq_one E h₁ h₂ hP hY
+      hD₁P hD₁negP hD₂P hD₂negP hMin
+  · rw [hMin]
+    exact cross_case_iterDivLin_one_eval_zero_iff_when_min_eq_one E h₁ h₂ hP hY
+      hD₁P hD₁negP hD₂P hD₂negP hMin
+
 end Divisor
