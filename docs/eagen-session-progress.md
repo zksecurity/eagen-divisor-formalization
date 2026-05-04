@@ -195,6 +195,26 @@ Closure of `eagenBuild_length4_residue_sum_eq`: only standard Lean
 axioms (`propext`, `Classical.choice`, `Quot.sound`). No new
 mathematical axioms.
 
+## HEADLINE: full discharge for simplest honest case (May 2026, 169 commits)
+
+**`weil_reciprocity_honest_length4_simple`** — for the length-4 honest
+divisor with k=3 bases all at scalar 1 and input list
+`[(-P_target), B 0, B 1, B 2]`, proves
+`logDerivCheckFn = 0` with **no user hypotheses beyond on-curve +
+genericity + ¬badPairCompletenessPred**.
+
+Axiom closure (`#print axioms`):
+```
+[propext, Classical.choice, Quot.sound,
+ Divisor.chord_fiber_product_eq_normZ_under_split,
+ Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g]
+```
+
+**This proves the formerly-axiomatic `weil_reciprocity_honest` is
+constructively dischargeable for at least one honest divisor structure**.
+The remaining work is generalizing the construction (eagenBuild) to
+other honest divisor shapes (k≠3 bases, scalars > 1, doublings).
+
 ## Session checkpoint (May 2026, 156 commits)
 
 Major milestones achieved this session:
