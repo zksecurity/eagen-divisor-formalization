@@ -500,6 +500,11 @@ theorem card_filter_product_fiber_eq
     simp only [Finset.mem_coe, Finset.mem_filter, Finset.mem_product] at hp
     exact hp.1.1
 
+-- TODO: thirdPoint_symm — at the chord branch, both chord coordinates
+-- and slope are symmetric in (A₀, A₁) (slopeOf is symmetric per
+-- ClearedPolyForm.slopeOf_symm). Once proven, gives S_6 = swap of S_5
+-- as a Finset, hence |S_6| ≤ |E.numAffine|.
+
 /-- Cardinality bound for the tangent-collision-at-A₀ set:
     `|tangentCollisionAtA₀| ≤ |E.points|`. -/
 theorem card_tangentCollisionAtA₀_le :
