@@ -58,7 +58,7 @@
 
 import Divisor.IncrementalConstruction
 import Divisor.WeilReciprocityDescent
-import Divisor.Soundness
+import Divisor.MACompletenessCore
 
 open Polynomial Finset Classical
 

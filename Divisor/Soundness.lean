@@ -15,6 +15,7 @@ import Divisor.SupportDisjoint
 import Divisor.LogDeriv
 import Divisor.ClearedPolyForm
 import Divisor.Protocol
+import Divisor.MACompletenessCore
 
 namespace Divisor
 
@@ -277,39 +278,13 @@ theorem extracted_scalars_valid_special
 
     Hence rejection forces the challenge into the bad set.
 
-    Refactored: factored through `ma_completeness_parameterized` which
-    takes the per-pair `logDerivCheckFn = 0` claim as a hook. This
-    lets specialized integrations (e.g., `length-4 simple` from
-    `Divisor.LogDerivEagenLength4`) provide the hook without using
-    the `weil_reciprocity_honest` axiom. -/
-theorem ma_completeness_parameterized
-    (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (h_logDerivCheckFn_zero :
-      ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
-        A₀ ∈ E.points → A₁ ∈ E.points →
-        (A₀, A₁) ∉ badChallengesCompleteness E msg.toD →
-        logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-          (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
-    ((E.points ×ˢ E.points).filter
-        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  set rejectSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
-    (E.points ×ˢ E.points).filter
-      (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hRS
-  have hSub : rejectSet ⊆ badChallengesCompleteness E msg.toD := by
-    intro p hp
-    simp only [hRS, Finset.mem_filter] at hp
-    obtain ⟨hpIn, hpR⟩ := hp
-    by_contra hNotBad
-    apply hpR
-    refine ⟨hDegK, hAdm, ?_⟩
-    have hpPts := Finset.mem_product.mp hpIn
-    exact h_logDerivCheckFn_zero p.1 p.2 hpPts.1 hpPts.2 hNotBad
-  exact le_trans (Finset.card_le_card hSub)
-    (support_disjointness E msg.toD (numZeros E msg.toD) (le_refl _))
+    Refactored: factored through `ma_completeness_parameterized`
+    (in `Divisor/MACompletenessCore.lean`), which takes the per-pair
+    `logDerivCheckFn = 0` claim as a hook. This lets specialized
+    integrations (e.g., `length-4 simple` from
+    `Divisor.LogDerivEagenLength4`, the explicit honest-divisor
+    identity in `Divisor.EagenBuildRecursive`) provide the hook
+    without using the `weil_reciprocity_honest` axiom. -/
 
 theorem ma_completeness
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
