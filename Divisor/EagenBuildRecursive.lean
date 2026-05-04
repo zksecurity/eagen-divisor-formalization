@@ -43,6 +43,8 @@
 -/
 
 import Divisor.IncrementalConstruction
+import Divisor.LogDerivEagenLength4
+import Divisor.WeilReciprocityDescent
 
 open Polynomial Finset
 
@@ -300,6 +302,58 @@ theorem hQline_of_hGood_general
     rw [show (A₀, A₁).1 = A₀ from rfl, show (A₀, A₁).2 = A₁ from rfl]
     rw [hThirdEq]
     rw [← hQ]; exact hQzero
+
+/-! ## Any-k bridge: `logDerivCheckFn = 0` for any honest D with explicit hypotheses
+
+Takes a generic msg with `IsHonestForExplicit` plus the splitsOnE,
+hAccount, and residue-match side conditions (protocol- and D-specific).
+Produces logDerivCheckFn = 0.
+
+For length-4 simple, all these can be discharged via length-4 work.
+For general k, the user provides them (e.g., via recursive eagenBuild). -/
+
+theorem logDerivCheckFn_zero_via_isHonestForExplicit_with_sides
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
+    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
+    (hSplit : splitsOnE E msg.toD)
+    (hAccount : (∑ Q ∈ E.points, ordAt E msg.toD Q) = (normPoly E msg.toD).natDegree)
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
+    (hNV : A₀.1 ≠ A₁.1)
+    (hGood : (A₀, A₁) ∉ badChallengesCompleteness E msg.toD)
+    (hResidueMatch :
+      (∑ Q ∈ zerosFinset E msg.toD, (ordAt E msg.toD Q : ZMod E.q) *
+          ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2)⁻¹)
+        = ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval stmt.target.1 (-stmt.target.2))⁻¹
+          + (Finset.univ : Finset (Fin stmt.k)).sum
+              (fun j => msg.m (hkm ▸ j) *
+                ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (stmt.bases j).1
+                  (stmt.bases j).2)⁻¹)) :
+    logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
+      (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0 := by
+  classical
+  -- β_fun = ordAt = betaTrue (definitional).
+  have hβsup : ∀ Q, ordAt E msg.toD Q ≠ 0 →
+      Q ∈ E.points ∧ msg.toD.eval Q.1 Q.2 = 0 :=
+    betaTrue_support E msg.toD hD
+  have hβcov : ∀ Q ∈ E.points, msg.toD.eval Q.1 Q.2 = 0 →
+      ordAt E msg.toD Q ≠ 0 := by
+    intro Q hQE hQeval
+    have h_pos : 0 < ordAt E msg.toD Q := (ordAt_pos_iff_zero E msg.toD hD Q hQE).mpr hQeval
+    omega
+  have hβtrue : ∀ Q, ordAt E msg.toD Q = betaTrue E msg.toD hD Q := fun _ => rfl
+  -- hQline from general lemma.
+  have hQline := hQline_of_hGood_general E hD hA₀ hA₁ hNV hGood
+  -- hDen from general lemma (in LogDerivEagenLength4).
+  have hDen := hDen_of_hGood E msg.toD A₀ A₁ hA₀ hA₁ hNV hGood
+  -- Apply logDerivCheckFn_zero_of_explicit_divisor_data.
+  exact logDerivCheckFn_zero_of_explicit_divisor_data E msg.toD stmt.target
+    stmt.bases (fun i => msg.m (hkm ▸ i)) (ordAt E msg.toD)
+    hD hSplit hβsup hβcov hAccount hβtrue
+    A₀ A₁ hA₀ hA₁ hNV hGood hQline hDen hResidueMatch
 
 /-! ## Notes on remaining infrastructure for any-k completeness
 
