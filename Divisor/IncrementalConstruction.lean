@@ -2872,7 +2872,30 @@ When `(X − x₀)^k` divides both `D₁.a` and `D₁.b`,
 This is the iterated lift of `mulCoordRingElt_divLin_left`. Used to
 reduce the cross-case multiplicativity proof: by stripping `k₁`
 common factors from `D₁` first, we reduce to analyzing `D̃₁ · D₂`
-where `D̃₁` has no further common factor. -/
+where `D̃₁` has no further common factor.
+
+### TODO: cross-case lemma `ordAt_mul_of_right_eval_ne_zero`
+
+Statement (per Codex consultation, May 2026):
+```
+ordAt E (mulCoordRingElt E D₁ D₂) P = ordAt E D₁ P
+```
+when `D₂.eval P.1 P.2 ≠ 0`.
+
+Sub-cases:
+* `D₁.eval P ≠ 0`: trivial (`ordAt_mul_add_at_nonvanish` suffices).
+* `D₁` twin at P: descend via `mulCoordRingElt_divLin_left` + IH on
+  `D₁.divLin x₀`.
+* `D₁` lone at P, `D₂` unit on fiber: existing
+  `ordAt_mul_add_at_lone_sheet` covers this.
+* `D₁` lone at P, `D₂(-P) = 0` (cross case): the substantive piece.
+
+The cross sub-case requires the `cross_iterDivLin_invariant` lemma
+(commonRootMultRat (D₁·D₂) P.1 = min(m₁, m₂); branch determined by
+`lt_trichotomy m₁ m₂`). Proof strategy in
+`docs/eagen-session-progress.md`. Substantial sub-proof involving
+the algebraic computation of `T_r⁺(x_0) = (D₀⁺)^(r)(x_0)`. -/
+
 
 theorem iterDivLin_mul_left (k : ℕ) :
     ∀ (D₁ D₂ : CoordRingElt E.q) (x₀ : ZMod E.q),
