@@ -2490,4 +2490,33 @@ For correctness:
 Implementing this in Lean is the next major piece after the cross-case
 additivity is closed. -/
 
+/-! ## Multiplication-additivity when one factor non-vanishes on entire fiber
+
+A clean statement: if EITHER `D₁` OR `D₂` is non-vanishing on the entire
+fiber pair `{P, (P.1, -P.2)}`, then `divisorOfD` is additive at `P`.
+
+The "cross" case (D₁ vanish at P only, D₂ at -P only — neither
+non-vanishing on full fiber) is excluded; that case requires the
+local valuation construction (TODO). -/
+
+theorem divisorOfD_mul_add_when_one_factor_nonvanish_fiber
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points)
+    (hOneNonvanish :
+        (D₁.eval P.1 P.2 ≠ 0 ∧ D₁.eval P.1 (-P.2) ≠ 0)
+      ∨ (D₂.eval P.1 P.2 ≠ 0 ∧ D₂.eval P.1 (-P.2) ≠ 0)) :
+    divisorOfD E (mulCoordRingElt E D₁ D₂) (ECPoint.affine E P.1 P.2)
+      = divisorOfD E D₁ (ECPoint.affine E P.1 P.2)
+        + divisorOfD E D₂ (ECPoint.affine E P.1 P.2) := by
+  classical
+  rcases hOneNonvanish with ⟨hD₁P, hD₁negP⟩ | ⟨hD₂P, hD₂negP⟩
+  · -- D₁ non-vanish on fiber: swap and use D₂ × D₁ = D₁ × D₂.
+    rw [show mulCoordRingElt E D₁ D₂ = mulCoordRingElt E D₂ D₁ from
+          mulCoordRingElt_comm E D₁ D₂]
+    have := divisorOfD_mul_add_affine_when_D2_nonvanish_fiber E h₂ h₁ hP hD₁P hD₁negP
+    linarith
+  · -- D₂ non-vanish on fiber: direct.
+    exact divisorOfD_mul_add_affine_when_D2_nonvanish_fiber E h₁ h₂ hP hD₂P hD₂negP
+
 end Divisor
