@@ -301,36 +301,67 @@ formula at concrete F_5 configurations.
 The `Tests/CrossCaseSmokeTest.lean` provides regression checks any
 formalisation of the cross case must satisfy.
 
-Suggested next session focus:
-1. Read `Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean`
-   for the `XYIdeal'` localisation API. Key entry points:
-   - `WeierstrassCurve.Affine.CoordinateRing.XYIdeal x y` — the
-     maximal ideal at `(x, y)` in the affine coordinate ring.
-   - `WeierstrassCurve.Affine.CoordinateRing.XYIdeal'` — its
-     fractional-ideal class.
-   - `WeierstrassCurve.Affine.CoordinateRing.quotientXYIdealEquiv` —
-     the residue field is the base field.
-   - `WeierstrassCurve.Affine.Point.toClass` — `ECPoint → ClassGroup`
-     homomorphism via `XYIdeal'`.
-2. Try formalising `v_P` for non-2-torsion P. Two routes:
-   - **Route A (mathlib-native):** use `IsLocalization.AtPrime` at the
-     `XYIdeal x y` prime + `DiscreteValuationRing` instance (smooth
-     curve has DVRs at closed points). Show D's image in the
-     localisation has `m_P`-adic valuation = `ordAt E D (x, y)`.
-   - **Route B (direct):** define `v_P D := the unique k such that
-     D ∈ m_P^k \ m_P^{k+1}`. Show multiplicative via standard
-     valuation argument.
-3. Prove `v_P` is multiplicative (fundamental DVR fact, standard in
-   mathlib once the DVR instance is established).
-4. Prove `ordAt = v_P` at non-2-torsion by induction on the recursive
-   definition. Cases on the recursive branch:
-   - Non-vanish (`D(P) ≠ 0`): `D` unit in localization, `v_P D = 0`.
-   - Lone (`D(P) = 0, D(-P) ≠ 0`): `D` is "minimal" generator of
-     m_P^m where m = `rootMult P.1 N(D)`. `v_P D = m`.
-   - Twin (both vanish): `D = (X - C P.1) · D'`, so
-     `v_P D = v_P (X - C P.1) + v_P D' = 1 + v_P D'`. Recurse.
-5. Combine to close cross-case ordAt-additivity:
-   `ordAt(D₁·D₂)(P) = v_P(D₁·D₂) = v_P D₁ + v_P D₂ = ordAt D₁(P) + ordAt D₂(P)`.
+### Recommended approach (Codex consult, May 2026)
+
+Codex's recommendation: bypass iterated `divLin` (route (b)) and DVR
+infrastructure (route (a)) in favour of a closed-form route (d):
+
+> Prove a closed-form lemma at the `branchRat / commonRootMultRat` layer,
+> then bridge back. The clean recursive invariant is: after `r` twin
+> divisions, `r = min m n`; the residual is lone at P if `n < m`, lone
+> at -P if `m < n`, and nonvanishing on both if equal.
+
+**Concretely, prove:** at non-2-torsion P (`y_0 ≠ 0`),
+
+```
+ordAt_nonTwoTorsion E D P =
+  let m := rootMult P.1 (normPoly E D)
+  let k := commonRootMultRat D.a D.b P.1     -- max j s.t. (X-x_0)^j | both
+  let D̃ := D.divLin x_0 iterated k times    -- fully strip common factor
+  if D̃.eval P.1 P.2 = 0 then m - k else k    -- branch on residual
+```
+
+This is provable by induction on `k` (each level strips one (X-x_0)
+from each component, halves the normPoly's rootMult by 2). The base
+case `k = 0` is the 3-way recursion leaf (nonvan, lone-at-P,
+lone-at-(-P)).
+
+Once we have this closed form, **multiplicativity** at non-2-torsion
+follows from a 3-case analysis on which branch `D̃₁₂` falls into,
+combined with the pair-sum identity (already proved at
+`Divisor/OrdP/LocalRing.lean:626`) and `normPoly_mul_eq` (rootMult of
+norm products adds). No iterated descent required.
+
+**Cross-case verification:** in cross case at non-2-torsion P
+(`D₁` lone at P with mult `m_1`, `D₂` lone at -P with mult `m_2`),
+we have `D₁·D₂` with `m_norm = m_1 + m_2`, `k = min(m_1, m_2)` (after
+stripping common factor), `D̃₁₂` lone at the sheet of the factor with
+larger `m_i` (or nonvan if `m_1 = m_2`). Closed form returns:
+* if `m_1 > m_2`: `D̃₁₂` lone at P, so output `m - k = (m_1+m_2) - m_2 = m_1`. ✓
+* if `m_1 < m_2`: `D̃₁₂` lone at -P, so output `k = m_1`. ✓
+* if `m_1 = m_2`: `D̃₁₂` nonvan, so output `k = m_1`. ✓
+
+In all sub-cases, `ord(D₁·D₂)(P) = m_1 = ord(D₁)(P) + ord(D₂)(P)`. ✓
+
+### Implementation plan
+
+1. **Define `commonRootMultRat`** for two polynomials over `ZMod E.q`
+   (rational analog of `commonRootMultiplicity`). Place in
+   `Divisor/IncrementalConstruction.lean`. Foundation lemmas:
+   `commonRootMultRat_le_left`, `_le_right`, `commonRootFactorRat_dvd_left`,
+   `_dvd_right`.
+2. **Prove `ordAt_nonTwoTorsion_closed_form`** by induction on
+   `commonRootMultRat D.a D.b P.1`. Base case (k=0): three-way
+   dispatch (nonvan, lone-at-P, lone-at-(-P)) directly. Inductive
+   step: `D` is twin at P (since k > 0 means both .a and .b vanish at
+   x_0), use `ordAt_nonTwoTorsion_twin_rec`, recurse on `D.divLin x_0`
+   which has `commonRootMultRat = k - 1`.
+3. **Prove cross-case additivity** via 3-case analysis on `D̃₁₂`'s
+   branch. Use `normPoly_mul_eq` for the m-side and the algebraic
+   structure of `D̃₁`, `D̃₂` for the k-side and branch-determination.
+4. **Combine with existing** `ordAt_mul_add_when_D2_nonvanish_fiber`
+   to get unconditional ordAt-additivity at non-2-torsion. Then close
+   `divisorOfD_mul_add` unconditionally.
 6. Then proceed with eagenBuild driver + correctness:
    - Define `eagenBuild` recursively on lists of `ECPoint E`.
    - Base cases (length 2, 3) reuse existing `chordCoordRingElt`.
