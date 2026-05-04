@@ -5810,4 +5810,68 @@ theorem eagenBuild_length4_explicit_eval_zero_at_P₃
     omega
   exact (ordAt_pos_iff_zero E _ hNZ P₃ hP₃).mp h_ord_pos
 
+/-- Generic-R contrapositive: at any point off all of `D`'s support
+    (input points, `A_2_01`, `A_2_23`, and `Q_0x`-vertical line),
+    `D.eval ≠ 0`. -/
+theorem eagenBuild_length4_explicit_eval_ne_zero_at_generic_R
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_P₀_ne_A2_01 : P₀.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₁_ne_A2_01 : P₁.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₂_ne_A2_23 : P₂.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₃_ne_A2_23 : P₃.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                        * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                        + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0)
+    (R : ZMod E.q × ZMod E.q) (hR : R ∈ E.points)
+    (hR_ne_P₀ : R ≠ P₀) (hR_ne_P₁ : R ≠ P₁)
+    (hR_ne_P₂ : R ≠ P₂) (hR_ne_P₃ : R ≠ P₃)
+    (hR_ne_A2_01 : R ≠
+      (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+        slopeOf P₀.1 P₀.2 P₁.1 P₁.2 *
+          (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) +
+        (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (hR_ne_A2_23 : R ≠
+      (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+        slopeOf P₂.1 P₂.2 P₃.1 P₃.2 *
+          (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) +
+        (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)))
+    (hR_x_ne_Q₀x : R.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) :
+    (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃).eval R.1 R.2 ≠ 0 := by
+  have hDiv := eagenBuild_length4_div_at_generic_R E P₀ P₁ P₂ P₃
+    hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
+    h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_third_match h_y_match h_Q₀_nontorsion
+    R hR hR_ne_P₀ hR_ne_P₁ hR_ne_P₂ hR_ne_P₃ hR_ne_A2_01 hR_ne_A2_23 hR_x_ne_Q₀x
+  have hNZ := eagenBuild_length4_explicit_ne_zero E P₀ P₁ P₂ P₃
+    hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_third_match h_y_match h_Q₀_nontorsion
+  -- divisorOfD = 0 ⟹ ordAt = 0 ⟹ D.eval ≠ 0 (via `ordAt_pos_iff_zero` contrapositive).
+  have h_eq : divisorOfD E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+                (ECPoint.affine E R.1 R.2)
+        = (ordAtPoint E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+            (ECPoint.affine E R.1 R.2) : ℤ) := by
+    rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff R.1 R.2).mpr (E.hOnCurve _ hR)))]
+    rfl
+  rw [h_eq, ordAtPoint_affine E _ hR] at hDiv
+  -- hDiv: ordAt = 0 (cast). So ordAt = 0, hence D.eval ≠ 0 by contrapositive.
+  have h_ord_zero : ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) R = 0 := by
+    have : (ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) R : ℤ) = 0 := hDiv
+    omega
+  intro h_eval_zero
+  have h_pos : 0 < ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) R :=
+    (ordAt_pos_iff_zero E _ hNZ R hR).mpr h_eval_zero
+  omega
+
 end Divisor
