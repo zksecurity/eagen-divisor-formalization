@@ -1664,6 +1664,47 @@ private theorem ordAt_aux_fuel_irrelevant
             omega
           rw [IH (D.divLin P.1) hMeas'' n' m' (by omega) (by omega)]
 
+/-! ## Wrapper-level twin recursive identity
+
+When `D` is twin-sheet at non-2-torsion `P`, `ordAt = 1 + ordAt(D.divLin P.1)`.
+Combines the aux unfolding with `ordAt_aux_fuel_irrelevant` to bridge the
+fuel mismatch between the outer wrapper and the inner one. -/
+
+theorem ordAt_nonTwoTorsion_twin_rec
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hY : P.2 ≠ 0)
+    (h1 : D.eval P.1 P.2 = 0) (h2 : D.eval P.1 (-P.2) = 0) :
+    ordAt_nonTwoTorsion E D P = 1 + ordAt_nonTwoTorsion E (D.divLin P.1) P := by
+  classical
+  obtain ⟨hax, hbx⟩ : D.a.eval P.1 = 0 ∧ D.b.eval P.1 = 0 :=
+    Da_Db_eval_zero_of_both_sheets_zero E D hY h1 h2
+  have hD' : ¬ ((D.divLin P.1).a = 0 ∧ (D.divLin P.1).b = 0) :=
+    divLin_not_both_zero E D hD hax hbx
+  have hMeas' :=
+    divLin_natDegree_sum_lt E D hD hax hbx
+  -- Unfold the outer wrapper.
+  unfold ordAt_nonTwoTorsion
+  -- Outer fuel = D.a.natDeg + D.b.natDeg + 1.
+  -- After one step (twin branch), inner aux fuel = D.a.natDeg + D.b.natDeg.
+  obtain ⟨n, hn⟩ : ∃ n, D.a.natDegree + D.b.natDegree + 1 = n + 1 := ⟨_, rfl⟩
+  rw [hn]
+  show (if D.a = 0 ∧ D.b = 0 then 0
+        else if D.eval P.1 P.2 ≠ 0 then 0
+        else if D.eval P.1 (-P.2) ≠ 0 then Polynomial.rootMultiplicity P.1 (normPoly E D)
+        else 1 + ordAt_nonTwoTorsion_aux E n (D.divLin P.1) P)
+      = 1 + ordAt_nonTwoTorsion_aux E
+          ((D.divLin P.1).a.natDegree + (D.divLin P.1).b.natDegree + 1)
+          (D.divLin P.1) P
+  rw [if_neg hD, if_neg (not_not.mpr h1), if_neg (not_not.mpr h2)]
+  -- Now: 1 + ord_aux n (D.divLin) P = 1 + ord_aux ((D.divLin).natDegSum + 1) (D.divLin) P.
+  -- Use fuel-irrelevance with measure = (D.divLin).a.natDeg + (D.divLin).b.natDeg.
+  have hFuel := ordAt_aux_fuel_irrelevant E hY
+    ((D.divLin P.1).a.natDegree + (D.divLin P.1).b.natDegree)
+    (D.divLin P.1) (le_refl _) n
+    ((D.divLin P.1).a.natDegree + (D.divLin P.1).b.natDegree + 1)
+    (by omega) (by omega)
+  rw [hFuel]
+
 /-! ## `divisorOfD` additivity at infinity
 
 The infinity coefficient of `divisorOfD` is `-natDegree(normPoly)`. By
