@@ -3180,12 +3180,28 @@ theorem cross_case_T_deriv_eq_normPoly_deriv
   rw [hax₁, hax₂, hCurveX]
   ring
 
-/-! ## Cross-case base case: when m₁ = 1, T_poly has rootMult exactly 1
+/-! ## Bridge: `commonRootMultRat ≤ rootMult` of T_poly
 
-When `D₁` lone at P with multiplicity 1 (i.e. `(normPoly E D₁)` has
-rootMult 1 at `P.1`), the polynomial `T_poly := (D₁·D₂)⁺` has rootMult
-exactly 1 at `P.1`. This is the base case of the cross-case structure:
-after 1 divLin step on `(D₁·D₂)`, the residual no longer vanishes at P. -/
+For any `D : CoordRingElt` with `D.a − D.b · C y₀ ≠ 0`, the
+`commonRootMultRat E D x₀` is bounded above by the rootMult of
+`D.a − D.b · C y₀` at `x₀`.
+
+This follows from: `(X − x₀)^k | D.a` and `(X − x₀)^k | D.b` together
+imply `(X − x₀)^k | (D.a − D.b · C y₀)`.
+
+The non-zero hypothesis avoids the rootMultiplicity-of-zero convention. -/
+
+theorem commonRootMultRat_le_T_poly_rootMult
+    (D : CoordRingElt E.q) (x₀ y₀ : ZMod E.q)
+    (hT : D.a - D.b * Polynomial.C y₀ ≠ 0) :
+    commonRootMultRat E D x₀
+      ≤ Polynomial.rootMultiplicity x₀ (D.a - D.b * Polynomial.C y₀) := by
+  rw [Polynomial.le_rootMultiplicity_iff hT]
+  have hDvdA := commonRootMultRat_dvd_a E D x₀
+  have hDvdB := commonRootMultRat_dvd_b E D x₀
+  have hDvdBy : (Polynomial.X - Polynomial.C x₀) ^ commonRootMultRat E D x₀
+                  ∣ D.b * Polynomial.C y₀ := hDvdB.mul_right _
+  exact dvd_sub hDvdA hDvdBy
 
 theorem cross_case_T_poly_deriv_ne_zero
     {D₁ D₂ : CoordRingElt E.q}
