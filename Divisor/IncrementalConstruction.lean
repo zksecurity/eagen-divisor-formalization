@@ -3700,4 +3700,64 @@ theorem ordAt_nonTwoTorsion_mul_in_cross_when_min_eq_one
     rw [if_pos hbranch_true]
     omega
 
+/-! ## Cross-case ordAt-additivity at non-2-torsion when min(m₁, m₂) = 1
+
+The user-facing additivity statement: in cross case at non-2-torsion P
+with min(m₁, m₂) = 1:
+
+  ord(D₁·D₂)(P) = ord(D₁)(P) + ord(D₂)(P)
+
+(at the affine ECPoint level). -/
+
+theorem ordAt_mul_add_in_cross_when_min_eq_one
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₁negP : D₁.eval P.1 (-P.2) ≠ 0)
+    (hD₂P : D₂.eval P.1 P.2 ≠ 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0)
+    (hMin : min (Polynomial.rootMultiplicity P.1 (normPoly E D₁))
+                (Polynomial.rootMultiplicity P.1 (normPoly E D₂)) = 1) :
+    ordAt E (mulCoordRingElt E D₁ D₂) P
+      = ordAt E D₁ P + ordAt E D₂ P := by
+  -- D = D_1 * D_2 non-zero.
+  have hMul_NZ : ¬ ((mulCoordRingElt E D₁ D₂).a = 0
+      ∧ (mulCoordRingElt E D₁ D₂).b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E (mulCoordRingElt E D₁ D₂) = 0 := by
+      rw [normPoly_eq, ha, hb]; ring
+    rw [normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂)) hN
+  -- Convert ordAt to ordAt_nonTwoTorsion (P.2 ≠ 0).
+  rw [ordAt_eq_dispatch E _ hP hMul_NZ, if_neg hY]
+  rw [ordAt_eq_dispatch E _ hP h₁, if_neg hY]
+  rw [ordAt_eq_dispatch E _ hP h₂, if_neg hY]
+  -- LHS: ord(D_1*D_2)(P) = m_1 by cross-case mul lemma.
+  rw [ordAt_nonTwoTorsion_mul_in_cross_when_min_eq_one E h₁ h₂ hP hY
+        hD₁P hD₁negP hD₂P hD₂negP hMin]
+  -- ord(D_1)(P) = m_1 (D_1 lone at P).
+  have hOrd1 : ordAt_nonTwoTorsion E D₁ P
+      = Polynomial.rootMultiplicity P.1 (normPoly E D₁) := by
+    unfold ordAt_nonTwoTorsion
+    obtain ⟨n, hn⟩ : ∃ n, D₁.a.natDegree + D₁.b.natDegree + 1 = n + 1 := ⟨_, rfl⟩
+    rw [hn]
+    show (if D₁.a = 0 ∧ D₁.b = 0 then 0
+          else if D₁.eval P.1 P.2 ≠ 0 then 0
+          else if D₁.eval P.1 (-P.2) ≠ 0 then
+                  Polynomial.rootMultiplicity P.1 (normPoly E D₁)
+                else 1 + ordAt_nonTwoTorsion_aux E n (D₁.divLin P.1) P)
+        = Polynomial.rootMultiplicity P.1 (normPoly E D₁)
+    rw [if_neg h₁, if_neg (not_not.mpr hD₁P), if_pos hD₁negP]
+  -- ord(D_2)(P) = 0 (D_2 unit at P).
+  have hOrd2 : ordAt_nonTwoTorsion E D₂ P = 0 := by
+    unfold ordAt_nonTwoTorsion
+    obtain ⟨n, hn⟩ : ∃ n, D₂.a.natDegree + D₂.b.natDegree + 1 = n + 1 := ⟨_, rfl⟩
+    rw [hn]
+    show (if D₂.a = 0 ∧ D₂.b = 0 then 0
+          else if D₂.eval P.1 P.2 ≠ 0 then 0
+          else if D₂.eval P.1 (-P.2) ≠ 0 then
+                  Polynomial.rootMultiplicity P.1 (normPoly E D₂)
+                else 1 + ordAt_nonTwoTorsion_aux E n (D₂.divLin P.1) P) = 0
+    rw [if_neg h₂, if_pos hD₂P]
+  rw [hOrd1, hOrd2]; ring
+
 end Divisor
