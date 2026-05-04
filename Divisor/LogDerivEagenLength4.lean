@@ -28,25 +28,28 @@
   Both Divisor-specific axioms are already in `ma_extractable`'s closure
   (soundness side). NO `weil_reciprocity_honest` dependency.
 
+  ## Discharged side conditions (May 2026 update)
+
+  Both `hQline` and `hDen` are now derived internally from `hGood`:
+  * `hQline_of_hGood_eagenBuild_length4` — Bezout argument.
+  * `hDen_of_hGood` — chord-derivative-denominator factorization
+    `3·pt.x² + A − 2λ·pt.y = (pt.x − A_i.x)(pt.x − A_j.x)` for various
+    indices. Combined with strengthened bad set excluding the relevant
+    tangent collisions.
+
+  The main theorem `logDerivCheckFn_zero_for_eagenBuild_length4` only
+  takes `hResidueMatch` as the user-supplied per-pair hypothesis.
+
   ## Remaining gaps to fully discharge `weil_reciprocity_honest`
 
-  1. `hDen` (denominator non-vanishing for chord-derivative formula at
-     A_0, A_1, A_2) — currently explicit. Mathematically follows from
-     B4-strengthened `¬badPairCompletenessPred` via:
-       3·pt.x² + A − 2λ·pt.y = 0 ⟺ pt.x is a double root of the chord
-       cubic ⟺ A_2.x = A_0.x or A_2.x = A_1.x ⟺ A_2 = A_0 or A_2 = A_1
-       (chord determines y from x) ⟺ tangentCollisionAtA_i — excluded
-       by B4. Lean derivation pending (~100 LOC algebraic chain via
-       `chord_x_pairwise_sum`, `chord_x_triple_product`).
-
-  2. `hResidueMatch` (protocol-level identification of the four eagenBuild
+  1. `hResidueMatch` (protocol-level identification of the four eagenBuild
      inputs `{P_0..P_3}` with the honest message structure
      `{(-P), B_j with multiplicities}`) — genuinely application-specific.
      For length-4 with k=3 distinct bases at scalars 1, this is the
      identification `[P_0, P_1, P_2, P_3] = [(-P), B_1, B_2, B_3]`
      after a permutation determined by `wit.scalars`.
 
-  3. General-N `eagenBuild` — currently only length-4. Honest divisors
+  2. General-N `eagenBuild` — currently only length-4. Honest divisors
      for general k bases + scalars require the recursive driver from
      Eagen §3.1.1 (paper p. 4). Length-4 only handles the special case
      where the input list has exactly 4 elements with all distinct
@@ -230,6 +233,148 @@ theorem hDen_of_hGood
     rcases mul_eq_zero.mp hMul with h₁ | h₂
     · exact (sub_ne_zero.mpr hA₂x_ne_A₀x) h₁
     · exact (sub_ne_zero.mpr hA₂x_ne_A₁x) h₂
+
+/-! ## Residue sum expansion: closed-form RHS for hResidueMatch
+
+The chord-residue sum on the LHS of `hResidueMatch` expands explicitly to
+the sum of L-evaluation-reciprocals at each input point P_i (since
+zerosFinset = {P_0..P_3} and ordAt = 1 at each). -/
+
+theorem eagenBuild_length4_residue_sum_eq
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_P₀_ne_A2_01 : P₀.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₁_ne_A2_01 : P₁.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₂_ne_A2_23 : P₂.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₃_ne_A2_23 : P₃.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₀_off_L₂ : P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₀ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                    slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+                      * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+                      + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)))
+    (h_P₁_off_L₂ : P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₁ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                    slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+                      * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+                      + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)))
+    (h_P₂_off_L₁ : P₂ ≠ P₀ ∧ P₂ ≠ P₁ ∧ P₂ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+                    slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                      * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                      + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_P₃_off_L₁ : P₃ ≠ P₀ ∧ P₃ ≠ P₁ ∧ P₃ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+                    slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                      * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                      + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                        * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                        + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0)
+    (h_Q₀_off_L₂_inputs :
+      let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+      let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+      (Q₀x, Q₀y) ≠ P₂ ∧ (Q₀x, Q₀y) ≠ P₃ ∧ (Q₀x, Q₀y) ≠ (Q₀x, -Q₀y))
+    (h_negQ₀_off_L₁_inputs :
+      let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+      let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+      (Q₀x, -Q₀y) ≠ P₀ ∧ (Q₀x, -Q₀y) ≠ P₁ ∧ (Q₀x, -Q₀y) ≠ (Q₀x, Q₀y))
+    (h_inputs_distinct : P₀ ≠ P₁ ∧ P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₂ ≠ P₃)
+    (L : Line E.q) :
+    (∑ Q ∈ zerosFinset E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃),
+        (ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) Q : ZMod E.q) *
+        (L.eval Q.1 Q.2)⁻¹)
+      = (L.eval P₀.1 P₀.2)⁻¹ + (L.eval P₁.1 P₁.2)⁻¹
+        + (L.eval P₂.1 P₂.2)⁻¹ + (L.eval P₃.1 P₃.2)⁻¹ := by
+  classical
+  -- ordAt = 1 at each input.
+  have ord_P₀ : ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) P₀ = 1 := by
+    have hDiv := eagenBuild_length4_div_at_P₀ E P₀ P₁ P₂ P₃
+      hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
+      h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_third_match h_y_match h_Q₀_nontorsion
+    have h_eq : divisorOfD E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+                  (ECPoint.affine E P₀.1 P₀.2)
+          = (ordAtPoint E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+              (ECPoint.affine E P₀.1 P₀.2) : ℤ) := by
+      rw [ECPoint.affine_of_nonsingular E
+            (E.equation_iff_nonsingular.mp ((E.equation_iff P₀.1 P₀.2).mpr (E.hOnCurve _ hP₀)))]
+      rfl
+    rw [h_eq, ordAtPoint_affine E _ hP₀] at hDiv
+    have : (ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) P₀ : ℤ) = 1 := hDiv
+    omega
+  have ord_P₁ : ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) P₁ = 1 := by
+    have hDiv := eagenBuild_length4_div_at_P₁ E P₀ P₁ P₂ P₃
+      hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
+      h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₁_off_L₂ h_third_match h_y_match h_Q₀_nontorsion
+    have h_eq : divisorOfD E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+                  (ECPoint.affine E P₁.1 P₁.2)
+          = (ordAtPoint E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+              (ECPoint.affine E P₁.1 P₁.2) : ℤ) := by
+      rw [ECPoint.affine_of_nonsingular E
+            (E.equation_iff_nonsingular.mp ((E.equation_iff P₁.1 P₁.2).mpr (E.hOnCurve _ hP₁)))]
+      rfl
+    rw [h_eq, ordAtPoint_affine E _ hP₁] at hDiv
+    have : (ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) P₁ : ℤ) = 1 := hDiv
+    omega
+  have ord_P₂ : ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) P₂ = 1 := by
+    have hDiv := eagenBuild_length4_div_at_P₂ E P₀ P₁ P₂ P₃
+      hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
+      h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₂_off_L₁ h_third_match h_y_match h_Q₀_nontorsion
+    have h_eq : divisorOfD E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+                  (ECPoint.affine E P₂.1 P₂.2)
+          = (ordAtPoint E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+              (ECPoint.affine E P₂.1 P₂.2) : ℤ) := by
+      rw [ECPoint.affine_of_nonsingular E
+            (E.equation_iff_nonsingular.mp ((E.equation_iff P₂.1 P₂.2).mpr (E.hOnCurve _ hP₂)))]
+      rfl
+    rw [h_eq, ordAtPoint_affine E _ hP₂] at hDiv
+    have : (ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) P₂ : ℤ) = 1 := hDiv
+    omega
+  have ord_P₃ : ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) P₃ = 1 := by
+    have hDiv := eagenBuild_length4_div_at_P₃ E P₀ P₁ P₂ P₃
+      hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
+      h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₃_off_L₁ h_third_match h_y_match h_Q₀_nontorsion
+    have h_eq : divisorOfD E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+                  (ECPoint.affine E P₃.1 P₃.2)
+          = (ordAtPoint E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+              (ECPoint.affine E P₃.1 P₃.2) : ℤ) := by
+      rw [ECPoint.affine_of_nonsingular E
+            (E.equation_iff_nonsingular.mp ((E.equation_iff P₃.1 P₃.2).mpr (E.hOnCurve _ hP₃)))]
+      rfl
+    rw [h_eq, ordAtPoint_affine E _ hP₃] at hDiv
+    have : (ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) P₃ : ℤ) = 1 := hDiv
+    omega
+  -- zerosFinset = {P_0, P_1, P_2, P_3}.
+  rw [zerosFinset_eagenBuild_length4_eq E P₀ P₁ P₂ P₃
+      hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
+      h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
+      h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs]
+  -- Expand the sum.
+  obtain ⟨h01, h02, h03, h12, h13, h23⟩ := h_inputs_distinct
+  have h_P_0_notin_123 : P₀ ∉ ({P₁, P₂, P₃} : Finset (ZMod E.q × ZMod E.q)) := by
+    simp only [Finset.mem_insert, Finset.mem_singleton]
+    push_neg; exact ⟨h01, h02, h03⟩
+  have h_P_1_notin_23 : P₁ ∉ ({P₂, P₃} : Finset (ZMod E.q × ZMod E.q)) := by
+    simp only [Finset.mem_insert, Finset.mem_singleton]
+    push_neg; exact ⟨h12, h13⟩
+  have h_P_2_notin_3 : P₂ ∉ ({P₃} : Finset (ZMod E.q × ZMod E.q)) := by
+    simp only [Finset.mem_singleton]; exact h23
+  rw [show ({P₀, P₁, P₂, P₃} : Finset (ZMod E.q × ZMod E.q))
+      = insert P₀ (insert P₁ (insert P₂ ({P₃} : Finset _))) from rfl]
+  rw [Finset.sum_insert h_P_0_notin_123,
+      Finset.sum_insert h_P_1_notin_23,
+      Finset.sum_insert h_P_2_notin_3,
+      Finset.sum_singleton]
+  rw [ord_P₀, ord_P₁, ord_P₂, ord_P₃]
+  push_cast
+  ring
 
 /-! ## hQline derivation: chord doesn't pass through any zero
 
