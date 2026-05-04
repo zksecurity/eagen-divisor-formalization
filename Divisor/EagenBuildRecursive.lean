@@ -241,6 +241,66 @@ def MAProverMsg.IsHonestForExplicit (E : ECSetup) (msg : MAProverMsg E.q)
   msg.isHonestFor E stmt wit hk hkm
   ∧ ∀ R : ECPoint E, divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R
 
+/-! ## General hQline derivation from `hGood`
+
+For any nonzero D, if `(A_0, A_1) ∉ badChallengesCompleteness E D`, then
+the chord through `A_0, A_1` doesn't pass through any zero of D.
+
+Proof: Bezout — chord intersects E in `{A_0, A_1, A_2}`. Any zero of
+D on E that's also on the chord must be in this set, but `¬bad` excludes
+D vanishing at A_0, A_1, or A_2. -/
+
+theorem hQline_of_hGood_general
+    {D : CoordRingElt E.q} (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    {A₀ A₁ : ZMod E.q × ZMod E.q}
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
+    (hNV : A₀.1 ≠ A₁.1)
+    (hGood : (A₀, A₁) ∉ badChallengesCompleteness E D) :
+    ∀ Q ∈ zerosFinset E D,
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 ≠ 0 := by
+  classical
+  intro Q hQzeros
+  -- Q ∈ zerosFinset E D = E.points.filter (D.eval = 0).
+  unfold zerosFinset zeros at hQzeros
+  rw [Finset.mem_filter] at hQzeros
+  obtain ⟨hQE, hQzero⟩ := hQzeros
+  intro hChord
+  -- By chord_line_support_in_E (Bezout), Q ∈ {A_0, A_1, A_2}.
+  have hQ_in_chord : Q = A₀ ∨ Q = A₁ ∨
+      Q = (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1,
+           slopeOf A₀.1 A₀.2 A₁.1 A₁.2 *
+             (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1) +
+           (A₀.2 - slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.1)) :=
+    chord_line_support_in_E E A₀ A₁ hA₀ hA₁ hNV Q hQE hChord
+  -- ¬bad: D doesn't vanish at A_0, A_1, A_2.
+  have hMem : (A₀, A₁) ∈ E.points ×ˢ E.points := Finset.mk_mem_product hA₀ hA₁
+  have h_unbad : ¬ badPairCompletenessPred E D (A₀, A₁) := fun hbad =>
+    hGood (Finset.mem_filter.mpr ⟨hMem, hbad⟩)
+  have hThirdEq : thirdPoint E A₀ A₁ =
+      some (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1,
+            slopeOf A₀.1 A₀.2 A₁.1 A₁.2 *
+              (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1) +
+            (A₀.2 - slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.1)) := by
+    unfold thirdPoint
+    rw [if_neg hNV]
+    rfl
+  rcases hQ_in_chord with hQ | hQ | hQ
+  · -- Q = A_0: D(A_0) = 0 contradicts ¬bad.
+    apply h_unbad
+    exact Or.inl (by rw [← hQ]; exact hQzero)
+  · -- Q = A_1.
+    apply h_unbad
+    exact Or.inr (Or.inl (by rw [← hQ]; exact hQzero))
+  · -- Q = A_2.
+    apply h_unbad
+    refine Or.inr (Or.inr (Or.inl ?_))
+    show (match thirdPoint E (A₀, A₁).1 (A₀, A₁).2 with
+      | none => True
+      | some (x, y) => D.eval x y = 0)
+    rw [show (A₀, A₁).1 = A₀ from rfl, show (A₀, A₁).2 = A₁ from rfl]
+    rw [hThirdEq]
+    rw [← hQ]; exact hQzero
+
 /-! ## Future work
 
 The skeleton above defines the construction; correctness proofs require:
