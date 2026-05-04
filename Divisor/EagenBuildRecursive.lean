@@ -224,24 +224,19 @@ deferred to subsequent firings. -/
 
 /-! ## `IsHonestForExplicit` predicate (any-k completeness path)
 
-Per Codex's guidance: rather than deriving completeness from a specific
-constructive `eagenBuild` build, take the divisor identity as a stronger
-hypothesis. This handles ANY honest divisor structure (any k, any scalars)
-provided the user proves the identity.
-
-For length-4 simple, `eagenBuild_length4_explicit` provides the witness
-(via `IsHonestForLength4Simple`). For general k, the witness is the
-recursive `eagenBuild` (proof of correctness pending).
-
-The predicate adds to existing `isHonestFor`:
-* All conditions of `isHonestFor` (scalar reduction, IsPrincipal).
-* PLUS: `∀ R : ECPoint E, divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R`. -/
+After strengthening `MAProverMsg.isHonestFor` (in `Protocol.lean`) to
+include the extensional divisor identity and the on-curve invariants,
+`IsHonestForExplicit` is now a definitional alias of `isHonestFor`.
+Existing call sites that destructure `IsHonestForExplicit` as
+`(isHonestFor) ∧ (divisor identity)` continue to work via the
+projections: `.1` is scalar reduction, `.2.1` is `IsPrincipal`,
+`.2.2.1` is the divisor identity, `.2.2.2.1` and `.2.2.2.2` are the
+on-curve invariants. -/
 
 def MAProverMsg.IsHonestForExplicit (E : ECSetup) (msg : MAProverMsg E.q)
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (hkm : stmt.k = msg.k) : Prop :=
   msg.isHonestFor E stmt wit hk hkm
-  ∧ ∀ R : ECPoint E, divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R
 
 /-! ## General hQline derivation from `hGood`
 
@@ -589,7 +584,7 @@ theorem hResidueMatch_via_isHonestForExplicit
         + (Finset.univ : Finset (Fin stmt.k)).sum
             (fun i => ((wit.scalars (hk ▸ i) : ℤ) : ZMod E.q) * f (stmt.bases i)) := by
   classical
-  obtain ⟨_h_basic, h_div⟩ := h_honest
+  have h_div := h_honest.2.2.1
   -- Step 1: convert to honestDivisorCoeffs sum over E.points.
   rw [residue_sum_eq_honest_via_isHonestForExplicit E stmt wit hk msg h_div hD f]
   -- Step 2: split honestDivisorCoeffs into indicator + bases-sum.
@@ -695,7 +690,7 @@ theorem ma_completeness_via_isHonestForExplicit_splitsOnE_only
   · exact hAccount_of_splitsOnE E msg.toD hD hSplit
   · exact h_negT
   · exact h_bases
-  · exact h_honest.1.1
+  · exact h_honest.1
   · exact hDegK
   · exact hAdm
 
@@ -756,8 +751,8 @@ theorem honestDivisorCoeffs_deg_zero_of_isHonestForExplicit
         (honestDivisorCoeffs E stmt wit hk msg)),
       ∑ P ∈ hFinSupp.toFinset, honestDivisorCoeffs E stmt wit hk msg P = 0 := by
   have hFin := honestDivisorCoeffs_finiteSupport_of_divisor_identity E
-    stmt wit hk msg h_honest.2
-  have hIsP : IsPrincipal E (honestDivisorCoeffs E stmt wit hk msg) := h_honest.1.2
+    stmt wit hk msg h_honest.2.2.1
+  have hIsP : IsPrincipal E (honestDivisorCoeffs E stmt wit hk msg) := h_honest.2.1
   exact ⟨hFin, ((principal_divisor_iff E _ hFin).mp hIsP).1⟩
 
 /-! ## ECPoint.some-to-affinePoints bijection
@@ -941,7 +936,7 @@ theorem ordAt_sum_eq_degE_of_isHonestForExplicit
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm) :
     ((∑ Q ∈ E.points, ordAt E msg.toD Q : ℕ) : ℤ) = (msg.toD.degE : ℤ) := by
-  rw [ordAt_sum_eq_honestDivisorCoeffs_sum_at_affines E stmt wit hk msg h_honest.2]
+  rw [ordAt_sum_eq_honestDivisorCoeffs_sum_at_affines E stmt wit hk msg h_honest.2.2.1]
   rw [← affinePoints_sum_eq_image_sum E (honestDivisorCoeffs E stmt wit hk msg)]
   exact honestDivisorCoeffs_affine_sum_eq_degE E stmt wit hk msg hkm h_honest
 
@@ -1158,7 +1153,7 @@ theorem ma_completeness_via_isHonestForExplicit
   have h_m_eq_scalars : ∀ i : Fin stmt.k,
       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ℤ) : ZMod E.q) := by
     intro i
-    have := h_honest.1.1 i
+    have := h_honest.1 i
     push_cast at this
     convert this
   apply ma_completeness_via_isHonestForExplicit_no_residue_match E stmt wit hk msg hkm

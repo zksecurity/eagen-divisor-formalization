@@ -3,6 +3,7 @@
 -/
 import Divisor.Defs
 import Divisor.LogDeriv
+import Divisor.OrdP.LocalRing
 
 open Polynomial Finset
 
@@ -188,17 +189,30 @@ noncomputable def honestDivisorCoeffs (E : ECSetup) (stmt : DlogStatement E.q)
 /-- Predicate: `msg` is the honest prover's first-round message for
     `(stmt, wit)`.
 
-    Two conditions:
+    Conditions:
     * `msg.m_i ≡ wit.scalars i (mod q)` — the reduced scalar vector matches.
     * The divisor `(-P) + Σ_i n_i · (B_i) - degE(D) · (∞)` is principal
-      (so `D = msg.toD` can be interpreted as a rational function with
-      this divisor, via `IsPrincipal` from `Axioms.lean`). -/
+      (so it equals `div(f)` for some nonzero rational function `f`,
+      via `IsPrincipal` from `Axioms.lean`).
+    * **Extensional divisor identity**: at every `R : ECPoint E`,
+      `divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R`.
+      This anchors `msg.toD` (the prover's committed polynomial) to the
+      formal target divisor — without it, `IsPrincipal` only asserts
+      that *some* function realises the divisor, not that `msg.toD`
+      itself does. The identity is the protocol contract that makes
+      Weil reciprocity applicable to `msg.toD`.
+    * **On-curve wellformedness**: `(-P)` and every `B_i` are points
+      on `E`. (Statement-level invariants for the dlog relation.) -/
 def MAProverMsg.isHonestFor (E : ECSetup) (msg : MAProverMsg E.q)
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (hkm : stmt.k = msg.k) : Prop :=
   (∀ i : Fin stmt.k,
       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
   ∧ IsPrincipal E (honestDivisorCoeffs E stmt wit hk msg)
+  ∧ (∀ R : ECPoint E,
+      divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R)
+  ∧ (stmt.target.1, -stmt.target.2) ∈ E.points
+  ∧ (∀ i : Fin stmt.k, stmt.bases i ∈ E.points)
 
 structure MAChallenge (q : ℕ) [Fact (Nat.Prime q)] where
   A₀ : ZMod q × ZMod q
