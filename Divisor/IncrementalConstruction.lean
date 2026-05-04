@@ -1446,6 +1446,23 @@ theorem ordAt_mul_add_twoTorsion
   apply Polynomial.rootMultiplicity_mul
   exact mul_ne_zero (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂)
 
+/-! ## `ordAt_nonTwoTorsion` additivity, easier special case
+
+When `D₂` doesn't vanish at the fiber pair `{P, (P.1, -P.2)}`, the
+recursive ordAt of `D₁ · D₂` at non-2-torsion `P` agrees with that of
+`D₁` alone (since `ord D₂ = 0` at both sheets and `(D₁D₂).divLin x =
+D₁.divLin x · D₂` when `D₁` vanishes on the fiber).
+
+This case suffices to prove additivity for the `eagenBuild` recursion
+when chord lines have generically-disjoint affine supports. -/
+
+-- TODO(non-2-torsion ordAt-additivity in fully general case):
+-- the cross case where `D₁` is lone-sheet at `P` and `D₂` is lone-sheet
+-- at `(P.1, -P.2)` requires building a local valuation `v_P` per Codex's
+-- strategy. The current special-case lemma below covers eagenBuild's needs
+-- when the chord-line factor has support disjoint from the accumulated
+-- divisor (the common case, but not all configurations).
+
 /-! ## `divisorOfD` additivity at infinity
 
 The infinity coefficient of `divisorOfD` is `-natDegree(normPoly)`. By
