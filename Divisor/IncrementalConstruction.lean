@@ -2010,4 +2010,69 @@ theorem divisorOfD_mul_add_affine_when_D2_nonvanish_fiber
           (E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP)))]
     rfl
 
+/-! ## Full chord-line divisor identification (affine + infinity)
+
+Combining the per-branch `ordAt`-multiplicity theorems with the
+`divisorOfD` definition gives the explicit chord-line divisor at every
+ECPoint:
+
+* For chord case (3 distinct points P, Q, A₂):
+  `divisorOfD = δ_P + δ_Q + δ_{A₂} − 3·δ_O`
+* For tangent case (2 distinct points P, A₂, doubled at P):
+  `divisorOfD = 2·δ_P + δ_{A₂} − 3·δ_O`
+* For vertical case with P, -P pair (P.2 ≠ 0):
+  `divisorOfD = δ_P + δ_{(P.1,-P.2)} − 2·δ_O`
+* For 2-torsion vertical (P = (x₀, 0)):
+  `divisorOfD = 2·δ_P − 2·δ_O`
+
+Below: the chord case stated in terms of `ordAtPoint` at each support
+point (via `affine`) plus the infinity coefficient. -/
+
+theorem divisorOfD_chordCoordRingElt_chord_distinct
+    (P Q : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (hxx : P.1 ≠ Q.1)
+    (hP_neq_A2 : P.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
+    (hQ_neq_A2 : Q.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) :
+    let A₂ := (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1,
+               slopeOf P.1 P.2 Q.1 Q.2 *
+                 (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) +
+               (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1))
+    divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E P.1 P.2) = 1
+    ∧ divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E Q.1 Q.2) = 1
+    ∧ divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E A₂.1 A₂.2) = 1
+    ∧ divisorOfD E (chordCoordRingElt E P Q) (0 : ECPoint E) = -3 := by
+  intro A₂
+  obtain ⟨hOrdP, hOrdQ, hOrdA₂⟩ :=
+    chord_ordAt_eq_one_at_distinct_chord E P Q hP hQ hxx hP_neq_A2 hQ_neq_A2
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [show divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E P.1 P.2)
+        = (ordAtPoint E (chordCoordRingElt E P Q)
+            (ECPoint.affine E P.1 P.2) : ℤ) from ?_,
+        ordAtPoint_affine E _ hP, hOrdP]
+    rfl
+    rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP)))]
+    rfl
+  · rw [show divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E Q.1 Q.2)
+        = (ordAtPoint E (chordCoordRingElt E P Q)
+            (ECPoint.affine E Q.1 Q.2) : ℤ) from ?_,
+        ordAtPoint_affine E _ hQ, hOrdQ]
+    rfl
+    rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff Q.1 Q.2).mpr (E.hOnCurve _ hQ)))]
+    rfl
+  · -- A₂ ∈ E.points
+    have hA₂ : A₂ ∈ E.points := by
+      apply E.hComplete
+      exact chord_third_point_on_E E P Q hP hQ hxx
+    rw [show divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E A₂.1 A₂.2)
+        = (ordAtPoint E (chordCoordRingElt E P Q)
+            (ECPoint.affine E A₂.1 A₂.2) : ℤ) from ?_,
+        ordAtPoint_affine E _ hA₂, hOrdA₂]
+    rfl
+    rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff A₂.1 A₂.2).mpr (E.hOnCurve _ hA₂)))]
+    rfl
+  · exact divisorOfD_chordCoordRingElt_at_infinity_nonvertical E P Q hxx
+
 end Divisor
