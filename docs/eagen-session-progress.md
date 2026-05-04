@@ -58,13 +58,26 @@ divisorOfD-additivity.
 * `eagenBuild_length4_explicit_ne_zero` — `¬ (D.a = 0 ∧ D.b = 0)`.
 * `eagenBuild_length4_explicit_eval_zero_at_P_i` for i=0,1,2,3 —
   `D.eval P_i.1 P_i.2 = 0`.
+* `eagenBuild_length4_explicit_eval_ne_zero_at_generic_R` —
+  off the entire support, `D.eval R.1 R.2 ≠ 0`.
+* `eagenBuild_length4_explicit_eval_ne_zero_at_Q_0` —
+  third intersection of L_1, `D.eval ≠ 0`.
+* `eagenBuild_length4_explicit_eval_ne_zero_at_negQ_0` —
+  third intersection of L_2 (by sum-zero), `D.eval ≠ 0`.
 
 **Helper added:** `divisorOfD_vertical_at_x₀_nonTwoTorsion_affine`
 gives `divisorOfD ((X - x_0), 0) = 1` at `(x_0, y_0)` with `y_0 ≠ 0`.
 
-These corollaries discharge `hβsup` (forward) and prepare the way
-for `hβcov` (reverse: any D.eval-zero is one of P_0..P_3) and
-`hAccount` (sum-of-ordAt = 4) needed by `chord_sum_eq_residue_sum`.
+These corollaries discharge `hβsup` (forward: input points are zeros)
+and prepare the way for `hβcov` (reverse: zero implies input point
+or Q_0/-Q_0/generic R, all of which contradict the pos-divisor) and
+`hAccount` (sum-of-ordAt = 4 by per-point characterization) needed by
+`chord_sum_eq_residue_sum`.
+
+Branch state: 140 commits since master, 8098 jobs build cleanly. Closure
+pin shows `ma_extractable`/`ip_knowledge_sound` byte-for-byte unchanged
+from master; `ma_completeness*` still gated on `weil_reciprocity_honest`
+(now sound under strengthened bad-set predicate per B4).
 
 ## eagenBuild_length4 status (May 2026, 123 commits)
 
