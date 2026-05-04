@@ -3760,4 +3760,74 @@ theorem ordAt_mul_add_in_cross_when_min_eq_one
     rw [if_neg h₂, if_pos hD₂P]
   rw [hOrd1, hOrd2]; ring
 
+/-! ## ordAt-additivity at non-2-torsion when both factors lone at same sheet
+
+When `D₁` and `D₂` are both lone at the same sheet (both vanish at P,
+neither at -P), the product is also lone at P with multiplicity
+`m₁ + m₂`. -/
+
+theorem ordAt_mul_add_at_both_lone_same_sheet
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₁negP : D₁.eval P.1 (-P.2) ≠ 0)
+    (hD₂P : D₂.eval P.1 P.2 = 0) (hD₂negP : D₂.eval P.1 (-P.2) ≠ 0) :
+    ordAt E (mulCoordRingElt E D₁ D₂) P
+      = ordAt E D₁ P + ordAt E D₂ P := by
+  classical
+  -- (P.1, -P.2) ∈ E.points.
+  have hMP : (P.1, -P.2) ∈ E.points := by
+    apply E.hComplete
+    have hOC : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := E.hOnCurve P hP
+    show (-P.2) ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB
+    linear_combination hOC
+  -- D = D_1 * D_2 non-zero.
+  have hMul_NZ : ¬ ((mulCoordRingElt E D₁ D₂).a = 0
+      ∧ (mulCoordRingElt E D₁ D₂).b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E (mulCoordRingElt E D₁ D₂) = 0 := by
+      rw [normPoly_eq, ha, hb]; ring
+    rw [normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂)) hN
+  -- D_1*D_2 at P, -P.
+  have hMulP : (mulCoordRingElt E D₁ D₂).eval P.1 P.2 = 0 := by
+    rw [mulCoordRingElt_eval_on_E E D₁ D₂ hP, hD₁P, zero_mul]
+  have hMulnegP : (mulCoordRingElt E D₁ D₂).eval P.1 (-P.2) ≠ 0 := by
+    rw [mulCoordRingElt_eval_on_E E D₁ D₂ hMP]
+    exact mul_ne_zero hD₁negP hD₂negP
+  -- Convert to ordAt_nonTwoTorsion.
+  rw [ordAt_eq_dispatch E _ hP hMul_NZ, if_neg hY]
+  rw [ordAt_eq_dispatch E _ hP h₁, if_neg hY]
+  rw [ordAt_eq_dispatch E _ hP h₂, if_neg hY]
+  unfold ordAt_nonTwoTorsion
+  -- Each factor's lone-branch dispatch: ordAt = rootMult x_0 (normPoly D_i).
+  obtain ⟨n_mul, hn_mul⟩ : ∃ n,
+      (mulCoordRingElt E D₁ D₂).a.natDegree
+      + (mulCoordRingElt E D₁ D₂).b.natDegree + 1 = n + 1 := ⟨_, rfl⟩
+  obtain ⟨n₁, hn₁⟩ : ∃ n, D₁.a.natDegree + D₁.b.natDegree + 1 = n + 1 := ⟨_, rfl⟩
+  obtain ⟨n₂, hn₂⟩ : ∃ n, D₂.a.natDegree + D₂.b.natDegree + 1 = n + 1 := ⟨_, rfl⟩
+  rw [hn_mul, hn₁, hn₂]
+  show (if (mulCoordRingElt E D₁ D₂).a = 0 ∧ (mulCoordRingElt E D₁ D₂).b = 0 then 0
+        else if (mulCoordRingElt E D₁ D₂).eval P.1 P.2 ≠ 0 then 0
+        else if (mulCoordRingElt E D₁ D₂).eval P.1 (-P.2) ≠ 0 then
+          Polynomial.rootMultiplicity P.1 (normPoly E (mulCoordRingElt E D₁ D₂))
+        else 1 + ordAt_nonTwoTorsion_aux E n_mul ((mulCoordRingElt E D₁ D₂).divLin P.1) P)
+      = (if D₁.a = 0 ∧ D₁.b = 0 then 0
+          else if D₁.eval P.1 P.2 ≠ 0 then 0
+          else if D₁.eval P.1 (-P.2) ≠ 0 then
+            Polynomial.rootMultiplicity P.1 (normPoly E D₁)
+          else 1 + ordAt_nonTwoTorsion_aux E n₁ (D₁.divLin P.1) P)
+      + (if D₂.a = 0 ∧ D₂.b = 0 then 0
+          else if D₂.eval P.1 P.2 ≠ 0 then 0
+          else if D₂.eval P.1 (-P.2) ≠ 0 then
+            Polynomial.rootMultiplicity P.1 (normPoly E D₂)
+          else 1 + ordAt_nonTwoTorsion_aux E n₂ (D₂.divLin P.1) P)
+  rw [if_neg hMul_NZ, if_neg (not_not.mpr hMulP), if_pos hMulnegP]
+  rw [if_neg h₁, if_neg (not_not.mpr hD₁P), if_pos hD₁negP]
+  rw [if_neg h₂, if_neg (not_not.mpr hD₂P), if_pos hD₂negP]
+  -- normPoly_mul_eq + rootMult_mul.
+  rw [normPoly_mul_eq]
+  exact Polynomial.rootMultiplicity_mul
+    (mul_ne_zero (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂))
+
 end Divisor
