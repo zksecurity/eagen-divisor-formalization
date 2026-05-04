@@ -213,8 +213,6 @@ theorem logDerivCheckFn_zero_for_eagenBuild_length4
     (hNV : A₀.1 ≠ A₁.1)
     (hGood : (A₀, A₁) ∉ badChallengesCompleteness E
               (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃))
-    (hQline : ∀ Q ∈ zerosFinset E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃),
-      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 ≠ 0)
     (hDen : let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
             ∀ pt : ZMod E.q × ZMod E.q,
               pt = A₀ ∨ pt = A₁ ∨
@@ -258,6 +256,12 @@ theorem logDerivCheckFn_zero_for_eagenBuild_length4
     have h_pos : 0 < ordAt E D Q := (ordAt_pos_iff_zero E D hNZ Q hQE).mpr hQeval
     omega
   have hβtrue : ∀ Q, ordAt E D Q = betaTrue E D hNZ Q := fun _ => rfl
+  -- hQline: derived from hGood via Bezout.
+  have hQline := hQline_of_hGood_eagenBuild_length4 E P₀ P₁ P₂ P₃
+    hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
+    h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
+    h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs
+    A₀ A₁ hA₀ hA₁ hNV hGood
   -- Apply logDerivCheckFn_zero_of_explicit_divisor_data.
   exact logDerivCheckFn_zero_of_explicit_divisor_data E D P_target B m
     (ordAt E D) hNZ hSplit hβsup hβcov hAccount hβtrue
