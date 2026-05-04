@@ -111,6 +111,27 @@ noncomputable def EagenAccum.combine_higher_distinct
   let after_div_b := after_div_a.divLin b.point.1
   { point := (Qx, -Qy), poly := after_div_b }
 
+/-- Combine two accumulators when their points are negatives of each
+    other (`a.point = -b.point`, so `a.point.1 = b.point.1`). The chord
+    through `(P, -P)` is the vertical line `(X - x(P))`. Their group sum
+    is `0` (the identity = ∞), so the level-(k+1) "third intersection"
+    is also `O`.
+
+    Polynomial: `(X - x(a.point)) · a.poly · b.poly / (X - x(a.point))^2
+                = a.poly · b.poly / (X - x(a.point))`. -/
+noncomputable def EagenAccum.combine_higher_vertical
+    (a b : EagenAccum E)
+    (_h_xx : a.point.1 = b.point.1) (_h_yy : a.point.2 = -b.point.2) :
+    EagenAccum E :=
+  -- Combined = a.poly · b.poly / (X - x(a.point)).
+  let mul_ab := mulCoordRingElt E a.poly b.poly
+  let combined := mul_ab.divLin a.point.1
+  -- "New point" is the identity (= O). Encode as the affine pair (a.point.1, 0)
+  -- as a sentinel; in the divisor equation, the actual contribution is at ∞.
+  -- Since the recursion should terminate here for sum-zero inputs, the
+  -- output is whatever consumer extracts.
+  { point := a.point, poly := combined }
+
 /-- Process a level-k (k ≥ 1) accumulator list, pairing adjacent entries
     and combining each pair. Odd-length lists carry the last entry forward. -/
 noncomputable def eagenBuild_level_step (xs : List (EagenAccum E)) :
@@ -121,7 +142,13 @@ noncomputable def eagenBuild_level_step (xs : List (EagenAccum E)) :
   | a :: b :: rest =>
       if h : a.point.1 ≠ b.point.1 then
         EagenAccum.combine_higher_distinct E a b h :: eagenBuild_level_step rest
+      else if hYY : a.point.2 = -b.point.2 then
+        -- Vertical chord case (a.point = -b.point).
+        EagenAccum.combine_higher_vertical E a b
+          (Classical.byContradiction (fun h_neq => h h_neq)) hYY ::
+          eagenBuild_level_step rest
       else
+        -- Tangent doubling: a.point = b.point. Deferred.
         a :: b :: eagenBuild_level_step rest
 
 /-! ## Top-level driver
