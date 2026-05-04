@@ -543,7 +543,7 @@ theorem splitsOnE_chordCoordRingElt_chord
   set x₂ := lam ^ 2 - P.1 - Q.1 with hx₂
   -- Use the factored form for the roots multiset.
   have hFactor := normPoly_chord_factor_chord E P Q hP hQ hxx
-  simp only [← hlam, ← hmu, ← hx₂] at hFactor
+  simp only [← hlam, ← hx₂] at hFactor
   refine ⟨?_, ?_⟩
   · -- splits: card roots = natDegree
     show Multiset.card (normPoly E _).roots = (normPoly E _).natDegree
@@ -557,7 +557,7 @@ theorem splitsOnE_chordCoordRingElt_chord
     rw [Polynomial.roots_mul hMul1]
     rw [Polynomial.roots_X_sub_C, Polynomial.roots_X_sub_C, Polynomial.roots_X_sub_C]
     rw [show ((X - C P.1) * (X - C Q.1) * (X - C x₂) : (ZMod E.q)[X]).natDegree = 3 from ?_]
-    · simp [Multiset.card_add]
+    · simp
     · rw [natDegree_mul hMul1 hX2, natDegree_mul (X_sub_C_ne_zero _) (X_sub_C_ne_zero _),
           natDegree_X_sub_C, natDegree_X_sub_C, natDegree_X_sub_C]
   · -- Every root lifts to an F_q-point
@@ -1430,7 +1430,7 @@ theorem mulCoordRingElt_eval_on_E
     = (D₁.a.eval P.1 - D₁.b.eval P.1 * P.2)
       * (D₂.a.eval P.1 - D₂.b.eval P.1 * P.2)
   unfold curveX
-  simp only [eval_add, eval_mul, eval_sub, eval_pow, eval_X, eval_C]
+  simp only [eval_add, eval_mul, eval_pow, eval_X, eval_C]
   have hRw : P.1 ^ 3 + E.curveA * P.1 + E.curveB = P.2 ^ 2 := by
     rw [hOC]
   rw [hRw]
