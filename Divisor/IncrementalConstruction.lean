@@ -2864,4 +2864,65 @@ theorem ordAt_nonTwoTorsion_closed_form
         else k :=
   ordAt_nonTwoTorsion_closed_form_aux E (commonRootMultRat E D P.1) D hD hP hY rfl
 
+/-! ## `iterDivLin` distributes over multiplication on the left
+
+When `(X − x₀)^k` divides both `D₁.a` and `D₁.b`,
+`iterDivLin (D₁ · D₂) x₀ k = (iterDivLin D₁ x₀ k) · D₂`.
+
+This is the iterated lift of `mulCoordRingElt_divLin_left`. Used to
+reduce the cross-case multiplicativity proof: by stripping `k₁`
+common factors from `D₁` first, we reduce to analyzing `D̃₁ · D₂`
+where `D̃₁` has no further common factor. -/
+
+theorem iterDivLin_mul_left (k : ℕ) :
+    ∀ (D₁ D₂ : CoordRingElt E.q) (x₀ : ZMod E.q),
+      (Polynomial.X - Polynomial.C x₀) ^ k ∣ D₁.a →
+      (Polynomial.X - Polynomial.C x₀) ^ k ∣ D₁.b →
+      iterDivLin E (mulCoordRingElt E D₁ D₂) x₀ k
+        = mulCoordRingElt E (iterDivLin E D₁ x₀ k) D₂ := by
+  induction k with
+  | zero =>
+    intro D₁ D₂ x₀ _ _
+    simp [iterDivLin_zero]
+  | succ k IH =>
+    intro D₁ D₂ x₀ ha hb
+    -- (X - x₀) | D₁.a and D₁.b (from k+1-th power dvd).
+    have ha1 : (Polynomial.X - Polynomial.C x₀) ∣ D₁.a := by
+      have : (Polynomial.X - Polynomial.C x₀) ∣ (Polynomial.X - Polynomial.C x₀) ^ (k+1) :=
+        dvd_pow_self _ (by omega)
+      exact dvd_trans this ha
+    have hb1 : (Polynomial.X - Polynomial.C x₀) ∣ D₁.b := by
+      have : (Polynomial.X - Polynomial.C x₀) ∣ (Polynomial.X - Polynomial.C x₀) ^ (k+1) :=
+        dvd_pow_self _ (by omega)
+      exact dvd_trans this hb
+    -- (X - x₀)^k | D₁.divLin x₀ .a and .b.
+    have ha' : (Polynomial.X - Polynomial.C x₀) ^ k ∣ (D₁.divLin x₀).a := by
+      rw [CoordRingElt.divLin_a]
+      have hMonic : (Polynomial.X - Polynomial.C x₀).Monic := Polynomial.monic_X_sub_C x₀
+      have : D₁.a = (Polynomial.X - Polynomial.C x₀) * (D₁.a /ₘ (Polynomial.X - Polynomial.C x₀)) := by
+        rw [Polynomial.mul_divByMonic_eq_iff_isRoot.mpr (Polynomial.dvd_iff_isRoot.mp ha1)]
+      have hDvd : (Polynomial.X - Polynomial.C x₀) ^ (k + 1)
+                    ∣ (Polynomial.X - Polynomial.C x₀)
+                       * (D₁.a /ₘ (Polynomial.X - Polynomial.C x₀)) := this ▸ ha
+      rw [pow_succ, mul_comm ((Polynomial.X - Polynomial.C x₀) ^ k)] at hDvd
+      exact (mul_dvd_mul_iff_left (X_sub_C_ne_zero x₀)).mp hDvd
+    have hb' : (Polynomial.X - Polynomial.C x₀) ^ k ∣ (D₁.divLin x₀).b := by
+      rw [CoordRingElt.divLin_b]
+      have hMonic : (Polynomial.X - Polynomial.C x₀).Monic := Polynomial.monic_X_sub_C x₀
+      have : D₁.b = (Polynomial.X - Polynomial.C x₀) * (D₁.b /ₘ (Polynomial.X - Polynomial.C x₀)) := by
+        rw [Polynomial.mul_divByMonic_eq_iff_isRoot.mpr (Polynomial.dvd_iff_isRoot.mp hb1)]
+      have hDvd : (Polynomial.X - Polynomial.C x₀) ^ (k + 1)
+                    ∣ (Polynomial.X - Polynomial.C x₀)
+                       * (D₁.b /ₘ (Polynomial.X - Polynomial.C x₀)) := this ▸ hb
+      rw [pow_succ, mul_comm ((Polynomial.X - Polynomial.C x₀) ^ k)] at hDvd
+      exact (mul_dvd_mul_iff_left (X_sub_C_ne_zero x₀)).mp hDvd
+    -- mulCoordRingElt_divLin_left to peel off one step.
+    have hStep : (mulCoordRingElt E D₁ D₂).divLin x₀
+                  = mulCoordRingElt E (D₁.divLin x₀) D₂ :=
+      mulCoordRingElt_divLin_left E D₁ D₂ x₀ ha1 hb1
+    rw [iterDivLin_succ, hStep]
+    -- Now apply IH on (D₁.divLin, D₂) with k.
+    rw [IH (D₁.divLin x₀) D₂ x₀ ha' hb']
+    rw [iterDivLin_succ]
+
 end Divisor
