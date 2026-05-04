@@ -1463,6 +1463,107 @@ when chord lines have generically-disjoint affine supports. -/
 -- when the chord-line factor has support disjoint from the accumulated
 -- divisor (the common case, but not all configurations).
 
+/-! ## `ordAt`-additivity at non-2-torsion lone-sheet (with D₂ non-vanishing on fiber)
+
+For non-2-torsion `P` (P.2 ≠ 0), if `D₁` is in the lone-sheet branch
+(`D₁(P) = 0, D₁(-P) ≠ 0`) and `D₂` is non-vanishing on the fiber pair
+(`D₂(P) ≠ 0, D₂(-P) ≠ 0`), then ordAt-additivity holds:
+
+  `ordAt(D₁ · D₂)(P) = ordAt(D₁)(P) = ord(D₁)(P) + 0 = ord(D₁)(P) + ord(D₂)(P)`.
+
+Proof: both sides equal `rootMult P.1 (N(D₁))`. -/
+
+theorem ordAt_mul_add_at_lone_sheet
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₁negP : D₁.eval P.1 (-P.2) ≠ 0)
+    (hD₂P : D₂.eval P.1 P.2 ≠ 0) (hD₂negP : D₂.eval P.1 (-P.2) ≠ 0) :
+    ordAt E (mulCoordRingElt E D₁ D₂) P
+      = ordAt E D₁ P + ordAt E D₂ P := by
+  classical
+  -- (P.1, -P.2) is on E.
+  have hMP : (P.1, -P.2) ∈ E.points := by
+    apply E.hComplete
+    have hOC : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := E.hOnCurve P hP
+    show (-P.2) ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB
+    linear_combination hOC
+  -- mulCoordRingElt non-zero (from normPoly_mul_eq + non-zero factors).
+  have hMul_NZ : ¬ ((mulCoordRingElt E D₁ D₂).a = 0 ∧ (mulCoordRingElt E D₁ D₂).b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E (mulCoordRingElt E D₁ D₂) = 0 := by
+      rw [normPoly_eq, ha, hb]; ring
+    rw [normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂)) hN
+  -- D₁ · D₂ at P: vanishes; at (P.1, -P.2): non-vanishing.
+  have hMulP : (mulCoordRingElt E D₁ D₂).eval P.1 P.2 = 0 := by
+    rw [mulCoordRingElt_eval_on_E E D₁ D₂ hP, hD₁P, zero_mul]
+  have hMulnegP : (mulCoordRingElt E D₁ D₂).eval P.1 (-P.2) ≠ 0 := by
+    rw [mulCoordRingElt_eval_on_E E D₁ D₂ hMP]
+    exact mul_ne_zero hD₁negP hD₂negP
+  -- Dispatch all three to non-2-torsion branch and use the lone-sheet identity.
+  rw [ordAt_eq_dispatch E _ hP hMul_NZ, if_neg hY]
+  rw [ordAt_eq_dispatch E _ hP h₁, if_neg hY]
+  rw [ordAt_eq_dispatch E _ hP h₂, if_neg hY]
+  -- All three: unfold ordAt_nonTwoTorsion (fuel = ...natDeg+...natDeg+1).
+  -- For each, the recursion takes the lone-sheet branch:
+  --   ordAt = rootMultiplicity P.1 (normPoly E D).
+  unfold ordAt_nonTwoTorsion
+  -- The aux unfolds to the lone-sheet branch given conditions.
+  have hAuxMul : ordAt_nonTwoTorsion_aux E
+      ((mulCoordRingElt E D₁ D₂).a.natDegree + (mulCoordRingElt E D₁ D₂).b.natDegree + 1)
+      (mulCoordRingElt E D₁ D₂) P
+      = Polynomial.rootMultiplicity P.1 (normPoly E (mulCoordRingElt E D₁ D₂)) := by
+    -- fuel + 1 form.
+    obtain ⟨n, hn⟩ : ∃ n, (mulCoordRingElt E D₁ D₂).a.natDegree
+        + (mulCoordRingElt E D₁ D₂).b.natDegree + 1 = n + 1 :=
+      ⟨_, rfl⟩
+    rw [hn]
+    show (if (mulCoordRingElt E D₁ D₂).a = 0 ∧ (mulCoordRingElt E D₁ D₂).b = 0 then 0
+          else if (mulCoordRingElt E D₁ D₂).eval P.1 P.2 ≠ 0 then 0
+          else if (mulCoordRingElt E D₁ D₂).eval P.1 (-P.2) ≠ 0
+                  then Polynomial.rootMultiplicity P.1
+                        (normPoly E (mulCoordRingElt E D₁ D₂))
+                  else 1 + ordAt_nonTwoTorsion_aux E n
+                          ((mulCoordRingElt E D₁ D₂).divLin P.1) P)
+        = Polynomial.rootMultiplicity P.1
+            (normPoly E (mulCoordRingElt E D₁ D₂))
+    rw [if_neg hMul_NZ, if_neg (not_not.mpr hMulP), if_pos hMulnegP]
+  have hAux1 : ordAt_nonTwoTorsion_aux E (D₁.a.natDegree + D₁.b.natDegree + 1) D₁ P
+      = Polynomial.rootMultiplicity P.1 (normPoly E D₁) := by
+    obtain ⟨n, hn⟩ : ∃ n, D₁.a.natDegree + D₁.b.natDegree + 1 = n + 1 :=
+      ⟨_, rfl⟩
+    rw [hn]
+    show (if D₁.a = 0 ∧ D₁.b = 0 then 0
+          else if D₁.eval P.1 P.2 ≠ 0 then 0
+          else if D₁.eval P.1 (-P.2) ≠ 0
+                  then Polynomial.rootMultiplicity P.1 (normPoly E D₁)
+                  else 1 + ordAt_nonTwoTorsion_aux E n (D₁.divLin P.1) P)
+        = Polynomial.rootMultiplicity P.1 (normPoly E D₁)
+    rw [if_neg h₁, if_neg (not_not.mpr hD₁P), if_pos hD₁negP]
+  have hAux2 : ordAt_nonTwoTorsion_aux E (D₂.a.natDegree + D₂.b.natDegree + 1) D₂ P = 0 := by
+    obtain ⟨n, hn⟩ : ∃ n, D₂.a.natDegree + D₂.b.natDegree + 1 = n + 1 :=
+      ⟨_, rfl⟩
+    rw [hn]
+    show (if D₂.a = 0 ∧ D₂.b = 0 then 0
+          else if D₂.eval P.1 P.2 ≠ 0 then 0
+          else if D₂.eval P.1 (-P.2) ≠ 0
+                  then Polynomial.rootMultiplicity P.1 (normPoly E D₂)
+                  else 1 + ordAt_nonTwoTorsion_aux E n (D₂.divLin P.1) P)
+        = 0
+    rw [if_neg h₂, if_pos hD₂P]
+  rw [hAuxMul, hAux1, hAux2]
+  -- Final: rootMult P.1 (N(D₁D₂)) = rootMult P.1 (N(D₁)) + 0
+  rw [normPoly_mul_eq, Polynomial.rootMultiplicity_mul
+        (mul_ne_zero (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂))]
+  -- rootMult P.1 (N(D₂)) = 0 since N(D₂)(P.1) = D₂(P)·D₂(-P) ≠ 0.
+  have hRMzero : Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 0 := by
+    apply Polynomial.rootMultiplicity_eq_zero
+    show (normPoly E D₂).eval P.1 ≠ 0
+    rw [normPoly_eval_eq_D_mul_D_neg E D₂ hP]
+    exact mul_ne_zero hD₂P hD₂negP
+  rw [hRMzero]
+
 /-! ## `divisorOfD` additivity at infinity
 
 The infinity coefficient of `divisorOfD` is `-natDegree(normPoly)`. By
