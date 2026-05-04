@@ -28,6 +28,132 @@ namespace Divisor
 
 variable (E : ECSetup)
 
+/-! ## hQline derivation: chord doesn't pass through any zero
+
+For length-4 `D = eagenBuild_length4`, `zerosFinset = {P_0..P_3}`. A
+chord through `(A_0, A_1)` (non-vertical) intersects `E` in
+`{A_0, A_1, A_2}`. The pair being "good" (`¬badPairCompletenessPred`)
+excludes `D` vanishing at any of `{A_0, A_1, A_2}`. Hence no zero of
+`D` lies on the chord. -/
+
+theorem hQline_of_hGood_eagenBuild_length4
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_P₀_ne_A2_01 : P₀.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₁_ne_A2_01 : P₁.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₂_ne_A2_23 : P₂.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₃_ne_A2_23 : P₃.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₀_off_L₂ : P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₀ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                    slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+                      * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+                      + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)))
+    (h_P₁_off_L₂ : P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₁ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                    slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+                      * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+                      + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)))
+    (h_P₂_off_L₁ : P₂ ≠ P₀ ∧ P₂ ≠ P₁ ∧ P₂ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+                    slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                      * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                      + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_P₃_off_L₁ : P₃ ≠ P₀ ∧ P₃ ≠ P₁ ∧ P₃ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+                    slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                      * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                      + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                        * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                        + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0)
+    (h_Q₀_off_L₂_inputs :
+      let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+      let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+      (Q₀x, Q₀y) ≠ P₂ ∧ (Q₀x, Q₀y) ≠ P₃ ∧ (Q₀x, Q₀y) ≠ (Q₀x, -Q₀y))
+    (h_negQ₀_off_L₁_inputs :
+      let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+      let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+      (Q₀x, -Q₀y) ≠ P₀ ∧ (Q₀x, -Q₀y) ≠ P₁ ∧ (Q₀x, -Q₀y) ≠ (Q₀x, Q₀y))
+    (A₀ A₁ : ZMod E.q × ZMod E.q)
+    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
+    (hNV : A₀.1 ≠ A₁.1)
+    (hGood : (A₀, A₁) ∉ badChallengesCompleteness E
+              (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)) :
+    ∀ Q ∈ zerosFinset E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃),
+      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 ≠ 0 := by
+  classical
+  intro Q hQzeros
+  -- Q ∈ zerosFinset implies Q.1, Q.2 are coords of some P_i.
+  have hQfin := zerosFinset_eagenBuild_length4_eq E P₀ P₁ P₂ P₃
+    hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
+    h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
+    h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs
+  rw [hQfin] at hQzeros
+  -- Q is in E.points (since zerosFinset ⊆ E.points).
+  have hQE : Q ∈ E.points := by
+    simp only [Finset.mem_insert, Finset.mem_singleton] at hQzeros
+    rcases hQzeros with h | h | h | h
+    · rw [h]; exact hP₀
+    · rw [h]; exact hP₁
+    · rw [h]; exact hP₂
+    · rw [h]; exact hP₃
+  -- Suppose chord(Q) = 0. Then Q ∈ {A_0, A_1, A_2}.
+  intro hZero
+  have hQ_in_chord : Q = A₀ ∨ Q = A₁ ∨
+      Q = (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1,
+           slopeOf A₀.1 A₀.2 A₁.1 A₁.2 *
+             (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1) +
+           (A₀.2 - slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.1)) :=
+    chord_line_support_in_E E A₀ A₁ hA₀ hA₁ hNV Q hQE hZero
+  -- ¬bad: D doesn't vanish at A_0, A_1, A_2.
+  have hMem : (A₀, A₁) ∈ E.points ×ˢ E.points := Finset.mk_mem_product hA₀ hA₁
+  have h_unbad : ¬ badPairCompletenessPred E
+      (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) (A₀, A₁) := fun hbad =>
+    hGood (Finset.mem_filter.mpr ⟨hMem, hbad⟩)
+  -- Q ∈ zerosFinset means D.eval Q = 0.
+  have hQzero : (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃).eval Q.1 Q.2 = 0 := by
+    -- zerosFinset = E.points.filter (D.eval = 0) — extract the filter.
+    have h_back := zerosFinset_eagenBuild_length4_eq E P₀ P₁ P₂ P₃
+      hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
+      h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
+      h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs
+    have : Q ∈ zerosFinset E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) := by
+      rw [h_back]; exact hQzeros
+    unfold zerosFinset zeros at this
+    exact (Finset.mem_filter.mp this).2
+  -- thirdPoint formula matches.
+  have hThirdEq : thirdPoint E A₀ A₁ =
+      some (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1,
+            slopeOf A₀.1 A₀.2 A₁.1 A₁.2 *
+              (slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1) +
+            (A₀.2 - slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.1)) := by
+    unfold thirdPoint slopeOf
+    rw [if_neg hNV]
+  rcases hQ_in_chord with hQA₀ | hQA₁ | hQA₂
+  · -- Q = A_0: D.eval A_0 = 0 contradicts ¬bad.
+    apply h_unbad
+    exact Or.inl (by rw [← hQA₀]; exact hQzero)
+  · -- Q = A_1: similar.
+    apply h_unbad
+    exact Or.inr (Or.inl (by rw [← hQA₁]; exact hQzero))
+  · -- Q = A_2: D.eval A_2 = 0 contradicts ¬bad.
+    apply h_unbad
+    refine Or.inr (Or.inr (Or.inl ?_))
+    show (match thirdPoint E (A₀, A₁).1 (A₀, A₁).2 with
+      | none => True
+      | some (x, y) => (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃).eval x y = 0)
+    rw [show (A₀, A₁).1 = A₀ from rfl, show (A₀, A₁).2 = A₁ from rfl]
+    rw [hThirdEq]
+    rw [← hQA₂]; exact hQzero
+
 /-- Length-4-specific `logDerivCheckFn = 0`: for `D = eagenBuild_length4`
     with all the genericity hypotheses required, and any "good"
     `(A_0, A_1)` pair, the log-derivative check vanishes — modulo the
