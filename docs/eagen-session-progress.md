@@ -303,6 +303,31 @@ This proves the formerly-axiomatic `ma_completeness` is **constructively
 dischargeable for the restricted k=3 simple honest case** — the strongest
 demonstration that the Eagen-construction approach works end-to-end.
 
+## Toward any-k completeness (May 2026, 193 commits)
+
+Per Eagen 596.pdf §3.1.1, the next phase generalizes from length-4 to ANY-N.
+
+**`Divisor/EagenBuildRecursive.lean`** (skeleton complete) — recursive
+`eagenBuild` driver per the paper's algorithm:
+* `EagenAccum` structure (point + accumulated polynomial).
+* `eagenBuild_level0` — pair adjacent inputs, build chord lines (with
+  vertical-chord fallback for `P = -Q`).
+* `combine_higher_distinct` / `combine_higher_vertical` — level-(k+1)
+  combine: `chord · a.poly · b.poly / (X-x(a))(X-x(b))`, with vertical
+  branch for sum-zero termination.
+* `eagenBuild_level_step` — one level of pairing.
+* `eagenBuild_iterate` — fuel-based iteration to convergence.
+* `eagenBuild` — top-level driver.
+
+**Pending for any-k:**
+1. Tangent-doubling case (`P = Q` in input list, e.g., k=2 scalars (1, 2)).
+2. Length-4 reduction proof: `eagenBuild [P_0..P_3] = eagenBuild_length4_explicit ...`.
+3. Divisor equation by induction on levels.
+4. `IsHonestForAny` predicate (any-k variant of length-4 simple).
+5. `ma_completeness_via_isHonestForAny`.
+
+Multi-firing project; foundational length-4 path remains the demonstration.
+
 ## Session checkpoint (May 2026, 156 commits)
 
 Major milestones achieved this session:
