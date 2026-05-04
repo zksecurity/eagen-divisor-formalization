@@ -211,7 +211,7 @@ The proof works case-by-case (chord vs. tangent) showing that our `thirdPoint`
 coordinates equal `(addX, negAddY)`, and invokes mathlib's
 `add_of_X_ne'` / `add_self_of_Y_ne'` lemmas. -/
 
-private theorem thirdPoint_some_eq_neg_add
+theorem thirdPoint_some_eq_neg_add
     {A₀ A₁ : ZMod E.q × ZMod E.q}
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
     {x y : ZMod E.q}

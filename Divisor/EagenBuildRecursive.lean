@@ -1158,6 +1158,112 @@ theorem negTarget_on_curve_for_length4Simple
   rw [← h_simple.h_P₀_eq]
   exact h_simple.hP₀
 
+/-! ### EC group sum lemma for length-4 simple
+
+`thirdPoint E P_0 P_1 = some Q_0` and `thirdPoint E P_2 P_3 = some (-Q_0)`
+(via `h_third_match` and `h_y_match`). Combined with the standard
+EC identity "third intersection = negation of sum", we get
+`P_0 + P_1 + P_2 + P_3 = O` in `ECPoint E`. -/
+
+/-- The thirdPoint of `(P_0, P_1)` for the chord case. -/
+private theorem thirdPoint_chord_case
+    {E : ECSetup} {P₀ P₁ : ZMod E.q × ZMod E.q}
+    (h_xx : P₀.1 ≠ P₁.1) :
+    thirdPoint E P₀ P₁ = some
+      (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+       slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+         * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+         + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)) := by
+  unfold thirdPoint slopeOf
+  rw [if_neg h_xx]
+
+/-- For length-4 simple, the EC group sum of the four input points is zero. -/
+theorem ec_sum_zero_for_length4Simple
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt) :
+    (ECPoint.affineOfMem E h_simple.hP₀ + ECPoint.affineOfMem E h_simple.hP₁
+      + ECPoint.affineOfMem E h_simple.hP₂ + ECPoint.affineOfMem E h_simple.hP₃
+      : ECPoint E) = 0 := by
+  classical
+  -- Q_0 = thirdPoint of (P_0, P_1).
+  set Q₀x := slopeOf h_simple.P₀.1 h_simple.P₀.2 h_simple.P₁.1 h_simple.P₁.2 ^ 2
+            - h_simple.P₀.1 - h_simple.P₁.1 with hQ₀x_def
+  set Q₀y := slopeOf h_simple.P₀.1 h_simple.P₀.2 h_simple.P₁.1 h_simple.P₁.2 * Q₀x
+            + (h_simple.P₀.2 - slopeOf h_simple.P₀.1 h_simple.P₀.2
+                                  h_simple.P₁.1 h_simple.P₁.2 * h_simple.P₀.1)
+            with hQ₀y_def
+  -- Q_0 is on E.
+  have hQ₀_mem : (Q₀x, Q₀y) ∈ E.points := by
+    have hOC := chord_third_point_on_E E h_simple.P₀ h_simple.P₁
+                  h_simple.hP₀ h_simple.hP₁ h_simple.h_xx_01
+    exact E.hComplete _ _ hOC
+  -- thirdPoint of (P_0, P_1) = some (Q_0x, Q_0y).
+  have hT01 : thirdPoint E h_simple.P₀ h_simple.P₁ = some (Q₀x, Q₀y) :=
+    thirdPoint_chord_case h_simple.h_xx_01
+  -- thirdPoint of (P_2, P_3) = some (Q_0x, -Q_0y) (via h_third_match, h_y_match).
+  have hT23 : thirdPoint E h_simple.P₂ h_simple.P₃ = some (Q₀x, -Q₀y) := by
+    have h := thirdPoint_chord_case (E := E)
+                (P₀ := h_simple.P₂) (P₁ := h_simple.P₃) h_simple.h_xx_23
+    rw [h]
+    congr 1
+    apply Prod.ext
+    · simp only []; rw [hQ₀x_def]; exact h_simple.h_third_match
+    · simp only []
+      rw [hQ₀y_def]
+      have h_y := h_simple.h_y_match
+      linear_combination h_y
+  -- Negation of (Q_0x, Q_0y) on the curve.
+  have h_negQ₀_mem : (Q₀x, -Q₀y) ∈ E.points := by
+    apply E.hComplete
+    have hC := E.hOnCurve _ hQ₀_mem
+    show (-Q₀y) ^ 2 = Q₀x ^ 3 + E.curveA * Q₀x + E.curveB
+    rw [neg_pow_two]; exact hC
+  -- Apply thirdPoint_some_eq_neg_add for (P_0, P_1).
+  have hSum01 : ECPoint.affineOfMem E h_simple.hP₀ + ECPoint.affineOfMem E h_simple.hP₁
+              = -ECPoint.affineOfMem E
+                  (third_point_on_curve E h_simple.P₀ h_simple.P₁
+                    h_simple.hP₀ h_simple.hP₁ hT01) :=
+    thirdPoint_some_eq_neg_add (E := E) h_simple.hP₀ h_simple.hP₁ hT01
+  -- Apply thirdPoint_some_eq_neg_add for (P_2, P_3).
+  have hSum23 : ECPoint.affineOfMem E h_simple.hP₂ + ECPoint.affineOfMem E h_simple.hP₃
+              = -ECPoint.affineOfMem E
+                  (third_point_on_curve E h_simple.P₂ h_simple.P₃
+                    h_simple.hP₂ h_simple.hP₃ hT23) :=
+    thirdPoint_some_eq_neg_add (E := E) h_simple.hP₂ h_simple.hP₃ hT23
+  -- Identify affineOfMem of (Q_0x, -Q_0y) with -affineOfMem of (Q_0x, Q_0y).
+  have h_Q₀_eq : ECPoint.affineOfMem E
+                  (third_point_on_curve E h_simple.P₀ h_simple.P₁
+                    h_simple.hP₀ h_simple.hP₁ hT01)
+                = ECPoint.affineOfMem E hQ₀_mem := by
+    rfl
+  have h_negQ₀_eq : ECPoint.affineOfMem E
+                  (third_point_on_curve E h_simple.P₂ h_simple.P₃
+                    h_simple.hP₂ h_simple.hP₃ hT23)
+                = ECPoint.affineOfMem E h_negQ₀_mem := by
+    rfl
+  rw [h_Q₀_eq] at hSum01
+  rw [h_negQ₀_eq] at hSum23
+  -- affineOfMem (Q_0x, -Q_0y) = -affineOfMem (Q_0x, Q_0y).
+  have h_affNeg : ECPoint.affineOfMem E h_negQ₀_mem
+                = -ECPoint.affineOfMem E hQ₀_mem := by
+    rw [← ECPoint.affine_eq_affineOfMem E hQ₀_mem]
+    rw [← ECPoint.affine_eq_affineOfMem E h_negQ₀_mem]
+    show ECPoint.affine E (Q₀x, -Q₀y).1 (Q₀x, -Q₀y).2
+        = -ECPoint.affine E (Q₀x, Q₀y).1 (Q₀x, Q₀y).2
+    show ECPoint.affine E Q₀x (-Q₀y) = -ECPoint.affine E Q₀x Q₀y
+    rw [ECPoint.affine_neg E Q₀x Q₀y]
+  -- Combine. Goal is `(P₀ + P₁) + P₂ + P₃ = 0`.
+  -- First reassociate: P₀ + P₁ + P₂ + P₃ = (P₀ + P₁) + (P₂ + P₃).
+  have h_assoc : (ECPoint.affineOfMem E h_simple.hP₀ + ECPoint.affineOfMem E h_simple.hP₁
+                  + ECPoint.affineOfMem E h_simple.hP₂ + ECPoint.affineOfMem E h_simple.hP₃
+                  : ECPoint E)
+              = (ECPoint.affineOfMem E h_simple.hP₀ + ECPoint.affineOfMem E h_simple.hP₁)
+                + (ECPoint.affineOfMem E h_simple.hP₂ + ECPoint.affineOfMem E h_simple.hP₃) := by
+    abel
+  rw [h_assoc, hSum01, hSum23, h_affNeg]
+  -- Goal: -A + (-(-A)) = 0.
+  abel
+
 /-- Cast helper: `(h ▸ jj : Fin stmt.k).val = jj.val` where `h : stmt.k = 3`. -/
 private theorem cast_subst_val_l4
     {stmt : DlogStatement E.q} (h : stmt.k = 3) (jj : Fin 3) :
