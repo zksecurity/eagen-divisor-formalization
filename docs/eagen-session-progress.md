@@ -177,6 +177,24 @@ either:
    (simplest applicable subcase; still doesn't replace the axiom in
    `ma_completeness` but demonstrates full discharge of that subcase).
 
+**Residue sum expansion (May 2026, 165 commits):** The new theorem
+`eagenBuild_length4_residue_sum_eq` provides a closed-form
+expansion of the residue sum:
+```
+∑ Q ∈ zerosFinset E (eagenBuild_length4_explicit P_0 P_1 P_2 P_3),
+  (ordAt E D Q : ZMod E.q) * (L.eval Q.1 Q.2)⁻¹
+  = (L.eval P_0.1 P_0.2)⁻¹ + (L.eval P_1.1 P_1.2)⁻¹
+    + (L.eval P_2.1 P_2.2)⁻¹ + (L.eval P_3.1 P_3.2)⁻¹
+```
+This is the key tool for discharging `hResidueMatch` from a specific
+honest divisor structure. For e.g. `k=3` bases with all scalars 1
+and `P_0 = -P_target, P_i = B_{i-1}`, the LHS expansion matches the
+protocol RHS verbatim.
+
+Closure of `eagenBuild_length4_residue_sum_eq`: only standard Lean
+axioms (`propext`, `Classical.choice`, `Quot.sound`). No new
+mathematical axioms.
+
 ## Session checkpoint (May 2026, 156 commits)
 
 Major milestones achieved this session:
