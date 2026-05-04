@@ -4492,4 +4492,13 @@ theorem mulCoordRingElt_vertical_divLin_eq_self
   · rw [mul_comm]; exact Polynomial.mul_divByMonic_cancel_left _ (Polynomial.monic_X_sub_C x₀)
   · rw [mul_comm]; exact Polynomial.mul_divByMonic_cancel_left _ (Polynomial.monic_X_sub_C x₀)
 
+/-! ## Vertical line normPoly natDegree -/
+
+theorem natDegree_normPoly_vertical_helper (x₀ : ZMod E.q) :
+    (normPoly E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                  : CoordRingElt E.q)).natDegree = 2 := by
+  rw [show ({ a := Polynomial.X - Polynomial.C x₀, b := 0 } : CoordRingElt E.q)
+        = { a := Polynomial.X - Polynomial.C x₀, b := 0 } from rfl]
+  exact natDegree_normPoly_chordCoordRingElt_vertical E x₀
+
 end Divisor
