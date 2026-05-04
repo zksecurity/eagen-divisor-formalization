@@ -2519,4 +2519,59 @@ theorem divisorOfD_mul_add_when_one_factor_nonvanish_fiber
   · -- D₂ non-vanish on fiber: direct.
     exact divisorOfD_mul_add_affine_when_D2_nonvanish_fiber E h₁ h₂ hP hD₂P hD₂negP
 
+/-! ## Common `(X − x₀)` rootMult of a `CoordRingElt`'s coefficients
+
+The largest `k` such that `(X − x₀)^k` divides both `D.a` and `D.b`.
+Used to reduce the cross-case ordAt-additivity to a closed form.
+
+Rational analog of `Divisor/GeomLocalOrder.lean:41`'s
+`commonRootMultiplicity`.
+
+When `D.a = 0` (respectively `D.b = 0`), the common factor is the full
+rootMult of `D.b` (resp. `D.a`); otherwise it is the min. -/
+
+noncomputable def commonRootMultRat (D : CoordRingElt E.q) (x₀ : ZMod E.q) : ℕ :=
+  if D.a = 0 then D.b.rootMultiplicity x₀
+  else if D.b = 0 then D.a.rootMultiplicity x₀
+  else min (D.a.rootMultiplicity x₀) (D.b.rootMultiplicity x₀)
+
+theorem commonRootMultRat_le_rootMult_a
+    (D : CoordRingElt E.q) (x₀ : ZMod E.q) (ha : D.a ≠ 0) :
+    commonRootMultRat E D x₀ ≤ D.a.rootMultiplicity x₀ := by
+  unfold commonRootMultRat
+  rw [if_neg ha]
+  by_cases hb : D.b = 0
+  · rw [if_pos hb]
+  · rw [if_neg hb]
+    exact min_le_left _ _
+
+theorem commonRootMultRat_le_rootMult_b
+    (D : CoordRingElt E.q) (x₀ : ZMod E.q) (hb : D.b ≠ 0) :
+    commonRootMultRat E D x₀ ≤ D.b.rootMultiplicity x₀ := by
+  unfold commonRootMultRat
+  by_cases ha : D.a = 0
+  · rw [if_pos ha]
+  · rw [if_neg ha, if_neg hb]
+    exact min_le_right _ _
+
+/-- `(X − x₀)^k` divides `D.a` for `k = commonRootMultRat D x₀`. -/
+theorem commonRootMultRat_dvd_a
+    (D : CoordRingElt E.q) (x₀ : ZMod E.q) :
+    (Polynomial.X - Polynomial.C x₀) ^ commonRootMultRat E D x₀ ∣ D.a := by
+  by_cases ha : D.a = 0
+  · rw [ha]; exact dvd_zero _
+  · exact dvd_trans
+      (pow_dvd_pow _ (commonRootMultRat_le_rootMult_a E D x₀ ha))
+      (pow_rootMultiplicity_dvd D.a x₀)
+
+/-- `(X − x₀)^k` divides `D.b` for `k = commonRootMultRat D x₀`. -/
+theorem commonRootMultRat_dvd_b
+    (D : CoordRingElt E.q) (x₀ : ZMod E.q) :
+    (Polynomial.X - Polynomial.C x₀) ^ commonRootMultRat E D x₀ ∣ D.b := by
+  by_cases hb : D.b = 0
+  · rw [hb]; exact dvd_zero _
+  · exact dvd_trans
+      (pow_dvd_pow _ (commonRootMultRat_le_rootMult_b E D x₀ hb))
+      (pow_rootMultiplicity_dvd D.b x₀)
+
 end Divisor
