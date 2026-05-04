@@ -79,18 +79,24 @@ pin shows `ma_extractable`/`ip_knowledge_sound` byte-for-byte unchanged
 from master; `ma_completeness*` still gated on `weil_reciprocity_honest`
 (now sound under strengthened bad-set predicate per B4).
 
-**Zero-set characterization (May 2026, 144 commits):**
+**Zero-set characterization (May 2026, 146 commits):**
 
 * `ECPoints_same_x_y_eq_or_neg` — y-uniqueness on E (helper).
 * `eagenBuild_length4_explicit_zero_iff_input` — for Q ∈ E.points with
   `D.eval Q = 0`, Q is one of the four input points P_0..P_3. Combines
   per-ECPoint divisor characterization with curve y-uniqueness.
+* `zerosFinset_eagenBuild_length4_eq` — exact Finset equality:
+  `zerosFinset E (eagenBuild_length4_explicit ...) = {P_0, P_1, P_2, P_3}`.
 
-This characterization, together with the existing `eval_zero_at_P_i`
-corollaries, fully pins down `zerosFinset(eagenBuild_length4) = {P_0..P_3}`
-under the genericity hypotheses (subject to the four input points being
-mutually distinct). Direct path to `chord_sum_eq_residue_sum`'s `hβsup`
-and `hβcov` hypotheses.
+This pins down `zerosFinset(eagenBuild_length4) = {P_0..P_3}` as an exact
+Finset equality. Combined with the per-ECPoint ordAt characterization
+(`ordAt = 1` at each P_i), this directly satisfies `chord_sum_eq_residue_sum`'s
+`hβsup` and `hβcov` hypotheses for β_fun = `ordAt`. The `hAccount` (sum
+of ordAt = 4) follows from the Finset cardinality.
+
+Closure pin (verified post-zerosFinset_eq): `ma_extractable` /
+`ip_knowledge_sound` byte-for-byte unchanged from master.
+`ma_completeness*` still gated on (now-sound) `weil_reciprocity_honest`.
 
 ## eagenBuild_length4 status (May 2026, 123 commits)
 
