@@ -1158,6 +1158,14 @@ theorem negTarget_on_curve_for_length4Simple
   rw [← h_simple.h_P₀_eq]
   exact h_simple.hP₀
 
+/-- Cast helper: `(h ▸ jj : Fin stmt.k).val = jj.val` where `h : stmt.k = 3`. -/
+private theorem cast_subst_val_l4
+    {stmt : DlogStatement E.q} (h : stmt.k = 3) (jj : Fin 3) :
+    ((h ▸ jj : Fin stmt.k)).val = jj.val := by
+  generalize stmt.k = k at h jj
+  cases h
+  rfl
+
 /-- Helper: extract a specific basis from IsHonestForLength4Simple. The
     cast-rewriting is encapsulated here so the bridge theorem doesn't
     need to fight Lean's dependent-type machinery directly. -/
@@ -1361,6 +1369,83 @@ private theorem div_eq_one_at_P_for_length4Simple
       h_simple.h_P₂_ne_A2_23 h_simple.h_P₃_ne_A2_23
       h_simple.h_P₃_off_L₁ h_simple.h_third_match h_simple.h_y_match
       h_simple.h_Q₀_nontorsion
+
+/-! ### On-support helper: filter-singleton characterisation
+
+For each j : Fin 3, the filter `{i : Fin stmt.k | stmt.bases i = stmt.bases (h3 ▸ j)}`
+is the singleton `{h3 ▸ j}`. Uses `h_inputs_distinct` (P_1, P_2, P_3 distinct
+modulo P_0 not being a basis index). -/
+private theorem bases_filter_singleton_for_length4Simple
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    (j : Fin 3) :
+    (Finset.univ : Finset (Fin stmt.k)).filter
+        (fun i => stmt.bases i = stmt.bases (h_simple.hk_eq_3 ▸ j))
+      = {h_simple.hk_eq_3 ▸ j} := by
+  classical
+  have h3 := h_simple.hk_eq_3
+  have h_dist := h_simple.h_inputs_distinct
+  -- The base identifications.
+  have hb0 : stmt.bases (h3 ▸ (0 : Fin 3)) = h_simple.P₁ := h_simple.h_P₁_eq.symm
+  have hb1 : stmt.bases (h3 ▸ (1 : Fin 3)) = h_simple.P₂ := h_simple.h_P₂_eq.symm
+  have hb2 : stmt.bases (h3 ▸ (2 : Fin 3)) = h_simple.P₃ := h_simple.h_P₃_eq.symm
+  -- Distinctness facts in the form needed.
+  have hP12 : h_simple.P₁ ≠ h_simple.P₂ := h_dist.2.2.2.1
+  have hP13 : h_simple.P₁ ≠ h_simple.P₃ := h_dist.2.2.2.2.1
+  have hP23 : h_simple.P₂ ≠ h_simple.P₃ := h_dist.2.2.2.2.2
+  apply Finset.ext
+  intro i
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_singleton]
+  constructor
+  · -- Forward: stmt.bases i = stmt.bases (h3 ▸ j) → i = h3 ▸ j.
+    intro h_bi
+    -- Cast i to a fresh Fin 3 variable ji by obtaining.
+    obtain ⟨ji, hji⟩ : ∃ ji : Fin 3, ji = Fin.cast h3 i := ⟨Fin.cast h3 i, rfl⟩
+    -- Show stmt.bases i = stmt.bases (h3 ▸ ji).
+    have h_i_eq : stmt.bases i = stmt.bases (h3 ▸ ji) := by
+      congr 1
+      apply Fin.ext
+      rw [cast_subst_val_l4 (E := E) h3 ji, hji]
+      rfl
+    rw [h_i_eq] at h_bi
+    -- Now stmt.bases (h3 ▸ ji) = stmt.bases (h3 ▸ j). Case-split on ji and j.
+    have h_eq : ji = j := by
+      have h_contra : ∀ (h_bi' : stmt.bases (h3 ▸ (0 : Fin 3))
+                              = stmt.bases (h3 ▸ (1 : Fin 3))), False := fun h =>
+        hP12 ((hb0.symm.trans h).trans hb1)
+      have h_contra2 : ∀ (h_bi' : stmt.bases (h3 ▸ (0 : Fin 3))
+                              = stmt.bases (h3 ▸ (2 : Fin 3))), False := fun h =>
+        hP13 ((hb0.symm.trans h).trans hb2)
+      have h_contra3 : ∀ (h_bi' : stmt.bases (h3 ▸ (1 : Fin 3))
+                              = stmt.bases (h3 ▸ (0 : Fin 3))), False := fun h =>
+        (Ne.symm hP12) ((hb1.symm.trans h).trans hb0)
+      have h_contra4 : ∀ (h_bi' : stmt.bases (h3 ▸ (1 : Fin 3))
+                              = stmt.bases (h3 ▸ (2 : Fin 3))), False := fun h =>
+        hP23 ((hb1.symm.trans h).trans hb2)
+      have h_contra5 : ∀ (h_bi' : stmt.bases (h3 ▸ (2 : Fin 3))
+                              = stmt.bases (h3 ▸ (0 : Fin 3))), False := fun h =>
+        (Ne.symm hP13) ((hb2.symm.trans h).trans hb0)
+      have h_contra6 : ∀ (h_bi' : stmt.bases (h3 ▸ (2 : Fin 3))
+                              = stmt.bases (h3 ▸ (1 : Fin 3))), False := fun h =>
+        (Ne.symm hP23) ((hb2.symm.trans h).trans hb1)
+      fin_cases ji <;> fin_cases j
+      · rfl
+      · exact (h_contra h_bi).elim
+      · exact (h_contra2 h_bi).elim
+      · exact (h_contra3 h_bi).elim
+      · rfl
+      · exact (h_contra4 h_bi).elim
+      · exact (h_contra5 h_bi).elim
+      · exact (h_contra6 h_bi).elim
+      · rfl
+    -- ji = j, recover i.
+    apply Fin.ext
+    rw [cast_subst_val_l4 (E := E) h3 j]
+    rw [show j.val = ji.val from h_eq ▸ rfl, hji]
+    rfl
+  · -- Backward.
+    intro h_eq
+    rw [h_eq]
 
 /-- Scalar reduction for the length-4 simple case (with `wit.scalars = 1`). -/
 theorem scalar_reduction_for_length4Simple
