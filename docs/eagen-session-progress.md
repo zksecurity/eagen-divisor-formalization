@@ -98,34 +98,47 @@ Closure pin (verified post-zerosFinset_eq): `ma_extractable` /
 `ip_knowledge_sound` byte-for-byte unchanged from master.
 `ma_completeness*` still gated on (now-sound) `weil_reciprocity_honest`.
 
-## Next steps (post-zerosFinset_eq)
+## Static prerequisites for `chord_sum_eq_residue_sum` — COMPLETE
 
-Codex consulted (2026-05-04): recommended Option B — prove
-length-4-specific theorems first, before attempting general-N
-`eagenBuild` extension. Rationale: low blast radius, leverages
-existing per-ECPoint infrastructure.
+All static (not per-pair) prerequisites for applying
+`chord_sum_eq_residue_sum` to length-4 `eagenBuild_length4_explicit`
+are now proven:
 
-1. **`splitsOnE eagenBuild_length4`** — needs:
-   * `Multiset.card (normPoly D).roots = 4`. Approach: use existing
-     `ordAt_nonTwoTorsion_pair_eq_rootMult` to relate rootMultiplicity
-     to ordAt-pair sum at each x-coord, then sum over E.points.
-   * Each root has y-lift ∈ E.points. Direct from input list.
-2. **`hAccount`** — `∑_{P ∈ E.points} ordAt P = 4`. Follows from
-   `splitsOnE + sum_ordAt_eq_natDegree_under_split`.
-3. **`hβsup`, `hβcov`** — use `betaTrue_support` and
-   `ordAt_pos_iff_zero` (already proved).
-4. **`hβtrue`** — trivial: `betaTrue = ordAt` (definitional).
-5. **Application of `chord_sum_eq_residue_sum`** — gives
-   `∑ logDerivTerm = -∑_{Q ∈ {P_0..P_3}} ordAt(Q) · L(Q)^{-1}`.
-6. **`hResidueMatch` (protocol-level)** — for honest D,
-   identify {P_0..P_3} with {(-P), B_1, B_2, B_3} (specific list shape)
-   to match the protocol's expected RHS. This is the bridge
-   discussed in `weil_residue_identity` sorry.
-7. **Length-4-specific `weil_reciprocity_honest_length4`** — combine
-   the residue match with `logDerivCheckFn_zero_of_chord_residue_match`.
+* **`eagenBuild_length4_explicit_ne_zero`** — `D ≠ 0`.
+* **`zerosFinset_eagenBuild_length4_eq`** — `zerosFinset = {P_0..P_3}`.
+* **`eagenBuild_length4_normPoly_natDegree_eq_four`** — natDegree = 4.
+* **`ordAt_sum_eagenBuild_length4_eq_four`** — `∑ ordAt over E.points = 4` (hAccount).
+* **`splitsOnE_eagenBuild_length4`** — both splits + fiber rationality.
+* **β_fun = ordAt = betaTrue** — definitional, `betaTrue_support` and
+  `ordAt_pos_iff_zero` discharge `hβsup`, `hβcov`.
 
-Beyond length 4: extend `eagenBuild` recursively. Big lift but
-mechanical given the chord-line algebra is already proved.
+Closure pin verified: `ma_extractable`/`ip_knowledge_sound` byte-for-byte
+unchanged from master after splitsOnE landed.
+
+## Next steps
+
+The remaining inputs to `chord_sum_eq_residue_sum` are *per-pair*
+side conditions on `(A_0, A_1)`:
+
+1. **`hQline`** — chord through (A_0, A_1) doesn't pass through any
+   zero of D. Derivable from `¬badPairCompletenessPred` (which excludes
+   D vanishing at A_0, A_1, A_2) via Bezout: chord ∩ E ⊆ {A_0, A_1, A_2},
+   so any zero of D on the chord ∈ {A_i} — contradicts `¬bad`.
+2. **`hDen`** — `3·pt.1² + curveA - 2λ·pt.2 ≠ 0` for pt ∈ {A_0, A_1, A_2}.
+   Application/configuration-specific; may need additional bad-set
+   strengthening or per-pair hypothesis.
+3. **`hA*def`** — `D.eval ≠ 0` at A_0, A_1, A_2. Already extractable
+   from `¬badPairCompletenessPred` (existing in
+   `logDerivCheckFn_zero_of_explicit_divisor_data`).
+4. **Application** — assemble via
+   `logDerivCheckFn_zero_of_chord_residue_match` to get
+   `logDerivCheckFn = 0` modulo `hResidueMatch`.
+5. **`hResidueMatch`** — protocol-level identification of the four
+   eagenBuild inputs as `{(-P)} ∪ {B_j (with multiplicities)}`. This
+   is the genuinely protocol-level bridge.
+
+Beyond length 4: extend `eagenBuild` recursively (big lift but
+mechanical given the chord-line algebra is already proved).
 
 ## eagenBuild_length4 status (May 2026, 123 commits)
 
