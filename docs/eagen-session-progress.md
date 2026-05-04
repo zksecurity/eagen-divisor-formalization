@@ -254,6 +254,16 @@ for the simple length-4 honest case:
 - `h_m_eq_one : ∀ i, msg.m i = 1`
 - All genericity + on-curve hypotheses for length-4 simple discharge.
 
+**Raw-form bridge (May 2026, 178 commits):**
+`logDerivCheckFn_zero_via_isHonestForLength4Simple_raw` provides the
+drop-in replacement for `weil_reciprocity_honest` using raw types
+(target, B, D, m as parameters) instead of stmt/msg projections.
+Avoids `subst` pain on Lean's `stmt.k`/`msg.k` projections.
+
+Axiom closure (verified): no `weil_reciprocity_honest` dependency.
+Both Divisor-specific axioms it uses are already in `ma_extractable`'s
+closure.
+
 ## Session checkpoint (May 2026, 156 commits)
 
 Major milestones achieved this session:
