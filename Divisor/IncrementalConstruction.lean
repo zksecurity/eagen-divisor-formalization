@@ -4501,4 +4501,22 @@ theorem natDegree_normPoly_vertical_helper (x₀ : ZMod E.q) :
         = { a := Polynomial.X - Polynomial.C x₀, b := 0 } from rfl]
   exact natDegree_normPoly_chordCoordRingElt_vertical E x₀
 
+/-! ## Vertical multiplication additivity at infinity -/
+
+theorem divisorOfD_mul_vertical_add_at_infinity
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) (x₀ : ZMod E.q) :
+    divisorOfD E (mulCoordRingElt E D
+        ({ a := Polynomial.X - Polynomial.C x₀, b := 0 } : CoordRingElt E.q))
+        (0 : ECPoint E)
+      = divisorOfD E D (0 : ECPoint E)
+      + divisorOfD E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                      : CoordRingElt E.q) (0 : ECPoint E) := by
+  have hLv_NZ : ¬ (({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                    : CoordRingElt E.q).a = 0
+                  ∧ ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                      : CoordRingElt E.q).b = 0) := by
+    intro ⟨ha, _⟩
+    exact (X_sub_C_ne_zero x₀) ha
+  exact divisorOfD_mul_add_at_infinity E hD hLv_NZ
+
 end Divisor
