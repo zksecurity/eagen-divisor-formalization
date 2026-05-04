@@ -3008,4 +3008,66 @@ theorem normPoly_iterDivLin_factor (k : ℕ) :
     rw [iterDivLin_succ]
     ring
 
+/-! ## Cross-case helper: in cross case, `(D₁·D₂)` is twin at P
+
+When `D₁` lone at P and `D₂` lone at -P (the genuine cross case),
+both `(D₁·D₂).a` and `(D₁·D₂).b` vanish at `x₀`.
+
+Useful for the cross-case multiplicativity proof: confirms that
+`commonRootMultRat E (D₁·D₂) P.1 ≥ 1` so iterDivLin has at least one
+step. -/
+
+theorem cross_case_mul_a_b_vanish
+    {D₁ D₂ : CoordRingElt E.q}
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0) :
+    (mulCoordRingElt E D₁ D₂).a.eval P.1 = 0
+    ∧ (mulCoordRingElt E D₁ D₂).b.eval P.1 = 0 := by
+  -- D₁(P) = 0 ⟺ D₁.a(x₀) = D₁.b(x₀) · y₀.
+  have hax₁ : D₁.a.eval P.1 = D₁.b.eval P.1 * P.2 := by
+    have heq : D₁.a.eval P.1 - D₁.b.eval P.1 * P.2 = 0 := hD₁P
+    linear_combination heq
+  -- D₂(-P) = 0 ⟺ D₂.a(x₀) = -D₂.b(x₀) · y₀.
+  have hax₂ : D₂.a.eval P.1 = -(D₂.b.eval P.1 * P.2) := by
+    have heq : D₂.a.eval P.1 - D₂.b.eval P.1 * (-P.2) = 0 := hD₂negP
+    linear_combination heq
+  -- curveX(x₀) = y₀² (P on E).
+  have hOC : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := E.hOnCurve P hP
+  -- Now compute (D₁·D₂).a(x₀) and .b(x₀) and show both = 0.
+  refine ⟨?_, ?_⟩
+  · -- (D₁·D₂).a = D₁.a · D₂.a + D₁.b · D₂.b · curveX.
+    show (D₁.a * D₂.a + D₁.b * D₂.b * curveX E).eval P.1 = 0
+    simp only [Polynomial.eval_add, Polynomial.eval_mul]
+    rw [hax₁, hax₂]
+    -- D₁.b·y₀ · (-D₂.b·y₀) + D₁.b · D₂.b · y₀² = 0
+    -- (using curveX evaluated at P.1 equals y₀²).
+    have hCurveX : (curveX E).eval P.1 = P.2 ^ 2 := by
+      unfold curveX
+      simp [Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_mul,
+            Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X, hOC]
+    rw [hCurveX]
+    ring
+  · -- (D₁·D₂).b = D₁.a · D₂.b + D₂.a · D₁.b.
+    show (D₁.a * D₂.b + D₂.a * D₁.b).eval P.1 = 0
+    simp only [Polynomial.eval_add, Polynomial.eval_mul]
+    rw [hax₁, hax₂]
+    ring
+
+theorem cross_case_commonRootMult_pos
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0) :
+    0 < commonRootMultRat E (mulCoordRingElt E D₁ D₂) P.1 := by
+  -- mulCoordRingElt is non-zero (from normPoly_mul_eq + non-zero factors).
+  have hMul_NZ : ¬ ((mulCoordRingElt E D₁ D₂).a = 0
+      ∧ (mulCoordRingElt E D₁ D₂).b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E (mulCoordRingElt E D₁ D₂) = 0 := by
+      rw [normPoly_eq, ha, hb]; ring
+    rw [normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂)) hN
+  obtain ⟨hax, hbx⟩ := cross_case_mul_a_b_vanish E hP hY hD₁P hD₂negP
+  exact (commonRootMultRat_pos_iff E _ hMul_NZ P.1).mpr ⟨hax, hbx⟩
+
 end Divisor
