@@ -297,7 +297,7 @@ theorem natDegree_normPoly_chordCoordRingElt_nonvertical (lam mu : ZMod E.q) :
       omega
     have hCurveCoeff3 : (curveX E).coeff 3 = 1 := by
       unfold curveX
-      simp [coeff_add, coeff_X_pow, coeff_C_mul, coeff_X, coeff_C]
+      simp [coeff_add]
     rw [hSqCoeff3, hCurveCoeff3]; ring
   -- Use leadingCoeff non-zero ⇒ natDegree exact via coeff_natDegree.
   have hNonzero : (((C lam * X + C mu) ^ 2 - curveX E : (ZMod E.q)[X])) ≠ 0 := by
@@ -345,7 +345,7 @@ theorem chordCoordRingElt_zeros_on_E_chord
 /-- Chord case: `chordCoordRingElt P Q` vanishes at `thirdPoint`. -/
 theorem chordCoordRingElt_eval_thirdPoint_chord
     {P Q : ZMod E.q × ZMod E.q}
-    (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (_hP : P ∈ E.points) (_hQ : Q ∈ E.points)
     (hxx : P.1 ≠ Q.1) :
     let lam := slopeOf P.1 P.2 Q.1 Q.2
     let x₂ := lam ^ 2 - P.1 - Q.1
