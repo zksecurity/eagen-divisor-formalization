@@ -4562,4 +4562,19 @@ theorem divisorOfD_mul_vertical_add_affine_off_x₀
   exact divisorOfD_mul_add_affine_when_normPoly_D2_le_one E hD hLv_NZ hP
     (by omega)
 
+/-! ## Helper: divLin of the vertical line equals (1, 0) -/
+
+theorem divLin_of_vertical (x₀ : ZMod E.q) :
+    ({ a := Polynomial.X - Polynomial.C x₀, b := 0 } : CoordRingElt E.q).divLin x₀
+      = ({ a := 1, b := 0 } : CoordRingElt E.q) := by
+  refine CoordRingElt.mk.injEq _ _ _ _ |>.mpr ?_
+  refine ⟨?_, ?_⟩
+  · show (Polynomial.X - Polynomial.C x₀) /ₘ (Polynomial.X - Polynomial.C x₀) = 1
+    have : (Polynomial.X - Polynomial.C x₀) * 1
+              /ₘ (Polynomial.X - Polynomial.C x₀) = 1 :=
+      Polynomial.mul_divByMonic_cancel_left 1 (Polynomial.monic_X_sub_C x₀)
+    simpa using this
+  · show (0 : (ZMod E.q)[X]) /ₘ (Polynomial.X - Polynomial.C x₀) = 0
+    exact Polynomial.zero_divByMonic _
+
 end Divisor
