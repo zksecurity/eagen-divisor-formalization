@@ -1158,6 +1158,55 @@ theorem negTarget_on_curve_for_length4Simple
   rw [← h_simple.h_P₀_eq]
   exact h_simple.hP₀
 
+/-- Helper: extract a specific basis from IsHonestForLength4Simple. The
+    cast-rewriting is encapsulated here so the bridge theorem doesn't
+    need to fight Lean's dependent-type machinery directly. -/
+private theorem bases_at_cast_index_for_length4Simple
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    (j : Fin 3) :
+    stmt.bases (h_simple.hk_eq_3 ▸ j) ∈ E.points := by
+  fin_cases j
+  · show stmt.bases (h_simple.hk_eq_3 ▸ (⟨0, by decide⟩ : Fin 3)) ∈ E.points
+    have : (⟨0, by decide⟩ : Fin 3) = (0 : Fin 3) := rfl
+    rw [this, ← h_simple.h_P₁_eq]; exact h_simple.hP₁
+  · show stmt.bases (h_simple.hk_eq_3 ▸ (⟨1, by decide⟩ : Fin 3)) ∈ E.points
+    have : (⟨1, by decide⟩ : Fin 3) = (1 : Fin 3) := rfl
+    rw [this, ← h_simple.h_P₂_eq]; exact h_simple.hP₂
+  · show stmt.bases (h_simple.hk_eq_3 ▸ (⟨2, by decide⟩ : Fin 3)) ∈ E.points
+    have : (⟨2, by decide⟩ : Fin 3) = (2 : Fin 3) := rfl
+    rw [this, ← h_simple.h_P₃_eq]; exact h_simple.hP₃
+
+/-- On-curve invariant: every `bases i` is on E. -/
+theorem bases_on_curve_for_length4Simple
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt) :
+    ∀ i : Fin stmt.k, stmt.bases i ∈ E.points := by
+  intro i
+  have h3 := h_simple.hk_eq_3
+  -- We need: stmt.bases i ∈ E.points.
+  -- Strategy: show stmt.bases i = stmt.bases (h3 ▸ Fin.cast h3 i) and use the helper.
+  set j : Fin 3 := Fin.cast h3 i with hj_def
+  have h_eq : stmt.bases i = stmt.bases (h3 ▸ j) := by
+    congr 1
+    -- Goal: i = h3 ▸ j (in Fin stmt.k).
+    apply Fin.ext
+    -- Goal: i.val = (h3 ▸ j).val
+    -- (Fin.cast h3 i).val = i.val by definition.
+    have h_cast_val : (Fin.cast h3 i).val = i.val := rfl
+    -- (h3 ▸ j).val = j.val (cast preserves val).
+    -- This is the tricky part; use generalization.
+    have h_subst_val : ∀ (h : stmt.k = 3) (j : Fin 3),
+        ((h ▸ j : Fin stmt.k)).val = j.val := by
+      intro h jj
+      -- Case on h.
+      generalize stmt.k = k at h jj
+      cases h
+      rfl
+    rw [h_subst_val h3 j, hj_def, h_cast_val]
+  rw [h_eq]
+  exact bases_at_cast_index_for_length4Simple E h_simple j
+
 /-! ## Hypothesis-light any-k completeness
 
 `splitsOnE` and `hAccount` are now both derived from `IsHonestForExplicit`.
