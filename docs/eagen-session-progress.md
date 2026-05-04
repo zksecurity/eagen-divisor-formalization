@@ -359,6 +359,36 @@ Helpers proved this iteration:
 * `ordAt_sum_extend_to_E_points` — padding lemma for residue match derivation.
 * `ordAt_eq_honestDivisorCoeffs_at_affine` — affine-bridge from ordAt to honestDivisorCoeffs.
 
+## Tighter any-k completeness (May 2026, 211 commits)
+
+**`ma_completeness_via_isHonestForExplicit_splitsOnE_only`** — discharges
+any-k completeness with `splitsOnE` as the only substantive remaining
+hypothesis. The user provides:
+* `IsHonestForExplicit` (`isHonestFor` + divisor identity).
+* `D ≠ 0` (from admSet via `admSet_implies_toD_nonzero`).
+* `splitsOnE D` (substantive — pending discharge).
+* on-curve targets/bases (protocol invariants).
+* degree + admSet (protocol checks).
+
+Path to fully hypothesis-light any-k completeness:
+1. ✓ `hResidueMatch_via_isHonestForExplicit` — discharged from divisor identity.
+2. ✓ `hAccount_of_splitsOnE` — wrapper around existing infrastructure.
+3. **Pending**: `splitsOnE_of_isHonestForExplicit` — derive splitsOnE from
+   divisor identity (zeros at honest rational support → all roots rational).
+
+New theorems this iteration:
+* `ordAt_cast_eq_honestDivisorCoeffs_cast_at_affine` — ZMod cast bridge.
+* `residue_sum_eq_honest_via_isHonestForExplicit` — sum substitution.
+* `honestDivisorCoeffs_at_affine_split` — indicator + bases-sum decomposition.
+* `indicator_sum_eq_eval_at_negTarget` — indicator term reduction.
+* `bases_sum_eq_index_sum` — bases-sum reorder.
+* `hResidueMatch_via_isHonestForExplicit` — full residue-match identity.
+* `hAccount_of_splitsOnE` — wrapper.
+* `ma_completeness_via_isHonestForExplicit_no_residue_match` — hResidueMatch automatic.
+* `ma_completeness_via_isHonestForExplicit_splitsOnE_only` — only splitsOnE remaining.
+
+All have axiom closures clean of `weil_reciprocity_honest`.
+
 The user's stated goal — "completeness for any k" — is now achievable
 via this theorem, requiring only protocol-/D-specific side conditions
 that the user proves for their honest divisor structure. The recursive
