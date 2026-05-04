@@ -660,6 +660,45 @@ theorem ma_completeness_via_isHonestForExplicit_no_residue_match
   intro i _
   rw [h_m_eq_scalars i]
 
+/-! ## hAccount from splitsOnE (existing infrastructure wrapper)
+
+Wrapper around `sum_ordAt_eq_natDegree_under_split` for ergonomic use. -/
+
+theorem hAccount_of_splitsOnE
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hSplit : splitsOnE E D) :
+    (∑ Q ∈ E.points, ordAt E D Q) = (normPoly E D).natDegree :=
+  sum_ordAt_eq_natDegree_under_split E D hD hSplit
+
+/-! ## Tighter any-k completeness with hAccount discharged
+
+If splitsOnE D, then hAccount is automatic. Combined with the residue
+match discharge, we now only need splitsOnE as a side condition. -/
+
+theorem ma_completeness_via_isHonestForExplicit_splitsOnE_only
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
+    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
+    (hSplit : splitsOnE E msg.toD)
+    (h_negT : (stmt.target.1, -stmt.target.2) ∈ E.points)
+    (h_bases : ∀ i : Fin stmt.k, stmt.bases i ∈ E.points)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+  apply ma_completeness_via_isHonestForExplicit_no_residue_match E stmt wit hk msg hkm
+    h_honest hD hSplit
+  · exact hAccount_of_splitsOnE E msg.toD hD hSplit
+  · exact h_negT
+  · exact h_bases
+  · exact h_honest.1.1
+  · exact hDegK
+  · exact hAdm
+
 /-! ## Notes on remaining infrastructure for any-k completeness
 
 To prove `ma_completeness_via_isHonestForExplicit` for ANY k, we need:
