@@ -2696,4 +2696,172 @@ theorem commonRootMultRat_divLin
       have hMulB := rootMult_shift D.b hb hbEval
       omega
 
+/-! ## Iterated `divLin`
+
+Strips up to `k` common `(X − x₀)` factors from a `CoordRingElt`'s
+`a` and `b` components.
+
+Used to express the closed form for `ordAt_nonTwoTorsion`: let
+`k = commonRootMultRat E D x₀`, then `iterDivLin D x₀ k` has
+`commonRootMultRat = 0` and is the "fully reduced" representative. -/
+
+noncomputable def iterDivLin : CoordRingElt E.q → ZMod E.q → ℕ → CoordRingElt E.q
+  | D, _, 0 => D
+  | D, x₀, k + 1 => iterDivLin (D.divLin x₀) x₀ k
+
+@[simp] theorem iterDivLin_zero (D : CoordRingElt E.q) (x₀ : ZMod E.q) :
+    iterDivLin E D x₀ 0 = D := rfl
+
+theorem iterDivLin_succ (D : CoordRingElt E.q) (x₀ : ZMod E.q) (k : ℕ) :
+    iterDivLin E D x₀ (k + 1) = iterDivLin E (D.divLin x₀) x₀ k := rfl
+
+/-! ## Closed-form `ordAt_nonTwoTorsion`
+
+At non-2-torsion P (`y₀ ≠ 0`), `ordAt_nonTwoTorsion` is determined by:
+* `m := rootMult P.1 (normPoly E D)` — rootMult of the norm at the
+  affine x-coordinate.
+* `k := commonRootMultRat E D P.1` — common `(X − x₀)`-rootMult of
+  `D.a` and `D.b`.
+* Whether the "fully reduced" `iterDivLin E D P.1 k` evaluates to
+  zero at P.
+
+Specifically: `ordAt_nonTwoTorsion E D P = if (Dt.eval P.1 P.2 = 0) then m - k else k`
+where `Dt := iterDivLin E D P.1 k`.
+
+This bypasses the iterated `divLin` recursion in proofs: the ord is
+expressed in one closed form, making case-analysis on multiplicativity
+tractable without circular induction. -/
+
+theorem ordAt_nonTwoTorsion_closed_form_aux (k : ℕ) :
+    ∀ (D : CoordRingElt E.q), ¬ (D.a = 0 ∧ D.b = 0) →
+    ∀ {P : ZMod E.q × ZMod E.q}, P ∈ E.points → P.2 ≠ 0 →
+    commonRootMultRat E D P.1 = k →
+    ordAt_nonTwoTorsion E D P
+      = if (iterDivLin E D P.1 k).eval P.1 P.2 = 0 then
+          Polynomial.rootMultiplicity P.1 (normPoly E D) - k
+        else k := by
+  classical
+  induction k with
+  | zero =>
+    intro D hD P hP hY hk
+    -- k = 0: D is in nonvan, lone-at-P, or lone-at-(-P) branch (not twin).
+    rw [iterDivLin_zero]
+    -- Fact: D is NOT twin at P.
+    have hNotTwin : ¬ (D.eval P.1 P.2 = 0 ∧ D.eval P.1 (-P.2) = 0) := by
+      rintro ⟨h1, h2⟩
+      have ⟨hax, hbx⟩ := Da_Db_eval_zero_of_both_sheets_zero E D hY h1 h2
+      have hPos : 0 < commonRootMultRat E D P.1 :=
+        (commonRootMultRat_pos_iff E D hD P.1).mpr ⟨hax, hbx⟩
+      omega
+    -- Apply the recursion: at non-2-torsion, dispatch lone/twin/nonvan.
+    unfold ordAt_nonTwoTorsion
+    -- Use ordAt_nonTwoTorsion_aux: case-split on the three branches.
+    obtain ⟨n, hn⟩ : ∃ n, D.a.natDegree + D.b.natDegree + 1 = n + 1 := ⟨_, rfl⟩
+    rw [hn]
+    show (if D.a = 0 ∧ D.b = 0 then 0
+          else if D.eval P.1 P.2 ≠ 0 then 0
+          else if D.eval P.1 (-P.2) ≠ 0 then
+                  Polynomial.rootMultiplicity P.1 (normPoly E D)
+                else 1 + ordAt_nonTwoTorsion_aux E n (D.divLin P.1) P)
+        = if D.eval P.1 P.2 = 0 then
+            Polynomial.rootMultiplicity P.1 (normPoly E D) - 0
+          else 0
+    rw [if_neg hD]
+    by_cases h1 : D.eval P.1 P.2 = 0
+    · -- D(P) = 0. Twin or lone at P. Not twin (hNotTwin), so lone at P.
+      have h2 : D.eval P.1 (-P.2) ≠ 0 := fun h => hNotTwin ⟨h1, h⟩
+      rw [if_neg (not_not.mpr h1), if_pos h2, if_pos h1]
+      simp
+    · -- D(P) ≠ 0. Output 0.
+      rw [if_pos h1, if_neg h1]
+  | succ k IH =>
+    intro D hD P hP hY hk
+    -- k+1 > 0: D is twin at P (both .a, .b vanish at x_0 since common rootMult ≥ 1).
+    have hPos : 0 < commonRootMultRat E D P.1 := by omega
+    obtain ⟨hax, hbx⟩ := (commonRootMultRat_pos_iff E D hD P.1).mp hPos
+    -- D evaluates to 0 at both P and (-P).
+    have h1 : D.eval P.1 P.2 = 0 := by
+      show D.a.eval P.1 - D.b.eval P.1 * P.2 = 0
+      rw [hax, hbx]; ring
+    have h2 : D.eval P.1 (-P.2) = 0 := by
+      show D.a.eval P.1 - D.b.eval P.1 * -P.2 = 0
+      rw [hax, hbx]; ring
+    -- Apply twin-rec: ordAt(D)(P) = 1 + ordAt(D.divLin)(P).
+    rw [ordAt_nonTwoTorsion_twin_rec E D hD hY h1 h2]
+    -- D.divLin nonzero.
+    have hD' : ¬ ((D.divLin P.1).a = 0 ∧ (D.divLin P.1).b = 0) :=
+      divLin_not_both_zero E D hD hax hbx
+    -- commonRootMultRat (D.divLin) = k.
+    have hk' : commonRootMultRat E (D.divLin P.1) P.1 = k := by
+      have := commonRootMultRat_divLin E D hD P.1 hPos
+      omega
+    -- normPoly D = (X - x₀)² · normPoly (D.divLin), so rootMult shifts by 2.
+    have hNorm : Polynomial.rootMultiplicity P.1 (normPoly E D)
+                  = 2 + Polynomial.rootMultiplicity P.1 (normPoly E (D.divLin P.1)) := by
+      have hFactor : normPoly E D
+          = (Polynomial.X - Polynomial.C P.1) ^ 2 * normPoly E (D.divLin P.1) :=
+        normPoly_divLin_factor E D hax hbx
+      have hN'_NZ : normPoly E (D.divLin P.1) ≠ 0 := normPoly_ne_zero E _ hD'
+      have hPow_NZ : (Polynomial.X - Polynomial.C P.1) ^ 2 ≠ 0 := by
+        exact pow_ne_zero 2 (X_sub_C_ne_zero P.1)
+      have hMul_NZ : (Polynomial.X - Polynomial.C P.1) ^ 2 * normPoly E (D.divLin P.1) ≠ 0 :=
+        mul_ne_zero hPow_NZ hN'_NZ
+      rw [hFactor, Polynomial.rootMultiplicity_mul hMul_NZ]
+      rw [show ((Polynomial.X - Polynomial.C P.1) ^ 2 : Polynomial (ZMod E.q))
+            = (Polynomial.X - Polynomial.C P.1) * (Polynomial.X - Polynomial.C P.1)
+          from by ring]
+      have hX_NZ : (Polynomial.X - Polynomial.C P.1 : Polynomial (ZMod E.q)) ≠ 0 :=
+        X_sub_C_ne_zero P.1
+      rw [Polynomial.rootMultiplicity_mul (mul_ne_zero hX_NZ hX_NZ)]
+      rw [Polynomial.rootMultiplicity_X_sub_C_self]
+    -- Bound: m' ≥ 2 * (commonRootMultRat E (D.divLin) P.1) = 2k.
+    -- Follows from (X - C P.1)^{2k} | normPoly (D.divLin).
+    have hm'_ge_2k : 2 * commonRootMultRat E (D.divLin P.1) P.1
+                      ≤ Polynomial.rootMultiplicity P.1 (normPoly E (D.divLin P.1)) := by
+      set k' := commonRootMultRat E (D.divLin P.1) P.1
+      have hN'_NZ : normPoly E (D.divLin P.1) ≠ 0 := normPoly_ne_zero E _ hD'
+      have hda : (Polynomial.X - Polynomial.C P.1) ^ k' ∣ (D.divLin P.1).a :=
+        commonRootMultRat_dvd_a E (D.divLin P.1) P.1
+      have hdb : (Polynomial.X - Polynomial.C P.1) ^ k' ∣ (D.divLin P.1).b :=
+        commonRootMultRat_dvd_b E (D.divLin P.1) P.1
+      have hda_sq : (Polynomial.X - Polynomial.C P.1) ^ (2 * k')
+                      ∣ (D.divLin P.1).a ^ 2 := by
+        rw [show 2 * k' = k' + k' from by ring, pow_add, sq]
+        exact mul_dvd_mul hda hda
+      have hdb_sq_curveX : (Polynomial.X - Polynomial.C P.1) ^ (2 * k')
+                      ∣ (D.divLin P.1).b ^ 2 * curveX E := by
+        have : (Polynomial.X - Polynomial.C P.1) ^ (2 * k')
+                  ∣ (D.divLin P.1).b ^ 2 := by
+          rw [show 2 * k' = k' + k' from by ring, pow_add, sq]
+          exact mul_dvd_mul hdb hdb
+        exact this.mul_right _
+      have hPow_dvd : (Polynomial.X - Polynomial.C P.1) ^ (2 * k')
+                        ∣ normPoly E (D.divLin P.1) := by
+        rw [normPoly_eq]
+        exact dvd_sub hda_sq hdb_sq_curveX
+      exact (Polynomial.le_rootMultiplicity_iff hN'_NZ).mpr hPow_dvd
+    -- Apply IH.
+    rw [IH (D.divLin P.1) hD' hP hY hk']
+    -- Now: 1 + (if (iterDivLin (D.divLin) k).eval = 0 then m' - k else k)
+    --        = if (iterDivLin D (k+1)).eval = 0 then m - (k+1) else (k+1)
+    rw [iterDivLin_succ]
+    -- iterDivLin D (k+1) = iterDivLin (D.divLin) k. ✓
+    by_cases hbranch : (iterDivLin E (D.divLin P.1) P.1 k).eval P.1 P.2 = 0
+    · rw [if_pos hbranch, if_pos hbranch]
+      -- Need: 1 + (m' - k) = m - (k+1) where m = m' + 2.
+      -- Use hm'_ge_2k: m' ≥ 2k ≥ k.
+      omega
+    · rw [if_neg hbranch, if_neg hbranch]
+      omega
+
+theorem ordAt_nonTwoTorsion_closed_form
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0) :
+    ordAt_nonTwoTorsion E D P
+      = let k := commonRootMultRat E D P.1
+        if (iterDivLin E D P.1 k).eval P.1 P.2 = 0 then
+          Polynomial.rootMultiplicity P.1 (normPoly E D) - k
+        else k :=
+  ordAt_nonTwoTorsion_closed_form_aux E (commonRootMultRat E D P.1) D hD hP hY rfl
+
 end Divisor
