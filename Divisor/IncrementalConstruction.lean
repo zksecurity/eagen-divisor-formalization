@@ -1463,6 +1463,19 @@ when chord lines have generically-disjoint affine supports. -/
 -- when the chord-line factor has support disjoint from the accumulated
 -- divisor (the common case, but not all configurations).
 
+/-! ## Commutativity of `mulCoordRingElt`
+
+The product in `F_q[E]` is commutative, mirroring the algebra structure
+of the coordinate ring. -/
+
+theorem mulCoordRingElt_comm (D₁ D₂ : CoordRingElt E.q) :
+    mulCoordRingElt E D₁ D₂ = mulCoordRingElt E D₂ D₁ := by
+  unfold mulCoordRingElt
+  refine CoordRingElt.mk.injEq _ _ _ _ |>.mpr ?_
+  refine ⟨?_, ?_⟩
+  · ring
+  · ring
+
 /-! ## `ordAt`-additivity at non-2-torsion lone-sheet (with D₂ non-vanishing on fiber)
 
 For non-2-torsion `P` (P.2 ≠ 0), if `D₁` is in the lone-sheet branch
@@ -1563,6 +1576,18 @@ theorem ordAt_mul_add_at_lone_sheet
     rw [normPoly_eval_eq_D_mul_D_neg E D₂ hP]
     exact mul_ne_zero hD₂P hD₂negP
   rw [hRMzero]
+
+/-- Symmetric variant: D₂ lone-sheet, D₁ non-vanishing on fiber. -/
+theorem ordAt_mul_add_at_lone_sheet_swap
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 ≠ 0) (hD₁negP : D₁.eval P.1 (-P.2) ≠ 0)
+    (hD₂P : D₂.eval P.1 P.2 = 0) (hD₂negP : D₂.eval P.1 (-P.2) ≠ 0) :
+    ordAt E (mulCoordRingElt E D₁ D₂) P
+      = ordAt E D₁ P + ordAt E D₂ P := by
+  rw [mulCoordRingElt_comm, Nat.add_comm]
+  exact ordAt_mul_add_at_lone_sheet E h₂ h₁ hP hY hD₂P hD₂negP hD₁P hD₁negP
 
 /-! ## `divisorOfD` additivity at infinity
 
