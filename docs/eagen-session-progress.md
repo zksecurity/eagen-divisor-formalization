@@ -385,6 +385,31 @@ In all sub-cases, `ord(D₁·D₂)(P) = m_1 = ord(D₁)(P) + ord(D₂)(P)`. ✓
    to get unconditional ordAt-additivity at non-2-torsion. Then close
    `divisorOfD_mul_add` unconditionally.
 
+### Inductive step for `min ≥ 2` (after Codex consultation #4)
+
+Codex confirmed (May 2026) that the T_poly approach **does not work**
+for the inductive step in general. Counter-example: `D = D₁*D₂` can have
+`T_poly = 3*X^9` (rootMult 9) while `m₁ = 6`. The polynomial-rootMult
+strategy only handles `min = 1` cleanly.
+
+**Codex's recommendation:** prove the inductive step via the local-ring
+valuation approach (geomLocalOrder_mul) rather than polynomial-level
+analysis. Specifically:
+
+```lean
+cross_product_ordAt :
+  ordAt_nonTwoTorsion E (mulCoordRingElt E D₁ D₂) P
+    = rootMultiplicity P.1 (normPoly E D₁)
+```
+
+via `geomLocalOrder_mul` (multiplicativity of geometric local order
+over Fqbar) plus an `ordAt_eq_geomLocalOrder_at_rationalLift` bridge.
+
+Building this is substantial (~hundreds of lines of new local-ring
+formalisation). Alternatively: skip the cross case entirely for now and
+proceed with a NARROWER `weil_reciprocity_honest` axiom replacement
+that excludes the cross-case configurations.
+
 ### Codex's clean lemma signature
 
 ```lean
