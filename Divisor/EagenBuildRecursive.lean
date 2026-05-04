@@ -726,6 +726,23 @@ theorem honestDivisorCoeffs_at_infinity
     (msg : MAProverMsg E.q) :
     honestDivisorCoeffs E stmt wit hk msg (0 : ECPoint E) = -(msg.toD.degE : ℤ) := rfl
 
+/-! ## honestDivisorCoeffs has finite support (via divisor identity)
+
+By divisor identity, honestDivisorCoeffs equals the finitely-supported
+divisorOfD, hence is also finitely supported. -/
+
+theorem honestDivisorCoeffs_finiteSupport_of_divisor_identity
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q)
+    (h_div : ∀ R : ECPoint E,
+      divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R) :
+    Set.Finite (Function.support (honestDivisorCoeffs E stmt wit hk msg)) := by
+  have h_eq : honestDivisorCoeffs E stmt wit hk msg = divisorOfD E msg.toD := by
+    funext R
+    exact (h_div R).symm
+  rw [h_eq]
+  exact divisorOfD_finiteSupport E msg.toD
+
 /-! ## Notes on remaining infrastructure for any-k completeness
 
 To prove `ma_completeness_via_isHonestForExplicit` for ANY k, we need:
