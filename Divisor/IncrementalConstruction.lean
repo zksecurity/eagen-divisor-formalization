@@ -4139,6 +4139,18 @@ theorem ordAt_mul_add_when_normPoly_D2_le_one
   · exact ordAt_mul_add_at_nonTwoTorsion_when_normPoly_D2_le_one E
       (D₁.a.natDegree + D₁.b.natDegree) D₁ D₂ h₁ h₂ (le_refl _) hP hY hRoot
 
+/-! ## divisorOfD additivity at infinity (always) -/
+
+theorem divisorOfD_mul_add_at_infinity
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0)) :
+    divisorOfD E (mulCoordRingElt E D₁ D₂) (0 : ECPoint E)
+      = divisorOfD E D₁ (0 : ECPoint E) + divisorOfD E D₂ (0 : ECPoint E) := by
+  show -((normPoly E (mulCoordRingElt E D₁ D₂)).natDegree : ℤ)
+        = -((normPoly E D₁).natDegree : ℤ) + -((normPoly E D₂).natDegree : ℤ)
+  rw [natDegree_normPoly_mul_eq E D₁ D₂ h₁ h₂]
+  push_cast; ring
+
 /-! ## divisorOfD additivity at affine points under chord-line hypothesis -/
 
 theorem divisorOfD_mul_add_affine_when_normPoly_D2_le_one
@@ -4166,5 +4178,39 @@ theorem divisorOfD_mul_add_affine_when_normPoly_D2_le_one
     rw [ECPoint.affine_of_nonsingular E
           (E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP)))]
     rfl
+
+/-! ## Full divisorOfD-additivity under chord-line hypothesis at every ECPoint
+
+Combines:
+* `divisorOfD_mul_add_affine_when_normPoly_D2_le_one` (at affine points where D₂'s
+  rootMult of normPoly is ≤ 1).
+* `divisorOfD_mul_add_at_infinity` (at the point at infinity, unconditional).
+
+Where applicable: at affine x-coordinates outside D₂'s normPoly support,
+rootMult = 0 ≤ 1; at intersection x-coordinates with chord lines, the
+chord line has rootMult exactly 1. -/
+
+theorem divisorOfD_mul_add_when_chord_line_D2
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    (hChord : ∀ x : ZMod E.q, Polynomial.rootMultiplicity x (normPoly E D₂) ≤ 1)
+    (Q : ECPoint E) :
+    divisorOfD E (mulCoordRingElt E D₁ D₂) Q
+      = divisorOfD E D₁ Q + divisorOfD E D₂ Q := by
+  match Q with
+  | WeierstrassCurve.Affine.Point.zero =>
+    exact divisorOfD_mul_add_at_infinity E h₁ h₂
+  | WeierstrassCurve.Affine.Point.some (x := x) (y := y) hOnCurve =>
+    -- (x, y) ∈ E.points via hComplete + equation.
+    have hEq : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB :=
+      (E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hOnCurve)
+    have hP : (x, y) ∈ E.points := E.hComplete x y hEq
+    -- Apply affine additivity.
+    have := divisorOfD_mul_add_affine_when_normPoly_D2_le_one E h₁ h₂ hP (hChord x)
+    -- The Q here is (some hOnCurve), but ECPoint.affine E x y reduces to it.
+    rw [show (WeierstrassCurve.Affine.Point.some hOnCurve : ECPoint E)
+        = ECPoint.affine E x y from ?_]
+    · exact this
+    · rw [ECPoint.affine_of_nonsingular E hOnCurve]
 
 end Divisor
