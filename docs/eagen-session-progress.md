@@ -215,6 +215,32 @@ constructively dischargeable for at least one honest divisor structure**.
 The remaining work is generalizing the construction (eagenBuild) to
 other honest divisor shapes (k≠3 bases, scalars > 1, doublings).
 
+## INTEGRATION: `rejectSet_bound_length4_simple` (May 2026, 172 commits)
+
+The end-to-end integration theorem: for the length-4 simple honest D,
+the rejection set (pairs where `logDerivCheckFn ≠ 0` and chord is
+non-vertical) has cardinality bounded by `(3·4 + 4) · |E.points|`
+— exactly mirroring `ma_completeness`'s conclusion but specialized
+to k=3 simple honest case.
+
+Axiom closure (verified):
+```
+[propext, Classical.choice, Quot.sound,
+ Divisor.chord_fiber_product_eq_normZ_under_split,
+ Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g]
+```
+
+**Codex confirmed this was the right next step (Option C from strategy
+consultation): "demonstrating actual replacement of `weil_reciprocity_honest`
+dependency".**
+
+Per Codex's recommended sequence:
+* C ✓ DONE — specialized end-to-end integration without axiom.
+* D NEXT — strengthen `isHonestFor` around the constructive bridge
+  once the needed shape is known.
+* A/B LATER — expand coverage (length-N, doublings) only after the
+  replacement path is demonstrated.
+
 ## Session checkpoint (May 2026, 156 commits)
 
 Major milestones achieved this session:
