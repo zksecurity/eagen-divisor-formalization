@@ -74,10 +74,23 @@ or Q_0/-Q_0/generic R, all of which contradict the pos-divisor) and
 `hAccount` (sum-of-ordAt = 4 by per-point characterization) needed by
 `chord_sum_eq_residue_sum`.
 
-Branch state: 140 commits since master, 8098 jobs build cleanly. Closure
+Branch state: 140+ commits since master, 8098 jobs build cleanly. Closure
 pin shows `ma_extractable`/`ip_knowledge_sound` byte-for-byte unchanged
 from master; `ma_completeness*` still gated on `weil_reciprocity_honest`
 (now sound under strengthened bad-set predicate per B4).
+
+**Zero-set characterization (May 2026, 144 commits):**
+
+* `ECPoints_same_x_y_eq_or_neg` — y-uniqueness on E (helper).
+* `eagenBuild_length4_explicit_zero_iff_input` — for Q ∈ E.points with
+  `D.eval Q = 0`, Q is one of the four input points P_0..P_3. Combines
+  per-ECPoint divisor characterization with curve y-uniqueness.
+
+This characterization, together with the existing `eval_zero_at_P_i`
+corollaries, fully pins down `zerosFinset(eagenBuild_length4) = {P_0..P_3}`
+under the genericity hypotheses (subject to the four input points being
+mutually distinct). Direct path to `chord_sum_eq_residue_sum`'s `hβsup`
+and `hβcov` hypotheses.
 
 ## eagenBuild_length4 status (May 2026, 123 commits)
 
