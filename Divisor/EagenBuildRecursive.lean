@@ -301,7 +301,32 @@ theorem hQline_of_hGood_general
     rw [hThirdEq]
     rw [← hQ]; exact hQzero
 
-/-! ## Future work
+/-! ## Notes on remaining infrastructure for any-k completeness
+
+To prove `ma_completeness_via_isHonestForExplicit` for ANY k, we need:
+
+1. **Divisor identity → β-properties** (β_fun = ordAt = betaTrue):
+   - hβsup, hβcov: standard from any nonzero D (no divisor identity needed).
+   - hβtrue: trivial (`betaTrue = ordAt`).
+   - hAccount: ∑ ordAt = natDegree(normPoly E D). Provable from
+     `sum_ordAt_eq_natDegree_under_split` IF splitsOnE.
+
+2. **splitsOnE D**: Provable from divisor identity (zeros are at honest
+   support, all rational). Substantial — defer or take as explicit hyp.
+
+3. **hQline**: `hQline_of_hGood_general` (proved above) — general for any D.
+
+4. **hDen**: `hDen_of_hGood` (in `Divisor/LogDerivEagenLength4.lean`) is
+   already general (no length-4 specifics).
+
+5. **hResidueMatch**: `∑ zerosFinset · L^{-1} = ∑ E.points honestDivisorCoeffs · L^{-1}`
+   (since coeff = 0 outside support), then unfold to `L(-P)^{-1} + Σ m_j L(B_j)^{-1}`.
+   Requires careful Finset.sum manipulation; substantial.
+
+The full integration is feasible but multi-firing. Length-4 simple
+remains the headline demonstration.
+
+## Future work
 
 The skeleton above defines the construction; correctness proofs require:
 
