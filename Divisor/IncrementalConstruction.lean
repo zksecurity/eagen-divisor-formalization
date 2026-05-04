@@ -1589,6 +1589,13 @@ theorem ordAt_mul_add_at_lone_sheet_swap
   rw [mulCoordRingElt_comm, Nat.add_comm]
   exact ordAt_mul_add_at_lone_sheet E h₂ h₁ hP hY hD₂P hD₂negP hD₁P hD₁negP
 
+-- TODO: ordAt_aux_fuel_irrelevant — at non-2-torsion P (P.2 ≠ 0), padding fuel
+-- beyond the natDegree-sum bound doesn't change the recursion result. Strong
+-- induction on D.a.natDegree + D.b.natDegree, using Da_Db_eval_zero_of_both_sheets_zero
+-- at the twin-sheet branch for divLin natDegree-decrease. Once this is in place,
+-- the wrapper-level twin-recursive identity ordAt = 1 + ordAt(D.divLin) follows,
+-- which closes the twin × non-vanishing-fiber sub-case of ordAt_mul_add.
+
 /-! ## `divisorOfD` additivity at infinity
 
 The infinity coefficient of `divisorOfD` is `-natDegree(normPoly)`. By
