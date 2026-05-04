@@ -2450,4 +2450,44 @@ theorem eagenBuild_length2_2torsion_correctness
     ∧ divisorOfD E (chordCoordRingElt E P P) (0 : ECPoint E) = -2 :=
   divisorOfD_chordCoordRingElt_2torsion E hP h2t
 
+/-! ## Strategy note for higher-length eagenBuild
+
+Eagen's recursion for length-4 list `[P_0, P_1, P_2, P_3]` summing to
+zero (sketched mathematically):
+
+* `L_1 = chord through P_0, P_1` (third intersection at `Q_0 = -(P_0+P_1)`).
+* `L_2 = chord through P_2, P_3` (third intersection at `Q_1 = -(P_2+P_3)`).
+* `L_3 = chord through −Q_0, −Q_1` (vertical since `−Q_0 + −Q_1 = 0`).
+
+Then `L_1 · L_2 · L_3` has divisor (over geometric points):
+
+```
+  (P_0) + (P_1) + (Q_0) + (P_2) + (P_3) + (Q_1) + (−Q_0) + (−Q_1) − 8·(O)
+```
+
+To recover the formal divisor `(P_0)+(P_1)+(P_2)+(P_3) − 4·(O)`, divide
+by `(X − x(Q_0))·(X − x(Q_1))` (each contributing a `+(Q_i) + (−Q_i) − 2·(O)`
+to subtract). The final D is:
+
+```
+  D = L_1 · L_2 · L_3 / ((X − x(Q_0)) · (X − x(Q_1)))
+```
+
+In `CoordRingElt` terms: `D = ((L_1 ·_E L_2) ·_E L_3).divLin x(Q_0).divLin x(Q_1)`,
+provided each divLin step is valid (both `a` and `b` divisible by the
+respective `X − x_k`). The pre-conditions for divisibility are exactly
+that the constructed product vanishes at both sheets above each
+`x(Q_i)` — true for our construction.
+
+For correctness:
+* Use `divisorOfD_mul_add_affine_when_D2_nonvanish_fiber` at points
+  off the support of all three chord lines (`L_1, L_2, L_3` non-vanishing
+  on the relevant fiber).
+* Use the cross-case ordAt-additivity (TODO) for the on-support points.
+* Apply the `divLin` recursive identities to handle the divLin
+  cancellations.
+
+Implementing this in Lean is the next major piece after the cross-case
+additivity is closed. -/
+
 end Divisor
