@@ -146,6 +146,37 @@ Next: extend `eagenBuild` to recursive general-N driver. Estimate:
 ~500 LOC for the driver + per-step divisor characterization +
 generalized closures of all length-4 corollaries.
 
+## Session checkpoint (May 2026, 164 commits)
+
+**Length-4 theorem now requires only `hResidueMatch` from the user.**
+All static prerequisites + per-pair side conditions (hQline, hDen) are
+derived internally from genericity hypotheses + `¬badPairCompletenessPred`.
+
+Headline state:
+* `logDerivCheckFn_zero_for_eagenBuild_length4` — main theorem.
+* Static: `eagenBuild_length4_explicit_ne_zero`, `splitsOnE`,
+  `zerosFinset_eq`, `normPoly_natDegree_eq_four`, `ordAt_sum_eq_four`.
+* Per-pair: `hQline_of_hGood_eagenBuild_length4` (Bezout chord),
+  `hDen_of_hGood` (chord-derivative-denominator factorization at all
+  three points A_0, A_1, A_2 + strengthened bad set).
+
+Axiom closure (verified post-hDen):
+```
+[propext, Classical.choice, Quot.sound,
+ Divisor.chord_fiber_product_eq_normZ_under_split,
+ Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g]
+```
+Both Divisor-specific axioms are already in `ma_extractable`'s closure.
+NO `weil_reciprocity_honest` dependency.
+
+Still gated on `weil_reciprocity_honest` for `ma_completeness*`:
+the bridge from honest message structure to length-4 inputs requires
+either:
+1. A general-N `eagenBuild` driver (the path forward in the audit plan).
+2. A specialized length-4 wrapper for k=3 bases with all scalars 1
+   (simplest applicable subcase; still doesn't replace the axiom in
+   `ma_completeness` but demonstrates full discharge of that subcase).
+
 ## Session checkpoint (May 2026, 156 commits)
 
 Major milestones achieved this session:
