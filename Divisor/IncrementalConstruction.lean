@@ -5010,4 +5010,39 @@ theorem divisorOfD_eagenBuild_length4_eq_chord_pair_minus_vertical
   rw [hRec, hVadd]
   ring
 
+/-! ## Vertical line at off-x_0 affine: divisorOfD = 0 -/
+
+theorem divisorOfD_vertical_at_off_x₀_affine (x₀ : ZMod E.q)
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (h_off : P.1 ≠ x₀) :
+    divisorOfD E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                  : CoordRingElt E.q) (ECPoint.affine E P.1 P.2) = 0 := by
+  -- L_v doesn't vanish at P.1 ≠ x₀; ord = 0.
+  have hLv_NZ : ¬ (({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                    : CoordRingElt E.q).a = 0
+                  ∧ ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                      : CoordRingElt E.q).b = 0) := by
+    intro ⟨ha, _⟩; exact (X_sub_C_ne_zero x₀) ha
+  have h_eval : ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                  : CoordRingElt E.q).eval P.1 P.2 ≠ 0 := by
+    unfold CoordRingElt.eval
+    simp
+    exact sub_ne_zero.mpr h_off
+  have hOrd : ordAt E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                       : CoordRingElt E.q) P = 0 := by
+    apply Nat.eq_zero_of_le_zero
+    by_contra h
+    push_neg at h
+    apply h_eval
+    exact (ordAt_pos_iff_zero E _ hLv_NZ P hP).mp h
+  -- divisorOfD at affine = ord cast.
+  rw [show divisorOfD E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                          : CoordRingElt E.q) (ECPoint.affine E P.1 P.2)
+      = (ordAtPoint E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                        : CoordRingElt E.q) (ECPoint.affine E P.1 P.2) : ℤ) from ?_,
+      ordAtPoint_affine E _ hP, hOrd]
+  · rfl
+  · rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP)))]
+    rfl
+
 end Divisor
