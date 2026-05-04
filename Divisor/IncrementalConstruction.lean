@@ -4873,4 +4873,27 @@ theorem mulCoordRingElt_chord_pair_recompose_at_Q₀
     (Polynomial.dvd_iff_isRoot.mpr hax)
     (Polynomial.dvd_iff_isRoot.mpr hbx)
 
+/-! ## divisorOfD at infinity for chord and vertical -/
+
+theorem divisorOfD_chord_at_infinity_eq_neg_three
+    (P Q : ZMod E.q × ZMod E.q) (hxx : P.1 ≠ Q.1) :
+    divisorOfD E (chordCoordRingElt E P Q) (0 : ECPoint E) = -3 := by
+  show -((normPoly E (chordCoordRingElt E P Q)).natDegree : ℤ) = -3
+  have hD_eq : chordCoordRingElt E P Q
+      = ({ a := -(C (slopeOf P.1 P.2 Q.1 Q.2)) * X
+                  - C (P.2 - (slopeOf P.1 P.2 Q.1 Q.2) * P.1), b := -1 }
+          : CoordRingElt E.q) := by
+    unfold chordCoordRingElt
+    rw [dif_neg hxx]
+    rfl
+  rw [hD_eq]
+  rw [natDegree_normPoly_chordCoordRingElt_nonvertical]; rfl
+
+theorem divisorOfD_vertical_at_infinity_eq_neg_two (x₀ : ZMod E.q) :
+    divisorOfD E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                  : CoordRingElt E.q) (0 : ECPoint E) = -2 := by
+  show -((normPoly E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                        : CoordRingElt E.q)).natDegree : ℤ) = -2
+  rw [natDegree_normPoly_vertical_helper]; rfl
+
 end Divisor
