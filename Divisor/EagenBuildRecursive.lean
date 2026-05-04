@@ -760,6 +760,15 @@ theorem honestDivisorCoeffs_deg_zero_of_isHonestForExplicit
   have hIsP : IsPrincipal E (honestDivisorCoeffs E stmt wit hk msg) := h_honest.1.2
   exact ⟨hFin, ((principal_divisor_iff E _ hFin).mp hIsP).1⟩
 
+/-! ## Sum extension for honestDivisorCoeffs (deferred)
+
+The next step in the splitsOnE discharge chain is showing that the
+`honestDivisorCoeffs` support is contained in `affinePoints E ∪ {0}`,
+allowing the deg-zero sum to decompose into affine + infinity parts.
+This requires a bijection between `.some h` ECPoints and pairs
+`Q ∈ E.points`; the coercion from `ECPoint.affine E Q.1 Q.2` back to
+the pair is non-trivial and deferred to a follow-up. -/
+
 /-! ## Notes on remaining infrastructure for any-k completeness
 
 To prove `ma_completeness_via_isHonestForExplicit` for ANY k, we need:
