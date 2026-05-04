@@ -3104,6 +3104,36 @@ This is the key Codex-suggested identity that bridges the cross-case
 multiplicity to the original. When `m₁ = 1` (i.e. `N(D₁)'(x₀) ≠ 0`),
 this gives `T'(x₀) ≠ 0`, hence `rootMult x₀ T = 1`. -/
 
+/-- D₁.b non-zero at x_0 in cross case (D₁ lone at P, D₁ doesn't vanish on full fiber). -/
+theorem cross_case_D1_b_eval_ne_zero
+    {D₁ : CoordRingElt E.q}
+    {P : ZMod E.q × ZMod E.q} (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₁negP : D₁.eval P.1 (-P.2) ≠ 0) :
+    D₁.b.eval P.1 ≠ 0 := by
+  intro hb
+  apply hD₁negP
+  have ha : D₁.a.eval P.1 = 0 := by
+    have heq : D₁.a.eval P.1 - D₁.b.eval P.1 * P.2 = 0 := hD₁P
+    rw [hb] at heq
+    linear_combination heq
+  show D₁.a.eval P.1 - D₁.b.eval P.1 * (-P.2) = 0
+  rw [ha, hb]; ring
+
+/-- D₂.b non-zero at x_0 in cross case (D₂ lone at -P, D₂ doesn't vanish on full fiber). -/
+theorem cross_case_D2_b_eval_ne_zero
+    {D₂ : CoordRingElt E.q}
+    {P : ZMod E.q × ZMod E.q} (hY : P.2 ≠ 0)
+    (hD₂P : D₂.eval P.1 P.2 ≠ 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0) :
+    D₂.b.eval P.1 ≠ 0 := by
+  intro hb
+  apply hD₂P
+  have ha : D₂.a.eval P.1 = 0 := by
+    have heq : D₂.a.eval P.1 - D₂.b.eval P.1 * (-P.2) = 0 := hD₂negP
+    rw [hb] at heq
+    linear_combination heq
+  show D₂.a.eval P.1 - D₂.b.eval P.1 * P.2 = 0
+  rw [ha, hb]; ring
+
 theorem cross_case_T_deriv_eq_normPoly_deriv
     (D₁ D₂ : CoordRingElt E.q)
     {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points)
