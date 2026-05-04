@@ -590,10 +590,10 @@ Remaining for full B5 (axiom replacement):
 
 ## Final session summary
 
-This branch (`work/completeness`) lands ~5000 lines of new Lean
+This branch (`work/completeness`) lands ~5500 lines of new Lean
 across multiple files plus several test files. Verification:
 
-* `lake build Divisor`: 8104 jobs, success.
+* `lake build Divisor`: 8103 jobs, success.
 * `Tests/AxiomClosurePin.lean`: `ma_extractable` and `ip_knowledge_sound`
   axiom closures byte-for-byte unchanged from `master`. **`ma_completeness`
   no longer depends on `weil_reciprocity_honest`.** New closure:
@@ -601,6 +601,13 @@ across multiple files plus several test files. Verification:
    chord_fiber_product_eq_normZ_under_split,
    resultant_logDeriv_at_split_specialization]` — all sound axioms
   already in soundness-side closures or classical Silverman III.3.5.
+* **IsHonestForLength4Simple → isHonestFor bridge complete**:
+  `isHonestFor_of_isHonestForLength4Simple` combines five helper
+  components (scalar reduction, IsPrincipal, divisor identity at all R,
+  on-curve invariants for -target and bases) to produce the strengthened
+  `isHonestFor` from a length-4 sum-zero quadruple plus a DlogWitness
+  with scalars = 1. Validates that the strengthened isHonestFor is
+  constructively satisfiable.
 * `Tests/RegressionDoublingChallenge.lean`: F_5 doubling counterexample
   preserved (`claim_F5 = 2`).
 * `Tests/IncrementalSmokeTest.lean` and `Tests/CrossCaseSmokeTest.lean`
