@@ -860,4 +860,22 @@ The skeleton above defines the construction; correctness proofs require:
 
 These are deferred to subsequent firings. -/
 
+/-! ## `0 ∉ affinePoints E`
+
+The infinity ECPoint is not in `affinePoints E`, since `affinePoints E`
+is the image of `E.points` under `affine`, and for any `Q ∈ E.points`,
+`affine E Q.1 Q.2 = .some _` (which is `≠ 0`). -/
+
+theorem zero_notMem_affinePoints : (0 : ECPoint E) ∉ ECPoint.affinePoints E := by
+  classical
+  unfold ECPoint.affinePoints
+  intro h
+  rw [Finset.mem_image] at h
+  obtain ⟨Q, hQ, hEq⟩ := h
+  -- ECPoint.affine E Q.1 Q.2 = 0 forces Nonsingular to fail, but it holds for Q ∈ E.points.
+  have hNs : E.toW.toAffine.Nonsingular Q.1 Q.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff Q.1 Q.2).mpr (E.hOnCurve _ hQ))
+  rw [ECPoint.affine_of_nonsingular E hNs] at hEq
+  cases hEq
+
 end Divisor
