@@ -1114,21 +1114,49 @@ theorem splitsOnE_of_isHonestForExplicit
   ⟨normPoly_splits_of_isHonestForExplicit E stmt wit hk msg hkm h_honest hD,
    fiber_rationality_of_isHonestForExplicit E stmt wit hk msg hkm h_honest hD⟩
 
-/-! ## Bridge: IsHonestForLength4Simple → IsHonestForExplicit
+/-! ## Bridge: IsHonestForLength4Simple → isHonestFor
 
-The bridge requires proving divisorOfD eagenBuild_length4_explicit = honestDivisorCoeffs
-at every R : ECPoint E. Building blocks:
+Building blocks for the bridge from `IsHonestForLength4Simple` to the
+strengthened `MAProverMsg.isHonestFor`. Below we discharge:
+* the divisor identity at infinity (needs `degE = 4`, now proved);
+* the on-curve invariant for `(target.1, -target.2)` (`= P_0`);
 
-* At infinity: divisorOfD = -(natDegree(normPoly D) : ℤ);
-  honestDivisorCoeffs = -(D.degE : ℤ). Need natDegree = degE.
-* At affine R = P_i: divisorOfD = 1 (per per-ECPoint cases); honestDivisorCoeffs
-  = 1 (indicator at P_0 = -P_target, base-sum at P_i = B_{i-1}).
-* At affine R ∉ {P_i}: divisorOfD = 0 (zero-iff-input contrapositive);
-  honestDivisorCoeffs = 0 (no indicator/base match).
+Affine divisor identity, on-curve invariant for bases, and the
+IsPrincipal conjunct require multi-firing case-analysis; deferred. -/
 
-Substantial case analysis. The infinity case requires a length-4-specific
-`degE_eq_four` lemma; the affine cases require splitting per the
-length-4 ECPoint characterization. Multi-firing work; deferred. -/
+/-- Divisor identity at infinity: both `divisorOfD` and
+    `honestDivisorCoeffs` evaluate to `-4` at the point at infinity. -/
+theorem divisor_identity_at_infinity_for_length4Simple
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    {wit : DlogWitness E.q} (hk : stmt.k = wit.k) :
+    divisorOfD E msg.toD (0 : ECPoint E)
+      = honestDivisorCoeffs E stmt wit hk msg (0 : ECPoint E) := by
+  rw [h_simple.h_toD_eq]
+  rw [eagenBuild_length4_div_at_infinity E
+        h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
+        h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
+        h_simple.h_xx_01 h_simple.h_xx_23
+        h_simple.h_P₂_ne_A2_23 h_simple.h_P₃_ne_A2_23
+        h_simple.h_third_match h_simple.h_y_match h_simple.h_Q₀_nontorsion]
+  show (-4 : ℤ) = -((msg.toD.degE : ℤ))
+  have h_degE : msg.toD.degE = 4 := by
+    rw [h_simple.h_toD_eq]
+    exact eagenBuild_length4_explicit_degE_eq_four E
+      h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
+      h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
+      h_simple.h_xx_01 h_simple.h_xx_23
+      h_simple.h_P₂_ne_A2_23 h_simple.h_P₃_ne_A2_23
+      h_simple.h_third_match h_simple.h_y_match h_simple.h_Q₀_nontorsion
+  rw [h_degE]; norm_num
+
+/-- On-curve invariant for `(-target)`: `(target.1, -target.2) ∈ E.points`. -/
+theorem negTarget_on_curve_for_length4Simple
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt) :
+    (stmt.target.1, -stmt.target.2) ∈ E.points := by
+  rw [← h_simple.h_P₀_eq]
+  exact h_simple.hP₀
 
 /-! ## Hypothesis-light any-k completeness
 
