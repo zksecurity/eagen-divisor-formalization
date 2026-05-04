@@ -147,6 +147,34 @@ Next: extend `eagenBuild` to recursive general-N driver. Estimate:
 ~500 LOC for the driver + per-step divisor characterization +
 generalized closures of all length-4 corollaries.
 
+## Session checkpoint (May 2026, 156 commits)
+
+Major milestones achieved this session:
+
+1. **Per-ECPoint divisor characterization** — 8 cases for length-4 eagenBuild
+   (4 input points = 1, Q_0 = 0, -Q_0 = 0, generic R = 0, infinity = -4).
+2. **D.eval = 0 / ≠ 0 corollaries** — at all 7 affine cases.
+3. **`zerosFinset_eagenBuild_length4_eq`** — exact Finset equality of zeros.
+4. **`ordAt_sum_eagenBuild_length4_eq_four`** — hAccount discharged.
+5. **`splitsOnE_eagenBuild_length4`** — D's normPoly splits over F_q.
+6. **`logDerivCheckFn_zero_for_eagenBuild_length4`** (NEW FILE: `LogDerivEagenLength4.lean`)
+   — main length-4 theorem proving log-derivative check vanishes.
+   **Critical**: closure includes only `chord_fiber_product_eq_normZ_under_split` and
+   `Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`
+   (both already in ma_extractable closure). NO `weil_reciprocity_honest`.
+7. **`hQline_of_hGood_eagenBuild_length4`** — Bezout-style derivation that
+   chord through challenge pair doesn't hit any zero of D.
+8. **WeilReciprocityDescent.lean fix** — post-B4 stale `show` pattern updated.
+
+Remaining gaps for full ma_completeness discharge:
+* General-N `eagenBuild` driver (currently length-4 only).
+* `hDen` derivation from strengthened bad set (math confirmed via Codex
+  consultation, Lean derivation pending — ~100 LOC of algebraic work).
+* `hResidueMatch` — protocol-level identification of honest input list.
+
+The length-4 case demonstrates the entire approach works end-to-end
+without requiring `weil_reciprocity_honest` as an axiom.
+
 ## Static prerequisites for `chord_sum_eq_residue_sum` — COMPLETE
 
 All static (not per-pair) prerequisites for applying
