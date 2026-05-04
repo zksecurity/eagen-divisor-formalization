@@ -38,7 +38,7 @@ the accumulator F by `chordCoordRingElt P Q` for distinct-chord pairs)
 can directly invoke `divisorOfD_mul_add_when_chord_line_D2` for
 divisorOfD-additivity.
 
-## eagenBuild_length4 per-ECPoint status (May 2026, 130+ commits)
+## eagenBuild_length4 per-ECPoint status (May 2026, 137+ commits)
 
 **All eight per-ECPoint cases COMPLETE:**
 
@@ -51,12 +51,20 @@ divisorOfD-additivity.
 * `eagenBuild_length4_div_at_generic_R = 0` (off all support)
 * `eagenBuild_length4_div_at_infinity = -4` (already complete earlier)
 
+**Downstream corollaries (for chord-residue identity hypotheses):**
+
+* `eagenBuild_length4_normPoly_natDegree_eq_four` — natDegree = 4
+  (from `divisorOfD = -4` at infinity).
+* `eagenBuild_length4_explicit_ne_zero` — `¬ (D.a = 0 ∧ D.b = 0)`.
+* `eagenBuild_length4_explicit_eval_zero_at_P_i` for i=0,1,2,3 —
+  `D.eval P_i.1 P_i.2 = 0`.
+
 **Helper added:** `divisorOfD_vertical_at_x₀_nonTwoTorsion_affine`
 gives `divisorOfD ((X - x_0), 0) = 1` at `(x_0, y_0)` with `y_0 ≠ 0`.
 
-The full `eagenBuild_length4`-divisor-equation `D = (P_0)+(P_1)+(P_2)+(P_3) - 4·(O)`
-is now provable per-ECPoint by case analysis. Next: assemble universal
-quotient by classifying ECPoints into the seven cases.
+These corollaries discharge `hβsup` (forward) and prepare the way
+for `hβcov` (reverse: any D.eval-zero is one of P_0..P_3) and
+`hAccount` (sum-of-ordAt = 4) needed by `chord_sum_eq_residue_sum`.
 
 ## eagenBuild_length4 status (May 2026, 123 commits)
 
