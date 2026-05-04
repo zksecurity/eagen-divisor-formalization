@@ -1415,6 +1415,37 @@ theorem natDegree_normPoly_mul_eq
   rw [normPoly_mul_eq]
   exact Polynomial.natDegree_mul (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂)
 
+/-! ## `ordAt` is additive under multiplication, 2-torsion case
+
+For 2-torsion P (P.2 = 0), `ordAt = rootMultiplicity P.1 (normPoly)`, and
+the polynomial root-multiplicity of a product is additive. Combined with
+`normPoly_mul_eq`, `ordAt` is additive at 2-torsion. -/
+
+theorem ordAt_mul_add_twoTorsion
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 = 0) :
+    ordAt E (mulCoordRingElt E D₁ D₂) P
+      = ordAt E D₁ P + ordAt E D₂ P := by
+  classical
+  have hMul_NZ : ¬ ((mulCoordRingElt E D₁ D₂).a = 0 ∧ (mulCoordRingElt E D₁ D₂).b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E (mulCoordRingElt E D₁ D₂) = 0 := by
+      rw [normPoly_eq, ha, hb]; ring
+    rw [normPoly_mul_eq] at hN
+    have hN1 : normPoly E D₁ ≠ 0 := normPoly_ne_zero E D₁ h₁
+    have hN2 : normPoly E D₂ ≠ 0 := normPoly_ne_zero E D₂ h₂
+    exact (mul_ne_zero hN1 hN2) hN
+  rw [ordAt_eq_dispatch E _ hP hMul_NZ, if_pos hY]
+  rw [ordAt_eq_dispatch E _ hP h₁, if_pos hY]
+  rw [ordAt_eq_dispatch E _ hP h₂, if_pos hY]
+  rw [ordAt_twoTorsion_eq_rootMult_normPoly E _ hMul_NZ hP hY]
+  rw [ordAt_twoTorsion_eq_rootMult_normPoly E _ h₁ hP hY]
+  rw [ordAt_twoTorsion_eq_rootMult_normPoly E _ h₂ hP hY]
+  rw [normPoly_mul_eq]
+  apply Polynomial.rootMultiplicity_mul
+  exact mul_ne_zero (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂)
+
 /-! ## Polynomial cancellation `(X − x₀)`
 
 When `(X − x₀)` divides both `D.a` and `D.b`, dividing it out gives a
