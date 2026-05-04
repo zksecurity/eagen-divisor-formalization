@@ -836,4 +836,105 @@ theorem numZeros_eagenBuild_length4_eq_four
       Finset.card_insert_of_notMem (by simp [h23]),
       Finset.card_singleton]
 
+/-! ## Integration: rejection set bound for length-4 simple case (NO weil_reciprocity_honest)
+
+End-to-end integration: bound on the set of "bad challenges" for the
+length-4 simple honest-prover D = eagenBuild_length4_explicit. Uses
+`weil_reciprocity_honest_length4_simple` instead of the formerly-unsound
+`weil_reciprocity_honest` axiom.
+
+This bypasses the protocol structure layers (DlogStatement / MAProverMsg)
+to focus on the mathematical content: any `(A_0, A_1)` pair where
+`logDerivCheckFn ≠ 0` must be in `badChallengesCompleteness`, hence the
+count is bounded by `(3·N + 4) · |E.points|` with `N = 4`. -/
+
+theorem rejectSet_bound_length4_simple
+    (P_target : ZMod E.q × ZMod E.q)
+    (B : Fin 3 → ZMod E.q × ZMod E.q)
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (h_P₀_eq : P₀ = (P_target.1, -P_target.2))
+    (h_P₁_eq : P₁ = B 0) (h_P₂_eq : P₂ = B 1) (h_P₃_eq : P₃ = B 2)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_P₀_ne_A2_01 : P₀.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₁_ne_A2_01 : P₁.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₂_ne_A2_23 : P₂.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₃_ne_A2_23 : P₃.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₀_off_L₂ : P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₀ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                    slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+                      * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+                      + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)))
+    (h_P₁_off_L₂ : P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₁ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                    slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+                      * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+                      + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)))
+    (h_P₂_off_L₁ : P₂ ≠ P₀ ∧ P₂ ≠ P₁ ∧ P₂ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+                    slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                      * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                      + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_P₃_off_L₁ : P₃ ≠ P₀ ∧ P₃ ≠ P₁ ∧ P₃ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+                    slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                      * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                      + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                        * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                        + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0)
+    (h_Q₀_off_L₂_inputs :
+      let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+      let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+      (Q₀x, Q₀y) ≠ P₂ ∧ (Q₀x, Q₀y) ≠ P₃ ∧ (Q₀x, Q₀y) ≠ (Q₀x, -Q₀y))
+    (h_negQ₀_off_L₁_inputs :
+      let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+      let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+      (Q₀x, -Q₀y) ≠ P₀ ∧ (Q₀x, -Q₀y) ≠ P₁ ∧ (Q₀x, -Q₀y) ≠ (Q₀x, Q₀y))
+    (h_inputs_distinct : P₀ ≠ P₁ ∧ P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₂ ≠ P₃) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          p.1.1 ≠ p.2.1 ∧
+          logDerivCheckFn E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+              P_target 3 B (fun _ => 1) p.1 p.2 ≠ 0)).card
+      ≤ (3 * 4 + 4) * E.numAffine := by
+  classical
+  set D := eagenBuild_length4_explicit E P₀ P₁ P₂ P₃ with hD_def
+  set rejectSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+    (E.points ×ˢ E.points).filter
+      (fun p => p.1.1 ≠ p.2.1 ∧
+                logDerivCheckFn E D P_target 3 B (fun _ => 1) p.1 p.2 ≠ 0) with hRS
+  -- rejectSet ⊆ badChallengesCompleteness E D.
+  have hSub : rejectSet ⊆ badChallengesCompleteness E D := by
+    intro p hp
+    simp only [hRS, Finset.mem_filter] at hp
+    obtain ⟨hpIn, hNV, hpLogDeriv⟩ := hp
+    by_contra hNotBad
+    apply hpLogDeriv
+    have hpPts := Finset.mem_product.mp hpIn
+    exact weil_reciprocity_honest_length4_simple E P_target B P₀ P₁ P₂ P₃
+      h_P₀_eq h_P₁_eq h_P₂_eq h_P₃_eq
+      hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
+      h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
+      h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs
+      h_inputs_distinct p.1 p.2 hpPts.1 hpPts.2 hNV hNotBad
+  -- Bound badChallengesCompleteness card.
+  have hNZ : numZeros E D = 4 := numZeros_eagenBuild_length4_eq_four E P₀ P₁ P₂ P₃
+    hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
+    h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
+    h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs
+    h_inputs_distinct
+  calc rejectSet.card
+      ≤ (badChallengesCompleteness E D).card := Finset.card_le_card hSub
+    _ ≤ (3 * numZeros E D + 4) * E.numAffine :=
+        support_disjointness E D (numZeros E D) (le_refl _)
+    _ = (3 * 4 + 4) * E.numAffine := by rw [hNZ]
+
 end Divisor
