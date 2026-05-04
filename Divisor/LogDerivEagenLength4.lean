@@ -1174,22 +1174,33 @@ theorem rejectSet_bound_via_isHonestForLength4Simple
     h_honest.h_Q₀_off_L₂_inputs h_honest.h_negQ₀_off_L₁_inputs
     h_honest.h_inputs_distinct
 
+/-! ## Cast bridging: logDerivCheckFn under k = 3 -/
+
+theorem logDerivCheckFn_eq_under_stmt_k_eq_three
+    (D : CoordRingElt E.q) (target : ZMod E.q × ZMod E.q)
+    {stmt_k : ℕ} (hk : stmt_k = 3)
+    (stmt_bases : Fin stmt_k → ZMod E.q × ZMod E.q)
+    (m : Fin stmt_k → ZMod E.q)
+    (h_m_one : ∀ i : Fin stmt_k, m i = 1)
+    (A₀ A₁ : ZMod E.q × ZMod E.q) :
+    logDerivCheckFn E D target stmt_k stmt_bases m A₀ A₁
+      = logDerivCheckFn E D target 3
+          (fun i : Fin 3 => stmt_bases (hk ▸ i))
+          (fun _ : Fin 3 => 1) A₀ A₁ := by
+  subst hk
+  congr 1
+  funext i
+  exact h_m_one i
+
 /-! ## Note on ma_completeness instantiation
 
-`ma_completeness_parameterized` (Soundness.lean) takes the per-pair
-`logDerivCheckFn = 0` claim as a hook. The full instantiation for
-`IsHonestForLength4Simple` requires:
+The cast bridge above lets us instantiate `ma_completeness_parameterized`
+(Soundness.lean) with `IsHonestForLength4Simple`. The remaining step is
+deriving `A_0.1 ≠ A_1.1` from `¬badPairCompletenessPred`, which the
+strengthened bad set (post B4) handles via the diagonal + vertical-chord
+exclusions.
 
-1. Cast bridging: align `stmt.k` (= 3) with the literal `3` in the
-   raw bridge's conclusion.
-2. Derive `A_0.1 ≠ A_1.1` from `¬badPairCompletenessPred` (using the
-   strengthened bad set that excludes diagonal A_0 = A_1 and vertical
-   chord A_2 = ∞).
-
-Both are straightforward algebraic manipulations but require careful
-Lean dependent-type bookkeeping. Deferred for follow-up. The
-`ma_completeness_parameterized` factoring (Soundness.lean) and
-all the static prerequisites are in place; the remaining cast
-plumbing is mechanical. -/
+Full instantiation `ma_completeness_via_isHonestForLength4Simple` is a
+follow-up combining: cast bridge + hNV derivation + structure bridge. -/
 
 end Divisor
