@@ -802,7 +802,23 @@ theorem honestDivisorCoeffs_support_subset_affineAndInfinity
     right
     exact some_in_affinePoints E h
 
-/-! ## Notes on remaining infrastructure for any-k completeness
+/-! ## Affine-sum equals degE: derivation deferred
+
+The goal is: `∑_{R ∈ affinePoints E} honestDivisorCoeffs(R) = degE(D)`.
+
+The proof plan:
+1. From `IsPrincipal honestDivisorCoeffs` (via `principal_divisor_iff`),
+   `∑_{P ∈ hFinSupp.toFinset} coeffs P = 0`.
+2. Extend sum to `insert 0 (affinePoints E)`: both cover support; outside
+   support coeff = 0.
+3. `0 ∉ affinePoints E` (affinePoints contains only `.some`).
+4. Decompose: `coeffs(0) + affine_sum = 0`.
+5. `coeffs(0) = -degE` (from `honestDivisorCoeffs_at_infinity`).
+6. Hence `affine_sum = degE`.
+
+Each step is a small Finset manipulation; full assembly deferred.
+
+## Notes on remaining infrastructure for any-k completeness (general)
 
 To prove `ma_completeness_via_isHonestForExplicit` for ANY k, we need:
 
