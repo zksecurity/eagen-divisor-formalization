@@ -5590,6 +5590,208 @@ theorem eagenBuild_length4_normPoly_natDegree_eq_four
     linarith
   exact_mod_cast this
 
+/-! ## Corollary: degE of `eagenBuild_length4_explicit` is 4
+
+Building block for the IsHonestForLength4Simple → isHonestFor bridge.
+The strengthened `MAProverMsg.isHonestFor` requires the divisor identity
+`divisorOfD msg.toD R = honestDivisorCoeffs R` at all `R : ECPoint E`,
+including infinity. At infinity:
+* `divisorOfD msg.toD 0 = -((normPoly).natDegree : ℤ) = -4` (proved).
+* `honestDivisorCoeffs 0 = -(D.degE : ℤ)`.
+So the identity at infinity requires `D.degE = 4`.
+
+By `normPoly_natDegree_le`, `natDegree(normPoly) ≤ degE`, giving `4 ≤ degE`.
+Upper bound `degE ≤ 4` from polynomial structure: chord-pair `L_1·L_2`
+has `.a.natDegree ≤ 3` (cubic, leading X^3 from `b_1·b_2·curveX`) and
+`.b.natDegree ≤ 1` (linear). After `divLin Q_0x` (which divides by
+`X - C Q_0x`, monic of degree 1), `.a.natDegree ≤ 2` and `.b.natDegree ≤ 0`.
+Hence `degE = max(2·2, 3+2·0) = 4`. -/
+
+theorem mulCoordRingElt_chord_pair_a_natDegree_le_three
+    (P Q R S : ZMod E.q × ZMod E.q) (h_pq : P.1 ≠ Q.1) (h_rs : R.1 ≠ S.1) :
+    (mulCoordRingElt E (chordCoordRingElt E P Q) (chordCoordRingElt E R S)).a.natDegree ≤ 3 := by
+  classical
+  have hL₁_form : (chordCoordRingElt E P Q).a
+      = -(C (slopeOf P.1 P.2 Q.1 Q.2)) * X
+        - C (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1) ∧
+      (chordCoordRingElt E P Q).b = -1 := by
+    unfold chordCoordRingElt
+    rw [dif_neg h_pq]
+    refine ⟨rfl, rfl⟩
+  have hL₂_form : (chordCoordRingElt E R S).a
+      = -(C (slopeOf R.1 R.2 S.1 S.2)) * X
+        - C (R.2 - slopeOf R.1 R.2 S.1 S.2 * R.1) ∧
+      (chordCoordRingElt E R S).b = -1 := by
+    unfold chordCoordRingElt
+    rw [dif_neg h_rs]
+    refine ⟨rfl, rfl⟩
+  -- L_1.a, L_2.a have natDegree ≤ 1; L_1.b, L_2.b are constants (-1).
+  have hL₁_a_le : (chordCoordRingElt E P Q).a.natDegree ≤ 1 := by
+    rw [hL₁_form.1]
+    refine le_trans (natDegree_sub_le _ _) ?_
+    refine max_le ?_ ?_
+    · -- -C(λ) * X has natDegree ≤ 1.
+      refine le_trans natDegree_mul_le ?_
+      have h1 : (-(C (slopeOf P.1 P.2 Q.1 Q.2)) : (ZMod E.q)[X]).natDegree = 0 := by
+        rw [Polynomial.natDegree_neg]; exact Polynomial.natDegree_C _
+      simp [h1, Polynomial.natDegree_X]
+    · -- C(μ) has natDegree 0 ≤ 1.
+      exact (Polynomial.natDegree_C _).le.trans (by omega)
+  have hL₂_a_le : (chordCoordRingElt E R S).a.natDegree ≤ 1 := by
+    rw [hL₂_form.1]
+    refine le_trans (natDegree_sub_le _ _) ?_
+    refine max_le ?_ ?_
+    · refine le_trans natDegree_mul_le ?_
+      have h1 : (-(C (slopeOf R.1 R.2 S.1 S.2)) : (ZMod E.q)[X]).natDegree = 0 := by
+        rw [Polynomial.natDegree_neg]; exact Polynomial.natDegree_C _
+      simp [h1, Polynomial.natDegree_X]
+    · exact (Polynomial.natDegree_C _).le.trans (by omega)
+  have hL₁_b_le : (chordCoordRingElt E P Q).b.natDegree = 0 := by
+    rw [hL₁_form.2]
+    simp [natDegree_neg, natDegree_one]
+  have hL₂_b_le : (chordCoordRingElt E R S).b.natDegree = 0 := by
+    rw [hL₂_form.2]
+    simp [natDegree_neg, natDegree_one]
+  -- (L_1·L_2).a = L_1.a·L_2.a + L_1.b·L_2.b·curveX.
+  show (_ * _ + _ * _ * curveX E).natDegree ≤ 3
+  refine le_trans (natDegree_add_le _ _) ?_
+  refine max_le ?_ ?_
+  · -- L_1.a · L_2.a: deg ≤ 1+1 = 2 ≤ 3.
+    refine le_trans (natDegree_mul_le) ?_
+    omega
+  · -- L_1.b · L_2.b · curveX: deg ≤ 0+0+3 = 3.
+    refine le_trans (natDegree_mul_le) ?_
+    have h_LL : ((chordCoordRingElt E P Q).b * (chordCoordRingElt E R S).b).natDegree ≤ 0 := by
+      refine le_trans natDegree_mul_le ?_
+      omega
+    have h_curve := curveX_natDegree_le_three E
+    omega
+
+theorem mulCoordRingElt_chord_pair_b_natDegree_le_one
+    (P Q R S : ZMod E.q × ZMod E.q) (h_pq : P.1 ≠ Q.1) (h_rs : R.1 ≠ S.1) :
+    (mulCoordRingElt E (chordCoordRingElt E P Q) (chordCoordRingElt E R S)).b.natDegree ≤ 1 := by
+  classical
+  have hL₁_form : (chordCoordRingElt E P Q).a
+      = -(C (slopeOf P.1 P.2 Q.1 Q.2)) * X
+        - C (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1) ∧
+      (chordCoordRingElt E P Q).b = -1 := by
+    unfold chordCoordRingElt
+    rw [dif_neg h_pq]
+    refine ⟨rfl, rfl⟩
+  have hL₂_form : (chordCoordRingElt E R S).a
+      = -(C (slopeOf R.1 R.2 S.1 S.2)) * X
+        - C (R.2 - slopeOf R.1 R.2 S.1 S.2 * R.1) ∧
+      (chordCoordRingElt E R S).b = -1 := by
+    unfold chordCoordRingElt
+    rw [dif_neg h_rs]
+    refine ⟨rfl, rfl⟩
+  have hL₁_a_le : (chordCoordRingElt E P Q).a.natDegree ≤ 1 := by
+    rw [hL₁_form.1]
+    refine le_trans (natDegree_sub_le _ _) ?_
+    refine max_le ?_ ?_
+    · -- -C(λ) * X has natDegree ≤ 1.
+      refine le_trans natDegree_mul_le ?_
+      have h1 : (-(C (slopeOf P.1 P.2 Q.1 Q.2)) : (ZMod E.q)[X]).natDegree = 0 := by
+        rw [Polynomial.natDegree_neg]; exact Polynomial.natDegree_C _
+      simp [h1, Polynomial.natDegree_X]
+    · -- C(μ) has natDegree 0 ≤ 1.
+      exact (Polynomial.natDegree_C _).le.trans (by omega)
+  have hL₂_a_le : (chordCoordRingElt E R S).a.natDegree ≤ 1 := by
+    rw [hL₂_form.1]
+    refine le_trans (natDegree_sub_le _ _) ?_
+    refine max_le ?_ ?_
+    · refine le_trans natDegree_mul_le ?_
+      have h1 : (-(C (slopeOf R.1 R.2 S.1 S.2)) : (ZMod E.q)[X]).natDegree = 0 := by
+        rw [Polynomial.natDegree_neg]; exact Polynomial.natDegree_C _
+      simp [h1, Polynomial.natDegree_X]
+    · exact (Polynomial.natDegree_C _).le.trans (by omega)
+  have hL₁_b_le : (chordCoordRingElt E P Q).b.natDegree = 0 := by
+    rw [hL₁_form.2]
+    simp [natDegree_neg, natDegree_one]
+  have hL₂_b_le : (chordCoordRingElt E R S).b.natDegree = 0 := by
+    rw [hL₂_form.2]
+    simp [natDegree_neg, natDegree_one]
+  -- (L_1·L_2).b = L_1.a·L_2.b + L_2.a·L_1.b.
+  show ((chordCoordRingElt E P Q).a * (chordCoordRingElt E R S).b
+        + (chordCoordRingElt E R S).a * (chordCoordRingElt E P Q).b).natDegree ≤ 1
+  refine le_trans (natDegree_add_le _ _) ?_
+  refine max_le ?_ ?_
+  · refine le_trans natDegree_mul_le ?_
+    omega
+  · refine le_trans natDegree_mul_le ?_
+    omega
+
+theorem eagenBuild_length4_explicit_a_natDegree_le_two
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1) :
+    (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃).a.natDegree ≤ 2 := by
+  classical
+  unfold eagenBuild_length4_explicit
+  show ((mulCoordRingElt E (chordCoordRingElt E P₀ P₁)
+          (chordCoordRingElt E P₂ P₃)).divLin _).a.natDegree ≤ 2
+  rw [CoordRingElt.divLin_a]
+  rw [Polynomial.natDegree_divByMonic _ (Polynomial.monic_X_sub_C _)]
+  have ha := mulCoordRingElt_chord_pair_a_natDegree_le_three E P₀ P₁ P₂ P₃ h_xx_01 h_xx_23
+  have h1 : (X - C (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              : (ZMod E.q)[X]).natDegree = 1 := Polynomial.natDegree_X_sub_C _
+  omega
+
+theorem eagenBuild_length4_explicit_b_natDegree_le_zero
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1) :
+    (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃).b.natDegree ≤ 0 := by
+  classical
+  unfold eagenBuild_length4_explicit
+  show ((mulCoordRingElt E (chordCoordRingElt E P₀ P₁)
+          (chordCoordRingElt E P₂ P₃)).divLin _).b.natDegree ≤ 0
+  rw [CoordRingElt.divLin_b]
+  rw [Polynomial.natDegree_divByMonic _ (Polynomial.monic_X_sub_C _)]
+  have hb := mulCoordRingElt_chord_pair_b_natDegree_le_one E P₀ P₁ P₂ P₃ h_xx_01 h_xx_23
+  have h1 : (X - C (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              : (ZMod E.q)[X]).natDegree = 1 := Polynomial.natDegree_X_sub_C _
+  omega
+
+theorem eagenBuild_length4_explicit_degE_le_four
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1) :
+    (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃).degE ≤ 4 := by
+  unfold CoordRingElt.degE
+  have ha := eagenBuild_length4_explicit_a_natDegree_le_two E P₀ P₁ P₂ P₃ h_xx_01 h_xx_23
+  have hb := eagenBuild_length4_explicit_b_natDegree_le_zero E P₀ P₁ P₂ P₃ h_xx_01 h_xx_23
+  refine max_le ?_ ?_
+  · omega
+  · omega
+
+theorem eagenBuild_length4_explicit_degE_eq_four
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_P₂_ne_A2_23 : P₂.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₃_ne_A2_23 : P₃.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                        * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                        + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0) :
+    (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃).degE = 4 := by
+  -- Lower: 4 = natDegree(normPoly) ≤ degE.
+  have hND := eagenBuild_length4_normPoly_natDegree_eq_four E P₀ P₁ P₂ P₃
+    hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₂_ne_A2_23 h_P₃_ne_A2_23
+    h_third_match h_y_match h_Q₀_nontorsion
+  have h_le := normPoly_natDegree_le E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+  -- Upper: degE ≤ 4.
+  have h_ge := eagenBuild_length4_explicit_degE_le_four E P₀ P₁ P₂ P₃ h_xx_01 h_xx_23
+  omega
+
 /-! ## Corollary: `eagenBuild_length4_explicit` is nonzero -/
 
 theorem eagenBuild_length4_explicit_ne_zero
