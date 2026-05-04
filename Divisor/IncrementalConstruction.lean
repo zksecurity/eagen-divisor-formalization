@@ -4126,4 +4126,45 @@ theorem ordAt_mul_add_at_nonTwoTorsion_when_normPoly_D2_le_one (s : ℕ) :
       · push_neg at hD₂P
         exact ordAt_mul_add_at_nonvanish E h₁ h₂ hP hD₁P hD₂P
 
+/-- Wrapper at fixed natDeg-sum measure. -/
+theorem ordAt_mul_add_when_normPoly_D2_le_one
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points)
+    (hRoot : Polynomial.rootMultiplicity P.1 (normPoly E D₂) ≤ 1) :
+    ordAt E (mulCoordRingElt E D₁ D₂) P
+      = ordAt E D₁ P + ordAt E D₂ P := by
+  by_cases hY : P.2 = 0
+  · exact ordAt_mul_add_twoTorsion E h₁ h₂ hP hY
+  · exact ordAt_mul_add_at_nonTwoTorsion_when_normPoly_D2_le_one E
+      (D₁.a.natDegree + D₁.b.natDegree) D₁ D₂ h₁ h₂ (le_refl _) hP hY hRoot
+
+/-! ## divisorOfD additivity at affine points under chord-line hypothesis -/
+
+theorem divisorOfD_mul_add_affine_when_normPoly_D2_le_one
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points)
+    (hRoot : Polynomial.rootMultiplicity P.1 (normPoly E D₂) ≤ 1) :
+    divisorOfD E (mulCoordRingElt E D₁ D₂) (ECPoint.affine E P.1 P.2)
+      = divisorOfD E D₁ (ECPoint.affine E P.1 P.2)
+        + divisorOfD E D₂ (ECPoint.affine E P.1 P.2) := by
+  classical
+  have hAddOrd := ordAt_mul_add_when_normPoly_D2_le_one E h₁ h₂ hP hRoot
+  rw [show divisorOfD E (mulCoordRingElt E D₁ D₂) (ECPoint.affine E P.1 P.2)
+      = (ordAtPoint E (mulCoordRingElt E D₁ D₂) (ECPoint.affine E P.1 P.2) : ℤ) from ?_,
+      show divisorOfD E D₁ (ECPoint.affine E P.1 P.2)
+      = (ordAtPoint E D₁ (ECPoint.affine E P.1 P.2) : ℤ) from ?_,
+      show divisorOfD E D₂ (ECPoint.affine E P.1 P.2)
+      = (ordAtPoint E D₂ (ECPoint.affine E P.1 P.2) : ℤ) from ?_,
+      ordAtPoint_affine E _ hP, ordAtPoint_affine E _ hP, ordAtPoint_affine E _ hP,
+      hAddOrd]
+  push_cast; ring
+  all_goals
+    show divisorOfD E _ (ECPoint.affine E P.1 P.2)
+        = (ordAtPoint E _ (ECPoint.affine E P.1 P.2) : ℤ)
+    rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP)))]
+    rfl
+
 end Divisor
