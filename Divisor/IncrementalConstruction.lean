@@ -2430,4 +2430,24 @@ theorem eagenBuild_length3_chord_correctness
   exact ⟨hP_div, hQ_div, hA₂_div, hO_div,
     divisorOfD_chordCoordRingElt_chord_pointwise E P Q hP hQ hxx hP_neq_A2 hQ_neq_A2⟩
 
+/-! ## Length-2 eagenBuild base case (vertical branches)
+
+For a P-pair with `Q = -P` (or `P = Q = (x_0, 0)` 2-torsion), the
+vertical chord line gives the expected divisor. -/
+
+theorem eagenBuild_length2_inverse_correctness
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (h2t : P.2 ≠ 0) :
+    let Q : ZMod E.q × ZMod E.q := (P.1, -P.2)
+    Q ∈ E.points ∧
+    divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E P.1 P.2) = 1
+    ∧ divisorOfD E (chordCoordRingElt E P Q) (ECPoint.affine E Q.1 Q.2) = 1
+    ∧ divisorOfD E (chordCoordRingElt E P Q) (0 : ECPoint E) = -2 :=
+  divisorOfD_chordCoordRingElt_vertical_inverse E P hP h2t
+
+theorem eagenBuild_length2_2torsion_correctness
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (h2t : P.2 = 0) :
+    divisorOfD E (chordCoordRingElt E P P) (ECPoint.affine E P.1 P.2) = 2
+    ∧ divisorOfD E (chordCoordRingElt E P P) (0 : ECPoint E) = -2 :=
+  divisorOfD_chordCoordRingElt_2torsion E hP h2t
+
 end Divisor
