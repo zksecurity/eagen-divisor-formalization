@@ -98,6 +98,33 @@ Closure pin (verified post-zerosFinset_eq): `ma_extractable` /
 `ip_knowledge_sound` byte-for-byte unchanged from master.
 `ma_completeness*` still gated on (now-sound) `weil_reciprocity_honest`.
 
+## MILESTONE: length-4-specific logDerivCheckFn = 0 theorem (May 2026, 150+ commits)
+
+`Divisor/LogDerivEagenLength4.lean` (new file): the theorem
+`logDerivCheckFn_zero_for_eagenBuild_length4` proves
+`logDerivCheckFn E (eagenBuild_length4_explicit P_0 P_1 P_2 P_3) ... = 0`
+for any "good" challenge pair `(A_0, A_1)`, modulo three per-pair
+hypotheses: `hQline`, `hDen`, `hResidueMatch`.
+
+**Critical**: this theorem's axiom closure does **NOT** depend on
+`weil_reciprocity_honest`! Verified via `#print axioms`:
+
+```
+'Divisor.logDerivCheckFn_zero_for_eagenBuild_length4' depends on axioms:
+  [propext, Classical.choice, Quot.sound,
+   Divisor.chord_fiber_product_eq_normZ_under_split,
+   Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g]
+```
+
+Both axioms it depends on are already in `ma_extractable`'s closure
+(soundness side), so they're "allowed".
+
+What remains to fully discharge `weil_reciprocity_honest` for length-4:
+* `hResidueMatch` — protocol-level identification of `{P_0..P_3}` with
+  the honest message's structure `{(-P), B_j with multiplicities}`.
+* `hQline`, `hDen` — derivable from `¬badPairCompletenessPred` via
+  Bezout (chord ∩ E ⊆ {A_0, A_1, A_2}) + curve denominator analysis.
+
 ## Static prerequisites for `chord_sum_eq_residue_sum` — COMPLETE
 
 All static (not per-pair) prerequisites for applying
