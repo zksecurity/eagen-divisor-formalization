@@ -1956,4 +1956,24 @@ theorem ordAt_mul_add_at_nonTwoTorsion_when_D2_nonvanish
     · push_neg at hD₁P
       exact ordAt_mul_add_at_nonvanish E h₁ h₂ hP hD₁P hD₂P
 
+/-! ## Unified ordAt-additivity when D₂ doesn't vanish on the fiber pair
+
+Combines the 2-torsion case (always works) with the non-2-torsion case
+(requires D₂ non-vanishing on the fiber pair). For 2-torsion P, the
+fiber pair is {P} and the hypothesis reduces to D₂(P) ≠ 0; for
+non-2-torsion P, the fiber pair is {P, (P.1, -P.2)} and we need D₂ to
+not vanish at both. -/
+
+theorem ordAt_mul_add_when_D2_nonvanish_fiber
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points)
+    (hD₂P : D₂.eval P.1 P.2 ≠ 0) (hD₂negP : D₂.eval P.1 (-P.2) ≠ 0) :
+    ordAt E (mulCoordRingElt E D₁ D₂) P
+      = ordAt E D₁ P + ordAt E D₂ P := by
+  by_cases hY : P.2 = 0
+  · exact ordAt_mul_add_twoTorsion E h₁ h₂ hP hY
+  · exact ordAt_mul_add_at_nonTwoTorsion_when_D2_nonvanish E
+      (D₁.a.natDegree + D₁.b.natDegree) D₁ D₂ h₁ h₂ (le_refl _) hP hY hD₂P hD₂negP
+
 end Divisor
