@@ -2318,4 +2318,36 @@ theorem divisorOfD_chordCoordRingElt_chord_pointwise
         (E.equation_iff_nonsingular.mp ((E.equation_iff S.1 S.2).mpr (E.hOnCurve _ hS)))]
   rfl
 
+/-! ## 2-torsion divLin recursive identity
+
+At a 2-torsion point P (P.2 = 0), if both `D.a` and `D.b` vanish at
+`P.1`, the divLin step reduces ordAt by **2** (not 1 as in non-2-torsion):
+
+  `ordAt(D)(P) = 2 + ordAt(D.divLin P.1)(P)`
+
+This corresponds to the `(X − C x₀)²` factor in `normPoly`. -/
+
+theorem ordAt_twoTorsion_divLin_rec
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (h2t : P.2 = 0)
+    (hax : D.a.eval P.1 = 0) (hbx : D.b.eval P.1 = 0) :
+    ordAt E D P = 2 + ordAt E (D.divLin P.1) P := by
+  classical
+  have hD' : ¬ ((D.divLin P.1).a = 0 ∧ (D.divLin P.1).b = 0) :=
+    divLin_not_both_zero E D hD hax hbx
+  -- 2-torsion dispatch on both sides.
+  rw [ordAt_eq_dispatch E _ hP hD, if_pos h2t]
+  rw [ordAt_eq_dispatch E _ hP hD', if_pos h2t]
+  rw [ordAt_twoTorsion_eq_rootMult_normPoly E _ hD hP h2t]
+  rw [ordAt_twoTorsion_eq_rootMult_normPoly E _ hD' hP h2t]
+  -- normPoly D = (X - C P.1)^2 * normPoly D' at twin step.
+  rw [normPoly_divLin_factor E D hax hbx]
+  rw [Polynomial.rootMultiplicity_mul]
+  · -- rootMult P.1 (X - C P.1)^2 = 2.
+    rw [Polynomial.rootMultiplicity_X_sub_C_pow]
+  · -- (X - C P.1)^2 * normPoly D' ≠ 0.
+    apply mul_ne_zero
+    · exact pow_ne_zero _ (X_sub_C_ne_zero _)
+    · exact normPoly_ne_zero E _ hD'
+
 end Divisor
