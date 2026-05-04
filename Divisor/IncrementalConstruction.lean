@@ -3896,4 +3896,234 @@ theorem rootMult_normPoly_ge_two_when_twin
     omega
   omega
 
+/-! ## Unified ordAt-additivity at non-2-torsion when D₂ has chord-line multiplicity
+
+This is the eagenBuild-relevant additivity: when `rootMult x₀ (normPoly D₂) ≤ 1`
+(which holds for chord lines at any affine point), ordAt is additive
+under multiplication at non-2-torsion P.
+
+Proof by induction on `D₁.a.natDegree + D₁.b.natDegree`, dispatching
+on D₂'s branch (using rootMult ≤ 1 to rule out D₂ twin), then on D₁'s
+branch. Twin D₁ uses mulCoordRingElt_divLin_left descent + IH. -/
+
+theorem ordAt_mul_add_at_nonTwoTorsion_when_normPoly_D2_le_one (s : ℕ) :
+    ∀ (D₁ D₂ : CoordRingElt E.q),
+      ¬ (D₁.a = 0 ∧ D₁.b = 0) → ¬ (D₂.a = 0 ∧ D₂.b = 0) →
+      D₁.a.natDegree + D₁.b.natDegree ≤ s →
+      ∀ {P : ZMod E.q × ZMod E.q}, P ∈ E.points → P.2 ≠ 0 →
+      Polynomial.rootMultiplicity P.1 (normPoly E D₂) ≤ 1 →
+      ordAt E (mulCoordRingElt E D₁ D₂) P
+        = ordAt E D₁ P + ordAt E D₂ P := by
+  classical
+  induction s with
+  | zero =>
+    intro D₁ D₂ h₁ h₂ hMeas P hP hY hRoot
+    -- D₁ constant. D₁ at fiber: nonvan (else exfalso as in existing proof).
+    by_cases hD₁P : D₁.eval P.1 P.2 = 0
+    · by_cases hD₁negP : D₁.eval P.1 (-P.2) = 0
+      · -- D₁ twin at P with natDeg 0: D₁ = 0. Contradiction.
+        exfalso
+        have hax_eq : D₁.a.eval P.1 = 0 ∧ D₁.b.eval P.1 = 0 :=
+          Da_Db_eval_zero_of_both_sheets_zero E D₁ hY hD₁P hD₁negP
+        have ha_const : D₁.a.natDegree = 0 := by omega
+        have hb_const : D₁.b.natDegree = 0 := by omega
+        have ha_zero : D₁.a = 0 := by
+          rcases (Polynomial.natDegree_eq_zero.mp ha_const) with ⟨c, hc⟩
+          have hcz : c = 0 := by
+            have := hax_eq.1; rw [← hc] at this; simpa using this
+          rw [← hc, hcz]; simp
+        have hb_zero : D₁.b = 0 := by
+          rcases (Polynomial.natDegree_eq_zero.mp hb_const) with ⟨c, hc⟩
+          have hcz : c = 0 := by
+            have := hax_eq.2; rw [← hc] at this; simpa using this
+          rw [← hc, hcz]; simp
+        exact h₁ ⟨ha_zero, hb_zero⟩
+      · -- D₁ lone at P. Dispatch on D₂.
+        push_neg at hD₁negP
+        -- D₂ branches via rootMult ≤ 1 hypothesis.
+        by_cases hD₂P : D₂.eval P.1 P.2 = 0
+        · -- D₂ vanishes at P.
+          by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
+          · -- D₂ twin at P: rootMult ≥ 2, contradicts hRoot.
+            exfalso
+            have := rootMult_normPoly_ge_two_when_twin E D₂ h₂ hP hY hD₂P hD₂negP
+            omega
+          · -- D₂ lone at P (D₂(P) = 0, D₂(-P) ≠ 0). Both lone at P.
+            push_neg at hD₂negP
+            exact ordAt_mul_add_at_both_lone_same_sheet E h₁ h₂ hP hY
+              hD₁P hD₁negP hD₂P hD₂negP
+        · -- D₂(P) ≠ 0.
+          push_neg at hD₂P
+          by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
+          · -- D₂ lone at -P. Cross case (D₁ lone at P, D₂ lone at -P).
+            -- m_2 = 1 from rootMult ≤ 1 + lone (m_2 ≥ 1).
+            have hm₂_eq_one : Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 1 := by
+              have hm₂_pos : 0 < Polynomial.rootMultiplicity P.1 (normPoly E D₂) :=
+                cross_case_m2_pos E h₂ hP hD₂negP
+              omega
+            have hm₁_pos : 0 < Polynomial.rootMultiplicity P.1 (normPoly E D₁) :=
+              cross_case_m1_pos E h₁ hP hD₁P
+            have hMin : min (Polynomial.rootMultiplicity P.1 (normPoly E D₁))
+                            (Polynomial.rootMultiplicity P.1 (normPoly E D₂)) = 1 := by
+              rw [hm₂_eq_one]; exact Nat.min_eq_right hm₁_pos
+            exact ordAt_mul_add_in_cross_when_min_eq_one E h₁ h₂ hP hY
+              hD₁P hD₁negP hD₂P hD₂negP hMin
+          · -- D₂ unit on fiber.
+            push_neg at hD₂negP
+            exact ordAt_mul_add_at_lone_sheet E h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
+    · -- D₁(P) ≠ 0. Apply nonvan or lone_sheet_swap.
+      push_neg at hD₁P
+      by_cases hD₂P : D₂.eval P.1 P.2 = 0
+      · -- D₂ vanishes at P, D₁ doesn't.
+        by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
+        · -- D₂ twin: contradicts rootMult ≤ 1.
+          exfalso
+          have := rootMult_normPoly_ge_two_when_twin E D₂ h₂ hP hY hD₂P hD₂negP
+          omega
+        · -- D₂ lone at P. Apply ordAt_mul_add_at_lone_sheet_swap (D_1 nonvan).
+          push_neg at hD₂negP
+          -- Need D₁ nonvan on fiber. Check D₁(-P).
+          by_cases hD₁negP : D₁.eval P.1 (-P.2) = 0
+          · -- D₁ lone at -P (D₁(P) ≠ 0, D₁(-P) = 0). D₂ lone at P. Cross at -P.
+            -- Apply ordAt_mul_add_in_cross_when_min_eq_one with (D₂, D₁) at P.
+            -- D₂ lone at P, D₁ lone at -P. By comm: D₁·D₂ = D₂·D₁.
+            -- Apply ordAt_mul_add_in_cross_when_min_eq_one with D₁:= D₂, D₂:= D₁.
+            have hm₂_eq_one : Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 1 := by
+              have hm₂_pos : 0 < Polynomial.rootMultiplicity P.1 (normPoly E D₂) :=
+                cross_case_m1_pos E h₂ hP hD₂P
+              omega
+            have hm₁_pos : 0 < Polynomial.rootMultiplicity P.1 (normPoly E D₁) := by
+              -- D₁(-P) = 0 ⟹ rootMult ≥ 1 via normPoly at x_0 = D_1(P)·D_1(-P) = ?·0 = 0.
+              rw [Polynomial.rootMultiplicity_pos (normPoly_ne_zero E D₁ h₁)]
+              rw [Polynomial.IsRoot, normPoly_eval_eq_D_mul_D_neg E D₁ hP, hD₁negP]
+              simp
+            have hMin' : min (Polynomial.rootMultiplicity P.1 (normPoly E D₂))
+                             (Polynomial.rootMultiplicity P.1 (normPoly E D₁)) = 1 := by
+              rw [hm₂_eq_one]; exact Nat.min_eq_left hm₁_pos
+            -- Apply with swap D₁ ↔ D₂.
+            rw [mulCoordRingElt_comm E D₁ D₂, add_comm]
+            exact ordAt_mul_add_in_cross_when_min_eq_one E h₂ h₁ hP hY
+              hD₂P hD₂negP hD₁P hD₁negP hMin'
+          · -- D₁ nonvan on fiber.
+            push_neg at hD₁negP
+            exact ordAt_mul_add_at_lone_sheet_swap E h₁ h₂ hP hY hD₁P hD₁negP
+              hD₂P hD₂negP
+      · -- D₁(P) ≠ 0 AND D₂(P) ≠ 0.
+        push_neg at hD₂P
+        exact ordAt_mul_add_at_nonvanish E h₁ h₂ hP hD₁P hD₂P
+  | succ s' IH =>
+    intro D₁ D₂ h₁ h₂ hMeas P hP hY hRoot
+    -- Same structure, with D₁ twin descent using IH.
+    by_cases hD₁P : D₁.eval P.1 P.2 = 0
+    · by_cases hD₁negP : D₁.eval P.1 (-P.2) = 0
+      · -- D₁ twin: descend via mulCoordRingElt_divLin_left + IH.
+        have hMP : (P.1, -P.2) ∈ E.points := by
+          apply E.hComplete
+          have hOC : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := E.hOnCurve P hP
+          show (-P.2) ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB
+          linear_combination hOC
+        have hMul_NZ : ¬ ((mulCoordRingElt E D₁ D₂).a = 0
+            ∧ (mulCoordRingElt E D₁ D₂).b = 0) := by
+          intro ⟨ha, hb⟩
+          have hN : normPoly E (mulCoordRingElt E D₁ D₂) = 0 := by
+            rw [normPoly_eq, ha, hb]; ring
+          rw [normPoly_mul_eq] at hN
+          exact (mul_ne_zero (normPoly_ne_zero E D₁ h₁)
+            (normPoly_ne_zero E D₂ h₂)) hN
+        have hMulP : (mulCoordRingElt E D₁ D₂).eval P.1 P.2 = 0 := by
+          rw [mulCoordRingElt_eval_on_E E D₁ D₂ hP, hD₁P, zero_mul]
+        have hMulnegP : (mulCoordRingElt E D₁ D₂).eval P.1 (-P.2) = 0 := by
+          rw [mulCoordRingElt_eval_on_E E D₁ D₂ hMP, hD₁negP, zero_mul]
+        obtain ⟨hax, hbx⟩ : D₁.a.eval P.1 = 0 ∧ D₁.b.eval P.1 = 0 :=
+          Da_Db_eval_zero_of_both_sheets_zero E D₁ hY hD₁P hD₁negP
+        have hD₁' : ¬ ((D₁.divLin P.1).a = 0 ∧ (D₁.divLin P.1).b = 0) :=
+          divLin_not_both_zero E D₁ h₁ hax hbx
+        have hMeas' :
+            (D₁.divLin P.1).a.natDegree + (D₁.divLin P.1).b.natDegree
+              < D₁.a.natDegree + D₁.b.natDegree :=
+          divLin_natDegree_sum_lt E D₁ h₁ hax hbx
+        have hMeas'' :
+            (D₁.divLin P.1).a.natDegree + (D₁.divLin P.1).b.natDegree ≤ s' := by
+          omega
+        have haDvd : (X - C P.1) ∣ D₁.a := dvd_iff_isRoot.mpr hax
+        have hbDvd : (X - C P.1) ∣ D₁.b := dvd_iff_isRoot.mpr hbx
+        have hMul_divLin :
+            (mulCoordRingElt E D₁ D₂).divLin P.1
+              = mulCoordRingElt E (D₁.divLin P.1) D₂ :=
+          mulCoordRingElt_divLin_left E D₁ D₂ P.1 haDvd hbDvd
+        rw [ordAt_eq_dispatch E _ hP hMul_NZ, if_neg hY,
+            ordAt_nonTwoTorsion_twin_rec E (mulCoordRingElt E D₁ D₂) hMul_NZ hY
+              hMulP hMulnegP, hMul_divLin]
+        rw [ordAt_eq_dispatch E _ hP h₁, if_neg hY,
+            ordAt_nonTwoTorsion_twin_rec E D₁ h₁ hY hD₁P hD₁negP]
+        have hIH := IH (D₁.divLin P.1) D₂ hD₁' h₂ hMeas'' hP hY hRoot
+        rw [ordAt_eq_dispatch E _ hP hD₁'] at hIH
+        rw [if_neg hY] at hIH
+        have hMul_NZ' : ¬ ((mulCoordRingElt E (D₁.divLin P.1) D₂).a = 0
+            ∧ (mulCoordRingElt E (D₁.divLin P.1) D₂).b = 0) := by
+          intro ⟨ha, hb⟩
+          have hN : normPoly E (mulCoordRingElt E (D₁.divLin P.1) D₂) = 0 := by
+            rw [normPoly_eq, ha, hb]; ring
+          rw [normPoly_mul_eq] at hN
+          exact (mul_ne_zero (normPoly_ne_zero E (D₁.divLin P.1) hD₁')
+            (normPoly_ne_zero E D₂ h₂)) hN
+        rw [ordAt_eq_dispatch E _ hP hMul_NZ'] at hIH
+        rw [if_neg hY] at hIH
+        rw [ordAt_eq_dispatch E _ hP h₂] at *
+        rw [if_neg hY] at *
+        omega
+      · -- D₁ lone at P. Same dispatch as base case.
+        push_neg at hD₁negP
+        by_cases hD₂P : D₂.eval P.1 P.2 = 0
+        · by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
+          · exfalso
+            have := rootMult_normPoly_ge_two_when_twin E D₂ h₂ hP hY hD₂P hD₂negP
+            omega
+          · push_neg at hD₂negP
+            exact ordAt_mul_add_at_both_lone_same_sheet E h₁ h₂ hP hY
+              hD₁P hD₁negP hD₂P hD₂negP
+        · push_neg at hD₂P
+          by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
+          · have hm₂_eq_one : Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 1 := by
+              have hm₂_pos : 0 < Polynomial.rootMultiplicity P.1 (normPoly E D₂) :=
+                cross_case_m2_pos E h₂ hP hD₂negP
+              omega
+            have hm₁_pos : 0 < Polynomial.rootMultiplicity P.1 (normPoly E D₁) :=
+              cross_case_m1_pos E h₁ hP hD₁P
+            have hMin : min (Polynomial.rootMultiplicity P.1 (normPoly E D₁))
+                            (Polynomial.rootMultiplicity P.1 (normPoly E D₂)) = 1 := by
+              rw [hm₂_eq_one]; exact Nat.min_eq_right hm₁_pos
+            exact ordAt_mul_add_in_cross_when_min_eq_one E h₁ h₂ hP hY
+              hD₁P hD₁negP hD₂P hD₂negP hMin
+          · push_neg at hD₂negP
+            exact ordAt_mul_add_at_lone_sheet E h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
+    · push_neg at hD₁P
+      -- D₁(P) ≠ 0. Same dispatch as base case.
+      by_cases hD₂P : D₂.eval P.1 P.2 = 0
+      · by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
+        · exfalso
+          have := rootMult_normPoly_ge_two_when_twin E D₂ h₂ hP hY hD₂P hD₂negP
+          omega
+        · push_neg at hD₂negP
+          by_cases hD₁negP : D₁.eval P.1 (-P.2) = 0
+          · have hm₂_eq_one : Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 1 := by
+              have hm₂_pos : 0 < Polynomial.rootMultiplicity P.1 (normPoly E D₂) :=
+                cross_case_m1_pos E h₂ hP hD₂P
+              omega
+            have hm₁_pos : 0 < Polynomial.rootMultiplicity P.1 (normPoly E D₁) := by
+              rw [Polynomial.rootMultiplicity_pos (normPoly_ne_zero E D₁ h₁)]
+              rw [Polynomial.IsRoot, normPoly_eval_eq_D_mul_D_neg E D₁ hP, hD₁negP]
+              simp
+            have hMin' : min (Polynomial.rootMultiplicity P.1 (normPoly E D₂))
+                             (Polynomial.rootMultiplicity P.1 (normPoly E D₁)) = 1 := by
+              rw [hm₂_eq_one]; exact Nat.min_eq_left hm₁_pos
+            rw [mulCoordRingElt_comm E D₁ D₂, add_comm]
+            exact ordAt_mul_add_in_cross_when_min_eq_one E h₂ h₁ hP hY
+              hD₂P hD₂negP hD₁P hD₁negP hMin'
+          · push_neg at hD₁negP
+            exact ordAt_mul_add_at_lone_sheet_swap E h₁ h₂ hP hY hD₁P hD₁negP
+              hD₂P hD₂negP
+      · push_neg at hD₂P
+        exact ordAt_mul_add_at_nonvanish E h₁ h₂ hP hD₁P hD₂P
+
 end Divisor
