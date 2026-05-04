@@ -98,7 +98,7 @@ Closure pin (verified post-zerosFinset_eq): `ma_extractable` /
 `ip_knowledge_sound` byte-for-byte unchanged from master.
 `ma_completeness*` still gated on (now-sound) `weil_reciprocity_honest`.
 
-## MILESTONE: length-4-specific logDerivCheckFn = 0 theorem (May 2026, 150+ commits)
+## Length-4 logDerivCheckFn = 0 theorem (May 2026, 150+ commits)
 
 `Divisor/LogDerivEagenLength4.lean` (new file): the theorem
 `logDerivCheckFn_zero_for_eagenBuild_length4` proves
@@ -152,7 +152,7 @@ generalized closures of all length-4 corollaries.
 All static prerequisites + per-pair side conditions (hQline, hDen) are
 derived internally from genericity hypotheses + `¬badPairCompletenessPred`.
 
-Headline state:
+State:
 * `logDerivCheckFn_zero_for_eagenBuild_length4` — main theorem.
 * Static: `eagenBuild_length4_explicit_ne_zero`, `splitsOnE`,
   `zerosFinset_eq`, `normPoly_natDegree_eq_four`, `ordAt_sum_eq_four`.
@@ -195,7 +195,7 @@ Closure of `eagenBuild_length4_residue_sum_eq`: only standard Lean
 axioms (`propext`, `Classical.choice`, `Quot.sound`). No new
 mathematical axioms.
 
-## HEADLINE: full discharge for simplest honest case (May 2026, 169 commits)
+## Full discharge for simplest honest case (May 2026, 169 commits)
 
 **`weil_reciprocity_honest_length4_simple`** — for the length-4 honest
 divisor with k=3 bases all at scalar 1 and input list
@@ -210,12 +210,11 @@ Axiom closure (`#print axioms`):
  Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g]
 ```
 
-**This proves the formerly-axiomatic `weil_reciprocity_honest` is
-constructively dischargeable for at least one honest divisor structure**.
-The remaining work is generalizing the construction (eagenBuild) to
-other honest divisor shapes (k≠3 bases, scalars > 1, doublings).
+Shows `weil_reciprocity_honest` is constructively dischargeable for the
+k=3 simple honest divisor structure. Remaining work: generalize the
+eagenBuild construction to other shapes (k≠3, scalars > 1, doublings).
 
-## INTEGRATION: `rejectSet_bound_length4_simple` (May 2026, 172 commits)
+## `rejectSet_bound_length4_simple` (May 2026, 172 commits)
 
 The end-to-end integration theorem: for the length-4 simple honest D,
 the rejection set (pairs where `logDerivCheckFn ≠ 0` and chord is
@@ -230,9 +229,8 @@ Axiom closure (verified):
  Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g]
 ```
 
-**Codex confirmed this was the right next step (Option C from strategy
-consultation): "demonstrating actual replacement of `weil_reciprocity_honest`
-dependency".**
+Per Codex consultation (Option C): demonstrates replacement of
+`weil_reciprocity_honest` dependency at the integration point.
 
 Per Codex's recommended sequence:
 * C ✓ DONE — specialized end-to-end integration without axiom.
@@ -264,7 +262,7 @@ Axiom closure (verified): no `weil_reciprocity_honest` dependency.
 Both Divisor-specific axioms it uses are already in `ma_extractable`'s
 closure.
 
-## TOP-LEVEL HEADLINE (May 2026, 187 commits)
+## Length-4 simple integration (May 2026, 187 commits)
 
 **`ma_completeness_via_isHonestForLength4Simple`** — fully-discharged
 version of `ma_completeness` for the length-4 simple honest case.
@@ -299,9 +297,8 @@ Helpers added to support the integration:
 * `logDerivCheckFn_zero_via_isHonestForLength4Simple` — structure-level
   bridge to the discharge.
 
-This proves the formerly-axiomatic `ma_completeness` is **constructively
-dischargeable for the restricted k=3 simple honest case** — the strongest
-demonstration that the Eagen-construction approach works end-to-end.
+For the k=3 simple honest case, `ma_completeness` is constructively
+dischargeable without invoking `weil_reciprocity_honest`.
 
 ## Toward any-k completeness (May 2026, 193 commits)
 
@@ -328,7 +325,7 @@ Per Eagen 596.pdf §3.1.1, the next phase generalizes from length-4 to ANY-N.
 
 Multi-firing project; foundational length-4 path remains the demonstration.
 
-## ANY-K HEADLINE: `ma_completeness_via_isHonestForExplicit_with_sides`
+## Any-k bridge: `ma_completeness_via_isHonestForExplicit_with_sides`
 
 **Achieved (200+ commits)**: `ma_completeness_via_isHonestForExplicit_with_sides`
 in `Divisor/EagenBuildRecursive.lean` is the any-k completeness theorem.
@@ -516,7 +513,7 @@ Verified properties (cross-case multiplicativity wall broken):
 * `divisorOfD_mul_add_when_chord_line_D2` — full divisorOfD-additivity
   at every ECPoint under chord-line hypothesis.
 
-## Headline achievement
+## B4 status
 
 **The originally-defective `weil_reciprocity_honest` axiom is now
 empirically sound** (B4 complete). The audit's first goal — "the
