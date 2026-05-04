@@ -3350,6 +3350,29 @@ theorem cross_case_commonRootMult_eq_one_when_m2_eq_one
   rw [mulCoordRingElt_comm E D₁ D₂]
   exact hCommon
 
+/-! ## Helper: `(P /ₘ (X − C x₀))(x₀) = P'(x₀)` when `P(x₀) = 0` -/
+
+theorem divByMonic_X_sub_C_eval_eq_derivative_eval
+    {R : Type*} [CommRing R] (P : Polynomial R) (x₀ : R) (hP : P.eval x₀ = 0) :
+    (P /ₘ (Polynomial.X - Polynomial.C x₀)).eval x₀ = P.derivative.eval x₀ := by
+  -- P = (X - C x₀) * (P /ₘ (X - C x₀)) (when x₀ is a root).
+  have hEq : P = (Polynomial.X - Polynomial.C x₀)
+                  * (P /ₘ (Polynomial.X - Polynomial.C x₀)) := by
+    have : P.IsRoot x₀ := hP
+    exact (Polynomial.mul_divByMonic_eq_iff_isRoot.mpr this).symm
+  -- Take derivative.
+  have hDer : P.derivative = (P /ₘ (Polynomial.X - Polynomial.C x₀))
+                + (Polynomial.X - Polynomial.C x₀)
+                  * (P /ₘ (Polynomial.X - Polynomial.C x₀)).derivative := by
+    have := congrArg Polynomial.derivative hEq
+    rw [Polynomial.derivative_mul, Polynomial.derivative_sub,
+        Polynomial.derivative_X, Polynomial.derivative_C, sub_zero, one_mul] at this
+    exact this
+  -- Evaluate at x₀.
+  rw [hDer]
+  simp [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+        Polynomial.eval_X, Polynomial.eval_C]
+
 /-! ## Cross-case: `m₁ ≥ 1` always (D₁ lone at P implies non-zero rootMult of normPoly) -/
 
 theorem cross_case_m1_pos
