@@ -716,6 +716,16 @@ theorem ordAt_sum_eq_honestDivisorCoeffs_sum_at_affines
   intro Q hQ
   exact ordAt_eq_honestDivisorCoeffs_at_affine E stmt wit hk msg h_div hQ
 
+/-! ## honestDivisorCoeffs at infinity
+
+The infinity coefficient of `honestDivisorCoeffs` is `-degE(msg.toD)`,
+directly from the definition. -/
+
+theorem honestDivisorCoeffs_at_infinity
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) :
+    honestDivisorCoeffs E stmt wit hk msg (0 : ECPoint E) = -(msg.toD.degE : ℤ) := rfl
+
 /-! ## Notes on remaining infrastructure for any-k completeness
 
 To prove `ma_completeness_via_isHonestForExplicit` for ANY k, we need:
