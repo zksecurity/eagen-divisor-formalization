@@ -4632,4 +4632,71 @@ theorem ord_vertical_at_x₀_nonTwoTorsion
   rw [ordAt_eq_dispatch E _ hP h1NZ, if_neg hY] at h0
   rw [h0]
 
+/-- ordAt-additivity for vertical multiplication at non-2-torsion above x₀. -/
+theorem ordAt_mul_vertical_add_at_x₀_nonTwoTorsion
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (x₀ y₀ : ZMod E.q)
+    (hP : (x₀, y₀) ∈ E.points) (hY : y₀ ≠ 0) :
+    ordAt E (mulCoordRingElt E D
+        ({ a := Polynomial.X - Polynomial.C x₀, b := 0 } : CoordRingElt E.q))
+        (x₀, y₀)
+      = ordAt E D (x₀, y₀)
+      + ordAt E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                  : CoordRingElt E.q) (x₀, y₀) := by
+  -- L_v non-zero.
+  have hLv_NZ : ¬ (({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                    : CoordRingElt E.q).a = 0
+                  ∧ ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                      : CoordRingElt E.q).b = 0) := by
+    intro ⟨ha, _⟩
+    exact (X_sub_C_ne_zero x₀) ha
+  -- (-y₀) on E.
+  have hMP : (x₀, -y₀) ∈ E.points := by
+    apply E.hComplete
+    have hOC : y₀ ^ 2 = x₀ ^ 3 + E.curveA * x₀ + E.curveB := E.hOnCurve _ hP
+    show (-y₀) ^ 2 = x₀ ^ 3 + E.curveA * x₀ + E.curveB
+    linear_combination hOC
+  -- L_v evals to 0 at both sheets.
+  have hLv_at_P : ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                   : CoordRingElt E.q).eval x₀ y₀ = 0 := by
+    unfold CoordRingElt.eval; simp
+  have hLv_at_negP : ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                      : CoordRingElt E.q).eval x₀ (-y₀) = 0 := by
+    unfold CoordRingElt.eval; simp
+  -- D · L_v non-zero.
+  have hDLv_NZ : ¬ ((mulCoordRingElt E D ({ a := Polynomial.X - Polynomial.C x₀,
+                                            b := 0 } : CoordRingElt E.q)).a = 0
+                    ∧ (mulCoordRingElt E D ({ a := Polynomial.X - Polynomial.C x₀,
+                                              b := 0 } : CoordRingElt E.q)).b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E (mulCoordRingElt E D
+                ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                  : CoordRingElt E.q)) = 0 := by
+      rw [normPoly_eq, ha, hb]; ring
+    rw [normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E D hD) (normPoly_ne_zero E _ hLv_NZ)) hN
+  -- D · L_v evals to 0 at both sheets.
+  have hDLv_at_P :
+      (mulCoordRingElt E D ({ a := Polynomial.X - Polynomial.C x₀,
+                              b := 0 } : CoordRingElt E.q)).eval x₀ y₀ = 0 := by
+    rw [mulCoordRingElt_eval_on_E E D _ hP, hLv_at_P, mul_zero]
+  have hDLv_at_negP :
+      (mulCoordRingElt E D ({ a := Polynomial.X - Polynomial.C x₀,
+                              b := 0 } : CoordRingElt E.q)).eval x₀ (-y₀) = 0 := by
+    rw [mulCoordRingElt_eval_on_E E D _ hMP, hLv_at_negP, mul_zero]
+  -- ord(D · L_v) at (x_0, y_0) = 1 + ord(D)((x_0, y_0)).
+  have hOrd_DLv : ordAt E (mulCoordRingElt E D
+                          ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                            : CoordRingElt E.q)) (x₀, y₀)
+                  = 1 + ordAt E D (x₀, y₀) := by
+    rw [ordAt_eq_dispatch E _ hP hDLv_NZ, if_neg hY]
+    rw [ordAt_nonTwoTorsion_twin_rec E _ hDLv_NZ hY hDLv_at_P hDLv_at_negP]
+    rw [mulCoordRingElt_vertical_divLin_eq_self E D x₀]
+    rw [ordAt_eq_dispatch E D hP hD, if_neg hY]
+  -- ord(L_v) = 1.
+  have hOrd_Lv : ordAt E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                          : CoordRingElt E.q) (x₀, y₀) = 1 :=
+    ord_vertical_at_x₀_nonTwoTorsion E x₀ y₀ hP hY
+  rw [hOrd_DLv, hOrd_Lv]; ring
+
 end Divisor
