@@ -349,19 +349,58 @@ In all sub-cases, `ord(D₁·D₂)(P) = m_1 = ord(D₁)(P) + ord(D₂)(P)`. ✓
    (rational analog of `commonRootMultiplicity`). Place in
    `Divisor/IncrementalConstruction.lean`. Foundation lemmas:
    `commonRootMultRat_le_left`, `_le_right`, `commonRootFactorRat_dvd_left`,
-   `_dvd_right`.
+   `_dvd_right`. **DONE** (commit 6befe22, 12a1a5e).
 2. **Prove `ordAt_nonTwoTorsion_closed_form`** by induction on
-   `commonRootMultRat D.a D.b P.1`. Base case (k=0): three-way
-   dispatch (nonvan, lone-at-P, lone-at-(-P)) directly. Inductive
-   step: `D` is twin at P (since k > 0 means both .a and .b vanish at
-   x_0), use `ordAt_nonTwoTorsion_twin_rec`, recurse on `D.divLin x_0`
-   which has `commonRootMultRat = k - 1`.
-3. **Prove cross-case additivity** via 3-case analysis on `D̃₁₂`'s
-   branch. Use `normPoly_mul_eq` for the m-side and the algebraic
-   structure of `D̃₁`, `D̃₂` for the k-side and branch-determination.
+   `commonRootMultRat D.a D.b P.1`. **DONE** (commit 456e3fb).
+3. **Prove `ordAt_mul_of_right_eval_ne_zero`** (Codex's
+   recommendation): when `D₂.eval P.1 P.2 ≠ 0` (so `D₂` is a unit in
+   the local ring at P), `ord(D₁·D₂)(P) = ord(D₁)(P)`. This subsumes
+   both the existing `ordAt_mul_add_at_lone_sheet` (when D₂ also
+   nonvan at -P) and the cross case (when D₂(-P) = 0).
+
+   Proof strategy:
+   - Induct on `D₁.a.natDegree + D₁.b.natDegree`.
+   - Case D₁(P) ≠ 0 (`D₁` unit at P): `ord(D₁)(P) = 0`,
+     `(D₁·D₂)(P) ≠ 0`, so `ord((D₁·D₂))(P) = 0`. ✓
+   - Case D₁(P) = 0 ∧ D₁(-P) = 0 (`D₁` twin): use
+     `mulCoordRingElt_divLin_left`, twin-recursion, IH on `D₁.divLin`.
+   - Case D₁(P) = 0 ∧ D₁(-P) ≠ 0 (`D₁` lone at P) — the cross case
+     when also D₂(-P) = 0:
+     * Use closed form on `D₁·D₂`: need to compute
+       `commonRootMultRat (D₁·D₂) P.1` and the branch of
+       `iterDivLin (D₁·D₂) P.1 k`.
+     * Auxiliary lemma: `iterDivLin (D₁·D₂) P.1 k₁ = D̃₁ · D₂` when
+       `(X − x₀)^k₁` divides D₁.a, D₁.b (since divLin distributes
+       over multiplication when one factor has the dividing factor).
+     * In our case k₁ = 0 (since D₁ lone at P implies D₁.b(x₀) ≠ 0).
+       So iterDivLin D₁ P.1 0 = D₁ already has D₁(P) = 0 (in lone
+       branch).
+     * For D₁·D₂: need to count common (X-x₀) factors after 0 strips.
+       Use Codex's invariant: in cross case k_{12} = min(m_1, m_2).
+       Concretely, prove `commonRootMultRat (D₁·D₂) P.1 ≥ 1` (both
+       .a, .b vanish at x₀ in cross case), then induct on
+       min(m_1, m_2) to peel off divLin steps until residual is
+       non-twin.
 4. **Combine with existing** `ordAt_mul_add_when_D2_nonvanish_fiber`
    to get unconditional ordAt-additivity at non-2-torsion. Then close
    `divisorOfD_mul_add` unconditionally.
+
+### Codex's clean lemma signature
+
+```lean
+theorem ordAt_mul_of_right_eval_ne_zero
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points)
+    (h₂P : D₂.eval P.1 P.2 ≠ 0) :
+    ordAt E (mulCoordRingElt E D₁ D₂) P = ordAt E D₁ P
+```
+
+This subsumes the cross case and is the cleanest formulation: it says
+"multiplying by a unit at P doesn't change the order". By symmetry (via
+`mulCoordRingElt_comm`), the same holds when `D₁(P) ≠ 0`. Combined,
+this gives ordAt-additivity in all cases except both factors vanishing
+at P (which is then handled via mulCoordRingElt_divLin_left descent).
 6. Then proceed with eagenBuild driver + correctness:
    - Define `eagenBuild` recursively on lists of `ECPoint E`.
    - Base cases (length 2, 3) reuse existing `chordCoordRingElt`.
