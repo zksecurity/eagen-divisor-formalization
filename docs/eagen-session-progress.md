@@ -406,9 +406,27 @@ via `geomLocalOrder_mul` (multiplicativity of geometric local order
 over Fqbar) plus an `ordAt_eq_geomLocalOrder_at_rationalLift` bridge.
 
 Building this is substantial (~hundreds of lines of new local-ring
-formalisation). Alternatively: skip the cross case entirely for now and
-proceed with a NARROWER `weil_reciprocity_honest` axiom replacement
-that excludes the cross-case configurations.
+formalisation).
+
+### Key insight: eagenBuild only needs `min = 1` cross case
+
+In eagenBuild's recursion, every multiplication is by a **chord line**
+`L` (or vertical line). Chord lines have multiplicity exactly 1 at
+each of their 3 affine intersection points (or 2 for vertical).
+
+Therefore in eagenBuild's cross case at any affine non-2-torsion P:
+* The chord line `L` is the factor lone at one sheet with mult 1.
+* The accumulator `F_{n-1}` is the factor lone at the other sheet
+  with arbitrary mult.
+
+Hence `min(m_L, m_F) = 1` always. **The full base case
+`cross_iterDivLin_invariant_when_min_eq_one` is sufficient for
+eagenBuild's correctness.**
+
+This is a major simplification: the inductive step (min ≥ 2) is
+NOT NEEDED for the eagenBuild axiom-replacement task. The full
+cross-case formalization is reserved for future work / general
+multiplicativity statement.
 
 ### Codex's clean lemma signature
 
