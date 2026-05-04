@@ -1834,4 +1834,126 @@ theorem divLin_eval_mul_X_sub_C
   simp only [eval_mul, eval_sub, eval_C, eval_X]
   ring
 
+/-! ## ordAt-additivity at non-2-torsion when D₂ is non-vanishing on the fiber
+
+Strong induction on `D₁.a.natDegree + D₁.b.natDegree`, dispatching on
+the recursive `ordAt_nonTwoTorsion` branch (nonvanish, lone-sheet, twin).
+The twin branch uses `mulCoordRingElt_divLin_left` to reduce
+`(D₁ · D₂).divLin` to `D₁.divLin · D₂` plus the IH. -/
+
+theorem ordAt_mul_add_at_nonTwoTorsion_when_D2_nonvanish
+    (s : ℕ) :
+    ∀ (D₁ D₂ : CoordRingElt E.q),
+      ¬ (D₁.a = 0 ∧ D₁.b = 0) → ¬ (D₂.a = 0 ∧ D₂.b = 0) →
+      D₁.a.natDegree + D₁.b.natDegree ≤ s →
+      ∀ {P : ZMod E.q × ZMod E.q}, P ∈ E.points → P.2 ≠ 0 →
+      D₂.eval P.1 P.2 ≠ 0 → D₂.eval P.1 (-P.2) ≠ 0 →
+      ordAt E (mulCoordRingElt E D₁ D₂) P
+        = ordAt E D₁ P + ordAt E D₂ P := by
+  classical
+  induction s with
+  | zero =>
+    intro D₁ D₂ h₁ h₂ hMeas P hP hY hD₂P hD₂negP
+    -- D₁.a.natDeg + D₁.b.natDeg ≤ 0 ⇒ both natDegree = 0.
+    -- Case on D₁'s vanishing at P.
+    by_cases hD₁P : D₁.eval P.1 P.2 = 0
+    · by_cases hD₁negP : D₁.eval P.1 (-P.2) = 0
+      · -- twin: but D₁ is constant. natDeg-0 polynomials with zero eval = 0.
+        exfalso
+        have hax_eq : D₁.a.eval P.1 = 0 ∧ D₁.b.eval P.1 = 0 :=
+          Da_Db_eval_zero_of_both_sheets_zero E D₁ hY hD₁P hD₁negP
+        have ha_const : D₁.a.natDegree = 0 := by omega
+        have hb_const : D₁.b.natDegree = 0 := by omega
+        have ha_zero : D₁.a = 0 := by
+          rcases (Polynomial.natDegree_eq_zero.mp ha_const) with ⟨c, hc⟩
+          have hcz : c = 0 := by
+            have := hax_eq.1
+            rw [← hc] at this
+            simpa using this
+          rw [← hc, hcz]; simp
+        have hb_zero : D₁.b = 0 := by
+          rcases (Polynomial.natDegree_eq_zero.mp hb_const) with ⟨c, hc⟩
+          have hcz : c = 0 := by
+            have := hax_eq.2
+            rw [← hc] at this
+            simpa using this
+          rw [← hc, hcz]; simp
+        exact h₁ ⟨ha_zero, hb_zero⟩
+      · push_neg at hD₁negP
+        exact ordAt_mul_add_at_lone_sheet E h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
+    · -- D₁(P) ≠ 0: nonvanish at P case.
+      push_neg at hD₁P
+      exact ordAt_mul_add_at_nonvanish E h₁ h₂ hP hD₁P hD₂P
+  | succ s' IH =>
+    intro D₁ D₂ h₁ h₂ hMeas P hP hY hD₂P hD₂negP
+    by_cases hD₁P : D₁.eval P.1 P.2 = 0
+    · by_cases hD₁negP : D₁.eval P.1 (-P.2) = 0
+      · -- Twin case: descend via divLin and IH.
+        have hMP : (P.1, -P.2) ∈ E.points := by
+          apply E.hComplete
+          have hOC : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := E.hOnCurve P hP
+          show (-P.2) ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB
+          linear_combination hOC
+        have hMul_NZ : ¬ ((mulCoordRingElt E D₁ D₂).a = 0
+            ∧ (mulCoordRingElt E D₁ D₂).b = 0) := by
+          intro ⟨ha, hb⟩
+          have hN : normPoly E (mulCoordRingElt E D₁ D₂) = 0 := by
+            rw [normPoly_eq, ha, hb]; ring
+          rw [normPoly_mul_eq] at hN
+          exact (mul_ne_zero (normPoly_ne_zero E D₁ h₁)
+            (normPoly_ne_zero E D₂ h₂)) hN
+        have hMulP : (mulCoordRingElt E D₁ D₂).eval P.1 P.2 = 0 := by
+          rw [mulCoordRingElt_eval_on_E E D₁ D₂ hP, hD₁P, zero_mul]
+        have hMulnegP : (mulCoordRingElt E D₁ D₂).eval P.1 (-P.2) = 0 := by
+          rw [mulCoordRingElt_eval_on_E E D₁ D₂ hMP, hD₁negP, zero_mul]
+        obtain ⟨hax, hbx⟩ : D₁.a.eval P.1 = 0 ∧ D₁.b.eval P.1 = 0 :=
+          Da_Db_eval_zero_of_both_sheets_zero E D₁ hY hD₁P hD₁negP
+        have hD₁' : ¬ ((D₁.divLin P.1).a = 0 ∧ (D₁.divLin P.1).b = 0) :=
+          divLin_not_both_zero E D₁ h₁ hax hbx
+        have hMeas' :
+            (D₁.divLin P.1).a.natDegree + (D₁.divLin P.1).b.natDegree
+              < D₁.a.natDegree + D₁.b.natDegree :=
+          divLin_natDegree_sum_lt E D₁ h₁ hax hbx
+        have hMeas'' :
+            (D₁.divLin P.1).a.natDegree + (D₁.divLin P.1).b.natDegree ≤ s' := by
+          omega
+        have haDvd : (X - C P.1) ∣ D₁.a := dvd_iff_isRoot.mpr hax
+        have hbDvd : (X - C P.1) ∣ D₁.b := dvd_iff_isRoot.mpr hbx
+        have hMul_divLin :
+            (mulCoordRingElt E D₁ D₂).divLin P.1
+              = mulCoordRingElt E (D₁.divLin P.1) D₂ :=
+          mulCoordRingElt_divLin_left E D₁ D₂ P.1 haDvd hbDvd
+        -- LHS: ord(D₁ · D₂)(P) = 1 + ord((D₁ · D₂).divLin)(P)
+        --   = 1 + ord(D₁.divLin · D₂)(P)
+        rw [ordAt_eq_dispatch E _ hP hMul_NZ, if_neg hY,
+            ordAt_nonTwoTorsion_twin_rec E (mulCoordRingElt E D₁ D₂) hMul_NZ hY
+              hMulP hMulnegP, hMul_divLin]
+        -- RHS: ord(D₁)(P) + ord(D₂)(P) = (1 + ord(D₁.divLin)(P)) + ord(D₂)(P).
+        rw [ordAt_eq_dispatch E _ hP h₁, if_neg hY,
+            ordAt_nonTwoTorsion_twin_rec E D₁ h₁ hY hD₁P hD₁negP]
+        -- Apply IH to D₁.divLin · D₂.
+        have hIH := IH (D₁.divLin P.1) D₂ hD₁' h₂ hMeas'' hP hY hD₂P hD₂negP
+        -- IH says: ord(D₁.divLin · D₂)(P) = ord(D₁.divLin)(P) + ord(D₂)(P).
+        -- Both sides need to be in same wrapper form.
+        -- Reduce via dispatch.
+        rw [ordAt_eq_dispatch E _ hP hD₁'] at hIH
+        rw [if_neg hY] at hIH
+        have hMul_NZ' : ¬ ((mulCoordRingElt E (D₁.divLin P.1) D₂).a = 0
+            ∧ (mulCoordRingElt E (D₁.divLin P.1) D₂).b = 0) := by
+          intro ⟨ha, hb⟩
+          have hN : normPoly E (mulCoordRingElt E (D₁.divLin P.1) D₂) = 0 := by
+            rw [normPoly_eq, ha, hb]; ring
+          rw [normPoly_mul_eq] at hN
+          exact (mul_ne_zero (normPoly_ne_zero E (D₁.divLin P.1) hD₁')
+            (normPoly_ne_zero E D₂ h₂)) hN
+        rw [ordAt_eq_dispatch E _ hP hMul_NZ'] at hIH
+        rw [if_neg hY] at hIH
+        rw [ordAt_eq_dispatch E _ hP h₂] at *
+        rw [if_neg hY] at *
+        omega
+      · push_neg at hD₁negP
+        exact ordAt_mul_add_at_lone_sheet E h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
+    · push_neg at hD₁P
+      exact ordAt_mul_add_at_nonvanish E h₁ h₂ hP hD₁P hD₂P
+
 end Divisor
