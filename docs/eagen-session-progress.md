@@ -236,10 +236,23 @@ dependency".**
 
 Per Codex's recommended sequence:
 * C ✓ DONE — specialized end-to-end integration without axiom.
-* D NEXT — strengthen `isHonestFor` around the constructive bridge
-  once the needed shape is known.
+* D PARTIAL — `MAProverMsg.IsHonestForLength4Simple` structure added
+  (174 commits). Bridge theorem (drop-in replacement matching
+  `weil_reciprocity_honest`'s signature) deferred due to `subst`
+  issues with `stmt.k`/`msg.k` projections; structure itself is
+  usable via direct application of `weil_reciprocity_honest_length4_simple`.
 * A/B LATER — expand coverage (length-N, doublings) only after the
   replacement path is demonstrated.
+
+**`MAProverMsg.IsHonestForLength4Simple` structure (Codex D-option-1):**
+Captures all the hypotheses needed to discharge `weil_reciprocity_honest`
+for the simple length-4 honest case:
+- `hk_eq_3 : stmt.k = 3`, `hkm_eq_3 : msg.k = 3`
+- 4 input points `P_0..P_3` with structural identifications
+  (`P_0 = -P_target`, `P_i = stmt.bases (i-1)` for i=1,2,3)
+- `h_toD_eq : msg.toD = eagenBuild_length4_explicit E P_0 P_1 P_2 P_3`
+- `h_m_eq_one : ∀ i, msg.m i = 1`
+- All genericity + on-curve hypotheses for length-4 simple discharge.
 
 ## Session checkpoint (May 2026, 156 commits)
 
