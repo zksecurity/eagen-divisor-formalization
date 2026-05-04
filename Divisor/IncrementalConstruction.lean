@@ -4896,4 +4896,63 @@ theorem divisorOfD_vertical_at_infinity_eq_neg_two (x₀ : ZMod E.q) :
                         : CoordRingElt E.q)).natDegree : ℤ) = -2
   rw [natDegree_normPoly_vertical_helper]; rfl
 
+theorem eagenBuild_length4_div_at_infinity
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_P₂_ne_A2_23 : P₂.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₃_ne_A2_23 : P₃.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                        * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                        + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0) :
+    divisorOfD E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) (0 : ECPoint E) = -4 := by
+  have hL₁L₂_NZ : ¬ ((mulCoordRingElt E (chordCoordRingElt E P₀ P₁)
+        (chordCoordRingElt E P₂ P₃)).a = 0
+      ∧ (mulCoordRingElt E (chordCoordRingElt E P₀ P₁)
+        (chordCoordRingElt E P₂ P₃)).b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E (mulCoordRingElt E (chordCoordRingElt E P₀ P₁)
+        (chordCoordRingElt E P₂ P₃)) = 0 := by
+      rw [normPoly_eq, ha, hb]; ring
+    rw [normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E _ (chordCoordRingElt_ne_zero E P₀ P₁))
+           (normPoly_ne_zero E _ (chordCoordRingElt_ne_zero E P₂ P₃))) hN
+  obtain ⟨hax, hbx⟩ := mulCoordRingElt_chord_pair_a_b_vanish_at_Q₀ E P₀ P₁ P₂ P₃
+    hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_third_match h_y_match h_Q₀_nontorsion
+  have hBuildNZ : ¬ ((eagenBuild_length4_explicit E P₀ P₁ P₂ P₃).a = 0
+                    ∧ (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃).b = 0) :=
+    divLin_not_both_zero E _ hL₁L₂_NZ hax hbx
+  have hRec := mulCoordRingElt_chord_pair_recompose_at_Q₀ E P₀ P₁ P₂ P₃
+    hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_third_match h_y_match h_Q₀_nontorsion
+  have hVadd := divisorOfD_mul_vertical_add E
+    (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) hBuildNZ
+    (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) (0 : ECPoint E)
+  have hLv_inf := divisorOfD_vertical_at_infinity_eq_neg_two E
+    (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+  have hProd : divisorOfD E (mulCoordRingElt E (chordCoordRingElt E P₀ P₁)
+        (chordCoordRingElt E P₂ P₃)) (0 : ECPoint E) = -6 := by
+    rw [divisorOfD_mul_add_by_chordCoordRingElt_distinct E
+          (chordCoordRingElt_ne_zero E P₀ P₁)
+          P₂ P₃ hP₂ hP₃ h_xx_23 h_P₂_ne_A2_23 h_P₃_ne_A2_23 (0 : ECPoint E),
+        divisorOfD_chord_at_infinity_eq_neg_three E P₀ P₁ h_xx_01,
+        divisorOfD_chord_at_infinity_eq_neg_three E P₂ P₃ h_xx_23]
+    norm_num
+  rw [hRec] at hProd
+  unfold eagenBuild_length4_explicit at hVadd
+  unfold eagenBuild_length4_explicit
+  rw [hVadd] at hProd
+  rw [hLv_inf] at hProd
+  linarith
+
 end Divisor
