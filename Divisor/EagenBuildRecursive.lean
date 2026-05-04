@@ -568,6 +568,63 @@ theorem bases_sum_eq_index_sum
   · intro h
     exact absurd (h_bases i) h
 
+/-! ## Full residue-match derivation from IsHonestForExplicit
+
+Combine the helpers to produce `hResidueMatchAll` from divisor identity.
+
+For honest msg with `IsHonestForExplicit`, plus the assumption that
+`-P_target ∈ E.points` and all `bases ∈ E.points`, the residue sum equals
+the protocol RHS. -/
+
+theorem hResidueMatch_via_isHonestForExplicit
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
+    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
+    (h_negT : (stmt.target.1, -stmt.target.2) ∈ E.points)
+    (h_bases : ∀ i : Fin stmt.k, stmt.bases i ∈ E.points)
+    (f : ZMod E.q × ZMod E.q → ZMod E.q) :
+    (∑ Q ∈ zerosFinset E msg.toD, (ordAt E msg.toD Q : ZMod E.q) * f Q)
+      = f (stmt.target.1, -stmt.target.2)
+        + (Finset.univ : Finset (Fin stmt.k)).sum
+            (fun i => ((wit.scalars (hk ▸ i) : ℤ) : ZMod E.q) * f (stmt.bases i)) := by
+  classical
+  obtain ⟨_h_basic, h_div⟩ := h_honest
+  -- Step 1: convert to honestDivisorCoeffs sum over E.points.
+  rw [residue_sum_eq_honest_via_isHonestForExplicit E stmt wit hk msg h_div hD f]
+  -- Step 2: split honestDivisorCoeffs into indicator + bases-sum.
+  rw [show (∑ Q ∈ E.points,
+        ((honestDivisorCoeffs E stmt wit hk msg (ECPoint.affine E Q.1 Q.2) : ℤ)
+          : ZMod E.q) * f Q)
+      = (∑ Q ∈ E.points,
+          (((if Q = (stmt.target.1, -stmt.target.2) then (1 : ℤ) else 0) +
+             ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
+               (fun i => stmt.bases i = Q),
+               (wit.scalars (hk ▸ i) : ℤ) : ℤ) : ZMod E.q) * f Q) from by
+    apply Finset.sum_congr rfl
+    intro Q hQ
+    rw [honestDivisorCoeffs_at_affine_split E stmt wit hk msg hQ]]
+  -- Step 3: distribute the addition.
+  rw [show (∑ Q ∈ E.points,
+        ((((if Q = (stmt.target.1, -stmt.target.2) then (1 : ℤ) else 0) +
+           ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
+             (fun i => stmt.bases i = Q),
+             (wit.scalars (hk ▸ i) : ℤ)) : ℤ) : ZMod E.q) * f Q)
+      = (∑ Q ∈ E.points,
+            ((if Q = (stmt.target.1, -stmt.target.2) then (1 : ℤ) else 0) : ZMod E.q) * f Q)
+        + (∑ Q ∈ E.points,
+            ((∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
+              (fun i => stmt.bases i = Q),
+              (wit.scalars (hk ▸ i) : ℤ)) : ZMod E.q) * f Q) from by
+    rw [← Finset.sum_add_distrib]
+    apply Finset.sum_congr rfl
+    intro Q _
+    push_cast
+    ring]
+  -- Step 4: apply the indicator and bases lemmas.
+  rw [indicator_sum_eq_eval_at_negTarget E stmt.target h_negT f]
+  rw [bases_sum_eq_index_sum E stmt wit hk h_bases f]
+
 /-! ## Notes on remaining infrastructure for any-k completeness
 
 To prove `ma_completeness_via_isHonestForExplicit` for ANY k, we need:
