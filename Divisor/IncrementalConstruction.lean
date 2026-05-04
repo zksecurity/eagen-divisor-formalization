@@ -4594,4 +4594,42 @@ theorem ord_const_one_at_nonTwoTorsion
   apply h1_eval
   exact (ordAt_pos_iff_zero E _ h1NZ P hP).mp h
 
+/-- Order of vertical line `(X - C x₀, 0)` at non-2-torsion above x₀ equals 1. -/
+theorem ord_vertical_at_x₀_nonTwoTorsion
+    (x₀ y₀ : ZMod E.q)
+    (hP : (x₀, y₀) ∈ E.points) (hY : y₀ ≠ 0) :
+    ordAt E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 } : CoordRingElt E.q)
+            (x₀, y₀) = 1 := by
+  -- L_v non-zero.
+  have hLv_NZ : ¬ (({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                    : CoordRingElt E.q).a = 0
+                  ∧ ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                      : CoordRingElt E.q).b = 0) := by
+    intro ⟨ha, _⟩
+    exact (X_sub_C_ne_zero x₀) ha
+  -- L_v evals to 0 at both sheets above x₀.
+  have hLv_at_P : ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                   : CoordRingElt E.q).eval x₀ y₀ = 0 := by
+    unfold CoordRingElt.eval
+    simp
+  have hLv_at_negP : ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                      : CoordRingElt E.q).eval x₀ (-y₀) = 0 := by
+    unfold CoordRingElt.eval
+    simp
+  -- (1, 0) non-zero.
+  have h1NZ : ¬ (({ a := 1, b := 0 } : CoordRingElt E.q).a = 0
+                 ∧ ({ a := 1, b := 0 } : CoordRingElt E.q).b = 0) := by
+    intro ⟨h1, _⟩
+    exact one_ne_zero h1
+  -- ordAt of vertical at (x₀, y₀) via dispatch + twin recursion.
+  rw [ordAt_eq_dispatch E _ hP hLv_NZ, if_neg hY]
+  rw [ordAt_nonTwoTorsion_twin_rec E _ hLv_NZ hY hLv_at_P hLv_at_negP]
+  rw [divLin_of_vertical E x₀]
+  -- ord((1, 0))((x₀, y₀)) = 0.
+  have h0 : ordAt E ({ a := 1, b := 0 } : CoordRingElt E.q) (x₀, y₀) = 0 :=
+    ord_const_one_at_nonTwoTorsion E hP hY
+  -- ord_nonTwoTorsion = ord (via dispatch).
+  rw [ordAt_eq_dispatch E _ hP h1NZ, if_neg hY] at h0
+  rw [h0]
+
 end Divisor
