@@ -147,12 +147,48 @@ formalisation of the cross case must satisfy.
 
 Suggested next session focus:
 1. Read `Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean`
-   for the `XYIdeal'` localisation API.
-2. Try formalising `v_P` for non-2-torsion P using mathlib's
-   `IsLocalization.AtPrime` or directly in the localised ring.
-3. Prove `v_P` is multiplicative (fundamental DVR fact).
+   for the `XYIdeal'` localisation API. Key entry points:
+   - `WeierstrassCurve.Affine.CoordinateRing.XYIdeal x y` — the
+     maximal ideal at `(x, y)` in the affine coordinate ring.
+   - `WeierstrassCurve.Affine.CoordinateRing.XYIdeal'` — its
+     fractional-ideal class.
+   - `WeierstrassCurve.Affine.CoordinateRing.quotientXYIdealEquiv` —
+     the residue field is the base field.
+   - `WeierstrassCurve.Affine.Point.toClass` — `ECPoint → ClassGroup`
+     homomorphism via `XYIdeal'`.
+2. Try formalising `v_P` for non-2-torsion P. Two routes:
+   - **Route A (mathlib-native):** use `IsLocalization.AtPrime` at the
+     `XYIdeal x y` prime + `DiscreteValuationRing` instance (smooth
+     curve has DVRs at closed points). Show D's image in the
+     localisation has `m_P`-adic valuation = `ordAt E D (x, y)`.
+   - **Route B (direct):** define `v_P D := the unique k such that
+     D ∈ m_P^k \ m_P^{k+1}`. Show multiplicative via standard
+     valuation argument.
+3. Prove `v_P` is multiplicative (fundamental DVR fact, standard in
+   mathlib once the DVR instance is established).
 4. Prove `ordAt = v_P` at non-2-torsion by induction on the recursive
-   definition.
-5. Combine to close cross-case ordAt-additivity.
-6. Then proceed with eagenBuild driver + correctness.
-7. Finally B1–B5 axiom replacement.
+   definition. Cases on the recursive branch:
+   - Non-vanish (`D(P) ≠ 0`): `D` unit in localization, `v_P D = 0`.
+   - Lone (`D(P) = 0, D(-P) ≠ 0`): `D` is "minimal" generator of
+     m_P^m where m = `rootMult P.1 N(D)`. `v_P D = m`.
+   - Twin (both vanish): `D = (X - C P.1) · D'`, so
+     `v_P D = v_P (X - C P.1) + v_P D' = 1 + v_P D'`. Recurse.
+5. Combine to close cross-case ordAt-additivity:
+   `ordAt(D₁·D₂)(P) = v_P(D₁·D₂) = v_P D₁ + v_P D₂ = ordAt D₁(P) + ordAt D₂(P)`.
+6. Then proceed with eagenBuild driver + correctness:
+   - Define `eagenBuild` recursively on lists of `ECPoint E`.
+   - Base cases (length 2, 3) reuse existing `chordCoordRingElt`.
+   - Recursive case follows Eagen §3.1.1 (chord pairs + divLin
+     cancellation).
+   - Correctness theorem via induction on list length, using the
+     full ordAt-additivity (including cross case).
+7. Finally B1–B5 axiom replacement:
+   - Rewrite `isHonestFor` constructively as `msg.toD = eagenBuild [...]`.
+   - Prove elliptic-resultant identity from eagenBuild output.
+   - Prove `logDerivCheckFn_zero_for_eagenBuild` (replaces the false
+     `weil_reciprocity_honest` axiom).
+   - Strengthen `badPairCompletenessPred` (need card-bound for
+     `S_5 = {(A_0, A_1) : thirdPoint = some A_0}` ≤ |E.points| via
+     `thirdPoint_inj_on_A₁` + group-law `A_0 + A_1 = -A_0`, hence
+     `A_1 = -2A_0`, unique).
+   - Delete `weil_reciprocity_honest`; rewire `ma_completeness`.
