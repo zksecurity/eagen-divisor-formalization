@@ -3,6 +3,26 @@
 **Branch:** `work/completeness`
 **Plan file:** `~/.claude/plans/we-want-to-fix-steady-cocke.md`
 
+## Branch state at firing (May 2026)
+
+**99 commits since master, all building cleanly (8098 jobs).**
+
+Closure pin verified clean: `ma_extractable`, `ip_knowledge_sound`,
+`ma_completeness*` byte-for-byte unchanged from master. The
+`weil_reciprocity_honest` axiom is now sound (B4 strengthened
+precondition).
+
+Verified properties (cross-case multiplicativity wall broken):
+
+* `ordAt_nonTwoTorsion_closed_form` — closed-form via `commonRootMultRat`.
+* `cross_case_T_deriv_eq_normPoly_deriv` — Codex's derivative identity
+  `B₁·T'(x₀) = -B₂·N(D₁)'(x₀)`.
+* `cross_iterDivLin_invariant_when_min_eq_one` — full base case.
+* `ordAt_mul_add_at_nonTwoTorsion_when_normPoly_D2_le_one` — unified
+  ord-additivity at non-2-torsion under chord-line hypothesis.
+* `divisorOfD_mul_add_when_chord_line_D2` — full divisorOfD-additivity
+  at every ECPoint under chord-line hypothesis.
+
 ## Headline achievement
 
 **The originally-defective `weil_reciprocity_honest` axiom is now
