@@ -264,6 +264,45 @@ Axiom closure (verified): no `weil_reciprocity_honest` dependency.
 Both Divisor-specific axioms it uses are already in `ma_extractable`'s
 closure.
 
+## TOP-LEVEL HEADLINE (May 2026, 187 commits)
+
+**`ma_completeness_via_isHonestForLength4Simple`** — fully-discharged
+version of `ma_completeness` for the length-4 simple honest case.
+
+Theorem: given a `IsHonestForLength4Simple` structure attesting to the
+honest construction, plus standard verifier hypotheses (degree, admSet),
+proves the rejection set is bounded by `(3·numZeros + 4) · |E.points|`
+— same conclusion as the formerly-axiomatic `ma_completeness`.
+
+Axiom closure (`#print axioms`):
+```
+[propext, Classical.choice, Quot.sound,
+ Divisor.chord_fiber_product_eq_normZ_under_split,
+ Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g]
+```
+**NO `weil_reciprocity_honest` dependency.**
+
+Architecture (Codex-recommended factoring):
+* `ma_completeness_parameterized` (Soundness.lean) — takes per-pair
+  logDerivCheckFn-zero claim as a hook. Closure: standard Lean axioms only.
+* Existing `ma_completeness` factored through this parameterized version,
+  instantiated with the (sound but axiomatic) `weil_reciprocity_honest`
+  for backward compatibility.
+* Length-4 simple instantiation: provides the hook via the constructive
+  bridge from `IsHonestForLength4Simple`, fully discharging the axiom
+  for this case.
+
+Helpers added to support the integration:
+* `logDerivCheckFn_eq_under_stmt_k_eq_three` — cast bridge for `stmt.k = 3`.
+* `hNV_of_hGood` — extracts `A_0.1 ≠ A_1.1` from `¬badPairCompletenessPred`
+  via the strengthened bad set's diagonal + vertical-chord exclusions.
+* `logDerivCheckFn_zero_via_isHonestForLength4Simple` — structure-level
+  bridge to the discharge.
+
+This proves the formerly-axiomatic `ma_completeness` is **constructively
+dischargeable for the restricted k=3 simple honest case** — the strongest
+demonstration that the Eagen-construction approach works end-to-end.
+
 ## Session checkpoint (May 2026, 156 commits)
 
 Major milestones achieved this session:
