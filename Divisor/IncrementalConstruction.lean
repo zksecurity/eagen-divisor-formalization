@@ -5993,4 +5993,19 @@ theorem eagenBuild_length4_explicit_eval_ne_zero_at_negQ₀
     (ordAt_pos_iff_zero E _ hNZ (Q₀x, -Q₀y) hNegQ₀_on_E).mpr h_eval_zero
   omega
 
+/-- For two points on E with the same x-coordinate, their y-coordinates
+    are equal or negatives. Follows from the curve equation
+    `y² = x³ + Ax + B`. -/
+theorem ECPoints_same_x_y_eq_or_neg
+    {x y₁ y₂ : ZMod E.q}
+    (h₁ : (x, y₁) ∈ E.points) (h₂ : (x, y₂) ∈ E.points) :
+    y₁ = y₂ ∨ y₁ = -y₂ := by
+  have he₁ : y₁ ^ 2 = x ^ 3 + E.curveA * x + E.curveB := E.hOnCurve _ h₁
+  have he₂ : y₂ ^ 2 = x ^ 3 + E.curveA * x + E.curveB := E.hOnCurve _ h₂
+  have h_eq_sq : y₁ ^ 2 = y₂ ^ 2 := he₁.trans he₂.symm
+  have h_diff : (y₁ - y₂) * (y₁ + y₂) = 0 := by linear_combination h_eq_sq
+  rcases mul_eq_zero.mp h_diff with h | h
+  · left; linear_combination h
+  · right; linear_combination h
+
 end Divisor
