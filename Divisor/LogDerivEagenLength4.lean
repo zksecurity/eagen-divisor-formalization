@@ -1174,4 +1174,21 @@ theorem rejectSet_bound_via_isHonestForLength4Simple
     h_honest.h_Q₀_off_L₂_inputs h_honest.h_negQ₀_off_L₁_inputs
     h_honest.h_inputs_distinct
 
+/-! ## Note on ma_completeness instantiation
+
+`ma_completeness_parameterized` (Soundness.lean) takes the per-pair
+`logDerivCheckFn = 0` claim as a hook. To instantiate this for
+`IsHonestForLength4Simple`, the user provides the hook by combining
+my `logDerivCheckFn_zero_via_isHonestForLength4Simple` with the
+required `stmt.k = 3` cast bridging.
+
+The cast pattern: `logDerivCheckFn ... stmt.k stmt.bases (fun i => msg.m (hkm ▸ i))`
+needs to align with `... 3 (fun i : Fin 3 => stmt.bases (hk_eq_3 ▸ i)) (fun _ => 1)`.
+This requires `Eq.mpr`/`subst`-style cast bookkeeping that Lean's
+`subst` doesn't directly handle for projection terms.
+
+Workaround: use `ma_completeness_parameterized` directly with the
+raw bridge `logDerivCheckFn_zero_via_isHonestForLength4Simple_raw`,
+manually destructuring `stmt`/`msg` first. -/
+
 end Divisor
