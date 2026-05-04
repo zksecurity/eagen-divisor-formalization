@@ -38,6 +38,26 @@ the accumulator F by `chordCoordRingElt P Q` for distinct-chord pairs)
 can directly invoke `divisorOfD_mul_add_when_chord_line_D2` for
 divisorOfD-additivity.
 
+## eagenBuild_length4 per-ECPoint status (May 2026, 130+ commits)
+
+**All eight per-ECPoint cases COMPLETE:**
+
+* `eagenBuild_length4_div_at_P₀ = 1`
+* `eagenBuild_length4_div_at_P₁ = 1`
+* `eagenBuild_length4_div_at_P₂ = 1`
+* `eagenBuild_length4_div_at_P₃ = 1`
+* `eagenBuild_length4_div_at_Q₀ = 0` (cancellation: chord-1 + vertical = 1+1 net 0 with -1 sign)
+* `eagenBuild_length4_div_at_negQ₀ = 0` (cancellation: chord-2 + vertical = 1+1 net 0 with -1 sign)
+* `eagenBuild_length4_div_at_generic_R = 0` (off all support)
+* `eagenBuild_length4_div_at_infinity = -4` (already complete earlier)
+
+**Helper added:** `divisorOfD_vertical_at_x₀_nonTwoTorsion_affine`
+gives `divisorOfD ((X - x_0), 0) = 1` at `(x_0, y_0)` with `y_0 ≠ 0`.
+
+The full `eagenBuild_length4`-divisor-equation `D = (P_0)+(P_1)+(P_2)+(P_3) - 4·(O)`
+is now provable per-ECPoint by case analysis. Next: assemble universal
+quotient by classifying ECPoints into the seven cases.
+
 ## eagenBuild_length4 status (May 2026, 123 commits)
 
 **Driver and universal divisor identity COMPLETE:**
