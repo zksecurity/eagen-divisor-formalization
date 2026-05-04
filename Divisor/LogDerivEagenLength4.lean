@@ -62,6 +62,23 @@ namespace Divisor
 
 variable (E : ECSetup)
 
+/-! ## hDen identity: chord-derivative-denominator factorization
+
+Key algebraic identity for deriving `hDen` from `¬badPairCompletenessPred`:
+
+  `3·A_0.x² + curveA − 2λ·A_0.y = (A_0.x − A_1.x)(A_0.x − A_2.x)`
+
+where `A_2.x = λ² − A_0.x − A_1.x`. So the chord-derivative-denominator
+at A_0 vanishes iff A_0.x = A_1.x (excluded by hNV) or A_2.x = A_0.x
+(chord-tangent at A_0, equivalent to A_2 = A_0 modulo chord-y formula,
+excluded by `¬tangentCollisionAtA_0` in the strengthened B4 bad set).
+
+This identity uses `chord_x_pairwise_sum` (Vieta `e_2 = A − 2λμ`) plus
+the trivial `lam² = A_0.x + A_1.x + A_2.x` (`e_1`) substitution.
+
+Derivation pending — once landed, hDen at all three points (A_0, A_1, A_2)
+follows by symmetric/trivial application. -/
+
 /-! ## hQline derivation: chord doesn't pass through any zero
 
 For length-4 `D = eagenBuild_length4`, `zerosFinset = {P_0..P_3}`. A
