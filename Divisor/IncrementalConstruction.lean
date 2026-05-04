@@ -4430,6 +4430,40 @@ theorem mulCoordRingElt_chord_pair_eval_at_neg_thirdPoint
   -- (L_1·L_2)(-Q_0) = L_1(-Q_0) · L_2(-Q_0) = ... · 0 = 0.
   rw [mulCoordRingElt_eval_on_E E _ _ hNegQ₀_on, hL₂_vanish_at_negQ₀, mul_zero]
 
+/-- Combined: at non-2-torsion `Q₀`, `L₁·L₂` is twin at `Q₀`,
+hence both `.a` and `.b` vanish at `Q₀.1`. -/
+theorem mulCoordRingElt_chord_pair_a_b_vanish_at_Q₀
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                        * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                        + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0) :
+    let lam := slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+    let Q₀x := lam ^ 2 - P₀.1 - P₁.1
+    let D := mulCoordRingElt E (chordCoordRingElt E P₀ P₁) (chordCoordRingElt E P₂ P₃)
+    D.a.eval Q₀x = 0 ∧ D.b.eval Q₀x = 0 := by
+  intro lam Q₀x D
+  set Q₀y := lam * Q₀x + (P₀.2 - lam * P₀.1)
+  have h_at_Q₀ : D.eval Q₀x Q₀y = 0 :=
+    mulCoordRingElt_chord_pair_eval_at_thirdPoint_of_left_chord E P₀ P₁ P₂ P₃ hP₀ hP₁ h_xx_01
+  have h_at_negQ₀ : D.eval Q₀x (-Q₀y) = 0 :=
+    mulCoordRingElt_chord_pair_eval_at_neg_thirdPoint E P₀ P₁ P₂ P₃
+      hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_third_match h_y_match
+  -- Apply Da_Db_eval_zero_of_both_sheets_zero with P = (Q₀x, Q₀y), Q₀y ≠ 0.
+  exact Da_Db_eval_zero_of_both_sheets_zero E D h_Q₀_nontorsion h_at_Q₀ h_at_negQ₀
+
 /-! ## Multiplication by vertical line: clean form
 
 For `L = (X − C x₀, 0)` (vertical line at x₀), `D · L` has the simple
