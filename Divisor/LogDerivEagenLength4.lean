@@ -770,4 +770,70 @@ theorem weil_reciprocity_honest_length4_simple
     h_inputs_distinct P_target B (fun _ => 1)
     A₀ A₁ hA₀ hA₁ hNV hGood hRM
 
+/-! ## numZeros = 4 corollary -/
+
+theorem numZeros_eagenBuild_length4_eq_four
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_P₀_ne_A2_01 : P₀.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₁_ne_A2_01 : P₁.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_P₂_ne_A2_23 : P₂.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₃_ne_A2_23 : P₃.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₀_off_L₂ : P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₀ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                    slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+                      * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+                      + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)))
+    (h_P₁_off_L₂ : P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₁ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+                    slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+                      * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+                      + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)))
+    (h_P₂_off_L₁ : P₂ ≠ P₀ ∧ P₂ ≠ P₁ ∧ P₂ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+                    slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                      * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                      + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_P₃_off_L₁ : P₃ ≠ P₀ ∧ P₃ ≠ P₁ ∧ P₃ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+                    slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                      * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                      + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                        * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                        + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0)
+    (h_Q₀_off_L₂_inputs :
+      let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+      let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+      (Q₀x, Q₀y) ≠ P₂ ∧ (Q₀x, Q₀y) ≠ P₃ ∧ (Q₀x, Q₀y) ≠ (Q₀x, -Q₀y))
+    (h_negQ₀_off_L₁_inputs :
+      let Q₀x := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
+      let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
+      (Q₀x, -Q₀y) ≠ P₀ ∧ (Q₀x, -Q₀y) ≠ P₁ ∧ (Q₀x, -Q₀y) ≠ (Q₀x, Q₀y))
+    (h_inputs_distinct : P₀ ≠ P₁ ∧ P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₂ ≠ P₃) :
+    numZeros E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) = 4 := by
+  classical
+  unfold numZeros
+  rw [show zeros (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) E.points
+      = zerosFinset E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) from rfl]
+  rw [zerosFinset_eagenBuild_length4_eq E P₀ P₁ P₂ P₃
+      hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
+      h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
+      h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs]
+  obtain ⟨h01, h02, h03, h12, h13, h23⟩ := h_inputs_distinct
+  rw [show ({P₀, P₁, P₂, P₃} : Finset (ZMod E.q × ZMod E.q))
+      = insert P₀ (insert P₁ (insert P₂ ({P₃} : Finset _))) from rfl]
+  rw [Finset.card_insert_of_notMem (by simp [h01, h02, h03]),
+      Finset.card_insert_of_notMem (by simp [h12, h13]),
+      Finset.card_insert_of_notMem (by simp [h23]),
+      Finset.card_singleton]
+
 end Divisor
