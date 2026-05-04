@@ -445,6 +445,28 @@ This subsumes the cross case and is the cleanest formulation: it says
 this gives ordAt-additivity in all cases except both factors vanishing
 at P (which is then handled via mulCoordRingElt_divLin_left descent).
 
+### Cross-case progress (May 2026, multiple firings)
+
+The cross case for `min(m₁, m₂) = 1` is now FULLY proved:
+
+* `ordAt_mul_add_in_cross_when_min_eq_one`: at non-2-torsion P with
+  D₁ lone at P, D₂ lone at -P, and `min(m₁, m₂) = 1`:
+  `ord(D₁·D₂)(P) = ord(D₁)(P) + ord(D₂)(P)`.
+
+* `ordAt_mul_add_at_both_lone_same_sheet`: at non-2-torsion P with
+  D₁, D₂ both lone at P (same sheet):
+  `ord(D₁·D₂)(P) = ord(D₁)(P) + ord(D₂)(P)`.
+
+These plus existing lemmas (nonvan-fiber, lone-sheet-with-nonvan-D₂,
+twin-descent) cover all sub-cases at non-2-torsion under the hypothesis
+`rootMult x_0 (normPoly D₂) ≤ 1`.
+
+Remaining work for the unified `ordAt_mul_add_at_nonTwoTorsion_when_normPoly_D2_le_one`:
+combine the sub-case lemmas via a single inductive proof on D₁'s
+natDegSum (parallel to `ordAt_mul_add_at_nonTwoTorsion_when_D2_nonvanish`),
+dispatching on D₁'s branch (nonvan / lone-P / lone-(-P) / twin) and
+D₂'s branch (nonvan / lone-P / lone-(-P)).
+
 ### Cross-case sub-lemma needed
 
 The cross case (D₁ lone at P, D₂ lone at -P) requires a structural
