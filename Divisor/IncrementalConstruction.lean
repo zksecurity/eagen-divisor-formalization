@@ -494,11 +494,11 @@ private theorem normPoly_chord_factor_chord
     -- this uses lam (slopeOf), mu (= P.2 - lam · P.1), x₂ as in the theorem.
     -- Match my x₂ and mu definitions.
     show P.1 * Q.1 + P.1 * x₂ + Q.1 * x₂ = E.curveA - 2 * lam * mu
-    convert this using 2 <;> rfl
+    convert this using 2
   have he₃ : P.1 * Q.1 * x₂ = mu ^ 2 - E.curveB := by
     have := chord_x_triple_product E P Q hP hQ hxx
     show P.1 * Q.1 * x₂ = mu ^ 2 - E.curveB
-    convert this using 2 <;> rfl
+    convert this using 2
   -- Now: (C lam · X + C mu)² − (X³ + C A · X + C B)
   --   = -((X - C P.1)(X - C Q.1)(X - C x₂))
   -- Expand the RHS first, in terms of e₁, e₂, e₃.
@@ -2335,8 +2335,8 @@ divisorOfD function on `ECPoint E` is exactly the formal divisor
 theorem divisorOfD_chordCoordRingElt_chord_pointwise
     (P Q : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hQ : Q ∈ E.points)
     (hxx : P.1 ≠ Q.1)
-    (hP_neq_A2 : P.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
-    (hQ_neq_A2 : Q.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) :
+    (_hP_neq_A2 : P.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
+    (_hQ_neq_A2 : Q.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) :
     let A₂ := (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1,
                slopeOf P.1 P.2 Q.1 Q.2 *
                  (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) +
