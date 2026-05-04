@@ -4699,4 +4699,64 @@ theorem ordAt_mul_vertical_add_at_x₀_nonTwoTorsion
     ord_vertical_at_x₀_nonTwoTorsion E x₀ y₀ hP hY
   rw [hOrd_DLv, hOrd_Lv]; ring
 
+/-- ordAt-additivity for vertical mul at 2-torsion. Direct from
+`ordAt_mul_add_twoTorsion` (unconditional at 2-torsion). -/
+theorem ordAt_mul_vertical_add_at_twoTorsion
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) (x₀ : ZMod E.q)
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 = 0) :
+    ordAt E (mulCoordRingElt E D
+        ({ a := Polynomial.X - Polynomial.C x₀, b := 0 } : CoordRingElt E.q)) P
+      = ordAt E D P
+      + ordAt E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                  : CoordRingElt E.q) P := by
+  have hLv_NZ : ¬ (({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                    : CoordRingElt E.q).a = 0
+                  ∧ ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                      : CoordRingElt E.q).b = 0) := by
+    intro ⟨ha, _⟩
+    exact (X_sub_C_ne_zero x₀) ha
+  exact ordAt_mul_add_twoTorsion E hD hLv_NZ hP hY
+
+/-- Unified ordAt-additivity for vertical multiplication at any affine ECPoint. -/
+theorem ordAt_mul_vertical_add
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) (x₀ : ZMod E.q)
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) :
+    ordAt E (mulCoordRingElt E D
+        ({ a := Polynomial.X - Polynomial.C x₀, b := 0 } : CoordRingElt E.q)) P
+      = ordAt E D P
+      + ordAt E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                  : CoordRingElt E.q) P := by
+  by_cases hY : P.2 = 0
+  · exact ordAt_mul_vertical_add_at_twoTorsion E D hD x₀ hP hY
+  · -- non-2-torsion: split on P.1 vs x₀.
+    by_cases hPx : P.1 = x₀
+    · -- non-2-torsion above x₀.
+      rw [show P = (x₀, P.2) from Prod.ext hPx rfl] at hP ⊢
+      exact ordAt_mul_vertical_add_at_x₀_nonTwoTorsion E D hD x₀ P.2 hP hY
+    · -- non-2-torsion off x₀: use lift via affine ECPoint additivity.
+      have hLv_NZ : ¬ (({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                        : CoordRingElt E.q).a = 0
+                      ∧ ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                          : CoordRingElt E.q).b = 0) := by
+        intro ⟨ha, _⟩
+        exact (X_sub_C_ne_zero x₀) ha
+      -- rootMult P.1 (normPoly L_v) = 0 when P.1 ≠ x₀.
+      have hRootMult : Polynomial.rootMultiplicity P.1
+          (normPoly E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                        : CoordRingElt E.q)) = 0 := by
+        rw [show normPoly E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                              : CoordRingElt E.q) = (Polynomial.X - Polynomial.C x₀) ^ 2
+            from normPoly_chordCoordRingElt_vertical E x₀]
+        apply Polynomial.rootMultiplicity_eq_zero
+        intro hRoot
+        apply hPx
+        have h2NZ : ((Polynomial.X - Polynomial.C x₀) ^ 2 : (ZMod E.q)[X]) ≠ 0 :=
+          pow_ne_zero 2 (X_sub_C_ne_zero x₀)
+        rw [Polynomial.IsRoot, Polynomial.eval_pow] at hRoot
+        have h2 : (Polynomial.X - Polynomial.C x₀ : (ZMod E.q)[X]).eval P.1 = 0 :=
+          pow_eq_zero_iff (n := 2) (by omega) |>.mp hRoot
+        simp [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C, sub_eq_zero] at h2
+        exact h2
+      exact ordAt_mul_add_when_normPoly_D2_le_one E hD hLv_NZ hP (by omega)
+
 end Divisor
