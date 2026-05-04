@@ -5553,4 +5553,40 @@ theorem eagenBuild_length4_div_at_generic_R
   rw [hLv_at_R]
   ring
 
+/-! ## Corollary: normPoly natDegree of `eagenBuild_length4_explicit` is 4 -/
+
+theorem eagenBuild_length4_normPoly_natDegree_eq_four
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
+    (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
+    (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1)
+    (h_P₂_ne_A2_23 : P₂.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_P₃_ne_A2_23 : P₃.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+    (h_third_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1
+        = slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+    (h_y_match :
+      slopeOf P₂.1 P₂.2 P₃.1 P₃.2
+        * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
+        + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)
+          = -(slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+              * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+              + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
+    (h_Q₀_nontorsion : slopeOf P₀.1 P₀.2 P₁.1 P₁.2
+                        * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+                        + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1) ≠ 0) :
+    (normPoly E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)).natDegree = 4 := by
+  have hInf := eagenBuild_length4_div_at_infinity E P₀ P₁ P₂ P₃
+    hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₂_ne_A2_23 h_P₃_ne_A2_23
+    h_third_match h_y_match h_Q₀_nontorsion
+  -- divisorOfD at 0 = -((normPoly).natDegree : ℤ).
+  have h_unfold :
+      divisorOfD E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) (0 : ECPoint E)
+        = -((normPoly E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)).natDegree : ℤ) := rfl
+  rw [h_unfold] at hInf
+  -- Now -((normPoly).natDegree : ℤ) = -4. Solve for natDegree.
+  have : ((normPoly E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)).natDegree : ℤ) = 4 := by
+    linarith
+  exact_mod_cast this
+
 end Divisor
