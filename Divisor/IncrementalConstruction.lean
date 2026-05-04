@@ -3830,4 +3830,70 @@ theorem ordAt_mul_add_at_both_lone_same_sheet
   exact Polynomial.rootMultiplicity_mul
     (mul_ne_zero (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂))
 
+/-! ## Helper: D₂ unit on fiber implies rootMult of normPoly = 0 at x_0 -/
+
+theorem rootMult_normPoly_eq_zero_when_unit_fiber
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points)
+    (hD_P : D.eval P.1 P.2 ≠ 0) (hD_negP : D.eval P.1 (-P.2) ≠ 0) :
+    Polynomial.rootMultiplicity P.1 (normPoly E D) = 0 := by
+  have hN_NZ : normPoly E D ≠ 0 := normPoly_ne_zero E D hD
+  apply Polynomial.rootMultiplicity_eq_zero
+  intro hRoot
+  rw [Polynomial.IsRoot, normPoly_eval_eq_D_mul_D_neg E D hP] at hRoot
+  rcases mul_eq_zero.mp hRoot with h | h
+  · exact hD_P h
+  · exact hD_negP h
+
+/-! ## Helper: rootMult of normPoly ≥ 2 in twin case (both vanish at fiber) -/
+
+theorem rootMult_normPoly_ge_two_when_twin
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD_P : D.eval P.1 P.2 = 0) (hD_negP : D.eval P.1 (-P.2) = 0) :
+    2 ≤ Polynomial.rootMultiplicity P.1 (normPoly E D) := by
+  have hMP : (P.1, -P.2) ∈ E.points := by
+    apply E.hComplete
+    have hOC : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := E.hOnCurve P hP
+    show (-P.2) ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB
+    linear_combination hOC
+  have hSum := ordAt_nonTwoTorsion_pair_eq_rootMult E D hD hP hY
+  have hP_pos : 0 < ordAt_nonTwoTorsion E D P := by
+    rw [Nat.pos_iff_ne_zero]
+    intro h0
+    unfold ordAt_nonTwoTorsion at h0
+    obtain ⟨n, hn⟩ : ∃ n, D.a.natDegree + D.b.natDegree + 1 = n + 1 := ⟨_, rfl⟩
+    rw [hn] at h0
+    change (if D.a = 0 ∧ D.b = 0 then 0
+            else if D.eval P.1 P.2 ≠ 0 then 0
+            else if D.eval P.1 (-P.2) ≠ 0 then
+              Polynomial.rootMultiplicity P.1 (normPoly E D)
+            else 1 + ordAt_nonTwoTorsion_aux E n (D.divLin P.1) P) = 0 at h0
+    rw [if_neg hD, if_neg (not_not.mpr hD_P), if_neg (not_not.mpr hD_negP)] at h0
+    omega
+  have hnegP_pos : 0 < ordAt_nonTwoTorsion E D (P.1, -P.2) := by
+    rw [Nat.pos_iff_ne_zero]
+    intro h0
+    unfold ordAt_nonTwoTorsion at h0
+    obtain ⟨n, hn⟩ : ∃ n, D.a.natDegree + D.b.natDegree + 1 = n + 1 := ⟨_, rfl⟩
+    rw [hn] at h0
+    have hYneg : (P.1, -P.2).2 ≠ 0 := by
+      show -P.2 ≠ 0
+      intro h
+      apply hY
+      linear_combination -h
+    have hD_at_negP : D.eval (P.1, -P.2).1 (P.1, -P.2).2 = 0 := hD_negP
+    have hD_at_P : D.eval (P.1, -P.2).1 (-(P.1, -P.2).2) = 0 := by
+      show D.eval P.1 (-(-P.2)) = 0
+      have : -(-P.2) = P.2 := neg_neg _
+      rw [this]; exact hD_P
+    change (if D.a = 0 ∧ D.b = 0 then 0
+            else if D.eval (P.1, -P.2).1 (P.1, -P.2).2 ≠ 0 then 0
+            else if D.eval (P.1, -P.2).1 (-(P.1, -P.2).2) ≠ 0 then
+              Polynomial.rootMultiplicity (P.1, -P.2).1 (normPoly E D)
+            else 1 + ordAt_nonTwoTorsion_aux E n (D.divLin (P.1, -P.2).1) (P.1, -P.2)) = 0 at h0
+    rw [if_neg hD, if_neg (not_not.mpr hD_at_negP), if_neg (not_not.mpr hD_at_P)] at h0
+    omega
+  omega
+
 end Divisor
