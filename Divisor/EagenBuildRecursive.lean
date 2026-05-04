@@ -779,6 +779,29 @@ theorem some_in_affinePoints {x y : ZMod E.q}
   refine ⟨(x, y), hQ, ?_⟩
   rw [ECPoint.affine_of_nonsingular E h]
 
+/-! ## honestDivisorCoeffs support contained in affinePoints ∪ {0}
+
+Per the previous lemma, every `.some` ECPoint is in `affinePoints E`.
+The infinity ECPoint is the additional element. Hence the support of
+`honestDivisorCoeffs` (or any function on ECPoints) is contained in
+`insert 0 (affinePoints E)`. -/
+
+theorem honestDivisorCoeffs_support_subset_affineAndInfinity
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) :
+    Function.support (honestDivisorCoeffs E stmt wit hk msg)
+      ⊆ ↑(insert (0 : ECPoint E) (ECPoint.affinePoints E)) := by
+  classical
+  intro R _hR
+  match R with
+  | 0 =>
+    rw [Finset.coe_insert]
+    exact Set.mem_insert _ _
+  | .some h =>
+    rw [Finset.coe_insert, Set.mem_insert_iff]
+    right
+    exact some_in_affinePoints E h
+
 /-! ## Notes on remaining infrastructure for any-k completeness
 
 To prove `ma_completeness_via_isHonestForExplicit` for ANY k, we need:
