@@ -38,6 +38,37 @@ the accumulator F by `chordCoordRingElt P Q` for distinct-chord pairs)
 can directly invoke `divisorOfD_mul_add_when_chord_line_D2` for
 divisorOfD-additivity.
 
+## eagenBuild_length4 status (May 2026, 123 commits)
+
+**Driver and universal divisor identity COMPLETE:**
+
+```lean
+noncomputable def eagenBuild_length4_explicit
+    (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q) : CoordRingElt E.q :=
+  (mulCoordRingElt E (chordCoordRingElt E P₀ P₁) (chordCoordRingElt E P₂ P₃))
+    .divLin (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
+
+theorem divisorOfD_eagenBuild_length4_eq_chord_pair_minus_vertical
+    (genericity hyps) (R : ECPoint E) :
+    divisorOfD E (eagenBuild_length4_explicit ...) R
+      = divisorOfD E (mulCoordRingElt L₁ L₂) R - divisorOfD E L_v R
+
+theorem eagenBuild_length4_div_at_infinity
+    (genericity hyps) :
+    divisorOfD E (eagenBuild_length4_explicit ...) (0 : ECPoint E) = -4
+```
+
+**For the affine ECPoint cases**, plug into the universal identity:
+* `R = P_i`: divisorOfD chord at P_i (1 if on chord, 0 else) - 0 (vertical doesn't vanish at P_i.1 ≠ Q_0x).
+* `R = Q_0`: 1 + 0 - 1 = 0 (chord vanishes once, vertical vanishes once, cancel).
+* `R = -Q_0`: 0 + 1 - 1 = 0 (chord_2 vanishes once, vertical vanishes once).
+* `R generic`: 0 + 0 - 0 = 0.
+
+Each specific R value requires its own theorem combining the universal
+identity with `divisorOfD_chordCoordRingElt_chord_distinct`,
+`divisorOfD_chordCoordRingElt_chord_pointwise`, and a "vertical at affine
+P off x_0" lemma. Mechanical but verbose; ~100-200 LOC each.
+
 ## Branch state at firing (May 2026)
 
 **99 commits since master, all building cleanly (8098 jobs).**
