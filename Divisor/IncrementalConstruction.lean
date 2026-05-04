@@ -3402,6 +3402,107 @@ theorem cross_case_m2_pos
       normPoly_eval_eq_D_mul_D_neg E D₂ hMP]
   simp [hD₂negP]
 
+/-! ## (iterDivLin one step).eval at P = T_poly'(P.1) in cross case -/
+
+theorem cross_case_iterDivLin_one_eval_eq_T_deriv
+    {D₁ D₂ : CoordRingElt E.q}
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0) :
+    (iterDivLin E (mulCoordRingElt E D₁ D₂) P.1 1).eval P.1 P.2
+      = ((mulCoordRingElt E D₁ D₂).a -
+         (mulCoordRingElt E D₁ D₂).b * Polynomial.C P.2).derivative.eval P.1 := by
+  obtain ⟨hax, hbx⟩ := cross_case_mul_a_b_vanish E hP hY hD₁P hD₂negP
+  rw [iterDivLin_succ, iterDivLin_zero]
+  -- ((D₁·D₂).divLin P.1).eval P.1 P.2 expanded.
+  show ((mulCoordRingElt E D₁ D₂).a /ₘ (Polynomial.X - Polynomial.C P.1)).eval P.1
+      - ((mulCoordRingElt E D₁ D₂).b /ₘ (Polynomial.X - Polynomial.C P.1)).eval P.1
+        * P.2 = _
+  rw [divByMonic_X_sub_C_eval_eq_derivative_eval _ _ hax]
+  rw [divByMonic_X_sub_C_eval_eq_derivative_eval _ _ hbx]
+  -- T_poly.derivative.eval P.1 = (D₁D₂).a.derivative.eval P.1 - (D₁D₂).b.derivative.eval P.1 * P.2.
+  simp only [Polynomial.derivative_sub, Polynomial.derivative_mul,
+             Polynomial.derivative_C, mul_zero, add_zero,
+             Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C]
+
+/-! ## Branch condition for `min = 1`: (iterDivLin 1).eval = 0 iff `m₂ < m₁` -/
+
+theorem cross_case_iterDivLin_one_eval_zero_iff_when_min_eq_one
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₁negP : D₁.eval P.1 (-P.2) ≠ 0)
+    (hD₂P : D₂.eval P.1 P.2 ≠ 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0)
+    (hMin : min (Polynomial.rootMultiplicity P.1 (normPoly E D₁))
+                (Polynomial.rootMultiplicity P.1 (normPoly E D₂)) = 1) :
+    (iterDivLin E (mulCoordRingElt E D₁ D₂) P.1 1).eval P.1 P.2 = 0
+      ↔ Polynomial.rootMultiplicity P.1 (normPoly E D₂) <
+        Polynomial.rootMultiplicity P.1 (normPoly E D₁) := by
+  have hB₁ : D₁.b.eval P.1 ≠ 0 := cross_case_D1_b_eval_ne_zero E hY hD₁P hD₁negP
+  have hB₂ : D₂.b.eval P.1 ≠ 0 := cross_case_D2_b_eval_ne_zero E hY hD₂P hD₂negP
+  have hN₁nz : normPoly E D₁ ≠ 0 := normPoly_ne_zero E D₁ h₁
+  have hm₁_pos : 0 < Polynomial.rootMultiplicity P.1 (normPoly E D₁) :=
+    cross_case_m1_pos E h₁ hP hD₁P
+  have hm₂_pos : 0 < Polynomial.rootMultiplicity P.1 (normPoly E D₂) :=
+    cross_case_m2_pos E h₂ hP hD₂negP
+  rw [cross_case_iterDivLin_one_eval_eq_T_deriv E hP hY hD₁P hD₂negP]
+  -- T_poly'(P.1) = 0 ↔ (normPoly D_1)'(P.1) = 0 (via derivative identity, B_1, B_2 ≠ 0).
+  have hId := cross_case_T_deriv_eq_normPoly_deriv E D₁ D₂ hP hD₁P hD₂negP
+  -- Rephrase: T_poly'(P.1) = 0 iff -B_2 * (normPoly D_1)'(P.1) = 0 iff (normPoly D_1)'(P.1) = 0.
+  constructor
+  · intro hT
+    rw [hT, mul_zero] at hId
+    -- hId : 0 = -B_2 * (normPoly D_1)'(P.1).
+    have : (normPoly E D₁).derivative.eval P.1 = 0 := by
+      have h := hId.symm
+      rcases mul_eq_zero.mp h with hb | hN
+      · exfalso; apply hB₂; linear_combination -hb
+      · exact hN
+    -- (normPoly D_1)'(P.1) = 0 ⟺ m_1 ≥ 2 (using one_lt_rootMultiplicity_iff_isRoot).
+    have hm₁_ge_2 : 2 ≤ Polynomial.rootMultiplicity P.1 (normPoly E D₁) := by
+      have hRoot : (normPoly E D₁).IsRoot P.1 := by
+        rw [Polynomial.IsRoot, normPoly_eval_eq_D_mul_D_neg E D₁ hP, hD₁P]
+        simp
+      have h1lt : 1 < Polynomial.rootMultiplicity P.1 (normPoly E D₁) := by
+        rw [Polynomial.one_lt_rootMultiplicity_iff_isRoot hN₁nz]
+        exact ⟨hRoot, this⟩
+      omega
+    -- min(m_1, m_2) = 1 with m_1 ≥ 2 ⟹ m_2 = 1 < m_1.
+    have hm₂_eq_one : Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 1 := by
+      have : min (Polynomial.rootMultiplicity P.1 (normPoly E D₁))
+                  (Polynomial.rootMultiplicity P.1 (normPoly E D₂)) ≤
+              Polynomial.rootMultiplicity P.1 (normPoly E D₂) := min_le_right _ _
+      have h1le : 1 ≤ Polynomial.rootMultiplicity P.1 (normPoly E D₂) := hm₂_pos
+      -- min = 1, m_1 ≥ 2, so m_2 = 1 (else min would be > 1).
+      rcases Nat.lt_or_ge (Polynomial.rootMultiplicity P.1 (normPoly E D₁))
+              (Polynomial.rootMultiplicity P.1 (normPoly E D₂)) with hlt | hge
+      · rw [Nat.min_eq_left (le_of_lt hlt)] at hMin; omega
+      · rw [Nat.min_eq_right hge] at hMin; exact hMin
+    omega
+  · intro hLt
+    -- m_2 < m_1: m_2 = 1 (since min = 1), m_1 ≥ 2.
+    have hm₂_eq_one : Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 1 := by
+      rcases Nat.lt_or_ge (Polynomial.rootMultiplicity P.1 (normPoly E D₁))
+              (Polynomial.rootMultiplicity P.1 (normPoly E D₂)) with hlt | hge
+      · -- m_1 < m_2 contradicts m_2 < m_1.
+        omega
+      · rw [Nat.min_eq_right hge] at hMin; exact hMin
+    have hm₁_ge_2 : 2 ≤ Polynomial.rootMultiplicity P.1 (normPoly E D₁) := by omega
+    -- (normPoly D_1)'(P.1) = 0 (since m_1 ≥ 2).
+    have hNder_zero : (normPoly E D₁).derivative.eval P.1 = 0 := by
+      by_contra hd
+      have hRoot : (normPoly E D₁).IsRoot P.1 := by
+        rw [Polynomial.IsRoot, normPoly_eval_eq_D_mul_D_neg E D₁ hP, hD₁P]
+        simp
+      have h1lt : 1 < Polynomial.rootMultiplicity P.1 (normPoly E D₁) := by omega
+      rw [Polynomial.one_lt_rootMultiplicity_iff_isRoot hN₁nz] at h1lt
+      exact hd h1lt.2
+    -- Use derivative identity: B_1 * T_poly'(P.1) = -B_2 * (normPoly D_1)'(P.1) = 0.
+    rw [hNder_zero, mul_zero] at hId
+    -- hId : B_1 * T_poly'(P.1) = 0.
+    rcases mul_eq_zero.mp hId with hb | hT
+    · exfalso; exact hB₁ hb
+    · exact hT
+
 /-- Unified base case: commonRootMultRat = 1 when `min(m₁, m₂) = 1` in cross case. -/
 theorem cross_case_commonRootMult_eq_one_when_min_eq_one
     {D₁ D₂ : CoordRingElt E.q}
