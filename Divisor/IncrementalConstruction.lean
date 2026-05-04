@@ -1463,6 +1463,56 @@ theorem divisorOfD_mul_add_at_infinity
   push_cast
   ring
 
+/-! ## Compatibility of `divLin` with multiplication
+
+When `(X − C x₀)` divides `D₁.a` and `D₁.b`, we have
+
+  `(D₁ · D₂).divLin x₀ = D₁.divLin x₀ · D₂`
+
+because `divByMonic` distributes over the linear-combination form of
+multiplication. Used to step the recursion on `ordAt` through products. -/
+
+theorem mulCoordRingElt_divLin_left
+    (D₁ D₂ : CoordRingElt E.q) (x₀ : ZMod E.q)
+    (haDvd : (X - C x₀) ∣ D₁.a) (hbDvd : (X - C x₀) ∣ D₁.b) :
+    (mulCoordRingElt E D₁ D₂).divLin x₀
+      = mulCoordRingElt E (D₁.divLin x₀) D₂ := by
+  classical
+  have hMonic : (X - C x₀ : (ZMod E.q)[X]).Monic := monic_X_sub_C _
+  obtain ⟨qa, hqa⟩ := haDvd
+  obtain ⟨qb, hqb⟩ := hbDvd
+  have ha_div : D₁.a /ₘ (X - C x₀) = qa := by
+    rw [hqa]; exact mul_divByMonic_cancel_left _ hMonic
+  have hb_div : D₁.b /ₘ (X - C x₀) = qb := by
+    rw [hqb]; exact mul_divByMonic_cancel_left _ hMonic
+  -- Build out both sides:
+  -- LHS = ((D₁·D₂).a /ₘ (X-x₀), (D₁·D₂).b /ₘ (X-x₀))
+  -- RHS = mul of (D₁.divLin x₀ = (qa, qb)) and D₂
+  -- (D₁·D₂).a = a₁·a₂ + b₁·b₂·curveX = (X-x₀)·qa·a₂ + (X-x₀)·qb·b₂·curveX
+  --           = (X-x₀)·(qa·a₂ + qb·b₂·curveX)
+  -- so (D₁·D₂).a /ₘ (X-x₀) = qa·a₂ + qb·b₂·curveX = (D₁.divLin·D₂).a
+  -- Similar for b component.
+  -- Unfold mulCoordRingElt + divLin and prove componentwise.
+  unfold mulCoordRingElt CoordRingElt.divLin
+  show ({ a := (D₁.a * D₂.a + D₁.b * D₂.b * curveX E) /ₘ (X - C x₀),
+          b := (D₁.a * D₂.b + D₂.a * D₁.b) /ₘ (X - C x₀) } : CoordRingElt E.q)
+      = { a := (D₁.a /ₘ (X - C x₀)) * D₂.a + (D₁.b /ₘ (X - C x₀)) * D₂.b * curveX E,
+          b := (D₁.a /ₘ (X - C x₀)) * D₂.b + D₂.a * (D₁.b /ₘ (X - C x₀)) }
+  rw [ha_div, hb_div]
+  -- Now split the conjunction.
+  refine CoordRingElt.mk.injEq _ _ _ _ |>.mpr ?_
+  refine ⟨?_, ?_⟩
+  · have hRw : D₁.a * D₂.a + D₁.b * D₂.b * curveX E
+        = (X - C x₀) * (qa * D₂.a + qb * D₂.b * curveX E) := by
+      rw [hqa, hqb]; ring
+    rw [hRw]
+    exact mul_divByMonic_cancel_left _ hMonic
+  · have hRw : D₁.a * D₂.b + D₂.a * D₁.b
+        = (X - C x₀) * (qa * D₂.b + D₂.a * qb) := by
+      rw [hqa, hqb]; ring
+    rw [hRw]
+    exact mul_divByMonic_cancel_left _ hMonic
+
 /-! ## `ordAt` is additive when D₁ doesn't vanish at P
 
 A simple but useful corollary: when neither factor vanishes at `P`, both
