@@ -3632,4 +3632,72 @@ theorem ordAt_nonTwoTorsion_mul_when_m2_eq_one_in_cross
     rw [if_pos hbranch_true]
     omega
 
+/-- Unified cross-case multiplicativity for `min(m₁, m₂) = 1`.
+
+Since eagenBuild's recursion always multiplies by chord lines (which
+have mult 1 at any affine intersection), this covers all cross-case
+configurations needed for eagenBuild correctness. -/
+theorem ordAt_nonTwoTorsion_mul_in_cross_when_min_eq_one
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₁negP : D₁.eval P.1 (-P.2) ≠ 0)
+    (hD₂P : D₂.eval P.1 P.2 ≠ 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0)
+    (hMin : min (Polynomial.rootMultiplicity P.1 (normPoly E D₁))
+                (Polynomial.rootMultiplicity P.1 (normPoly E D₂)) = 1) :
+    ordAt_nonTwoTorsion E (mulCoordRingElt E D₁ D₂) P
+      = Polynomial.rootMultiplicity P.1 (normPoly E D₁) := by
+  have hm₁_pos : 0 < Polynomial.rootMultiplicity P.1 (normPoly E D₁) :=
+    cross_case_m1_pos E h₁ hP hD₁P
+  have hm₂_pos : 0 < Polynomial.rootMultiplicity P.1 (normPoly E D₂) :=
+    cross_case_m2_pos E h₂ hP hD₂negP
+  -- D = D_1 * D_2 non-zero.
+  have hMul_NZ : ¬ ((mulCoordRingElt E D₁ D₂).a = 0
+      ∧ (mulCoordRingElt E D₁ D₂).b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E (mulCoordRingElt E D₁ D₂) = 0 := by
+      rw [normPoly_eq, ha, hb]; ring
+    rw [normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂)) hN
+  -- Closed form for ord(D_1*D_2)(P).
+  rw [ordAt_nonTwoTorsion_closed_form E (mulCoordRingElt E D₁ D₂) hMul_NZ hP hY]
+  simp only []
+  -- Get cross_iterDivLin_invariant_when_min_eq_one.
+  obtain ⟨hk, hbranch⟩ :=
+    cross_iterDivLin_invariant_when_min_eq_one E h₁ h₂ hP hY
+      hD₁P hD₁negP hD₂P hD₂negP hMin
+  rw [hk, hMin]
+  -- Compute m_norm = m_1 + m_2.
+  have hm_norm : Polynomial.rootMultiplicity P.1
+                    (normPoly E (mulCoordRingElt E D₁ D₂))
+                  = Polynomial.rootMultiplicity P.1 (normPoly E D₁)
+                    + Polynomial.rootMultiplicity P.1 (normPoly E D₂) := by
+    rw [normPoly_mul_eq]
+    exact Polynomial.rootMultiplicity_mul
+      (mul_ne_zero (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂))
+  rw [hm_norm]
+  -- Substitute hMin into hbranch.
+  rw [hMin] at hbranch
+  -- Case on which factor has mult 1.
+  by_cases hm₁_eq_one : Polynomial.rootMultiplicity P.1 (normPoly E D₁) = 1
+  · -- m_1 = 1: branch false (m_2 < 1 is false since m_2 >= 1). Output k = 1 = m_1.
+    have hbranch_false :
+        ¬ (iterDivLin E (mulCoordRingElt E D₁ D₂) P.1 1).eval P.1 P.2 = 0 := by
+      rw [hbranch]; omega
+    rw [if_neg hbranch_false]
+    omega
+  · -- m_1 != 1. Since min = 1, m_2 must be 1 (and m_1 >= 2).
+    have hm₂_eq_one : Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 1 := by
+      rcases Nat.lt_or_ge (Polynomial.rootMultiplicity P.1 (normPoly E D₁))
+              (Polynomial.rootMultiplicity P.1 (normPoly E D₂)) with hlt | hge
+      · rw [Nat.min_eq_left (le_of_lt hlt)] at hMin; omega
+      · rw [Nat.min_eq_right hge] at hMin; exact hMin
+    have hm₁_ge_two : 2 ≤ Polynomial.rootMultiplicity P.1 (normPoly E D₁) := by omega
+    -- Branch true: m_2 < m_1 ⟺ 1 < m_1 ⟺ true.
+    have hbranch_true :
+        (iterDivLin E (mulCoordRingElt E D₁ D₂) P.1 1).eval P.1 P.2 = 0 := by
+      rw [hbranch]; omega
+    rw [if_pos hbranch_true]
+    omega
+
 end Divisor
