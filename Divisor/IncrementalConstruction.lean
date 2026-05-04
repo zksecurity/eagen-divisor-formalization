@@ -4179,6 +4179,93 @@ theorem divisorOfD_mul_add_affine_when_normPoly_D2_le_one
           (E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP)))]
     rfl
 
+/-! ## Bridge: `chordCoordRingElt` satisfies chord-line hypothesis (distinct chord) -/
+
+theorem chordCoordRingElt_normPoly_rootMult_le_one_at_distinct_chord
+    (P Q : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (hxx : P.1 ≠ Q.1)
+    (hP_neq_A2 : P.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
+    (hQ_neq_A2 : Q.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) :
+    ∀ x : ZMod E.q,
+      Polynomial.rootMultiplicity x
+        (normPoly E (chordCoordRingElt E P Q)) ≤ 1 := by
+  classical
+  set lam := slopeOf P.1 P.2 Q.1 Q.2 with hlam_def
+  set A₂x := lam ^ 2 - P.1 - Q.1 with hA₂x_def
+  set A₂y := lam * A₂x + (P.2 - lam * P.1)
+  set NP := normPoly E (chordCoordRingElt E P Q) with hNP_def
+  -- A₂ on E.
+  have hA₂_on : (A₂x, A₂y) ∈ E.points := by
+    apply E.hComplete
+    show A₂y ^ 2 = A₂x ^ 3 + E.curveA * A₂x + E.curveB
+    exact chord_third_point_on_E E P Q hP hQ hxx
+  -- chord non-zero ⟹ NP non-zero.
+  have hNZ : ¬ ((chordCoordRingElt E P Q).a = 0 ∧ (chordCoordRingElt E P Q).b = 0) :=
+    chordCoordRingElt_ne_zero E P Q
+  have hNP_NZ : NP ≠ 0 := normPoly_ne_zero E _ hNZ
+  -- natDegree NP = 3 (chord case).
+  have hND : NP.natDegree = 3 := by
+    show (normPoly E (chordCoordRingElt E P Q)).natDegree = 3
+    -- chordCoordRingElt E P Q in non-vertical case has form (-C lam·X - C mu, -1).
+    have hD_eq : chordCoordRingElt E P Q =
+        { a := -(Polynomial.C lam) * Polynomial.X
+                - Polynomial.C (P.2 - lam * P.1),
+          b := -1 } := by
+      unfold chordCoordRingElt
+      rw [dif_neg hxx]
+      rfl
+    rw [hD_eq]
+    exact natDegree_normPoly_chordCoordRingElt_nonvertical E _ _
+  -- Three distinct x-roots.
+  have hxP_root : NP.IsRoot P.1 := by
+    show NP.eval P.1 = 0
+    rw [hNP_def, normPoly_eval_eq_D_mul_D_neg E _ hP,
+        chordCoordRingElt_eval_left E P Q, zero_mul]
+  have hxQ_root : NP.IsRoot Q.1 := by
+    show NP.eval Q.1 = 0
+    rw [hNP_def, normPoly_eval_eq_D_mul_D_neg E _ hQ,
+        chordCoordRingElt_eval_right E P Q, zero_mul]
+  have hxA₂_root : NP.IsRoot A₂x := by
+    show NP.eval A₂x = 0
+    rw [hNP_def, normPoly_eval_eq_D_mul_D_neg E _ hA₂_on]
+    have h_eval : (chordCoordRingElt E P Q).eval A₂x A₂y = 0 :=
+      chordCoordRingElt_eval_thirdPoint_chord E hP hQ hxx
+    rw [h_eval, zero_mul]
+  -- Build Finset {P.1, Q.1, A₂x} of size 3.
+  have hxP_neq_xQ : P.1 ≠ Q.1 := hxx
+  have hxP_neq_xA₂ : P.1 ≠ A₂x := hP_neq_A2
+  have hxQ_neq_xA₂ : Q.1 ≠ A₂x := hQ_neq_A2
+  set S : Finset (ZMod E.q) := {P.1, Q.1, A₂x} with hS_def
+  have hS_card : S.card = 3 := by
+    rw [hS_def]
+    rw [show ({P.1, Q.1, A₂x} : Finset (ZMod E.q)) = insert P.1 (insert Q.1 {A₂x}) from rfl]
+    have h1 : Q.1 ∉ ({A₂x} : Finset (ZMod E.q)) := by simp [hxQ_neq_xA₂]
+    have h2 : P.1 ∉ insert Q.1 ({A₂x} : Finset (ZMod E.q)) := by
+      simp [hxP_neq_xQ, hxP_neq_xA₂]
+    rw [Finset.card_insert_of_notMem h2, Finset.card_insert_of_notMem h1,
+        Finset.card_singleton]
+  -- S ⊆ NP.roots (as multisets).
+  have hS_le_roots : (S.val : Multiset (ZMod E.q)) ≤ NP.roots := by
+    rw [Multiset.le_iff_subset S.nodup]
+    intro x hx
+    have hx' : x ∈ S := hx
+    simp only [hS_def, Finset.mem_insert, Finset.mem_singleton] at hx'
+    rcases hx' with rfl | rfl | rfl
+    · exact (Polynomial.mem_roots hNP_NZ).mpr hxP_root
+    · exact (Polynomial.mem_roots hNP_NZ).mpr hxQ_root
+    · exact (Polynomial.mem_roots hNP_NZ).mpr hxA₂_root
+  -- Card of roots ≤ natDeg = 3.
+  have hRoots_card_le : NP.roots.card ≤ 3 := hND ▸ Polynomial.card_roots' NP
+  -- NP.roots = S.val.
+  have hRoots_eq : (S.val : Multiset (ZMod E.q)) = NP.roots := by
+    apply Multiset.eq_of_le_of_card_le hS_le_roots
+    have : S.val.card = 3 := hS_card
+    omega
+  -- For any x: rootMult ≤ count in S.val ≤ 1 (Nodup).
+  intro x
+  rw [← Polynomial.count_roots, ← hRoots_eq]
+  exact Multiset.nodup_iff_count_le_one.mp S.nodup x
+
 /-! ## Full divisorOfD-additivity under chord-line hypothesis at every ECPoint
 
 Combines:
