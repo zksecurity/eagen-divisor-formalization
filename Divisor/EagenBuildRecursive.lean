@@ -1294,6 +1294,74 @@ theorem divisor_identity_at_affine_off_support_for_length4Simple
   rw [h_filter_empty]
   simp
 
+/-! ### Affine on-support case: R ∈ {P_0..P_3}
+
+For each P_i, the divisor identity at .some P_i is `1 = 1`:
+* `divisorOfD = 1` from `eagenBuild_length4_div_at_P_i`.
+* `honestDivisorCoeffs = 1` from indicator (i = 0) or base-sum (i ≥ 1).
+
+Each sub-case is structurally the same; we keep them separate for
+readability. -/
+
+/-- Helper: extract divisorOfD msg.toD = 1 at any of P_0..P_3 (under
+    IsHonestForLength4Simple's hypotheses). -/
+private theorem div_eq_one_at_P_for_length4Simple
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    {x y : ZMod E.q} (hns : E.toW.toAffine.Nonsingular x y)
+    (h_xy : (x, y) = h_simple.P₀ ∨ (x, y) = h_simple.P₁ ∨
+            (x, y) = h_simple.P₂ ∨ (x, y) = h_simple.P₃) :
+    divisorOfD E msg.toD (WeierstrassCurve.Affine.Point.some hns) = 1 := by
+  rw [show (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+        = ECPoint.affine E x y from (ECPoint.affine_of_nonsingular E hns).symm]
+  rw [h_simple.h_toD_eq]
+  rcases h_xy with h0 | h1 | h2 | h3
+  · -- (x, y) = P_0: divisorOfD = 1.
+    have hx : x = h_simple.P₀.1 := by rw [show x = (x, y).1 from rfl, h0]
+    have hy : y = h_simple.P₀.2 := by rw [show y = (x, y).2 from rfl, h0]
+    rw [hx, hy]
+    exact eagenBuild_length4_div_at_P₀ E
+      h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
+      h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
+      h_simple.h_xx_01 h_simple.h_xx_23
+      h_simple.h_P₀_ne_A2_01 h_simple.h_P₁_ne_A2_01
+      h_simple.h_P₂_ne_A2_23 h_simple.h_P₃_ne_A2_23
+      h_simple.h_P₀_off_L₂ h_simple.h_third_match h_simple.h_y_match
+      h_simple.h_Q₀_nontorsion
+  · have hx : x = h_simple.P₁.1 := by rw [show x = (x, y).1 from rfl, h1]
+    have hy : y = h_simple.P₁.2 := by rw [show y = (x, y).2 from rfl, h1]
+    rw [hx, hy]
+    exact eagenBuild_length4_div_at_P₁ E
+      h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
+      h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
+      h_simple.h_xx_01 h_simple.h_xx_23
+      h_simple.h_P₀_ne_A2_01 h_simple.h_P₁_ne_A2_01
+      h_simple.h_P₂_ne_A2_23 h_simple.h_P₃_ne_A2_23
+      h_simple.h_P₁_off_L₂ h_simple.h_third_match h_simple.h_y_match
+      h_simple.h_Q₀_nontorsion
+  · have hx : x = h_simple.P₂.1 := by rw [show x = (x, y).1 from rfl, h2]
+    have hy : y = h_simple.P₂.2 := by rw [show y = (x, y).2 from rfl, h2]
+    rw [hx, hy]
+    exact eagenBuild_length4_div_at_P₂ E
+      h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
+      h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
+      h_simple.h_xx_01 h_simple.h_xx_23
+      h_simple.h_P₀_ne_A2_01 h_simple.h_P₁_ne_A2_01
+      h_simple.h_P₂_ne_A2_23 h_simple.h_P₃_ne_A2_23
+      h_simple.h_P₂_off_L₁ h_simple.h_third_match h_simple.h_y_match
+      h_simple.h_Q₀_nontorsion
+  · have hx : x = h_simple.P₃.1 := by rw [show x = (x, y).1 from rfl, h3]
+    have hy : y = h_simple.P₃.2 := by rw [show y = (x, y).2 from rfl, h3]
+    rw [hx, hy]
+    exact eagenBuild_length4_div_at_P₃ E
+      h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
+      h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
+      h_simple.h_xx_01 h_simple.h_xx_23
+      h_simple.h_P₀_ne_A2_01 h_simple.h_P₁_ne_A2_01
+      h_simple.h_P₂_ne_A2_23 h_simple.h_P₃_ne_A2_23
+      h_simple.h_P₃_off_L₁ h_simple.h_third_match h_simple.h_y_match
+      h_simple.h_Q₀_nontorsion
+
 /-- Scalar reduction for the length-4 simple case (with `wit.scalars = 1`). -/
 theorem scalar_reduction_for_length4Simple
     {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
