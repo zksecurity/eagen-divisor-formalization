@@ -1676,4 +1676,156 @@ theorem pairUpN_eq_singleton_of_len_one {α : Type*} (n : ℕ) (xss : List (List
     rw [this]
   | _ :: _ :: _ => simp [h_eq] at h
 
+/-! ## level_step length bound -/
+
+theorem level_step_length_le (xs : List (EagenAccum E)) :
+    (level_step E xs).length ≤ (xs.length + 1) / 2 := by
+  match xs with
+  | [] => simp [level_step]
+  | [_] => simp [level_step]
+  | a :: b :: rest =>
+    show (EagenAccum.combine E a b :: level_step E rest).length ≤ _
+    rw [List.length_cons]
+    have ih := level_step_length_le rest
+    rw [show (a :: b :: rest).length = rest.length + 2 from rfl]
+    omega
+
+theorem iterate_length_le_one_of_fuel_geq
+    (n : ℕ) (xs : List (EagenAccum E)) (h : xs.length ≤ n) :
+    (iterate E n xs).length ≤ 1 := by
+  induction n generalizing xs with
+  | zero =>
+    show xs.length ≤ 1
+    omega
+  | succ k ih =>
+    show (iterate E (k + 1) xs).length ≤ 1
+    by_cases hLen : xs.length ≤ 1
+    · show (if xs.length ≤ 1 then xs else iterate E k (level_step E xs)).length ≤ 1
+      rw [if_pos hLen]; exact hLen
+    · show (if xs.length ≤ 1 then xs else iterate E k (level_step E xs)).length ≤ 1
+      rw [if_neg hLen]
+      apply ih
+      have hStep := level_step_length_le E xs
+      -- xs.length ≥ 2, so (level_step xs).length ≤ (xs.length + 1) / 2 ≤ xs.length - 1 ≤ k.
+      -- Specifically: xs.length ≤ k + 1 and xs.length ≥ 2, so (xs.length + 1)/2 ≤ k.
+      omega
+
+/-! ## Final landmark theorem (conditional on combine) -/
+
+theorem eagenBuild_singletons_landmark
+    (Ps : List (ZMod E.q × ZMod E.q))
+    (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
+    (hSumZero : sumOnE E Ps = 0)
+    (hNonEmpty : Ps ≠ [])
+    (h_combine : ∀ (xs ys : List (ZMod E.q × ZMod E.q))
+        (a b : EagenAccum E),
+      LandmarkInv E xs a → LandmarkInv E ys b →
+      LandmarkInv E (xs ++ ys) (EagenAccum.combine E a b)) :
+    let D := eagenBuild_singletons E Ps
+    ¬ (D.a = 0 ∧ D.b = 0) ∧
+    (∀ P ∈ Ps, D.eval P.1 P.2 = 0) ∧
+    (normPoly E D).natDegree = Ps.length := by
+  classical
+  -- The iterate output has length ≤ 1 with sufficient fuel.
+  have h_init_len : (level0_singletons E Ps).length = Ps.length := by
+    show (Ps.map _).length = Ps.length
+    exact List.length_map ..
+  have h_iter_le : (iterate E Ps.length (level0_singletons E Ps)).length ≤ 1 :=
+    iterate_length_le_one_of_fuel_geq E Ps.length _ (by rw [h_init_len])
+  -- LandmarkInvList for the iterated.
+  have h_inv_list : LandmarkInvList E
+      (pairUpN Ps.length (Ps.map (fun P => [P])))
+      (iterate E Ps.length (level0_singletons E Ps)) :=
+    landmarkInvList_eagenBuild_singletons E Ps hPs_on h_combine
+  -- Pair up partition has same length as iterate output (Forall₂).
+  have h_lens : (pairUpN Ps.length (Ps.map (fun P => [P]))).length
+      = (iterate E Ps.length (level0_singletons E Ps)).length :=
+    List.Forall₂.length_eq h_inv_list
+  -- The iterate output has length ≥ 1 (since input non-empty).
+  have h_init_pos : (level0_singletons E Ps).length ≥ 1 := by
+    rw [h_init_len]
+    cases Ps with
+    | nil => exact (hNonEmpty rfl).elim
+    | cons _ _ => simp
+  -- ... actually iterate doesn't preserve length ≥ 1 in general, need to handle.
+  -- For Ps.length ≥ 1, after iterate the output is exactly length 1.
+  -- This requires: iterate doesn't drop to 0 if input was non-empty.
+  -- Skip rigorous proof of this, take from the LandmarkInvList structure:
+  -- pairUpN starts with non-empty (Ps.map fun P => [P]) and pairUp preserves
+  -- non-empty (when input non-empty). So pairUpN result is non-empty.
+  -- Hence iterate result is non-empty (same length).
+  -- Combined with h_iter_le: length is exactly 1.
+  -- ...
+  -- For now, use pairUpN_flatten + non-empty as a proxy.
+  have h_pairUp_flatten : (pairUpN Ps.length (Ps.map (fun P => [P]))).flatten
+      = Ps := by
+    rw [pairUpN_flatten, map_singleton_flatten]
+  -- pairUpN result has length ≥ 1 (since flatten = Ps non-empty).
+  have h_pair_ne_empty : pairUpN Ps.length (Ps.map (fun P => [P])) ≠ [] := by
+    intro h
+    rw [h] at h_pairUp_flatten
+    simp at h_pairUp_flatten
+    exact hNonEmpty h_pairUp_flatten
+  have h_pair_len_pos : (pairUpN Ps.length (Ps.map (fun P => [P]))).length ≥ 1 := by
+    cases h_pair_eq : pairUpN Ps.length (Ps.map (fun P => [P])) with
+    | nil => exact (h_pair_ne_empty h_pair_eq).elim
+    | cons _ _ => simp
+  -- So both lists have length 1.
+  have h_pair_len_one : (pairUpN Ps.length (Ps.map (fun P => [P]))).length = 1 := by
+    rw [h_lens]; omega
+  -- pairUpN result = [Ps].
+  have h_pair_eq_singleton :
+      pairUpN Ps.length (Ps.map (fun P => [P])) = [Ps] := by
+    have := pairUpN_eq_singleton_of_len_one Ps.length
+              (Ps.map (fun P => [P])) h_pair_len_one
+    rw [this, map_singleton_flatten]
+  -- iterate result has length 1: extract the singleton.
+  match h_iter_eq : iterate E Ps.length (level0_singletons E Ps) with
+  | [] =>
+    rw [h_iter_eq] at h_lens
+    simp at h_lens
+    rw [h_lens] at h_pair_len_one
+    simp at h_pair_len_one
+  | [final_acc] =>
+    -- LandmarkInv E Ps final_acc.
+    rw [h_pair_eq_singleton, h_iter_eq] at h_inv_list
+    have h_inv : LandmarkInv E Ps final_acc := by
+      cases h_inv_list with
+      | cons h_head h_tail => exact h_head
+    obtain ⟨h_pt, h_van, h_res, h_deg⟩ := h_inv
+    -- final_acc.point = sumOnE Ps = 0.
+    have h_pt_zero : final_acc.point = (0 : ECPoint E) := by
+      rw [h_pt]; exact hSumZero
+    -- D = eagenBuild_singletons Ps = final_acc.poly.
+    have h_D_eq : eagenBuild_singletons E Ps = final_acc.poly := by
+      show (match iterate E Ps.length (level0_singletons E Ps) with
+            | [a] => a.poly
+            | _ => { a := 1, b := 0 }) = final_acc.poly
+      rw [h_iter_eq]
+    -- Degree.
+    rw [if_pos h_pt_zero] at h_deg
+    -- Show all three conjuncts.
+    refine ⟨?_, ?_, ?_⟩
+    · -- D ≠ 0.
+      intro ⟨ha, hb⟩
+      rw [h_D_eq] at ha hb
+      have hNorm : normPoly E final_acc.poly = 0 := by
+        rw [normPoly_eq]
+        rw [ha, hb]
+        ring
+      rw [hNorm, Polynomial.natDegree_zero] at h_deg
+      have : Ps.length = 0 := by linarith
+      have : Ps = [] := List.length_eq_zero_iff.mp this
+      exact hNonEmpty this
+    · -- D vanishes at every P ∈ Ps.
+      intro P hP
+      rw [h_D_eq]
+      exact h_van P hP
+    · -- (normPoly D).natDegree = Ps.length.
+      rw [h_D_eq, h_deg]
+      omega
+  | _ :: _ :: _ =>
+    rw [h_iter_eq] at h_iter_le
+    simp at h_iter_le
+
 end Divisor.Landmark
