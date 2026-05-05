@@ -628,6 +628,95 @@ theorem accInv_level0_chord_divisor_identity_at_Q
   rw [if_neg h_ne_neg, if_neg h_ne_zero]
   push_cast
 
+/-! ### Level-0 chord case: full divisor identity ∀ R
+
+Combines infinity + at_P + at_Q + at_A₂ + off-support cases. -/
+
+theorem accInv_level0_chord_divisor_identity
+    (P Q : ZMod E.q × ZMod E.q)
+    (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (h_xx : P.1 ≠ Q.1)
+    (hP_neq_A2 : P.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
+    (hQ_neq_A2 : Q.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) :
+    let h_acc := (accInv_level0_chord_running_sum E P Q hP hQ h_xx).choose
+    ∀ R : ECPoint E,
+      divisorOfD E (chordCoordRingElt E P Q) R
+        = formalDivisorOfList E [P, Q] R
+          + residueDivisor E (ECPoint.affineOfMem E h_acc) R := by
+  classical
+  intro h_acc R
+  match R with
+  | WeierstrassCurve.Affine.Point.zero =>
+    exact accInv_level0_chord_divisor_identity_at_infinity E P Q hP hQ h_xx
+            hP_neq_A2 hQ_neq_A2
+  | WeierstrassCurve.Affine.Point.some (x := x) (y := y) hns =>
+    -- Case-split: (x, y) = P, Q, A₂, or off-support.
+    by_cases h_eqP : (x, y) = P
+    · -- Use h_eqP to swap (x, y) ↔ P inside hns.
+      have hP_eq : P = (x, y) := h_eqP.symm
+      have hns_P : E.toW.toAffine.Nonsingular P.1 P.2 := by
+        rw [hP_eq]; exact hns
+      have h_eq : (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+                = WeierstrassCurve.Affine.Point.some hns_P := by
+        rw [show (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+              = ECPoint.affine E x y from (ECPoint.affine_of_nonsingular E hns).symm]
+        rw [show (WeierstrassCurve.Affine.Point.some hns_P : ECPoint E)
+              = ECPoint.affine E P.1 P.2 from (ECPoint.affine_of_nonsingular E hns_P).symm]
+        congr 1 <;> rw [← h_eqP]
+      rw [h_eq]
+      exact accInv_level0_chord_divisor_identity_at_P E P Q hP hQ h_xx
+              hP_neq_A2 hQ_neq_A2 hns_P
+    · by_cases h_eqQ : (x, y) = Q
+      · have hQ_eq : Q = (x, y) := h_eqQ.symm
+        have hns_Q : E.toW.toAffine.Nonsingular Q.1 Q.2 := by
+          rw [hQ_eq]; exact hns
+        have h_eq : (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+                  = WeierstrassCurve.Affine.Point.some hns_Q := by
+          rw [show (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+                = ECPoint.affine E x y from (ECPoint.affine_of_nonsingular E hns).symm]
+          rw [show (WeierstrassCurve.Affine.Point.some hns_Q : ECPoint E)
+                = ECPoint.affine E Q.1 Q.2 from (ECPoint.affine_of_nonsingular E hns_Q).symm]
+          congr 1 <;> rw [← h_eqQ]
+        rw [h_eq]
+        exact accInv_level0_chord_divisor_identity_at_Q E P Q hP hQ h_xx
+                hP_neq_A2 hQ_neq_A2 hns_Q
+      · by_cases h_eqA₂ : (x, y) = (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1,
+                            slopeOf P.1 P.2 Q.1 Q.2 *
+                              (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) +
+                            (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1))
+        · have hThird_eq : (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1,
+                            slopeOf P.1 P.2 Q.1 Q.2 *
+                              (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) +
+                            (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1)) = (x, y) := h_eqA₂.symm
+          have hx_eq : x = (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) := by
+            have h := h_eqA₂
+            have : (x, y).1 = _ := congrArg Prod.fst h
+            exact this
+          have hy_eq : y = slopeOf P.1 P.2 Q.1 Q.2 *
+                            (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) +
+                          (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1) := by
+            have h := h_eqA₂
+            have : (x, y).2 = _ := congrArg Prod.snd h
+            exact this
+          have hns_third : E.toW.toAffine.Nonsingular
+              (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
+              (slopeOf P.1 P.2 Q.1 Q.2 *
+                (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) +
+              (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1)) := by
+            convert hns using 2 <;> [rw [hx_eq]; rw [hy_eq]]
+          have h_eq : (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+                    = WeierstrassCurve.Affine.Point.some hns_third := by
+            rw [show (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+                  = ECPoint.affine E x y from (ECPoint.affine_of_nonsingular E hns).symm]
+            rw [show (WeierstrassCurve.Affine.Point.some hns_third : ECPoint E)
+                  = ECPoint.affine E _ _ from (ECPoint.affine_of_nonsingular E hns_third).symm]
+            rw [hx_eq, hy_eq]
+          rw [h_eq]
+          exact accInv_level0_chord_divisor_identity_at_A₂ E P Q hP hQ h_xx
+                  hP_neq_A2 hQ_neq_A2 hns_third
+        · exact accInv_level0_chord_divisor_identity_at_off_support E P Q hP hQ h_xx
+                  hP_neq_A2 hQ_neq_A2 hns h_eqP h_eqQ h_eqA₂
+
 /-! ### Helper lemmas for residue and formalDivisor -/
 
 /-- residueDivisor evaluated at `-S` is `1` (when -S ≠ 0). -/
