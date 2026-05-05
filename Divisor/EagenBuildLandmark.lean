@@ -512,4 +512,56 @@ theorem landmarkInv_combine_or
     rw [ha_deg, hb_deg, List.length_append]
     omega
 
+/-! ## divLin helpers (axiom-free)
+
+Polynomial-level lemmas about `divLin`'s interaction with
+evaluation. These are used by the affine-affine combine
+preservation lemmas. -/
+
+/-- If `(X - C x₀)` divides both `D.a` and `D.b`, and `D` vanishes
+    at `(x, y)` with `x ≠ x₀`, then `D.divLin x₀` also vanishes at
+    `(x, y)`. -/
+theorem divLin_eval_zero_of_x_ne
+    (D : CoordRingElt E.q) (x₀ : ZMod E.q)
+    (haDvd : (X - C x₀) ∣ D.a) (hbDvd : (X - C x₀) ∣ D.b)
+    {x y : ZMod E.q} (h_eval : D.eval x y = 0) (h_xx : x ≠ x₀) :
+    (D.divLin x₀).eval x y = 0 := by
+  have h := divLin_eval_mul_X_sub_C E D x₀ haDvd hbDvd x y
+  -- h : (D.divLin x₀).eval x y * (x - x₀) = D.eval x y
+  rw [h_eval] at h
+  have hne : (x - x₀) ≠ 0 := sub_ne_zero.mpr h_xx
+  exact (mul_eq_zero.mp h).resolve_right hne
+
+/-- `(X - C x₀)` divides any polynomial `p` such that `p.eval x₀ = 0`. -/
+theorem dvd_X_sub_C_of_eval_eq_zero
+    {p : (ZMod E.q)[X]} {x₀ : ZMod E.q} (h : p.eval x₀ = 0) :
+    (X - C x₀) ∣ p := by
+  rw [Polynomial.dvd_iff_isRoot]
+  exact h
+
+/-- `(X - C x₀)^2` divides any polynomial `p` if `p` has a double
+    root at `x₀`, i.e. both `p.eval x₀ = 0` and the derivative
+    `p.derivative.eval x₀ = 0`. -/
+theorem dvd_pow_two_X_sub_C_of_double_root
+    {p : (ZMod E.q)[X]} {x₀ : ZMod E.q}
+    (h_eval : p.eval x₀ = 0)
+    (h_deriv : p.derivative.eval x₀ = 0) :
+    (X - C x₀) ^ 2 ∣ p := by
+  -- (X - C x₀) | p from h_eval. Write p = (X - C x₀) · q.
+  -- Then p.derivative = q + (X - C x₀) · q.derivative.
+  -- At x₀: 0 = q(x₀) + 0 = q(x₀). So (X - C x₀) | q. Hence (X - C x₀)² | p.
+  have h1 : (X - C x₀) ∣ p := dvd_X_sub_C_of_eval_eq_zero E h_eval
+  obtain ⟨q, hq⟩ := h1
+  have h2 : q.eval x₀ = 0 := by
+    have hderiv : p.derivative = q + (X - C x₀) * q.derivative := by
+      rw [hq, derivative_mul]
+      simp [derivative_X, derivative_C]
+    rw [hderiv] at h_deriv
+    simp at h_deriv
+    exact h_deriv
+  have h3 : (X - C x₀) ∣ q := dvd_X_sub_C_of_eval_eq_zero E h2
+  obtain ⟨r, hr⟩ := h3
+  refine ⟨r, ?_⟩
+  rw [hq, hr]; ring
+
 end Divisor.Landmark
