@@ -6031,6 +6031,17 @@ theorem accsPairsBaseGeneric_implies_tangent_free
     refine ⟨Or.inl h.1, ?_⟩
     exact IH h.2.2.2.2.2
 
+/-! ### AccInvList cons-cons unfolding -/
+
+theorem accInvList_cons_cons_iff
+    (xs ys : List (ZMod E.q × ZMod E.q))
+    (rest_xss : List (List (ZMod E.q × ZMod E.q)))
+    (a b : EagenAccum E)
+    (rest_accs : List (EagenAccum E)) :
+    AccInvList E (xs :: ys :: rest_xss) (a :: b :: rest_accs) ↔
+      AccInv E xs a ∧ AccInv E ys b ∧ AccInvList E rest_xss rest_accs := by
+  rw [accInvList_cons_iff, accInvList_cons_iff]
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
