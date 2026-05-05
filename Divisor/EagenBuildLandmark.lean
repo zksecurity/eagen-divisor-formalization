@@ -564,27 +564,63 @@ theorem dvd_pow_two_X_sub_C_of_double_root
   refine ⟨r, ?_⟩
   rw [hq, hr]; ring
 
-/-! ## TODO: combine_vertical, combine_distinct, combine_tangent_*
+/-! ## Helpers: deducing univariate vanishing from bivariate fiber
 
-The remaining four affine-affine preservation lemmas all need the
-divisibility-from-double-fiber-vanishing argument:
+When a bivariate polynomial `q : CoordRingElt E.q` vanishes at both
+`(x₀, y₀)` and `(x₀, -y₀)` for `y₀ ≠ 0`, the components `q.a` and
+`q.b` both vanish at `x₀`. (Char ≠ 2 plumbing handled via
+`E.hq_ge`.) -/
 
-  - `q.eval (xa, ya) = 0` and `q.eval (xa, -ya) = 0` together force
-    `q.a.eval xa = 0` and `q.b.eval xa = 0` (using char ≠ 2 and y ≠ 0
-    for the non-2-torsion sub-cases).
-  - This gives `(X - C xa) ∣ q.a` and `(X - C xa) ∣ q.b`.
-  - `divLin xa` then preserves vanishing at non-fiber points via
-    `divLin_eval_zero_of_x_ne`.
+theorem two_ne_zero_in_zmod : (2 : ZMod E.q) ≠ 0 := by
+  have hq5 : E.q ≥ 5 := E.hq_ge
+  have h2eq : (2 : ZMod E.q) = ((2 : ℕ) : ZMod E.q) := by norm_cast
+  rw [h2eq, Ne, CharP.cast_eq_zero_iff (ZMod E.q) E.q]
+  intro hdvd
+  have : E.q ≤ 2 := Nat.le_of_dvd (by norm_num) hdvd
+  omega
 
-The "no-x-collision" hypothesis (`∀ P ∈ xs ++ ys, P.1 ≠ xa`) lets
-us avoid the multiplicity argument at the divided-out fiber. Future
-work: lift this hypothesis using a strengthened invariant tracking
-multiplicities at coinciding x-coordinates (Codex-flagged sheet
-dichotomy).
+theorem qa_qb_eval_zero_of_double_fiber_vanish
+    (q : CoordRingElt E.q) (x₀ y₀ : ZMod E.q)
+    (hy_ne : y₀ ≠ 0)
+    (hq_pos : q.eval x₀ y₀ = 0) (hq_neg : q.eval x₀ (-y₀) = 0) :
+    q.a.eval x₀ = 0 ∧ q.b.eval x₀ = 0 := by
+  -- q.eval x₀ y = q.a.eval x₀ - q.b.eval x₀ · y.
+  have heq1 : q.a.eval x₀ - q.b.eval x₀ * y₀ = 0 := hq_pos
+  have heq2 : q.a.eval x₀ - q.b.eval x₀ * (-y₀) = 0 := hq_neg
+  have h2_ne : (2 : ZMod E.q) ≠ 0 := two_ne_zero_in_zmod E
+  refine ⟨?_, ?_⟩
+  · -- q.a.eval x₀ = 0 from heq1 + heq2.
+    have hprod : 2 * q.a.eval x₀ = 0 := by linear_combination heq1 + heq2
+    exact (mul_eq_zero.mp hprod).resolve_left h2_ne
+  · -- q.b.eval x₀ * y₀ = 0 from heq2 - heq1.
+    have hprod : 2 * (q.b.eval x₀ * y₀) = 0 := by
+      linear_combination heq2 - heq1
+    have hmid : q.b.eval x₀ * y₀ = 0 :=
+      (mul_eq_zero.mp hprod).resolve_left h2_ne
+    exact (mul_eq_zero.mp hmid).resolve_right hy_ne
 
-For combine_distinct (chord case) and combine_tangent_smooth, two
-divLin operations are needed (at xa and xb / twice at xa). The
-proof structure is similar but requires composing the divisibility
-arguments. -/
+/-! ## Helper: normPoly factorization through divLin
+
+When `(X - C x₀)` divides both `D.a` and `D.b`,
+`normPoly E (D.divLin x₀) * (X - C x₀)^2 = normPoly E D`.
+
+This gives the natDegree drop of 2 when divLin "absorbs" a
+fiber. -/
+
+theorem normPoly_eq_X_sub_C_sq_mul_normPoly_divLin
+    (D : CoordRingElt E.q) (x₀ : ZMod E.q)
+    (haDvd : (X - C x₀) ∣ D.a) (hbDvd : (X - C x₀) ∣ D.b) :
+    normPoly E D = (X - C x₀) ^ 2 * normPoly E (D.divLin x₀) := by
+  obtain ⟨qa, hqa⟩ := haDvd
+  obtain ⟨qb, hqb⟩ := hbDvd
+  have hMonic : (X - C x₀ : (ZMod E.q)[X]).Monic := monic_X_sub_C _
+  have ha_eq : D.a /ₘ (X - C x₀) = qa := by
+    rw [hqa]; exact mul_divByMonic_cancel_left _ hMonic
+  have hb_eq : D.b /ₘ (X - C x₀) = qb := by
+    rw [hqb]; exact mul_divByMonic_cancel_left _ hMonic
+  rw [normPoly_eq, normPoly_eq]
+  rw [CoordRingElt.divLin_a, CoordRingElt.divLin_b]
+  rw [ha_eq, hb_eq, hqa, hqb]
+  ring
 
 end Divisor.Landmark
