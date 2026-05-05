@@ -4189,6 +4189,25 @@ theorem accInv_combine_higher_distinct_step
   -- Prop irrelevance: h_combine_pt = h_combine_pt'.
   exact h_div
 
+/-! ### Residue sum identity in the vertical-combine case
+
+When `b.lift = -a.lift`, residueDivisor S R + residueDivisor (-S) R
+simplifies to `δ_S(R) + δ_{-S}(R) - 2 δ_O(R)`. This is just unfolding
++ algebraic identification — used in `terminalInv_combine_higher_vertical_step`. -/
+
+theorem residueDivisor_add_neg_S_eq
+    (S : ECPoint E) (R : ECPoint E) :
+    residueDivisor E S R + residueDivisor E (-S) R
+      = (if R = -S then (1 : ℤ) else 0) + (if R = S then 1 else 0)
+        - 2 * (if R = 0 then 1 else 0) := by
+  classical
+  unfold residueDivisor
+  -- residueDivisor S R = (R = -S ? 1 : 0) - δ_O(R)
+  -- residueDivisor (-S) R = (R = -(-S) ? 1 : 0) - δ_O(R)
+  --                       = (R = S ? 1 : 0) - δ_O(R)
+  rw [show (-(-S) : ECPoint E) = S from neg_neg S]
+  ring
+
 /-! ## General-k correctness: status
 
 Progress so far:
