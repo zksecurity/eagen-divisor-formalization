@@ -5538,6 +5538,15 @@ theorem inputPairsDistinctX_cons_cons {q : ℕ}
     InputPairsDistinctX (P :: Q :: rest) ↔
       P.1 ≠ Q.1 ∧ InputPairsDistinctX rest := Iff.rfl
 
+/-! ### eagenBuild_level0 → AccInvList: status
+
+The level0 → AccInvList theorem requires per-pair genericity on the
+chord's third intersection x-coord (Q₀x ≠ P.x, Q₀x ≠ Q.x) as encoded
+in `accInv_level0_chord_case`. The base `InputPairsDistinctX`
+predicate captures only P.x ≠ Q.x at each paired position — needs
+strengthening to bundle the Q₀x conditions before the level0 →
+AccInvList theorem can land. Implementation deferred. -/
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
