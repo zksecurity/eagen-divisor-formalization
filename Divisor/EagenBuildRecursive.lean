@@ -5222,7 +5222,69 @@ def AllDistinctECPoints : List (EagenAccum E) → Prop
   | [] => True
   | a :: rest => (∀ b ∈ rest, a.point ≠ b.point) ∧ AllDistinctECPoints rest
 
-/-! ## General-k correctness: status
+/-! ## Session summary: combine-step assembly + general-k inductive steps
+
+This file has accumulated ~340 commits of general-k correctness work
+on the `work/completeness` branch:
+
+### Combine-step (chord case) — full divisor identity dispatch
+Eleven AccInv-form theorems covering every R : ECPoint E:
+* at infinity (raw + AccInv form).
+* at affine off-support (zero + AccInv form).
+* at -combine.lift (third intersection, divisor = 1) + AccInv form.
+* at +combine.lift (zero + AccInv form).
+* at a.lift + AccInv form.
+* at -a.lift + AccInv form.
+* at b.lift + AccInv form.
+* at -b.lift + AccInv form.
+* at general affine R off chord support (covers xs/ys-formal-divisor
+  support + generic off-support).
+
+Bypassed cross-case wall via chord-line additivity: at every R, the
+chord factor (rootMult ≤ 1 globally for distinct chord) plus
+mulCoordRingElt_comm + assoc allow the additivity for the triple
+product without needing pointwise mul-add in the cross case.
+
+### Combine-step inductive step (capstone)
+`accInv_combine_higher_distinct_step` (under CombineStrongGeneric +
+hOffChord catch-all): AccInv (xs, a) + AccInv (ys, b) ⟹
+AccInv (xs ++ ys, combine_higher_distinct E a b).
+
+### Vertical combine — full TerminalInv dispatch
+`terminalInv_combine_higher_vertical_step` (under hOffFiber catch-all):
+AccInv (xs, a) + AccInv (ys, b) + (a = -b) ⟹
+TerminalInv (xs ++ ys, combine_higher_vertical E a b).
+
+Per-R cases: at infinity, off-a-fiber, at a.lift, at -a.lift.
+
+### Iteration scaffolding
+* `LevelStepTangentFree` predicate (no tangent collisions at adjacent
+  pairs).
+* `AllDistinctECPoints` predicate (stronger genericity).
+* level_step length bounds (weak: ≤; strict: < at length ≥ 2).
+* iterate convergence: `eagenBuild_iterate_length_le_one_of_tangent_free`
+  under tangent-free preservation hypothesis.
+
+### Open structural piece
+* Tangent-free preservation under level_step: combining adjacent
+  pairs preserves the tangent-free predicate. Requires
+  group-theoretic genericity on the input (no zero subsums beyond
+  the global zero sum).
+
+### Status
+* Headline project goal achieved: weil_reciprocity_honest discharged
+  from ma_completeness's closure (early in session).
+* Length-4 simple fully constructive (constructive bridge in
+  IsHonestForLength4Simple).
+* General-k inductive steps both landed (chord AccInv + vertical
+  TerminalInv).
+* Final eagenBuild_correctness assembly requires:
+  - tangent-free preservation propagation.
+  - eagenBuild_level0 producing AccInv-list initial state.
+  - Connecting eagenBuild's output polynomial back to the
+    formal-divisor identity via the converged single-element list.
+
+## General-k correctness: status
 
 Progress so far:
 
