@@ -528,6 +528,18 @@ theorem localMult_eq_ordAt
       exact localMultNonTwo_eq_ordAt_nonTwoTorsion E D P
   · rw [if_neg h, if_neg h]
 
+theorem localMult_mulCoordRingElt_eq_add_when_rootMult_le_one
+    (D₁ D₂ : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (hP : P ∈ E.points)
+    (hD₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0))
+    (hD₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    (hRoot : Polynomial.rootMultiplicity P.1 (normPoly E D₂) ≤ 1) :
+    localMult E (mulCoordRingElt E D₁ D₂) P
+      = localMult E D₁ P + localMult E D₂ P := by
+  simpa [localMult_eq_ordAt] using
+    (Divisor.ordAt_mul_add_when_normPoly_D2_le_one (E := E)
+      (D₁ := D₁) (D₂ := D₂) hD₁ hD₂ hP hRoot)
+
 theorem localMult_divLin_decreases_at_fiber
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     (hP : P ∈ E.points)
