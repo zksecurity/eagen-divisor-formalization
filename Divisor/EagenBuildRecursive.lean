@@ -2795,6 +2795,81 @@ theorem combine_higher_distinct_prod_divisor_split_when_b_nonvanish_fiber
   rw [h_step1, h_comm, h_step2]
   ring
 
+/-! ### Combine.poly = prod.divLin² applied: divisor relates by two vert subtractions
+
+Two applications of divisorOfD_divLin_subtract give:
+  divisorOfD combine.poly R
+    = divisorOfD prod R
+      - divisorOfD vert(a.x) R - divisorOfD vert(b.x) R. -/
+
+theorem combine_higher_distinct_divisor_via_prod_minus_two_verts
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (R : ECPoint E) :
+    divisorOfD E (EagenAccum.combine_higher_distinct E a b h_xx).poly R
+      = divisorOfD E (mulCoordRingElt E (mulCoordRingElt E
+          (chordCoordRingElt E a.point b.point) a.poly) b.poly) R
+        - divisorOfD E ({ a := Polynomial.X - Polynomial.C a.point.1, b := 0 }
+                        : CoordRingElt E.q) R
+        - divisorOfD E ({ a := Polynomial.X - Polynomial.C b.point.1, b := 0 }
+                        : CoordRingElt E.q) R := by
+  classical
+  set chord := chordCoordRingElt E a.point b.point with hchord_def
+  set prod := mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly with hprod_def
+  -- non-zero predicates.
+  have h_chord_NZ : ¬ (chord.a = 0 ∧ chord.b = 0) :=
+    chordCoordRingElt_ne_zero E a.point b.point
+  have h_chord_a_NZ : ¬ ((mulCoordRingElt E chord a.poly).a = 0
+      ∧ (mulCoordRingElt E chord a.poly).b = 0) := by
+    intro ⟨ha', hb'⟩
+    have hN : normPoly E (mulCoordRingElt E chord a.poly) = 0 := by
+      rw [normPoly_eq, ha', hb']; ring
+    rw [normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E chord h_chord_NZ)
+      (normPoly_ne_zero E a.poly h_a_poly_NZ)) hN
+  have h_prod_NZ : ¬ (prod.a = 0 ∧ prod.b = 0) := by
+    intro ⟨ha', hb'⟩
+    have hN : normPoly E prod = 0 := by rw [normPoly_eq, ha', hb']; ring
+    rw [hprod_def, normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E _ h_chord_a_NZ)
+      (normPoly_ne_zero E b.poly h_b_poly_NZ)) hN
+  -- Divisibility hypotheses.
+  have h_prod_at_a := combine_higher_distinct_divisible_at_a (E := E)
+    h_acc_a h_xx hY_a h_a_poly_NZ h_b_poly_NZ
+  have h_after_a_at_b := combine_higher_distinct_divisible_at_b (E := E)
+    h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
+  have h_pa_dvd : (Polynomial.X - Polynomial.C a.point.1) ∣ prod.a :=
+    Polynomial.dvd_iff_isRoot.mpr h_prod_at_a.1
+  have h_pb_dvd : (Polynomial.X - Polynomial.C a.point.1) ∣ prod.b :=
+    Polynomial.dvd_iff_isRoot.mpr h_prod_at_a.2
+  have h_da_a_dvd : (Polynomial.X - Polynomial.C b.point.1)
+      ∣ (prod.divLin a.point.1).a :=
+    Polynomial.dvd_iff_isRoot.mpr h_after_a_at_b.1
+  have h_da_b_dvd : (Polynomial.X - Polynomial.C b.point.1)
+      ∣ (prod.divLin a.point.1).b :=
+    Polynomial.dvd_iff_isRoot.mpr h_after_a_at_b.2
+  -- Step 1: div(prod.divLin a.x) = div(prod) - div(vert(a.x)).
+  have h_step1 := divisorOfD_divLin_subtract (E := E) prod a.point.1
+    h_pa_dvd h_pb_dvd h_prod_NZ R
+  -- Step 2: div((prod.divLin a.x).divLin b.x) = div(prod.divLin a.x) - div(vert(b.x)).
+  have h_after_a_NZ : ¬ ((prod.divLin a.point.1).a = 0
+      ∧ (prod.divLin a.point.1).b = 0) :=
+    divLin_not_both_zero E prod h_prod_NZ h_prod_at_a.1 h_prod_at_a.2
+  have h_step2 := divisorOfD_divLin_subtract (E := E) (prod.divLin a.point.1)
+    b.point.1 h_da_a_dvd h_da_b_dvd h_after_a_NZ R
+  -- Combine.poly = (prod.divLin a.x).divLin b.x.
+  show divisorOfD E ((prod.divLin a.point.1).divLin b.point.1) R
+      = divisorOfD E prod R
+        - divisorOfD E ({ a := Polynomial.X - Polynomial.C a.point.1, b := 0 }
+                        : CoordRingElt E.q) R
+        - divisorOfD E ({ a := Polynomial.X - Polynomial.C b.point.1, b := 0 }
+                        : CoordRingElt E.q) R
+  rw [h_step2, h_step1]
+
 /-! ## General-k correctness: status
 
 Progress so far:
