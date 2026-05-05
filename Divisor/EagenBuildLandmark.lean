@@ -1828,4 +1828,24 @@ theorem eagenBuild_singletons_landmark
     rw [h_iter_eq] at h_iter_le
     simp at h_iter_le
 
+
+/-! ## Path forward (Codex consultation)
+
+Making eagenBuild_singletons_landmark unconditional (no h_combine
+hypothesis) requires strengthening LandmarkInv with point/sheet-level
+multiplicity tracking. Per Codex:
+
+  - Define a constructive local multiplicity mult E D P : Nat for
+    D : CoordRingElt, P : ZMod q x q, returning 0 if D does not
+    vanish at P, otherwise matching geometric ord.
+  - Strengthen LandmarkInv:
+      target xs R P := xs.count P + (if negCoords R = some P then 1 else 0)
+      forall P in E.points, target xs a.point P <= mult E a.poly P
+      (normPoly a.poly).natDegree = sum P in E.points, target xs a.point P
+  - combine_distinct becomes a multiplicity identity:
+      M(xs,A) + M(ys,B) + L(A,B) - V(A) - V(B) = M(xs++ys, A+B)
+    where chord/divLin contributions cancel at fiber collisions.
+
+Estimated: ~600-1000 LOC of new infrastructure. -/
+
 end Divisor.Landmark
