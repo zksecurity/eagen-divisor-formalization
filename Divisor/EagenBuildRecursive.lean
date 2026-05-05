@@ -5039,6 +5039,24 @@ theorem eagenBuild_iterate_singleton (n : ℕ) (a : EagenAccum E) :
     rw [eagenBuild_iterate_succ_of_length_le_one E n [a]
         (by simp : ([a] : List (EagenAccum E)).length ≤ 1)]
 
+/-! ### level_step tangent-free assumption
+
+The tangent branch of `level_step` (a.point.1 = b.point.1 ∧ a.point.2 ≠ -b.point.2)
+corresponds to a.point = b.point as ECPoints. Eagen's algorithm
+applied to a list of *distinct* affine EC points never enters this
+branch: at each level, paired accumulators have distinct EC points
+(since they came from disjoint sublists of the input).
+
+Under this "all-distinct" genericity, `level_step` always uses the
+distinct or vertical branch, strictly reducing list length:
+* distinct: `a :: b :: rest ↦ combine_distinct :: level_step rest`
+  (length 2+|rest| → 1+|level_step rest|).
+* vertical: similar.
+
+The list length bound `level_step.length ≤ xs.length` and the strict
+`level_step.length < xs.length` (when |xs| ≥ 2) follow by induction
+under all-distinct hypothesis. Implementation deferred. -/
+
 /-! ## General-k correctness: status
 
 Progress so far:
