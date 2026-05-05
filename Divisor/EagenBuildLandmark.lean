@@ -842,4 +842,29 @@ theorem points_neg_y {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) :
 See in-file roadmap above (commit 404ce03). The chained-divLin and
 points_neg_y helpers prepare the ground; the full proofs are deferred. -/
 
+/-! ## Helper: thirdPoint = none for sum-zero pair
+
+`P + Q = 0` on `E` translates to `P.1 = Q.1` AND (`P.2 = -Q.2` for
+non-2-torsion, or `P = Q` with `P.2 = 0` for 2-torsion). In both
+cases, `thirdPoint E P Q = none` (vertical line). -/
+
+theorem thirdPoint_eq_none_of_sum_zero_data
+    (P Q : ZMod E.q × ZMod E.q)
+    (hxx : P.1 = Q.1)
+    (hyy : P.2 = -Q.2 ∨ (P = Q ∧ P.2 = 0)) :
+    thirdPoint E P Q = none := by
+  unfold thirdPoint
+  rw [if_pos hxx]
+  rcases hyy with h | ⟨hPQ, hP_zero⟩
+  · by_cases hY : P.2 = Q.2
+    · rw [if_pos hY]
+      have hP_zero : P.2 = 0 := by
+        have h2y : 2 * P.2 = 0 := by linear_combination hY + h
+        have h2_ne : (2 : ZMod E.q) ≠ 0 := two_ne_zero_in_zmod E
+        exact (mul_eq_zero.mp h2y).resolve_left h2_ne
+      rw [if_pos hP_zero]
+    · rw [if_neg hY]
+  · subst hPQ
+    rw [if_pos rfl, if_pos hP_zero]
+
 end Divisor.Landmark
