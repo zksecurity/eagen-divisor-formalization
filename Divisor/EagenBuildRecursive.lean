@@ -6389,6 +6389,14 @@ vertical branch and the result becomes a singleton with TerminalInv.
 The mixed AccInv-to-TerminalInv handoff requires extending
 AccInvList preservation to allow vertical at one (the last) pair. -/
 
+/-! ### iterate at non-trivial length: at-most-one-step decomposition -/
+
+theorem eagenBuild_iterate_succ_eq_iterate_level_step
+    (n : ℕ) (xs : List (EagenAccum E)) (h : ¬ xs.length ≤ 1) :
+    eagenBuild_iterate E (n + 1) xs
+      = eagenBuild_iterate E n (eagenBuild_level_step E xs) :=
+  eagenBuild_iterate_succ_of_length_gt_one E n xs h
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
