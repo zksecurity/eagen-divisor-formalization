@@ -5000,6 +5000,45 @@ theorem eagenBuild_level_step_cons_cons_tangent
       = a :: b :: eagenBuild_level_step E rest
   rw [dif_neg h_xx, dif_neg h_yy]
 
+/-! ### Structural unfolding helpers for eagenBuild_iterate -/
+
+theorem eagenBuild_iterate_zero (xs : List (EagenAccum E)) :
+    eagenBuild_iterate E 0 xs = xs := rfl
+
+theorem eagenBuild_iterate_succ_of_length_le_one (n : ℕ)
+    (xs : List (EagenAccum E)) (h : xs.length ≤ 1) :
+    eagenBuild_iterate E (n + 1) xs = xs := by
+  show (if xs.length ≤ 1 then xs
+        else eagenBuild_iterate E n (eagenBuild_level_step E xs)) = xs
+  rw [if_pos h]
+
+theorem eagenBuild_iterate_succ_of_length_gt_one (n : ℕ)
+    (xs : List (EagenAccum E)) (h : ¬ xs.length ≤ 1) :
+    eagenBuild_iterate E (n + 1) xs
+      = eagenBuild_iterate E n (eagenBuild_level_step E xs) := by
+  show (if xs.length ≤ 1 then xs
+        else eagenBuild_iterate E n (eagenBuild_level_step E xs))
+      = eagenBuild_iterate E n (eagenBuild_level_step E xs)
+  rw [if_neg h]
+
+/-- Iteration on the empty list is the empty list. -/
+theorem eagenBuild_iterate_nil (n : ℕ) :
+    eagenBuild_iterate E n ([] : List (EagenAccum E)) = [] := by
+  cases n with
+  | zero => rfl
+  | succ n =>
+    rw [eagenBuild_iterate_succ_of_length_le_one E n []
+        (by simp : ([] : List (EagenAccum E)).length ≤ 1)]
+
+/-- Iteration on a singleton list is the same singleton. -/
+theorem eagenBuild_iterate_singleton (n : ℕ) (a : EagenAccum E) :
+    eagenBuild_iterate E n [a] = [a] := by
+  cases n with
+  | zero => rfl
+  | succ n =>
+    rw [eagenBuild_iterate_succ_of_length_le_one E n [a]
+        (by simp : ([a] : List (EagenAccum E)).length ≤ 1)]
+
 /-! ## General-k correctness: status
 
 Progress so far:
