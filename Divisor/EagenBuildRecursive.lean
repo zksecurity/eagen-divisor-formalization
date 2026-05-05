@@ -6278,6 +6278,16 @@ theorem mergeAdjacentPairs_eq_self_of_length_le_one {α : Type _}
     | nil => rfl
     | cons _ _ => simp at h
 
+/-! ### AccInvList singleton characterization -/
+
+theorem accInvList_singleton_iff
+    (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E) :
+    AccInvList E [xs] [a] ↔ AccInv E xs a := by
+  rw [accInvList_cons_iff]
+  constructor
+  · intro ⟨h1, _⟩; exact h1
+  · intro h; exact ⟨h, (accInvList_nil_iff E _).mpr rfl⟩
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
