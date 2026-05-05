@@ -824,32 +824,30 @@ theorem eagenBuild_length2_neg_eq_vertical
   unfold eagenBuild_iterate
   simp
 
-/-! ## General-k correctness: strategy outline
+/-! ## General-k correctness: status
 
-The full general-k correctness theorem would say: for any sum-zero list
-`Ps : List (ECPoint E)`, `divisorOfD E (eagenBuild Ps) = formalDivisor Ps`,
-where `formalDivisor` records the multiplicities of each P_i minus
-`|Ps|` at infinity.
+Progress so far:
 
-Recommended strategy (per Codex consultation):
+* `residueDivisor`, `formalDivisorOfList` definitions ✓
+* `AccInv` invariant for non-degenerate accumulators ✓
+* `TerminalInv` invariant for sum-zero (terminal) accumulators ✓
+* Helper lemmas (`residueDivisor_at_*`, `formalDivisorOfList_at_*`) ✓
+* `accInv_level0_chord_running_sum` ✓
+* `accInv_level0_chord_divisor_identity_at_{infinity, P, Q, A₂, off_support}` ✓
+* `accInv_level0_chord_divisor_identity` (universal ∀ R) ✓
+* `accInv_level0_chord_case` (full level-0 chord AccInv) ✓
 
-1. Define `residue (S : ECPoint E) : ECPoint E → ℤ` capturing the
-   "running deficit" at `-S` vs `O`.
+Remaining (multi-firing):
 
-2. Define an accumulator invariant tracking the absorbed sublist:
-   `AccInv xs a := a.point = xs.foldl (· + ·) 0 ∧
-                   divisorOfD a.poly = formalDivisor xs + residue a.point`
-
-3. Prove one local "correction factor" lemma covering
-   chord/tangent/vertical combine cases.
-
-4. Combine step preserves the invariant:
-   `AccInv xs a → AccInv ys b → AccInv (xs ++ ys) (combine a b)`
-
-5. For sum-zero input, the final accumulator's point is `0`, so the
-   residue cancels and we recover `formalDivisor`.
-
-This is multi-firing; deferred. -/
+* `terminalInv_level0_vertical_case`: TerminalInv for `(P, -P)` input.
+* `accInv_singleton_carry`: handle odd-length carry (singleton accumulator
+  with identity poly carries no points yet).
+* `accInv_combine_higher_distinct_step`: AccInv preserved on append for
+  the chord combine.
+* `terminalInv_combine_higher_vertical_step`: TerminalInv for sum-zero
+  combine.
+* `eagenBuild_correctness`: ∀ sum-zero `Ps`, `divisorOfD (eagenBuild Ps) =
+  formalDivisor Ps`. -/
 
 /-! ## Length-4 reduction (deferred)
 
