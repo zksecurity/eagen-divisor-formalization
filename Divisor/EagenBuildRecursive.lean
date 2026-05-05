@@ -193,6 +193,43 @@ noncomputable def eagenBuild (Ps : List (ZMod E.q × ZMod E.q)) : CoordRingElt E
   | [single] => single.poly
   | _ => { a := 1, b := 0 }  -- shouldn't happen if iterations sufficient
 
+/-! ## General-k correctness: foundational definitions
+
+Working definitions for the recursive correctness proof. See the
+strategy outline below for how these are intended to be used. -/
+
+/-- The "residue" divisor at the running sum point `S`: a single +1 at
+    `-S` and a -1 at infinity. Tracks the dangling third-intersection
+    contribution after absorbing some sublist of points. -/
+noncomputable def residueDivisor (S : ECPoint E) : ECPoint E → ℤ :=
+  fun R => (if R = -S then (1 : ℤ) else 0) - (if R = (0 : ECPoint E) then 1 else 0)
+
+/-- The formal divisor of a list of affine points on E: each point
+    contributes +1 (with multiplicity = list count), and `-|Ps|·O`
+    appears at infinity. -/
+noncomputable def formalDivisorOfList
+    (Ps : List (ZMod E.q × ZMod E.q)) : ECPoint E → ℤ :=
+  fun R =>
+    match R with
+    | WeierstrassCurve.Affine.Point.zero => -((Ps.length : ℤ))
+    | WeierstrassCurve.Affine.Point.some (x := x) (y := y) _ =>
+        (Ps.filter (fun P => P = (x, y))).length
+
+/-- Sanity check: residueDivisor at infinity is -1 when S ≠ 0. -/
+theorem residueDivisor_at_infinity_of_S_ne_zero
+    (S : ECPoint E) (hS : S ≠ 0) :
+    residueDivisor E S (0 : ECPoint E) = -1 := by
+  unfold residueDivisor
+  rw [if_pos rfl]
+  rw [if_neg]
+  · simp
+  · -- 0 = -S iff S = 0 (group). But hS says S ≠ 0.
+    intro h_eq
+    apply hS
+    have : -S = 0 := h_eq.symm
+    have : S = -(0 : ECPoint E) := by rw [← this]; abel
+    rw [this]; abel
+
 /-! ## Sanity check: length-2 sum-zero base case
 
 For input `[P, -P]` (the simplest sum-zero case), `eagenBuild` produces
