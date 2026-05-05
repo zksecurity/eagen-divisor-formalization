@@ -5803,6 +5803,17 @@ theorem pairList_eq_nil_iff {q : ℕ} (Ps : List (ZMod q × ZMod q)) :
     | nil => simp [pairList]
     | cons Q rest' => simp [pairList]
 
+/-! ### mergeAdjacentPairs nil characterization -/
+
+theorem mergeAdjacentPairs_eq_nil_iff {α : Type _} (xss : List (List α)) :
+    mergeAdjacentPairs xss = [] ↔ xss = [] := by
+  cases xss with
+  | nil => simp [mergeAdjacentPairs]
+  | cons xs rest =>
+    cases rest with
+    | nil => simp [mergeAdjacentPairs]
+    | cons ys rest' => simp [mergeAdjacentPairs]
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
