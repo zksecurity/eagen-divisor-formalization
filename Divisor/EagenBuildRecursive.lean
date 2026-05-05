@@ -5896,6 +5896,37 @@ theorem eagenBuild_iterate_id_of_length_le_one
   | succ n =>
     rw [eagenBuild_iterate_succ_of_length_le_one E n xs h]
 
+/-! ### iterate fuel-irrelevance once converged
+
+If at fuel n the iterate has reached length ≤ 1, additional fuel
+doesn't change the result. Useful for "saturated" reasoning. -/
+
+theorem eagenBuild_iterate_extra_fuel_id
+    (n : ℕ) (xs : List (EagenAccum E))
+    (h : (eagenBuild_iterate E n xs).length ≤ 1)
+    (m : ℕ) :
+    eagenBuild_iterate E (n + m) xs = eagenBuild_iterate E n xs := by
+  classical
+  induction n generalizing xs with
+  | zero =>
+    -- iterate 0 xs = xs; xs.length ≤ 1 (from h after iterate_zero).
+    rw [eagenBuild_iterate_zero] at h
+    rw [show (0 : ℕ) + m = m from by omega]
+    rw [eagenBuild_iterate_zero]
+    exact eagenBuild_iterate_id_of_length_le_one E m xs h
+  | succ n IH =>
+    by_cases h_xs : xs.length ≤ 1
+    · -- xs.length ≤ 1: iterate n xs and iterate (n+1+m) xs both equal xs.
+      rw [eagenBuild_iterate_id_of_length_le_one E (n + 1) xs h_xs]
+      rw [show n + 1 + m = (n + m) + 1 from by omega]
+      rw [eagenBuild_iterate_id_of_length_le_one E (n + m + 1) xs h_xs]
+    · -- xs.length > 1: unfold once and apply IH on level_step.
+      rw [eagenBuild_iterate_succ_of_length_gt_one E n xs h_xs] at h
+      rw [show n + 1 + m = n + m + 1 from by omega]
+      rw [eagenBuild_iterate_succ_of_length_gt_one E (n + m) xs h_xs]
+      rw [eagenBuild_iterate_succ_of_length_gt_one E n xs h_xs]
+      exact IH _ h
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
