@@ -1336,6 +1336,34 @@ theorem combine_higher_distinct_running_sum
       = -ECPoint.affine E Q₀x Q₀y
   rw [ECPoint.affine_neg E Q₀x Q₀y]
 
+/-! ### AccInv at infinity: natDegree of `normPoly` matches list length
+
+Under `AccInv xs a`, the `normPoly` of `a.poly` has natDegree
+`xs.length + 1` (since `a.poly`'s pole at `O` matches the formal
+divisor's `-(xs.length)` plus the residue's `-1` at infinity). -/
+
+theorem accInv_natDegree_normPoly
+    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
+    (h_acc : AccInv E xs a)
+    (h_a_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0)) :
+    (normPoly E a.poly).natDegree = xs.length + 1 := by
+  classical
+  obtain ⟨h_pt_mem, _, h_div⟩ := h_acc
+  have h_div_inf := h_div (0 : ECPoint E)
+  -- `a.lift ≠ 0` since affineOfMem produces a `some _` constructor.
+  have h_lift_ne_zero : (ECPoint.affineOfMem E h_pt_mem : ECPoint E) ≠ 0 := by
+    intro h_eq
+    unfold ECPoint.affineOfMem ECPoint.affineOfEqn at h_eq
+    cases h_eq
+  -- Rewrite both sides explicitly.
+  rw [show divisorOfD E a.poly (0 : ECPoint E)
+        = -((normPoly E a.poly).natDegree : ℤ) from rfl,
+      formalDivisorOfList_at_infinity,
+      residueDivisor_at_infinity_of_S_ne_zero E _ h_lift_ne_zero] at h_div_inf
+  -- h_div_inf : -((normPoly a.poly).natDeg : ℤ) = -(xs.length : ℤ) + -1.
+  have h2 : ((normPoly E a.poly).natDegree : ℤ) = (xs.length : ℤ) + 1 := by linarith
+  exact_mod_cast h2
+
 /-! ## General-k correctness: status
 
 Progress so far:
