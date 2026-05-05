@@ -6369,6 +6369,26 @@ theorem mergeAdjacentPairs_flatten_length {α : Type _}
     (mergeAdjacentPairs xss).flatten.length = xss.flatten.length := by
   rw [mergeAdjacentPairs_flatten_eq]
 
+/-! ### Forward path to eagenBuild_correctness
+
+Pieces in place:
+* INITIAL: `accInvList_eagenBuild_level0_of_even_length` (level0 → AccInvList).
+* PER-STEP PRESERVATION: `accInvList_preservation_under_level_step`.
+* CONVERGENCE: `eagenBuild_iterate_length_le_one_of_tangent_free`.
+* SINGLETON OUTPUT: `eagenBuild_eq_singleton_poly_when_converged`.
+* TERMINAL: `terminalInv_of_accInvList_pair_via_vertical`.
+
+The composing step, an `accInvList_preservation_under_iterate`
+theorem, would chain per-step preservation across iterate's recursion.
+It needs at each level a `AccsListChordStep` predicate plus the
+running mergeAdjacentPairs of xss, parameterized by fuel.
+
+For the second-to-last → final step, when iterate's input has length
+2 and the two accumulators are EC-negations, level_step takes the
+vertical branch and the result becomes a singleton with TerminalInv.
+The mixed AccInv-to-TerminalInv handoff requires extending
+AccInvList preservation to allow vertical at one (the last) pair. -/
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
