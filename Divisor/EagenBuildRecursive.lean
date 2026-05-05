@@ -328,6 +328,97 @@ theorem accInv_level0_chord_divisor_identity_at_infinity
     have := neg_eq_zero.mp this
     exact this
 
+/-! ### Level-0 chord divisor identity at off-support affine R
+
+For (x, y) on E that is none of P, Q, A₂: divisor identity simplifies
+to 0 = 0 + 0. -/
+
+theorem accInv_level0_chord_divisor_identity_at_off_support
+    (P Q : ZMod E.q × ZMod E.q)
+    (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (h_xx : P.1 ≠ Q.1)
+    (hP_neq_A2 : P.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
+    (hQ_neq_A2 : Q.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
+    {x y : ZMod E.q} (hns : E.toW.toAffine.Nonsingular x y)
+    (h_off_P : (x, y) ≠ P) (h_off_Q : (x, y) ≠ Q)
+    (h_off_A2 : (x, y) ≠
+      (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1,
+       slopeOf P.1 P.2 Q.1 Q.2 *
+         (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) +
+       (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1))) :
+    let h_acc := (accInv_level0_chord_running_sum E P Q hP hQ h_xx).choose
+    divisorOfD E (chordCoordRingElt E P Q)
+        (WeierstrassCurve.Affine.Point.some hns)
+      = formalDivisorOfList E [P, Q]
+          (WeierstrassCurve.Affine.Point.some hns)
+        + residueDivisor E (ECPoint.affineOfMem E h_acc)
+          (WeierstrassCurve.Affine.Point.some hns) := by
+  classical
+  intro h_acc
+  have hOC : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB :=
+    (E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hns)
+  have hMem : (x, y) ∈ E.points := E.hComplete x y hOC
+  -- divisorOfD = 0 (off-support).
+  have h_pw := divisorOfD_chordCoordRingElt_chord_pointwise E P Q hP hQ h_xx
+                hP_neq_A2 hQ_neq_A2
+  have h_div_zero := h_pw (x, y) hMem h_off_P h_off_Q h_off_A2
+  rw [show (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+        = ECPoint.affine E x y from (ECPoint.affine_of_nonsingular E hns).symm]
+  rw [h_div_zero]
+  -- formalDivisor [P, Q] at affine (x, y) = 0.
+  rw [show formalDivisorOfList E [P, Q] (ECPoint.affine E x y) = 0 by
+      unfold formalDivisorOfList
+      rw [ECPoint.affine_of_nonsingular E hns]
+      show ((List.filter (fun p => p = (x, y)) [P, Q]).length : ℤ) = 0
+      have : List.filter (fun p => p = (x, y)) [P, Q] = [] := by
+        simp only [List.filter, decide_eq_true_eq, decide_false,
+                   decide_eq_true_eq]
+        have h1 : ¬ P = (x, y) := fun h => h_off_P h.symm
+        have h2 : ¬ Q = (x, y) := fun h => h_off_Q h.symm
+        simp [h1, h2]
+      rw [this]
+      rfl]
+  -- residue at affine (x, y) = 0.
+  set Q₀x := slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1 with hQ₀x_def
+  set Q₀y := slopeOf P.1 P.2 Q.1 Q.2 * Q₀x +
+              (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1) with hQ₀y_def
+  have hThirdMem : (Q₀x, Q₀y) ∈ E.points := by
+    apply E.hComplete
+    exact chord_third_point_on_E E P Q hP hQ h_xx
+  have h_neg_run : (-ECPoint.affineOfMem E h_acc : ECPoint E)
+                = ECPoint.affineOfMem E hThirdMem := by
+    rw [← ECPoint.affine_eq_affineOfMem E hThirdMem]
+    rw [← ECPoint.affine_eq_affineOfMem E h_acc]
+    show -ECPoint.affine E
+            (EagenAccum.fromChordPair_distinct E P Q h_xx).point.1
+            (EagenAccum.fromChordPair_distinct E P Q h_xx).point.2
+        = ECPoint.affine E (Q₀x, Q₀y).1 (Q₀x, Q₀y).2
+    show -ECPoint.affine E Q₀x (-Q₀y) = ECPoint.affine E Q₀x Q₀y
+    rw [← ECPoint.affine_neg E Q₀x Q₀y, neg_neg]
+  unfold residueDivisor
+  -- Both `if`s evaluate to 0.
+  -- (1) ECPoint.affine (x, y) ≠ -running_sum = affineOfMem hThirdMem = ECPoint.affine (Q_0x, Q_0y).
+  -- (2) ECPoint.affine (x, y) ≠ 0.
+  have h_ne_neg : (ECPoint.affine E x y : ECPoint E)
+                 ≠ -ECPoint.affineOfMem E h_acc := by
+    rw [h_neg_run, ← ECPoint.affine_eq_affineOfMem E hThirdMem]
+    intro h
+    have hns_third : E.toW.toAffine.Nonsingular Q₀x Q₀y :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hThirdMem))
+    rw [ECPoint.affine_of_nonsingular E hns,
+        ECPoint.affine_of_nonsingular E hns_third] at h
+    apply h_off_A2
+    -- h : .some hns = .some hns_third → (x, y) = (Q_0x, Q_0y).
+    have : x = Q₀x ∧ y = Q₀y := by
+      have h_eq := WeierstrassCurve.Affine.Point.some.inj h
+      exact ⟨h_eq.1, h_eq.2⟩
+    exact Prod.ext this.1 this.2
+  have h_ne_zero : (ECPoint.affine E x y : ECPoint E) ≠ 0 := by
+    rw [ECPoint.affine_of_nonsingular E hns]
+    intro h; cases h
+  rw [if_neg h_ne_neg, if_neg h_ne_zero]
+  push_cast
+
 /-! ### Helper lemmas for residue and formalDivisor -/
 
 /-- residueDivisor evaluated at `-S` is `1` (when -S ≠ 0). -/
