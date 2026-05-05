@@ -4019,6 +4019,132 @@ theorem curve_y_dichotomy
   · left; linear_combination h
   · right; linear_combination h
 
+/-! ### Unified case-on-R divisor identity dispatch
+
+Given the strong-genericity bundle, the divisor identity holds at
+every R via case-split on R's structure (zero / some) and on the
+x-coordinate. Within each x case, curve_y_dichotomy gives y = ±the_y.
+
+For the catch-all general-off-chord branch, we still need:
+* h_chord_pos, h_chord_neg, h_b_pos, h_b_neg (per-R nonvanish).
+* Three ECPoint inequalities for residue accounting.
+
+These would normally be derived from the case-split conditions
+(x ≠ a.x, b.x, Q₀x), but doing so requires non-trivial algebraic
+arguments. For the dispatch entry, we accept these as additional
+caller-supplied hypotheses bundled into a Prop. -/
+
+theorem accInv_combine_higher_distinct_step_divisor_identity
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (hStrong : CombineStrongGeneric (E := E) h_acc_a h_acc_b h_xx)
+    (R : ECPoint E)
+    (hOffChord :
+        -- For affine R outside chord/Q₀-fiber x-coords, supplied per-R:
+        ∀ {x y : ZMod E.q}, (x, y) ∈ E.points →
+          x ≠ a.point.1 → x ≠ b.point.1 →
+          x ≠ slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                - a.point.1 - b.point.1 →
+        ((chordCoordRingElt E a.point b.point).eval x y ≠ 0
+          ∧ (chordCoordRingElt E a.point b.point).eval x (-y) ≠ 0
+          ∧ b.poly.eval x y ≠ 0 ∧ b.poly.eval x (-y) ≠ 0
+          ∧ (ECPoint.affine E x y : ECPoint E)
+              ≠ -(ECPoint.affineOfMem E h_acc_a.1 : ECPoint E)
+          ∧ (ECPoint.affine E x y : ECPoint E)
+              ≠ -(ECPoint.affineOfMem E h_acc_b.1 : ECPoint E)
+          ∧ (ECPoint.affine E x y : ECPoint E)
+              ≠ -(ECPoint.affineOfMem E
+                  (combine_higher_distinct_running_sum E a b
+                      h_acc_a.1 h_acc_b.1 h_xx).choose : ECPoint E))) :
+    let combine := EagenAccum.combine_higher_distinct E a b h_xx
+    ∃ h_combine_pt : combine.point ∈ E.points,
+      divisorOfD E combine.poly R
+        = formalDivisorOfList E (xs ++ ys) R
+          + residueDivisor E (ECPoint.affineOfMem E h_combine_pt) R := by
+  classical
+  intro combine
+  -- Case on R.
+  cases R with
+  | zero =>
+      exact accInv_combine_higher_distinct_step_at_infinity (E := E)
+        h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
+  | some hns =>
+      rename_i x y
+      -- (x, y) ∈ E.points.
+      have hP : (x, y) ∈ E.points :=
+        E.hComplete x y ((E.equation_iff x y).mp
+          ((E.equation_iff_nonsingular).mpr hns))
+      -- ECPoint.affine E x y = .some hns.
+      have h_R_eq : (ECPoint.affine E x y : ECPoint E)
+          = WeierstrassCurve.Affine.Point.some hns :=
+        ECPoint.affine_of_nonsingular E hns
+      rw [← h_R_eq]
+      -- Case on x.
+      by_cases h_x_a : x = a.point.1
+      · -- x = a.point.1: y = a.y or -a.y by curve dichotomy.
+        have h_a_pt_x : (x, a.point.2) ∈ E.points := by
+          have h_eq : (x, a.point.2) = a.point := Prod.ext h_x_a rfl
+          rw [h_eq]; exact h_acc_a.1
+        rcases curve_y_dichotomy E hP h_a_pt_x with h_y | h_y
+        · rw [h_x_a, h_y]
+          exact accInv_combine_higher_distinct_step_at_a_lift (E := E)
+            h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ hStrong
+        · rw [h_x_a, h_y]
+          exact accInv_combine_higher_distinct_step_at_neg_a_lift (E := E)
+            h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ hStrong
+      · by_cases h_x_b : x = b.point.1
+        · have h_b_pt_x : (x, b.point.2) ∈ E.points := by
+            have h_eq : (x, b.point.2) = b.point := Prod.ext h_x_b rfl
+            rw [h_eq]; exact h_acc_b.1
+          rcases curve_y_dichotomy E hP h_b_pt_x with h_y | h_y
+          · rw [h_x_b, h_y]
+            exact accInv_combine_higher_distinct_step_at_b_lift (E := E)
+              h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ hStrong
+          · rw [h_x_b, h_y]
+            exact accInv_combine_higher_distinct_step_at_neg_b_lift (E := E)
+              h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ hStrong
+        · -- x ≠ a.x and x ≠ b.x. Either Q₀-fiber or general off-chord.
+          -- This branch defers to hOffChord (which must additionally
+          -- handle the Q₀-fiber case if the caller chooses to include it).
+          by_cases h_x_Q : x = (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                                  - a.point.1 - b.point.1)
+          · -- Q₀-fiber: deferred to caller via hOffChord (or per-R wrapper).
+            -- For this dispatch theorem, callers should handle Q₀-fiber via
+            -- the dedicated at_third / at_combine_lift wrappers separately.
+            -- We extract from hOffChord by treating x ≠ Q₀x as false → ...
+            -- Since hOffChord requires h_x_Q : x ≠ Q₀x, we can't use it here.
+            -- Instead, fall back to the at_third / at_combine_lift wrappers
+            -- directly using the y-dichotomy.
+            have h_a_pt : a.point ∈ E.points := h_acc_a.1
+            have h_b_pt : b.point ∈ E.points := h_acc_b.1
+            set lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2 with hlam_def
+            set Q₀x := lam ^ 2 - a.point.1 - b.point.1 with hQ₀x_def
+            set Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1) with hQ₀y_def
+            have hQ₀_on_E : (Q₀x, Q₀y) ∈ E.points := by
+              apply E.hComplete
+              exact chord_third_point_on_E E a.point b.point h_a_pt h_b_pt h_xx
+            have h_Q₀_at_x : (x, Q₀y) ∈ E.points := by
+              rw [h_x_Q]; exact hQ₀_on_E
+            rcases curve_y_dichotomy E hP h_Q₀_at_x with h_y | h_y
+            · rw [h_x_Q, h_y]
+              exact accInv_combine_higher_distinct_step_at_third (E := E)
+                h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ hStrong
+            · rw [h_x_Q, h_y]
+              exact accInv_combine_higher_distinct_step_at_combine_lift (E := E)
+                h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ hStrong
+          · -- General off-chord.
+            obtain ⟨h_chord_pos, h_chord_neg, h_b_pos, h_b_neg,
+                    h_R_ne_a', h_R_ne_b', h_R_ne_combine'⟩ :=
+              hOffChord hP h_x_a h_x_b h_x_Q
+            exact accInv_combine_higher_distinct_step_at_general_off_chord (E := E)
+              h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ hStrong
+              hP h_chord_pos h_chord_neg h_b_pos h_b_neg h_x_a h_x_b
+              h_R_ne_a' h_R_ne_b' h_R_ne_combine'
+
 /-! ## General-k correctness: status
 
 Progress so far:
