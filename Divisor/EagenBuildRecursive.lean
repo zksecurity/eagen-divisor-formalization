@@ -1538,6 +1538,122 @@ theorem accInv_combine_higher_distinct_divisor_at_infinity_AccInv_form
   rw [residueDivisor_at_infinity_of_S_ne_zero E _ h_combine_ne_zero]
   push_cast; ring
 
+/-! ### Combine step: at-affine off-support divisor identity
+
+When R = `ECPoint.affine x y` has x ≠ a.point.1, x ≠ b.point.1, and
+the three factors (chord, a.poly, b.poly) all nonvanish at (x, y),
+the polynomial identity prod = (X-C a.x)(X-C b.x) · combine.poly
+forces combine.poly to nonvanish at (x, y). Then `ordAt = 0` by the
+nonvanish branch, so `divisorOfD combine.poly R = 0`. -/
+
+theorem accInv_combine_higher_distinct_divisor_at_off_support_zero
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    {x y : ZMod E.q} (hP : (x, y) ∈ E.points)
+    (h_chord_pos : (chordCoordRingElt E a.point b.point).eval x y ≠ 0)
+    (h_a_pos : a.poly.eval x y ≠ 0)
+    (h_b_pos : b.poly.eval x y ≠ 0)
+    (h_x_ne_a : x ≠ a.point.1)
+    (h_x_ne_b : x ≠ b.point.1) :
+    divisorOfD E (EagenAccum.combine_higher_distinct E a b h_xx).poly
+      (ECPoint.affine E x y) = 0 := by
+  classical
+  set chord := chordCoordRingElt E a.point b.point with hchord_def
+  set prod := mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly with hprod_def
+  -- prod's eval at (x, y) is the product of the three factors' evals (on E).
+  have h_prod_pos : prod.eval x y ≠ 0 := by
+    rw [hprod_def, mulCoordRingElt_eval_on_E E _ b.poly hP,
+        mulCoordRingElt_eval_on_E E chord a.poly hP]
+    exact mul_ne_zero (mul_ne_zero h_chord_pos h_a_pos) h_b_pos
+  -- Divisibility (X-C a.x) ∣ prod.a, prod.b.
+  have h_prod_at_a := combine_higher_distinct_divisible_at_a (E := E)
+    h_acc_a h_xx hY_a h_a_poly_NZ h_b_poly_NZ
+  -- Divisibility (X-C b.x) ∣ (prod.divLin a.x).a, .b.
+  have h_after_a_at_b := combine_higher_distinct_divisible_at_b (E := E)
+    h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
+  -- Polynomial recompositions:
+  -- prod.a = (X-C a.x) * (prod.divLin a.x).a;  similarly for .b.
+  have h_pa_recomp : prod.a
+      = (Polynomial.X - Polynomial.C a.point.1) * (prod.divLin a.point.1).a := by
+    show prod.a
+        = (Polynomial.X - Polynomial.C a.point.1)
+          * (prod.a /ₘ (Polynomial.X - Polynomial.C a.point.1))
+    exact (Polynomial.mul_divByMonic_eq_iff_isRoot.mpr h_prod_at_a.1).symm
+  have h_pb_recomp : prod.b
+      = (Polynomial.X - Polynomial.C a.point.1) * (prod.divLin a.point.1).b := by
+    show prod.b
+        = (Polynomial.X - Polynomial.C a.point.1)
+          * (prod.b /ₘ (Polynomial.X - Polynomial.C a.point.1))
+    exact (Polynomial.mul_divByMonic_eq_iff_isRoot.mpr h_prod_at_a.2).symm
+  have h_div_a_a_recomp : (prod.divLin a.point.1).a
+      = (Polynomial.X - Polynomial.C b.point.1)
+        * ((prod.divLin a.point.1).divLin b.point.1).a := by
+    show (prod.divLin a.point.1).a
+        = (Polynomial.X - Polynomial.C b.point.1)
+          * ((prod.divLin a.point.1).a /ₘ (Polynomial.X - Polynomial.C b.point.1))
+    exact (Polynomial.mul_divByMonic_eq_iff_isRoot.mpr h_after_a_at_b.1).symm
+  have h_div_a_b_recomp : (prod.divLin a.point.1).b
+      = (Polynomial.X - Polynomial.C b.point.1)
+        * ((prod.divLin a.point.1).divLin b.point.1).b := by
+    show (prod.divLin a.point.1).b
+        = (Polynomial.X - Polynomial.C b.point.1)
+          * ((prod.divLin a.point.1).b /ₘ (Polynomial.X - Polynomial.C b.point.1))
+    exact (Polynomial.mul_divByMonic_eq_iff_isRoot.mpr h_after_a_at_b.2).symm
+  -- combine.a, combine.b in terms of prod.a, prod.b.
+  set combine := EagenAccum.combine_higher_distinct E a b h_xx with hcombine_def
+  have h_combine_poly_eq : combine.poly = (prod.divLin a.point.1).divLin b.point.1 := by
+    show ((mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly).divLin
+            a.point.1).divLin b.point.1
+        = ((prod.divLin a.point.1).divLin b.point.1)
+    rw [hprod_def]
+  -- Now combine.eval(x, y) at (x, y).
+  -- Goal: ordAt(combine.poly)(x, y) = 0 from non-vanishing.
+  have h_x_diff_a : x - a.point.1 ≠ 0 := sub_ne_zero.mpr h_x_ne_a
+  have h_x_diff_b : x - b.point.1 ≠ 0 := sub_ne_zero.mpr h_x_ne_b
+  -- prod.a.eval x = (x - a.x) * (prod.divLin a.x).a.eval x
+  have h_pa_eval : prod.a.eval x
+      = (x - a.point.1) * (prod.divLin a.point.1).a.eval x := by
+    rw [h_pa_recomp]; simp [Polynomial.eval_mul, Polynomial.eval_sub,
+                            Polynomial.eval_X, Polynomial.eval_C]
+  have h_pb_eval : prod.b.eval x
+      = (x - a.point.1) * (prod.divLin a.point.1).b.eval x := by
+    rw [h_pb_recomp]; simp [Polynomial.eval_mul, Polynomial.eval_sub,
+                            Polynomial.eval_X, Polynomial.eval_C]
+  -- (prod.divLin a.x).a.eval x = (x - b.x) * combine.a.eval x
+  have h_da_a_eval : (prod.divLin a.point.1).a.eval x
+      = (x - b.point.1) * ((prod.divLin a.point.1).divLin b.point.1).a.eval x := by
+    rw [h_div_a_a_recomp]; simp [Polynomial.eval_mul, Polynomial.eval_sub,
+                                  Polynomial.eval_X, Polynomial.eval_C]
+  have h_da_b_eval : (prod.divLin a.point.1).b.eval x
+      = (x - b.point.1) * ((prod.divLin a.point.1).divLin b.point.1).b.eval x := by
+    rw [h_div_a_b_recomp]; simp [Polynomial.eval_mul, Polynomial.eval_sub,
+                                  Polynomial.eval_X, Polynomial.eval_C]
+  -- prod.eval x y = (x - a.x)(x - b.x) · combine.eval x y.
+  have h_prod_factored : prod.eval x y
+      = (x - a.point.1) * (x - b.point.1) * combine.poly.eval x y := by
+    show prod.a.eval x - prod.b.eval x * y
+        = (x - a.point.1) * (x - b.point.1) *
+          (combine.poly.a.eval x - combine.poly.b.eval x * y)
+    rw [h_combine_poly_eq]
+    rw [h_pa_eval, h_pb_eval, h_da_a_eval, h_da_b_eval]
+    ring
+  -- Therefore combine.eval x y ≠ 0.
+  have h_combine_eval : combine.poly.eval x y ≠ 0 := by
+    intro h_eq
+    apply h_prod_pos
+    rw [h_prod_factored, h_eq, mul_zero]
+  -- Hence divisorOfD combine.poly at affine (x,y) = 0.
+  have hns : E.toW.toAffine.Nonsingular x y :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hP))
+  rw [ECPoint.affine_of_nonsingular E hns]
+  show (ordAt E combine.poly (x, y) : ℤ) = 0
+  rw [ordAt_eq_zero_of_eval_ne_zero E combine.poly hP h_combine_eval]
+  rfl
+
 /-! ## General-k correctness: status
 
 Progress so far:
