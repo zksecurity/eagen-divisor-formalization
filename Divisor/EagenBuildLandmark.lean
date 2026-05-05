@@ -3598,6 +3598,199 @@ theorem landmarkInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
     rw [h_natDeg2, h_natDeg1, h_qnp, List.length_append]
     omega
 
+/-- Extra affine-affine hypotheses needed by the strong `combine`
+dispatcher beyond the point-shape case split.
+
+The distinct chord branch needs non-2-torsion endpoints and the third
+intersection's x-coordinate to differ from both endpoints. The smooth
+tangent branch currently depends on the explicit double-divisibility and
+local-multiplicity product hypotheses isolated by
+`landmarkInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult`. -/
+def LandmarkInvStrongCombineAffineExtras
+    (a b : EagenAccum E) : Prop :=
+  ∀ ⦃xa ya xb yb : ZMod E.q⦄,
+    a.point = ECPoint.affine E xa ya →
+    b.point = ECPoint.affine E xb yb →
+      (xa ≠ xb →
+        ya ≠ 0 ∧ yb ≠ 0 ∧
+        (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xa ∧
+        (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xb) ∧
+      (xa = xb → ya ≠ -yb → ya ≠ 0 →
+        let line := chordCoordRingElt E (xa, ya) (xa, ya)
+        let q := mulCoordRingElt E (mulCoordRingElt E line a.poly) b.poly
+        ((3 * xa ^ 2 + E.curveA) * (2 * ya)⁻¹) ^ 2 - 2 * xa ≠ xa ∧
+        (X - C xa) ^ 2 ∣ q.a ∧
+        (X - C xa) ^ 2 ∣ q.b ∧
+        ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+          localMult E a.poly P + localMult E b.poly P + localMult E line P
+            ≤ localMult E q P)
+
+/-- Unified dispatcher for the case-specific strong combine lemmas. -/
+theorem landmarkInvStrong_combine_when_rootMult_le_one
+    {xs ys : List (ZMod E.q × ZMod E.q)}
+    {a b : EagenAccum E}
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (hys_on : ∀ P ∈ ys, P ∈ E.points)
+    (h_neg_a_on : ∀ Q : ZMod E.q × ZMod E.q,
+      negCoords E a.point = some Q → Q ∈ E.points)
+    (h_neg_b_on : ∀ Q : ZMod E.q × ZMod E.q,
+      negCoords E b.point = some Q → Q ∈ E.points)
+    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
+    (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+      Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 1
+      ∨ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 1)
+    (h_aff_aff_extras : LandmarkInvStrongCombineAffineExtras E a b) :
+    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine E a b) := by
+  classical
+  match hpa : a.point, hpb : b.point with
+  | WeierstrassCurve.Affine.Point.zero, WeierstrassCurve.Affine.Point.zero =>
+      have hcase := landmarkInvStrong_combine_oo_when_rootMult_le_one
+        E hxs_on hys_on ha hb hpa hpb ha_nz hb_nz h_root_le
+      have hcombine :
+          EagenAccum.combine E a b = EagenAccum.combine_oo E a b := by
+        unfold EagenAccum.combine
+        rw [hpa, hpb]
+      rw [hcombine]
+      exact hcase
+  | WeierstrassCurve.Affine.Point.zero,
+    WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) hns_b =>
+      have hb_ne : b.point ≠ (0 : ECPoint E) := by
+        rw [hpb]
+        exact WeierstrassCurve.Affine.Point.some_ne_zero hns_b
+      have hcase := landmarkInvStrong_combine_ol_when_rootMult_le_one
+        E hxs_on hys_on h_neg_b_on ha hb hpa hb_ne ha_nz hb_nz h_root_le
+      have hcombine :
+          EagenAccum.combine E a b = EagenAccum.combine_ol E a b := by
+        unfold EagenAccum.combine
+        rw [hpa, hpb]
+      rw [hcombine]
+      exact hcase
+  | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) hns_a,
+    WeierstrassCurve.Affine.Point.zero =>
+      have ha_ne : a.point ≠ (0 : ECPoint E) := by
+        rw [hpa]
+        exact WeierstrassCurve.Affine.Point.some_ne_zero hns_a
+      have hcase := landmarkInvStrong_combine_or_when_rootMult_le_one
+        E hxs_on hys_on h_neg_a_on ha hb ha_ne hpb ha_nz hb_nz h_root_le
+      have hcombine :
+          EagenAccum.combine E a b = EagenAccum.combine_or E a b := by
+        unfold EagenAccum.combine
+        rw [hpa, hpb]
+      rw [hcombine]
+      exact hcase
+  | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) hns_a,
+    WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) hns_b =>
+      have hxa_on : (xa, ya) ∈ E.points :=
+        E.hComplete xa ya
+          ((E.equation_iff xa ya).mp ((E.equation_iff_nonsingular).mpr hns_a))
+      have hxb_on : (xb, yb) ∈ E.points :=
+        E.hComplete xb yb
+          ((E.equation_iff xb yb).mp ((E.equation_iff_nonsingular).mpr hns_b))
+      have ha_pt_eq : a.point = ECPoint.affine E xa ya := by
+        rw [hpa, ECPoint.affine_of_nonsingular E hns_a]
+      have hb_pt_eq : b.point = ECPoint.affine E xb yb := by
+        rw [hpb, ECPoint.affine_of_nonsingular E hns_b]
+      by_cases h_xx : xa ≠ xb
+      · obtain ⟨hya_ne, hyb_ne, h_third_xa, h_third_xb⟩ :=
+          (h_aff_aff_extras ha_pt_eq hb_pt_eq).1 h_xx
+        have hcase := landmarkInvStrong_combine_distinct_when_rootMult_le_one
+          E h_xx hxs_on hys_on hxa_on hxb_on hya_ne hyb_ne
+          h_third_xa h_third_xb ha hb ha_pt_eq hb_pt_eq
+          ha_nz hb_nz h_root_le
+        have hcombine :
+            EagenAccum.combine E a b =
+              EagenAccum.combine_distinct E a b xa ya xb yb h_xx := by
+          unfold EagenAccum.combine
+          rw [hpa, hpb]
+          simp [h_xx]
+        rw [hcombine]
+        exact hcase
+      · have hxeq : xa = xb := by exact not_not.mp h_xx
+        by_cases h_yy : ya = -yb
+        · by_cases hya_zero : ya = 0
+          · have hyb_zero : yb = 0 := by
+              have hneg_yb_zero : -yb = 0 := by
+                simpa [hya_zero] using h_yy.symm
+              simpa using (neg_eq_zero.mp hneg_yb_zero)
+            have hxy_on : (xa, (0 : ZMod E.q)) ∈ E.points := by
+              simpa [hya_zero] using hxa_on
+            have ha_torsion_pt :
+                a.point = ECPoint.affine E xa (0 : ZMod E.q) := by
+              simpa [hya_zero] using ha_pt_eq
+            have hb_torsion_pt :
+                b.point = ECPoint.affine E xa (0 : ZMod E.q) := by
+              calc
+                b.point = ECPoint.affine E xb yb := hb_pt_eq
+                _ = ECPoint.affine E xa (0 : ZMod E.q) := by
+                  rw [← hxeq, hyb_zero]
+            have hcase := landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_one
+              E hxs_on hys_on hxy_on ha hb ha_torsion_pt hb_torsion_pt
+              ha_nz hb_nz h_root_le
+            have hcombine :
+                EagenAccum.combine E a b = EagenAccum.combine_vertical E a b xa := by
+              unfold EagenAccum.combine
+              rw [hpa, hpb]
+              simp [hxeq, h_yy]
+            rw [hcombine]
+            simpa [EagenAccum.combine_tangent_torsion] using hcase
+          · have hyb_eq_neg : yb = -ya := by
+              have hneg := congrArg Neg.neg h_yy
+              simpa [neg_neg] using hneg.symm
+            have hxy_neg_on : (xa, -ya) ∈ E.points := points_neg_y E hxa_on
+            have hb_vertical_pt : b.point = ECPoint.affine E xa (-ya) := by
+              calc
+                b.point = ECPoint.affine E xb yb := hb_pt_eq
+                _ = ECPoint.affine E xa (-ya) := by
+                  rw [← hxeq, hyb_eq_neg]
+            have hcase := landmarkInvStrong_combine_vertical_when_rootMult_le_one
+              E hxs_on hys_on hxa_on hxy_neg_on hya_zero ha hb
+              ha_pt_eq hb_vertical_pt ha_nz hb_nz h_root_le
+            have hcombine :
+                EagenAccum.combine E a b = EagenAccum.combine_vertical E a b xa := by
+              unfold EagenAccum.combine
+              rw [hpa, hpb]
+              simp [hxeq, h_yy]
+            rw [hcombine]
+            exact hcase
+        · by_cases hya_zero : ya = 0
+          · have hyb_zero : yb = 0 := by
+              have hy_dich : ya = yb ∨ ya = -yb := by
+                have hxb_as_xa : (xa, yb) ∈ E.points := by
+                  simpa [hxeq] using hxb_on
+                exact ECPoints_same_x_y_eq_or_neg E hxa_on hxb_as_xa
+              rcases hy_dich with hy_eq | hy_neg
+              · simp [← hy_eq, hya_zero]
+              · exact False.elim (h_yy hy_neg)
+            exact False.elim (h_yy (by simp [hya_zero, hyb_zero]))
+          · have hxb_as_xa : (xa, yb) ∈ E.points := by
+              simpa [hxeq] using hxb_on
+            have hy_eq : ya = yb := by
+              rcases ECPoints_same_x_y_eq_or_neg E hxa_on hxb_as_xa with hy_same | hy_neg
+              · exact hy_same
+              · exact False.elim (h_yy hy_neg)
+            have hb_smooth_pt : b.point = ECPoint.affine E xa ya := by
+              calc
+                b.point = ECPoint.affine E xb yb := hb_pt_eq
+                _ = ECPoint.affine E xa ya := by
+                  rw [← hxeq, ← hy_eq]
+            have hxy_neg_on : (xa, -ya) ∈ E.points := points_neg_y E hxa_on
+            obtain ⟨h_third_xa, h_dvd_qa_sq, h_dvd_qb_sq, hprod_all_ge⟩ :=
+              (h_aff_aff_extras ha_pt_eq hb_pt_eq).2 hxeq h_yy hya_zero
+            have hcase :=
+              landmarkInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
+                E hxa_on hxy_neg_on hya_zero h_third_xa ha hb
+                ha_pt_eq hb_smooth_pt ha_nz hb_nz
+                h_dvd_qa_sq h_dvd_qb_sq hprod_all_ge
+            have hcombine :
+                EagenAccum.combine E a b =
+                  EagenAccum.combine_tangent_smooth E a b xa ya hya_zero := by
+              unfold EagenAccum.combine
+              rw [hpa, hpb]
+              simp [hxeq, h_yy, hya_zero]
+            rw [hcombine]
+            exact hcase
+
 /-! ## Helper: nonzero from positive natDegree -/
 /-- `eagenBuild` of a sum-zero pair is the vertical line at `P.1`. -/
 theorem eagenBuild_pair_vertical
