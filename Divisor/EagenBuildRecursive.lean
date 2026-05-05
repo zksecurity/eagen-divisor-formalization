@@ -1173,6 +1173,107 @@ theorem combine_higher_distinct_divisible_at_a
   -- Apply Da_Db_eval_zero_of_both_sheets_zero.
   exact Da_Db_eval_zero_of_both_sheets_zero E prod hY_a h_prod_at_a h_prod_at_negA
 
+/-! ### Combine step divisibility at b after divLin a
+
+After `divLin a.point.1`, the resulting `after_div_a` evaluated at `b.point.1`
+in both `.a` and `.b` is zero. This follows because the original product
+vanishes on the b-fiber (chord vanishes at (b.x,b.y), b.poly vanishes at
+(b.x,-b.y) via AccInv on b), and `b.point.1 ≠ a.point.1` lets us push the
+vanishing through divLin's quotient. -/
+
+theorem combine_higher_distinct_prod_vanish_at_b
+    {ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_b : AccInv E ys b)
+    (hY_b : b.point.2 ≠ 0)
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0)) :
+    let chord := chordCoordRingElt E a.point b.point
+    let prod := mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly
+    prod.a.eval b.point.1 = 0 ∧ prod.b.eval b.point.1 = 0 := by
+  classical
+  intro chord prod
+  have h_pt_mem : b.point ∈ E.points := h_acc_b.1
+  have h_neg_mem : (b.point.1, -b.point.2) ∈ E.points := by
+    apply E.hComplete
+    have hC := E.hOnCurve _ h_pt_mem
+    show (-b.point.2) ^ 2 = b.point.1 ^ 3 + E.curveA * b.point.1 + E.curveB
+    rw [neg_pow_two]; exact hC
+  -- chord vanishes at b.point.
+  have h_chord_at_b : chord.eval b.point.1 b.point.2 = 0 :=
+    chordCoordRingElt_eval_right E a.point b.point
+  -- b.poly vanishes at -b.point.
+  have h_bPoly_at_negB : b.poly.eval b.point.1 (-b.point.2) = 0 :=
+    accInv_poly_vanishes_at_neg_point E h_acc_b h_neg_mem hY_b h_b_poly_NZ
+  -- Product vanishes at sheet (b.x, b.y).
+  have h_prod_at_b : prod.eval b.point.1 b.point.2 = 0 := by
+    rw [show prod = mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly from rfl]
+    rw [mulCoordRingElt_eval_on_E E _ b.poly h_pt_mem]
+    rw [mulCoordRingElt_eval_on_E E chord a.poly h_pt_mem]
+    rw [h_chord_at_b, zero_mul, zero_mul]
+  -- Product vanishes at sheet (b.x, -b.y).
+  have h_prod_at_negB : prod.eval b.point.1 (-b.point.2) = 0 := by
+    rw [show prod = mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly from rfl]
+    rw [mulCoordRingElt_eval_on_E E _ b.poly h_neg_mem]
+    rw [h_bPoly_at_negB, mul_zero]
+  exact Da_Db_eval_zero_of_both_sheets_zero E prod hY_b h_prod_at_b h_prod_at_negB
+
+theorem combine_higher_distinct_divisible_at_b
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0)) :
+    let chord := chordCoordRingElt E a.point b.point
+    let prod := mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly
+    let after_div_a := prod.divLin a.point.1
+    after_div_a.a.eval b.point.1 = 0 ∧ after_div_a.b.eval b.point.1 = 0 := by
+  classical
+  intro chord prod after_div_a
+  -- Step 1: prod.a, prod.b both vanish at a.point.1 (combine_higher_distinct_divisible_at_a).
+  have h_at_a := combine_higher_distinct_divisible_at_a (E := E)
+    h_acc_a h_xx hY_a h_a_poly_NZ h_b_poly_NZ
+  have h_pa_at_a : prod.a.eval a.point.1 = 0 := h_at_a.1
+  have h_pb_at_a : prod.b.eval a.point.1 = 0 := h_at_a.2
+  -- Step 2: write prod.a = (X - C a.x) * after_div_a.a and similarly for .b.
+  have h_pa_root : prod.a.IsRoot a.point.1 := h_pa_at_a
+  have h_pb_root : prod.b.IsRoot a.point.1 := h_pb_at_a
+  have h_pa_factored :
+      (Polynomial.X - Polynomial.C a.point.1) * after_div_a.a = prod.a := by
+    show (Polynomial.X - Polynomial.C a.point.1)
+        * (prod.a /ₘ (Polynomial.X - Polynomial.C a.point.1)) = prod.a
+    exact Polynomial.mul_divByMonic_eq_iff_isRoot.mpr h_pa_root
+  have h_pb_factored :
+      (Polynomial.X - Polynomial.C a.point.1) * after_div_a.b = prod.b := by
+    show (Polynomial.X - Polynomial.C a.point.1)
+        * (prod.b /ₘ (Polynomial.X - Polynomial.C a.point.1)) = prod.b
+    exact Polynomial.mul_divByMonic_eq_iff_isRoot.mpr h_pb_root
+  -- Step 3: prod.a, prod.b vanish at b.point.1.
+  have h_at_b := combine_higher_distinct_prod_vanish_at_b (E := E) (a := a)
+    h_acc_b hY_b h_b_poly_NZ
+  have h_pa_at_b : prod.a.eval b.point.1 = 0 := h_at_b.1
+  have h_pb_at_b : prod.b.eval b.point.1 = 0 := h_at_b.2
+  -- Step 4: extract after_div_a.{a,b}.eval b.point.1 = 0.
+  have h_factor_ne : b.point.1 - a.point.1 ≠ 0 := sub_ne_zero.mpr (Ne.symm h_xx)
+  refine ⟨?_, ?_⟩
+  · have heval : ((Polynomial.X - Polynomial.C a.point.1) * after_div_a.a).eval b.point.1
+                = (b.point.1 - a.point.1) * after_div_a.a.eval b.point.1 := by
+      simp [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
+    rw [h_pa_factored] at heval
+    rw [h_pa_at_b] at heval
+    have : (b.point.1 - a.point.1) * after_div_a.a.eval b.point.1 = 0 := heval.symm
+    rcases mul_eq_zero.mp this with h | h
+    · exact absurd h h_factor_ne
+    · exact h
+  · have heval : ((Polynomial.X - Polynomial.C a.point.1) * after_div_a.b).eval b.point.1
+                = (b.point.1 - a.point.1) * after_div_a.b.eval b.point.1 := by
+      simp [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
+    rw [h_pb_factored] at heval
+    rw [h_pb_at_b] at heval
+    have : (b.point.1 - a.point.1) * after_div_a.b.eval b.point.1 = 0 := heval.symm
+    rcases mul_eq_zero.mp this with h | h
+    · exact absurd h h_factor_ne
+    · exact h
+
 /-! ### Combine step running-sum claim
 
 For combine_higher_distinct, the resulting accumulator's point lifts
