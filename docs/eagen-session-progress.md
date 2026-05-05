@@ -1210,3 +1210,38 @@ session.
 - Final eagenBuild_correctness assembly remains: requires the
   preservation propagation + connecting eagenBuild's output to the
   formal divisor via the converged singleton list.
+
+## Iteration scaffolding (continued)
+
+- `pairList`: input list partitioned into pair-sublists (matching
+  level0's structure).
+- `mergeAdjacentPairs`: list-of-sublists pair merger (matching
+  level_step's structure).
+- `AccInvList`: List.Forall₂ AccInv invariant for paired
+  sublists/accumulators.
+- `InputPairsLevelZeroOK`: input-side genericity bundle
+  (P.x ≠ Q.x, Q₀x ≠ P.x, Q₀x ≠ Q.x at each pair).
+- `accInvList_eagenBuild_level0_of_even_length`: initial-state
+  correctness — under genericity + on-curve, level0 produces an
+  AccInvList paired with pairList.
+- `accInvList_cons_cons_chord_step`: per-pair preservation
+  (alias of accInv_combine_higher_distinct_step).
+- Various structural unfoldings and length-correlation helpers.
+
+## Status: scaffolding complete, full preservation theorem deferred
+
+The infrastructure for the level_step → AccInvList preservation
+theorem is in place:
+* Structural alignment via pairList/mergeAdjacentPairs.
+* AccInvList ↔ List.Forall₂ at the predicate level.
+* Per-pair chord step via accInv_combine_higher_distinct_step.
+* Length match + tangent-free predicate scaffolding.
+
+The full preservation theorem (combining all per-pair steps under a
+list-level genericity bundle) remains as a focused multi-firing task
+requiring careful list-induction with multiple synchronized pairs.
+
+The session has accumulated ~370 commits of substantive Lean
+development on work/completeness branch, with the headline goal
+(weil_reciprocity_honest discharge) achieved early and extensive
+general-k correctness scaffolding in place.
