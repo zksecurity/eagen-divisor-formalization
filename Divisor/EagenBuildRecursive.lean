@@ -4208,6 +4208,124 @@ theorem residueDivisor_add_neg_S_eq
   rw [show (-(-S) : ECPoint E) = S from neg_neg S]
   ring
 
+/-! ### Vertical-line divisor at any R
+
+For a non-2-torsion x = a.x (a.y ≠ 0, (a.x, a.y) ∈ E), the vertical
+line's divisor at any R is:
+  δ_{a.lift}(R) + δ_{-a.lift}(R) - 2 δ_O(R). -/
+
+theorem divisorOfD_vertical_at_any_R
+    {x y : ZMod E.q} (hP : (x, y) ∈ E.points) (hY : y ≠ 0)
+    (R : ECPoint E) :
+    divisorOfD E ({ a := Polynomial.X - Polynomial.C x, b := 0 }
+                  : CoordRingElt E.q) R
+      = (if R = ECPoint.affine E x y then (1 : ℤ) else 0)
+        + (if R = ECPoint.affine E x (-y) then (1 : ℤ) else 0)
+        - 2 * (if R = (0 : ECPoint E) then (1 : ℤ) else 0) := by
+  classical
+  -- (x, -y) ∈ E.points.
+  have h_neg_pt : (x, -y) ∈ E.points := by
+    apply E.hComplete
+    have hC := E.hOnCurve _ hP
+    show (-y) ^ 2 = x ^ 3 + E.curveA * x + E.curveB
+    rw [neg_pow_two]; exact hC
+  match R with
+  | WeierstrassCurve.Affine.Point.zero =>
+    -- At infinity: divisorOfD = -2.
+    have h_zero_eq : (WeierstrassCurve.Affine.Point.zero : ECPoint E) = (0 : ECPoint E) :=
+      rfl
+    rw [h_zero_eq]
+    rw [divisorOfD_vertical_at_infinity_eq_neg_two E x]
+    have hns : E.toW.toAffine.Nonsingular x y :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hP))
+    have hns_neg : E.toW.toAffine.Nonsingular x (-y) :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ h_neg_pt))
+    rw [if_neg, if_neg, if_pos rfl]
+    · ring
+    · rw [ECPoint.affine_of_nonsingular E hns_neg]; intro h; cases h
+    · rw [ECPoint.affine_of_nonsingular E hns]; intro h; cases h
+  | WeierstrassCurve.Affine.Point.some hns =>
+    rename_i x' y'
+    -- R = .some hns at (x', y'). (x', y') ∈ E.points.
+    have hP' : (x', y') ∈ E.points :=
+      E.hComplete x' y' ((E.equation_iff x' y').mp
+        ((E.equation_iff_nonsingular).mpr hns))
+    have h_R_ne_zero : (WeierstrassCurve.Affine.Point.some hns : ECPoint E) ≠ 0 := by
+      intro h; cases h
+    rw [if_neg h_R_ne_zero]
+    by_cases h_x_eq : x' = x
+    · -- x' = x: y-dichotomy gives y' = y or y' = -y.
+      have h_y_pt : (x', y) ∈ E.points := by rw [h_x_eq]; exact hP
+      rcases curve_y_dichotomy E hP' h_y_pt with h_y | h_y
+      · -- y' = y: R = ECPoint.affine x y.
+        have h_R_eq : (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+            = ECPoint.affine E x y := by
+          subst h_x_eq h_y
+          exact (ECPoint.affine_of_nonsingular E hns).symm
+        rw [h_R_eq]
+        rw [if_pos rfl]
+        rw [if_neg]
+        · -- divisorOfD vert at (x, y) = 1.
+          have := divisorOfD_vertical_at_x₀_nonTwoTorsion_affine E x y hP hY
+          rw [this]
+          ring
+        · -- ECPoint.affine x y ≠ ECPoint.affine x (-y) since y ≠ -y.
+          rw [ECPoint.affine_of_nonsingular E
+              (E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hP)))]
+          rw [ECPoint.affine_of_nonsingular E
+              (E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ h_neg_pt)))]
+          intro h_eq
+          injection h_eq with _ h_y_eq
+          have h2 : (2 : ZMod E.q) ≠ 0 := ZMod_two_ne_zero_of_E E
+          apply hY
+          have : (2 : ZMod E.q) * y = 0 := by linear_combination h_y_eq
+          rcases mul_eq_zero.mp this with h | h
+          · exact absurd h h2
+          · exact h
+      · -- y' = -y: R = ECPoint.affine x (-y).
+        have h_R_eq : (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+            = ECPoint.affine E x (-y) := by
+          subst h_x_eq h_y
+          exact (ECPoint.affine_of_nonsingular E hns).symm
+        rw [h_R_eq]
+        rw [if_pos rfl]
+        rw [if_neg]
+        · have := divisorOfD_vertical_at_x₀_nonTwoTorsion_affine E x (-y) h_neg_pt
+              (neg_ne_zero.mpr hY)
+          rw [this]
+          ring
+        · rw [ECPoint.affine_of_nonsingular E
+              (E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ h_neg_pt)))]
+          rw [ECPoint.affine_of_nonsingular E
+              (E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hP)))]
+          intro h_eq
+          injection h_eq with _ h_y_eq
+          have h2 : (2 : ZMod E.q) ≠ 0 := ZMod_two_ne_zero_of_E E
+          apply hY
+          have : (2 : ZMod E.q) * y = 0 := by linear_combination -h_y_eq
+          rcases mul_eq_zero.mp this with h | h
+          · exact absurd h h2
+          · exact h
+    · -- x' ≠ x: vert nonvanish at R.
+      have h_R_ne_pos : (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+          ≠ ECPoint.affine E x y := by
+        rw [ECPoint.affine_of_nonsingular E
+            (E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hP)))]
+        intro h_eq; injection h_eq with hx _; exact h_x_eq hx
+      have h_R_ne_neg : (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+          ≠ ECPoint.affine E x (-y) := by
+        rw [ECPoint.affine_of_nonsingular E
+            (E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ h_neg_pt)))]
+        intro h_eq; injection h_eq with hx _; exact h_x_eq hx
+      rw [if_neg h_R_ne_pos, if_neg h_R_ne_neg]
+      -- divisorOfD vert at R = 0 (vert nonvanish at R since x' ≠ x).
+      have := divisorOfD_vertical_at_off_x₀_affine E x hP' h_x_eq
+      rw [show (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+            = ECPoint.affine E x' y' from
+          (ECPoint.affine_of_nonsingular E hns).symm]
+      rw [this]
+      ring
+
 /-! ## General-k correctness: status
 
 Progress so far:
