@@ -5583,6 +5583,58 @@ theorem inputPairsLevelZeroOK_implies_distinctX
     refine ⟨h.1, ?_⟩
     exact IH h.2.2.2
 
+/-! ### eagenBuild_level0 → AccInvList for even-length input
+
+Under `Ps.length` even + `InputPairsLevelZeroOK Ps` + on-curve hypotheses,
+eagenBuild_level0 produces an AccInvList paired with pairList. -/
+
+theorem accInvList_eagenBuild_level0_of_even_length
+    (n : ℕ) (Ps : List (ZMod E.q × ZMod E.q))
+    (h_len : Ps.length ≤ n)
+    (h_even : Ps.length % 2 = 0)
+    (h_pair_ok : InputPairsLevelZeroOK E Ps)
+    (h_on_E : ∀ P ∈ Ps, P ∈ E.points) :
+    AccInvList E (pairList Ps) (eagenBuild_level0 E Ps) := by
+  classical
+  induction n generalizing Ps with
+  | zero =>
+    have : Ps.length = 0 := by omega
+    rw [List.length_eq_zero_iff] at this
+    rw [this, pairList_nil, eagenBuild_level0_nil]
+    exact (accInvList_nil_iff E _).mpr rfl
+  | succ n IH =>
+    cases Ps with
+    | nil =>
+      rw [pairList_nil, eagenBuild_level0_nil]
+      exact (accInvList_nil_iff E _).mpr rfl
+    | cons P rest =>
+      cases rest with
+      | nil =>
+        exfalso
+        have : (1 : ℕ) % 2 = 0 := h_even
+        omega
+      | cons Q rest' =>
+        obtain ⟨h_xx, h_P_neq_A2, h_Q_neq_A2, h_rest_pair_ok⟩ :=
+          (inputPairsLevelZeroOK_cons_cons E P Q rest').mp h_pair_ok
+        rw [pairList_cons_cons]
+        rw [eagenBuild_level0_cons_cons_distinct E P Q rest' h_xx]
+        rw [accInvList_cons_iff]
+        refine ⟨?_, ?_⟩
+        · have hP : P ∈ E.points := h_on_E P (by simp)
+          have hQ : Q ∈ E.points := h_on_E Q (by simp [List.mem_cons])
+          exact accInv_level0_chord_case E P Q hP hQ h_xx h_P_neq_A2 h_Q_neq_A2
+        · have h_rest_len : rest'.length ≤ n := by
+            have : (P :: Q :: rest').length = rest'.length + 2 := by simp [List.length]
+            omega
+          have h_rest_even : rest'.length % 2 = 0 := by
+            have h1 : (P :: Q :: rest').length = rest'.length + 2 := by simp [List.length]
+            rw [h1] at h_even
+            omega
+          have h_rest_on_E : ∀ R ∈ rest', R ∈ E.points := by
+            intro R h_R_in
+            exact h_on_E R (by simp [List.mem_cons]; right; right; exact h_R_in)
+          exact IH rest' h_rest_len h_rest_even h_rest_pair_ok h_rest_on_E
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
