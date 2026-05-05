@@ -1707,6 +1707,78 @@ theorem chordCoordRingElt_eval_at_neg_third
         - (a.point.2 - lam * a.point.1) = -2 * (lam * Q₀x + (a.point.2 - lam * a.point.1))
   ring
 
+/-! ### Combine nonvanishes at -third under generic hypotheses
+
+Under the hypotheses `Q₀y ≠ 0`, `a.poly` and `b.poly` nonvanish at
+`(Q₀x, -Q₀y)`, and `Q₀x ≠ a.point.1`, `Q₀x ≠ b.point.1`, we have
+`combine.poly.eval(Q₀x, -Q₀y) ≠ 0`. Follows from the prod_eval_factor
+identity plus chord nonvanish at -third. -/
+
+theorem combine_higher_distinct_eval_neg_third_nonzero
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (h_Q₀y_ne_zero : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+                      * (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                         - a.point.1 - b.point.1)
+                      + (a.point.2 - slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+                         * a.point.1)) ≠ 0)
+    (h_Q₀x_ne_a : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                    - a.point.1 - b.point.1) ≠ a.point.1)
+    (h_Q₀x_ne_b : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                    - a.point.1 - b.point.1) ≠ b.point.1)
+    (h_a_neg_Q₀ :
+        let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+        let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+        let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+        a.poly.eval Q₀x (-Q₀y) ≠ 0)
+    (h_b_neg_Q₀ :
+        let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+        let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+        let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+        b.poly.eval Q₀x (-Q₀y) ≠ 0) :
+    let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+    let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+    let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+    (EagenAccum.combine_higher_distinct E a b h_xx).poly.eval Q₀x (-Q₀y) ≠ 0 := by
+  classical
+  intro lam Q₀x Q₀y
+  have h_a_pt : a.point ∈ E.points := h_acc_a.1
+  have h_b_pt : b.point ∈ E.points := h_acc_b.1
+  -- (Q₀x, -Q₀y) ∈ E.points.
+  have hQ₀_on_E : (Q₀x, Q₀y) ∈ E.points := by
+    apply E.hComplete
+    exact chord_third_point_on_E E a.point b.point h_a_pt h_b_pt h_xx
+  have h_negQ₀_on_E : (Q₀x, -Q₀y) ∈ E.points := by
+    apply E.hComplete
+    have hC := E.hOnCurve _ hQ₀_on_E
+    show (-Q₀y) ^ 2 = Q₀x ^ 3 + E.curveA * Q₀x + E.curveB
+    rw [neg_pow_two]; exact hC
+  -- chord at (Q₀x, -Q₀y) = -2·Q₀y ≠ 0.
+  have h_chord_neg : (chordCoordRingElt E a.point b.point).eval Q₀x (-Q₀y) ≠ 0 := by
+    rw [chordCoordRingElt_eval_at_neg_third E a b h_xx]
+    show (-2 : ZMod E.q) * Q₀y ≠ 0
+    have h2 : (2 : ZMod E.q) ≠ 0 := ZMod_two_ne_zero_of_E E
+    have hneg2 : (-2 : ZMod E.q) ≠ 0 := neg_ne_zero.mpr h2
+    exact mul_ne_zero hneg2 h_Q₀y_ne_zero
+  -- prod.eval at (Q₀x, -Q₀y) ≠ 0.
+  have h_prod_neg : (mulCoordRingElt E (mulCoordRingElt E
+        (chordCoordRingElt E a.point b.point) a.poly) b.poly).eval Q₀x (-Q₀y) ≠ 0 := by
+    rw [mulCoordRingElt_eval_on_E E _ b.poly h_negQ₀_on_E]
+    rw [mulCoordRingElt_eval_on_E E _ a.poly h_negQ₀_on_E]
+    exact mul_ne_zero (mul_ne_zero h_chord_neg h_a_neg_Q₀) h_b_neg_Q₀
+  -- prod_eval_factor: prod.eval = (Q₀x - a.x)(Q₀x - b.x) · combine.eval.
+  have h_factor :=
+    combine_higher_distinct_prod_eval_factor (E := E)
+      h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ Q₀x (-Q₀y)
+  -- Therefore combine.eval(Q₀x, -Q₀y) ≠ 0.
+  intro h_combine_eval
+  apply h_prod_neg
+  rw [h_factor, h_combine_eval, mul_zero]
+
 /-! ### Combine step: at-affine off-support divisor identity
 
 When R = `ECPoint.affine x y` has x ≠ a.point.1, x ≠ b.point.1, and
