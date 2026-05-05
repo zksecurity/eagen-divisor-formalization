@@ -322,4 +322,73 @@ def LandmarkInvList (xss : List (List (ZMod E.q × ZMod E.q)))
     (accs : List (EagenAccum E)) : Prop :=
   List.Forall₂ (LandmarkInv E) xss accs
 
+/-! ## Helper: sumOnE on append -/
+
+theorem sumOnE_append (xs ys : List (ZMod E.q × ZMod E.q)) :
+    sumOnE E (xs ++ ys) = sumOnE E xs + sumOnE E ys := by
+  classical
+  induction xs with
+  | nil => simp [sumOnE]
+  | cons P xs ih =>
+    show List.foldr _ 0 (P :: xs ++ ys) =
+         List.foldr _ 0 (P :: xs) + List.foldr _ 0 ys
+    simp only [List.cons_append, List.foldr_cons]
+    by_cases hP : P ∈ E.points
+    · rw [dif_pos hP, dif_pos hP]
+      change ECPoint.affineOfMem E hP + sumOnE E (xs ++ ys)
+        = ECPoint.affineOfMem E hP + sumOnE E xs + sumOnE E ys
+      rw [ih, add_assoc]
+    · rw [dif_neg hP, dif_neg hP]
+      change sumOnE E (xs ++ ys) = sumOnE E xs + sumOnE E ys
+      exact ih
+
+/-! ## Preservation: `combine_oo` (both running sums = O)
+
+When two accumulators with `point = 0` are combined, the result
+just multiplies the polynomials. `LandmarkInv` is preserved. -/
+
+theorem landmarkInv_combine_oo
+    {xs ys : List (ZMod E.q × ZMod E.q)}
+    {a b : EagenAccum E}
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (hys_on : ∀ P ∈ ys, P ∈ E.points)
+    (ha : LandmarkInv E xs a) (hb : LandmarkInv E ys b)
+    (ha_pt : a.point = (0 : ECPoint E))
+    (hb_pt : b.point = (0 : ECPoint E))
+    (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0) :
+    LandmarkInv E (xs ++ ys) (EagenAccum.combine_oo E a b) := by
+  classical
+  obtain ⟨ha_sum, ha_van, ha_deg⟩ := ha
+  obtain ⟨hb_sum, hb_van, hb_deg⟩ := hb
+  refine ⟨?_, ?_, ?_⟩
+  · -- (combine_oo).point = 0 = sumOnE (xs ++ ys)
+    show (0 : ECPoint E) = sumOnE E (xs ++ ys)
+    rw [sumOnE_append]
+    rw [← ha_sum, ← hb_sum, ha_pt, hb_pt, zero_add]
+  · -- Vanishing at every P ∈ xs ++ ys
+    intro P hP_mem
+    show (mulCoordRingElt E a.poly b.poly).eval P.1 P.2 = 0
+    rw [List.mem_append] at hP_mem
+    rcases hP_mem with hP_xs | hP_ys
+    · have hP_on : P ∈ E.points := hxs_on P hP_xs
+      rw [mulCoordRingElt_eval_on_E E a.poly b.poly hP_on]
+      rw [ha_van P hP_xs]
+      ring
+    · have hP_on : P ∈ E.points := hys_on P hP_ys
+      rw [mulCoordRingElt_eval_on_E E a.poly b.poly hP_on]
+      rw [hb_van P hP_ys]
+      ring
+  · -- Degree: (normPoly (a.poly · b.poly)).natDegree = (xs ++ ys).length.
+    show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree
+        = (xs ++ ys).length + (if (EagenAccum.combine_oo E a b).point
+                                  = (0 : ECPoint E) then 0 else 1)
+    rw [normPoly_mul_eq]
+    have h_combined_zero : (EagenAccum.combine_oo E a b).point = (0 : ECPoint E) := rfl
+    rw [if_pos h_combined_zero]
+    rw [if_pos ha_pt] at ha_deg
+    rw [if_pos hb_pt] at hb_deg
+    rw [Polynomial.natDegree_mul ha_nz hb_nz]
+    rw [ha_deg, hb_deg, List.length_append]
+    omega
+
 end Divisor.Landmark
