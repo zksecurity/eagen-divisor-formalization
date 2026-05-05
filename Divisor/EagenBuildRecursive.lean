@@ -5402,6 +5402,48 @@ theorem eagenBuild_level0_cons_cons_tangent
       = { point := P, poly := { a := 1, b := 0 } } :: eagenBuild_level0 E rest
   rw [dif_neg h_xx, dif_neg h_yy]
 
+/-! ### eagenBuild_level0 length bound
+
+Always: level0 Ps.length ≤ Ps.length. Strict when Ps.length ≥ 2. -/
+
+theorem eagenBuild_level0_length_le
+    (n : ℕ) (Ps : List (ZMod E.q × ZMod E.q))
+    (h_len : Ps.length ≤ n) :
+    (eagenBuild_level0 E Ps).length ≤ Ps.length := by
+  classical
+  induction n generalizing Ps with
+  | zero =>
+    have : Ps.length = 0 := by omega
+    rw [List.length_eq_zero_iff] at this
+    rw [this, eagenBuild_level0_nil]
+    simp
+  | succ n IH =>
+    cases Ps with
+    | nil =>
+      rw [eagenBuild_level0_nil]
+      simp
+    | cons P rest =>
+      cases rest with
+      | nil =>
+        rw [eagenBuild_level0_singleton]
+        simp
+      | cons Q rest' =>
+        have h_rest_len : rest'.length ≤ n := by
+          have : (P :: Q :: rest').length = rest'.length + 2 := by simp [List.length]
+          omega
+        have IH_rest := IH rest' h_rest_len
+        by_cases h_xx : P.1 ≠ Q.1
+        · rw [eagenBuild_level0_cons_cons_distinct E P Q rest' h_xx]
+          simp only [List.length_cons]
+          omega
+        · by_cases h_yy : P.2 = -Q.2
+          · rw [eagenBuild_level0_cons_cons_vertical E P Q rest' h_xx h_yy]
+            simp only [List.length_cons]
+            omega
+          · rw [eagenBuild_level0_cons_cons_tangent E P Q rest' h_xx h_yy]
+            simp only [List.length_cons]
+            omega
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
