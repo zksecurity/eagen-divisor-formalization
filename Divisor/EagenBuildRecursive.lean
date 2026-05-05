@@ -284,6 +284,50 @@ theorem accInv_level0_chord_running_sum
       = -ECPoint.affine E Q₀x Q₀y
   rw [ECPoint.affine_neg E Q₀x Q₀y]
 
+/-! ### Level-0 chord case: divisor identity at infinity
+
+For chord case (P, Q): divisorOfD chord at ∞ = -3 = -2 + (-1)
+                    = formalDivisor [P, Q] at ∞ + residue (P+Q) at ∞. -/
+
+theorem accInv_level0_chord_divisor_identity_at_infinity
+    (P Q : ZMod E.q × ZMod E.q)
+    (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (h_xx : P.1 ≠ Q.1)
+    (hP_neq_A2 : P.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
+    (hQ_neq_A2 : Q.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) :
+    let h_acc := (accInv_level0_chord_running_sum E P Q hP hQ h_xx).choose
+    divisorOfD E (chordCoordRingElt E P Q) (0 : ECPoint E)
+      = formalDivisorOfList E [P, Q] (0 : ECPoint E)
+        + residueDivisor E (ECPoint.affineOfMem E h_acc) (0 : ECPoint E) := by
+  classical
+  intro h_acc
+  -- divisorOfD chord at ∞ = -3.
+  have h_chord_inf := divisorOfD_chordCoordRingElt_chord_distinct E P Q hP hQ h_xx
+                        hP_neq_A2 hQ_neq_A2
+  rw [h_chord_inf.2.2.2]
+  -- formalDivisor [P, Q] at ∞ = -2.
+  rw [show formalDivisorOfList E [P, Q] (0 : ECPoint E) = -2 from rfl]
+  -- residue at ∞: -1 since running sum ≠ 0.
+  -- Running sum = affineOfMem h_acc.
+  have h_run := (accInv_level0_chord_running_sum E P Q hP hQ h_xx).choose_spec
+  -- h_run : affineOfMem h_acc = affineOfMem hP + affineOfMem hQ.
+  have h_run_ne_zero : (ECPoint.affineOfMem E h_acc : ECPoint E) ≠ 0 := by
+    -- affineOfMem unfolds to .some hns; .some ≠ 0.
+    intro h_eq
+    unfold ECPoint.affineOfMem ECPoint.affineOfEqn at h_eq
+    cases h_eq
+  -- Inline residueDivisor at infinity = -1.
+  unfold residueDivisor
+  rw [if_pos rfl]
+  rw [if_neg]
+  · norm_num
+  · -- 0 = -running_sum iff running_sum = 0.
+    intro h_eq
+    apply h_run_ne_zero
+    have : -(ECPoint.affineOfMem E h_acc : ECPoint E) = 0 := h_eq.symm
+    have := neg_eq_zero.mp this
+    exact this
+
 /-! ### Helper lemmas for residue and formalDivisor -/
 
 /-- residueDivisor evaluated at `-S` is `1` (when -S ≠ 0). -/
