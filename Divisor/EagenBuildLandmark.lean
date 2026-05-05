@@ -1036,6 +1036,76 @@ theorem landmarkInvStrong_combine_ol_when_rootMult_le_one
     rw [h_combined_pt, if_neg hb_pt, ha_deg, hb_deg, List.length_append]
     omega
 
+theorem landmarkInvStrong_combine_or_when_rootMult_le_one
+    {xs ys : List (ZMod E.q × ZMod E.q)}
+    {a b : EagenAccum E}
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (hys_on : ∀ P ∈ ys, P ∈ E.points)
+    (h_neg_a_on : ∀ Q : ZMod E.q × ZMod E.q,
+      negCoords E a.point = some Q → Q ∈ E.points)
+    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha_pt : a.point ≠ (0 : ECPoint E))
+    (hb_pt : b.point = (0 : ECPoint E))
+    (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
+    (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+      Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 1
+      ∨ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 1) :
+    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine_or E a b) := by
+  classical
+  have _hxs_on := hxs_on
+  have _hys_on := hys_on
+  have _h_neg_a_on := h_neg_a_on
+  have ha_poly_nz : ¬ (a.poly.a = 0 ∧ a.poly.b = 0) := by
+    intro hzero
+    apply ha_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have hb_poly_nz : ¬ (b.poly.a = 0 ∧ b.poly.b = 0) := by
+    intro hzero
+    apply hb_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  refine ⟨?_, ?_, ?_⟩
+  · show a.point = sumOnE E (xs ++ ys)
+    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
+      ← LandmarkInvStrong.running_sum E hb, hb_pt, add_zero]
+  · intro P hPon
+    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
+    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have hb_count_le : ys.count P ≤ localMult E b.poly P := by
+      have htarget : target E ys b.point P = ys.count P := by
+        rw [hb_pt]
+        simp [target, negCoords]
+      simpa [htarget] using hb_target_le
+    have hprod_le :
+        localMult E a.poly P + localMult E b.poly P
+          ≤ localMult E (mulCoordRingElt E a.poly b.poly) P := by
+      apply localMult_mulCoordRingElt_ge_add_general E a.poly b.poly P
+        hPon ha_poly_nz hb_poly_nz
+      rcases h_root_le P hPon with hroot_a | hroot_b
+      · exact Or.inr hroot_a
+      · exact Or.inl hroot_b
+    calc
+      target E (xs ++ ys) (EagenAccum.combine_or E a b).point P
+          = target E xs a.point P + ys.count P := by
+            simp [target, EagenAccum.combine_or, List.count_append]
+            omega
+      _ ≤ localMult E a.poly P + localMult E b.poly P :=
+            Nat.add_le_add ha_target_le hb_count_le
+      _ ≤ localMult E (EagenAccum.combine_or E a b).poly P := by
+            simpa [EagenAccum.combine_or] using hprod_le
+  · show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree =
+        (xs ++ ys).length + (if (EagenAccum.combine_or E a b).point
+          = (0 : ECPoint E) then 0 else 1)
+    rw [normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
+    have ha_deg := LandmarkInvStrong.natDegree E ha
+    have hb_deg := LandmarkInvStrong.natDegree E hb
+    rw [if_neg ha_pt] at ha_deg
+    rw [if_pos hb_pt] at hb_deg
+    have h_combined_pt : (EagenAccum.combine_or E a b).point = a.point := rfl
+    rw [h_combined_pt, if_neg ha_pt, ha_deg, hb_deg, List.length_append]
+    omega
+
 /-! ## Preservation: `combine_ol` (a.point = O, b.point ≠ O)
 
 The combined accumulator forwards `b`'s residue point. Polynomial
