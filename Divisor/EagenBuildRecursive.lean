@@ -5732,6 +5732,29 @@ theorem accInvList_cons_cons_chord_step
   accInv_combine_higher_distinct_step (E := E)
     h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ hStrong hOffChord
 
+/-! ### pairList sublist length invariant
+
+Every sublist in pairList Ps has length ≤ 2 (singleton tail or
+2-element pair). -/
+
+theorem pairList_sublist_length_le_two {q : ℕ}
+    (Ps : List (ZMod q × ZMod q)) :
+    ∀ xs ∈ pairList Ps, xs.length ≤ 2 := by
+  induction Ps using pairList.induct with
+  | case1 => intro xs h_in; simp at h_in
+  | case2 P =>
+    intro xs h_in
+    rw [pairList_singleton] at h_in
+    rw [List.mem_singleton] at h_in
+    rw [h_in]; simp
+  | case3 P Q rest IH =>
+    intro xs h_in
+    rw [pairList_cons_cons] at h_in
+    rw [List.mem_cons] at h_in
+    rcases h_in with h_eq | h_rest
+    · rw [h_eq]; simp
+    · exact IH _ h_rest
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
