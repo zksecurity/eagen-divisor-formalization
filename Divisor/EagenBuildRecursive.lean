@@ -717,6 +717,42 @@ theorem accInv_level0_chord_divisor_identity
         · exact accInv_level0_chord_divisor_identity_at_off_support E P Q hP hQ h_xx
                   hP_neq_A2 hQ_neq_A2 hns h_eqP h_eqQ h_eqA₂
 
+/-! ### Level-0 chord case: full AccInv
+
+Combines running-sum claim + universal divisor identity into the full
+AccInv invariant. -/
+
+theorem accInv_level0_chord_case
+    (P Q : ZMod E.q × ZMod E.q)
+    (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (h_xx : P.1 ≠ Q.1)
+    (hP_neq_A2 : P.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
+    (hQ_neq_A2 : Q.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) :
+    AccInv E [P, Q] (EagenAccum.fromChordPair_distinct E P Q h_xx) := by
+  classical
+  unfold AccInv
+  have h_run := accInv_level0_chord_running_sum E P Q hP hQ h_xx
+  refine ⟨h_run.choose, ?_, ?_⟩
+  · -- Running-sum claim.
+    have h_sum := h_run.choose_spec
+    show (ECPoint.affineOfMem E h_run.choose : ECPoint E) =
+      [P, Q].foldr (fun P S =>
+        if h' : P ∈ E.points then ECPoint.affineOfMem E h' + S else S) 0
+    rw [h_sum]
+    simp only [List.foldr, dif_pos hP, dif_pos hQ, add_zero]
+  · -- Divisor identity ∀ R.
+    have h_chord := chordCoordRingElt_ne_zero E P Q
+    -- The accumulator's poly is chordCoordRingElt P Q.
+    show ∀ R : ECPoint E,
+      divisorOfD E (EagenAccum.fromChordPair_distinct E P Q h_xx).poly R
+        = formalDivisorOfList E [P, Q] R
+          + residueDivisor E (ECPoint.affineOfMem E h_run.choose) R
+    show ∀ R : ECPoint E,
+      divisorOfD E (chordCoordRingElt E P Q) R
+        = formalDivisorOfList E [P, Q] R
+          + residueDivisor E (ECPoint.affineOfMem E h_run.choose) R
+    exact accInv_level0_chord_divisor_identity E P Q hP hQ h_xx hP_neq_A2 hQ_neq_A2
+
 /-! ### Helper lemmas for residue and formalDivisor -/
 
 /-- residueDivisor evaluated at `-S` is `1` (when -S ≠ 0). -/
