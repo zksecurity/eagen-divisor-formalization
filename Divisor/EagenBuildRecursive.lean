@@ -2870,6 +2870,140 @@ theorem combine_higher_distinct_divisor_via_prod_minus_two_verts
                         : CoordRingElt E.q) R
   rw [h_step2, h_step1]
 
+/-! ### Combine step at-a.lift AccInv-form divisor identity
+
+R = a.lift = ECPoint.affine a.x a.y. Under generic hypotheses
+(b.poly nonvanish on a fiber, a.lift ≠ -b.lift, a.lift ≠ -combine.lift):
+
+  divisorOfD combine.poly (a.lift)
+    = divisorOfD prod (a.lift) - 1 - 0    (via vert(a.x) at a.lift = 1)
+    = (1 + div(a.poly)(a.lift) + div(b.poly)(a.lift)) - 1
+    = div(a.poly)(a.lift) + div(b.poly)(a.lift)
+
+By AccInv:
+  div(a.poly)(a.lift) = formalDivisor xs (a.lift) + 0
+  div(b.poly)(a.lift) = formalDivisor ys (a.lift) + 0
+
+So the result equals formalDivisor (xs++ys) (a.lift), and the RHS
+residue is 0, matching. -/
+
+theorem accInv_combine_higher_distinct_divisor_at_a_lift_AccInv_form
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (h_Q₀x_ne_a : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                    - a.point.1 - b.point.1) ≠ a.point.1)
+    (h_Q₀x_ne_b : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                    - a.point.1 - b.point.1) ≠ b.point.1)
+    (h_b_at_a : b.poly.eval a.point.1 a.point.2 ≠ 0)
+    (h_b_at_neg_a : b.poly.eval a.point.1 (-a.point.2) ≠ 0)
+    (h_a_lift_ne_neg_b_lift :
+        ECPoint.affineOfMem E h_acc_a.1
+          ≠ -(ECPoint.affineOfMem E h_acc_b.1 : ECPoint E))
+    (h_a_lift_ne_neg_combine_lift :
+        ECPoint.affineOfMem E h_acc_a.1
+          ≠ -(ECPoint.affineOfMem E
+              (combine_higher_distinct_running_sum E a b
+                  h_acc_a.1 h_acc_b.1 h_xx).choose : ECPoint E)) :
+    let combine := EagenAccum.combine_higher_distinct E a b h_xx
+    ∃ h_combine_pt : combine.point ∈ E.points,
+      divisorOfD E combine.poly (ECPoint.affine E a.point.1 a.point.2)
+        = formalDivisorOfList E (xs ++ ys) (ECPoint.affine E a.point.1 a.point.2)
+          + residueDivisor E (ECPoint.affineOfMem E h_combine_pt)
+              (ECPoint.affine E a.point.1 a.point.2) := by
+  classical
+  intro combine
+  have h_a_pt : a.point ∈ E.points := h_acc_a.1
+  have h_b_pt : b.point ∈ E.points := h_acc_b.1
+  obtain ⟨h_combine_pt, _⟩ := combine_higher_distinct_running_sum
+    E a b h_a_pt h_b_pt h_xx
+  refine ⟨h_combine_pt, ?_⟩
+  -- a.lift ≠ 0.
+  have h_a_lift_ne_zero :
+      (ECPoint.affineOfMem E h_a_pt : ECPoint E) ≠ 0 := by
+    intro h_eq
+    unfold ECPoint.affineOfMem ECPoint.affineOfEqn at h_eq
+    cases h_eq
+  -- a.lift ≠ -a.lift (since y ≠ 0, char ≠ 2).
+  have hns_a : E.toW.toAffine.Nonsingular a.point.1 a.point.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ h_a_pt))
+  -- Express R via affine_of_nonsingular.
+  have h_R_eq : (ECPoint.affine E a.point.1 a.point.2 : ECPoint E)
+      = ECPoint.affineOfMem E h_a_pt := ECPoint.affine_eq_affineOfMem E h_a_pt
+  -- Use the universal divLin double-subtract.
+  rw [combine_higher_distinct_divisor_via_prod_minus_two_verts (E := E)
+        h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
+        (ECPoint.affine E a.point.1 a.point.2)]
+  -- Use the prod_split helper for divisorOfD prod (a.lift).
+  rw [combine_higher_distinct_prod_divisor_split_when_b_nonvanish_fiber (E := E)
+        h_a_pt h_b_pt h_xx h_a_poly_NZ h_b_poly_NZ
+        h_Q₀x_ne_a.symm h_Q₀x_ne_b.symm
+        (E.hComplete _ _ ((E.equation_iff _ _).mp
+          ((E.equation_iff_nonsingular).mpr hns_a)))
+        h_b_at_a h_b_at_neg_a]
+  -- Compute divisor of chord at a.lift = 1.
+  rw [chordCoordRingElt_divisor_at_a_lift_eq_one E a b h_a_pt h_b_pt h_xx hY_a
+        h_Q₀x_ne_a h_Q₀x_ne_b]
+  -- Compute divisor of vert(a.x) at a.lift = 1.
+  rw [divisorOfD_vertical_at_x₀_nonTwoTorsion_affine E a.point.1 a.point.2
+        h_a_pt hY_a]
+  -- Compute divisor of vert(b.x) at a.lift = 0 (a.x ≠ b.x).
+  rw [divisorOfD_vertical_at_off_x₀_affine E b.point.1 h_a_pt h_xx]
+  -- Replace divisorOfD a.poly (a.lift), b.poly (a.lift) via AccInv.
+  obtain ⟨_, _, h_div_a⟩ := h_acc_a
+  obtain ⟨_, _, h_div_b⟩ := h_acc_b
+  rw [show (ECPoint.affine E a.point.1 a.point.2 : ECPoint E)
+        = ECPoint.affineOfMem E h_a_pt from h_R_eq]
+  rw [h_div_a (ECPoint.affineOfMem E h_a_pt)]
+  rw [h_div_b (ECPoint.affineOfMem E h_a_pt)]
+  -- residueDivisor a.lift (a.lift) = 0 (a.lift ≠ -a.lift, a.lift ≠ 0).
+  have h_a_ne_neg_a : (ECPoint.affineOfMem E h_a_pt : ECPoint E)
+      ≠ -(ECPoint.affineOfMem E h_a_pt : ECPoint E) := by
+    -- -a.lift = ECPoint.affine a.x (-a.y). Equal to a.lift iff y = -y iff y = 0.
+    rw [← ECPoint.affine_eq_affineOfMem E h_a_pt]
+    rw [show -(ECPoint.affine E a.point.1 a.point.2 : ECPoint E)
+          = ECPoint.affine E a.point.1 (-a.point.2) from
+        ECPoint.affine_neg E a.point.1 a.point.2]
+    intro h_eq
+    rw [ECPoint.affine_of_nonsingular E hns_a] at h_eq
+    have h_neg_a_pt : (a.point.1, -a.point.2) ∈ E.points := by
+      apply E.hComplete
+      have hC := E.hOnCurve _ h_a_pt
+      show (-a.point.2) ^ 2 = a.point.1 ^ 3 + E.curveA * a.point.1 + E.curveB
+      rw [neg_pow_two]; exact hC
+    have hns_neg_a : E.toW.toAffine.Nonsingular a.point.1 (-a.point.2) :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ h_neg_a_pt))
+    rw [ECPoint.affine_of_nonsingular E hns_neg_a] at h_eq
+    injection h_eq with _ h_y_eq
+    have h2 : (2 : ZMod E.q) ≠ 0 := ZMod_two_ne_zero_of_E E
+    apply hY_a
+    have : (2 : ZMod E.q) * a.point.2 = 0 := by linear_combination h_y_eq
+    rcases mul_eq_zero.mp this with h | h
+    · exact absurd h h2
+    · exact h
+  have h_residue_a_at_a : residueDivisor E (ECPoint.affineOfMem E h_a_pt)
+        (ECPoint.affineOfMem E h_a_pt) = 0 :=
+    residueDivisor_at_other E _ _ h_a_ne_neg_a h_a_lift_ne_zero
+  rw [h_residue_a_at_a]
+  -- residueDivisor b.lift (a.lift) = 0 (a.lift ≠ -b.lift, a.lift ≠ 0).
+  have h_residue_b_at_a : residueDivisor E (ECPoint.affineOfMem E h_b_pt)
+        (ECPoint.affineOfMem E h_a_pt) = 0 :=
+    residueDivisor_at_other E _ _ h_a_lift_ne_neg_b_lift h_a_lift_ne_zero
+  rw [h_residue_b_at_a]
+  -- residueDivisor combine.lift (a.lift) = 0.
+  have h_residue_combine_at_a : residueDivisor E
+        (ECPoint.affineOfMem E h_combine_pt) (ECPoint.affineOfMem E h_a_pt) = 0 :=
+    residueDivisor_at_other E _ _
+      (by convert h_a_lift_ne_neg_combine_lift using 2)
+      h_a_lift_ne_zero
+  rw [h_residue_combine_at_a, add_zero]
+  -- formalDivisorOfList (xs ++ ys) at affine (a.x, a.y) = formal_xs + formal_ys.
+  rw [formalDivisorOfList_append]
+  ring
+
 /-! ## General-k correctness: status
 
 Progress so far:
