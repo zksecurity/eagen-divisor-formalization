@@ -623,4 +623,162 @@ theorem normPoly_eq_X_sub_C_sq_mul_normPoly_divLin
   rw [ha_eq, hb_eq, hqa, hqb]
   ring
 
+/-! ## Preservation: `combine_vertical` (a.point = -b.point, both .some)
+
+The vertical case: `a.point + b.point = O` on `E`, with both
+`a.point` and `b.point` affine and (necessarily) non-2-torsion (`ya ≠ 0`).
+The combined accumulator's residue is `O`, polynomial is the product
+`a.poly · b.poly` divided by one factor of `(X - C xa)`.
+
+The divisibility argument: `q := a.poly · b.poly` vanishes at both
+`(xa, ya)` (from `b`'s residue at `-b.point = (xa, ya)`) and
+`(xa, -ya)` (from `a`'s residue at `-a.point = (xa, -ya)`).
+Both sheets ⇒ `q.a.eval xa = 0 ∧ q.b.eval xa = 0` ⇒
+`(X - C xa) ∣ q.a` and `(X - C xa) ∣ q.b` ⇒ divLin succeeds cleanly.
+
+Conditional on no `P ∈ xs ++ ys` having `P.1 = xa`. Future work:
+unconditional via richer multiplicity invariant (Codex-flagged sheet
+dichotomy). -/
+
+theorem landmarkInv_combine_vertical_no_collision
+    {xs ys : List (ZMod E.q × ZMod E.q)}
+    {a b : EagenAccum E}
+    {xa ya : ZMod E.q}
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (hys_on : ∀ P ∈ ys, P ∈ E.points)
+    (h_no_collision : ∀ P ∈ xs ++ ys, P.1 ≠ xa)
+    (hxy_on : (xa, ya) ∈ E.points)
+    (hxy_neg_on : (xa, -ya) ∈ E.points)
+    (hy_ne : ya ≠ 0)
+    (ha : LandmarkInv E xs a) (hb : LandmarkInv E ys b)
+    (ha_pt_eq : a.point = ECPoint.affine E xa ya)
+    (hb_pt_eq : b.point = ECPoint.affine E xa (-ya))
+    (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0) :
+    LandmarkInv E (xs ++ ys) (EagenAccum.combine_vertical E a b xa) := by
+  classical
+  obtain ⟨ha_sum, ha_van, ha_res, ha_deg⟩ := ha
+  obtain ⟨hb_sum, hb_van, hb_res, hb_deg⟩ := hb
+  -- Step 1: residue evaluations from a/b.
+  have ha_neg : negCoords E a.point = some (xa, -ya) := by
+    rw [ha_pt_eq]
+    have hns : E.toW.toAffine.Nonsingular xa ya :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxy_on))
+    rw [ECPoint.affine_of_nonsingular E hns]
+    rfl
+  have hb_neg : negCoords E b.point = some (xa, ya) := by
+    rw [hb_pt_eq]
+    have hns : E.toW.toAffine.Nonsingular xa (-ya) :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff xa (-ya)).mpr (E.hOnCurve _ hxy_neg_on))
+    rw [ECPoint.affine_of_nonsingular E hns]
+    show some (xa, -(-ya)) = some (xa, ya)
+    rw [neg_neg]
+  have ha_van_neg : a.poly.eval xa (-ya) = 0 := ha_res (xa, -ya) ha_neg
+  have hb_van_pos : b.poly.eval xa ya = 0 := hb_res (xa, ya) hb_neg
+  -- Step 2: product q vanishes on both fibers.
+  set q := mulCoordRingElt E a.poly b.poly with hq_def
+  have hq_eval_pos : q.eval xa ya = 0 := by
+    rw [hq_def, mulCoordRingElt_eval_on_E E _ _ hxy_on, hb_van_pos]; ring
+  have hq_eval_neg : q.eval xa (-ya) = 0 := by
+    rw [hq_def, mulCoordRingElt_eval_on_E E _ _ hxy_neg_on, ha_van_neg]; ring
+  -- Step 3: deduce univariate vanishing at xa.
+  obtain ⟨h_qa_xa, h_qb_xa⟩ :=
+    qa_qb_eval_zero_of_double_fiber_vanish E q xa ya hy_ne hq_eval_pos hq_eval_neg
+  have h_dvd_a : (X - C xa) ∣ q.a := dvd_X_sub_C_of_eval_eq_zero E h_qa_xa
+  have h_dvd_b : (X - C xa) ∣ q.b := dvd_X_sub_C_of_eval_eq_zero E h_qb_xa
+  -- Step 4: assemble the four LandmarkInv conjuncts.
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · -- (combine_vertical).point = 0 = sumOnE (xs ++ ys).
+    show (0 : ECPoint E) = sumOnE E (xs ++ ys)
+    rw [sumOnE_append, ← ha_sum, ← hb_sum, ha_pt_eq, hb_pt_eq]
+    -- ECPoint.affine xa ya + ECPoint.affine xa (-ya) = 0 (group law).
+    have hns_a : E.toW.toAffine.Nonsingular xa ya :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxy_on))
+    have hns_b : E.toW.toAffine.Nonsingular xa (-ya) :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff xa (-ya)).mpr (E.hOnCurve _ hxy_neg_on))
+    rw [ECPoint.affine_of_nonsingular E hns_a, ECPoint.affine_of_nonsingular E hns_b]
+    -- Use mathlib's Affine.Point negation: .some (x, y) + .some (x, -y) = 0.
+    show (0 : ECPoint E) = (.some hns_a + .some hns_b : ECPoint E)
+    -- The sum of a point with its negative is the identity.
+    -- mathlib: WeierstrassCurve.Affine.Point.add_neg or similar.
+    have h_neg : (.some hns_b : ECPoint E) = -(.some hns_a) := by
+      show WeierstrassCurve.Affine.Point.some hns_b
+            = -WeierstrassCurve.Affine.Point.some hns_a
+      simp [WeierstrassCurve.Affine.Point.neg_some]
+    rw [h_neg]
+    show (0 : ECPoint E) = .some hns_a + (-.some hns_a)
+    rw [add_neg_cancel]
+  · -- Vanishing at every P ∈ xs ++ ys (using no-collision hypothesis).
+    intro P hP_mem
+    show (q.divLin xa).eval P.1 P.2 = 0
+    have hP_ne : P.1 ≠ xa := h_no_collision P hP_mem
+    -- q.eval P = 0 from a/b's vanishing.
+    have hP_on : P ∈ E.points := by
+      rw [List.mem_append] at hP_mem
+      rcases hP_mem with hP_xs | hP_ys
+      · exact hxs_on P hP_xs
+      · exact hys_on P hP_ys
+    have h_q_eval : q.eval P.1 P.2 = 0 := by
+      rw [hq_def, mulCoordRingElt_eval_on_E E _ _ hP_on]
+      rw [List.mem_append] at hP_mem
+      rcases hP_mem with hP_xs | hP_ys
+      · rw [ha_van P hP_xs]; ring
+      · rw [hb_van P hP_ys]; ring
+    exact divLin_eval_zero_of_x_ne E q xa h_dvd_a h_dvd_b h_q_eval hP_ne
+  · -- Residue: result.point = 0, vacuous.
+    intro Q hQ
+    have h_combined_pt : (EagenAccum.combine_vertical E a b xa).point
+        = (0 : ECPoint E) := rfl
+    rw [h_combined_pt] at hQ
+    simp [negCoords] at hQ
+  · -- Degree.
+    show (normPoly E (q.divLin xa)).natDegree
+        = (xs ++ ys).length + (if (EagenAccum.combine_vertical E a b xa).point
+                                  = (0 : ECPoint E) then 0 else 1)
+    have h_combined_zero : (EagenAccum.combine_vertical E a b xa).point
+        = (0 : ECPoint E) := rfl
+    rw [if_pos h_combined_zero]
+    -- normPoly q = (X - C xa)^2 · normPoly (q.divLin xa).
+    have h_factorize := normPoly_eq_X_sub_C_sq_mul_normPoly_divLin
+      E q xa h_dvd_a h_dvd_b
+    -- Take natDegree of both sides; compute.
+    have hq_nz : normPoly E q ≠ 0 := by
+      rw [hq_def, normPoly_mul_eq]
+      exact mul_ne_zero ha_nz hb_nz
+    have hX_sub_ne : (X - C xa : (ZMod E.q)[X]) ≠ 0 := X_sub_C_ne_zero _
+    have hSq_ne : ((X - C xa) ^ 2 : (ZMod E.q)[X]) ≠ 0 := pow_ne_zero _ hX_sub_ne
+    have h_div_nz : normPoly E (q.divLin xa) ≠ 0 := by
+      intro hzero
+      apply hq_nz
+      rw [h_factorize, hzero, mul_zero]
+    have h_natDeg : (normPoly E q).natDegree
+        = ((X - C xa) ^ 2 : (ZMod E.q)[X]).natDegree
+          + (normPoly E (q.divLin xa)).natDegree := by
+      rw [h_factorize, Polynomial.natDegree_mul hSq_ne h_div_nz]
+    have h_X_sq_deg : ((X - C xa) ^ 2 : (ZMod E.q)[X]).natDegree = 2 := by
+      rw [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C]
+    -- natDegree(normPoly q) = natDegree(normPoly a.poly · normPoly b.poly)
+    --                      = natDegree(normPoly a.poly) + natDegree(normPoly b.poly)
+    --                      = (xs.length + 1) + (ys.length + 1).
+    have h_qnp : (normPoly E q).natDegree = xs.length + ys.length + 2 := by
+      rw [hq_def, normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
+      have hap : a.point ≠ (0 : ECPoint E) := by
+        rw [ha_pt_eq]
+        intro h
+        have hns : E.toW.toAffine.Nonsingular xa ya :=
+          E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxy_on))
+        rw [ECPoint.affine_of_nonsingular E hns] at h
+        exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
+      have hbp : b.point ≠ (0 : ECPoint E) := by
+        rw [hb_pt_eq]
+        intro h
+        have hns : E.toW.toAffine.Nonsingular xa (-ya) :=
+          E.equation_iff_nonsingular.mp ((E.equation_iff xa (-ya)).mpr (E.hOnCurve _ hxy_neg_on))
+        rw [ECPoint.affine_of_nonsingular E hns] at h
+        exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
+      rw [if_neg hap] at ha_deg
+      rw [if_neg hbp] at hb_deg
+      omega
+    rw [List.length_append]
+    omega
+
 end Divisor.Landmark
