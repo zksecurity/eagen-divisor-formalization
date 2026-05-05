@@ -564,4 +564,27 @@ theorem dvd_pow_two_X_sub_C_of_double_root
   refine ⟨r, ?_⟩
   rw [hq, hr]; ring
 
+/-! ## TODO: combine_vertical, combine_distinct, combine_tangent_*
+
+The remaining four affine-affine preservation lemmas all need the
+divisibility-from-double-fiber-vanishing argument:
+
+  - `q.eval (xa, ya) = 0` and `q.eval (xa, -ya) = 0` together force
+    `q.a.eval xa = 0` and `q.b.eval xa = 0` (using char ≠ 2 and y ≠ 0
+    for the non-2-torsion sub-cases).
+  - This gives `(X - C xa) ∣ q.a` and `(X - C xa) ∣ q.b`.
+  - `divLin xa` then preserves vanishing at non-fiber points via
+    `divLin_eval_zero_of_x_ne`.
+
+The "no-x-collision" hypothesis (`∀ P ∈ xs ++ ys, P.1 ≠ xa`) lets
+us avoid the multiplicity argument at the divided-out fiber. Future
+work: lift this hypothesis using a strengthened invariant tracking
+multiplicities at coinciding x-coordinates (Codex-flagged sheet
+dichotomy).
+
+For combine_distinct (chord case) and combine_tangent_smooth, two
+divLin operations are needed (at xa and xb / twice at xa). The
+proof structure is similar but requires composing the divisibility
+arguments. -/
+
 end Divisor.Landmark
