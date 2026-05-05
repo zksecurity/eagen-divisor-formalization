@@ -5322,6 +5322,23 @@ theorem allDistinctECPoints_iff_nodup_map_point
       intro b h_b_in h_eq
       exact h_uniq (List.mem_map.mpr ⟨b, h_b_in, h_eq.symm⟩)
 
+/-! ### AllDistinctECPoints structural lemmas -/
+
+theorem allDistinctECPoints_cons (a : EagenAccum E) (rest : List (EagenAccum E)) :
+    AllDistinctECPoints E (a :: rest) ↔
+      (∀ b ∈ rest, a.point ≠ b.point) ∧ AllDistinctECPoints E rest := Iff.rfl
+
+theorem allDistinctECPoints_tail
+    (a : EagenAccum E) (rest : List (EagenAccum E))
+    (h : AllDistinctECPoints E (a :: rest)) :
+    AllDistinctECPoints E rest := h.2
+
+/- Note: a full `allDistinctECPoints_append` characterization via
+   `List.nodup_append` (with `List.Disjoint`) is deferred — the
+   `Disjoint` predicate's binder shape interacts awkwardly with
+   the `mem_map` rewrites. Use `allDistinctECPoints_iff_nodup_map_point`
+   + raw `List.Nodup` reasoning where needed. -/
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
