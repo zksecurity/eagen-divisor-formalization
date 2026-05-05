@@ -1848,4 +1848,129 @@ multiplicity tracking. Per Codex:
 
 Estimated: ~600-1000 LOC of new infrastructure. -/
 
+
+/-! ## Bridge: landmark → full divisor identity (uses splitsOnE machinery) -/
+
+/-- Local copy of formalDivisorOfList (avoid importing EagenBuildRecursive
+to keep the bridge theorem's project-axiom dependence minimal). -/
+noncomputable def formalDivisorOfList
+    (Ps : List (ZMod E.q × ZMod E.q)) : ECPoint E → ℤ :=
+  fun R =>
+    match R with
+    | WeierstrassCurve.Affine.Point.zero => -((Ps.length : ℤ))
+    | WeierstrassCurve.Affine.Point.some (x := x) (y := y) _ =>
+        (Ps.filter (fun P => P = (x, y))).length
+
+private theorem filter_length_eq_count_eq {α : Type _} [DecidableEq α] [BEq α] [LawfulBEq α]
+    (xs : List α) (a : α) :
+    (xs.filter (fun x => x = a)).length = xs.count a := by
+  induction xs with
+  | nil =>
+      simp [List.count]
+  | cons x xs ih =>
+      by_cases hx : x = a
+      · simp [List.count, ih, hx]
+      · simp [List.count, ih, hx]
+
+theorem divisorOfD_eq_formalDivisorOfList_of_landmark
+    (Ps : List (ZMod E.q × ZMod E.q))
+    (D : CoordRingElt E.q)
+    (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
+    (hNodup : Ps.Nodup)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hVan : ∀ P ∈ Ps, D.eval P.1 P.2 = 0)
+    (hDeg : (normPoly E D).natDegree = Ps.length)
+    (hSplit : splitsOnE E D) :
+    ∀ R : ECPoint E,
+      divisorOfD E D R = formalDivisorOfList E Ps R := by
+  classical
+  have h_total : (∑ Q ∈ E.points, ordAt E D Q) = Ps.length := by
+    rw [sum_ordAt_eq_natDegree_under_split E D hD hSplit]
+    exact hDeg
+  have h_each_pos : ∀ P ∈ Ps, 1 ≤ ordAt E D P := by
+    intro P hP
+    have hP_on : P ∈ E.points := hPs_on P hP
+    rw [Nat.one_le_iff_ne_zero, ← Nat.pos_iff_ne_zero]
+    rw [ordAt_pos_iff_zero E D hD P hP_on]
+    exact hVan P hP
+  have h_Ps_subset : Ps.toFinset ⊆ E.points := by
+    intro P hP; rw [List.mem_toFinset] at hP; exact hPs_on P hP
+  have h_Ps_card : Ps.toFinset.card = Ps.length := List.toFinset_card_of_nodup hNodup
+  have h_sub_lower : Ps.length ≤ ∑ P ∈ Ps.toFinset, ordAt E D P := by
+    rw [← h_Ps_card]
+    rw [show Ps.toFinset.card = ∑ _P ∈ Ps.toFinset, 1 from by
+        rw [Finset.sum_const, Nat.smul_one_eq_cast]; rfl]
+    apply Finset.sum_le_sum
+    intro P hP
+    rw [List.mem_toFinset] at hP
+    exact h_each_pos P hP
+  have h_split_sum :
+      (∑ Q ∈ E.points, ordAt E D Q)
+        = (∑ P ∈ Ps.toFinset, ordAt E D P)
+          + (∑ Q ∈ E.points \ Ps.toFinset, ordAt E D Q) := by
+    rw [← Finset.sum_sdiff h_Ps_subset]; ring
+  have h_rest_zero : (∑ Q ∈ E.points \ Ps.toFinset, ordAt E D Q) = 0 := by omega
+  have h_Ps_sum : (∑ P ∈ Ps.toFinset, ordAt E D P) = Ps.length := by omega
+  have h_each_eq : ∀ P ∈ Ps, ordAt E D P = 1 := by
+    intro P hP
+    by_contra h_ne
+    have hge2 : 2 ≤ ordAt E D P := by
+      have h1 := h_each_pos P hP; omega
+    have hP_in : P ∈ Ps.toFinset := List.mem_toFinset.mpr hP
+    have h_split2 :
+        (∑ Q ∈ Ps.toFinset, ordAt E D Q)
+          = ordAt E D P + (∑ Q ∈ Ps.toFinset.erase P, ordAt E D Q) := by
+      rw [← Finset.sum_erase_add _ _ hP_in]; ring
+    have h_others_card : (Ps.toFinset.erase P).card = Ps.length - 1 := by
+      rw [Finset.card_erase_of_mem hP_in, h_Ps_card]
+    have h_others_lower : Ps.length - 1 ≤ ∑ Q ∈ Ps.toFinset.erase P, ordAt E D Q := by
+      rw [← h_others_card]
+      rw [show (Ps.toFinset.erase P).card = ∑ _Q ∈ Ps.toFinset.erase P, 1 from by
+          rw [Finset.sum_const, Nat.smul_one_eq_cast]; rfl]
+      apply Finset.sum_le_sum
+      intro Q hQ
+      rw [Finset.mem_erase, List.mem_toFinset] at hQ
+      exact h_each_pos Q hQ.2
+    have hPs_pos : 0 < Ps.length := by
+      cases Ps with
+      | nil => exact absurd hP (List.not_mem_nil)
+      | cons _ _ => simp
+    omega
+  have h_off_zero : ∀ Q ∈ E.points \ Ps.toFinset, ordAt E D Q = 0 := by
+    intro Q hQ
+    by_contra h_ne
+    have h_pos : 0 < ordAt E D Q := Nat.pos_of_ne_zero h_ne
+    have h_sum_pos : 0 < ∑ Q ∈ E.points \ Ps.toFinset, ordAt E D Q :=
+      Finset.sum_pos' (fun _ _ => Nat.zero_le _) ⟨Q, hQ, h_pos⟩
+    omega
+  intro R
+  match R with
+  | WeierstrassCurve.Affine.Point.zero =>
+    show -((normPoly E D).natDegree : ℤ) = -((Ps.length : ℤ))
+    rw [hDeg]
+  | WeierstrassCurve.Affine.Point.some (x := x) (y := y) hns =>
+    show (ordAt E D (x, y) : ℤ) = ((Ps.filter (fun P => P = (x, y))).length : ℤ)
+    have hxy_on : (x, y) ∈ E.points := E.hComplete x y
+      ((E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hns))
+    by_cases hxy_in : (x, y) ∈ Ps
+    · have h_ord : ordAt E D (x, y) = 1 := h_each_eq _ hxy_in
+      have h_count : (Ps.filter (fun P => P = (x, y))).length = 1 := by
+        have h_filter_count :
+            (Ps.filter (fun P => P = (x, y))).length = Ps.count (x, y) := by
+          exact filter_length_eq_count_eq Ps (x, y)
+        rw [h_filter_count]
+        exact List.count_eq_one_of_mem hNodup hxy_in
+      exact congrArg (fun n : ℕ => (n : ℤ)) (by rw [h_ord, h_count])
+    · have h_ord : ordAt E D (x, y) = 0 := by
+        apply h_off_zero
+        rw [Finset.mem_sdiff]
+        exact ⟨hxy_on, by rw [List.mem_toFinset]; exact hxy_in⟩
+      have h_count : (Ps.filter (fun P => P = (x, y))).length = 0 := by
+        rw [List.length_eq_zero_iff, List.filter_eq_nil_iff]
+        intro P hP h_eq
+        simp at h_eq
+        rw [← h_eq] at hxy_in
+        exact hxy_in hP
+      exact congrArg (fun n : ℕ => (n : ℤ)) (by rw [h_ord, h_count])
+
 end Divisor.Landmark
