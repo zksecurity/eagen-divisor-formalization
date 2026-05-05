@@ -5814,6 +5814,13 @@ theorem mergeAdjacentPairs_eq_nil_iff {α : Type _} (xss : List (List α)) :
     | nil => simp [mergeAdjacentPairs]
     | cons ys rest' => simp [mergeAdjacentPairs]
 
+/-! ### Length-1 pairList characterization -/
+
+theorem pairList_length_eq_one_iff {q : ℕ} (Ps : List (ZMod q × ZMod q)) :
+    (pairList Ps).length = 1 ↔ Ps.length = 1 ∨ Ps.length = 2 := by
+  rw [pairList_length_eq_div_ceil]
+  omega
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
