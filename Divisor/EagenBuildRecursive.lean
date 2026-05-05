@@ -1125,6 +1125,54 @@ theorem accInv_poly_vanishes_at_neg_point
   -- Apply ordAt_pos_iff_zero.
   exact (ordAt_pos_iff_zero E a.poly h_poly_NZ (a.point.1, -a.point.2) h_negPt_mem).mp h_ord_pos
 
+/-! ### Combine step divisibility: (X - a.point.x) divides product
+
+For combine_higher_distinct, the product `chord_ab · a.poly · b.poly`
+vanishes on the full fiber at `a.point.x`:
+- `chord_ab` vanishes at sheet (a.x, a.y) (a.point is on chord_ab).
+- `a.poly` vanishes at sheet (a.x, -a.y) (via AccInv residue).
+
+Hence `(X - a.point.x)` divides both `.a` and `.b` of the product, so
+`divLin a.point.x` gives a proper polynomial reduction. -/
+
+theorem combine_higher_distinct_divisible_at_a
+    {xs : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0)) :
+    let chord := chordCoordRingElt E a.point b.point
+    let prod := mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly
+    prod.a.eval a.point.1 = 0 ∧ prod.b.eval a.point.1 = 0 := by
+  classical
+  intro chord prod
+  have h_pt_mem : a.point ∈ E.points := h_acc_a.1
+  -- Negation point (a.x, -a.y) ∈ E.points.
+  have h_neg_mem : (a.point.1, -a.point.2) ∈ E.points := by
+    apply E.hComplete
+    have hC := E.hOnCurve _ h_pt_mem
+    show (-a.point.2) ^ 2 = a.point.1 ^ 3 + E.curveA * a.point.1 + E.curveB
+    rw [neg_pow_two]; exact hC
+  -- chord_ab evaluates to 0 at a.point.
+  have h_chord_at_a : chord.eval a.point.1 a.point.2 = 0 :=
+    chordCoordRingElt_eval_left E a.point b.point
+  -- a.poly evaluates to 0 at -a.point (AccInv consequence).
+  have h_aPoly_at_negA : a.poly.eval a.point.1 (-a.point.2) = 0 :=
+    accInv_poly_vanishes_at_neg_point E h_acc_a h_neg_mem hY_a h_a_poly_NZ
+  -- (chord · a.poly · b.poly) vanishes at both sheets of x = a.point.1.
+  have h_prod_at_a : prod.eval a.point.1 a.point.2 = 0 := by
+    rw [show prod = mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly from rfl]
+    rw [mulCoordRingElt_eval_on_E E _ b.poly h_pt_mem]
+    rw [mulCoordRingElt_eval_on_E E chord a.poly h_pt_mem]
+    rw [h_chord_at_a, zero_mul, zero_mul]
+  have h_prod_at_negA : prod.eval a.point.1 (-a.point.2) = 0 := by
+    rw [show prod = mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly from rfl]
+    rw [mulCoordRingElt_eval_on_E E _ b.poly h_neg_mem]
+    rw [mulCoordRingElt_eval_on_E E chord a.poly h_neg_mem]
+    rw [h_aPoly_at_negA, mul_zero, zero_mul]
+  -- Apply Da_Db_eval_zero_of_both_sheets_zero.
+  exact Da_Db_eval_zero_of_both_sheets_zero E prod hY_a h_prod_at_a h_prod_at_negA
+
 /-! ### Combine step running-sum claim
 
 For combine_higher_distinct, the resulting accumulator's point lifts
