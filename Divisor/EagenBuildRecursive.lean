@@ -1779,6 +1779,32 @@ theorem combine_higher_distinct_eval_neg_third_nonzero
   apply h_prod_neg
   rw [h_factor, h_combine_eval, mul_zero]
 
+/-! ### Lone-sheet ordAt at non-2-torsion: ordAt = rootMult(normPoly)
+
+Reusable closed-form: when D vanishes at +sheet only (lone-sheet at +)
+of a non-2-torsion fiber, `ordAt E D P = rootMult P.1 (normPoly E D)`.
+Direct from the recursive ordAt's lone-sheet branch. -/
+
+theorem ordAt_lone_sheet_eq_rootMult_normPoly
+    {D : CoordRingElt E.q}
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hDP : D.eval P.1 P.2 = 0) (hDnegP : D.eval P.1 (-P.2) ≠ 0) :
+    ordAt E D P = Polynomial.rootMultiplicity P.1 (normPoly E D) := by
+  classical
+  rw [ordAt_eq_dispatch E D hP hD]
+  rw [if_neg hY]
+  unfold ordAt_nonTwoTorsion
+  obtain ⟨n, hn⟩ : ∃ n, D.a.natDegree + D.b.natDegree + 1 = n + 1 := ⟨_, rfl⟩
+  rw [hn]
+  show (if D.a = 0 ∧ D.b = 0 then 0
+        else if D.eval P.1 P.2 ≠ 0 then 0
+        else if D.eval P.1 (-P.2) ≠ 0
+                then Polynomial.rootMultiplicity P.1 (normPoly E D)
+                else 1 + ordAt_nonTwoTorsion_aux E n (D.divLin P.1) P)
+      = Polynomial.rootMultiplicity P.1 (normPoly E D)
+  rw [if_neg hD, if_neg (not_not.mpr hDP), if_pos hDnegP]
+
 /-! ### Combine step: at-affine off-support divisor identity
 
 When R = `ECPoint.affine x y` has x ≠ a.point.1, x ≠ b.point.1, and
