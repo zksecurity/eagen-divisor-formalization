@@ -3140,6 +3140,84 @@ theorem accInv_combine_higher_distinct_divisor_at_neg_a_lift_AccInv_form
   rw [formalDivisorOfList_append]
   ring
 
+/-! ### mulCoordRingElt is associative
+
+A direct polynomial-ring identity, expanding both sides on .a and .b
+components and applying ring. -/
+
+theorem mulCoordRingElt_assoc (D₁ D₂ D₃ : CoordRingElt E.q) :
+    mulCoordRingElt E (mulCoordRingElt E D₁ D₂) D₃
+      = mulCoordRingElt E D₁ (mulCoordRingElt E D₂ D₃) := by
+  unfold mulCoordRingElt
+  refine CoordRingElt.mk.injEq _ _ _ _ |>.mpr ?_
+  refine ⟨?_, ?_⟩
+  · ring
+  · ring
+
+/-! ### Prod divisor splits at affine R when a.poly nonvanish on R fiber
+
+Symmetric to b version: at R where a.poly is non-vanishing on the
+full fiber, divisorOfD prod R splits into the three factors. -/
+
+theorem combine_higher_distinct_prod_divisor_split_when_a_nonvanish_fiber
+    {a b : EagenAccum E}
+    (ha : a.point ∈ E.points) (hb : b.point ∈ E.points)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (h_Q₀x_ne_a : a.point.1
+        ≠ slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+            - a.point.1 - b.point.1)
+    (h_Q₀x_ne_b : b.point.1
+        ≠ slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+            - a.point.1 - b.point.1)
+    {x y : ZMod E.q} (hP : (x, y) ∈ E.points)
+    (h_a_at_pos : a.poly.eval x y ≠ 0)
+    (h_a_at_neg : a.poly.eval x (-y) ≠ 0) :
+    divisorOfD E
+      (mulCoordRingElt E (mulCoordRingElt E (chordCoordRingElt E a.point b.point)
+        a.poly) b.poly) (ECPoint.affine E x y)
+      = divisorOfD E (chordCoordRingElt E a.point b.point) (ECPoint.affine E x y)
+        + divisorOfD E a.poly (ECPoint.affine E x y)
+        + divisorOfD E b.poly (ECPoint.affine E x y) := by
+  classical
+  set chord := chordCoordRingElt E a.point b.point with hchord_def
+  -- non-zero predicates.
+  have h_chord_NZ : ¬ (chord.a = 0 ∧ chord.b = 0) :=
+    chordCoordRingElt_ne_zero E a.point b.point
+  have h_chord_b_NZ : ¬ ((mulCoordRingElt E chord b.poly).a = 0
+      ∧ (mulCoordRingElt E chord b.poly).b = 0) := by
+    intro ⟨ha', hb'⟩
+    have hN : normPoly E (mulCoordRingElt E chord b.poly) = 0 := by
+      rw [normPoly_eq, ha', hb']; ring
+    rw [normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E chord h_chord_NZ)
+      (normPoly_ne_zero E b.poly h_b_poly_NZ)) hN
+  -- prod = mul(mul(chord, a.poly), b.poly).
+  -- Rearrange via comm + assoc:
+  -- mul(mul(chord, a.poly), b.poly)
+  --   = mul(mul(chord, b.poly), a.poly)  via assoc + comm of inner
+  -- Actually simpler chain:
+  --   mul(mul(chord, a.poly), b.poly)
+  --   = mul(mul(a.poly, chord), b.poly)  [inner comm]
+  --   = mul(a.poly, mul(chord, b.poly))  [assoc]
+  -- Then apply mul-add (a.poly nonvanish on fiber).
+  have h_rearrange :
+      mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly
+        = mulCoordRingElt E a.poly (mulCoordRingElt E chord b.poly) := by
+    rw [mulCoordRingElt_comm E chord a.poly]
+    rw [mulCoordRingElt_assoc]
+  rw [h_rearrange]
+  -- Apply mul-add (a.poly nonvanish on fiber).
+  rw [divisorOfD_mul_add_when_one_factor_nonvanish_fiber E
+        h_a_poly_NZ h_chord_b_NZ hP (Or.inl ⟨h_a_at_pos, h_a_at_neg⟩)]
+  -- Apply chord-line additivity to mul(chord, b.poly): = div(b.poly) + div(chord).
+  rw [show mulCoordRingElt E chord b.poly = mulCoordRingElt E b.poly chord from
+        mulCoordRingElt_comm E chord b.poly]
+  rw [divisorOfD_mul_add_by_chordCoordRingElt_distinct E h_b_poly_NZ
+        a.point b.point ha hb h_xx h_Q₀x_ne_a h_Q₀x_ne_b _]
+  ring
+
 /-! ## General-k correctness: status
 
 Progress so far:
