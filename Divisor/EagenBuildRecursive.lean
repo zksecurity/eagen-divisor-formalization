@@ -5767,6 +5767,18 @@ theorem pairList_length_le {q : ℕ} (Ps : List (ZMod q × ZMod q)) :
     simp only [List.length_cons]
     omega
 
+/-! ### pairList exact length: (Ps.length + 1) / 2 -/
+
+theorem pairList_length_eq_div_ceil {q : ℕ} (Ps : List (ZMod q × ZMod q)) :
+    (pairList Ps).length = (Ps.length + 1) / 2 := by
+  induction Ps using pairList.induct with
+  | case1 => simp
+  | case2 P => simp
+  | case3 P Q rest IH =>
+    rw [pairList_cons_cons]
+    simp only [List.length_cons, IH]
+    omega
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
