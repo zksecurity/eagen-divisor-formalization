@@ -3908,6 +3908,52 @@ theorem accInv_combine_higher_distinct_step_at_neg_b_lift
     hStrong.hneg_b_lift_ne_neg_a_lift
     hStrong.hneg_b_lift_ne_neg_combine_lift
 
+theorem accInv_combine_higher_distinct_step_at_third
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (hStrong : CombineStrongGeneric (E := E) h_acc_a h_acc_b h_xx) :
+    let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+    let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+    let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+    let combine := EagenAccum.combine_higher_distinct E a b h_xx
+    ∃ h_combine_pt : combine.point ∈ E.points,
+      divisorOfD E combine.poly (ECPoint.affine E Q₀x Q₀y)
+        = formalDivisorOfList E (xs ++ ys) (ECPoint.affine E Q₀x Q₀y)
+          + residueDivisor E (ECPoint.affineOfMem E h_combine_pt)
+              (ECPoint.affine E Q₀x Q₀y) :=
+  accInv_combine_higher_distinct_divisor_at_third_AccInv_form (E := E)
+    h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
+    hStrong.hQ₀x_ne_a hStrong.hQ₀x_ne_b hStrong.hQ₀y_ne_zero
+    hStrong.ha_at_Q₀ hStrong.ha_at_neg_Q₀ hStrong.hb_at_Q₀ hStrong.hb_at_neg_Q₀
+    hStrong.hQ₀_not_in_xs hStrong.hQ₀_not_in_ys
+
+theorem accInv_combine_higher_distinct_step_at_combine_lift
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (hStrong : CombineStrongGeneric (E := E) h_acc_a h_acc_b h_xx) :
+    let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+    let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+    let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+    let combine := EagenAccum.combine_higher_distinct E a b h_xx
+    ∃ h_combine_pt : combine.point ∈ E.points,
+      divisorOfD E combine.poly (ECPoint.affine E Q₀x (-Q₀y))
+        = formalDivisorOfList E (xs ++ ys) (ECPoint.affine E Q₀x (-Q₀y))
+          + residueDivisor E (ECPoint.affineOfMem E h_combine_pt)
+              (ECPoint.affine E Q₀x (-Q₀y)) :=
+  accInv_combine_higher_distinct_divisor_at_combine_lift_AccInv_form (E := E)
+    h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
+    hStrong.hQ₀x_ne_a hStrong.hQ₀x_ne_b hStrong.hQ₀y_ne_zero
+    hStrong.ha_at_neg_Q₀ hStrong.hb_at_neg_Q₀
+    hStrong.hnegQ₀_not_in_xs hStrong.hnegQ₀_not_in_ys
+
 /-! ## General-k correctness: status
 
 Progress so far:
