@@ -3714,6 +3714,34 @@ structure CombineStrongGeneric
             (combine_higher_distinct_running_sum E a b
                 h_acc_a.1 h_acc_b.1 h_xx).choose : ECPoint E)
 
+/-! ### Unified per-R divisor identity dispatch (work-in-progress)
+
+Plan: case-on-R using ECPoint constructor (zero / some) + decidable
+equality on x-coordinate against {a.point.1, b.point.1, Q₀x}; then
+within each special x value, decide y against ±the_y; default to
+general off-chord case.
+
+For now, the at-infinity case is wrapped here as a forward-looking
+entry point. The full dispatch over all R is a separate firing's work
+(involves seven case-splits + the general case). Each case uses one
+of the eleven AccInv-form theorems already landed. -/
+
+theorem accInv_combine_higher_distinct_step_at_infinity
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0)) :
+    let combine := EagenAccum.combine_higher_distinct E a b h_xx
+    ∃ h_combine_pt : combine.point ∈ E.points,
+      divisorOfD E combine.poly (0 : ECPoint E)
+        = formalDivisorOfList E (xs ++ ys) (0 : ECPoint E)
+          + residueDivisor E (ECPoint.affineOfMem E h_combine_pt)
+              (0 : ECPoint E) :=
+  accInv_combine_higher_distinct_divisor_at_infinity_AccInv_form (E := E)
+    h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
+
 /-! ## General-k correctness: status
 
 Progress so far:
