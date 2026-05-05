@@ -391,4 +391,87 @@ theorem landmarkInv_combine_oo
     rw [ha_deg, hb_deg, List.length_append]
     omega
 
+/-! ## Preservation: `combine_ol` (a.point = O, b.point ≠ O)
+
+The combined accumulator forwards `b`'s residue point. Polynomial
+is `a.poly · b.poly`. -/
+
+theorem landmarkInv_combine_ol
+    {xs ys : List (ZMod E.q × ZMod E.q)}
+    {a b : EagenAccum E}
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (hys_on : ∀ P ∈ ys, P ∈ E.points)
+    (ha : LandmarkInv E xs a) (hb : LandmarkInv E ys b)
+    (ha_pt : a.point = (0 : ECPoint E))
+    (hb_pt : b.point ≠ (0 : ECPoint E))
+    (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0) :
+    LandmarkInv E (xs ++ ys) (EagenAccum.combine_ol E a b) := by
+  classical
+  obtain ⟨ha_sum, ha_van, ha_deg⟩ := ha
+  obtain ⟨hb_sum, hb_van, hb_deg⟩ := hb
+  refine ⟨?_, ?_, ?_⟩
+  · show b.point = sumOnE E (xs ++ ys)
+    rw [sumOnE_append, ← ha_sum, ← hb_sum, ha_pt, zero_add]
+  · intro P hP_mem
+    show (mulCoordRingElt E a.poly b.poly).eval P.1 P.2 = 0
+    rw [List.mem_append] at hP_mem
+    rcases hP_mem with hP_xs | hP_ys
+    · have hP_on : P ∈ E.points := hxs_on P hP_xs
+      rw [mulCoordRingElt_eval_on_E E a.poly b.poly hP_on]
+      rw [ha_van P hP_xs]; ring
+    · have hP_on : P ∈ E.points := hys_on P hP_ys
+      rw [mulCoordRingElt_eval_on_E E a.poly b.poly hP_on]
+      rw [hb_van P hP_ys]; ring
+  · show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree
+        = (xs ++ ys).length + (if (EagenAccum.combine_ol E a b).point
+                                  = (0 : ECPoint E) then 0 else 1)
+    have h_combined_pt : (EagenAccum.combine_ol E a b).point = b.point := rfl
+    rw [h_combined_pt, if_neg hb_pt]
+    rw [normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
+    rw [if_pos ha_pt] at ha_deg
+    rw [if_neg hb_pt] at hb_deg
+    rw [ha_deg, hb_deg, List.length_append]
+    omega
+
+/-! ## Preservation: `combine_or` (a.point ≠ O, b.point = O)
+
+Symmetric to `combine_ol`. -/
+
+theorem landmarkInv_combine_or
+    {xs ys : List (ZMod E.q × ZMod E.q)}
+    {a b : EagenAccum E}
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (hys_on : ∀ P ∈ ys, P ∈ E.points)
+    (ha : LandmarkInv E xs a) (hb : LandmarkInv E ys b)
+    (ha_pt : a.point ≠ (0 : ECPoint E))
+    (hb_pt : b.point = (0 : ECPoint E))
+    (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0) :
+    LandmarkInv E (xs ++ ys) (EagenAccum.combine_or E a b) := by
+  classical
+  obtain ⟨ha_sum, ha_van, ha_deg⟩ := ha
+  obtain ⟨hb_sum, hb_van, hb_deg⟩ := hb
+  refine ⟨?_, ?_, ?_⟩
+  · show a.point = sumOnE E (xs ++ ys)
+    rw [sumOnE_append, ← ha_sum, ← hb_sum, hb_pt, add_zero]
+  · intro P hP_mem
+    show (mulCoordRingElt E a.poly b.poly).eval P.1 P.2 = 0
+    rw [List.mem_append] at hP_mem
+    rcases hP_mem with hP_xs | hP_ys
+    · have hP_on : P ∈ E.points := hxs_on P hP_xs
+      rw [mulCoordRingElt_eval_on_E E a.poly b.poly hP_on]
+      rw [ha_van P hP_xs]; ring
+    · have hP_on : P ∈ E.points := hys_on P hP_ys
+      rw [mulCoordRingElt_eval_on_E E a.poly b.poly hP_on]
+      rw [hb_van P hP_ys]; ring
+  · show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree
+        = (xs ++ ys).length + (if (EagenAccum.combine_or E a b).point
+                                  = (0 : ECPoint E) then 0 else 1)
+    have h_combined_pt : (EagenAccum.combine_or E a b).point = a.point := rfl
+    rw [h_combined_pt, if_neg ha_pt]
+    rw [normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
+    rw [if_neg ha_pt] at ha_deg
+    rw [if_pos hb_pt] at hb_deg
+    rw [ha_deg, hb_deg, List.length_append]
+    omega
+
 end Divisor.Landmark
