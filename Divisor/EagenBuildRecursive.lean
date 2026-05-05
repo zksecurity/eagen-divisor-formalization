@@ -6356,6 +6356,12 @@ theorem terminalInv_of_accInvList_pair_via_vertical
     h_acc_a h_acc_b h_xx h_yy hY_a h_a_poly_NZ h_b_poly_NZ
     h_a_pt_not_in_xs h_neg_a_pt_not_in_xs hOffFiber
 
+/-! ### Flatten length under pairList -/
+
+theorem pairList_flatten_length {q : ℕ} (Ps : List (ZMod q × ZMod q)) :
+    (pairList Ps).flatten.length = Ps.length := by
+  rw [pairList_flatten_eq]
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
