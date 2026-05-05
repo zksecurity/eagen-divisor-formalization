@@ -57,27 +57,31 @@
   * `ma_completeness`:
       propext, Classical.choice, Quot.sound,
       Divisor.chord_fiber_product_eq_normZ_under_split,
-      Divisor.principal_divisor_iff,
       Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
 
   * `ma_completeness_clean`:
       propext, Classical.choice, Quot.sound,
       Divisor.chord_fiber_product_eq_normZ_under_split,
-      Divisor.principal_divisor_iff,
       Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g,
       Divisor.hasse_weil
 
   The unsound `Divisor.weil_reciprocity_honest` axiom (which falsely
   claimed Eagen's eq. (1) on the diagonal `A_0 = A_1` where `slopeOf`
   totalises to `0/0`) is no longer reachable from `ma_completeness*`.
-  The new closure replaces it with `principal_divisor_iff`
-  (Silverman III.3.5) and the same sound axioms already used in
-  `ma_extractable`'s closure (`chord_fiber_product_eq_normZ_under_split`,
-  `resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`).
+
+  `Divisor.principal_divisor_iff` (Silverman III.3.5) was a transitional
+  intermediary in `ma_completeness*`'s closure and has now been removed.
+  The bridge previously round-tripped through it (build IsPrincipal via
+  .mpr from sum-zero + group-sum-zero, then immediately destruct via .mp
+  to recover sum-zero); replacing the IsPrincipal conjunct of
+  `MAProverMsg.isHonestFor` with `splitsOnE E msg.toD` lets the consumer
+  derive degree-zero directly via `sum_ordAt_eq_natDegree_under_split`
+  plus the divisor identity at infinity.
+
   The bridge: strengthened `MAProverMsg.isHonestFor` requires the
   extensional divisor identity `divisorOfD msg.toD R = honestDivisorCoeffs R`
-  at every `R : ECPoint E`; the residue-side Weil identity is then a
-  theorem of the chord-resultant infrastructure.
+  at every `R : ECPoint E` and `splitsOnE E msg.toD`; the residue-side
+  Weil identity is then a theorem of the chord-resultant infrastructure.
 
   * `ma_completeness_for_length4Simple` and
     `ma_completeness_clean_for_length4Simple`:
