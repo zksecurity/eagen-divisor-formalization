@@ -369,6 +369,37 @@ theorem ma_completeness_for_length4Simple
     hDeg hDegK hAdm
     (isHonestFor_of_isHonestForLength4Simple E h_simple hk h_scalars)
 
+/-- Hasse-clean form for the length-4 simple bridge. -/
+theorem ma_completeness_clean_for_length4Simple
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
+    (hValid : relDlog E stmt wit)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hQ : 5 ≤ E.q) :
+    ((E.points ×ˢ E.points).filter
+        (fun p =>
+          ¬ maVerifierAccepts E stmt msg
+            ⟨p.1, p.2⟩
+            (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm))).card
+      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
+  -- D ≠ 0 from the eagenBuild_length4_explicit nonzero property + h_toD_eq.
+  have hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) := by
+    rw [h_simple.h_toD_eq]
+    exact eagenBuild_length4_explicit_ne_zero E
+      h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
+      h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
+      h_simple.h_xx_01 h_simple.h_xx_23
+      h_simple.h_third_match h_simple.h_y_match h_simple.h_Q₀_nontorsion
+  exact ma_completeness_clean E stmt wit hk hValid msg
+    (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm)
+    hDeg hDegK hAdm
+    (isHonestFor_of_isHonestForLength4Simple E h_simple hk h_scalars)
+    hD hQ
+
 /-! ## Paper-Lean naming correspondence
 
     Paper ↔ Lean (post-rename, primary names):

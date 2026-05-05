@@ -98,6 +98,8 @@ import Divisor.Soundness
 #print axioms Divisor.ip_knowledge_sound
 #print axioms Divisor.ma_completeness
 #print axioms Divisor.ma_completeness_clean
+#print axioms Divisor.ma_completeness_for_length4Simple
+#print axioms Divisor.ma_completeness_clean_for_length4Simple
 #print axioms Divisor.CoordRingElt.exists_divisor_multiplicity
 #print axioms Divisor.CoordRingElt.exists_divisor_multiplicity_ecpoint
 #print axioms Divisor.ordAt_group_sum_zero_under_split
