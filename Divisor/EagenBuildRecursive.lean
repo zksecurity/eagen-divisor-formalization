@@ -5821,6 +5821,20 @@ theorem pairList_length_eq_one_iff {q : ℕ} (Ps : List (ZMod q × ZMod q)) :
   rw [pairList_length_eq_div_ceil]
   omega
 
+/-! ### Mathematical induction on `level_step` semantics
+
+For pure level_step semantics (without AccInv), pairList and
+mergeAdjacentPairs commute through level0/level_step. This is the
+"if level_step were just a list operation" version. -/
+
+theorem pairList_mergeAdjacentPairs_length_relation {q : ℕ}
+    (Ps : List (ZMod q × ZMod q)) :
+    (mergeAdjacentPairs (pairList Ps)).length
+      = (pairList Ps).length / 2
+        + (pairList Ps).length % 2 := by
+  rw [mergeAdjacentPairs_length_eq_div_ceil]
+  omega
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
