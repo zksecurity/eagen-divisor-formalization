@@ -5792,6 +5792,17 @@ theorem mergeAdjacentPairs_length_eq_div_ceil {α : Type _}
     simp only [List.length_cons, IH]
     omega
 
+/-! ### pairList nil characterization -/
+
+theorem pairList_eq_nil_iff {q : ℕ} (Ps : List (ZMod q × ZMod q)) :
+    pairList Ps = [] ↔ Ps = [] := by
+  cases Ps with
+  | nil => simp [pairList]
+  | cons P rest =>
+    cases rest with
+    | nil => simp [pairList]
+    | cons Q rest' => simp [pairList]
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
