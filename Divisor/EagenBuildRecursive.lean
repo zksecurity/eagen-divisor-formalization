@@ -765,6 +765,23 @@ def TerminalInv (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E) : Prop :=
   ∀ R : ECPoint E,
     divisorOfD E a.poly R = formalDivisorOfList E xs R
 
+/-! ### Level-0 vertical case helpers -/
+
+/-- For (P, -P) input, the vertical line's divisor at infinity matches
+    formalDivisor [P, -P] at infinity (both = -2). -/
+theorem terminalInv_vertical_at_infinity
+    (P : ZMod E.q × ZMod E.q) (h_xx : P.1 = (P.1, -P.2).1)
+    (h_yy : P.2 = -((P.1, -P.2).2)) :
+    divisorOfD E
+        ((EagenAccum.fromChordPair_vertical E P (P.1, -P.2) h_xx h_yy).poly)
+        (0 : ECPoint E)
+      = formalDivisorOfList E [P, (P.1, -P.2)] (0 : ECPoint E) := by
+  show divisorOfD E ({ a := Polynomial.X - Polynomial.C P.1, b := 0 }
+                    : CoordRingElt E.q) (0 : ECPoint E)
+      = formalDivisorOfList E [P, (P.1, -P.2)] (0 : ECPoint E)
+  rw [divisorOfD_vertical_at_infinity_eq_neg_two]
+  rfl
+
 /-! ### Helper lemmas for residue and formalDivisor -/
 
 /-- residueDivisor evaluated at `-S` is `1` (when -S ≠ 0). -/
