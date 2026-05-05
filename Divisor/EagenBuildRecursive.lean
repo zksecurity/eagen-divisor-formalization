@@ -4145,6 +4145,50 @@ theorem accInv_combine_higher_distinct_step_divisor_identity
               hP h_chord_pos h_chord_neg h_b_pos h_b_neg h_x_a h_x_b
               h_R_ne_a' h_R_ne_b' h_R_ne_combine'
 
+/-! ### Final combine-step AccInv assembly
+
+Combines the running-sum append and the divisor-identity dispatch
+into the full `AccInv (xs ++ ys) combine` theorem. This is the
+generic-k inductive step: given AccInv on (xs, a) and (ys, b) plus
+strong genericity (avoiding cross-fiber overlaps), AccInv holds for
+the combine accumulator on (xs ++ ys). -/
+
+theorem accInv_combine_higher_distinct_step
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (hStrong : CombineStrongGeneric (E := E) h_acc_a h_acc_b h_xx)
+    (hOffChord :
+        ∀ {x y : ZMod E.q}, (x, y) ∈ E.points →
+          x ≠ a.point.1 → x ≠ b.point.1 →
+          x ≠ slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                - a.point.1 - b.point.1 →
+        ((chordCoordRingElt E a.point b.point).eval x y ≠ 0
+          ∧ (chordCoordRingElt E a.point b.point).eval x (-y) ≠ 0
+          ∧ b.poly.eval x y ≠ 0 ∧ b.poly.eval x (-y) ≠ 0
+          ∧ (ECPoint.affine E x y : ECPoint E)
+              ≠ -(ECPoint.affineOfMem E h_acc_a.1 : ECPoint E)
+          ∧ (ECPoint.affine E x y : ECPoint E)
+              ≠ -(ECPoint.affineOfMem E h_acc_b.1 : ECPoint E)
+          ∧ (ECPoint.affine E x y : ECPoint E)
+              ≠ -(ECPoint.affineOfMem E
+                  (combine_higher_distinct_running_sum E a b
+                      h_acc_a.1 h_acc_b.1 h_xx).choose : ECPoint E))) :
+    AccInv E (xs ++ ys) (EagenAccum.combine_higher_distinct E a b h_xx) := by
+  classical
+  obtain ⟨h_combine_pt, h_running_sum⟩ := accInv_combine_higher_distinct_running_sum_append
+    (E := E) h_acc_a h_acc_b h_xx
+  refine ⟨h_combine_pt, h_running_sum, ?_⟩
+  intro R
+  obtain ⟨h_combine_pt', h_div⟩ :=
+    accInv_combine_higher_distinct_step_divisor_identity (E := E)
+      h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ hStrong R hOffChord
+  -- Prop irrelevance: h_combine_pt = h_combine_pt'.
+  exact h_div
+
 /-! ## General-k correctness: status
 
 Progress so far:
