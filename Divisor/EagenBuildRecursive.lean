@@ -913,6 +913,56 @@ theorem terminalInv_vertical_at_negP
       rw [show decide ((P.1, -P.2) = (P.1, -P.2)) = true by simp]
       simp]
 
+/-! ### Full TerminalInv for level-0 vertical case -/
+
+theorem terminalInv_level0_vertical_case
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (h_xx : P.1 = (P.1, -P.2).1) (h_yy : P.2 = -((P.1, -P.2).2)) :
+    TerminalInv E [P, (P.1, -P.2)]
+      (EagenAccum.fromChordPair_vertical E P (P.1, -P.2) h_xx h_yy) := by
+  classical
+  unfold TerminalInv
+  intro R
+  match R with
+  | WeierstrassCurve.Affine.Point.zero =>
+    exact terminalInv_vertical_at_infinity E P h_xx h_yy
+  | WeierstrassCurve.Affine.Point.some (x := x) (y := y) hns =>
+    by_cases hxx_eq : x = P.1
+    · -- x = P.1: derive y = P.2 or y = -P.2.
+      have hOC : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB :=
+        (E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hns)
+      have hP_OC : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := E.hOnCurve P hP
+      have hy_sq : y ^ 2 = P.2 ^ 2 := by rw [hOC, hxx_eq]; exact hP_OC.symm
+      have hy_factor : (y - P.2) * (y + P.2) = 0 := by linear_combination hy_sq
+      rcases mul_eq_zero.mp hy_factor with hy_eq_P | hy_eq_negP
+      · -- y = P.2.
+        have hy : y = P.2 := sub_eq_zero.mp hy_eq_P
+        have hns_P : E.toW.toAffine.Nonsingular P.1 P.2 := by rw [← hxx_eq, ← hy]; exact hns
+        have h_eq : (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+                  = WeierstrassCurve.Affine.Point.some hns_P := by
+          rw [show (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+                = ECPoint.affine E x y from (ECPoint.affine_of_nonsingular E hns).symm]
+          rw [show (WeierstrassCurve.Affine.Point.some hns_P : ECPoint E)
+                = ECPoint.affine E P.1 P.2 from (ECPoint.affine_of_nonsingular E hns_P).symm]
+          rw [hxx_eq, hy]
+        rw [h_eq]
+        exact terminalInv_vertical_at_P E P hP hY h_xx h_yy hns_P
+      · -- y = -P.2.
+        have hy : y = -P.2 := add_eq_zero_iff_eq_neg.mp hy_eq_negP
+        have hns_negP : E.toW.toAffine.Nonsingular P.1 (-P.2) := by
+          rw [← hxx_eq, ← hy]; exact hns
+        have h_eq : (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+                  = WeierstrassCurve.Affine.Point.some hns_negP := by
+          rw [show (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+                = ECPoint.affine E x y from (ECPoint.affine_of_nonsingular E hns).symm]
+          rw [show (WeierstrassCurve.Affine.Point.some hns_negP : ECPoint E)
+                = ECPoint.affine E P.1 (-P.2) from (ECPoint.affine_of_nonsingular E hns_negP).symm]
+          rw [hxx_eq, hy]
+        rw [h_eq]
+        exact terminalInv_vertical_at_negP E P hP hY h_xx h_yy hns_negP
+    · -- x ≠ P.1.
+      exact terminalInv_vertical_at_off_x₀ E P h_xx h_yy hns hxx_eq
+
 /-! ### Helper lemmas for residue and formalDivisor -/
 
 /-- residueDivisor evaluated at `-S` is `1` (when -S ≠ 0). -/
