@@ -4260,8 +4260,36 @@ chord-line factor (rootMult ≤ 1) on the right, enabling additivity
 for the full triple product without needing pointwise mul-add in the
 cross case.
 
-A unified `accInv_combine_higher_distinct_step` dispatch is the next
-piece (case-on-R, applying the per-R lemma matching).
+## CAPSTONE: AccInv inductive step landed
+
+`accInv_combine_higher_distinct_step` (final commit d43ccf2) gives:
+  AccInv (xs ++ ys) (combine_higher_distinct E a b h_xx)
+
+from AccInv on (xs, a) and (ys, b) plus genericity hypotheses
+(`CombineStrongGeneric` + `hOffChord`). This is the inductive step
+for general-k eagenBuild correctness.
+
+Unified case-on-R divisor identity dispatch (`step_divisor_identity`)
+combines the seven per-R wrappers via:
+* zero → at_infinity
+* x = a.point.1 → y-dichotomy → at_a_lift / at_neg_a_lift
+* x = b.point.1 → y-dichotomy → at_b_lift / at_neg_b_lift
+* x = Q₀x → y-dichotomy → at_third / at_combine_lift
+* else → at_general_off_chord (with hOffChord catch-all hypothesis)
+
+Final assembly bundles the divisor identity dispatch with
+`running_sum_append` to give the full AccInv on (xs ++ ys, combine).
+
+## Remaining for general-k eagenBuild correctness
+
+* Iteration: invoke `accInv_combine_higher_distinct_step` recursively
+  via `eagenBuild_iterate` driver, building AccInv on increasingly
+  long input lists.
+* Vertical combine step: `accInv_combine_higher_vertical_step`
+  (terminal case for sum-zero pair).
+* Singleton carry: `accInv_singleton_carry` (odd-length list pass-through).
+* Final theorem: `eagenBuild_correctness` connecting eagenBuild's
+  output polynomial to the formal divisor of the input list.
 
 **Strategy options (Codex consultation 2026-05-05):**
 1. Build a local valuation v_P on F_q(E) and prove agreement with the
