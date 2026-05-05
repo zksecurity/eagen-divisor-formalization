@@ -1597,4 +1597,17 @@ theorem pairUpN_flatten {α : Type*} (n : ℕ) (xss : List (List α)) :
     (pairUpN n xss).flatten = xss.flatten :=
   pairUpN_flatten_aux n xss
 
+/-! ## More pairUp helpers -/
+
+theorem map_singleton_flatten {α : Type*} (Ps : List α) :
+    (Ps.map (fun P => [P])).flatten = Ps := by
+  induction Ps with
+  | nil => rfl
+  | cons P rest ih =>
+    show ([P] :: rest.map (fun P => [P])).flatten = P :: rest
+    rw [List.flatten_cons]
+    rw [show ([P] : List α) = P :: [] from rfl]
+    rw [List.cons_append, List.nil_append]
+    rw [ih]
+
 end Divisor.Landmark
