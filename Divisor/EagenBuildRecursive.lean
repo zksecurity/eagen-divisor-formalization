@@ -5292,6 +5292,36 @@ Both options require nontrivial group-theoretic genericity on the
 *original* input list propagating through levels. Implementation
 deferred to a follow-up specialized session. -/
 
+/-! ### AllDistinctECPoints ↔ List.Nodup of mapped points
+
+The recursive `AllDistinctECPoints` predicate matches the standard
+`List.Nodup` on the mapped point list. This connects our predicate
+to mathlib's list infrastructure for further reasoning. -/
+
+theorem allDistinctECPoints_iff_nodup_map_point
+    (xs : List (EagenAccum E)) :
+    AllDistinctECPoints E xs ↔ (xs.map (·.point)).Nodup := by
+  induction xs with
+  | nil =>
+    constructor
+    · intro _; simp
+    · intro _; trivial
+  | cons a rest IH =>
+    constructor
+    · rintro ⟨h_uniq, h_rest⟩
+      rw [List.map_cons, List.nodup_cons]
+      refine ⟨?_, IH.mp h_rest⟩
+      intro h_a_in_rest_pts
+      rw [List.mem_map] at h_a_in_rest_pts
+      obtain ⟨c, h_c_in, h_c_eq⟩ := h_a_in_rest_pts
+      exact h_uniq c h_c_in h_c_eq.symm
+    · intro h_nodup
+      rw [List.map_cons, List.nodup_cons] at h_nodup
+      obtain ⟨h_uniq, h_rest⟩ := h_nodup
+      refine ⟨?_, IH.mpr h_rest⟩
+      intro b h_b_in h_eq
+      exact h_uniq (List.mem_map.mpr ⟨b, h_b_in, h_eq.symm⟩)
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
