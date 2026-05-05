@@ -5835,6 +5835,25 @@ theorem pairList_mergeAdjacentPairs_length_relation {q : ℕ}
   rw [mergeAdjacentPairs_length_eq_div_ceil]
   omega
 
+/-! ### eagenBuild_level0 nil characterization -/
+
+theorem eagenBuild_level0_eq_nil_iff (Ps : List (ZMod E.q × ZMod E.q)) :
+    eagenBuild_level0 E Ps = [] ↔ Ps = [] := by
+  cases Ps with
+  | nil => simp [eagenBuild_level0]
+  | cons P rest =>
+    cases rest with
+    | nil => simp [eagenBuild_level0]
+    | cons Q rest' =>
+      by_cases h_xx : P.1 ≠ Q.1
+      · rw [eagenBuild_level0_cons_cons_distinct E P Q rest' h_xx]
+        simp
+      · by_cases h_yy : P.2 = -Q.2
+        · rw [eagenBuild_level0_cons_cons_vertical E P Q rest' h_xx h_yy]
+          simp
+        · rw [eagenBuild_level0_cons_cons_tangent E P Q rest' h_xx h_yy]
+          simp
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
