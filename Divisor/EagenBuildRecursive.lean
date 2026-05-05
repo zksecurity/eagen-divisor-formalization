@@ -5927,6 +5927,18 @@ theorem eagenBuild_iterate_extra_fuel_id
       rw [eagenBuild_iterate_succ_of_length_gt_one E n xs h_xs]
       exact IH _ h
 
+/-! ### eagenBuild output when iterate converges to a singleton -/
+
+theorem eagenBuild_eq_singleton_poly_when_converged
+    (Ps : List (ZMod E.q × ZMod E.q)) (acc : EagenAccum E)
+    (h : eagenBuild_iterate E Ps.length (eagenBuild_level0 E Ps) = [acc]) :
+    eagenBuild E Ps = acc.poly := by
+  show (match eagenBuild_iterate E Ps.length (eagenBuild_level0 E Ps) with
+        | [] => ({ a := 1, b := 0 } : CoordRingElt E.q)
+        | [single] => single.poly
+        | _ => { a := 1, b := 0 }) = acc.poly
+  rw [h]
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
