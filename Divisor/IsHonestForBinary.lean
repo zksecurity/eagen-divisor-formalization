@@ -6,8 +6,11 @@
 -/
 import Divisor.EagenBuildLandmark
 import Divisor.Protocol
+import Divisor.Soundness
 
 namespace Divisor
+
+open Classical
 
 namespace Landmark
 
@@ -127,5 +130,43 @@ theorem isHonestFor_of_isHonestForBinary
   · exact divisor_identity_for_binary h_binary h_combine
   · exact h_binary.h_target_on_curve
   · exact h_binary.h_bases_on_curve
+
+theorem ma_completeness_for_binary
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (hkm : stmt.k = msg.k)
+    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    (h_combine : Landmark.PairwiseCombineHyp E)
+    (hValid : relDlog E stmt wit)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
+  ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm
+    (isHonestFor_of_isHonestForBinary (E := E) h_binary h_combine)
+
+theorem ma_completeness_clean_for_binary
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (hkm : stmt.k = msg.k)
+    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    (h_combine : Landmark.PairwiseCombineHyp E)
+    (hValid : relDlog E stmt wit)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hQ : 5 ≤ E.q) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
+  have hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
+    admSet_implies_toD_nonzero stmt msg hAdm
+  exact ma_completeness_clean E stmt wit hk hValid msg hkm hDeg hDegK hAdm
+    (isHonestFor_of_isHonestForBinary (E := E) h_binary h_combine)
+    hD hQ
 
 end Divisor
