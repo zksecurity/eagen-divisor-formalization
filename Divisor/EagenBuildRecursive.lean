@@ -5547,6 +5547,42 @@ predicate captures only P.x ≠ Q.x at each paired position — needs
 strengthening to bundle the Q₀x conditions before the level0 →
 AccInvList theorem can land. Implementation deferred. -/
 
+/-! ### InputPairsLevelZeroOK: strengthened predicate for level0 chord case
+
+Bundles the three per-pair conditions needed by accInv_level0_chord_case:
+* P.x ≠ Q.x.
+* Q₀x ≠ P.x (chord's third intersection x-coord distinct from P.x).
+* Q₀x ≠ Q.x. -/
+
+def InputPairsLevelZeroOK : List (ZMod E.q × ZMod E.q) → Prop
+  | [] => True
+  | [_] => True
+  | P :: Q :: rest =>
+      (P.1 ≠ Q.1)
+        ∧ (P.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
+        ∧ (Q.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1)
+        ∧ InputPairsLevelZeroOK rest
+
+theorem inputPairsLevelZeroOK_cons_cons
+    (P Q : ZMod E.q × ZMod E.q) (rest : List (ZMod E.q × ZMod E.q)) :
+    InputPairsLevelZeroOK E (P :: Q :: rest) ↔
+      P.1 ≠ Q.1 ∧
+      P.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1 ∧
+      Q.1 ≠ slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1 ∧
+      InputPairsLevelZeroOK E rest := Iff.rfl
+
+theorem inputPairsLevelZeroOK_implies_distinctX
+    (Ps : List (ZMod E.q × ZMod E.q))
+    (h : InputPairsLevelZeroOK E Ps) :
+    InputPairsDistinctX Ps := by
+  classical
+  induction Ps using pairList.induct with
+  | case1 => trivial
+  | case2 P => trivial
+  | case3 P Q rest IH =>
+    refine ⟨h.1, ?_⟩
+    exact IH h.2.2.2
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
