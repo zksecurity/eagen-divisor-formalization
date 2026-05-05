@@ -1546,4 +1546,55 @@ theorem landmarkInvList_preservation_under_iterate
         landmarkInvList_preservation_under_level_step E xss accs h h_combine
       exact ih (pairUp xss) (level_step E accs) h_step
 
+/-! ## Top-level driver: eagenBuild via singletons
+
+Composes `level0_singletons` with `iterate` to produce the final
+polynomial. -/
+
+noncomputable def eagenBuild_singletons
+    (Ps : List (ZMod E.q × ZMod E.q)) : CoordRingElt E.q :=
+  let initial := level0_singletons E Ps
+  let final := iterate E Ps.length initial
+  match final with
+  | [a] => a.poly
+  | _ => { a := 1, b := 0 }
+
+/-! ## pairUp helpers: flatten and convergence
+
+`pairUp` preserves the flattened sub-list. After enough iterations
+on a non-empty list of singletons, `pairUpN` converges to a singleton
+containing the full list. -/
+
+theorem pairUp_flatten {α : Type*} (xss : List (List α)) :
+    (pairUp xss).flatten = xss.flatten := by
+  match xss with
+  | [] => rfl
+  | [xs] => rfl
+  | xs :: ys :: rest =>
+    show (pairUp (xs :: ys :: rest)).flatten = (xs :: ys :: rest).flatten
+    rw [show pairUp (xs :: ys :: rest) = (xs ++ ys) :: pairUp rest from rfl]
+    simp [List.flatten, pairUp_flatten rest]
+
+theorem pairUpN_flatten_aux {α : Type*} (n : ℕ) (xss : List (List α)) :
+    (pairUpN n xss).flatten = xss.flatten := by
+  induction n generalizing xss with
+  | zero => rfl
+  | succ n ih =>
+    by_cases h : xss.length ≤ 1
+    · show (pairUpN (n + 1) xss).flatten = xss.flatten
+      have heq : pairUpN (n + 1) xss = xss := by
+        show (if xss.length ≤ 1 then xss else pairUpN n (pairUp xss)) = xss
+        rw [if_pos h]
+      rw [heq]
+    · show (pairUpN (n + 1) xss).flatten = xss.flatten
+      have heq : pairUpN (n + 1) xss = pairUpN n (pairUp xss) := by
+        show (if xss.length ≤ 1 then xss else pairUpN n (pairUp xss))
+            = pairUpN n (pairUp xss)
+        rw [if_neg h]
+      rw [heq, ih, pairUp_flatten]
+
+theorem pairUpN_flatten {α : Type*} (n : ℕ) (xss : List (List α)) :
+    (pairUpN n xss).flatten = xss.flatten :=
+  pairUpN_flatten_aux n xss
+
 end Divisor.Landmark
