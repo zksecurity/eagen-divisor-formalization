@@ -6171,6 +6171,24 @@ Remaining for eagenBuild_correctness:
 * AllDistinctECPoints preservation under level_step (subsum-collision
   freedom propagation). -/
 
+/-! ### AccsListChordStep structural lemmas -/
+
+theorem accsListChordStep_nil_nil :
+    AccsListChordStep E [] [] := trivial
+
+theorem accsListChordStep_singleton_singleton
+    (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E) :
+    AccsListChordStep E [xs] [a] := trivial
+
+theorem accsListChordStep_cons_cons_iff
+    (xs ys : List (ZMod E.q × ZMod E.q))
+    (rest_xss : List (List (ZMod E.q × ZMod E.q)))
+    (a b : EagenAccum E) (rest_accs : List (EagenAccum E)) :
+    AccsListChordStep E (xs :: ys :: rest_xss) (a :: b :: rest_accs) ↔
+      (∃ h_xx : a.point.1 ≠ b.point.1,
+        AccInv E (xs ++ ys) (EagenAccum.combine_higher_distinct E a b h_xx))
+        ∧ AccsListChordStep E rest_xss rest_accs := Iff.rfl
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
