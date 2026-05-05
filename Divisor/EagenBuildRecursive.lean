@@ -3792,6 +3792,35 @@ theorem accInv_running_sum_append (xs ys : List (ZMod E.q × ZMod E.q)) :
     · rw [dif_pos h, dif_pos h, IH, add_assoc]
     · rw [dif_neg h, dif_neg h, IH]
 
+/-! ### Combine step running-sum AccInv component
+
+Combines `accInv_running_sum_append` with `combine_higher_distinct_running_sum`
+to give the AccInv running-sum on (xs ++ ys) for combine. -/
+
+theorem accInv_combine_higher_distinct_running_sum_append
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1) :
+    ∃ h_combine_pt : (EagenAccum.combine_higher_distinct E a b h_xx).point ∈ E.points,
+      (ECPoint.affineOfMem E h_combine_pt : ECPoint E)
+        = (xs ++ ys).foldr
+            (fun P S =>
+              if h' : P ∈ E.points then ECPoint.affineOfMem E h' + S else S)
+            (0 : ECPoint E) := by
+  classical
+  have h_a_pt : a.point ∈ E.points := h_acc_a.1
+  have h_b_pt : b.point ∈ E.points := h_acc_b.1
+  obtain ⟨h_combine_pt, h_lift_eq⟩ := combine_higher_distinct_running_sum
+    E a b h_a_pt h_b_pt h_xx
+  refine ⟨h_combine_pt, ?_⟩
+  rw [accInv_running_sum_append]
+  rw [h_lift_eq]
+  -- Now goal: ECPoint.affineOfMem E h_a_pt + ECPoint.affineOfMem E h_b_pt
+  --   = foldr xs ... + foldr ys ...
+  obtain ⟨_, h_run_a, _⟩ := h_acc_a
+  obtain ⟨_, h_run_b, _⟩ := h_acc_b
+  rw [h_run_a, h_run_b]
+
 /-! ## General-k correctness: status
 
 Progress so far:
