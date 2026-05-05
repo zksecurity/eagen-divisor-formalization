@@ -1126,6 +1126,15 @@ Remaining (multi-firing):
                        - div(vert(a.point.1)) - div(vert(b.point.1))
                      = formalDivisor(xs ++ ys) + residue(a.point + b.point)
   ```
+  Key structural observation for divLin divisibility:
+  the outer chord(a.point, b.point) vanishes at a.point (so
+  chord · a.poly · b.poly vanishes at sheet (a.x, a.y));
+  separately a.poly vanishes at -a.point via its AccInv-tracked residue
+  (so chord · a.poly · b.poly vanishes at sheet (a.x, -a.y));
+  hence (X - a.x) | both .a and .b of the product, allowing divLin a.x.
+  Symmetric argument for divLin b.x. Once divisibility is established,
+  the divisor identity reduces to algebra via existing
+  `divisorOfD_divLin_subtract` + `divisorOfD_mul_vertical_add`.
 * `terminalInv_combine_higher_vertical_step`: TerminalInv for sum-zero
   combine (when a.point + b.point = O).
 * `eagenBuild_correctness`: ∀ sum-zero `Ps`, `divisorOfD (eagenBuild Ps) =
