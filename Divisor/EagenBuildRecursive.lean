@@ -1779,6 +1779,60 @@ theorem combine_higher_distinct_eval_neg_third_nonzero
   apply h_prod_neg
   rw [h_factor, h_combine_eval, mul_zero]
 
+/-! ### Chord normPoly rootMult at third intersection x = 1
+
+The chord through `a.point, b.point` (distinct) has `normPoly` with
+rootMult ≤ 1 globally (chordCoordRingElt_normPoly_rootMult_le_one_at_distinct_chord).
+At the x-coordinate `Q₀x` of the third intersection, the normPoly
+vanishes (since chord vanishes at `(Q₀x, Q₀y)`), so rootMult ≥ 1.
+Combined: rootMult = 1. -/
+
+theorem chordCoordRingElt_rootMult_normPoly_at_third_eq_one
+    (a b : EagenAccum E)
+    (ha : a.point ∈ E.points) (hb : b.point ∈ E.points)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (h_Q₀x_ne_a : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                    - a.point.1 - b.point.1) ≠ a.point.1)
+    (h_Q₀x_ne_b : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                    - a.point.1 - b.point.1) ≠ b.point.1) :
+    let Q₀x := slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                - a.point.1 - b.point.1
+    Polynomial.rootMultiplicity Q₀x
+      (normPoly E (chordCoordRingElt E a.point b.point)) = 1 := by
+  classical
+  intro Q₀x
+  -- Upper bound via chord-line lemma (note: lemma takes hypotheses in flipped form).
+  have h_le := chordCoordRingElt_normPoly_rootMult_le_one_at_distinct_chord E
+    a.point b.point ha hb h_xx h_Q₀x_ne_a.symm h_Q₀x_ne_b.symm Q₀x
+  -- Lower bound: chord vanishes at Q₀ ⟹ normPoly chord (Q₀x) = 0.
+  have hQ₀_on_E : (Q₀x,
+      slopeOf a.point.1 a.point.2 b.point.1 b.point.2 * Q₀x
+        + (a.point.2 - slopeOf a.point.1 a.point.2 b.point.1 b.point.2 * a.point.1))
+      ∈ E.points := by
+    apply E.hComplete
+    exact chord_third_point_on_E E a.point b.point ha hb h_xx
+  have h_chord_zero :=
+    chordCoordRingElt_eval_thirdPoint_chord E ha hb h_xx
+  have h_normPoly_zero :
+      (normPoly E (chordCoordRingElt E a.point b.point)).eval Q₀x = 0 := by
+    rw [normPoly_eval_eq_D_mul_D_neg E (chordCoordRingElt E a.point b.point) hQ₀_on_E]
+    rw [h_chord_zero, zero_mul]
+  -- chord nonzero (so normPoly nonzero).
+  have h_chord_NZ : ¬ ((chordCoordRingElt E a.point b.point).a = 0
+      ∧ (chordCoordRingElt E a.point b.point).b = 0) :=
+    chordCoordRingElt_ne_zero E a.point b.point
+  have h_normPoly_NZ : normPoly E (chordCoordRingElt E a.point b.point) ≠ 0 :=
+    normPoly_ne_zero E _ h_chord_NZ
+  -- rootMultiplicity ≥ 1 from eval = 0.
+  have h_ge :
+      1 ≤ Polynomial.rootMultiplicity Q₀x
+        (normPoly E (chordCoordRingElt E a.point b.point)) := by
+    have h_pos : 0 < Polynomial.rootMultiplicity Q₀x
+        (normPoly E (chordCoordRingElt E a.point b.point)) :=
+      (Polynomial.rootMultiplicity_pos h_normPoly_NZ).mpr h_normPoly_zero
+    omega
+  omega
+
 /-! ### Lone-sheet ordAt at non-2-torsion: ordAt = rootMult(normPoly)
 
 Reusable closed-form: when D vanishes at +sheet only (lone-sheet at +)
