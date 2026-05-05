@@ -6327,6 +6327,35 @@ theorem eagenBuild_iterate_split (m k : ℕ) (xs : List (EagenAccum E))
 theorem eagenBuild_iterate_zero_nil :
     eagenBuild_iterate E 0 ([] : List (EagenAccum E)) = [] := rfl
 
+/-! ### Final terminal step: AccInvList pair → TerminalInv via vertical combine
+
+Given AccInvList [xs, ys] [a, b] (two-acc list with both AccInvs) +
+vertical hypothesis (a = -b in EC sense) + genericity, the vertical
+combine produces TerminalInv (xs ++ ys). -/
+
+theorem terminalInv_of_accInvList_pair_via_vertical
+    (xs ys : List (ZMod E.q × ZMod E.q))
+    (a b : EagenAccum E)
+    (h_acc_list : AccInvList E [xs, ys] [a, b])
+    (h_xx : a.point.1 = b.point.1)
+    (h_yy : a.point.2 = -b.point.2)
+    (hY_a : a.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (h_a_pt_not_in_xs : a.point ∉ xs)
+    (h_neg_a_pt_not_in_xs : (a.point.1, -a.point.2) ∉ xs)
+    (hOffFiber :
+        ∀ {x y : ZMod E.q}, (x, y) ∈ E.points →
+          x ≠ a.point.1 →
+        (a.poly.eval x y ≠ 0 ∧ a.poly.eval x (-y) ≠ 0
+          ∧ b.poly.eval x y ≠ 0 ∧ b.poly.eval x (-y) ≠ 0)) :
+    TerminalInv E (xs ++ ys)
+      (EagenAccum.combine_higher_vertical E a b h_xx h_yy) := by
+  obtain ⟨h_acc_a, h_acc_b⟩ := (accInvList_pair_iff E xs ys a b).mp h_acc_list
+  exact terminalInv_combine_higher_vertical_step (E := E)
+    h_acc_a h_acc_b h_xx h_yy hY_a h_a_poly_NZ h_b_poly_NZ
+    h_a_pt_not_in_xs h_neg_a_pt_not_in_xs hOffFiber
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
