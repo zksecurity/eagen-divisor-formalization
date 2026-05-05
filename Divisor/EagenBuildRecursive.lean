@@ -5112,6 +5112,40 @@ theorem eagenBuild_level_step_length_le_of_tangent_free
             simp only [List.length_cons]
             omega
 
+/-! ### Strict length decrease for level_step at length ≥ 2 -/
+
+theorem eagenBuild_level_step_length_lt_of_tangent_free
+    (n : ℕ) (xs : List (EagenAccum E))
+    (h_len : xs.length ≤ n) (h : LevelStepTangentFree E xs)
+    (h_ge : 2 ≤ xs.length) :
+    (eagenBuild_level_step E xs).length < xs.length := by
+  classical
+  -- xs has form a :: b :: rest' since length ≥ 2.
+  match xs, h_ge with
+  | [], h_ge => exact absurd h_ge (by simp)
+  | [_], h_ge => exact absurd h_ge (by simp)
+  | a :: b :: rest', _ =>
+    have h_pair := h.1
+    have h_rest := h.2
+    have h_rest_len_le : rest'.length ≤ n := by
+      have : (a :: b :: rest').length = rest'.length + 2 := by simp [List.length]
+      omega
+    -- Weak bound on rest'.
+    have h_rest_le := eagenBuild_level_step_length_le_of_tangent_free
+                          E n rest' h_rest_len_le h_rest
+    -- Dispatch.
+    rcases h_pair with h_xx | h_yy
+    · rw [eagenBuild_level_step_cons_cons_distinct E a b rest' h_xx]
+      simp only [List.length_cons]
+      omega
+    · by_cases h_xx_neq : a.point.1 ≠ b.point.1
+      · rw [eagenBuild_level_step_cons_cons_distinct E a b rest' h_xx_neq]
+        simp only [List.length_cons]
+        omega
+      · rw [eagenBuild_level_step_cons_cons_vertical E a b rest' h_xx_neq h_yy]
+        simp only [List.length_cons]
+        omega
+
 /-! ## General-k correctness: status
 
 Progress so far:
