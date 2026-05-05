@@ -1153,3 +1153,60 @@ both `D₁` and `D₁·D₂`, using `ordAt_nonTwoTorsion_pair_eq_rootMult`
      `thirdPoint_inj_on_A₁` + group-law `A_0 + A_1 = -A_0`, hence
      `A_1 = -2A_0`, unique).
    - Delete `weil_reciprocity_honest`; rewire `ma_completeness`.
+
+## Session update (~340 commits ahead of master)
+
+Beyond the original plan items (B1-B7), this session has accumulated
+extensive general-k correctness scaffolding in
+`Divisor/EagenBuildRecursive.lean`:
+
+### Combine-step (chord case) — full divisor identity dispatch ✓
+
+Eleven AccInv-form theorems covering every R : ECPoint E:
+- at infinity (raw + AccInv form)
+- at affine off-support (zero + AccInv form)
+- at -combine.lift (third intersection, divisor = 1) + AccInv form
+- at +combine.lift (zero + AccInv form)
+- at a.lift, -a.lift, b.lift, -b.lift (lift-fiber cases) + AccInv forms
+- at general affine R off chord support (subsumes off-support +
+  xs/ys-formal-divisor-support)
+
+Bypassed cross-case wall via chord-line additivity + mulCoordRingElt
+commutativity/associativity.
+
+### Capstone: AccInv inductive step ✓
+
+`accInv_combine_higher_distinct_step`: AccInv (xs, a) + AccInv (ys, b)
++ CombineStrongGeneric + hOffChord ⟹ AccInv (xs ++ ys, combine).
+
+### Vertical combine — full TerminalInv dispatch ✓
+
+`terminalInv_combine_higher_vertical_step`: AccInv-on-AccInv
+⟹ TerminalInv on the concatenated input list when a = -b.
+
+### Iteration scaffolding ✓
+
+- LevelStepTangentFree predicate (no tangent collisions at adjacent pairs).
+- AllDistinctECPoints predicate (stronger genericity).
+- level_step length bounds (weak ≤; strict < at length ≥ 2).
+- iterate convergence: eagenBuild_iterate_length_le_one_of_tangent_free
+  (under a tangent-free preservation hypothesis).
+- Predicate bridge: AllDistinctECPoints + pair-negation hypothesis
+  ⟹ LevelStepTangentFree.
+- Bridge to mathlib: AllDistinctECPoints ↔ List.Nodup of point map.
+
+### Open structural piece
+
+Tangent-free preservation under level_step (combining adjacent pairs)
+requires group-theoretic genericity (no zero subsums beyond the
+global zero sum). Documented; implementation deferred to a follow-up
+session.
+
+### Status: headline goal achieved + dual capstone landed
+
+- weil_reciprocity_honest discharged (early in session).
+- Length-4 simple fully constructive (existing).
+- Both inductive steps for general-k landed (chord + vertical).
+- Final eagenBuild_correctness assembly remains: requires the
+  preservation propagation + connecting eagenBuild's output to the
+  formal divisor via the converged singleton list.
