@@ -5779,6 +5779,19 @@ theorem pairList_length_eq_div_ceil {q : ℕ} (Ps : List (ZMod q × ZMod q)) :
     simp only [List.length_cons, IH]
     omega
 
+/-! ### mergeAdjacentPairs exact length -/
+
+theorem mergeAdjacentPairs_length_eq_div_ceil {α : Type _}
+    (xss : List (List α)) :
+    (mergeAdjacentPairs xss).length = (xss.length + 1) / 2 := by
+  induction xss using mergeAdjacentPairs.induct with
+  | case1 => simp
+  | case2 _ => simp
+  | case3 xs ys rest IH =>
+    rw [mergeAdjacentPairs_cons_cons]
+    simp only [List.length_cons, IH]
+    omega
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
