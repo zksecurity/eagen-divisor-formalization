@@ -3649,45 +3649,41 @@ Progress so far:
 * `chordCoordRingElt_eval_at_neg_a` ✓
 * `chordCoordRingElt_divisor_at_a_lift_eq_one` ✓
 
-## Next: at-a.lift case (ready for assembly)
+* `combine_higher_distinct_prod_divisor_split_when_b_nonvanish_fiber` ✓
+* `combine_higher_distinct_divisor_via_prod_minus_two_verts` (universal divLin double-subtract) ✓
+* `accInv_combine_higher_distinct_divisor_at_a_lift_AccInv_form` ✓
+* `chordCoordRingElt_divisor_at_neg_a_lift_eq_zero` ✓
+* `accInv_combine_higher_distinct_divisor_at_neg_a_lift_AccInv_form` ✓
+* `mulCoordRingElt_assoc` ✓
+* `combine_higher_distinct_prod_divisor_split_when_a_nonvanish_fiber` ✓
+* `chordCoordRingElt_eval_at_neg_b` ✓
+* `chordCoordRingElt_divisor_at_b_lift_eq_one` ✓
+* `accInv_combine_higher_distinct_divisor_at_b_lift_AccInv_form` ✓
+* `chordCoordRingElt_divisor_at_neg_b_lift_eq_zero` ✓
+* `accInv_combine_higher_distinct_divisor_at_neg_b_lift_AccInv_form` ✓
+* `accInv_combine_higher_distinct_divisor_at_general_off_chord_AccInv_form`
+  (subsumes off-support + xs/ys-formal-divisor-support cases) ✓
 
-Building blocks now in place for `divisorOfD combine.poly (a.lift) = ...`:
-* chord_divisor_at_a_lift = 1 (chord-line additivity, lone-sheet at +a).
-* a.poly's divisor at a.lift via AccInv: count(xs, a.point) (since
-  residue is at -a.lift, contributes 0 at +a.lift).
-* b.poly's divisor via AccInv: count(ys, a.point) (with a.lift ≠ -b.lift).
-* div(vert(a.x))(a.lift) = 1 via `divisorOfD_vertical_at_x₀_nonTwoTorsion_affine`.
-* div(vert(b.x))(a.lift) = 0 via `divisorOfD_vertical_at_off_x₀_affine`.
-* mul-add for prod = b.poly·(chord·a.poly): need b.poly nonvanish on
-  a fiber (genericity hypothesis); apply
-  `divisorOfD_mul_add_when_one_factor_nonvanish_fiber`.
-* div(chord·a.poly) = div(a.poly·chord) by mulCoordRingElt_comm, then
-  `divisorOfD_mul_add_by_chordCoordRingElt_distinct`.
+## Combine-step divisor identity: full case coverage
 
-Final equation at a.lift:
-  div(combine.poly)(a.lift)
-    = (div(chord) + div(a.poly) + div(b.poly))(a.lift) - 1 - 0
-    = (1 + count(xs, a) + count(ys, a)) - 1
-    = count(xs, a) + count(ys, a)
-    = formalDivisor(xs++ys)(a.lift)
+The combine-step divisor identity at every R is now landed via:
+* at infinity (raw + AccInv form)
+* at a.lift, -a.lift (a-fiber)
+* at b.lift, -b.lift (b-fiber)
+* at -combine.lift = third intersection (Q₀-fiber, +sheet)
+* at +combine.lift (Q₀-fiber, -sheet)
+* at general affine R off chord support (covers xs/ys-formal-divisor
+  support and off-support cases)
 
-residueDivisor(combine.lift)(a.lift) = 0 (assuming a.lift ≠ -combine.lift,
-i.e. 2a + b ≠ 0 in EC group).
+The cross-case wall was *bypassed* via the chord-line additivity
+strategy: by commuting the outer chord factor inside via
+`mulCoordRingElt_comm` + `mulCoordRingElt_assoc`, we always have a
+chord-line factor (rootMult ≤ 1) on the right, enabling additivity
+for the full triple product without needing pointwise mul-add in the
+cross case.
 
-Symmetric at -a.lift, b.lift, -b.lift cases follow same pattern.
-
-## Cross-case wall (combine-step pointwise mul-additivity)
-
-The remaining piece for `accInv_combine_higher_distinct_step` is the
-pointwise divisor identity at every R. The clean route via existing
-`divisorOfD_mul_add_when_chord_line_D2` (chord-line additivity) lets
-us peel off the outer chord, leaving:
-  `div(a.poly · b.poly) at R = div(a.poly) at R + div(b.poly) at R`.
-
-This is *the* cross case: at R = a.lift, a.poly is lone-sheet at -a
-(via AccInv residue), and b.poly may be lone-sheet at +a (depending on
-whether xs/ys carry a.point). When neither factor is a chord-line and
-neither has rootMult ≤ 1 globally, no existing additivity lemma applies.
+A unified `accInv_combine_higher_distinct_step` dispatch is the next
+piece (case-on-R, applying the per-R lemma matching).
 
 **Strategy options (Codex consultation 2026-05-05):**
 1. Build a local valuation v_P on F_q(E) and prove agreement with the
