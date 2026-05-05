@@ -167,11 +167,15 @@ divisor on `E` is `(-P) + Σ_i n_i · (B_i) - degE(D) · (∞)`, where
 
 Concretely, `honestDivisorCoeffs` spells out this target coefficient
 function on `ECPoint E.q`, and `isHonestFor` requires (i) `msg.m_i` to
-reduce correctly to `wit.scalars i` in `ZMod E.q`, and (ii) the formal
-divisor to be principal (i.e. it is in fact `div(f)` for some nonzero
-rational function `f ∈ F_q(E)×`). By `principal_divisor_iff`, condition
-(ii) is equivalent to two concrete checks; by construction it also
-subsumes the curve-side claim `P = Σ [n_i] · B_i`. -/
+reduce correctly to `wit.scalars i` in `ZMod E.q`, (ii) `msg.toD`
+splits over `E` (every root of `normPoly E msg.toD` has an `F_q`-rational
+fiber), and (iii) the divisor of `msg.toD` extensionally matches
+`honestDivisorCoeffs`. The polynomial `msg.toD` is itself the
+rational-function witness; combined with `splitsOnE`, the consumer
+recovers the degree-zero accounting via
+`sum_ordAt_eq_natDegree_under_split`. The `splitsOnE` contract
+replaces the older `IsPrincipal` conjunct, which was a structural
+round-trip through `principal_divisor_iff`. -/
 
 /-- Target divisor coefficients for the honest prover's `D`:
     `+1` at `-P`, `n_i` at each `B_i` (with duplicates summed), and
@@ -191,16 +195,17 @@ noncomputable def honestDivisorCoeffs (E : ECSetup) (stmt : DlogStatement E.q)
 
     Conditions:
     * `msg.m_i ≡ wit.scalars i (mod q)` — the reduced scalar vector matches.
-    * The divisor `(-P) + Σ_i n_i · (B_i) - degE(D) · (∞)` is principal
-      (so it equals `div(f)` for some nonzero rational function `f`,
-      via `IsPrincipal` from `Axioms.lean`).
+    * `splitsOnE E msg.toD` — every root of `normPoly E msg.toD` over
+      `F̄_q` has an `F_q`-rational fiber. Together with the divisor
+      identity below, this gives the degree-zero accounting
+      (`Σ_{R∈affinePoints} ordAt = natDegree(normPoly)`) that the
+      completeness proof needs, without invoking `principal_divisor_iff`.
     * **Extensional divisor identity**: at every `R : ECPoint E`,
       `divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R`.
       This anchors `msg.toD` (the prover's committed polynomial) to the
-      formal target divisor — without it, `IsPrincipal` only asserts
-      that *some* function realises the divisor, not that `msg.toD`
-      itself does. The identity is the protocol contract that makes
-      Weil reciprocity applicable to `msg.toD`.
+      formal target divisor and serves as the existence witness for
+      principality (`msg.toD` itself realises the divisor as
+      `div(msg.toD)`, no opaque "exists f" claim required).
     * **On-curve wellformedness**: `(-P)` and every `B_i` are points
       on `E`. (Statement-level invariants for the dlog relation.) -/
 def MAProverMsg.isHonestFor (E : ECSetup) (msg : MAProverMsg E.q)
@@ -208,7 +213,7 @@ def MAProverMsg.isHonestFor (E : ECSetup) (msg : MAProverMsg E.q)
     (hk : stmt.k = wit.k) (hkm : stmt.k = msg.k) : Prop :=
   (∀ i : Fin stmt.k,
       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
-  ∧ IsPrincipal E (honestDivisorCoeffs E stmt wit hk msg)
+  ∧ splitsOnE E msg.toD
   ∧ (∀ R : ECPoint E,
       divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R)
   ∧ (stmt.target.1, -stmt.target.2) ∈ E.points

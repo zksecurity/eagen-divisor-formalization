@@ -7172,23 +7172,6 @@ theorem honestDivisorCoeffs_finiteSupport_of_divisor_identity
   rw [h_eq]
   exact divisorOfD_finiteSupport E msg.toD
 
-/-! ## Deg-zero from IsPrincipal (via principal_divisor_iff)
-
-Combines `IsPrincipal honestDivisorCoeffs` (from `isHonestFor`) with
-`principal_divisor_iff` to extract the degree-zero condition. -/
-
-theorem honestDivisorCoeffs_deg_zero_of_isHonestForExplicit
-    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm) :
-    ∃ hFinSupp : Set.Finite (Function.support
-        (honestDivisorCoeffs E stmt wit hk msg)),
-      ∑ P ∈ hFinSupp.toFinset, honestDivisorCoeffs E stmt wit hk msg P = 0 := by
-  have hFin := honestDivisorCoeffs_finiteSupport_of_divisor_identity E
-    stmt wit hk msg h_honest.2.2.1
-  have hIsP : IsPrincipal E (honestDivisorCoeffs E stmt wit hk msg) := h_honest.2.1
-  exact ⟨hFin, ((principal_divisor_iff E _ hFin).mp hIsP).1⟩
-
 /-! ## ECPoint.some-to-affinePoints bijection
 
 For any nonsingular .some ECPoint, the underlying (x, y) pair is in
@@ -7307,10 +7290,109 @@ theorem zero_notMem_affinePoints : (0 : ECPoint E) ∉ ECPoint.affinePoints E :=
   rw [ECPoint.affine_of_nonsingular E hNs] at hEq
   cases hEq
 
+/-! ## Bridge: `∑_{R ∈ affinePoints E} f R = ∑_{Q ∈ E.points} f (affine E Q.1 Q.2)` -/
+
+theorem affinePoints_sum_eq_image_sum {α : Type*} [AddCommMonoid α]
+    (f : ECPoint E → α) :
+    (∑ R ∈ ECPoint.affinePoints E, f R)
+      = ∑ Q ∈ E.points, f (ECPoint.affine E Q.1 Q.2) := by
+  classical
+  unfold ECPoint.affinePoints
+  rw [Finset.sum_image]
+  intro P hP Q hQ h_eq
+  simp only at h_eq
+  have hPns : E.toW.toAffine.Nonsingular P.1 P.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP))
+  have hQns : E.toW.toAffine.Nonsingular Q.1 Q.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff Q.1 Q.2).mpr (E.hOnCurve _ hQ))
+  rw [ECPoint.affine_of_nonsingular E hPns,
+      ECPoint.affine_of_nonsingular E hQns] at h_eq
+  -- .some hPns = .some hQns implies the implicit x, y match.
+  injection h_eq with hx_some hy_some
+  exact Prod.ext hx_some hy_some
+
+/-! ## Deg-zero from `splitsOnE` + divisor identity
+
+Replaces the prior route via `principal_divisor_iff`. Uses only
+the `splitsOnE` and divisor-identity conjuncts of `isHonestFor`,
+plus `sum_ordAt_eq_natDegree_under_split`. The constant-D edge
+case is ruled out by the divisor identity at infinity (`degE = 3`
+for `D = 0`, but `divisorOfD 0 = 0`, so the identity would force
+`-3 = 0`). -/
+
+theorem honestDivisorCoeffs_deg_zero_of_isHonestForExplicit
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm) :
+    ∃ hFinSupp : Set.Finite (Function.support
+        (honestDivisorCoeffs E stmt wit hk msg)),
+      ∑ P ∈ hFinSupp.toFinset, honestDivisorCoeffs E stmt wit hk msg P = 0 := by
+  classical
+  have h_split : splitsOnE E msg.toD := h_honest.2.1
+  have h_div_id : ∀ R : ECPoint E,
+      divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R :=
+    h_honest.2.2.1
+  have hFin := honestDivisorCoeffs_finiteSupport_of_divisor_identity E
+    stmt wit hk msg h_div_id
+  have hSubset := honestDivisorCoeffs_support_subset_affineAndInfinity E stmt wit hk msg
+  refine ⟨hFin, ?_⟩
+  -- Step 1: extend the sum from support to `insert 0 affinePoints`.
+  have h_ext : (∑ R ∈ hFin.toFinset, honestDivisorCoeffs E stmt wit hk msg R)
+      = ∑ R ∈ insert (0 : ECPoint E) (ECPoint.affinePoints E),
+          honestDivisorCoeffs E stmt wit hk msg R := by
+    apply Finset.sum_subset
+    · intro R hR; rw [Set.Finite.mem_toFinset] at hR; exact hSubset hR
+    · intro R _ hR_notIn; rw [Set.Finite.mem_toFinset] at hR_notIn
+      by_contra h; exact hR_notIn h
+  rw [h_ext, Finset.sum_insert (zero_notMem_affinePoints E),
+      honestDivisorCoeffs_at_infinity E stmt wit hk msg,
+      affinePoints_sum_eq_image_sum E (honestDivisorCoeffs E stmt wit hk msg)]
+  -- Convert `honestDivisorCoeffs (affine Q)` to `(ordAt msg.toD Q : ℤ)` via divisor identity.
+  have h_aff_sum :
+      (∑ Q ∈ E.points,
+        honestDivisorCoeffs E stmt wit hk msg (ECPoint.affine E Q.1 Q.2))
+        = ∑ Q ∈ E.points, (ordAt E msg.toD Q : ℤ) :=
+    Finset.sum_congr rfl
+      (fun Q hQ =>
+        (ordAt_eq_honestDivisorCoeffs_at_affine E stmt wit hk msg h_div_id hQ).symm)
+  rw [h_aff_sum]
+  -- Reduce to: -(degE) + Σ_{Q ∈ E.points} ordAt = 0.
+  by_cases hD : msg.toD.a = 0 ∧ msg.toD.b = 0
+  · -- Constant-zero D: ruled out by divisor identity at infinity.
+    exfalso
+    have h_id_at_zero := h_div_id 0
+    have hNorm0 : normPoly E msg.toD = 0 := by
+      rw [normPoly_eq, hD.1, hD.2]; ring
+    have hLHS0 : divisorOfD E msg.toD (0 : ECPoint E) = 0 := by
+      show -((normPoly E msg.toD).natDegree : ℤ) = 0
+      rw [hNorm0]; simp
+    rw [hLHS0, honestDivisorCoeffs_at_infinity] at h_id_at_zero
+    have hDegE : msg.toD.degE = 3 := by
+      simp [CoordRingElt.degE, hD.1, hD.2]
+    omega
+  · -- splitsOnE + D ≠ 0 ⇒ Σ ordAt = natDegree(normPoly).
+    have hOrdSum : (∑ Q ∈ E.points, ordAt E msg.toD Q) = (normPoly E msg.toD).natDegree :=
+      sum_ordAt_eq_natDegree_under_split E msg.toD hD h_split
+    -- Divisor identity at 0 gives natDegree(normPoly) = degE.
+    have h_id_at_zero := h_div_id 0
+    have hLHS0 : divisorOfD E msg.toD (0 : ECPoint E)
+        = -((normPoly E msg.toD).natDegree : ℤ) := rfl
+    rw [hLHS0, honestDivisorCoeffs_at_infinity] at h_id_at_zero
+    have h_natDeg : ((normPoly E msg.toD).natDegree : ℤ) = (msg.toD.degE : ℤ) := by
+      omega
+    -- Push cast on the affine sum and substitute.
+    have hOrdSumZ : (∑ Q ∈ E.points, (ordAt E msg.toD Q : ℤ))
+        = (msg.toD.degE : ℤ) := by
+      have h1 : (∑ Q ∈ E.points, (ordAt E msg.toD Q : ℤ))
+          = (((∑ Q ∈ E.points, ordAt E msg.toD Q : ℕ) : ℤ)) := by push_cast; rfl
+      rw [h1, hOrdSum]
+      exact h_natDeg
+    linarith [hOrdSumZ]
+
 /-! ## Affine sum = degE for honest divisor
 
-Combines deg-zero (from IsPrincipal) with the support subset and the
-infinity coefficient unfolding. -/
+Combines deg-zero with the support subset and the infinity-coefficient
+unfolding. -/
 
 theorem honestDivisorCoeffs_affine_sum_eq_degE
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
@@ -7341,27 +7423,6 @@ theorem honestDivisorCoeffs_affine_sum_eq_degE
   rw [Finset.sum_insert hZeroNotIn,
       honestDivisorCoeffs_at_infinity E stmt wit hk msg] at h_ext_sum
   linarith
-
-/-! ## Bridge: `∑_{R ∈ affinePoints E} f R = ∑_{Q ∈ E.points} f (affine E Q.1 Q.2)` -/
-
-theorem affinePoints_sum_eq_image_sum {α : Type*} [AddCommMonoid α]
-    (f : ECPoint E → α) :
-    (∑ R ∈ ECPoint.affinePoints E, f R)
-      = ∑ Q ∈ E.points, f (ECPoint.affine E Q.1 Q.2) := by
-  classical
-  unfold ECPoint.affinePoints
-  rw [Finset.sum_image]
-  intro P hP Q hQ h_eq
-  simp only at h_eq
-  have hPns : E.toW.toAffine.Nonsingular P.1 P.2 :=
-    E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP))
-  have hQns : E.toW.toAffine.Nonsingular Q.1 Q.2 :=
-    E.equation_iff_nonsingular.mp ((E.equation_iff Q.1 Q.2).mpr (E.hOnCurve _ hQ))
-  rw [ECPoint.affine_of_nonsingular E hPns,
-      ECPoint.affine_of_nonsingular E hQns] at h_eq
-  -- .some hPns = .some hQns implies the implicit x, y match.
-  injection h_eq with hx_some hy_some
-  exact Prod.ext hx_some hy_some
 
 /-! ## Step 3: ∑ ordAt = degE from divisor identity -/
 
@@ -8487,65 +8548,27 @@ theorem honestCoeffs_total_weightedSum_eq_zero_for_length4Simple
           + ECPoint.affineOfMem E h_simple.hP₂ + ECPoint.affineOfMem E h_simple.hP₃ by abel]
   exact h_ec
 
-/-! ### IsPrincipal honestDivisorCoeffs for length-4 simple
+/-! ### `splitsOnE msg.toD` for length-4 simple
 
-Apply `principal_divisor_iff.mpr` with the universal sum and weightedSum
-identities. -/
+Direct dispatch to `splitsOnE_eagenBuild_length4` (existing
+infrastructure in `Divisor/IncrementalConstruction.lean`). -/
 
-theorem isPrincipal_honestDivisorCoeffs_for_length4Simple
+theorem splitsOnE_msg_toD_for_length4Simple
     {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
-    {wit : DlogWitness E.q} (hk : stmt.k = wit.k)
-    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1) :
-    IsPrincipal E (honestDivisorCoeffs E stmt wit hk msg) := by
-  classical
-  have h_div := divisor_identity_for_length4Simple E h_simple hk h_scalars
-  have hFin := honestDivisorCoeffs_finiteSupport_of_divisor_identity E
-    stmt wit hk msg h_div
-  have hSubset := honestDivisorCoeffs_support_subset_affineAndInfinity E stmt wit hk msg
-  -- Use the cover insert 0 (affinePoints E).
-  rw [principal_divisor_iff E _ hFin]
-  refine ⟨?_, ?_⟩
-  · -- Σ = 0.
-    have h_total := honestCoeffs_total_sum_eq_zero_for_length4Simple E h_simple hk h_scalars
-    -- Σ over hFin.toFinset = Σ over (insert 0 affinePoints) (extension).
-    have h_ext :
-        (∑ R ∈ hFin.toFinset, honestDivisorCoeffs E stmt wit hk msg R)
-        = ∑ R ∈ insert (0 : ECPoint E) (ECPoint.affinePoints E),
-            honestDivisorCoeffs E stmt wit hk msg R := by
-      apply Finset.sum_subset
-      · intro R hR
-        rw [Set.Finite.mem_toFinset] at hR
-        exact hSubset hR
-      · intro R _hR_in hR_notIn
-        rw [Set.Finite.mem_toFinset] at hR_notIn
-        by_contra h
-        exact hR_notIn h
-    rw [h_ext]
-    exact h_total
-  · -- weightedSum = 0.
-    have h_total := honestCoeffs_total_weightedSum_eq_zero_for_length4Simple E h_simple
-                      hk h_scalars
-    have h_ext :
-        ECPoint.weightedSum E (insert (0 : ECPoint E) (ECPoint.affinePoints E))
-            (fun P => ECPoint.zsmul E (honestDivisorCoeffs E stmt wit hk msg P) P)
-        = ECPoint.weightedSum E hFin.toFinset
-            (fun P => ECPoint.zsmul E (honestDivisorCoeffs E stmt wit hk msg P) P) := by
-      apply ECPoint.weightedSum_subset_of_zero_outside
-      · intro R hR
-        rw [Set.Finite.mem_toFinset] at hR
-        exact hSubset hR
-      · intro R _hR_in hR_notIn
-        rw [Set.Finite.mem_toFinset] at hR_notIn
-        have hR_zero : honestDivisorCoeffs E stmt wit hk msg R = 0 := by
-          by_contra h
-          exact hR_notIn h
-        show ECPoint.zsmul E (honestDivisorCoeffs E stmt wit hk msg R) R
-            = (0 : ECPoint E)
-        rw [hR_zero]
-        exact ECPoint.zsmul_zero E _
-    rw [← h_ext]
-    exact h_total
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt) :
+    splitsOnE E msg.toD := by
+  rw [h_simple.h_toD_eq]
+  exact splitsOnE_eagenBuild_length4 E
+    h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
+    h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
+    h_simple.h_xx_01 h_simple.h_xx_23
+    h_simple.h_P₀_ne_A2_01 h_simple.h_P₁_ne_A2_01
+    h_simple.h_P₂_ne_A2_23 h_simple.h_P₃_ne_A2_23
+    h_simple.h_P₀_off_L₂ h_simple.h_P₁_off_L₂
+    h_simple.h_P₂_off_L₁ h_simple.h_P₃_off_L₁
+    h_simple.h_third_match h_simple.h_y_match h_simple.h_Q₀_nontorsion
+    h_simple.h_Q₀_off_L₂_inputs h_simple.h_negQ₀_off_L₁_inputs
+    h_simple.h_inputs_distinct
 
 /-- Scalar reduction for the length-4 simple case (with `wit.scalars = 1`). -/
 theorem scalar_reduction_for_length4Simple
@@ -8609,7 +8632,7 @@ theorem isHonestFor_of_isHonestForLength4Simple
       (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm) := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · exact scalar_reduction_for_length4Simple E h_simple hk h_scalars
-  · exact isPrincipal_honestDivisorCoeffs_for_length4Simple E h_simple hk h_scalars
+  · exact splitsOnE_msg_toD_for_length4Simple E h_simple
   · exact divisor_identity_for_length4Simple E h_simple hk h_scalars
   · exact negTarget_on_curve_for_length4Simple E h_simple
   · exact bases_on_curve_for_length4Simple E h_simple
