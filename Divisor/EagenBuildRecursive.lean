@@ -4878,6 +4878,63 @@ theorem terminalInv_combine_higher_vertical_at_neg_a_lift
   rw [formalDivisorOfList_append]
   ring
 
+/-! ### Unified TerminalInv dispatch for vertical combine
+
+Composes the four landed TerminalInv cases (zero, a.lift, -a.lift,
+off-a-fiber) into a universal ∀ R divisor identity. The off-a-fiber
+case takes per-R nonvanish hypotheses via a caller-supplied catch-all
+(similar to chord-combine's hOffChord). -/
+
+theorem terminalInv_combine_higher_vertical_step
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 = b.point.1) (h_yy : a.point.2 = -b.point.2)
+    (hY_a : a.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (h_a_pt_not_in_xs : a.point ∉ xs)
+    (h_neg_a_pt_not_in_xs : (a.point.1, -a.point.2) ∉ xs)
+    (hOffFiber :
+        ∀ {x y : ZMod E.q}, (x, y) ∈ E.points →
+          x ≠ a.point.1 →
+        (a.poly.eval x y ≠ 0 ∧ a.poly.eval x (-y) ≠ 0
+          ∧ b.poly.eval x y ≠ 0 ∧ b.poly.eval x (-y) ≠ 0)) :
+    TerminalInv E (xs ++ ys) (EagenAccum.combine_higher_vertical E a b h_xx h_yy) := by
+  classical
+  intro R
+  cases R with
+  | zero =>
+      exact terminalInv_combine_higher_vertical_at_infinity (E := E)
+        h_acc_a h_acc_b h_xx h_yy hY_a h_a_poly_NZ h_b_poly_NZ
+  | some hns =>
+      rename_i x y
+      have hP : (x, y) ∈ E.points :=
+        E.hComplete x y ((E.equation_iff x y).mp
+          ((E.equation_iff_nonsingular).mpr hns))
+      have h_R_eq : (ECPoint.affine E x y : ECPoint E)
+          = WeierstrassCurve.Affine.Point.some hns :=
+        ECPoint.affine_of_nonsingular E hns
+      rw [← h_R_eq]
+      by_cases h_x_a : x = a.point.1
+      · -- x = a.x: y-dichotomy.
+        have h_a_pt_x : (x, a.point.2) ∈ E.points := by
+          have h_eq : (x, a.point.2) = a.point := Prod.ext h_x_a rfl
+          rw [h_eq]; exact h_acc_a.1
+        rcases curve_y_dichotomy E hP h_a_pt_x with h_y | h_y
+        · rw [h_x_a, h_y]
+          exact terminalInv_combine_higher_vertical_at_a_lift (E := E)
+            h_acc_a h_acc_b h_xx h_yy hY_a h_a_poly_NZ h_b_poly_NZ
+            h_a_pt_not_in_xs h_neg_a_pt_not_in_xs
+        · rw [h_x_a, h_y]
+          exact terminalInv_combine_higher_vertical_at_neg_a_lift (E := E)
+            h_acc_a h_acc_b h_xx h_yy hY_a h_a_poly_NZ h_b_poly_NZ
+            h_a_pt_not_in_xs h_neg_a_pt_not_in_xs
+      · -- x ≠ a.x: off-fiber.
+        obtain ⟨h_a_pos, h_a_neg, h_b_pos, h_b_neg⟩ := hOffFiber hP h_x_a
+        exact terminalInv_combine_higher_vertical_at_off_a_fiber (E := E)
+          h_acc_a h_acc_b h_xx h_yy hY_a h_a_poly_NZ h_b_poly_NZ
+          hP h_x_a h_a_pos h_a_neg h_b_pos h_b_neg
+
 /-! ## General-k correctness: status
 
 Progress so far:
