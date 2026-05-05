@@ -483,6 +483,90 @@ theorem localMult_ge_one_of_eval_eq_zero
     · rw [if_neg hNeg]
       omega
 
+theorem localMultTwoTorsion_eq_ordAt_twoTorsion
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q) :
+    localMultTwoTorsion E D P = ordAt_twoTorsion E D P := by
+  classical
+  unfold localMultTwoTorsion ordAt_twoTorsion
+  rfl
+
+theorem localMultNonTwoAux_eq_ordAt_nonTwoTorsion_aux
+    (fuel : ℕ) (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q) :
+    localMultNonTwoAux E fuel D P = ordAt_nonTwoTorsion_aux E fuel D P := by
+  classical
+  induction fuel generalizing D with
+  | zero => rfl
+  | succ fuel ih =>
+      unfold localMultNonTwoAux ordAt_nonTwoTorsion_aux
+      by_cases hD : D.a = 0 ∧ D.b = 0
+      · rw [if_pos hD, if_pos hD]
+      · rw [if_neg hD, if_neg hD]
+        by_cases hEval : D.eval P.1 P.2 ≠ 0
+        · rw [if_pos hEval, if_pos hEval]
+        · rw [if_neg hEval, if_neg hEval]
+          by_cases hNeg : D.eval P.1 (-P.2) ≠ 0
+          · rw [if_pos hNeg, if_pos hNeg]
+          · rw [if_neg hNeg, if_neg hNeg, ih]
+
+theorem localMultNonTwo_eq_ordAt_nonTwoTorsion
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q) :
+    localMultNonTwo E D P = ordAt_nonTwoTorsion E D P := by
+  unfold localMultNonTwo ordAt_nonTwoTorsion
+  exact localMultNonTwoAux_eq_ordAt_nonTwoTorsion_aux E _ D P
+
+theorem localMult_eq_ordAt
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q) :
+    localMult E D P = ordAt E D P := by
+  classical
+  unfold localMult ordAt
+  by_cases h : P ∈ E.points ∧ ¬ (D.a = 0 ∧ D.b = 0)
+  · rw [if_pos h, if_pos h]
+    by_cases h2 : P.2 = 0
+    · rw [if_pos h2, if_pos h2]
+      exact localMultTwoTorsion_eq_ordAt_twoTorsion E D P
+    · rw [if_neg h2, if_neg h2]
+      exact localMultNonTwo_eq_ordAt_nonTwoTorsion E D P
+  · rw [if_neg h, if_neg h]
+
+theorem localMult_divLin_decreases_at_fiber
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (hP : P ∈ E.points)
+    (hDvd_a : (X - C P.1) ∣ D.a)
+    (hDvd_b : (X - C P.1) ∣ D.b)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    localMult E (D.divLin P.1) P + 1 ≤ localMult E D P
+      ∨ localMult E D P = 0 := by
+  classical
+  left
+  have ha_eval : D.a.eval P.1 = 0 := Polynomial.dvd_iff_isRoot.mp hDvd_a
+  have hb_eval : D.b.eval P.1 = 0 := Polynomial.dvd_iff_isRoot.mp hDvd_b
+  by_cases h2 : P.2 = 0
+  · have hrec :=
+      ordAt_twoTorsion_divLin_rec E D hD hP h2 ha_eval hb_eval
+    have hrec_local :
+        localMult E D P = 2 + localMult E (D.divLin P.1) P := by
+      simpa [localMult_eq_ordAt] using hrec
+    omega
+  · have hD' : ¬ ((D.divLin P.1).a = 0 ∧ (D.divLin P.1).b = 0) :=
+      divLin_not_both_zero E D hD ha_eval hb_eval
+    have hEval : D.eval P.1 P.2 = 0 := by
+      unfold CoordRingElt.eval
+      rw [ha_eval, hb_eval]
+      ring
+    have hEvalNeg : D.eval P.1 (-P.2) = 0 := by
+      unfold CoordRingElt.eval
+      rw [ha_eval, hb_eval]
+      ring
+    have hrec :=
+      ordAt_nonTwoTorsion_twin_rec E D hD h2 hEval hEvalNeg
+    have hrec_local :
+        localMult E D P = 1 + localMult E (D.divLin P.1) P := by
+      rw [localMult_eq_dispatch E D hP hD,
+          localMult_eq_dispatch E (D.divLin P.1) hP hD',
+          if_neg h2, if_neg h2]
+      simpa [localMultNonTwo_eq_ordAt_nonTwoTorsion] using hrec
+    omega
+
 /-! ## Target multiplicity carried by a Landmark accumulator -/
 
 noncomputable def target
