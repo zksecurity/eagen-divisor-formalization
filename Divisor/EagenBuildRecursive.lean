@@ -1344,12 +1344,48 @@ Progress so far:
 * `AccInv` invariant for non-degenerate accumulators ✓
 * `TerminalInv` invariant for sum-zero (terminal) accumulators ✓
 * Helper lemmas (`residueDivisor_at_*`, `formalDivisorOfList_at_*`) ✓
+* `formalDivisorOfList_append` ✓
 * `accInv_level0_chord_running_sum` ✓
 * `accInv_level0_chord_divisor_identity_at_{infinity, P, Q, A₂, off_support}` ✓
 * `accInv_level0_chord_divisor_identity` (universal ∀ R) ✓
 * `accInv_level0_chord_case` (full level-0 chord AccInv) ✓
 * `terminalInv_vertical_at_{infinity, off_x₀, P, negP}` ✓
 * `terminalInv_level0_vertical_case` (full TerminalInv for `(P, -P)`) ✓
+* `accInv_poly_vanishes_at_neg_point` (AccInv ⟹ a.poly vanishes at -a) ✓
+* `combine_higher_distinct_divisible_at_a` (X-a.x divides chord·a·b) ✓
+* `combine_higher_distinct_prod_vanish_at_b` (chord·a·b vanishes at ±b) ✓
+* `combine_higher_distinct_divisible_at_b` (X-b.x divides after-divLin-a) ✓
+* `combine_higher_distinct_running_sum` ✓
+
+## Cross-case wall (combine-step pointwise mul-additivity)
+
+The remaining piece for `accInv_combine_higher_distinct_step` is the
+pointwise divisor identity at every R. The clean route via existing
+`divisorOfD_mul_add_when_chord_line_D2` (chord-line additivity) lets
+us peel off the outer chord, leaving:
+  `div(a.poly · b.poly) at R = div(a.poly) at R + div(b.poly) at R`.
+
+This is *the* cross case: at R = a.lift, a.poly is lone-sheet at -a
+(via AccInv residue), and b.poly may be lone-sheet at +a (depending on
+whether xs/ys carry a.point). When neither factor is a chord-line and
+neither has rootMult ≤ 1 globally, no existing additivity lemma applies.
+
+**Strategy options (Codex consultation 2026-05-05):**
+1. Build a local valuation v_P on F_q(E) and prove agreement with the
+   recursive `ordAt`. Long local-ring project (~500+ LOC).
+2. Strengthen `AccInv` to track that the accumulator's polynomial has
+   normPoly rootMult ≤ 1 globally. *Counterexample*: combine of two
+   level-1 polys produces rootMult 2-3 at A₂.x and at residue x's,
+   so this invariant doesn't propagate.
+3. Strengthen `AccInv` further with a *support-disjointness* invariant
+   between accumulators in a level (so combine never multiplies two
+   factors that vanish on overlapping fibers). Eagen's algorithm
+   maintains this naturally if input list has all distinct points.
+   Tracking it requires substantial bookkeeping.
+
+For now, level-0 (length-4 simple) is fully constructive (see
+`Divisor/Soundness.lean:ma_completeness_for_length4Simple`). General-k
+correctness is deferred multi-firing work.
 
 Remaining (multi-firing):
 
