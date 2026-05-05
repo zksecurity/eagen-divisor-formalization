@@ -6322,6 +6322,11 @@ theorem eagenBuild_iterate_split (m k : ℕ) (xs : List (EagenAccum E))
   rw [show m + k + 1 = (m + k) + 1 from by omega]
   exact eagenBuild_iterate_succ_of_length_gt_one E (m + k) xs h_gt_one
 
+/-! ### iterate identity at fuel 0 / nil input -/
+
+theorem eagenBuild_iterate_zero_nil :
+    eagenBuild_iterate E 0 ([] : List (EagenAccum E)) = [] := rfl
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
