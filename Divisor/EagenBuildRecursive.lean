@@ -6002,6 +6002,35 @@ theorem divisorOfD_eagenBuild_nil_eq_formalDivisorOfList (R : ECPoint E) :
     rw [ordAtPoint_affine E _ hP, h_ord]
     rfl
 
+/-! ### Recursive predicate: per-pair chord-step genericity for accumulator list
+
+For each adjacent pair (a, b) of accumulators at level_step pairing
+positions, asserts the chord-step's hypotheses (h_xx, hY_a, hY_b, NZ
+predicates). Stronger conditions (CombineStrongGeneric, hOffChord)
+are accepted as per-pair Pi-type hypothesis at use sites. -/
+
+def AccsPairsBaseGeneric : List (EagenAccum E) → Prop
+  | [] => True
+  | [_] => True
+  | a :: b :: rest =>
+      (a.point.1 ≠ b.point.1)
+        ∧ (a.point.2 ≠ 0)
+        ∧ (b.point.2 ≠ 0)
+        ∧ ¬ (a.poly.a = 0 ∧ a.poly.b = 0)
+        ∧ ¬ (b.poly.a = 0 ∧ b.poly.b = 0)
+        ∧ AccsPairsBaseGeneric rest
+
+theorem accsPairsBaseGeneric_implies_tangent_free
+    (accs : List (EagenAccum E))
+    (h : AccsPairsBaseGeneric E accs) :
+    LevelStepTangentFree E accs := by
+  induction accs using LevelStepTangentFree.induct with
+  | case1 => trivial
+  | case2 _ => trivial
+  | case3 a b rest IH =>
+    refine ⟨Or.inl h.1, ?_⟩
+    exact IH h.2.2.2.2.2
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
