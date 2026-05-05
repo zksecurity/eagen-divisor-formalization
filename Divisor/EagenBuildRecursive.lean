@@ -6288,6 +6288,18 @@ theorem accInvList_singleton_iff
   · intro ⟨h1, _⟩; exact h1
   · intro h; exact ⟨h, (accInvList_nil_iff E _).mpr rfl⟩
 
+/-! ### AccInvList of length 2 -/
+
+theorem accInvList_pair_iff
+    (xs ys : List (ZMod E.q × ZMod E.q)) (a b : EagenAccum E) :
+    AccInvList E [xs, ys] [a, b] ↔ AccInv E xs a ∧ AccInv E ys b := by
+  rw [accInvList_cons_cons_iff]
+  constructor
+  · intro ⟨h1, h2, _⟩; exact ⟨h1, h2⟩
+  · intro ⟨h1, h2⟩
+    refine ⟨h1, h2, ?_⟩
+    exact (accInvList_nil_iff E _).mpr rfl
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
