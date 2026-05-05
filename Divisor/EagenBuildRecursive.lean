@@ -5366,6 +5366,42 @@ theorem eagenBuild_level0_cons_cons_distinct
           :: eagenBuild_level0 E rest
   rw [dif_pos h]
 
+theorem eagenBuild_level0_cons_cons_vertical
+    (P Q : ZMod E.q × ZMod E.q) (rest : List (ZMod E.q × ZMod E.q))
+    (h_xx : ¬ (P.1 ≠ Q.1)) (h_yy : P.2 = -Q.2) :
+    eagenBuild_level0 E (P :: Q :: rest)
+      = EagenAccum.fromChordPair_vertical E P Q
+          (Classical.byContradiction (fun h_neq => h_xx h_neq)) h_yy
+          :: eagenBuild_level0 E rest := by
+  show (if h' : P.1 ≠ Q.1 then
+          EagenAccum.fromChordPair_distinct E P Q h'
+            :: eagenBuild_level0 E rest
+        else if hYY : P.2 = -Q.2 then
+          EagenAccum.fromChordPair_vertical E P Q
+            (Classical.byContradiction (fun h_neq => h' h_neq)) hYY ::
+            eagenBuild_level0 E rest
+        else { point := P, poly := { a := 1, b := 0 } } :: eagenBuild_level0 E rest)
+      = EagenAccum.fromChordPair_vertical E P Q
+          (Classical.byContradiction (fun h_neq => h_xx h_neq)) h_yy
+          :: eagenBuild_level0 E rest
+  rw [dif_neg h_xx, dif_pos h_yy]
+
+theorem eagenBuild_level0_cons_cons_tangent
+    (P Q : ZMod E.q × ZMod E.q) (rest : List (ZMod E.q × ZMod E.q))
+    (h_xx : ¬ (P.1 ≠ Q.1)) (h_yy : ¬ (P.2 = -Q.2)) :
+    eagenBuild_level0 E (P :: Q :: rest)
+      = { point := P, poly := { a := 1, b := 0 } } :: eagenBuild_level0 E rest := by
+  show (if h' : P.1 ≠ Q.1 then
+          EagenAccum.fromChordPair_distinct E P Q h'
+            :: eagenBuild_level0 E rest
+        else if hYY : P.2 = -Q.2 then
+          EagenAccum.fromChordPair_vertical E P Q
+            (Classical.byContradiction (fun h_neq => h' h_neq)) hYY ::
+            eagenBuild_level0 E rest
+        else { point := P, poly := { a := 1, b := 0 } } :: eagenBuild_level0 E rest)
+      = { point := P, poly := { a := 1, b := 0 } } :: eagenBuild_level0 E rest
+  rw [dif_neg h_xx, dif_neg h_yy]
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
