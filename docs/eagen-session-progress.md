@@ -608,6 +608,13 @@ across multiple files plus several test files. Verification:
   `isHonestFor` from a length-4 sum-zero quadruple plus a DlogWitness
   with scalars = 1. Validates that the strengthened isHonestFor is
   constructively satisfiable.
+* **General-k recursive correctness (in progress)**: foundations
+  (`residueDivisor`, `formalDivisorOfList`, `AccInv`, `TerminalInv`,
+  helpers) + level-0 base cases (chord + vertical, all sub-cases)
+  + combine-step running-sum claim + `divisorOfD_divLin_subtract`
+  universal divLin identity. Remaining: general
+  `divisorOfD_mul_add` for `mulCoordRingElt` (multi-firing), then
+  combine-step divisor identity, then final `eagenBuild_correctness`.
 * `Tests/RegressionDoublingChallenge.lean`: F_5 doubling counterexample
   preserved (`claim_F5 = 2`).
 * `Tests/IncrementalSmokeTest.lean` and `Tests/CrossCaseSmokeTest.lean`
