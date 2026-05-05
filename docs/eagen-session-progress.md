@@ -1245,3 +1245,23 @@ The session has accumulated ~370 commits of substantive Lean
 development on work/completeness branch, with the headline goal
 (weil_reciprocity_honest discharge) achieved early and extensive
 general-k correctness scaffolding in place.
+
+## Final session capstone
+
+`accInvList_preservation_under_level_step` (commit 904e735): the
+connective tissue Codex identified as the high-leverage next piece.
+Under AccInvList xss accs + AccsListChordStep xss accs (per-pair
+chord-step output bundle), level_step preserves the invariant on
+mergeAdjacentPairs xss.
+
+Now with the four-piece chain (INITIAL/PRESERVATION/CONVERGENCE/FINAL)
+in place, the remaining gaps for the full eagenBuild_correctness:
+* AccsListChordStep propagation through level_step (so iteration
+  preserves the "next step's per-pair chord-step output" predicate).
+* Vertical terminal step (mixed AccInv-list preservation supporting
+  combine_higher_vertical at the final pair, producing TerminalInv).
+* AllDistinctECPoints / no-subsum-collision propagation
+  (group-theoretic genericity surviving level_step).
+
+Headline goal achieved: weil_reciprocity_honest discharged.
+Closure pin verified intact at every commit.
