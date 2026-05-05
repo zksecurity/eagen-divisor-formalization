@@ -1056,6 +1056,75 @@ theorem divisorOfD_divLin_subtract
                               : CoordRingElt E.q) R := hDD.trans h_split
   linarith
 
+/-! ### AccInv consequence: a.poly vanishes at -a.point
+
+Under `AccInv xs a`, the polynomial `a.poly` vanishes (eval = 0) at the
+sheet `(a.point.x, -a.point.y)`. This is because the residue contribution
+at -a.point makes the ordAt there positive. -/
+
+theorem accInv_poly_vanishes_at_neg_point
+    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
+    (h_acc : AccInv E xs a) (h_negPt_mem : (a.point.1, -a.point.2) ∈ E.points)
+    (hY : a.point.2 ≠ 0)
+    (h_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0)) :
+    a.poly.eval a.point.1 (-a.point.2) = 0 := by
+  classical
+  obtain ⟨h_pt_mem, _h_run, h_div⟩ := h_acc
+  -- Apply h_div at -a.point lifted to ECPoint.
+  have hns_neg : E.toW.toAffine.Nonsingular a.point.1 (-a.point.2) :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ h_negPt_mem))
+  have h_div_at := h_div (WeierstrassCurve.Affine.Point.some hns_neg)
+  -- divisorOfD a.poly at .some hns_neg = ordAt a.poly (a.point.1, -a.point.2) (cast).
+  rw [show (WeierstrassCurve.Affine.Point.some hns_neg : ECPoint E)
+        = ECPoint.affine E a.point.1 (-a.point.2) from
+      (ECPoint.affine_of_nonsingular E hns_neg).symm] at h_div_at
+  rw [show divisorOfD E a.poly (ECPoint.affine E a.point.1 (-a.point.2))
+        = (ordAt E a.poly (a.point.1, -a.point.2) : ℤ) from by
+      rw [ECPoint.affine_of_nonsingular E hns_neg]; rfl] at h_div_at
+  -- The RHS at -a.point includes residue = 1.
+  have h_residue_at_neg : residueDivisor E (ECPoint.affineOfMem E h_pt_mem)
+      (ECPoint.affine E a.point.1 (-a.point.2)) = 1 := by
+    unfold residueDivisor
+    rw [if_pos, if_neg]
+    · ring
+    · -- ECPoint.affine E a.point.1 (-a.point.2) ≠ 0.
+      rw [ECPoint.affine_of_nonsingular E hns_neg]
+      intro h; cases h
+    · -- ECPoint.affine E a.point.1 (-a.point.2) = -ECPoint.affineOfMem E h_pt_mem.
+      rw [← ECPoint.affine_eq_affineOfMem E h_pt_mem]
+      have hns_pt : E.toW.toAffine.Nonsingular a.point.1 a.point.2 :=
+        E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ h_pt_mem))
+      rw [ECPoint.affine_of_nonsingular E hns_neg,
+          ECPoint.affine_of_nonsingular E hns_pt]
+      -- -.some hns_pt = .some (negated witness) with x same, y negated.
+      rw [show -((WeierstrassCurve.Affine.Point.some hns_pt) : ECPoint E)
+            = ECPoint.affine E a.point.1 (-a.point.2) from by
+          rw [show -((WeierstrassCurve.Affine.Point.some hns_pt) : ECPoint E)
+                = ECPoint.affine E a.point.1 (-a.point.2) from by
+              rw [show ((WeierstrassCurve.Affine.Point.some hns_pt) : ECPoint E)
+                    = ECPoint.affine E a.point.1 a.point.2 from
+                  (ECPoint.affine_of_nonsingular E hns_pt).symm]
+              rw [ECPoint.affine_neg E a.point.1 a.point.2]]]
+      rw [ECPoint.affine_of_nonsingular E hns_neg]
+  -- formalDivisorOfList xs at -a.point ≥ 0 (since it's a count).
+  have h_formal_at_neg :
+      formalDivisorOfList E xs (ECPoint.affine E a.point.1 (-a.point.2)) ≥ 0 := by
+    rw [ECPoint.affine_of_nonsingular E hns_neg]
+    unfold formalDivisorOfList
+    show ((List.filter (fun p => p = (a.point.1, -a.point.2)) xs).length : ℤ) ≥ 0
+    exact Int.natCast_nonneg _
+  -- So ordAt > 0.
+  have h_ord_pos : 0 < ordAt E a.poly (a.point.1, -a.point.2) := by
+    have h_eq : (ordAt E a.poly (a.point.1, -a.point.2) : ℤ)
+              = formalDivisorOfList E xs (ECPoint.affine E a.point.1 (-a.point.2))
+                + residueDivisor E (ECPoint.affineOfMem E h_pt_mem)
+                  (ECPoint.affine E a.point.1 (-a.point.2)) := h_div_at
+    rw [h_residue_at_neg] at h_eq
+    have : (ordAt E a.poly (a.point.1, -a.point.2) : ℤ) ≥ 1 := by linarith
+    exact_mod_cast this
+  -- Apply ordAt_pos_iff_zero.
+  exact (ordAt_pos_iff_zero E a.poly h_poly_NZ (a.point.1, -a.point.2) h_negPt_mem).mp h_ord_pos
+
 /-! ### Combine step running-sum claim
 
 For combine_higher_distinct, the resulting accumulator's point lifts
