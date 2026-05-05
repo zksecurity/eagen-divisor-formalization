@@ -5666,6 +5666,28 @@ theorem mergeAdjacentPairs_flatten_eq {α : Type _} (xss : List (List α)) :
   | case2 xs => simp
   | case3 xs ys rest IH => simp [IH]
 
+/-! ### Length correlation: pairList and level0 align cons-by-cons
+
+For any input Ps, `pairList Ps` and `eagenBuild_level0 E Ps` have
+the same length (cons-by-cons alignment). -/
+
+theorem pairList_length_eq_level0_length
+    (Ps : List (ZMod E.q × ZMod E.q)) :
+    (pairList Ps).length = (eagenBuild_level0 E Ps).length := by
+  induction Ps using pairList.induct with
+  | case1 => simp [pairList, eagenBuild_level0]
+  | case2 P => simp [pairList, eagenBuild_level0]
+  | case3 P Q rest IH =>
+    rw [pairList_cons_cons]
+    by_cases h_xx : P.1 ≠ Q.1
+    · rw [eagenBuild_level0_cons_cons_distinct E P Q rest h_xx]
+      simp [List.length_cons, IH]
+    · by_cases h_yy : P.2 = -Q.2
+      · rw [eagenBuild_level0_cons_cons_vertical E P Q rest h_xx h_yy]
+        simp [List.length_cons, IH]
+      · rw [eagenBuild_level0_cons_cons_tangent E P Q rest h_xx h_yy]
+        simp [List.length_cons, IH]
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
