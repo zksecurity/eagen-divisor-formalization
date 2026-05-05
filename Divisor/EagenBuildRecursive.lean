@@ -4000,6 +4000,25 @@ theorem accInv_combine_higher_distinct_step_at_general_off_chord
     hP h_chord_pos h_chord_neg h_b_at_pos h_b_at_neg h_x_ne_a h_x_ne_b
     h_R_ne_neg_a_lift h_R_ne_neg_b_lift h_R_ne_neg_combine_lift
 
+/-! ### Curve y-dichotomy: same x ⟹ y agrees up to sign
+
+If two points share an x-coordinate on the same curve, their y values
+satisfy y² = y'², so y = y' or y = -y' (in a field). -/
+
+theorem curve_y_dichotomy
+    {x y y' : ZMod E.q}
+    (hP : (x, y) ∈ E.points) (hP' : (x, y') ∈ E.points) :
+    y = y' ∨ y = -y' := by
+  classical
+  have hC : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB := E.hOnCurve _ hP
+  have hC' : y' ^ 2 = x ^ 3 + E.curveA * x + E.curveB := E.hOnCurve _ hP'
+  have h_sq : y ^ 2 = y' ^ 2 := by rw [hC, ← hC']
+  -- (y - y')(y + y') = 0 in a field.
+  have : (y - y') * (y + y') = 0 := by linear_combination h_sq
+  rcases mul_eq_zero.mp this with h | h
+  · left; linear_combination h
+  · right; linear_combination h
+
 /-! ## General-k correctness: status
 
 Progress so far:
