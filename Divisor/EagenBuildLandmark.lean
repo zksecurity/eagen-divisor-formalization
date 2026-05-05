@@ -445,6 +445,44 @@ theorem eval_eq_zero_of_localMult_pos
   have hzero := localMult_eq_zero_of_eval_ne_zero E D hP hne
   omega
 
+theorem localMult_ge_one_of_eval_eq_zero
+    (D : CoordRingElt E.q) {P : ZMod E.q × ZMod E.q}
+    (hP : P ∈ E.points)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hEval : D.eval P.1 P.2 = 0) :
+    localMult E D P ≥ 1 := by
+  classical
+  rw [localMult_eq_dispatch E D hP hD]
+  by_cases h2 : P.2 = 0
+  · rw [if_pos h2]
+    have ha_eval : D.a.eval P.1 = 0 := by
+      have hEval' := hEval
+      unfold CoordRingElt.eval at hEval'
+      rw [h2] at hEval'
+      simpa using hEval'
+    unfold localMultTwoTorsion
+    rw [if_neg hD]
+    by_cases ha : D.a = 0
+    · rw [if_pos ha]
+      omega
+    · rw [if_neg ha]
+      have hRootA_pos : 0 < rootMultiplicity P.1 D.a := by
+        rw [Polynomial.rootMultiplicity_pos ha]
+        exact ha_eval
+      by_cases hb : D.b = 0
+      · rw [if_pos hb]
+        omega
+      · rw [if_neg hb]
+        exact le_min (by omega) (by omega)
+  · rw [if_neg h2]
+    unfold localMultNonTwo localMultNonTwoAux
+    rw [if_neg hD, if_neg (not_not.mpr hEval)]
+    by_cases hNeg : D.eval P.1 (-P.2) ≠ 0
+    · rw [if_pos hNeg]
+      exact rootMultiplicity_normPoly_pos E D hP hEval hD
+    · rw [if_neg hNeg]
+      omega
+
 /-! ## Target multiplicity carried by a Landmark accumulator -/
 
 noncomputable def target
@@ -582,6 +620,53 @@ unconditional:
   `Landmark.PairwiseCombineHyp E`, or replace downstream uses of the
   old invariant with `LandmarkInvStrong` directly.
 -/
+
+theorem localMult_chordCoordRingElt_at_left
+    {P Q : ZMod E.q × ZMod E.q}
+    (hP : P ∈ E.points) :
+    localMult E (chordCoordRingElt E P Q) P ≥ 1 := by
+  exact localMult_ge_one_of_eval_eq_zero E (chordCoordRingElt E P Q) hP
+    (chordCoordRingElt_ne_zero E P Q)
+    (chordCoordRingElt_eval_left E P Q)
+
+theorem localMult_chordCoordRingElt_at_right
+    {P Q : ZMod E.q × ZMod E.q}
+    (hQ : Q ∈ E.points) :
+    localMult E (chordCoordRingElt E P Q) Q ≥ 1 := by
+  exact localMult_ge_one_of_eval_eq_zero E (chordCoordRingElt E P Q) hQ
+    (chordCoordRingElt_ne_zero E P Q)
+    (chordCoordRingElt_eval_right E P Q)
+
+theorem localMult_chordCoordRingElt_at_third
+    {P Q : ZMod E.q × ZMod E.q}
+    (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (hxx : P.1 ≠ Q.1) :
+    let lam := slopeOf P.1 P.2 Q.1 Q.2
+    let x₂ := lam ^ 2 - P.1 - Q.1
+    let y₂ := lam * x₂ + (P.2 - lam * P.1)
+    localMult E (chordCoordRingElt E P Q) (x₂, y₂) ≥ 1 := by
+  intro lam x₂ y₂
+  have hT : thirdPoint E P Q = some (x₂, y₂) := by
+    unfold thirdPoint
+    rw [if_neg hxx]
+    simp [x₂, y₂, lam, slopeOf]
+  have hThirdOn : (x₂, y₂) ∈ E.points :=
+    third_point_on_curve E P Q hP hQ hT
+  apply localMult_ge_one_of_eval_eq_zero E (chordCoordRingElt E P Q) hThirdOn
+  · exact chordCoordRingElt_ne_zero E P Q
+  · have hEval := chordCoordRingElt_eval_thirdPoint_chord (E := E) hP hQ hxx
+    simpa [x₂, y₂, lam, slopeOf] using hEval
+
+theorem localMult_chordCoordRingElt_at_third_neg
+    {P Q : ZMod E.q × ZMod E.q}
+    (_hP : P ∈ E.points) (_hQ : Q ∈ E.points)
+    (_hxx : P.1 ≠ Q.1) :
+    let lam := slopeOf P.1 P.2 Q.1 Q.2
+    let x₂ := lam ^ 2 - P.1 - Q.1
+    let y₂ := lam * x₂ + (P.2 - lam * P.1)
+    localMult E (chordCoordRingElt E P Q) (x₂, -y₂) ≥ 0 := by
+  intro lam x₂ y₂
+  exact Nat.zero_le _
 
 noncomputable def LandmarkInv
     (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E) : Prop :=
