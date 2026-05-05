@@ -753,6 +753,18 @@ theorem accInv_level0_chord_case
           + residueDivisor E (ECPoint.affineOfMem E h_run.choose) R
     exact accInv_level0_chord_divisor_identity E P Q hP hQ h_xx hP_neq_A2 hQ_neq_A2
 
+/-! ### Terminal invariant: sum-zero accumulators
+
+When the running sum is `O` (e.g., after combining `(P, -P)` or any
+sum-zero block), AccInv fails because `a.point` cannot represent the
+identity. The terminal invariant captures this case directly: the
+polynomial's divisor matches the formal divisor of the absorbed list
+(no residue needed, since residue at `O` would cancel). -/
+
+def TerminalInv (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E) : Prop :=
+  ∀ R : ECPoint E,
+    divisorOfD E a.poly R = formalDivisorOfList E xs R
+
 /-! ### Helper lemmas for residue and formalDivisor -/
 
 /-- residueDivisor evaluated at `-S` is `1` (when -S ≠ 0). -/
