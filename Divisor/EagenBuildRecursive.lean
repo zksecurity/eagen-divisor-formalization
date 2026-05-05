@@ -4964,6 +4964,42 @@ theorem eagenBuild_level_step_cons_cons_distinct
           :: eagenBuild_level_step E rest
   rw [dif_pos h]
 
+theorem eagenBuild_level_step_cons_cons_vertical
+    (a b : EagenAccum E) (rest : List (EagenAccum E))
+    (h_xx : ¬ (a.point.1 ≠ b.point.1)) (h_yy : a.point.2 = -b.point.2) :
+    eagenBuild_level_step E (a :: b :: rest)
+      = EagenAccum.combine_higher_vertical E a b
+          (Classical.byContradiction (fun h_neq => h_xx h_neq)) h_yy
+          :: eagenBuild_level_step E rest := by
+  show (if h' : a.point.1 ≠ b.point.1 then
+          EagenAccum.combine_higher_distinct E a b h'
+            :: eagenBuild_level_step E rest
+        else if hYY : a.point.2 = -b.point.2 then
+          EagenAccum.combine_higher_vertical E a b
+            (Classical.byContradiction (fun h_neq => h' h_neq)) hYY ::
+            eagenBuild_level_step E rest
+        else a :: b :: eagenBuild_level_step E rest)
+      = EagenAccum.combine_higher_vertical E a b
+          (Classical.byContradiction (fun h_neq => h_xx h_neq)) h_yy
+          :: eagenBuild_level_step E rest
+  rw [dif_neg h_xx, dif_pos h_yy]
+
+theorem eagenBuild_level_step_cons_cons_tangent
+    (a b : EagenAccum E) (rest : List (EagenAccum E))
+    (h_xx : ¬ (a.point.1 ≠ b.point.1)) (h_yy : ¬ (a.point.2 = -b.point.2)) :
+    eagenBuild_level_step E (a :: b :: rest)
+      = a :: b :: eagenBuild_level_step E rest := by
+  show (if h' : a.point.1 ≠ b.point.1 then
+          EagenAccum.combine_higher_distinct E a b h'
+            :: eagenBuild_level_step E rest
+        else if hYY : a.point.2 = -b.point.2 then
+          EagenAccum.combine_higher_vertical E a b
+            (Classical.byContradiction (fun h_neq => h' h_neq)) hYY ::
+            eagenBuild_level_step E rest
+        else a :: b :: eagenBuild_level_step E rest)
+      = a :: b :: eagenBuild_level_step E rest
+  rw [dif_neg h_xx, dif_neg h_yy]
+
 /-! ## General-k correctness: status
 
 Progress so far:
