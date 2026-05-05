@@ -5688,6 +5688,15 @@ theorem pairList_length_eq_level0_length
       · rw [eagenBuild_level0_cons_cons_tangent E P Q rest h_xx h_yy]
         simp [List.length_cons, IH]
 
+/-! ### AccInvList length match -/
+
+theorem accInvList_length_eq
+    {xss : List (List (ZMod E.q × ZMod E.q))}
+    {accs : List (EagenAccum E)}
+    (h : AccInvList E xss accs) :
+    xss.length = accs.length :=
+  List.Forall₂.length_eq h
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
