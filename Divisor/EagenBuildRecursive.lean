@@ -215,6 +215,24 @@ noncomputable def formalDivisorOfList
     | WeierstrassCurve.Affine.Point.some (x := x) (y := y) _ =>
         (Ps.filter (fun P => P = (x, y))).length
 
+/-- Accumulator invariant: at the non-degenerate stage, `a.point ∈ E.points`
+    and represents the EC group sum of the absorbed list `xs` (lifted via
+    `affineOfMem`). The polynomial's divisor decomposes into the formal
+    divisor of `xs` plus the residue at the running sum.
+
+    This invariant fails when the running sum is `O` (terminal case);
+    that case is handled separately via the vertical combine step. -/
+def AccInv (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E) : Prop :=
+  ∃ h : a.point ∈ E.points,
+    -- a.point's ECPoint lift equals the running EC sum of xs.
+    (ECPoint.affineOfMem E h : ECPoint E) =
+      xs.foldr (fun P S =>
+        if h' : P ∈ E.points then ECPoint.affineOfMem E h' + S else S) 0
+    ∧ ∀ R : ECPoint E,
+        divisorOfD E a.poly R
+          = formalDivisorOfList E xs R
+            + residueDivisor E (ECPoint.affineOfMem E h) R
+
 /-- Sanity check: residueDivisor at infinity is -1 when S ≠ 0. -/
 theorem residueDivisor_at_infinity_of_S_ne_zero
     (S : ECPoint E) (hS : S ≠ 0) :
