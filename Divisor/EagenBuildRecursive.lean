@@ -5516,6 +5516,28 @@ with another point at the next level. This requires a different
 AccInv-like predicate (or omitting the carry-forward from the list
 and tracking it separately). -/
 
+/-! ### InputPairsDistinctX predicate
+
+Recursive predicate: every adjacent pair (P, Q) at level0's pairing
+positions has distinct x-coordinates (so the chord case applies). -/
+
+def InputPairsDistinctX {q : ℕ} :
+    List (ZMod q × ZMod q) → Prop
+  | [] => True
+  | [_] => True
+  | P :: Q :: rest => P.1 ≠ Q.1 ∧ InputPairsDistinctX rest
+
+theorem inputPairsDistinctX_nil {q : ℕ} :
+    @InputPairsDistinctX q [] := trivial
+
+theorem inputPairsDistinctX_singleton {q : ℕ} (P : ZMod q × ZMod q) :
+    InputPairsDistinctX [P] := trivial
+
+theorem inputPairsDistinctX_cons_cons {q : ℕ}
+    (P Q : ZMod q × ZMod q) (rest : List (ZMod q × ZMod q)) :
+    InputPairsDistinctX (P :: Q :: rest) ↔
+      P.1 ≠ Q.1 ∧ InputPairsDistinctX rest := Iff.rfl
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
