@@ -233,6 +233,57 @@ def AccInv (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E) : Prop :=
           = formalDivisorOfList E xs R
             + residueDivisor E (ECPoint.affineOfMem E h) R
 
+/-! ### Level-0 chord case: running-sum claim
+
+For (P, Q) chord case (distinct x), the level-0 accumulator's
+`point` lifts via `affineOfMem` to the EC group sum `P + Q`. -/
+
+theorem accInv_level0_chord_running_sum
+    (P Q : ZMod E.q × ZMod E.q)
+    (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (h_xx : P.1 ≠ Q.1) :
+    ∃ h_acc : (EagenAccum.fromChordPair_distinct E P Q h_xx).point ∈ E.points,
+      (ECPoint.affineOfMem E h_acc : ECPoint E)
+        = ECPoint.affineOfMem E hP + ECPoint.affineOfMem E hQ := by
+  classical
+  set lam := slopeOf P.1 P.2 Q.1 Q.2
+  set Q₀x := lam ^ 2 - P.1 - Q.1 with hQ₀x_def
+  set Q₀y := lam * Q₀x + (P.2 - lam * P.1) with hQ₀y_def
+  -- The accumulator's point is (Q_0x, -Q_0y).
+  have h_acc_point : (EagenAccum.fromChordPair_distinct E P Q h_xx).point
+                    = (Q₀x, -Q₀y) := rfl
+  -- Third intersection (Q_0x, Q_0y) ∈ E.points.
+  have hThirdMem : (Q₀x, Q₀y) ∈ E.points := by
+    apply E.hComplete
+    exact chord_third_point_on_E E P Q hP hQ h_xx
+  -- (Q_0x, -Q_0y) ∈ E.points.
+  have hNegThirdMem : (Q₀x, -Q₀y) ∈ E.points := by
+    apply E.hComplete
+    have hC := E.hOnCurve _ hThirdMem
+    show (-Q₀y) ^ 2 = Q₀x ^ 3 + E.curveA * Q₀x + E.curveB
+    rw [neg_pow_two]; exact hC
+  refine ⟨h_acc_point ▸ hNegThirdMem, ?_⟩
+  -- thirdPoint of (P, Q) = some (Q_0x, Q_0y).
+  have hT : thirdPoint E P Q = some (Q₀x, Q₀y) := by
+    unfold thirdPoint
+    rw [if_neg h_xx]
+    rfl
+  -- thirdPoint_some_eq_neg_add: P + Q = -third.
+  have hSum := thirdPoint_some_eq_neg_add (E := E) hP hQ hT
+  rw [hSum]
+  -- Goal: affineOfMem (h_acc_point ▸ hNegThirdMem) = -affineOfMem of third.
+  -- Reduce both via affine_eq_affineOfMem to ECPoint.affine.
+  rw [← ECPoint.affine_eq_affineOfMem E (h_acc_point ▸ hNegThirdMem)]
+  rw [← ECPoint.affine_eq_affineOfMem E (third_point_on_curve E P Q hP hQ hT)]
+  -- Goal: ECPoint.affine (acc.point.1, acc.point.2) = -ECPoint.affine (Q₀x, Q₀y).
+  show (ECPoint.affine E (EagenAccum.fromChordPair_distinct E P Q h_xx).point.1
+        (EagenAccum.fromChordPair_distinct E P Q h_xx).point.2 : ECPoint E)
+      = -ECPoint.affine E (Q₀x, Q₀y).1 (Q₀x, Q₀y).2
+  rw [h_acc_point]
+  show (ECPoint.affine E Q₀x (-Q₀y) : ECPoint E)
+      = -ECPoint.affine E Q₀x Q₀y
+  rw [ECPoint.affine_neg E Q₀x Q₀y]
+
 /-! ### Helper lemmas for residue and formalDivisor -/
 
 /-- residueDivisor evaluated at `-S` is `1` (when -S ≠ 0). -/
@@ -1272,7 +1323,7 @@ EC identity "third intersection = negation of sum", we get
 `P_0 + P_1 + P_2 + P_3 = O` in `ECPoint E`. -/
 
 /-- The thirdPoint of `(P_0, P_1)` for the chord case. -/
-private theorem thirdPoint_chord_case
+theorem thirdPoint_chord_case
     {E : ECSetup} {P₀ P₁ : ZMod E.q × ZMod E.q}
     (h_xx : P₀.1 ≠ P₁.1) :
     thirdPoint E P₀ P₁ = some
