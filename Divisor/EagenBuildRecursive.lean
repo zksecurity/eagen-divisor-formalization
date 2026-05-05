@@ -5697,6 +5697,41 @@ theorem accInvList_length_eq
     xss.length = accs.length :=
   List.Forall₂.length_eq h
 
+/-! ### Per-pair AccInvList step
+
+Given two adjacent (xs, a) and (ys, b) AccInv pairs in an
+AccInvList, the chord inductive step (under genericity) merges them
+into (xs ++ ys, combine_higher_distinct a b) preserving AccInvList. -/
+
+theorem accInvList_cons_cons_chord_step
+    {xs ys : List (ZMod E.q × ZMod E.q)}
+    {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (hStrong : CombineStrongGeneric (E := E) h_acc_a h_acc_b h_xx)
+    (hOffChord :
+        ∀ {x y : ZMod E.q}, (x, y) ∈ E.points →
+          x ≠ a.point.1 → x ≠ b.point.1 →
+          x ≠ slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                - a.point.1 - b.point.1 →
+        ((chordCoordRingElt E a.point b.point).eval x y ≠ 0
+          ∧ (chordCoordRingElt E a.point b.point).eval x (-y) ≠ 0
+          ∧ b.poly.eval x y ≠ 0 ∧ b.poly.eval x (-y) ≠ 0
+          ∧ (ECPoint.affine E x y : ECPoint E)
+              ≠ -(ECPoint.affineOfMem E h_acc_a.1 : ECPoint E)
+          ∧ (ECPoint.affine E x y : ECPoint E)
+              ≠ -(ECPoint.affineOfMem E h_acc_b.1 : ECPoint E)
+          ∧ (ECPoint.affine E x y : ECPoint E)
+              ≠ -(ECPoint.affineOfMem E
+                  (combine_higher_distinct_running_sum E a b
+                      h_acc_a.1 h_acc_b.1 h_xx).choose : ECPoint E))) :
+    AccInv E (xs ++ ys) (EagenAccum.combine_higher_distinct E a b h_xx) :=
+  accInv_combine_higher_distinct_step (E := E)
+    h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ hStrong hOffChord
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
