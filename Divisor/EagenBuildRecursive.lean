@@ -5755,6 +5755,18 @@ theorem pairList_sublist_length_le_two {q : ℕ}
     · rw [h_eq]; simp
     · exact IH _ h_rest
 
+/-! ### pairList weak length bound -/
+
+theorem pairList_length_le {q : ℕ} (Ps : List (ZMod q × ZMod q)) :
+    (pairList Ps).length ≤ Ps.length := by
+  induction Ps using pairList.induct with
+  | case1 => simp
+  | case2 _ => simp
+  | case3 _ _ rest IH =>
+    rw [pairList_cons_cons]
+    simp only [List.length_cons]
+    omega
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
