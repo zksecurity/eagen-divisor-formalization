@@ -5499,6 +5499,23 @@ theorem pairList_flatten_eq {q : ℕ} (Ps : List (ZMod q × ZMod q)) :
   | case2 P => simp
   | case3 P Q rest IH => simp [IH]
 
+/-! ### Singleton-tail caveat for level0 → AccInvList
+
+For odd-length input lists, `pairList Ps` ends in a singleton
+sublist [P] paired with the carry-forward sentinel
+`{ point := P, poly := { a := 1, b := 0 } }`.
+
+`AccInv [P] (carry-forward)` does NOT hold: divisorOfD ⟨1, 0⟩ R = 0
+at every R (1 is a unit), but the AccInv RHS at infinity would be
+formalDivisor [P] ∞ + residue P.lift ∞ = -1 + -1 = -2 ≠ 0.
+
+So `AccInvList (pairList Ps) (eagenBuild_level0 Ps)` only holds for
+even-length input. For odd-length, the singleton carry-forward is
+treated as an "in-progress" accumulator that needs to be re-paired
+with another point at the next level. This requires a different
+AccInv-like predicate (or omitting the carry-forward from the list
+and tracking it separately). -/
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
