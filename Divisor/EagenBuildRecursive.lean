@@ -2753,6 +2753,50 @@ Progress so far:
 * `combine_higher_distinct_prod_vanish_at_b` (chord·a·b vanishes at ±b) ✓
 * `combine_higher_distinct_divisible_at_b` (X-b.x divides after-divLin-a) ✓
 * `combine_higher_distinct_running_sum` ✓
+* `accInv_natDegree_normPoly` (AccInv ⟹ natDeg(normPoly a.poly) = xs.length+1) ✓
+* `accInv_combine_higher_distinct_divisor_at_infinity` (raw + AccInv form) ✓
+* `combine_higher_distinct_prod_eval_factor` (prod.eval = (X-a.x)(X-b.x)·combine.eval) ✓
+* `combine_higher_distinct_eval_third_zero` ✓
+* `chordCoordRingElt_eval_at_neg_third` ✓
+* `combine_higher_distinct_eval_neg_third_nonzero` ✓
+* `chordCoordRingElt_rootMult_normPoly_at_third_eq_one` ✓
+* `ordAt_lone_sheet_eq_rootMult_normPoly` ✓
+* `accInv_combine_higher_distinct_divisor_at_third_intersection` ✓
+* `accInv_combine_higher_distinct_divisor_at_third_AccInv_form` ✓
+* `combine_higher_distinct_rootMult_normPoly_at_third_eq_one` ✓
+* `rootMult_normPoly_eq_zero_of_fiber_nonvanish` ✓
+* `accInv_combine_higher_distinct_divisor_at_off_support_zero` ✓
+* `accInv_combine_higher_distinct_divisor_at_off_support_AccInv_form` ✓
+* `accInv_combine_higher_distinct_divisor_at_combine_lift_AccInv_form` ✓
+* `chordCoordRingElt_eval_at_neg_a` ✓
+* `chordCoordRingElt_divisor_at_a_lift_eq_one` ✓
+
+## Next: at-a.lift case (ready for assembly)
+
+Building blocks now in place for `divisorOfD combine.poly (a.lift) = ...`:
+* chord_divisor_at_a_lift = 1 (chord-line additivity, lone-sheet at +a).
+* a.poly's divisor at a.lift via AccInv: count(xs, a.point) (since
+  residue is at -a.lift, contributes 0 at +a.lift).
+* b.poly's divisor via AccInv: count(ys, a.point) (with a.lift ≠ -b.lift).
+* div(vert(a.x))(a.lift) = 1 via `divisorOfD_vertical_at_x₀_nonTwoTorsion_affine`.
+* div(vert(b.x))(a.lift) = 0 via `divisorOfD_vertical_at_off_x₀_affine`.
+* mul-add for prod = b.poly·(chord·a.poly): need b.poly nonvanish on
+  a fiber (genericity hypothesis); apply
+  `divisorOfD_mul_add_when_one_factor_nonvanish_fiber`.
+* div(chord·a.poly) = div(a.poly·chord) by mulCoordRingElt_comm, then
+  `divisorOfD_mul_add_by_chordCoordRingElt_distinct`.
+
+Final equation at a.lift:
+  div(combine.poly)(a.lift)
+    = (div(chord) + div(a.poly) + div(b.poly))(a.lift) - 1 - 0
+    = (1 + count(xs, a) + count(ys, a)) - 1
+    = count(xs, a) + count(ys, a)
+    = formalDivisor(xs++ys)(a.lift)
+
+residueDivisor(combine.lift)(a.lift) = 0 (assuming a.lift ≠ -combine.lift,
+i.e. 2a + b ≠ 0 in EC group).
+
+Symmetric at -a.lift, b.lift, -b.lift cases follow same pattern.
 
 ## Cross-case wall (combine-step pointwise mul-additivity)
 
