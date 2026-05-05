@@ -6362,6 +6362,13 @@ theorem pairList_flatten_length {q : ℕ} (Ps : List (ZMod q × ZMod q)) :
     (pairList Ps).flatten.length = Ps.length := by
   rw [pairList_flatten_eq]
 
+/-! ### mergeAdjacentPairs flatten preserves length -/
+
+theorem mergeAdjacentPairs_flatten_length {α : Type _}
+    (xss : List (List α)) :
+    (mergeAdjacentPairs xss).flatten.length = xss.flatten.length := by
+  rw [mergeAdjacentPairs_flatten_eq]
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
