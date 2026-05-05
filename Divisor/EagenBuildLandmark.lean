@@ -1634,4 +1634,46 @@ theorem landmarkInvList_eagenBuild_singletons
     landmarkInvList_level0_singletons E Ps hPs_on
   exact landmarkInvList_preservation_under_iterate E Ps.length _ _ h_init h_combine
 
+/-! ## Convergence of pairUpN
+
+For sufficient fuel, `pairUpN n xss` reaches a list of length ≤ 1.
+When length = 1, the single element is `xss.flatten`. -/
+
+theorem pairUp_length_le {α : Type*} (xss : List (List α)) :
+    (pairUp xss).length ≤ xss.length / 2 + 1 := by
+  match xss with
+  | [] => simp [pairUp]
+  | [_] => simp [pairUp]
+  | xs :: ys :: rest =>
+    show ((xs ++ ys) :: pairUp rest).length ≤ _
+    rw [List.length_cons]
+    have ih := pairUp_length_le rest
+    rw [show (xs :: ys :: rest).length = rest.length + 2 from rfl]
+    omega
+
+theorem pairUpN_le_of_le {α : Type*} (n : ℕ) (xss : List (List α))
+    (h : xss.length ≤ 1) :
+    pairUpN n xss = xss := by
+  match n with
+  | 0 => rfl
+  | k + 1 =>
+    show (if xss.length ≤ 1 then xss else pairUpN k (pairUp xss)) = xss
+    rw [if_pos h]
+
+theorem pairUpN_eq_singleton_of_len_one {α : Type*} (n : ℕ) (xss : List (List α))
+    (h : (pairUpN n xss).length = 1) :
+    pairUpN n xss = [xss.flatten] := by
+  have hf : (pairUpN n xss).flatten = xss.flatten := pairUpN_flatten n xss
+  match h_eq : pairUpN n xss with
+  | [] => simp [h_eq] at h
+  | [x] =>
+    rw [h_eq] at hf
+    show [x] = [xss.flatten]
+    have : x = xss.flatten := by
+      have := hf
+      simp at this
+      exact this
+    rw [this]
+  | _ :: _ :: _ => simp [h_eq] at h
+
 end Divisor.Landmark
