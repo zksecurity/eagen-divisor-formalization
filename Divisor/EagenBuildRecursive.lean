@@ -1022,6 +1022,40 @@ theorem eagenBuild_length2_neg_eq_vertical
   unfold eagenBuild_iterate
   simp
 
+/-! ### divLin divisor identity
+
+When `(X - x₀)` divides both `D.a` and `D.b`, the divisor of `D.divLin x₀`
+is the divisor of `D` minus the vertical line's divisor at `x₀`. -/
+
+theorem divisorOfD_divLin_subtract
+    (D : CoordRingElt E.q) (x₀ : ZMod E.q)
+    (ha : (Polynomial.X - Polynomial.C x₀) ∣ D.a)
+    (hb : (Polynomial.X - Polynomial.C x₀) ∣ D.b)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0)) (R : ECPoint E) :
+    divisorOfD E (D.divLin x₀) R
+      = divisorOfD E D R
+        - divisorOfD E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                        : CoordRingElt E.q) R := by
+  -- D = (D.divLin x₀) · L_v.
+  have h_recomp := mulCoordRingElt_divLin_vertical_recompose E D x₀ ha hb
+  -- Need: D.divLin x₀ is also nonzero (a or b nonzero).
+  have h_divLin_NZ : ¬ ((D.divLin x₀).a = 0 ∧ (D.divLin x₀).b = 0) :=
+    divLin_not_both_zero E D hD
+      (Polynomial.dvd_iff_isRoot.mp ha)
+      (Polynomial.dvd_iff_isRoot.mp hb)
+  -- divisorOfD (D.divLin · L_v) R = divisorOfD (D.divLin) R + divisorOfD L_v R.
+  have h_split := divisorOfD_mul_vertical_add E (D.divLin x₀) h_divLin_NZ x₀ R
+  -- D = D.divLin · L_v, so divisorOfD D R = divisorOfD (D.divLin · L_v) R.
+  have hDD : divisorOfD E D R
+           = divisorOfD E (mulCoordRingElt E (D.divLin x₀)
+              ({ a := Polynomial.X - Polynomial.C x₀, b := 0 } : CoordRingElt E.q)) R :=
+    congrArg (fun X => divisorOfD E X R) h_recomp
+  have h_eq : divisorOfD E D R
+            = divisorOfD E (D.divLin x₀) R
+              + divisorOfD E ({ a := Polynomial.X - Polynomial.C x₀, b := 0 }
+                              : CoordRingElt E.q) R := hDD.trans h_split
+  linarith
+
 /-! ### Combine step running-sum claim
 
 For combine_higher_distinct, the resulting accumulator's point lifts
