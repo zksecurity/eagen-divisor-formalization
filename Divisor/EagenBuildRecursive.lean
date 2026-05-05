@@ -1022,6 +1022,50 @@ theorem eagenBuild_length2_neg_eq_vertical
   unfold eagenBuild_iterate
   simp
 
+/-! ### Combine step running-sum claim
+
+For combine_higher_distinct, the resulting accumulator's point lifts
+to the EC group sum of the two input accumulators' points. -/
+
+theorem combine_higher_distinct_running_sum
+    (a b : EagenAccum E)
+    (ha : a.point ∈ E.points) (hb : b.point ∈ E.points)
+    (h_xx : a.point.1 ≠ b.point.1) :
+    ∃ h_acc : (EagenAccum.combine_higher_distinct E a b h_xx).point ∈ E.points,
+      (ECPoint.affineOfMem E h_acc : ECPoint E)
+        = ECPoint.affineOfMem E ha + ECPoint.affineOfMem E hb := by
+  classical
+  -- combine_higher_distinct's point structure mirrors fromChordPair_distinct.
+  set lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2 with hlam_def
+  set Q₀x := lam ^ 2 - a.point.1 - b.point.1 with hQ₀x_def
+  set Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1) with hQ₀y_def
+  have h_acc_point : (EagenAccum.combine_higher_distinct E a b h_xx).point
+                    = (Q₀x, -Q₀y) := rfl
+  have hThirdMem : (Q₀x, Q₀y) ∈ E.points := by
+    apply E.hComplete
+    exact chord_third_point_on_E E a.point b.point ha hb h_xx
+  have hNegThirdMem : (Q₀x, -Q₀y) ∈ E.points := by
+    apply E.hComplete
+    have hC := E.hOnCurve _ hThirdMem
+    show (-Q₀y) ^ 2 = Q₀x ^ 3 + E.curveA * Q₀x + E.curveB
+    rw [neg_pow_two]; exact hC
+  refine ⟨h_acc_point ▸ hNegThirdMem, ?_⟩
+  have hT : thirdPoint E a.point b.point = some (Q₀x, Q₀y) := by
+    unfold thirdPoint
+    rw [if_neg h_xx]
+    rfl
+  have hSum := thirdPoint_some_eq_neg_add (E := E) ha hb hT
+  rw [hSum]
+  rw [← ECPoint.affine_eq_affineOfMem E (h_acc_point ▸ hNegThirdMem)]
+  rw [← ECPoint.affine_eq_affineOfMem E (third_point_on_curve E a.point b.point ha hb hT)]
+  show (ECPoint.affine E (EagenAccum.combine_higher_distinct E a b h_xx).point.1
+        (EagenAccum.combine_higher_distinct E a b h_xx).point.2 : ECPoint E)
+      = -ECPoint.affine E (Q₀x, Q₀y).1 (Q₀x, Q₀y).2
+  rw [h_acc_point]
+  show (ECPoint.affine E Q₀x (-Q₀y) : ECPoint E)
+      = -ECPoint.affine E Q₀x Q₀y
+  rw [ECPoint.affine_neg E Q₀x Q₀y]
+
 /-! ## General-k correctness: status
 
 Progress so far:
