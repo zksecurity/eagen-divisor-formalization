@@ -1683,6 +1683,30 @@ theorem combine_higher_distinct_eval_third_zero
     · exact absurd h h_diff_b
   · exact h
 
+/-! ### Chord nonvanishes at the negation of the third intersection
+
+`chord(Q₀x, -Q₀y) = -2 · Q₀y`, where `(Q₀x, Q₀y)` is the third
+intersection of the chord through `a.point` and `b.point`. Hence
+chord nonvanishes at `(Q₀x, -Q₀y)` whenever `Q₀y ≠ 0`. -/
+
+theorem chordCoordRingElt_eval_at_neg_third
+    (a b : EagenAccum E)
+    (h_xx : a.point.1 ≠ b.point.1) :
+    let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+    let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+    let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+    (chordCoordRingElt E a.point b.point).eval Q₀x (-Q₀y) = -2 * Q₀y := by
+  classical
+  intro lam Q₀x Q₀y
+  rw [chordCoordRingElt_eval_eq_lineThrough_chord E h_xx (Q₀x, -Q₀y)]
+  -- (lineThrough a.point b.point).eval (Q₀x, -Q₀y).
+  unfold Line.eval lineThrough
+  show -Q₀y - lam * Q₀x - (a.point.2 - lam * a.point.1) = -2 * Q₀y
+  -- Q₀y = lam * Q₀x + (a.point.2 - lam * a.point.1) by definition.
+  show -(lam * Q₀x + (a.point.2 - lam * a.point.1)) - lam * Q₀x
+        - (a.point.2 - lam * a.point.1) = -2 * (lam * Q₀x + (a.point.2 - lam * a.point.1))
+  ring
+
 /-! ### Combine step: at-affine off-support divisor identity
 
 When R = `ECPoint.affine x y` has x ≠ a.point.1, x ≠ b.point.1, and
