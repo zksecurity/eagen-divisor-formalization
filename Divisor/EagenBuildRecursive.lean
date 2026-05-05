@@ -5854,6 +5854,25 @@ theorem eagenBuild_level0_eq_nil_iff (Ps : List (ZMod E.q × ZMod E.q)) :
         · rw [eagenBuild_level0_cons_cons_tangent E P Q rest' h_xx h_yy]
           simp
 
+/-! ### eagenBuild_level_step nil characterization -/
+
+theorem eagenBuild_level_step_eq_nil_iff (xs : List (EagenAccum E)) :
+    eagenBuild_level_step E xs = [] ↔ xs = [] := by
+  cases xs with
+  | nil => simp [eagenBuild_level_step]
+  | cons a rest =>
+    cases rest with
+    | nil => simp [eagenBuild_level_step]
+    | cons b rest' =>
+      by_cases h_xx : a.point.1 ≠ b.point.1
+      · rw [eagenBuild_level_step_cons_cons_distinct E a b rest' h_xx]
+        simp
+      · by_cases h_yy : a.point.2 = -b.point.2
+        · rw [eagenBuild_level_step_cons_cons_vertical E a b rest' h_xx h_yy]
+          simp
+        · rw [eagenBuild_level_step_cons_cons_tangent E a b rest' h_xx h_yy]
+          simp
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
