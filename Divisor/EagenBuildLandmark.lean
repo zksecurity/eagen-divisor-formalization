@@ -1973,4 +1973,159 @@ theorem divisorOfD_eq_formalDivisorOfList_of_landmark
         exact hxy_in hP
       exact congrArg (fun n : ℕ => (n : ℤ)) (by rw [h_ord, h_count])
 
+/-- Landmark data already forces `normPoly E D` to split over `F_q`, and
+every root comes from the x-coordinate of one of the landmark points. -/
+theorem splitsOnE_of_landmark
+    (Ps : List (ZMod E.q × ZMod E.q))
+    (D : CoordRingElt E.q)
+    (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
+    (hNodup : Ps.Nodup)
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hVan : ∀ P ∈ Ps, D.eval P.1 P.2 = 0)
+    (hDeg : (normPoly E D).natDegree = Ps.length) :
+    splitsOnE E D := by
+  classical
+  let c : ZMod E.q → ℕ :=
+    fun α => (Ps.toFinset.filter (fun P => P.1 = α)).card
+  have h_Ps_card : Ps.toFinset.card = Ps.length := List.toFinset_card_of_nodup hNodup
+  have h_maps : ∀ P ∈ Ps.toFinset, P.1 ∈ (Finset.univ : Finset (ZMod E.q)) :=
+    fun _ _ => Finset.mem_univ _
+  have h_c_sum_card :
+      Ps.toFinset.card = ∑ α : ZMod E.q, c α := by
+    unfold c
+    simpa using
+      (Finset.card_eq_sum_card_fiberwise
+        (f := fun P : ZMod E.q × ZMod E.q => P.1)
+        (s := Ps.toFinset) (t := (Finset.univ : Finset (ZMod E.q))) h_maps)
+  have h_c_sum : (∑ α : ZMod E.q, c α) = (normPoly E D).natDegree := by
+    rw [← h_c_sum_card, h_Ps_card, ← hDeg]
+  have h_c_le_rm : ∀ α : ZMod E.q,
+      c α ≤ rootMultiplicity α (normPoly E D) := by
+    intro α
+    unfold c
+    set S := Ps.toFinset.filter (fun P => P.1 = α)
+    have hS_sub : S ⊆ E.points.filter (fun P => P.1 = α) := by
+      intro P hP
+      have hP' := Finset.mem_filter.mp hP
+      rw [Finset.mem_filter]
+      refine ⟨?_, hP'.2⟩
+      rw [List.mem_toFinset] at hP'
+      exact hPs_on P hP'.1
+    have hS_card_le : S.card ≤ 2 :=
+      (Finset.card_le_card hS_sub).trans (card_points_with_fst_eq_le E α)
+    interval_cases hScard : S.card
+    · exact Nat.zero_le _
+    · rw [Finset.card_eq_one] at hScard
+      obtain ⟨P, hS_eq⟩ := hScard
+      have hPS : P ∈ S := by
+        rw [hS_eq]
+        exact Finset.mem_singleton_self P
+      have hPmem : P ∈ Ps := by
+        have hP' := (Finset.mem_filter.mp hPS).1
+        rwa [List.mem_toFinset] at hP'
+      have hPx : P.1 = α := (Finset.mem_filter.mp hPS).2
+      have hRm_pos : 0 < rootMultiplicity P.1 (normPoly E D) :=
+        rootMultiplicity_normPoly_pos E D (hPs_on P hPmem) (hVan P hPmem) hD
+      rw [hPx] at hRm_pos
+      omega
+    · rw [Finset.card_eq_two] at hScard
+      obtain ⟨P₁, P₂, hNeq, hS_eq⟩ := hScard
+      have hP₁S : P₁ ∈ S := by
+        rw [hS_eq]
+        exact Finset.mem_insert_self P₁ {P₂}
+      have hP₂S : P₂ ∈ S := by
+        rw [hS_eq]
+        exact Finset.mem_insert_of_mem (Finset.mem_singleton_self P₂)
+      have hP₁mem : P₁ ∈ Ps := by
+        have hP' := (Finset.mem_filter.mp hP₁S).1
+        rwa [List.mem_toFinset] at hP'
+      have hP₂mem : P₂ ∈ Ps := by
+        have hP' := (Finset.mem_filter.mp hP₂S).1
+        rwa [List.mem_toFinset] at hP'
+      have hP₁x : P₁.1 = α := (Finset.mem_filter.mp hP₁S).2
+      have hP₂x : P₂.1 = α := (Finset.mem_filter.mp hP₂S).2
+      have hYneq : P₁.2 ≠ P₂.2 := by
+        intro hY
+        exact hNeq (Prod.ext (hP₁x.trans hP₂x.symm) hY)
+      have hY₁sq : P₁.2 ^ 2 = P₁.1 ^ 3 + E.curveA * P₁.1 + E.curveB :=
+        E.hOnCurve P₁ (hPs_on P₁ hP₁mem)
+      have hY₂sq : P₂.2 ^ 2 = P₂.1 ^ 3 + E.curveA * P₂.1 + E.curveB :=
+        E.hOnCurve P₂ (hPs_on P₂ hP₂mem)
+      have hYsum : P₁.2 ^ 2 = P₂.2 ^ 2 := by
+        rw [hY₁sq, hY₂sq, hP₁x, hP₂x]
+      have hFactor : (P₁.2 - P₂.2) * (P₁.2 + P₂.2) = 0 := by
+        linear_combination hYsum
+      have hYneg : P₂.2 = -P₁.2 := by
+        have hSumZero : P₁.2 + P₂.2 = 0 := by
+          rcases mul_eq_zero.mp hFactor with h | h
+          · exact absurd (sub_eq_zero.mp h) hYneq
+          · exact h
+        linear_combination hSumZero
+      have hY₁ : P₁.2 ≠ 0 := by
+        intro h
+        apply hYneq
+        rw [h, hYneg, h, neg_zero]
+      have hZ₁ : D.eval P₁.1 P₁.2 = 0 := hVan P₁ hP₁mem
+      have hZ₁neg : D.eval P₁.1 (-P₁.2) = 0 := by
+        have hEval :
+            D.eval P₁.1 (-P₁.2) = D.eval P₂.1 P₂.2 := by
+          congr 1
+          · exact hP₁x.trans hP₂x.symm
+          · exact hYneg.symm
+        rw [hEval, hVan P₂ hP₂mem]
+      have hge2 : 2 ≤ rootMultiplicity P₁.1 (normPoly E D) :=
+        rootMultiplicity_normPoly_ge_two_of_both_sheets E D hD hY₁ hZ₁ hZ₁neg
+      rw [hP₁x] at hge2
+      exact hge2
+  have h_rm_sum_card :
+      (∑ α : ZMod E.q, rootMultiplicity α (normPoly E D))
+        = Multiset.card (normPoly E D).roots :=
+    sum_rootMultiplicity_eq_card_roots E (normPoly E D)
+  have h_nat_le_rm_sum :
+      (normPoly E D).natDegree ≤
+        ∑ α : ZMod E.q, rootMultiplicity α (normPoly E D) := by
+    rw [← h_c_sum]
+    exact Finset.sum_le_sum (fun α _ => h_c_le_rm α)
+  have hSplit : normPoly_splits_over_Fq E D := by
+    unfold normPoly_splits_over_Fq
+    have h_nat_le_card :
+        (normPoly E D).natDegree ≤ Multiset.card (normPoly E D).roots := by
+      rw [← h_rm_sum_card]
+      exact h_nat_le_rm_sum
+    exact le_antisymm (Polynomial.card_roots' (normPoly E D)) h_nat_le_card
+  have h_rm_sum : (∑ α : ZMod E.q, rootMultiplicity α (normPoly E D))
+      = (normPoly E D).natDegree := by
+    rw [h_rm_sum_card]
+    exact hSplit
+  have h_c_eq_rm : ∀ α : ZMod E.q,
+      c α = rootMultiplicity α (normPoly E D) := by
+    intro α
+    by_contra hne
+    have hlt : c α < rootMultiplicity α (normPoly E D) :=
+      lt_of_le_of_ne (h_c_le_rm α) hne
+    have hsum_lt : (∑ x : ZMod E.q, c x)
+        < ∑ x : ZMod E.q, rootMultiplicity x (normPoly E D) :=
+      Finset.sum_lt_sum (fun x _ => h_c_le_rm x) ⟨α, Finset.mem_univ _, hlt⟩
+    omega
+  refine ⟨hSplit, ?_⟩
+  intro α hα
+  have hRoot_pos : 0 < rootMultiplicity α (normPoly E D) :=
+    (Polynomial.rootMultiplicity_pos (normPoly_ne_zero E D hD)).mpr
+      ((Polynomial.mem_roots (normPoly_ne_zero E D hD)).mp hα)
+  have hc_pos : 0 < c α := by
+    rw [h_c_eq_rm α]
+    exact hRoot_pos
+  have hS_nonempty :
+      (Ps.toFinset.filter (fun P => P.1 = α)).Nonempty := by
+    unfold c at hc_pos
+    exact Finset.card_pos.mp hc_pos
+  obtain ⟨P, hPS⟩ := hS_nonempty
+  have hPmem : P ∈ Ps := by
+    have hP' := (Finset.mem_filter.mp hPS).1
+    rwa [List.mem_toFinset] at hP'
+  have hPx : P.1 = α := (Finset.mem_filter.mp hPS).2
+  exact ⟨P.2, by
+    rw [← hPx]
+    simpa using hPs_on P hPmem⟩
+
 end Divisor.Landmark
