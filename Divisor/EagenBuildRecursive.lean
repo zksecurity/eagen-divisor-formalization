@@ -5873,6 +5873,19 @@ theorem eagenBuild_level_step_eq_nil_iff (xs : List (EagenAccum E)) :
         · rw [eagenBuild_level_step_cons_cons_tangent E a b rest' h_xx h_yy]
           simp
 
+/-! ### eagenBuild_iterate nil characterization -/
+
+theorem eagenBuild_iterate_eq_nil_iff (n : ℕ) (xs : List (EagenAccum E)) :
+    eagenBuild_iterate E n xs = [] ↔ xs = [] := by
+  induction n generalizing xs with
+  | zero => rw [eagenBuild_iterate_zero]
+  | succ n IH =>
+    by_cases h : xs.length ≤ 1
+    · rw [eagenBuild_iterate_succ_of_length_le_one E n xs h]
+    · rw [eagenBuild_iterate_succ_of_length_gt_one E n xs h]
+      rw [IH]
+      rw [eagenBuild_level_step_eq_nil_iff]
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
