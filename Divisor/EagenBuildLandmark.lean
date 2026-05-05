@@ -2128,4 +2128,32 @@ theorem splitsOnE_of_landmark
     rw [← hPx]
     simpa using hPs_on P hPmem⟩
 
+theorem eagenBuild_singletons_divisor_identity
+    (Ps : List (ZMod E.q × ZMod E.q))
+    (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
+    (hSumZero : sumOnE E Ps = 0)
+    (hNonEmpty : Ps ≠ [])
+    (hNodup : Ps.Nodup)
+    (h_combine : ∀ (xs ys : List (ZMod E.q × ZMod E.q))
+        (a b : EagenAccum E),
+      LandmarkInv E xs a → LandmarkInv E ys b →
+      LandmarkInv E (xs ++ ys) (EagenAccum.combine E a b)) :
+    ∀ R : ECPoint E,
+      divisorOfD E (eagenBuild_singletons E Ps) R
+        = formalDivisorOfList E Ps R := by
+  classical
+  let D := eagenBuild_singletons E Ps
+  have h_landmark :
+      ¬ (D.a = 0 ∧ D.b = 0) ∧
+      (∀ P ∈ Ps, D.eval P.1 P.2 = 0) ∧
+      (normPoly E D).natDegree = Ps.length := by
+    simpa [D] using
+      eagenBuild_singletons_landmark E Ps hPs_on hSumZero hNonEmpty h_combine
+  obtain ⟨hD, hVan, hDeg⟩ := h_landmark
+  have hSplit : splitsOnE E D :=
+    splitsOnE_of_landmark E Ps D hPs_on hNodup hD hVan hDeg
+  simpa [D] using
+    divisorOfD_eq_formalDivisorOfList_of_landmark
+      E Ps D hPs_on hNodup hD hVan hDeg hSplit
+
 end Divisor.Landmark
