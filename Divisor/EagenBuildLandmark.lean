@@ -1414,4 +1414,51 @@ theorem landmarkInvList_preservation_under_level_step
     · exact h_combine xs ys a b h_a h_b
     · exact landmarkInvList_preservation_under_level_step rest_xs rest_acc h_rest_rest h_combine
 
+/-! ## iterate preservation
+
+If `LandmarkInvList` holds for the input and per-pair combine preserves
+LandmarkInv, then iterating `level_step` `n` times preserves the
+property (with the corresponding number of `pairUp` operations on
+the index list). -/
+
+def pairUpN {α : Type*} : ℕ → List (List α) → List (List α)
+  | 0, xss => xss
+  | n + 1, xss =>
+      if xss.length ≤ 1 then xss
+      else pairUpN n (pairUp xss)
+
+private theorem iterate_succ_eq (n : ℕ) (xs : List (EagenAccum E)) :
+    iterate E (n + 1) xs =
+      if xs.length ≤ 1 then xs else iterate E n (level_step E xs) := rfl
+
+private theorem pairUpN_succ_eq (n : ℕ) (xss : List (List (ZMod E.q × ZMod E.q))) :
+    pairUpN (n + 1) xss =
+      if xss.length ≤ 1 then xss else pairUpN n (pairUp xss) := rfl
+
+theorem landmarkInvList_preservation_under_iterate
+    (n : ℕ)
+    (xss : List (List (ZMod E.q × ZMod E.q)))
+    (accs : List (EagenAccum E))
+    (h : LandmarkInvList E xss accs)
+    (h_combine : ∀ (xs ys : List (ZMod E.q × ZMod E.q))
+        (a b : EagenAccum E),
+      LandmarkInv E xs a → LandmarkInv E ys b →
+      LandmarkInv E (xs ++ ys) (EagenAccum.combine E a b)) :
+    LandmarkInvList E (pairUpN n xss) (iterate E n accs) := by
+  classical
+  induction n generalizing xss accs with
+  | zero => exact h
+  | succ n ih =>
+    have h_lengths : xss.length = accs.length := List.Forall₂.length_eq h
+    rw [iterate_succ_eq, pairUpN_succ_eq]
+    by_cases hLen : accs.length ≤ 1
+    · have h_xss_len : xss.length ≤ 1 := h_lengths ▸ hLen
+      rw [if_pos hLen, if_pos h_xss_len]
+      exact h
+    · have h_xss_len : ¬ xss.length ≤ 1 := h_lengths ▸ hLen
+      rw [if_neg hLen, if_neg h_xss_len]
+      have h_step : LandmarkInvList E (pairUp xss) (level_step E accs) :=
+        landmarkInvList_preservation_under_level_step E xss accs h h_combine
+      exact ih (pairUp xss) (level_step E accs) h_step
+
 end Divisor.Landmark
