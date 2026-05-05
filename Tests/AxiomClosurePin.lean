@@ -79,6 +79,15 @@
   at every `R : ECPoint E`; the residue-side Weil identity is then a
   theorem of the chord-resultant infrastructure.
 
+  * `ma_completeness_for_length4Simple` and
+    `ma_completeness_clean_for_length4Simple`:
+      same closure as `ma_completeness` (and `..._clean`) respectively.
+
+  These compose `Divisor.isHonestFor_of_isHonestForLength4Simple` with
+  `ma_completeness`. The length-4-simple bridge supplies the strengthened
+  `isHonestFor` constructively (without the unsound axiom), validating
+  end-to-end that the strengthening admits a concrete witness.
+
   * `CoordRingElt.exists_divisor_multiplicity`,
     `CoordRingElt.exists_divisor_multiplicity_ecpoint`,
     `ordAt_group_sum_zero_under_split`:
