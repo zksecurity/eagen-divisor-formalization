@@ -1833,6 +1833,195 @@ theorem chordCoordRingElt_rootMult_normPoly_at_third_eq_one
     omega
   omega
 
+/-! ### normPoly rootMult is zero when both fiber sheets are nonvanishing -/
+
+theorem rootMult_normPoly_eq_zero_of_fiber_nonvanish
+    (D : CoordRingElt E.q)
+    {x y : ZMod E.q} (hP : (x, y) ∈ E.points)
+    (h_pos : D.eval x y ≠ 0) (h_neg : D.eval x (-y) ≠ 0) :
+    Polynomial.rootMultiplicity x (normPoly E D) = 0 := by
+  classical
+  apply Polynomial.rootMultiplicity_eq_zero
+  show (normPoly E D).eval x ≠ 0
+  rw [normPoly_eval_eq_D_mul_D_neg E D hP]
+  exact mul_ne_zero h_pos h_neg
+
+/-! ### Combine rootMult(normPoly)(Q₀x) = 1
+
+Assembling the previous helpers:
+* chord normPoly rootMult at Q₀x = 1.
+* a.poly, b.poly normPoly rootMult at Q₀x = 0 (fiber nonvanish).
+* (X-a.x)², (X-b.x)² rootMult at Q₀x = 0 (Q₀x ≠ a.x, b.x).
+* normPoly mul = product, so rootMults add. -/
+
+theorem combine_higher_distinct_rootMult_normPoly_at_third_eq_one
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (h_Q₀x_ne_a : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                    - a.point.1 - b.point.1) ≠ a.point.1)
+    (h_Q₀x_ne_b : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                    - a.point.1 - b.point.1) ≠ b.point.1)
+    (h_a_at_Q₀ :
+        let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+        let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+        let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+        a.poly.eval Q₀x Q₀y ≠ 0)
+    (h_a_at_negQ₀ :
+        let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+        let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+        let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+        a.poly.eval Q₀x (-Q₀y) ≠ 0)
+    (h_b_at_Q₀ :
+        let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+        let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+        let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+        b.poly.eval Q₀x Q₀y ≠ 0)
+    (h_b_at_negQ₀ :
+        let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+        let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+        let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+        b.poly.eval Q₀x (-Q₀y) ≠ 0) :
+    Polynomial.rootMultiplicity
+      (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+       - a.point.1 - b.point.1)
+      (normPoly E (EagenAccum.combine_higher_distinct E a b h_xx).poly) = 1 := by
+  classical
+  set lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2 with hlam_def
+  set Q₀x := lam ^ 2 - a.point.1 - b.point.1 with hQ₀x_def
+  set Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1) with hQ₀y_def
+  have h_a_pt : a.point ∈ E.points := h_acc_a.1
+  have h_b_pt : b.point ∈ E.points := h_acc_b.1
+  -- Q₀ is on E.
+  have hQ₀_on_E : (Q₀x, Q₀y) ∈ E.points := by
+    apply E.hComplete
+    exact chord_third_point_on_E E a.point b.point h_a_pt h_b_pt h_xx
+  -- Set up needed values.
+  set chord := chordCoordRingElt E a.point b.point with hchord_def
+  set prod := mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly with hprod_def
+  set combine := EagenAccum.combine_higher_distinct E a b h_xx with hcombine_def
+  -- prod, prod.divLin a.x, combine all nonzero.
+  have h_chord_NZ : ¬ (chord.a = 0 ∧ chord.b = 0) :=
+    chordCoordRingElt_ne_zero E a.point b.point
+  have h_chord_a_NZ : ¬ ((mulCoordRingElt E chord a.poly).a = 0
+      ∧ (mulCoordRingElt E chord a.poly).b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E (mulCoordRingElt E chord a.poly) = 0 := by
+      rw [normPoly_eq, ha, hb]; ring
+    rw [normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E chord h_chord_NZ)
+      (normPoly_ne_zero E a.poly h_a_poly_NZ)) hN
+  have h_prod_NZ : ¬ (prod.a = 0 ∧ prod.b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E prod = 0 := by rw [normPoly_eq, ha, hb]; ring
+    rw [hprod_def, normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E _ h_chord_a_NZ)
+      (normPoly_ne_zero E b.poly h_b_poly_NZ)) hN
+  -- Divisibility (X-C a.x) ∣ prod.{a, b}; (X-C b.x) ∣ (prod.divLin a.x).{a, b}.
+  have h_prod_at_a := combine_higher_distinct_divisible_at_a (E := E)
+    h_acc_a h_xx hY_a h_a_poly_NZ h_b_poly_NZ
+  have h_after_a_at_b := combine_higher_distinct_divisible_at_b (E := E)
+    h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
+  -- divLin reduction: normPoly prod = (X-a.x)² · normPoly (prod.divLin a.x).
+  have h_normProd_factor : normPoly E prod
+      = (Polynomial.X - Polynomial.C a.point.1) ^ 2
+        * normPoly E (prod.divLin a.point.1) :=
+    normPoly_divLin_factor E prod h_prod_at_a.1 h_prod_at_a.2
+  have h_after_a_NZ : ¬ ((prod.divLin a.point.1).a = 0
+      ∧ (prod.divLin a.point.1).b = 0) :=
+    divLin_not_both_zero E prod h_prod_NZ h_prod_at_a.1 h_prod_at_a.2
+  have h_normAfterA_factor : normPoly E (prod.divLin a.point.1)
+      = (Polynomial.X - Polynomial.C b.point.1) ^ 2
+        * normPoly E ((prod.divLin a.point.1).divLin b.point.1) :=
+    normPoly_divLin_factor E (prod.divLin a.point.1)
+      h_after_a_at_b.1 h_after_a_at_b.2
+  -- combine.poly = (prod.divLin a.x).divLin b.x.
+  have h_combine_poly_eq : combine.poly = (prod.divLin a.point.1).divLin b.point.1 := rfl
+  -- normPoly prod = (X-a.x)²(X-b.x)² · normPoly combine.poly.
+  have h_normProd_full : normPoly E prod
+      = (Polynomial.X - Polynomial.C a.point.1) ^ 2
+        * ((Polynomial.X - Polynomial.C b.point.1) ^ 2
+           * normPoly E combine.poly) := by
+    rw [h_normProd_factor, h_normAfterA_factor, h_combine_poly_eq]
+  -- Also normPoly prod = normPoly chord · normPoly a.poly · normPoly b.poly.
+  have h_normProd_split : normPoly E prod
+      = normPoly E chord * normPoly E a.poly * normPoly E b.poly := by
+    rw [hprod_def, normPoly_mul_eq, normPoly_mul_eq]
+  -- Take rootMult at Q₀x of both expressions.
+  have h_xa_NZ : (Polynomial.X - Polynomial.C a.point.1) ≠ 0 :=
+    Polynomial.X_sub_C_ne_zero a.point.1
+  have h_xb_NZ : (Polynomial.X - Polynomial.C b.point.1) ≠ 0 :=
+    Polynomial.X_sub_C_ne_zero b.point.1
+  have h_xa_pow_NZ : ((Polynomial.X - Polynomial.C a.point.1) ^ 2
+                      : Polynomial (ZMod E.q)) ≠ 0 := pow_ne_zero _ h_xa_NZ
+  have h_xb_pow_NZ : ((Polynomial.X - Polynomial.C b.point.1) ^ 2
+                      : Polynomial (ZMod E.q)) ≠ 0 := pow_ne_zero _ h_xb_NZ
+  have h_combine_NZ : ¬ (combine.poly.a = 0 ∧ combine.poly.b = 0) := by
+    rw [h_combine_poly_eq]
+    exact divLin_not_both_zero E (prod.divLin a.point.1) h_after_a_NZ
+      h_after_a_at_b.1 h_after_a_at_b.2
+  have h_normCombine_NZ : normPoly E combine.poly ≠ 0 :=
+    normPoly_ne_zero E _ h_combine_NZ
+  have h_xb_pow_normC_NZ : ((Polynomial.X - Polynomial.C b.point.1) ^ 2
+                            * normPoly E combine.poly : Polynomial (ZMod E.q)) ≠ 0 :=
+    mul_ne_zero h_xb_pow_NZ h_normCombine_NZ
+  -- rootMult at Q₀x of factor pieces.
+  have h_xa_pow_rootMult :
+      Polynomial.rootMultiplicity Q₀x
+        ((Polynomial.X - Polynomial.C a.point.1) ^ 2 : Polynomial (ZMod E.q)) = 0 := by
+    apply Polynomial.rootMultiplicity_eq_zero
+    show (((Polynomial.X - Polynomial.C a.point.1) ^ 2
+           : Polynomial (ZMod E.q))).eval Q₀x ≠ 0
+    simp only [Polynomial.eval_pow, Polynomial.eval_sub, Polynomial.eval_X,
+               Polynomial.eval_C]
+    exact pow_ne_zero _ (sub_ne_zero.mpr h_Q₀x_ne_a)
+  have h_xb_pow_rootMult :
+      Polynomial.rootMultiplicity Q₀x
+        ((Polynomial.X - Polynomial.C b.point.1) ^ 2 : Polynomial (ZMod E.q)) = 0 := by
+    apply Polynomial.rootMultiplicity_eq_zero
+    show (((Polynomial.X - Polynomial.C b.point.1) ^ 2
+           : Polynomial (ZMod E.q))).eval Q₀x ≠ 0
+    simp only [Polynomial.eval_pow, Polynomial.eval_sub, Polynomial.eval_X,
+               Polynomial.eval_C]
+    exact pow_ne_zero _ (sub_ne_zero.mpr h_Q₀x_ne_b)
+  -- rootMult at Q₀x of normPoly chord = 1 (proved earlier).
+  have h_chord_rootMult :=
+    chordCoordRingElt_rootMult_normPoly_at_third_eq_one E a b h_a_pt h_b_pt
+      h_xx h_Q₀x_ne_a h_Q₀x_ne_b
+  -- rootMult at Q₀x of normPoly a.poly = 0 (fiber nonvanish).
+  have h_a_rootMult :=
+    rootMult_normPoly_eq_zero_of_fiber_nonvanish E a.poly hQ₀_on_E h_a_at_Q₀ h_a_at_negQ₀
+  -- rootMult at Q₀x of normPoly b.poly = 0.
+  have h_b_rootMult :=
+    rootMult_normPoly_eq_zero_of_fiber_nonvanish E b.poly hQ₀_on_E h_b_at_Q₀ h_b_at_negQ₀
+  -- rootMult of normPoly prod at Q₀x via the split:
+  have h_normChord_NZ : normPoly E chord ≠ 0 := normPoly_ne_zero E chord h_chord_NZ
+  have h_normA_NZ : normPoly E a.poly ≠ 0 := normPoly_ne_zero E a.poly h_a_poly_NZ
+  have h_normB_NZ : normPoly E b.poly ≠ 0 := normPoly_ne_zero E b.poly h_b_poly_NZ
+  have h_normChord_a_NZ : normPoly E chord * normPoly E a.poly ≠ 0 :=
+    mul_ne_zero h_normChord_NZ h_normA_NZ
+  have h_normChord_a_b_NZ : normPoly E chord * normPoly E a.poly * normPoly E b.poly ≠ 0 :=
+    mul_ne_zero h_normChord_a_NZ h_normB_NZ
+  have h_rootMult_prod_split :
+      Polynomial.rootMultiplicity Q₀x (normPoly E prod) = 1 := by
+    rw [h_normProd_split]
+    rw [Polynomial.rootMultiplicity_mul h_normChord_a_b_NZ]
+    rw [Polynomial.rootMultiplicity_mul h_normChord_a_NZ]
+    rw [h_chord_rootMult, h_a_rootMult, h_b_rootMult]
+  -- rootMult of normPoly prod at Q₀x via the divLin split: equals rootMult of combine.
+  have h_rootMult_prod_via_combine :
+      Polynomial.rootMultiplicity Q₀x (normPoly E prod)
+        = Polynomial.rootMultiplicity Q₀x (normPoly E combine.poly) := by
+    rw [h_normProd_full]
+    rw [Polynomial.rootMultiplicity_mul (mul_ne_zero h_xa_pow_NZ h_xb_pow_normC_NZ)]
+    rw [Polynomial.rootMultiplicity_mul h_xb_pow_normC_NZ]
+    rw [h_xa_pow_rootMult, h_xb_pow_rootMult]
+    ring
+  rw [← h_rootMult_prod_via_combine, h_rootMult_prod_split]
+
 /-! ### Lone-sheet ordAt at non-2-torsion: ordAt = rootMult(normPoly)
 
 Reusable closed-form: when D vanishes at +sheet only (lone-sheet at +)
