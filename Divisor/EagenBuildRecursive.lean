@@ -215,6 +215,24 @@ noncomputable def formalDivisorOfList
     | WeierstrassCurve.Affine.Point.some (x := x) (y := y) _ =>
         (Ps.filter (fun P => P = (x, y))).length
 
+/-- `formalDivisorOfList` is additive on list concatenation. -/
+theorem formalDivisorOfList_append
+    (xs ys : List (ZMod E.q × ZMod E.q)) (R : ECPoint E) :
+    formalDivisorOfList E (xs ++ ys) R
+      = formalDivisorOfList E xs R + formalDivisorOfList E ys R := by
+  classical
+  match R with
+  | WeierstrassCurve.Affine.Point.zero =>
+    show -(((xs ++ ys).length : ℤ)) = -((xs.length : ℤ)) + -((ys.length : ℤ))
+    rw [List.length_append]
+    push_cast; ring
+  | WeierstrassCurve.Affine.Point.some (x := x) (y := y) _ =>
+    show (((xs ++ ys).filter (fun P => P = (x, y))).length : ℤ)
+        = ((xs.filter (fun P => P = (x, y))).length : ℤ)
+          + ((ys.filter (fun P => P = (x, y))).length : ℤ)
+    rw [List.filter_append, List.length_append]
+    push_cast; ring
+
 /-- Accumulator invariant: at the non-degenerate stage, `a.point ∈ E.points`
     and represents the EC group sum of the absorbed list `xs` (lifted via
     `affineOfMem`). The polynomial's divisor decomposes into the formal
