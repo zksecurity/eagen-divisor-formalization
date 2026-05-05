@@ -2048,6 +2048,123 @@ theorem ordAt_lone_sheet_eq_rootMult_normPoly
       = Polynomial.rootMultiplicity P.1 (normPoly E D)
   rw [if_neg hD, if_neg (not_not.mpr hDP), if_pos hDnegP]
 
+/-! ### Combine step divisor identity at third intersection
+
+`divisorOfD combine.poly (-combine.lift) = 1` under generic
+hypotheses. Combines:
+* eval_third_zero: combine vanish at +sheet (Q₀x, Q₀y).
+* eval_neg_third_nonzero: combine nonvanish at -sheet (Q₀x, -Q₀y).
+* ordAt_lone_sheet_eq_rootMult_normPoly: ordAt = rootMult.
+* rootMult_normPoly_at_third_eq_one: rootMult = 1. -/
+
+theorem accInv_combine_higher_distinct_divisor_at_third_intersection
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (h_Q₀x_ne_a : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                    - a.point.1 - b.point.1) ≠ a.point.1)
+    (h_Q₀x_ne_b : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                    - a.point.1 - b.point.1) ≠ b.point.1)
+    (h_Q₀y_ne_zero : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+                      * (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                         - a.point.1 - b.point.1)
+                      + (a.point.2 - slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+                         * a.point.1)) ≠ 0)
+    (h_a_at_Q₀ :
+        let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+        let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+        let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+        a.poly.eval Q₀x Q₀y ≠ 0)
+    (h_a_at_negQ₀ :
+        let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+        let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+        let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+        a.poly.eval Q₀x (-Q₀y) ≠ 0)
+    (h_b_at_Q₀ :
+        let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+        let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+        let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+        b.poly.eval Q₀x Q₀y ≠ 0)
+    (h_b_at_negQ₀ :
+        let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+        let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+        let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+        b.poly.eval Q₀x (-Q₀y) ≠ 0) :
+    let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+    let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+    let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+    divisorOfD E (EagenAccum.combine_higher_distinct E a b h_xx).poly
+      (ECPoint.affine E Q₀x Q₀y) = 1 := by
+  classical
+  intro lam Q₀x Q₀y
+  have h_a_pt : a.point ∈ E.points := h_acc_a.1
+  have h_b_pt : b.point ∈ E.points := h_acc_b.1
+  -- (Q₀x, Q₀y) ∈ E.points.
+  have hQ₀_on_E : (Q₀x, Q₀y) ∈ E.points := by
+    apply E.hComplete
+    exact chord_third_point_on_E E a.point b.point h_a_pt h_b_pt h_xx
+  -- combine.poly is non-zero (as CoordRingElt).
+  set chord := chordCoordRingElt E a.point b.point with hchord_def
+  set prod := mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly with hprod_def
+  set combine := EagenAccum.combine_higher_distinct E a b h_xx with hcombine_def
+  have h_chord_NZ : ¬ (chord.a = 0 ∧ chord.b = 0) :=
+    chordCoordRingElt_ne_zero E a.point b.point
+  have h_chord_a_NZ : ¬ ((mulCoordRingElt E chord a.poly).a = 0
+      ∧ (mulCoordRingElt E chord a.poly).b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E (mulCoordRingElt E chord a.poly) = 0 := by
+      rw [normPoly_eq, ha, hb]; ring
+    rw [normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E chord h_chord_NZ)
+      (normPoly_ne_zero E a.poly h_a_poly_NZ)) hN
+  have h_prod_NZ : ¬ (prod.a = 0 ∧ prod.b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E prod = 0 := by rw [normPoly_eq, ha, hb]; ring
+    rw [hprod_def, normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E _ h_chord_a_NZ)
+      (normPoly_ne_zero E b.poly h_b_poly_NZ)) hN
+  have h_prod_at_a := combine_higher_distinct_divisible_at_a (E := E)
+    h_acc_a h_xx hY_a h_a_poly_NZ h_b_poly_NZ
+  have h_after_a_at_b := combine_higher_distinct_divisible_at_b (E := E)
+    h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
+  have h_after_a_NZ : ¬ ((prod.divLin a.point.1).a = 0
+      ∧ (prod.divLin a.point.1).b = 0) :=
+    divLin_not_both_zero E prod h_prod_NZ h_prod_at_a.1 h_prod_at_a.2
+  have h_combine_NZ : ¬ (combine.poly.a = 0 ∧ combine.poly.b = 0) :=
+    divLin_not_both_zero E (prod.divLin a.point.1) h_after_a_NZ
+      h_after_a_at_b.1 h_after_a_at_b.2
+  -- combine.eval at (Q₀x, Q₀y) = 0.
+  have h_combine_at_Q₀ :
+      combine.poly.eval Q₀x Q₀y = 0 :=
+    combine_higher_distinct_eval_third_zero (E := E)
+      h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
+      h_Q₀x_ne_a h_Q₀x_ne_b
+  -- combine.eval at (Q₀x, -Q₀y) ≠ 0.
+  have h_combine_at_negQ₀ :
+      combine.poly.eval Q₀x (-Q₀y) ≠ 0 :=
+    combine_higher_distinct_eval_neg_third_nonzero (E := E)
+      h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
+      h_Q₀y_ne_zero h_Q₀x_ne_a h_Q₀x_ne_b h_a_at_negQ₀ h_b_at_negQ₀
+  -- ordAt(combine.poly)(Q₀x, Q₀y) = rootMult(normPoly combine)(Q₀x).
+  have h_ordAt :=
+    ordAt_lone_sheet_eq_rootMult_normPoly (E := E) h_combine_NZ hQ₀_on_E
+      h_Q₀y_ne_zero h_combine_at_Q₀ h_combine_at_negQ₀
+  -- rootMult(normPoly combine)(Q₀x) = 1.
+  have h_rootMult :=
+    combine_higher_distinct_rootMult_normPoly_at_third_eq_one (E := E)
+      h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
+      h_Q₀x_ne_a h_Q₀x_ne_b h_a_at_Q₀ h_a_at_negQ₀ h_b_at_Q₀ h_b_at_negQ₀
+  -- Conclude.
+  have hns : E.toW.toAffine.Nonsingular Q₀x Q₀y :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hQ₀_on_E))
+  rw [ECPoint.affine_of_nonsingular E hns]
+  show (ordAt E combine.poly (Q₀x, Q₀y) : ℤ) = 1
+  rw [h_ordAt, h_rootMult]
+  rfl
+
 /-! ### Combine step: at-affine off-support divisor identity
 
 When R = `ECPoint.affine x y` has x ≠ a.point.1, x ≠ b.point.1, and
