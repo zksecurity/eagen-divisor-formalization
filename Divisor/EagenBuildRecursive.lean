@@ -1495,6 +1495,49 @@ theorem accInv_combine_higher_distinct_divisor_at_infinity
       = -((xs.length + ys.length + 1 : ℕ) : ℤ)
   rw [h_combine_natDeg]
 
+/-! ### Combine step: at-infinity divisor identity in AccInv form
+
+Reformulates `accInv_combine_higher_distinct_divisor_at_infinity` to
+match the `AccInv` divisor identity shape: the value equals
+`formalDivisorOfList (xs ++ ys) 0 + residueDivisor (combine.lift) 0`,
+where `combine.lift = a.lift + b.lift` (via running_sum). -/
+
+theorem accInv_combine_higher_distinct_divisor_at_infinity_AccInv_form
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0)) :
+    let combine := EagenAccum.combine_higher_distinct E a b h_xx
+    ∃ h_combine_pt : combine.point ∈ E.points,
+      divisorOfD E combine.poly (0 : ECPoint E)
+        = formalDivisorOfList E (xs ++ ys) (0 : ECPoint E)
+          + residueDivisor E (ECPoint.affineOfMem E h_combine_pt)
+              (0 : ECPoint E) := by
+  classical
+  intro combine
+  have h_a_pt : a.point ∈ E.points := h_acc_a.1
+  have h_b_pt : b.point ∈ E.points := h_acc_b.1
+  -- combine.point ∈ E.points (from running_sum).
+  obtain ⟨h_combine_pt, _h_lift_eq⟩ := combine_higher_distinct_running_sum
+    E a b h_a_pt h_b_pt h_xx
+  refine ⟨h_combine_pt, ?_⟩
+  -- combine.lift = a.lift + b.lift ≠ 0 (since a.point.1 ≠ b.point.1
+  -- forces combine.lift ≠ ∞; affineOfMem is a `.some` constructor).
+  have h_combine_ne_zero :
+      (ECPoint.affineOfMem E h_combine_pt : ECPoint E) ≠ 0 := by
+    intro h_eq
+    unfold ECPoint.affineOfMem ECPoint.affineOfEqn at h_eq
+    cases h_eq
+  -- LHS via the at-infinity theorem.
+  rw [accInv_combine_higher_distinct_divisor_at_infinity (E := E)
+        h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ]
+  -- RHS: formalDivisorOfList (xs++ys) 0 = -((xs++ys).length) = -(xs.length+ys.length).
+  rw [formalDivisorOfList_at_infinity, List.length_append]
+  rw [residueDivisor_at_infinity_of_S_ne_zero E _ h_combine_ne_zero]
+  push_cast; ring
+
 /-! ## General-k correctness: status
 
 Progress so far:
