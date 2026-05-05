@@ -6300,6 +6300,19 @@ theorem accInvList_pair_iff
     refine ⟨h1, h2, ?_⟩
     exact (accInvList_nil_iff E _).mpr rfl
 
+/-! ### AccsListChordStep with mismatched shape is False -/
+
+theorem not_accsListChordStep_nil_cons (a : EagenAccum E)
+    (rest : List (EagenAccum E)) :
+    ¬ AccsListChordStep E [] (a :: rest) := by
+  unfold AccsListChordStep; simp
+
+theorem not_accsListChordStep_cons_nil
+    (xs : List (ZMod E.q × ZMod E.q))
+    (rest : List (List (ZMod E.q × ZMod E.q))) :
+    ¬ AccsListChordStep E (xs :: rest) [] := by
+  unfold AccsListChordStep; simp
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
