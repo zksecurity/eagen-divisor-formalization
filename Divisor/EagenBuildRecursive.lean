@@ -6189,6 +6189,56 @@ theorem accsListChordStep_cons_cons_iff
         AccInv E (xs ++ ys) (EagenAccum.combine_higher_distinct E a b h_xx))
         ∧ AccsListChordStep E rest_xss rest_accs := Iff.rfl
 
+/-! ### AccsListChordStep length match -/
+
+theorem accsListChordStep_length_eq
+    (n : ℕ)
+    (xss : List (List (ZMod E.q × ZMod E.q)))
+    (accs : List (EagenAccum E))
+    (h_len : accs.length ≤ n)
+    (h : AccsListChordStep E xss accs) :
+    xss.length = accs.length := by
+  classical
+  induction n generalizing xss accs with
+  | zero =>
+    have h_accs_nil : accs = [] :=
+      List.length_eq_zero_iff.mp (by omega)
+    rw [h_accs_nil] at h
+    cases xss with
+    | nil => simp [h_accs_nil]
+    | cons _ _ => exact absurd h (by unfold AccsListChordStep; simp)
+  | succ n IH =>
+    cases xss with
+    | nil =>
+      cases accs with
+      | nil => rfl
+      | cons _ _ => exact absurd h (by unfold AccsListChordStep; simp)
+    | cons xs rest_xss =>
+      cases rest_xss with
+      | nil =>
+        cases accs with
+        | nil => exact absurd h (by unfold AccsListChordStep; simp)
+        | cons a rest_accs =>
+          cases rest_accs with
+          | nil => rfl
+          | cons _ _ => exact absurd h (by unfold AccsListChordStep; simp)
+      | cons ys rest_xss' =>
+        cases accs with
+        | nil => exact absurd h (by unfold AccsListChordStep; simp)
+        | cons a rest_accs =>
+          cases rest_accs with
+          | nil => exact absurd h (by unfold AccsListChordStep; simp)
+          | cons b rest_accs' =>
+            have h_rest := ((accsListChordStep_cons_cons_iff E xs ys rest_xss'
+              a b rest_accs').mp h).2
+            have h_rest_len : rest_accs'.length ≤ n := by
+              have : (a :: b :: rest_accs').length = rest_accs'.length + 2 := by
+                simp [List.length]
+              omega
+            have h_IH := IH rest_xss' rest_accs' h_rest_len h_rest
+            simp only [List.length_cons]
+            omega
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
