@@ -977,6 +977,59 @@ Conditional hypotheses:
   - No `P ∈ xs ++ ys` has `P.1 ∈ {xa, xb}`.
   - Third intersection x-coord `Qx ∉ {xa, xb}`. -/
 
+
+/-! ## Helper: thirdPoint = none for sum-zero pair
+
+`P + Q = 0` on `E` translates to `P.1 = Q.1` AND (`P.2 = -Q.2` for
+non-2-torsion, or `P = Q` with `P.2 = 0` for 2-torsion). In both
+cases, `thirdPoint E P Q = none` (vertical line). -/
+
+theorem thirdPoint_eq_none_of_sum_zero_data
+    (P Q : ZMod E.q × ZMod E.q)
+    (hxx : P.1 = Q.1)
+    (hyy : P.2 = -Q.2 ∨ (P = Q ∧ P.2 = 0)) :
+    thirdPoint E P Q = none := by
+  unfold thirdPoint
+  rw [if_pos hxx]
+  rcases hyy with h | ⟨hPQ, hP_zero⟩
+  · by_cases hY : P.2 = Q.2
+    · rw [if_pos hY]
+      have hP_zero : P.2 = 0 := by
+        have h2y : 2 * P.2 = 0 := by linear_combination hY + h
+        have h2_ne : (2 : ZMod E.q) ≠ 0 := two_ne_zero_in_zmod E
+        exact (mul_eq_zero.mp h2y).resolve_left h2_ne
+      rw [if_pos hP_zero]
+    · rw [if_neg hY]
+  · subst hPQ
+    rw [if_pos rfl, if_pos hP_zero]
+
+/-- For sum-zero pair, the chord/tangent line reduces to a vertical line. -/
+theorem chordCoordRingElt_eq_vertical_of_sum_zero
+    (P Q : ZMod E.q × ZMod E.q)
+    (hxx : P.1 = Q.1)
+    (hyy : P.2 = -Q.2 ∨ (P = Q ∧ P.2 = 0)) :
+    chordCoordRingElt E P Q = { a := X - C P.1, b := 0 } := by
+  unfold chordCoordRingElt
+  rw [dif_pos hxx]
+  rcases hyy with h | ⟨hPQ, hP_zero⟩
+  · by_cases hY : P.2 = Q.2
+    · rw [dif_pos hY]
+      have hP_zero : P.2 = 0 := by
+        have h2y : 2 * P.2 = 0 := by linear_combination hY + h
+        have h2_ne : (2 : ZMod E.q) ≠ 0 := two_ne_zero_in_zmod E
+        exact (mul_eq_zero.mp h2y).resolve_left h2_ne
+      rw [if_pos hP_zero]
+    · rw [dif_neg hY]
+  · subst hPQ
+    rw [dif_pos rfl, if_pos hP_zero]
+
+/-! ## TODO: levelInitPair_vertical, levelInitPair_tangent
+
+Vertical and tangent base cases for levelInitPair require careful
+group-law reasoning about ECPoint negation/2-torsion. The `simp
+[WeierstrassCurve.Affine.Point.neg_some]` reductions need precise
+form matching that's tangled. Deferred. -/
+
 theorem landmarkInv_combine_distinct_no_collision
     {xs ys : List (ZMod E.q × ZMod E.q)}
     {a b : EagenAccum E}
@@ -1248,52 +1301,6 @@ theorem landmarkInv_combine_distinct_no_collision
     omega
 
 /-! ## Helper: nonzero from positive natDegree -/
-
-/-! ## Helper: thirdPoint = none for sum-zero pair
-
-`P + Q = 0` on `E` translates to `P.1 = Q.1` AND (`P.2 = -Q.2` for
-non-2-torsion, or `P = Q` with `P.2 = 0` for 2-torsion). In both
-cases, `thirdPoint E P Q = none` (vertical line). -/
-
-theorem thirdPoint_eq_none_of_sum_zero_data
-    (P Q : ZMod E.q × ZMod E.q)
-    (hxx : P.1 = Q.1)
-    (hyy : P.2 = -Q.2 ∨ (P = Q ∧ P.2 = 0)) :
-    thirdPoint E P Q = none := by
-  unfold thirdPoint
-  rw [if_pos hxx]
-  rcases hyy with h | ⟨hPQ, hP_zero⟩
-  · by_cases hY : P.2 = Q.2
-    · rw [if_pos hY]
-      have hP_zero : P.2 = 0 := by
-        have h2y : 2 * P.2 = 0 := by linear_combination hY + h
-        have h2_ne : (2 : ZMod E.q) ≠ 0 := two_ne_zero_in_zmod E
-        exact (mul_eq_zero.mp h2y).resolve_left h2_ne
-      rw [if_pos hP_zero]
-    · rw [if_neg hY]
-  · subst hPQ
-    rw [if_pos rfl, if_pos hP_zero]
-
-/-- For sum-zero pair, the chord/tangent line reduces to a vertical line. -/
-theorem chordCoordRingElt_eq_vertical_of_sum_zero
-    (P Q : ZMod E.q × ZMod E.q)
-    (hxx : P.1 = Q.1)
-    (hyy : P.2 = -Q.2 ∨ (P = Q ∧ P.2 = 0)) :
-    chordCoordRingElt E P Q = { a := X - C P.1, b := 0 } := by
-  unfold chordCoordRingElt
-  rw [dif_pos hxx]
-  rcases hyy with h | ⟨hPQ, hP_zero⟩
-  · by_cases hY : P.2 = Q.2
-    · rw [dif_pos hY]
-      have hP_zero : P.2 = 0 := by
-        have h2y : 2 * P.2 = 0 := by linear_combination hY + h
-        have h2_ne : (2 : ZMod E.q) ≠ 0 := two_ne_zero_in_zmod E
-        exact (mul_eq_zero.mp h2y).resolve_left h2_ne
-      rw [if_pos hP_zero]
-    · rw [dif_neg hY]
-  · subst hPQ
-    rw [dif_pos rfl, if_pos hP_zero]
-
 /-- `eagenBuild` of a sum-zero pair is the vertical line at `P.1`. -/
 theorem eagenBuild_pair_vertical
     (P Q : ZMod E.q × ZMod E.q)
