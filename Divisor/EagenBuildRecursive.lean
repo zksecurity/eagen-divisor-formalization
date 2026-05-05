@@ -3954,6 +3954,52 @@ theorem accInv_combine_higher_distinct_step_at_combine_lift
     hStrong.ha_at_neg_Q₀ hStrong.hb_at_neg_Q₀
     hStrong.hnegQ₀_not_in_xs hStrong.hnegQ₀_not_in_ys
 
+/-! ### General-off-chord wrapper using CombineStrongGeneric
+
+Like `accInv_combine_higher_distinct_divisor_at_general_off_chord_AccInv_form`
+but using the strong-genericity bundle. The R-specific hypotheses
+(chord, b non-vanishing on R fiber; ECPoint inequalities) are not in
+the bundle — those are R-specific and must be supplied by the caller
+(typically derived from the dispatch case-split conditions). -/
+
+theorem accInv_combine_higher_distinct_step_at_general_off_chord
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (hStrong : CombineStrongGeneric (E := E) h_acc_a h_acc_b h_xx)
+    {x y : ZMod E.q} (hP : (x, y) ∈ E.points)
+    (h_chord_pos : (chordCoordRingElt E a.point b.point).eval x y ≠ 0)
+    (h_chord_neg : (chordCoordRingElt E a.point b.point).eval x (-y) ≠ 0)
+    (h_b_at_pos : b.poly.eval x y ≠ 0)
+    (h_b_at_neg : b.poly.eval x (-y) ≠ 0)
+    (h_x_ne_a : x ≠ a.point.1)
+    (h_x_ne_b : x ≠ b.point.1)
+    (h_R_ne_neg_a_lift :
+        (ECPoint.affine E x y : ECPoint E)
+          ≠ -(ECPoint.affineOfMem E h_acc_a.1 : ECPoint E))
+    (h_R_ne_neg_b_lift :
+        (ECPoint.affine E x y : ECPoint E)
+          ≠ -(ECPoint.affineOfMem E h_acc_b.1 : ECPoint E))
+    (h_R_ne_neg_combine_lift :
+        (ECPoint.affine E x y : ECPoint E)
+          ≠ -(ECPoint.affineOfMem E
+              (combine_higher_distinct_running_sum E a b
+                  h_acc_a.1 h_acc_b.1 h_xx).choose : ECPoint E)) :
+    let combine := EagenAccum.combine_higher_distinct E a b h_xx
+    ∃ h_combine_pt : combine.point ∈ E.points,
+      divisorOfD E combine.poly (ECPoint.affine E x y)
+        = formalDivisorOfList E (xs ++ ys) (ECPoint.affine E x y)
+          + residueDivisor E (ECPoint.affineOfMem E h_combine_pt)
+              (ECPoint.affine E x y) :=
+  accInv_combine_higher_distinct_divisor_at_general_off_chord_AccInv_form (E := E)
+    h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
+    hStrong.hQ₀x_ne_a hStrong.hQ₀x_ne_b
+    hP h_chord_pos h_chord_neg h_b_at_pos h_b_at_neg h_x_ne_a h_x_ne_b
+    h_R_ne_neg_a_lift h_R_ne_neg_b_lift h_R_ne_neg_combine_lift
+
 /-! ## General-k correctness: status
 
 Progress so far:
