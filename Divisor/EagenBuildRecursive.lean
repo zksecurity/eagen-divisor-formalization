@@ -2659,6 +2659,80 @@ theorem accInv_combine_higher_distinct_divisor_at_combine_lift_AccInv_form
     rw [ECPoint.affine_of_nonsingular E hns_neg] at h_eq
     cases h_eq
 
+/-! ### Chord lone-sheet at +a, divisor = 1
+
+Chord through `a.point, b.point` (distinct chord case) vanishes at
++sheet `(a.x, a.y)` (chord-eval-left) and nonvanishes at -sheet
+`(a.x, -a.y)` when `a.y ≠ 0` (algebraic computation similar to
+chord-eval-at-neg-third). Hence divisorOfD chord (a.lift) = 1. -/
+
+theorem chordCoordRingElt_eval_at_neg_a
+    (a b : EagenAccum E)
+    (h_xx : a.point.1 ≠ b.point.1) :
+    (chordCoordRingElt E a.point b.point).eval a.point.1 (-a.point.2)
+      = -2 * a.point.2 := by
+  classical
+  rw [chordCoordRingElt_eval_eq_lineThrough_chord E h_xx (a.point.1, -a.point.2)]
+  unfold Line.eval lineThrough
+  show -a.point.2 - slopeOf a.point.1 a.point.2 b.point.1 b.point.2 * a.point.1
+        - (a.point.2 - slopeOf a.point.1 a.point.2 b.point.1 b.point.2 * a.point.1)
+      = -2 * a.point.2
+  ring
+
+theorem chordCoordRingElt_divisor_at_a_lift_eq_one
+    (a b : EagenAccum E)
+    (ha : a.point ∈ E.points) (hb : b.point ∈ E.points)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0)
+    (h_Q₀x_ne_a : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                    - a.point.1 - b.point.1) ≠ a.point.1)
+    (h_Q₀x_ne_b : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                    - a.point.1 - b.point.1) ≠ b.point.1) :
+    divisorOfD E (chordCoordRingElt E a.point b.point)
+      (ECPoint.affine E a.point.1 a.point.2) = 1 := by
+  classical
+  -- chord vanish at +sheet (a.x, a.y), nonvanish at -sheet (a.x, -a.y).
+  have h_chord_at_a : (chordCoordRingElt E a.point b.point).eval a.point.1 a.point.2 = 0 :=
+    chordCoordRingElt_eval_left E a.point b.point
+  have h_chord_at_neg_a : (chordCoordRingElt E a.point b.point).eval
+        a.point.1 (-a.point.2) ≠ 0 := by
+    rw [chordCoordRingElt_eval_at_neg_a E a b h_xx]
+    show (-2 : ZMod E.q) * a.point.2 ≠ 0
+    have h2 : (2 : ZMod E.q) ≠ 0 := ZMod_two_ne_zero_of_E E
+    exact mul_ne_zero (neg_ne_zero.mpr h2) hY_a
+  have h_chord_NZ : ¬ ((chordCoordRingElt E a.point b.point).a = 0
+      ∧ (chordCoordRingElt E a.point b.point).b = 0) :=
+    chordCoordRingElt_ne_zero E a.point b.point
+  -- Apply ordAt_lone_sheet_eq_rootMult_normPoly.
+  have h_ordAt :=
+    ordAt_lone_sheet_eq_rootMult_normPoly (E := E) h_chord_NZ ha hY_a
+      h_chord_at_a h_chord_at_neg_a
+  have h_rootMult :=
+    chordCoordRingElt_rootMult_normPoly_at_third_eq_one (E := E) a b ha hb h_xx
+      h_Q₀x_ne_a h_Q₀x_ne_b
+  -- For x = a.point.1 (≠ Q₀x by h_Q₀x_ne_a.symm): rootMult ≤ 1.
+  have h_rootMult_a : Polynomial.rootMultiplicity a.point.1
+      (normPoly E (chordCoordRingElt E a.point b.point)) = 1 := by
+    have h_le := chordCoordRingElt_normPoly_rootMult_le_one_at_distinct_chord E
+      a.point b.point ha hb h_xx h_Q₀x_ne_a.symm h_Q₀x_ne_b.symm a.point.1
+    -- chord vanishes at a.lift fiber: normPoly chord (a.x) = chord(a.x, a.y) · chord(a.x, -a.y) = 0.
+    have h_normPoly_zero :
+        (normPoly E (chordCoordRingElt E a.point b.point)).eval a.point.1 = 0 := by
+      rw [normPoly_eval_eq_D_mul_D_neg E (chordCoordRingElt E a.point b.point) ha]
+      rw [h_chord_at_a, zero_mul]
+    have h_normPoly_NZ : normPoly E (chordCoordRingElt E a.point b.point) ≠ 0 :=
+      normPoly_ne_zero E _ h_chord_NZ
+    have h_pos : 0 < Polynomial.rootMultiplicity a.point.1
+        (normPoly E (chordCoordRingElt E a.point b.point)) :=
+      (Polynomial.rootMultiplicity_pos h_normPoly_NZ).mpr h_normPoly_zero
+    omega
+  have hns : E.toW.toAffine.Nonsingular a.point.1 a.point.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ ha))
+  rw [ECPoint.affine_of_nonsingular E hns]
+  show (ordAt E (chordCoordRingElt E a.point b.point) (a.point.1, a.point.2) : ℤ) = 1
+  rw [h_ordAt, h_rootMult_a]
+  rfl
+
 /-! ## General-k correctness: status
 
 Progress so far:
