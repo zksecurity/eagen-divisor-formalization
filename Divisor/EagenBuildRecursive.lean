@@ -5026,14 +5026,31 @@ combines the seven per-R wrappers via:
 Final assembly bundles the divisor identity dispatch with
 `running_sum_append` to give the full AccInv on (xs ++ ys, combine).
 
+## DUAL CAPSTONE: chord + vertical inductive steps both landed
+
+Both inductive steps for general-k eagenBuild are now landed:
+
+1. **Chord step** (`accInv_combine_higher_distinct_step`):
+   AccInv (xs, a) + AccInv (ys, b) + h_xx (a.x ≠ b.x) + genericity
+   ⟹ AccInv (xs ++ ys, combine_higher_distinct).
+
+2. **Vertical step** (`terminalInv_combine_higher_vertical_step`):
+   AccInv (xs, a) + AccInv (ys, b) + h_xx (a.x = b.x) + h_yy (a = -b)
+   + genericity ⟹ TerminalInv (xs ++ ys, combine_higher_vertical).
+
+Each step's helpers landed in this multi-firing session:
+* Chord step: 30+ helpers (eval/divisor at each chord-fiber point,
+  rootMult bound at Q₀x, dispatch wrappers).
+* Vertical step: 9 helpers (residue-vert identity, divLin subtract,
+  TerminalInv at infinity / off-fiber / a.lift / -a.lift, rootMult
+  bound at a.x, unified dispatch).
+
 ## Remaining for general-k eagenBuild correctness
 
-* Iteration: invoke `accInv_combine_higher_distinct_step` recursively
-  via `eagenBuild_iterate` driver, building AccInv on increasingly
-  long input lists.
-* Vertical combine step: `accInv_combine_higher_vertical_step`
-  (terminal case for sum-zero pair).
-* Singleton carry: `accInv_singleton_carry` (odd-length list pass-through).
+* Iteration: invoke the two inductive steps recursively via
+  `eagenBuild_iterate` driver, building AccInv/TerminalInv on
+  increasingly long input lists.
+* Singleton carry: `accInv_singleton_carry` (odd-length pass-through).
 * Final theorem: `eagenBuild_correctness` connecting eagenBuild's
   output polynomial to the formal divisor of the input list.
 
