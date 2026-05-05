@@ -5886,6 +5886,16 @@ theorem eagenBuild_iterate_eq_nil_iff (n : ℕ) (xs : List (EagenAccum E)) :
       rw [IH]
       rw [eagenBuild_level_step_eq_nil_iff]
 
+/-! ### iterate is identity on length-≤-1 lists -/
+
+theorem eagenBuild_iterate_id_of_length_le_one
+    (n : ℕ) (xs : List (EagenAccum E)) (h : xs.length ≤ 1) :
+    eagenBuild_iterate E n xs = xs := by
+  cases n with
+  | zero => rfl
+  | succ n =>
+    rw [eagenBuild_iterate_succ_of_length_le_one E n xs h]
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
