@@ -867,4 +867,93 @@ theorem thirdPoint_eq_none_of_sum_zero_data
   · subst hPQ
     rw [if_pos rfl, if_pos hP_zero]
 
+/-- For sum-zero pair, the chord/tangent line reduces to a vertical line. -/
+theorem chordCoordRingElt_eq_vertical_of_sum_zero
+    (P Q : ZMod E.q × ZMod E.q)
+    (hxx : P.1 = Q.1)
+    (hyy : P.2 = -Q.2 ∨ (P = Q ∧ P.2 = 0)) :
+    chordCoordRingElt E P Q = { a := X - C P.1, b := 0 } := by
+  unfold chordCoordRingElt
+  rw [dif_pos hxx]
+  rcases hyy with h | ⟨hPQ, hP_zero⟩
+  · by_cases hY : P.2 = Q.2
+    · rw [dif_pos hY]
+      have hP_zero : P.2 = 0 := by
+        have h2y : 2 * P.2 = 0 := by linear_combination hY + h
+        have h2_ne : (2 : ZMod E.q) ≠ 0 := two_ne_zero_in_zmod E
+        exact (mul_eq_zero.mp h2y).resolve_left h2_ne
+      rw [if_pos hP_zero]
+    · rw [dif_neg hY]
+  · subst hPQ
+    rw [dif_pos rfl, if_pos hP_zero]
+
+/-- `eagenBuild` of a sum-zero pair is the vertical line at `P.1`. -/
+theorem eagenBuild_pair_vertical
+    (P Q : ZMod E.q × ZMod E.q)
+    (hxx : P.1 = Q.1)
+    (hyy : P.2 = -Q.2 ∨ (P = Q ∧ P.2 = 0)) :
+    eagenBuild E [P, Q] = { a := X - C P.1, b := 0 } := by
+  -- Reduce eagenBuild [P, Q].
+  have h_third : thirdPoint E P Q = none :=
+    thirdPoint_eq_none_of_sum_zero_data E P Q hxx hyy
+  have h_chord : chordCoordRingElt E P Q = { a := X - C P.1, b := 0 } :=
+    chordCoordRingElt_eq_vertical_of_sum_zero E P Q hxx hyy
+  -- level0 [P, Q] = [levelInitPair P Q] = [{ point := 0, poly := chord }].
+  show (match iterate E [P, Q].length (level0 E [P, Q]) with
+        | [a] => a.poly
+        | _ => { a := 1, b := 0 }) = { a := X - C P.1, b := 0 }
+  have h_level0 : level0 E [P, Q] =
+      [{ point := (0 : ECPoint E), poly := chordCoordRingElt E P Q }] := by
+    show (levelInitPair E P Q :: level0 E []) = _
+    rw [show level0 E ([] : List (ZMod E.q × ZMod E.q)) = [] from rfl]
+    show [levelInitPair E P Q] = _
+    congr 1
+    show levelInitPair E P Q = _
+    unfold levelInitPair
+    rw [h_third]
+  rw [h_level0]
+  -- iterate 2 [single] = [single] since length 1 ≤ 1.
+  show (match iterate E 2 [{ point := (0 : ECPoint E),
+                              poly := chordCoordRingElt E P Q }] with
+        | [a] => a.poly
+        | _ => { a := 1, b := 0 }) = _
+  have h_iter : iterate E 2 [{ point := (0 : ECPoint E),
+                                 poly := chordCoordRingElt E P Q }]
+      = [{ point := (0 : ECPoint E), poly := chordCoordRingElt E P Q }] := by
+    show iterate E (1 + 1) _ = _
+    simp [iterate]
+  rw [h_iter]
+  -- Match: [a] returns a.poly = chordCoordRingElt P Q.
+  rw [h_chord]
+
+/-- Length-2 landmark: input `[P, Q]` with `P + Q = 0` on `E` produces
+    `D = (X - C P.1, 0)`, which:
+      - is nonzero,
+      - vanishes at `P` and `Q`,
+      - has `(normPoly D).natDegree = 2`. -/
+theorem eagenBuild_landmark_length2
+    {P Q : ZMod E.q × ZMod E.q}
+    (hxx : P.1 = Q.1)
+    (hyy : P.2 = -Q.2 ∨ (P = Q ∧ P.2 = 0)) :
+    let D := eagenBuild E [P, Q]
+    ¬ (D.a = 0 ∧ D.b = 0) ∧
+    D.eval P.1 P.2 = 0 ∧ D.eval Q.1 Q.2 = 0 ∧
+    (normPoly E D).natDegree = 2 := by
+  rw [eagenBuild_pair_vertical E P Q hxx hyy]
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · -- (X - C P.1, 0) ≠ 0: a = X - C P.1, which is nonzero (degree 1).
+    intro ⟨ha, _⟩
+    have h_nz : (X - C P.1 : (ZMod E.q)[X]) ≠ 0 := X_sub_C_ne_zero _
+    exact h_nz ha
+  · -- eval at P: (X - C P.1).eval P.1 - 0.eval P.1 · P.2 = (P.1 - P.1) - 0 = 0.
+    show (X - C P.1).eval P.1 - (0 : (ZMod E.q)[X]).eval P.1 * P.2 = 0
+    simp
+  · -- eval at Q: (Q.1 - P.1) - 0 = 0 since Q.1 = P.1.
+    show (X - C P.1).eval Q.1 - (0 : (ZMod E.q)[X]).eval Q.1 * Q.2 = 0
+    simp [hxx]
+  · -- (normPoly (X - C P.1, 0)).natDegree = ((X - C P.1)² - 0² · curveX).natDegree = 2.
+    rw [normPoly_eq]
+    show ((X - C P.1) ^ 2 - 0 ^ 2 * curveX E).natDegree = 2
+    simp [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C]
+
 end Divisor.Landmark
