@@ -3742,6 +3742,56 @@ theorem accInv_combine_higher_distinct_step_at_infinity
   accInv_combine_higher_distinct_divisor_at_infinity_AccInv_form (E := E)
     h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
 
+/-! ### Running-sum on append: foldr ECPoint sum splits
+
+For the AccInv invariant on (xs ++ ys), the running sum splits as
+`foldr (xs ++ ys) = foldr xs + foldr ys`. Pure list/group fact. -/
+
+theorem accInv_running_sum_append (xs ys : List (ZMod E.q × ZMod E.q)) :
+    (xs ++ ys).foldr
+      (fun P S =>
+        if h' : P ∈ E.points then ECPoint.affineOfMem E h' + S else S)
+      (0 : ECPoint E)
+      = xs.foldr
+          (fun P S =>
+            if h' : P ∈ E.points then ECPoint.affineOfMem E h' + S else S)
+          (0 : ECPoint E)
+        + ys.foldr
+            (fun P S =>
+              if h' : P ∈ E.points then ECPoint.affineOfMem E h' + S else S)
+            (0 : ECPoint E) := by
+  classical
+  induction xs with
+  | nil =>
+    simp [List.foldr_nil, List.nil_append]
+  | cons P rest IH =>
+    -- foldr ((P :: rest) ++ ys) = if P ∈ E.points then P + foldr (rest ++ ys) else foldr (rest ++ ys).
+    show (if h' : P ∈ E.points then ECPoint.affineOfMem E h' +
+              (rest ++ ys).foldr
+                (fun P S =>
+                  if h' : P ∈ E.points then ECPoint.affineOfMem E h' + S else S)
+                (0 : ECPoint E)
+            else (rest ++ ys).foldr
+                  (fun P S =>
+                    if h' : P ∈ E.points then ECPoint.affineOfMem E h' + S else S)
+                  (0 : ECPoint E))
+        = (if h' : P ∈ E.points then ECPoint.affineOfMem E h' +
+              rest.foldr
+                (fun P S =>
+                  if h' : P ∈ E.points then ECPoint.affineOfMem E h' + S else S)
+                (0 : ECPoint E)
+            else rest.foldr
+                  (fun P S =>
+                    if h' : P ∈ E.points then ECPoint.affineOfMem E h' + S else S)
+                  (0 : ECPoint E))
+          + ys.foldr
+              (fun P S =>
+                if h' : P ∈ E.points then ECPoint.affineOfMem E h' + S else S)
+              (0 : ECPoint E)
+    by_cases h : P ∈ E.points
+    · rw [dif_pos h, dif_pos h, IH, add_assoc]
+    · rw [dif_neg h, dif_neg h, IH]
+
 /-! ## General-k correctness: status
 
 Progress so far:
