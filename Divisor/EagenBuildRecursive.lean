@@ -5965,6 +5965,43 @@ theorem eagenBuild_singleton (P : ZMod E.q × ZMod E.q) :
   rw [eagenBuild_level0_singleton]
   rw [eagenBuild_iterate_singleton]
 
+/-! ### eagenBuild correctness on empty input
+
+For the empty input list, eagenBuild produces the unit polynomial
+⟨1, 0⟩ whose divisor is 0 everywhere — matching the formal divisor
+of [] (which is 0 at affine points and -((0 : ℤ)) = 0 at infinity). -/
+
+theorem divisorOfD_eagenBuild_nil_eq_formalDivisorOfList (R : ECPoint E) :
+    divisorOfD E (eagenBuild E ([] : List (ZMod E.q × ZMod E.q))) R
+      = formalDivisorOfList E [] R := by
+  rw [eagenBuild_nil]
+  -- divisorOfD ⟨1, 0⟩ R = 0 (constant polynomial, no zeros).
+  -- formalDivisorOfList [] R = 0 (length 0).
+  match R with
+  | WeierstrassCurve.Affine.Point.zero =>
+    -- divisorOfD = -natDeg(normPoly ⟨1, 0⟩) = -natDeg(1²) = 0.
+    show divisorOfD E ({ a := 1, b := 0 } : CoordRingElt E.q) (0 : ECPoint E) = 0
+    show -((normPoly E ({ a := 1, b := 0 } : CoordRingElt E.q)).natDegree : ℤ) = 0
+    simp [normPoly_eq]
+  | WeierstrassCurve.Affine.Point.some hns =>
+    rename_i x y
+    have hP : (x, y) ∈ E.points :=
+      E.hComplete x y ((E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hns))
+    have h_eval : ({ a := 1, b := 0 } : CoordRingElt E.q).eval x y ≠ 0 := by
+      unfold CoordRingElt.eval
+      simp
+    have h_ord : ordAt E ({ a := 1, b := 0 } : CoordRingElt E.q) (x, y) = 0 :=
+      ordAt_eq_zero_of_eval_ne_zero E _ hP h_eval
+    show divisorOfD E ({ a := 1, b := 0 } : CoordRingElt E.q)
+            (WeierstrassCurve.Affine.Point.some hns) = 0
+    show (ordAtPoint E ({ a := 1, b := 0 } : CoordRingElt E.q)
+            (WeierstrassCurve.Affine.Point.some hns) : ℤ) = 0
+    rw [show (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+          = ECPoint.affine E x y from
+        (ECPoint.affine_of_nonsingular E hns).symm]
+    rw [ordAtPoint_affine E _ hP, h_ord]
+    rfl
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
