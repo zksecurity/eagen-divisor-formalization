@@ -5469,6 +5469,36 @@ theorem accInvList_cons_iff (xs : List (ZMod E.q × ZMod E.q))
   · intro ⟨h_head, h_rest⟩
     exact List.Forall₂.cons h_head h_rest
 
+/-! ### Pair-list partition of input points
+
+The input list Ps is split into a list-of-pair-lists: adjacent pairs
+become 2-element sublists, with an odd trailing element kept as a
+singleton sublist. Mirrors `eagenBuild_level0`'s structure. -/
+
+def pairList {q : ℕ} :
+    List (ZMod q × ZMod q) → List (List (ZMod q × ZMod q))
+  | [] => []
+  | [P] => [[P]]
+  | P :: Q :: rest => [P, Q] :: pairList rest
+
+@[simp] theorem pairList_nil {q : ℕ} :
+    (pairList ([] : List (ZMod q × ZMod q))) = [] := rfl
+
+@[simp] theorem pairList_singleton {q : ℕ} (P : ZMod q × ZMod q) :
+    pairList [P] = [[P]] := rfl
+
+@[simp] theorem pairList_cons_cons {q : ℕ} (P Q : ZMod q × ZMod q)
+    (rest : List (ZMod q × ZMod q)) :
+    pairList (P :: Q :: rest) = [P, Q] :: pairList rest := rfl
+
+/-- Concatenation of pair-list sublists recovers the input. -/
+theorem pairList_flatten_eq {q : ℕ} (Ps : List (ZMod q × ZMod q)) :
+    (pairList Ps).flatten = Ps := by
+  induction Ps using pairList.induct with
+  | case1 => simp
+  | case2 P => simp
+  | case3 P Q rest IH => simp [IH]
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
