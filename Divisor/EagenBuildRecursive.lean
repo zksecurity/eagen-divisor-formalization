@@ -1364,6 +1364,137 @@ theorem accInv_natDegree_normPoly
   have h2 : ((normPoly E a.poly).natDegree : ℤ) = (xs.length : ℤ) + 1 := by linarith
   exact_mod_cast h2
 
+/-! ### Combine step: at-infinity divisor identity
+
+At infinity, the combine-step's divisor identity follows from
+`normPoly` multiplicativity and the `normPoly_divLin_factor` reduction
+(each `divLin` step removes a `(X-x₀)²` factor from `normPoly`). No
+cross-case mul-additivity issues at infinity. -/
+
+theorem accInv_combine_higher_distinct_divisor_at_infinity
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0)) :
+    divisorOfD E (EagenAccum.combine_higher_distinct E a b h_xx).poly
+      (0 : ECPoint E)
+      = -(((xs.length + ys.length + 1 : ℕ)) : ℤ) := by
+  classical
+  set chord := chordCoordRingElt E a.point b.point with hchord_def
+  set prod := mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly with hprod_def
+  -- non-zero: chord, chord·a.poly, prod = chord·a.poly·b.poly.
+  have h_chord_NZ : ¬ (chord.a = 0 ∧ chord.b = 0) :=
+    chordCoordRingElt_ne_zero E a.point b.point
+  have h_chord_a_NZ : ¬ ((mulCoordRingElt E chord a.poly).a = 0
+      ∧ (mulCoordRingElt E chord a.poly).b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E (mulCoordRingElt E chord a.poly) = 0 := by
+      rw [normPoly_eq, ha, hb]; ring
+    rw [normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E chord h_chord_NZ)
+      (normPoly_ne_zero E a.poly h_a_poly_NZ)) hN
+  have h_prod_NZ : ¬ (prod.a = 0 ∧ prod.b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E prod = 0 := by
+      rw [normPoly_eq, ha, hb]; ring
+    rw [normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E _ h_chord_a_NZ)
+      (normPoly_ne_zero E b.poly h_b_poly_NZ)) hN
+  -- (X - C a.x) divides prod.a and prod.b.
+  have h_prod_at_a := combine_higher_distinct_divisible_at_a (E := E)
+    h_acc_a h_xx hY_a h_a_poly_NZ h_b_poly_NZ
+  have h_prod_a_root : prod.a.eval a.point.1 = 0 := h_prod_at_a.1
+  have h_prod_b_root : prod.b.eval a.point.1 = 0 := h_prod_at_a.2
+  -- (X - C b.x) divides (prod.divLin a.x).a and .b.
+  have h_after_a_at_b := combine_higher_distinct_divisible_at_b (E := E)
+    h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
+  have h_after_a_a_root : (prod.divLin a.point.1).a.eval b.point.1 = 0 :=
+    h_after_a_at_b.1
+  have h_after_a_b_root : (prod.divLin a.point.1).b.eval b.point.1 = 0 :=
+    h_after_a_at_b.2
+  -- normPoly prod = (X - C a.x)² · normPoly (prod.divLin a.x)
+  have h_normProd_factor : normPoly E prod
+      = (Polynomial.X - Polynomial.C a.point.1) ^ 2
+        * normPoly E (prod.divLin a.point.1) :=
+    normPoly_divLin_factor E prod h_prod_a_root h_prod_b_root
+  -- prod.divLin a.x is non-zero (componentwise).
+  have h_after_a_NZ : ¬ ((prod.divLin a.point.1).a = 0
+      ∧ (prod.divLin a.point.1).b = 0) :=
+    divLin_not_both_zero E prod h_prod_NZ h_prod_a_root h_prod_b_root
+  -- normPoly (prod.divLin a.x) = (X - C b.x)² · normPoly (combine.poly)
+  have h_normAfterA_factor : normPoly E (prod.divLin a.point.1)
+      = (Polynomial.X - Polynomial.C b.point.1) ^ 2
+        * normPoly E ((prod.divLin a.point.1).divLin b.point.1) :=
+    normPoly_divLin_factor E (prod.divLin a.point.1)
+      h_after_a_a_root h_after_a_b_root
+  -- combine.poly's normPoly is non-zero.
+  have h_combine_NZ : ¬ (((prod.divLin a.point.1).divLin b.point.1).a = 0
+      ∧ ((prod.divLin a.point.1).divLin b.point.1).b = 0) :=
+    divLin_not_both_zero E (prod.divLin a.point.1) h_after_a_NZ
+      h_after_a_a_root h_after_a_b_root
+  -- natDegree(normPoly combine.poly) = natDegree(normPoly prod) - 4.
+  have h_xa_NZ : (Polynomial.X - Polynomial.C a.point.1) ≠ 0 :=
+    Polynomial.X_sub_C_ne_zero a.point.1
+  have h_xb_NZ : (Polynomial.X - Polynomial.C b.point.1) ≠ 0 :=
+    Polynomial.X_sub_C_ne_zero b.point.1
+  have h_xa_pow_NZ : ((Polynomial.X - Polynomial.C a.point.1) ^ 2 : Polynomial (ZMod E.q)) ≠ 0 :=
+    pow_ne_zero _ h_xa_NZ
+  have h_xb_pow_NZ : ((Polynomial.X - Polynomial.C b.point.1) ^ 2 : Polynomial (ZMod E.q)) ≠ 0 :=
+    pow_ne_zero _ h_xb_NZ
+  have h_normAfterA_NZ : normPoly E (prod.divLin a.point.1) ≠ 0 :=
+    normPoly_ne_zero E _ h_after_a_NZ
+  have h_normCombine_NZ : normPoly E ((prod.divLin a.point.1).divLin b.point.1) ≠ 0 :=
+    normPoly_ne_zero E _ h_combine_NZ
+  have h_xa_natDeg : ((Polynomial.X - Polynomial.C a.point.1) ^ 2
+                      : Polynomial (ZMod E.q)).natDegree = 2 := by
+    rw [Polynomial.natDegree_pow]
+    rw [Polynomial.natDegree_X_sub_C]
+  have h_xb_natDeg : ((Polynomial.X - Polynomial.C b.point.1) ^ 2
+                      : Polynomial (ZMod E.q)).natDegree = 2 := by
+    rw [Polynomial.natDegree_pow]
+    rw [Polynomial.natDegree_X_sub_C]
+  -- natDegree of normPoly factorings.
+  have h_natDeg_prod : (normPoly E prod).natDegree
+      = 2 + (normPoly E (prod.divLin a.point.1)).natDegree := by
+    rw [h_normProd_factor]
+    rw [Polynomial.natDegree_mul h_xa_pow_NZ h_normAfterA_NZ]
+    rw [h_xa_natDeg]
+  have h_natDeg_afterA : (normPoly E (prod.divLin a.point.1)).natDegree
+      = 2 + (normPoly E ((prod.divLin a.point.1).divLin b.point.1)).natDegree := by
+    rw [h_normAfterA_factor]
+    rw [Polynomial.natDegree_mul h_xb_pow_NZ h_normCombine_NZ]
+    rw [h_xb_natDeg]
+  -- natDegree(normPoly prod) via mul-additivity.
+  have h_natDeg_prod_total : (normPoly E prod).natDegree
+      = 3 + (xs.length + 1) + (ys.length + 1) := by
+    rw [hprod_def]
+    rw [natDegree_normPoly_mul_eq E _ b.poly h_chord_a_NZ h_b_poly_NZ]
+    rw [natDegree_normPoly_mul_eq E chord a.poly h_chord_NZ h_a_poly_NZ]
+    -- natDegree(normPoly chord) = 3.
+    have h_chord_natDeg : (normPoly E chord).natDegree = 3 := by
+      have := divisorOfD_chordCoordRingElt_at_infinity_nonvertical E a.point b.point h_xx
+      have hgoal : -((normPoly E chord).natDegree : ℤ) = -3 := by
+        rw [hchord_def]; exact this
+      have : ((normPoly E chord).natDegree : ℤ) = 3 := by linarith
+      exact_mod_cast this
+    rw [h_chord_natDeg]
+    rw [accInv_natDegree_normPoly E h_acc_a h_a_poly_NZ]
+    rw [accInv_natDegree_normPoly E h_acc_b h_b_poly_NZ]
+  -- Combine the equalities.
+  have h_combine_natDeg : (normPoly E
+      ((prod.divLin a.point.1).divLin b.point.1)).natDegree
+      = xs.length + ys.length + 1 := by
+    have : (normPoly E prod).natDegree
+        = 4 + (normPoly E ((prod.divLin a.point.1).divLin b.point.1)).natDegree := by
+      rw [h_natDeg_prod, h_natDeg_afterA]; ring
+    omega
+  -- divisorOfD = -natDegree(normPoly).
+  show -((normPoly E ((prod.divLin a.point.1).divLin b.point.1)).natDegree : ℤ)
+      = -((xs.length + ys.length + 1 : ℕ) : ℤ)
+  rw [h_combine_natDeg]
+
 /-! ## General-k correctness: status
 
 Progress so far:
