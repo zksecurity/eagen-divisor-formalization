@@ -781,6 +781,52 @@ theorem landmarkInv_combine_vertical_no_collision
     rw [List.length_append]
     omega
 
+/-! ## Helper: divLin preserves divisibility by an unrelated linear factor
+
+When `(X - C x₁)` and `(X - C x₂)` both divide a polynomial `p`,
+and `x₁ ≠ x₂`, then `p /ₘ (X - C x₁)` is still divisible by
+`(X - C x₂)`. (Coprimality of the two linear factors.) -/
+
+theorem dvd_X_sub_C_divByMonic_X_sub_C_of_ne
+    {p : (ZMod E.q)[X]} {x₁ x₂ : ZMod E.q}
+    (hdvd₁ : (X - C x₁) ∣ p) (hdvd₂ : (X - C x₂) ∣ p) (h_x12 : x₁ ≠ x₂) :
+    (X - C x₂) ∣ p /ₘ (X - C x₁) := by
+  have hcoprime : IsCoprime (X - C x₂ : (ZMod E.q)[X]) (X - C x₁) :=
+    isCoprime_X_sub_C_of_isUnit_sub
+      (isUnit_iff_ne_zero.mpr (sub_ne_zero.mpr h_x12.symm))
+  obtain ⟨qa, hqa⟩ := hdvd₁
+  have hMonic : (X - C x₁ : (ZMod E.q)[X]).Monic := monic_X_sub_C _
+  have h_div : p /ₘ (X - C x₁) = qa := by
+    rw [hqa]; exact mul_divByMonic_cancel_left _ hMonic
+  rw [h_div]
+  -- (X - C x₂) | (X - C x₁) * qa = p, coprime to (X - C x₁), so (X - C x₂) | qa.
+  exact hcoprime.dvd_of_dvd_mul_left (hqa ▸ hdvd₂)
+
+/-! ## Helper: chained divLin preserves vanishing
+
+After two divLin operations at distinct x-coords, vanishing at a
+third x-coord (different from both) is preserved. -/
+
+theorem divLin_chain_eval_zero
+    (D : CoordRingElt E.q) (x₁ x₂ : ZMod E.q)
+    (haDvd₁ : (X - C x₁) ∣ D.a) (hbDvd₁ : (X - C x₁) ∣ D.b)
+    (haDvd₂ : (X - C x₂) ∣ D.a) (hbDvd₂ : (X - C x₂) ∣ D.b)
+    (h_x12 : x₁ ≠ x₂)
+    {x y : ZMod E.q} (h_eval : D.eval x y = 0)
+    (h_xx₁ : x ≠ x₁) (h_xx₂ : x ≠ x₂) :
+    ((D.divLin x₁).divLin x₂).eval x y = 0 := by
+  -- After divLin x₁, vanishing at (x, y) is preserved.
+  have h1 : (D.divLin x₁).eval x y = 0 :=
+    divLin_eval_zero_of_x_ne E D x₁ haDvd₁ hbDvd₁ h_eval h_xx₁
+  -- divLin x₁ also preserves divisibility by (X - C x₂).
+  have h_dvd_a₂ : (X - C x₂) ∣ (D.divLin x₁).a := by
+    rw [CoordRingElt.divLin_a]
+    exact dvd_X_sub_C_divByMonic_X_sub_C_of_ne E haDvd₁ haDvd₂ h_x12
+  have h_dvd_b₂ : (X - C x₂) ∣ (D.divLin x₁).b := by
+    rw [CoordRingElt.divLin_b]
+    exact dvd_X_sub_C_divByMonic_X_sub_C_of_ne E hbDvd₁ hbDvd₂ h_x12
+  exact divLin_eval_zero_of_x_ne E (D.divLin x₁) x₂ h_dvd_a₂ h_dvd_b₂ h1 h_xx₂
+
 /-! ## TODO: combine_distinct, combine_tangent_torsion, combine_tangent_smooth
 
 ### combine_distinct (chord case, distinct x-coords)
