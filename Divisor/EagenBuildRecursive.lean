@@ -2733,6 +2733,68 @@ theorem chordCoordRingElt_divisor_at_a_lift_eq_one
   rw [h_ordAt, h_rootMult_a]
   rfl
 
+/-! ### Prod divisor splits at affine R when b.poly nonvanish on R fiber
+
+`divisorOfD prod R = div(chord)(R) + div(a.poly)(R) + div(b.poly)(R)`
+where prod = chord · a.poly · b.poly. Conditions:
+* chord-line additivity applies (h_Q₀x_ne_a, h_Q₀x_ne_b).
+* b.poly nonvanish on R's fiber (both sheets). -/
+
+theorem combine_higher_distinct_prod_divisor_split_when_b_nonvanish_fiber
+    {a b : EagenAccum E}
+    (ha : a.point ∈ E.points) (hb : b.point ∈ E.points)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (h_Q₀x_ne_a : a.point.1
+        ≠ slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+            - a.point.1 - b.point.1)
+    (h_Q₀x_ne_b : b.point.1
+        ≠ slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+            - a.point.1 - b.point.1)
+    {x y : ZMod E.q} (hP : (x, y) ∈ E.points)
+    (h_b_at_pos : b.poly.eval x y ≠ 0)
+    (h_b_at_neg : b.poly.eval x (-y) ≠ 0) :
+    divisorOfD E
+      (mulCoordRingElt E (mulCoordRingElt E (chordCoordRingElt E a.point b.point)
+        a.poly) b.poly) (ECPoint.affine E x y)
+      = divisorOfD E (chordCoordRingElt E a.point b.point) (ECPoint.affine E x y)
+        + divisorOfD E a.poly (ECPoint.affine E x y)
+        + divisorOfD E b.poly (ECPoint.affine E x y) := by
+  classical
+  set chord := chordCoordRingElt E a.point b.point with hchord_def
+  -- chord nonzero, mul(chord, a.poly) nonzero.
+  have h_chord_NZ : ¬ (chord.a = 0 ∧ chord.b = 0) :=
+    chordCoordRingElt_ne_zero E a.point b.point
+  have h_chord_a_NZ : ¬ ((mulCoordRingElt E chord a.poly).a = 0
+      ∧ (mulCoordRingElt E chord a.poly).b = 0) := by
+    intro ⟨ha', hb'⟩
+    have hN : normPoly E (mulCoordRingElt E chord a.poly) = 0 := by
+      rw [normPoly_eq, ha', hb']; ring
+    rw [normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E chord h_chord_NZ)
+      (normPoly_ne_zero E a.poly h_a_poly_NZ)) hN
+  -- div(prod) = div(mul(chord, a.poly)) + div(b.poly) via mul-add.
+  have h_step1 :
+      divisorOfD E (mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly)
+          (ECPoint.affine E x y)
+        = divisorOfD E (mulCoordRingElt E chord a.poly) (ECPoint.affine E x y)
+          + divisorOfD E b.poly (ECPoint.affine E x y) :=
+    divisorOfD_mul_add_when_one_factor_nonvanish_fiber E
+      h_chord_a_NZ h_b_poly_NZ hP (Or.inr ⟨h_b_at_pos, h_b_at_neg⟩)
+  -- div(mul(chord, a.poly)) = div(mul(a.poly, chord)) by comm.
+  have h_comm : mulCoordRingElt E chord a.poly = mulCoordRingElt E a.poly chord :=
+    mulCoordRingElt_comm E chord a.poly
+  -- div(mul(a.poly, chord)) = div(a.poly) + div(chord) via chord-line.
+  have h_step2 :
+      divisorOfD E (mulCoordRingElt E a.poly chord) (ECPoint.affine E x y)
+        = divisorOfD E a.poly (ECPoint.affine E x y)
+          + divisorOfD E chord (ECPoint.affine E x y) :=
+    divisorOfD_mul_add_by_chordCoordRingElt_distinct E h_a_poly_NZ
+      a.point b.point ha hb h_xx h_Q₀x_ne_a h_Q₀x_ne_b _
+  rw [h_step1, h_comm, h_step2]
+  ring
+
 /-! ## General-k correctness: status
 
 Progress so far:
