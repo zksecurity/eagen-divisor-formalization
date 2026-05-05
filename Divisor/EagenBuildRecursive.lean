@@ -782,6 +782,45 @@ theorem terminalInv_vertical_at_infinity
   rw [divisorOfD_vertical_at_infinity_eq_neg_two]
   rfl
 
+/-- For (P, -P) vertical case, divisor identity holds at affine R with
+    x ≠ P.1 (off-support): both = 0. -/
+theorem terminalInv_vertical_at_off_x₀
+    (P : ZMod E.q × ZMod E.q) (h_xx : P.1 = (P.1, -P.2).1)
+    (h_yy : P.2 = -((P.1, -P.2).2))
+    {x y : ZMod E.q} (hns : E.toW.toAffine.Nonsingular x y)
+    (h_off : x ≠ P.1) :
+    divisorOfD E
+        ((EagenAccum.fromChordPair_vertical E P (P.1, -P.2) h_xx h_yy).poly)
+        (WeierstrassCurve.Affine.Point.some hns)
+      = formalDivisorOfList E [P, (P.1, -P.2)]
+          (WeierstrassCurve.Affine.Point.some hns) := by
+  classical
+  have hOC : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB :=
+    (E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hns)
+  have hMem : (x, y) ∈ E.points := E.hComplete x y hOC
+  show divisorOfD E ({ a := Polynomial.X - Polynomial.C P.1, b := 0 }
+                    : CoordRingElt E.q)
+        (WeierstrassCurve.Affine.Point.some hns)
+      = formalDivisorOfList E [P, (P.1, -P.2)]
+          (WeierstrassCurve.Affine.Point.some hns)
+  rw [show (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+        = ECPoint.affine E x y from (ECPoint.affine_of_nonsingular E hns).symm]
+  rw [divisorOfD_vertical_at_off_x₀_affine E P.1 hMem h_off]
+  unfold formalDivisorOfList
+  rw [ECPoint.affine_of_nonsingular E hns]
+  show (0 : ℤ) = ((List.filter (fun p => p = (x, y)) [P, (P.1, -P.2)]).length : ℤ)
+  have h_filter : List.filter (fun p => p = (x, y)) [P, (P.1, -P.2)] = [] := by
+    have h1 : ¬ P = (x, y) := by
+      intro h
+      have : P.1 = (x, y).1 := congrArg Prod.fst h
+      exact h_off this.symm
+    have h2 : ¬ (P.1, -P.2) = (x, y) := by
+      intro h
+      have : (P.1, -P.2).1 = (x, y).1 := congrArg Prod.fst h
+      exact h_off this.symm
+    simp [List.filter, h1, h2]
+  rw [h_filter]; simp
+
 /-! ### Helper lemmas for residue and formalDivisor -/
 
 /-- residueDivisor evaluated at `-S` is `1` (when -S ≠ 0). -/
