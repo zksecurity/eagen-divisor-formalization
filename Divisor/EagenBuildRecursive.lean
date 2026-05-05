@@ -5339,6 +5339,33 @@ theorem allDistinctECPoints_tail
    the `mem_map` rewrites. Use `allDistinctECPoints_iff_nodup_map_point`
    + raw `List.Nodup` reasoning where needed. -/
 
+/-! ### eagenBuild_level0 structural unfoldings -/
+
+theorem eagenBuild_level0_nil :
+    eagenBuild_level0 E ([] : List (ZMod E.q × ZMod E.q)) = [] := rfl
+
+theorem eagenBuild_level0_singleton (P : ZMod E.q × ZMod E.q) :
+    eagenBuild_level0 E [P]
+      = [{ point := P, poly := { a := 1, b := 0 } }] := rfl
+
+theorem eagenBuild_level0_cons_cons_distinct
+    (P Q : ZMod E.q × ZMod E.q) (rest : List (ZMod E.q × ZMod E.q))
+    (h : P.1 ≠ Q.1) :
+    eagenBuild_level0 E (P :: Q :: rest)
+      = EagenAccum.fromChordPair_distinct E P Q h
+          :: eagenBuild_level0 E rest := by
+  show (if h' : P.1 ≠ Q.1 then
+          EagenAccum.fromChordPair_distinct E P Q h'
+            :: eagenBuild_level0 E rest
+        else if hYY : P.2 = -Q.2 then
+          EagenAccum.fromChordPair_vertical E P Q
+            (Classical.byContradiction (fun h_neq => h' h_neq)) hYY ::
+            eagenBuild_level0 E rest
+        else { point := P, poly := { a := 1, b := 0 } } :: eagenBuild_level0 E rest)
+      = EagenAccum.fromChordPair_distinct E P Q h
+          :: eagenBuild_level0 E rest
+  rw [dif_pos h]
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
