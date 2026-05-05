@@ -4935,6 +4935,35 @@ theorem terminalInv_combine_higher_vertical_step
           h_acc_a h_acc_b h_xx h_yy hY_a h_a_poly_NZ h_b_poly_NZ
           hP h_x_a h_a_pos h_a_neg h_b_pos h_b_neg
 
+/-! ### Structural helpers for eagenBuild_level_step
+
+Trivial unfolding lemmas for the `level_step` driver, used in
+the recursive correctness inductions. -/
+
+theorem eagenBuild_level_step_nil :
+    eagenBuild_level_step E ([] : List (EagenAccum E)) = [] := rfl
+
+theorem eagenBuild_level_step_singleton (a : EagenAccum E) :
+    eagenBuild_level_step E [a] = [a] := rfl
+
+theorem eagenBuild_level_step_cons_cons_distinct
+    (a b : EagenAccum E) (rest : List (EagenAccum E))
+    (h : a.point.1 ≠ b.point.1) :
+    eagenBuild_level_step E (a :: b :: rest)
+      = EagenAccum.combine_higher_distinct E a b h
+          :: eagenBuild_level_step E rest := by
+  show (if h' : a.point.1 ≠ b.point.1 then
+          EagenAccum.combine_higher_distinct E a b h'
+            :: eagenBuild_level_step E rest
+        else if hYY : a.point.2 = -b.point.2 then
+          EagenAccum.combine_higher_vertical E a b
+            (Classical.byContradiction (fun h_neq => h' h_neq)) hYY ::
+            eagenBuild_level_step E rest
+        else a :: b :: eagenBuild_level_step E rest)
+      = EagenAccum.combine_higher_distinct E a b h
+          :: eagenBuild_level_step E rest
+  rw [dif_pos h]
+
 /-! ## General-k correctness: status
 
 Progress so far:
