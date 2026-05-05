@@ -2624,6 +2624,287 @@ theorem mulCoordRingElt_assoc (D₁ D₂ D₃ : CoordRingElt E.q) :
   refine CoordRingElt.mk.injEq _ _ _ _ |>.mpr ?_
   refine ⟨?_, ?_⟩ <;> ring
 
+/-- Product of two non-zero coordinate-ring elements is non-zero. -/
+theorem mulCoordRingElt_not_both_zero
+    (D₁ D₂ : CoordRingElt E.q)
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0))
+    (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0)) :
+    ¬ ((mulCoordRingElt E D₁ D₂).a = 0
+        ∧ (mulCoordRingElt E D₁ D₂).b = 0) := by
+  intro ⟨ha, hb⟩
+  have hN : normPoly E (mulCoordRingElt E D₁ D₂) = 0 := by
+    rw [normPoly_eq, ha, hb]
+    ring
+  rw [normPoly_mul_eq] at hN
+  exact (mul_ne_zero (normPoly_ne_zero E D₁ h₁)
+    (normPoly_ne_zero E D₂ h₂)) hN
+
+/-- If a common `divLin` step is available and the original norm root
+multiplicity is at most two, the reduced norm has no root at that
+x-coordinate. -/
+theorem rootMultiplicity_normPoly_divLin_eq_zero_of_rootMult_le_two
+    (D : CoordRingElt E.q) {P : ZMod E.q × ZMod E.q}
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hax : D.a.eval P.1 = 0) (hbx : D.b.eval P.1 = 0)
+    (hRoot : Polynomial.rootMultiplicity P.1 (normPoly E D) ≤ 2) :
+    Polynomial.rootMultiplicity P.1 (normPoly E (D.divLin P.1)) = 0 := by
+  have hD' : ¬ ((D.divLin P.1).a = 0 ∧ (D.divLin P.1).b = 0) :=
+    divLin_not_both_zero E D hD hax hbx
+  have hFactor :
+      normPoly E D =
+        (Polynomial.X - Polynomial.C P.1) ^ 2
+          * normPoly E (D.divLin P.1) :=
+    normPoly_divLin_factor E D hax hbx
+  have hMul_NZ :
+      (Polynomial.X - Polynomial.C P.1) ^ 2
+          * normPoly E (D.divLin P.1) ≠ 0 := by
+    exact mul_ne_zero (pow_ne_zero 2 (X_sub_C_ne_zero P.1))
+      (normPoly_ne_zero E (D.divLin P.1) hD')
+  have hEq :
+      Polynomial.rootMultiplicity P.1 (normPoly E D)
+        = 2 + Polynomial.rootMultiplicity P.1
+            (normPoly E (D.divLin P.1)) := by
+    rw [hFactor, Polynomial.rootMultiplicity_mul hMul_NZ,
+      Polynomial.rootMultiplicity_X_sub_C_pow]
+  omega
+
+/-- Multiplicativity when the right factor is a simple twin-fiber factor
+over the current non-2-torsion x-coordinate.  The common linear factor is
+peeled as a vertical line, and the reduced right factor falls under the
+existing `rootMult ≤ 1` theorem. -/
+theorem ordAt_mul_add_when_right_twin_rootMult_le_two
+    (D₁ D₂ : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0))
+    (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    (hD₂P : D₂.eval P.1 P.2 = 0)
+    (hD₂negP : D₂.eval P.1 (-P.2) = 0)
+    (hRoot₂ : Polynomial.rootMultiplicity P.1 (normPoly E D₂) ≤ 2) :
+    ordAt E (mulCoordRingElt E D₁ D₂) P
+      = ordAt E D₁ P + ordAt E D₂ P := by
+  let D₂' : CoordRingElt E.q := D₂.divLin P.1
+  let Lv : CoordRingElt E.q := { a := Polynomial.X - Polynomial.C P.1, b := 0 }
+  obtain ⟨hax, hbx⟩ :=
+    Da_Db_eval_zero_of_both_sheets_zero E D₂ hY hD₂P hD₂negP
+  have hD₂' : ¬ (D₂'.a = 0 ∧ D₂'.b = 0) := by
+    simpa [D₂'] using divLin_not_both_zero E D₂ h₂ hax hbx
+  have hRoot₂' :
+      Polynomial.rootMultiplicity P.1 (normPoly E D₂') ≤ 1 := by
+    have hZero :
+        Polynomial.rootMultiplicity P.1 (normPoly E (D₂.divLin P.1)) = 0 :=
+      rootMultiplicity_normPoly_divLin_eq_zero_of_rootMult_le_two
+        E D₂ h₂ hax hbx hRoot₂
+    simpa [D₂'] using (by omega : Polynomial.rootMultiplicity P.1
+      (normPoly E (D₂.divLin P.1)) ≤ 1)
+  have hD₁D₂' : ¬ ((mulCoordRingElt E D₁ D₂').a = 0
+      ∧ (mulCoordRingElt E D₁ D₂').b = 0) :=
+    mulCoordRingElt_not_both_zero E D₁ D₂' h₁ hD₂'
+  have hDvdA : (Polynomial.X - Polynomial.C P.1) ∣ D₂.a :=
+    Polynomial.dvd_iff_isRoot.mpr hax
+  have hDvdB : (Polynomial.X - Polynomial.C P.1) ∣ D₂.b :=
+    Polynomial.dvd_iff_isRoot.mpr hbx
+  have hRecomp : D₂ = mulCoordRingElt E D₂' Lv := by
+    simpa [D₂', Lv] using
+      mulCoordRingElt_divLin_vertical_recompose E D₂ P.1 hDvdA hDvdB
+  have hAssoc :
+      mulCoordRingElt E D₁ D₂
+        = mulCoordRingElt E (mulCoordRingElt E D₁ D₂') Lv := by
+    rw [hRecomp]
+    exact (mulCoordRingElt_assoc E D₁ D₂' Lv).symm
+  have hAddReduced :
+      ordAt E (mulCoordRingElt E D₁ D₂') P
+        = ordAt E D₁ P + ordAt E D₂' P :=
+    Divisor.ordAt_mul_add_when_normPoly_D2_le_one
+      (E := E) (D₁ := D₁) (D₂ := D₂') h₁ hD₂' hP hRoot₂'
+  have hVertProd :
+      ordAt E (mulCoordRingElt E (mulCoordRingElt E D₁ D₂') Lv) P
+        = ordAt E (mulCoordRingElt E D₁ D₂') P + ordAt E Lv P := by
+    simpa [Lv] using
+      Divisor.ordAt_mul_vertical_add (E := E)
+        (D := mulCoordRingElt E D₁ D₂') hD₁D₂' P.1 hP
+  have hVertD₂ :
+      ordAt E D₂ P = ordAt E D₂' P + ordAt E Lv P := by
+    rw [hRecomp]
+    simpa [Lv] using
+      Divisor.ordAt_mul_vertical_add (E := E) (D := D₂') hD₂' P.1 hP
+  calc
+    ordAt E (mulCoordRingElt E D₁ D₂) P
+        = ordAt E (mulCoordRingElt E (mulCoordRingElt E D₁ D₂') Lv) P := by
+          rw [hAssoc]
+    _ = ordAt E (mulCoordRingElt E D₁ D₂') P + ordAt E Lv P := hVertProd
+    _ = (ordAt E D₁ P + ordAt E D₂' P) + ordAt E Lv P := by
+          rw [hAddReduced]
+    _ = ordAt E D₁ P + (ordAt E D₂' P + ordAt E Lv P) := by
+          rw [Nat.add_assoc]
+    _ = ordAt E D₁ P + ordAt E D₂ P := by
+          rw [hVertD₂]
+
+/-- Cross-case additivity under `rootMult ≤ 2` for both factors, with
+the remaining `2 × 2` case supplied as explicit iterated-`divLin`
+invariants. -/
+theorem ordAt_mul_add_in_cross_when_rootMult_le_two_of_iterDivLin
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0))
+    (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0)
+    (hD₁negP : D₁.eval P.1 (-P.2) ≠ 0)
+    (hD₂P : D₂.eval P.1 P.2 ≠ 0)
+    (hD₂negP : D₂.eval P.1 (-P.2) = 0)
+    (hRoot₁ : Polynomial.rootMultiplicity P.1 (normPoly E D₁) ≤ 2)
+    (hRoot₂ : Polynomial.rootMultiplicity P.1 (normPoly E D₂) ≤ 2)
+    (hCross₂₂ :
+      Polynomial.rootMultiplicity P.1 (normPoly E D₁) = 2 →
+      Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 2 →
+        commonRootMultRat E (mulCoordRingElt E D₁ D₂) P.1 = 2
+        ∧ (iterDivLin E (mulCoordRingElt E D₁ D₂) P.1 2).eval P.1 P.2 ≠ 0) :
+    ordAt E (mulCoordRingElt E D₁ D₂) P
+      = ordAt E D₁ P + ordAt E D₂ P := by
+  have hm₁_pos : 0 < Polynomial.rootMultiplicity P.1 (normPoly E D₁) :=
+    cross_case_m1_pos E h₁ hP hD₁P
+  have hm₂_pos : 0 < Polynomial.rootMultiplicity P.1 (normPoly E D₂) :=
+    cross_case_m2_pos E h₂ hP hD₂negP
+  by_cases hm₁_one : Polynomial.rootMultiplicity P.1 (normPoly E D₁) = 1
+  · have hMin : min (Polynomial.rootMultiplicity P.1 (normPoly E D₁))
+        (Polynomial.rootMultiplicity P.1 (normPoly E D₂)) = 1 := by
+      rw [hm₁_one]
+      exact Nat.min_eq_left hm₂_pos
+    exact Divisor.ordAt_mul_add_in_cross_when_min_eq_one
+      (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP hMin
+  · by_cases hm₂_one : Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 1
+    · have hMin : min (Polynomial.rootMultiplicity P.1 (normPoly E D₁))
+          (Polynomial.rootMultiplicity P.1 (normPoly E D₂)) = 1 := by
+        rw [hm₂_one]
+        exact Nat.min_eq_right hm₁_pos
+      exact Divisor.ordAt_mul_add_in_cross_when_min_eq_one
+        (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP hMin
+    · have hm₁_two :
+          Polynomial.rootMultiplicity P.1 (normPoly E D₁) = 2 := by
+        omega
+      have hm₂_two :
+          Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 2 := by
+        omega
+      obtain ⟨hCommon, hResidual⟩ := hCross₂₂ hm₁_two hm₂_two
+      exact Divisor.ordAt_mul_add_in_cross_when_m1_eq_m2_eq_two_of_iterDivLin
+        (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
+        hm₁_two hm₂_two hCommon hResidual
+
+/-- A weakened `rootMult ≤ 2` multiplicativity bridge.  Besides the
+right-factor bound, this version assumes the matching left-factor bound
+and explicit iterated-`divLin` invariants in the two oriented `2 × 2`
+cross cases. -/
+theorem ordAt_mul_add_when_normPoly_D2_le_two_of_iterDivLin
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0))
+    (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points)
+    (hRoot : Polynomial.rootMultiplicity P.1 (normPoly E D₂) ≤ 2)
+    (hRoot₁ : Polynomial.rootMultiplicity P.1 (normPoly E D₁) ≤ 2)
+    (hCross₁₂ :
+      P.2 ≠ 0 →
+      D₁.eval P.1 P.2 = 0 →
+      D₁.eval P.1 (-P.2) ≠ 0 →
+      D₂.eval P.1 P.2 ≠ 0 →
+      D₂.eval P.1 (-P.2) = 0 →
+      Polynomial.rootMultiplicity P.1 (normPoly E D₁) = 2 →
+      Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 2 →
+        commonRootMultRat E (mulCoordRingElt E D₁ D₂) P.1 = 2
+        ∧ (iterDivLin E (mulCoordRingElt E D₁ D₂) P.1 2).eval P.1 P.2 ≠ 0)
+    (hCross₂₁ :
+      P.2 ≠ 0 →
+      D₂.eval P.1 P.2 = 0 →
+      D₂.eval P.1 (-P.2) ≠ 0 →
+      D₁.eval P.1 P.2 ≠ 0 →
+      D₁.eval P.1 (-P.2) = 0 →
+      Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 2 →
+      Polynomial.rootMultiplicity P.1 (normPoly E D₁) = 2 →
+        commonRootMultRat E (mulCoordRingElt E D₂ D₁) P.1 = 2
+        ∧ (iterDivLin E (mulCoordRingElt E D₂ D₁) P.1 2).eval P.1 P.2 ≠ 0) :
+    ordAt E (mulCoordRingElt E D₁ D₂) P
+      = ordAt E D₁ P + ordAt E D₂ P := by
+  by_cases hY0 : P.2 = 0
+  · exact Divisor.ordAt_mul_add_twoTorsion E h₁ h₂ hP hY0
+  · have hY : P.2 ≠ 0 := hY0
+    by_cases hD₁P : D₁.eval P.1 P.2 = 0
+    · by_cases hD₁negP : D₁.eval P.1 (-P.2) = 0
+      · have hSwap :=
+          ordAt_mul_add_when_right_twin_rootMult_le_two
+            E D₂ D₁ P hP hY h₂ h₁ hD₁P hD₁negP hRoot₁
+        rw [mulCoordRingElt_comm E D₁ D₂, Nat.add_comm]
+        exact hSwap
+      · push_neg at hD₁negP
+        by_cases hD₂P : D₂.eval P.1 P.2 = 0
+        · by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
+          · exact ordAt_mul_add_when_right_twin_rootMult_le_two
+              E D₁ D₂ P hP hY h₁ h₂ hD₂P hD₂negP hRoot
+          · push_neg at hD₂negP
+            exact Divisor.ordAt_mul_add_at_both_lone_same_sheet
+              (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
+        · push_neg at hD₂P
+          by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
+          · exact ordAt_mul_add_in_cross_when_rootMult_le_two_of_iterDivLin
+              (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
+              hRoot₁ hRoot
+              (fun hm₁ hm₂ =>
+                hCross₁₂ hY hD₁P hD₁negP hD₂P hD₂negP hm₁ hm₂)
+          · push_neg at hD₂negP
+            exact Divisor.ordAt_mul_add_at_lone_sheet
+              (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
+    · push_neg at hD₁P
+      by_cases hD₂P : D₂.eval P.1 P.2 = 0
+      · by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
+        · exact ordAt_mul_add_when_right_twin_rootMult_le_two
+            E D₁ D₂ P hP hY h₁ h₂ hD₂P hD₂negP hRoot
+        · push_neg at hD₂negP
+          by_cases hD₁negP : D₁.eval P.1 (-P.2) = 0
+          · have hSwap :=
+              ordAt_mul_add_in_cross_when_rootMult_le_two_of_iterDivLin
+                (E := E) h₂ h₁ hP hY hD₂P hD₂negP hD₁P hD₁negP
+                hRoot hRoot₁
+                (fun hm₂ hm₁ =>
+                  hCross₂₁ hY hD₂P hD₂negP hD₁P hD₁negP hm₂ hm₁)
+            rw [mulCoordRingElt_comm E D₁ D₂, Nat.add_comm]
+            exact hSwap
+          · push_neg at hD₁negP
+            exact Divisor.ordAt_mul_add_at_lone_sheet_swap
+              (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
+      · push_neg at hD₂P
+        exact Divisor.ordAt_mul_add_at_nonvanish
+          (E := E) h₁ h₂ hP hD₁P hD₂P
+
+theorem localMult_mulCoordRingElt_eq_add_when_rootMult_le_two
+    (D₁ D₂ : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (hP : P ∈ E.points)
+    (hD₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0))
+    (hD₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    (hRoot : Polynomial.rootMultiplicity P.1 (normPoly E D₂) ≤ 2)
+    (hRoot₁ : Polynomial.rootMultiplicity P.1 (normPoly E D₁) ≤ 2)
+    (hCross₁₂ :
+      P.2 ≠ 0 →
+      D₁.eval P.1 P.2 = 0 →
+      D₁.eval P.1 (-P.2) ≠ 0 →
+      D₂.eval P.1 P.2 ≠ 0 →
+      D₂.eval P.1 (-P.2) = 0 →
+      Polynomial.rootMultiplicity P.1 (normPoly E D₁) = 2 →
+      Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 2 →
+        commonRootMultRat E (mulCoordRingElt E D₁ D₂) P.1 = 2
+        ∧ (iterDivLin E (mulCoordRingElt E D₁ D₂) P.1 2).eval P.1 P.2 ≠ 0)
+    (hCross₂₁ :
+      P.2 ≠ 0 →
+      D₂.eval P.1 P.2 = 0 →
+      D₂.eval P.1 (-P.2) ≠ 0 →
+      D₁.eval P.1 P.2 ≠ 0 →
+      D₁.eval P.1 (-P.2) = 0 →
+      Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 2 →
+      Polynomial.rootMultiplicity P.1 (normPoly E D₁) = 2 →
+        commonRootMultRat E (mulCoordRingElt E D₂ D₁) P.1 = 2
+        ∧ (iterDivLin E (mulCoordRingElt E D₂ D₁) P.1 2).eval P.1 P.2 ≠ 0) :
+    localMult E (mulCoordRingElt E D₁ D₂) P
+      = localMult E D₁ P + localMult E D₂ P := by
+  simpa [localMult_eq_ordAt] using
+    ordAt_mul_add_when_normPoly_D2_le_two_of_iterDivLin
+      (E := E) hD₁ hD₂ hP hRoot hRoot₁ hCross₁₂ hCross₂₁
+
 theorem landmarkInvStrong_combine_distinct_when_rootMult_le_one
     {xs ys : List (ZMod E.q × ZMod E.q)}
     {a b : EagenAccum E}
