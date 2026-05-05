@@ -1538,6 +1538,88 @@ theorem accInv_combine_higher_distinct_divisor_at_infinity_AccInv_form
   rw [residueDivisor_at_infinity_of_S_ne_zero E _ h_combine_ne_zero]
   push_cast; ring
 
+/-! ### Combine step: polynomial-factorization eval helper
+
+Reusable helper extracting the algebraic identity
+`prod.eval(x, y) = (x - a.x)(x - b.x) · combine.poly.eval(x, y)` for
+any (x, y). Follows from the divLin recompositions
+`prod.{a,b} = (X - a.x) · (prod.divLin a.x).{a,b}` and
+`(prod.divLin a.x).{a,b} = (X - b.x) · combine.{a,b}`. -/
+
+theorem combine_higher_distinct_prod_eval_factor
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (x y : ZMod E.q) :
+    (mulCoordRingElt E (mulCoordRingElt E
+        (chordCoordRingElt E a.point b.point) a.poly) b.poly).eval x y
+      = (x - a.point.1) * (x - b.point.1)
+        * (EagenAccum.combine_higher_distinct E a b h_xx).poly.eval x y := by
+  classical
+  set chord := chordCoordRingElt E a.point b.point with hchord_def
+  set prod := mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly with hprod_def
+  set combine := EagenAccum.combine_higher_distinct E a b h_xx with hcombine_def
+  have h_prod_at_a := combine_higher_distinct_divisible_at_a (E := E)
+    h_acc_a h_xx hY_a h_a_poly_NZ h_b_poly_NZ
+  have h_after_a_at_b := combine_higher_distinct_divisible_at_b (E := E)
+    h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
+  have h_pa_eval : prod.a.eval x
+      = (x - a.point.1) * (prod.divLin a.point.1).a.eval x := by
+    have h_pa_recomp : prod.a
+        = (Polynomial.X - Polynomial.C a.point.1)
+          * (prod.divLin a.point.1).a := by
+      show prod.a = (Polynomial.X - Polynomial.C a.point.1)
+            * (prod.a /ₘ (Polynomial.X - Polynomial.C a.point.1))
+      exact (Polynomial.mul_divByMonic_eq_iff_isRoot.mpr h_prod_at_a.1).symm
+    rw [h_pa_recomp]
+    simp [Polynomial.eval_mul, Polynomial.eval_sub,
+          Polynomial.eval_X, Polynomial.eval_C]
+  have h_pb_eval : prod.b.eval x
+      = (x - a.point.1) * (prod.divLin a.point.1).b.eval x := by
+    have h_pb_recomp : prod.b
+        = (Polynomial.X - Polynomial.C a.point.1)
+          * (prod.divLin a.point.1).b := by
+      show prod.b = (Polynomial.X - Polynomial.C a.point.1)
+            * (prod.b /ₘ (Polynomial.X - Polynomial.C a.point.1))
+      exact (Polynomial.mul_divByMonic_eq_iff_isRoot.mpr h_prod_at_a.2).symm
+    rw [h_pb_recomp]
+    simp [Polynomial.eval_mul, Polynomial.eval_sub,
+          Polynomial.eval_X, Polynomial.eval_C]
+  have h_da_a_eval : (prod.divLin a.point.1).a.eval x
+      = (x - b.point.1) * combine.poly.a.eval x := by
+    have h_da_a_recomp : (prod.divLin a.point.1).a
+        = (Polynomial.X - Polynomial.C b.point.1)
+          * ((prod.divLin a.point.1).divLin b.point.1).a := by
+      show (prod.divLin a.point.1).a
+          = (Polynomial.X - Polynomial.C b.point.1)
+            * ((prod.divLin a.point.1).a /ₘ (Polynomial.X - Polynomial.C b.point.1))
+      exact (Polynomial.mul_divByMonic_eq_iff_isRoot.mpr h_after_a_at_b.1).symm
+    rw [show combine.poly = (prod.divLin a.point.1).divLin b.point.1 from rfl]
+    rw [h_da_a_recomp]
+    simp [Polynomial.eval_mul, Polynomial.eval_sub,
+          Polynomial.eval_X, Polynomial.eval_C]
+  have h_da_b_eval : (prod.divLin a.point.1).b.eval x
+      = (x - b.point.1) * combine.poly.b.eval x := by
+    have h_da_b_recomp : (prod.divLin a.point.1).b
+        = (Polynomial.X - Polynomial.C b.point.1)
+          * ((prod.divLin a.point.1).divLin b.point.1).b := by
+      show (prod.divLin a.point.1).b
+          = (Polynomial.X - Polynomial.C b.point.1)
+            * ((prod.divLin a.point.1).b /ₘ (Polynomial.X - Polynomial.C b.point.1))
+      exact (Polynomial.mul_divByMonic_eq_iff_isRoot.mpr h_after_a_at_b.2).symm
+    rw [show combine.poly = (prod.divLin a.point.1).divLin b.point.1 from rfl]
+    rw [h_da_b_recomp]
+    simp [Polynomial.eval_mul, Polynomial.eval_sub,
+          Polynomial.eval_X, Polynomial.eval_C]
+  show prod.a.eval x - prod.b.eval x * y
+      = (x - a.point.1) * (x - b.point.1)
+        * (combine.poly.a.eval x - combine.poly.b.eval x * y)
+  rw [h_pa_eval, h_pb_eval, h_da_a_eval, h_da_b_eval]
+  ring
+
 /-! ### Combine step: at-affine off-support divisor identity
 
 When R = `ECPoint.affine x y` has x ≠ a.point.1, x ≠ b.point.1, and
