@@ -1610,4 +1610,28 @@ theorem map_singleton_flatten {α : Type*} (Ps : List α) :
     rw [List.cons_append, List.nil_append]
     rw [ih]
 
+/-! ## Landmark theorem (conditional on per-pair combine)
+
+Combining levelInitSingleton, level_step preservation, iterate
+preservation, and the pairUp/flatten helpers:
+
+  Given a list of points all on `E`, the iterate of level0_singletons
+  produces a list of accumulators each satisfying LandmarkInv with
+  its corresponding sub-list partition. -/
+
+theorem landmarkInvList_eagenBuild_singletons
+    (Ps : List (ZMod E.q × ZMod E.q))
+    (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
+    (h_combine : ∀ (xs ys : List (ZMod E.q × ZMod E.q))
+        (a b : EagenAccum E),
+      LandmarkInv E xs a → LandmarkInv E ys b →
+      LandmarkInv E (xs ++ ys) (EagenAccum.combine E a b)) :
+    LandmarkInvList E (pairUpN Ps.length (Ps.map (fun P => [P])))
+                       (iterate E Ps.length (level0_singletons E Ps)) := by
+  classical
+  have h_init : LandmarkInvList E (Ps.map (fun P => [P]))
+                                  (level0_singletons E Ps) :=
+    landmarkInvList_level0_singletons E Ps hPs_on
+  exact landmarkInvList_preservation_under_iterate E Ps.length _ _ h_init h_combine
+
 end Divisor.Landmark
