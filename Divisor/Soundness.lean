@@ -340,6 +340,35 @@ theorem ma_completeness_clean
         apply Nat.mul_le_mul (by omega) hHasse
     _ ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by ring_nf; omega
 
+/-! ## Length-4 simple completeness via the constructive bridge
+
+For length-4 simple sum-zero quadruples (`P_0 + P_1 + P_2 + P_3 = O`
+on `E`) with all witness scalars equal to 1, the
+`isHonestFor_of_isHonestForLength4Simple` bridge supplies the
+strengthened `isHonestFor` predicate constructively. Composing with
+`ma_completeness` gives an axiom-clean completeness theorem for this
+case, validating the bridge end-to-end. -/
+
+theorem ma_completeness_for_length4Simple
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
+    (hValid : relDlog E stmt wit)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    ((E.points ×ˢ E.points).filter
+        (fun p =>
+          ¬ maVerifierAccepts E stmt msg
+            ⟨p.1, p.2⟩
+            (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm))).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
+  ma_completeness E stmt wit hk hValid msg
+    (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm)
+    hDeg hDegK hAdm
+    (isHonestFor_of_isHonestForLength4Simple E h_simple hk h_scalars)
+
 /-! ## Paper-Lean naming correspondence
 
     Paper ↔ Lean (post-rename, primary names):
