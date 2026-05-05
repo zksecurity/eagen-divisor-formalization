@@ -4407,6 +4407,58 @@ theorem combine_higher_vertical_divisor_via_mul_minus_vert
   exact divisorOfD_divLin_subtract (E := E) mul_ab a.point.1
     h_pa_dvd h_pb_dvd h_mul_NZ R
 
+/-! ### TerminalInv for vertical combine at infinity
+
+At infinity, the vertical combine's TerminalInv equation reduces to
+the natDegree calculation:
+  natDeg(normPoly combined) = natDeg(normPoly (a.poly · b.poly)) - 2
+                           = (xs.length + 1) + (ys.length + 1) - 2
+                           = xs.length + ys.length
+                           = (xs ++ ys).length.
+
+Hence divisorOfD combined.poly 0 = -((xs ++ ys).length : ℤ)
+    = formalDivisorOfList E (xs ++ ys) 0. -/
+
+theorem terminalInv_combine_higher_vertical_at_infinity
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 = b.point.1) (h_yy : a.point.2 = -b.point.2)
+    (hY_a : a.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0)) :
+    divisorOfD E (EagenAccum.combine_higher_vertical E a b h_xx h_yy).poly
+      (0 : ECPoint E)
+      = formalDivisorOfList E (xs ++ ys) (0 : ECPoint E) := by
+  classical
+  -- Apply divisor_via_mul_minus_vert.
+  rw [combine_higher_vertical_divisor_via_mul_minus_vert (E := E)
+        h_acc_a h_acc_b h_xx h_yy hY_a h_a_poly_NZ h_b_poly_NZ]
+  -- mul-add at infinity (unconditional).
+  rw [divisorOfD_mul_add_at_infinity E h_a_poly_NZ h_b_poly_NZ]
+  -- AccInv at infinity for a, b (gives div = -(length+1) each).
+  rw [h_acc_a.2.2 (0 : ECPoint E)]
+  rw [h_acc_b.2.2 (0 : ECPoint E)]
+  -- vert at infinity = -2.
+  rw [divisorOfD_vertical_at_infinity_eq_neg_two E a.point.1]
+  -- residueDivisor a.lift 0 + residueDivisor b.lift 0 = -2 (each is -1).
+  have h_a_lift_ne_zero :
+      (ECPoint.affineOfMem E h_acc_a.1 : ECPoint E) ≠ 0 := by
+    intro h_eq
+    unfold ECPoint.affineOfMem ECPoint.affineOfEqn at h_eq
+    cases h_eq
+  have h_b_lift_ne_zero :
+      (ECPoint.affineOfMem E h_acc_b.1 : ECPoint E) ≠ 0 := by
+    intro h_eq
+    unfold ECPoint.affineOfMem ECPoint.affineOfEqn at h_eq
+    cases h_eq
+  rw [residueDivisor_at_infinity_of_S_ne_zero E _ h_a_lift_ne_zero]
+  rw [residueDivisor_at_infinity_of_S_ne_zero E _ h_b_lift_ne_zero]
+  rw [formalDivisorOfList_at_infinity, formalDivisorOfList_at_infinity,
+      formalDivisorOfList_at_infinity]
+  rw [List.length_append]
+  push_cast
+  ring
+
 /-! ## General-k correctness: status
 
 Progress so far:
