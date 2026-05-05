@@ -169,4 +169,56 @@ theorem ma_completeness_clean_for_binary
     (isHonestFor_of_isHonestForBinary (E := E) h_binary h_combine)
     hD hQ
 
+/-- M=3 binary completeness via the constructive length-4 simple bridge.
+
+This is the all-selected binary case: `stmt.k = msg.k = 3` is carried by
+`h_simple`, and every witness scalar is `1`.  Unlike
+`ma_completeness_for_binary`, this corollary does not need
+`PairwiseCombineHyp`; it composes through the existing
+`ma_completeness_for_length4Simple` proof, whose divisor witness is
+`eagenBuild_length4_explicit`. -/
+theorem ma_completeness_for_binary_M_eq_3
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (hkm : stmt.k = msg.k)
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
+    (hValid : relDlog E stmt wit)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    ((E.points ×ˢ E.points).filter
+        (fun p =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+  have hkm_eq :
+      hkm = h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm :=
+    Subsingleton.elim _ _
+  rw [hkm_eq]
+  exact ma_completeness_for_length4Simple E stmt msg h_simple wit hk
+    h_scalars hValid hDeg hDegK hAdm
+
+/-- Hasse-clean form of `ma_completeness_for_binary_M_eq_3`. -/
+theorem ma_completeness_clean_for_binary_M_eq_3
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (hkm : stmt.k = msg.k)
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
+    (hValid : relDlog E stmt wit)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hQ : 5 ≤ E.q) :
+    ((E.points ×ˢ E.points).filter
+        (fun p =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
+  have hkm_eq :
+      hkm = h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm :=
+    Subsingleton.elim _ _
+  rw [hkm_eq]
+  exact ma_completeness_clean_for_length4Simple E stmt msg h_simple wit hk
+    h_scalars hValid hDeg hDegK hAdm hQ
+
 end Divisor
