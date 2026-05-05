@@ -5146,6 +5146,40 @@ theorem eagenBuild_level_step_length_lt_of_tangent_free
         simp only [List.length_cons]
         omega
 
+/-! ### eagenBuild_iterate convergence under tangent-free preservation
+
+Given tangent-free preservation under level_step (per-iteration
+hypothesis), n iterations starting from a list of length ≤ n always
+produce a list of length ≤ 1. -/
+
+theorem eagenBuild_iterate_length_le_one_of_tangent_free
+    (h_preserve :
+      ∀ ys : List (EagenAccum E),
+        LevelStepTangentFree E ys → LevelStepTangentFree E (eagenBuild_level_step E ys))
+    (n : ℕ) (xs : List (EagenAccum E))
+    (h_len : xs.length ≤ n) (h : LevelStepTangentFree E xs) :
+    (eagenBuild_iterate E n xs).length ≤ 1 := by
+  classical
+  induction n generalizing xs with
+  | zero =>
+    -- xs.length ≤ 0 ⟹ xs = []. iterate 0 [] = [] (length 0 ≤ 1).
+    have : xs.length = 0 := by omega
+    rw [List.length_eq_zero_iff] at this
+    rw [this, eagenBuild_iterate_zero]
+    simp
+  | succ n IH =>
+    by_cases h_le_one : xs.length ≤ 1
+    · rw [eagenBuild_iterate_succ_of_length_le_one E n xs h_le_one]
+      exact h_le_one
+    · push_neg at h_le_one
+      have h_ge : 2 ≤ xs.length := h_le_one
+      rw [eagenBuild_iterate_succ_of_length_gt_one E n xs (by omega : ¬ xs.length ≤ 1)]
+      have h_lt := eagenBuild_level_step_length_lt_of_tangent_free E (n + 1) xs h_len h h_ge
+      have h_step_len : (eagenBuild_level_step E xs).length ≤ n := by omega
+      have h_step_tf : LevelStepTangentFree E (eagenBuild_level_step E xs) :=
+        h_preserve xs h
+      exact IH _ h_step_len h_step_tf
+
 /-! ## General-k correctness: status
 
 Progress so far:
