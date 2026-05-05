@@ -6042,6 +6042,29 @@ theorem accInvList_cons_cons_iff
       AccInv E xs a ∧ AccInv E ys b ∧ AccInvList E rest_xss rest_accs := by
   rw [accInvList_cons_iff, accInvList_cons_iff]
 
+/-! ### AccsListChordStep: per-pair chord-step output predicate
+
+For each adjacent pair (xs, a, ys, b) at level_step pairing positions
+in synchronized (xss, accs), asserts:
+* a.point.1 ≠ b.point.1 (chord case applies in level_step).
+* AccInv (xs ++ ys) (combine_higher_distinct a b) (chord step output).
+
+This bundles the chord step's "input genericity → output AccInv"
+implication for each pair, avoiding the need to thread CombineStrongGeneric
++ hOffChord through the list induction. The caller has already
+applied the chord step at each pair. -/
+
+def AccsListChordStep :
+    List (List (ZMod E.q × ZMod E.q)) → List (EagenAccum E) → Prop
+  | [], [] => True
+  | [_], [_] => True
+  | xs :: ys :: rest_xss, a :: b :: rest_accs =>
+      (∃ h_xx : a.point.1 ≠ b.point.1,
+        AccInv E (xs ++ ys)
+          (EagenAccum.combine_higher_distinct E a b h_xx))
+        ∧ AccsListChordStep rest_xss rest_accs
+  | _, _ => False
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
