@@ -1370,4 +1370,48 @@ theorem eagenBuild_landmark_length2
     show ((X - C P.1) ^ 2 - 0 ^ 2 * curveX E).natDegree = 2
     simp [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C]
 
+/-! ## level_step preservation (conditional on per-pair combine)
+
+If we know `LandmarkInv` is preserved under `combine` for all
+adjacent pairs in the input, then `LandmarkInvList` propagates
+through one application of `level_step`.
+
+The `pairUp` function on a list of sub-lists: pair adjacent and
+append, leaving any trailing odd-length element forwarded. -/
+
+def pairUp {α : Type*} : List (List α) → List (List α)
+  | [] => []
+  | [xs] => [xs]
+  | xs :: ys :: rest => (xs ++ ys) :: pairUp rest
+
+theorem landmarkInvList_preservation_under_level_step
+    (xss : List (List (ZMod E.q × ZMod E.q)))
+    (accs : List (EagenAccum E))
+    (h : LandmarkInvList E xss accs)
+    (h_combine : ∀ (xs ys : List (ZMod E.q × ZMod E.q))
+        (a b : EagenAccum E),
+      LandmarkInv E xs a → LandmarkInv E ys b →
+      LandmarkInv E (xs ++ ys) (EagenAccum.combine E a b)) :
+    LandmarkInvList E (pairUp xss) (level_step E accs) := by
+  classical
+  match xss, accs, h with
+  | [], [], _ =>
+    show LandmarkInvList E [] (level_step E [])
+    show List.Forall₂ _ [] []
+    exact List.Forall₂.nil
+  | [xs], [a], h =>
+    show LandmarkInvList E [xs] (level_step E [a])
+    show List.Forall₂ _ [xs] [a]
+    exact h
+  | xs :: ys :: rest_xs, a :: b :: rest_acc, h =>
+    obtain ⟨h_a, h_rest⟩ := List.forall₂_cons.mp h
+    obtain ⟨h_b, h_rest_rest⟩ := List.forall₂_cons.mp h_rest
+    show LandmarkInvList E (pairUp (xs :: ys :: rest_xs))
+                              (level_step E (a :: b :: rest_acc))
+    show List.Forall₂ _ ((xs ++ ys) :: pairUp rest_xs)
+                          (EagenAccum.combine E a b :: level_step E rest_acc)
+    refine List.Forall₂.cons ?_ ?_
+    · exact h_combine xs ys a b h_a h_b
+    · exact landmarkInvList_preservation_under_level_step rest_xs rest_acc h_rest_rest h_combine
+
 end Divisor.Landmark
