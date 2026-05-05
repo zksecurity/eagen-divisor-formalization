@@ -540,6 +540,29 @@ theorem localMult_mulCoordRingElt_eq_add_when_rootMult_le_one
     (Divisor.ordAt_mul_add_when_normPoly_D2_le_one (E := E)
       (D₁ := D₁) (D₂ := D₂) hD₁ hD₂ hP hRoot)
 
+theorem localMult_mulCoordRingElt_ge_add_general
+    (D₁ D₂ : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (hP : P ∈ E.points)
+    (hD₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0))
+    (hD₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    (hRoot : Polynomial.rootMultiplicity P.1 (normPoly E D₂) ≤ 1
+              ∨ Polynomial.rootMultiplicity P.1 (normPoly E D₁) ≤ 1) :
+    localMult E D₁ P + localMult E D₂ P
+      ≤ localMult E (mulCoordRingElt E D₁ D₂) P := by
+  rcases hRoot with hRoot₂ | hRoot₁
+  · have hEq := localMult_mulCoordRingElt_eq_add_when_rootMult_le_one
+      (E := E) D₁ D₂ P hP hD₁ hD₂ hRoot₂
+    exact le_of_eq hEq.symm
+  · have hEq := localMult_mulCoordRingElt_eq_add_when_rootMult_le_one
+      (E := E) D₂ D₁ P hP hD₂ hD₁ hRoot₁
+    refine le_of_eq ?_
+    calc
+      localMult E D₁ P + localMult E D₂ P
+          = localMult E D₂ P + localMult E D₁ P := by rw [add_comm]
+      _ = localMult E (mulCoordRingElt E D₂ D₁) P := hEq.symm
+      _ = localMult E (mulCoordRingElt E D₁ D₂) P := by
+        rw [mulCoordRingElt_comm E D₁ D₂]
+
 theorem localMult_divLin_decreases_at_fiber
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     (hP : P ∈ E.points)
