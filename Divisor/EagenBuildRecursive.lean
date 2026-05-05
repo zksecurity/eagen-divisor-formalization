@@ -6065,6 +6065,88 @@ def AccsListChordStep :
         ∧ AccsListChordStep rest_xss rest_accs
   | _, _ => False
 
+/-! ### AccInvList preservation under level_step
+
+The connective tissue: given AccInvList xss accs + AccsListChordStep
+(per-pair chord-step output bundle), level_step preserves the
+invariant on mergeAdjacentPairs xss. -/
+
+theorem accInvList_preservation_under_level_step
+    (n : ℕ)
+    (xss : List (List (ZMod E.q × ZMod E.q)))
+    (accs : List (EagenAccum E))
+    (h_len : accs.length ≤ n)
+    (h_acc_list : AccInvList E xss accs)
+    (h_chord_step : AccsListChordStep E xss accs) :
+    AccInvList E (mergeAdjacentPairs xss) (eagenBuild_level_step E accs) := by
+  classical
+  induction n generalizing xss accs with
+  | zero =>
+    -- accs = [], so xss = [] (length match).
+    have h_accs_nil : accs = [] :=
+      List.length_eq_zero_iff.mp (by omega)
+    have h_xss_nil : xss = [] := by
+      have h_xss_len : xss.length = 0 := by
+        rw [List.Forall₂.length_eq h_acc_list, h_accs_nil]; simp
+      exact List.length_eq_zero_iff.mp h_xss_len
+    rw [h_accs_nil, h_xss_nil, eagenBuild_level_step_nil, mergeAdjacentPairs_nil]
+    exact (accInvList_nil_iff E _).mpr rfl
+  | succ n IH =>
+    cases accs with
+    | nil =>
+      have h_xss_nil : xss = [] := by
+        have h_xss_len : xss.length = 0 := by
+          rw [List.Forall₂.length_eq h_acc_list]; simp
+        exact List.length_eq_zero_iff.mp h_xss_len
+      rw [h_xss_nil, eagenBuild_level_step_nil, mergeAdjacentPairs_nil]
+      exact (accInvList_nil_iff E _).mpr rfl
+    | cons a rest_accs =>
+      cases rest_accs with
+      | nil =>
+        -- Single element: level_step is identity, mergeAdjacentPairs is identity.
+        cases xss with
+        | nil =>
+          exfalso
+          have := List.Forall₂.length_eq h_acc_list
+          simp at this
+        | cons xs rest_xss =>
+          cases rest_xss with
+          | nil =>
+            rw [eagenBuild_level_step_singleton, mergeAdjacentPairs_singleton]
+            exact h_acc_list
+          | cons _ _ =>
+            exfalso
+            have := List.Forall₂.length_eq h_acc_list
+            simp at this
+      | cons b rest_accs' =>
+        -- cons-cons case.
+        cases xss with
+        | nil =>
+          exfalso
+          have := List.Forall₂.length_eq h_acc_list
+          simp at this
+        | cons xs rest_xss =>
+          cases rest_xss with
+          | nil =>
+            exfalso
+            have := List.Forall₂.length_eq h_acc_list
+            simp at this
+          | cons ys rest_xss' =>
+            -- Extract chord-step output for this pair.
+            obtain ⟨⟨h_xx, h_combine_acc⟩, h_chord_rest⟩ := h_chord_step
+            rw [eagenBuild_level_step_cons_cons_distinct E a b rest_accs' h_xx]
+            rw [mergeAdjacentPairs_cons_cons]
+            rw [accInvList_cons_iff]
+            refine ⟨h_combine_acc, ?_⟩
+            -- Apply IH on rest.
+            obtain ⟨_, _, h_rest_list⟩ :=
+              (accInvList_cons_cons_iff E xs ys rest_xss' a b rest_accs').mp h_acc_list
+            have h_rest_len : rest_accs'.length ≤ n := by
+              have : (a :: b :: rest_accs').length = rest_accs'.length + 2 := by
+                simp [List.length]
+              omega
+            exact IH rest_xss' rest_accs' h_rest_len h_rest_list h_chord_rest
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
