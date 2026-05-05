@@ -4547,6 +4547,146 @@ theorem terminalInv_combine_higher_vertical_at_off_a_fiber
   rw [formalDivisorOfList_append]
   ring
 
+/-! ### AccInv ⟹ normPoly rootMult ≤ 1 at the accumulator's own x-coord
+
+Under AccInv, plus xs disjoint from {a.point, -a.point}, the
+normPoly's rootMult at a.point.1 is exactly 1 (residue at -a.lift
+contributes 1, formal counts contribute 0). -/
+
+theorem accInv_normPoly_rootMult_at_a_x_eq_one
+    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
+    (h_acc : AccInv E xs a)
+    (hY_a : a.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_a_pt_not_in_xs : a.point ∉ xs)
+    (h_neg_a_pt_not_in_xs : (a.point.1, -a.point.2) ∉ xs) :
+    Polynomial.rootMultiplicity a.point.1 (normPoly E a.poly) = 1 := by
+  classical
+  -- Compute via norm-sum identity:
+  --   rootMult a.x (normPoly a.poly) = ordAt(a.poly)(a.lift) + ordAt(a.poly)(-a.lift)
+  -- AccInv gives both ords:
+  --   ordAt(a.poly)(a.lift) = formal_xs(a.lift) + 0 = 0 (xs has no a.point)
+  --   ordAt(a.poly)(-a.lift) = formal_xs(-a.lift) + 1 = 0 + 1 = 1.
+  -- Sum = 1.
+  have h_a_pt : a.point ∈ E.points := h_acc.1
+  have h_neg_a_pt : (a.point.1, -a.point.2) ∈ E.points := by
+    apply E.hComplete
+    have hC := E.hOnCurve _ h_a_pt
+    show (-a.point.2) ^ 2 = a.point.1 ^ 3 + E.curveA * a.point.1 + E.curveB
+    rw [neg_pow_two]; exact hC
+  -- Switch to a.point as the "P" in pair_eq_rootMult.
+  have h_pair := ordAt_nonTwoTorsion_pair_eq_rootMult E a.poly h_a_poly_NZ
+                  (P := a.point) h_a_pt hY_a
+  -- a.point.1 = a.point.fst.
+  show Polynomial.rootMultiplicity a.point.1 (normPoly E a.poly) = 1
+  rw [← h_pair]
+  -- Convert ordAt_nonTwoTorsion to ordAt using dispatch.
+  have h_eq1 : ordAt_nonTwoTorsion E a.poly a.point = ordAt E a.poly a.point := by
+    rw [ordAt_eq_dispatch E a.poly h_a_pt h_a_poly_NZ, if_neg hY_a]
+  have h_eq2 : ordAt_nonTwoTorsion E a.poly (a.point.1, -a.point.2)
+              = ordAt E a.poly (a.point.1, -a.point.2) := by
+    have hY_neg : (-a.point.2 : ZMod E.q) ≠ 0 := neg_ne_zero.mpr hY_a
+    rw [ordAt_eq_dispatch E a.poly h_neg_a_pt h_a_poly_NZ, if_neg hY_neg]
+  rw [h_eq1, h_eq2]
+  -- Now compute via AccInv.
+  have h_div_a := h_acc.2.2 (ECPoint.affineOfMem E h_a_pt)
+  have h_div_neg_a := h_acc.2.2 (ECPoint.affineOfMem E h_neg_a_pt)
+  -- divisorOfD a.poly (affineOfMem h_a_pt) = (ordAt a.poly a.point : ℤ).
+  rw [show divisorOfD E a.poly (ECPoint.affineOfMem E h_a_pt)
+        = (ordAt E a.poly a.point : ℤ) from by
+      rw [← ECPoint.affine_eq_affineOfMem E h_a_pt]
+      rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ h_a_pt)))]
+      rfl] at h_div_a
+  -- Similarly for -a.lift.
+  rw [show divisorOfD E a.poly (ECPoint.affineOfMem E h_neg_a_pt)
+        = (ordAt E a.poly (a.point.1, -a.point.2) : ℤ) from by
+      rw [← ECPoint.affine_eq_affineOfMem E h_neg_a_pt]
+      rw [ECPoint.affine_of_nonsingular E
+          (E.equation_iff_nonsingular.mp
+            ((E.equation_iff _ _).mpr (E.hOnCurve _ h_neg_a_pt)))]
+      rfl] at h_div_neg_a
+  -- formalDivisorOfList xs at a.lift = 0 (xs has no a.point).
+  have h_formal_a : formalDivisorOfList E xs (ECPoint.affineOfMem E h_a_pt) = 0 := by
+    rw [← ECPoint.affine_eq_affineOfMem E h_a_pt]
+    rw [ECPoint.affine_of_nonsingular E
+        (E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ h_a_pt)))]
+    show ((xs.filter (fun P => P = (a.point.1, a.point.2))).length : ℤ) = 0
+    have h_filt : xs.filter (fun P => P = (a.point.1, a.point.2)) = [] := by
+      apply List.filter_eq_nil_iff.mpr
+      intro P hP_in heq
+      apply h_a_pt_not_in_xs
+      have : P = a.point := decide_eq_true_eq.mp heq
+      rwa [this] at hP_in
+    rw [h_filt]; simp
+  have h_formal_neg_a : formalDivisorOfList E xs (ECPoint.affineOfMem E h_neg_a_pt) = 0 := by
+    rw [← ECPoint.affine_eq_affineOfMem E h_neg_a_pt]
+    rw [ECPoint.affine_of_nonsingular E
+        (E.equation_iff_nonsingular.mp
+          ((E.equation_iff _ _).mpr (E.hOnCurve _ h_neg_a_pt)))]
+    show ((xs.filter (fun P => P = (a.point.1, -a.point.2))).length : ℤ) = 0
+    have h_filt : xs.filter (fun P => P = (a.point.1, -a.point.2)) = [] := by
+      apply List.filter_eq_nil_iff.mpr
+      intro P hP_in heq
+      apply h_neg_a_pt_not_in_xs
+      have : P = (a.point.1, -a.point.2) := decide_eq_true_eq.mp heq
+      rwa [this] at hP_in
+    rw [h_filt]; simp
+  -- residueDivisor a.lift (a.lift) = 0 since a.lift ≠ -a.lift (hY_a).
+  have h_a_lift_ne_zero :
+      (ECPoint.affineOfMem E h_a_pt : ECPoint E) ≠ 0 := by
+    intro h_eq
+    unfold ECPoint.affineOfMem ECPoint.affineOfEqn at h_eq
+    cases h_eq
+  have h_a_ne_neg_a : (ECPoint.affineOfMem E h_a_pt : ECPoint E)
+      ≠ -(ECPoint.affineOfMem E h_a_pt : ECPoint E) := by
+    rw [← ECPoint.affine_eq_affineOfMem E h_a_pt]
+    rw [show -(ECPoint.affine E a.point.1 a.point.2 : ECPoint E)
+          = ECPoint.affine E a.point.1 (-a.point.2) from
+        ECPoint.affine_neg E a.point.1 a.point.2]
+    intro h_eq
+    rw [ECPoint.affine_of_nonsingular E
+        (E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ h_a_pt)))] at h_eq
+    rw [ECPoint.affine_of_nonsingular E
+        (E.equation_iff_nonsingular.mp
+          ((E.equation_iff _ _).mpr (E.hOnCurve _ h_neg_a_pt)))] at h_eq
+    injection h_eq with _ h_y_eq
+    have h2 : (2 : ZMod E.q) ≠ 0 := ZMod_two_ne_zero_of_E E
+    apply hY_a
+    have : (2 : ZMod E.q) * a.point.2 = 0 := by linear_combination h_y_eq
+    rcases mul_eq_zero.mp this with h | h
+    · exact absurd h h2
+    · exact h
+  have h_residue_a_at_a : residueDivisor E (ECPoint.affineOfMem E h_a_pt)
+        (ECPoint.affineOfMem E h_a_pt) = 0 :=
+    residueDivisor_at_other E _ _ h_a_ne_neg_a h_a_lift_ne_zero
+  -- residueDivisor a.lift (-a.lift) = 1.
+  have h_neg_a_ne_zero :
+      (ECPoint.affineOfMem E h_neg_a_pt : ECPoint E) ≠ 0 := by
+    intro h_eq
+    unfold ECPoint.affineOfMem ECPoint.affineOfEqn at h_eq
+    cases h_eq
+  have h_neg_a_eq : (ECPoint.affineOfMem E h_neg_a_pt : ECPoint E)
+      = -(ECPoint.affineOfMem E h_a_pt : ECPoint E) := by
+    rw [← ECPoint.affine_eq_affineOfMem E h_neg_a_pt]
+    rw [← ECPoint.affine_eq_affineOfMem E h_a_pt]
+    exact (ECPoint.affine_neg E a.point.1 a.point.2).symm
+  have h_residue_a_at_neg_a : residueDivisor E (ECPoint.affineOfMem E h_a_pt)
+        (ECPoint.affineOfMem E h_neg_a_pt) = 1 := by
+    unfold residueDivisor
+    rw [h_neg_a_eq]
+    rw [if_pos rfl]
+    rw [if_neg (by rw [← h_neg_a_eq]; exact h_neg_a_ne_zero)]
+    ring
+  rw [h_formal_a, h_residue_a_at_a, zero_add] at h_div_a
+  rw [h_formal_neg_a, h_residue_a_at_neg_a, zero_add] at h_div_neg_a
+  -- h_div_a : (ordAt a.poly a.point : ℤ) = 0.
+  -- h_div_neg_a : (ordAt a.poly (a.point.1, -a.point.2) : ℤ) = 1.
+  have h_ord_a : ordAt E a.poly a.point = 0 := by exact_mod_cast h_div_a
+  have h_ord_neg_a : ordAt E a.poly (a.point.1, -a.point.2) = 1 := by
+    exact_mod_cast h_div_neg_a
+  rw [h_ord_a, h_ord_neg_a]
+
 /-! ## General-k correctness: status
 
 Progress so far:
