@@ -214,6 +214,33 @@ theorem eagenBuild_length2_neg_eq_vertical
   unfold eagenBuild_iterate
   simp
 
+/-! ## General-k correctness: strategy outline
+
+The full general-k correctness theorem would say: for any sum-zero list
+`Ps : List (ECPoint E)`, `divisorOfD E (eagenBuild Ps) = formalDivisor Ps`,
+where `formalDivisor` records the multiplicities of each P_i minus
+`|Ps|` at infinity.
+
+Recommended strategy (per Codex consultation):
+
+1. Define `residue (S : ECPoint E) : ECPoint E → ℤ` capturing the
+   "running deficit" at `-S` vs `O`.
+
+2. Define an accumulator invariant tracking the absorbed sublist:
+   `AccInv xs a := a.point = xs.foldl (· + ·) 0 ∧
+                   divisorOfD a.poly = formalDivisor xs + residue a.point`
+
+3. Prove one local "correction factor" lemma covering
+   chord/tangent/vertical combine cases.
+
+4. Combine step preserves the invariant:
+   `AccInv xs a → AccInv ys b → AccInv (xs ++ ys) (combine a b)`
+
+5. For sum-zero input, the final accumulator's point is `0`, so the
+   residue cancels and we recover `formalDivisor`.
+
+This is multi-firing; deferred. -/
+
 /-! ## Length-4 reduction (deferred)
 
 For length-4 sum-zero distinct inputs, the recursive `eagenBuild`
