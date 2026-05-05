@@ -6147,6 +6147,30 @@ theorem accInvList_preservation_under_level_step
               omega
             exact IH rest_xss' rest_accs' h_rest_len h_rest_list h_chord_rest
 
+/-! ### NEW CAPSTONE: AccInvList preservation chain
+
+The level_step preservation (commit 904e735) closes the inductive
+tissue gap identified by Codex. The full eagenBuild correctness
+chain now has:
+
+* INITIAL: accInvList_eagenBuild_level0_of_even_length —
+  level0 produces AccInvList paired with pairList (chord case).
+* PRESERVATION: accInvList_preservation_under_level_step —
+  level_step + AccsListChordStep ⟹ AccInvList on
+  (mergeAdjacentPairs xss, level_step accs).
+* CONVERGENCE: eagenBuild_iterate_length_le_one_of_tangent_free —
+  iterate at sufficient fuel produces a list of length ≤ 1
+  (under tangent-free preservation).
+* FINAL: eagenBuild_eq_singleton_poly_when_converged —
+  iterate's singleton output IS eagenBuild's polynomial output.
+
+Remaining for eagenBuild_correctness:
+* Mixed-step preservation (allowing chord OR vertical at each pair)
+  for the terminal sum-zero step.
+* Connecting AccsListChordStep to original input genericity.
+* AllDistinctECPoints preservation under level_step (subsum-collision
+  freedom propagation). -/
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
