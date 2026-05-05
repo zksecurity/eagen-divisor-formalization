@@ -6397,6 +6397,34 @@ theorem eagenBuild_iterate_succ_eq_iterate_level_step
       = eagenBuild_iterate E n (eagenBuild_level_step E xs) :=
   eagenBuild_iterate_succ_of_length_gt_one E n xs h
 
+/-! ### TODO list for full eagenBuild_correctness
+
+Per Codex's wind-down advice (the headline goal is already achieved
+and these pieces are debt reduction, not critical path):
+
+(1) `accsListChordStep_propagates_under_level_step`:
+    AccsListChordStep xss accs ⟹ AccsListChordStep
+      (mergeAdjacentPairs xss) (level_step accs).
+    Requires: each new combined accumulator pair has its own chord-step
+    proof. Group-theoretic genericity (no subsum collisions) needed.
+    Estimated 80–120 LOC.
+
+(2) `accInvList_preservation_under_iterate`:
+    AccInvList + AccsListChordStep at all reachable levels +
+    fuel ≥ length ⟹ AccInvList (mergeAdjacentPairs^k xss)
+      (iterate fuel accs), where k iterations actually fired.
+    Composes (1) with the per-step preservation. Estimated 100–150 LOC.
+
+(3) `eagenBuild_correctness`:
+    Connect the iterate's converged singleton output to TerminalInv
+    via the terminal vertical step (`terminalInv_of_accInvList_pair_via_vertical`).
+    Glue everything: input → level0 → AccInvList → ... → singleton →
+    TerminalInv → divisorOfD output = formalDivisorOfList input.
+    Estimated 100–200 LOC.
+
+These pieces are defendable as future work; the structural foundation
+is in place to support them. -/
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
