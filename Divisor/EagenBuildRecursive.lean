@@ -5222,6 +5222,55 @@ def AllDistinctECPoints : List (EagenAccum E) → Prop
   | [] => True
   | a :: rest => (∀ b ∈ rest, a.point ≠ b.point) ∧ AllDistinctECPoints rest
 
+/-! ### AllDistinctECPoints ⟹ LevelStepTangentFree (strong induction) -/
+
+theorem LevelStepTangentFree_of_AllDistinctECPoints
+    (n : ℕ) (xs : List (EagenAccum E))
+    (h_len : xs.length ≤ n)
+    (h_all_distinct : AllDistinctECPoints E xs)
+    (h_pair_negation : ∀ a b, a ∈ xs → b ∈ xs → a.point.1 = b.point.1 →
+      a.point.2 = b.point.2 ∨ a.point.2 = -b.point.2) :
+    LevelStepTangentFree E xs := by
+  classical
+  induction n generalizing xs with
+  | zero =>
+    have : xs.length = 0 := by omega
+    rw [List.length_eq_zero_iff] at this
+    rw [this]
+    trivial
+  | succ n IH =>
+    cases xs with
+    | nil => trivial
+    | cons a rest =>
+      cases rest with
+      | nil => trivial
+      | cons b rest' =>
+        refine ⟨?_, ?_⟩
+        · -- pair(a, b): a.x ≠ b.x ∨ a.y = -b.y.
+          by_cases h_xx : a.point.1 = b.point.1
+          · right
+            have h_neg : a.point.2 = b.point.2 ∨ a.point.2 = -b.point.2 :=
+              h_pair_negation a b (by simp) (by simp [List.mem_cons]) h_xx
+            rcases h_neg with h_eq | h_neg
+            · exfalso
+              have h_pt_eq : a.point = b.point := Prod.ext h_xx h_eq
+              exact h_all_distinct.1 b (by simp) h_pt_eq
+            · exact h_neg
+          · left; exact h_xx
+        · -- LevelStepTangentFree rest'.
+          have h_rest_len : rest'.length ≤ n := by
+            have : (a :: b :: rest').length = rest'.length + 2 := by simp [List.length]
+            omega
+          have h_rest_ad : AllDistinctECPoints E rest' := h_all_distinct.2.2
+          have h_rest_pn : ∀ a' b', a' ∈ rest' → b' ∈ rest' →
+              a'.point.1 = b'.point.1 →
+              a'.point.2 = b'.point.2 ∨ a'.point.2 = -b'.point.2 := by
+            intro a' b' h_a' h_b' h_xx_eq
+            exact h_pair_negation a' b'
+              (by simp [List.mem_cons]; right; right; exact h_a')
+              (by simp [List.mem_cons]; right; right; exact h_b') h_xx_eq
+          exact IH rest' h_rest_len h_rest_ad h_rest_pn
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
