@@ -821,6 +821,49 @@ theorem terminalInv_vertical_at_off_x₀
     simp [List.filter, h1, h2]
   rw [h_filter]; simp
 
+/-- For (P, -P) vertical case (P non-2-torsion), divisor identity holds
+    at affine R = .some hns_P. -/
+theorem terminalInv_vertical_at_P
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (h_xx : P.1 = (P.1, -P.2).1) (h_yy : P.2 = -((P.1, -P.2).2))
+    (hns : E.toW.toAffine.Nonsingular P.1 P.2) :
+    divisorOfD E
+        ((EagenAccum.fromChordPair_vertical E P (P.1, -P.2) h_xx h_yy).poly)
+        (WeierstrassCurve.Affine.Point.some hns)
+      = formalDivisorOfList E [P, (P.1, -P.2)]
+          (WeierstrassCurve.Affine.Point.some hns) := by
+  classical
+  show divisorOfD E ({ a := Polynomial.X - Polynomial.C P.1, b := 0 }
+                    : CoordRingElt E.q)
+        (WeierstrassCurve.Affine.Point.some hns)
+      = formalDivisorOfList E [P, (P.1, -P.2)]
+          (WeierstrassCurve.Affine.Point.some hns)
+  rw [show (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+        = ECPoint.affine E P.1 P.2 from (ECPoint.affine_of_nonsingular E hns).symm]
+  rw [divisorOfD_vertical_at_x₀_nonTwoTorsion_affine E P.1 P.2 hP hY]
+  unfold formalDivisorOfList
+  rw [ECPoint.affine_of_nonsingular E hns]
+  have h_negP_ne_P : (P.1, -P.2) ≠ P := by
+    intro h
+    have h_neg_eq : -P.2 = P.2 := congrArg Prod.snd h
+    have h_2y : 2 * P.2 = 0 := by linear_combination -h_neg_eq
+    have h2 : (2 : ZMod E.q) ≠ 0 := ZMod_two_ne_zero_of_E E
+    have hP2_zero : P.2 = 0 := by
+      rcases mul_eq_zero.mp h_2y with h | h
+      · exact absurd h h2
+      · exact h
+    exact hY hP2_zero
+  show (1 : ℤ) = ((List.filter (fun p => p = (P.1, P.2)) [P, (P.1, -P.2)]).length : ℤ)
+  rw [show ((List.filter (fun p => p = (P.1, P.2)) [P, (P.1, -P.2)]).length : ℤ) = 1 by
+      rw [show [P, (P.1, -P.2)] = P :: [(P.1, -P.2)] from rfl]
+      rw [List.filter_cons]
+      rw [show decide (P = (P.1, P.2)) = true by simp]
+      simp only [if_true]
+      rw [List.filter_cons]
+      rw [show decide ((P.1, -P.2) = (P.1, P.2)) = false from by
+          rw [decide_eq_false_iff_not]; exact h_negP_ne_P]
+      simp]
+
 /-! ### Helper lemmas for residue and formalDivisor -/
 
 /-- residueDivisor evaluated at `-S` is `1` (when -S ≠ 0). -/
