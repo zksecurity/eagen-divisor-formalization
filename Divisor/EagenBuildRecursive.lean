@@ -5216,6 +5216,12 @@ happens. Encoding this propagation in Lean requires either:
 Option (b) is simpler but requires nontrivial group-theoretic
 genericity. Implementation deferred. -/
 
+/-! ### Strong genericity: all distinct ECPoints in accumulator list -/
+
+def AllDistinctECPoints : List (EagenAccum E) → Prop
+  | [] => True
+  | a :: rest => (∀ b ∈ rest, a.point ≠ b.point) ∧ AllDistinctECPoints rest
+
 /-! ## General-k correctness: status
 
 Progress so far:
