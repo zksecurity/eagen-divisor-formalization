@@ -5635,6 +5635,37 @@ theorem accInvList_eagenBuild_level0_of_even_length
             exact h_on_E R (by simp [List.mem_cons]; right; right; exact h_R_in)
           exact IH rest' h_rest_len h_rest_even h_rest_pair_ok h_rest_on_E
 
+/-! ### mergeAdjacentPairs: list-of-sublists pair merger
+
+Mirrors level_step's pairing structure on sublists. For each
+adjacent (xs, ys) pair in the input list-of-sublists, concatenate
+them; singleton tail (odd-length) carries forward unchanged. -/
+
+def mergeAdjacentPairs {α : Type _} : List (List α) → List (List α)
+  | [] => []
+  | [xs] => [xs]
+  | xs :: ys :: rest => (xs ++ ys) :: mergeAdjacentPairs rest
+
+@[simp] theorem mergeAdjacentPairs_nil {α : Type _} :
+    mergeAdjacentPairs ([] : List (List α)) = [] := rfl
+
+@[simp] theorem mergeAdjacentPairs_singleton {α : Type _} (xs : List α) :
+    mergeAdjacentPairs [xs] = [xs] := rfl
+
+@[simp] theorem mergeAdjacentPairs_cons_cons {α : Type _}
+    (xs ys : List α) (rest : List (List α)) :
+    mergeAdjacentPairs (xs :: ys :: rest)
+      = (xs ++ ys) :: mergeAdjacentPairs rest := rfl
+
+/-- Concatenation of mergeAdjacentPairs sublists recovers the
+flattened input. -/
+theorem mergeAdjacentPairs_flatten_eq {α : Type _} (xss : List (List α)) :
+    (mergeAdjacentPairs xss).flatten = xss.flatten := by
+  induction xss using mergeAdjacentPairs.induct with
+  | case1 => simp
+  | case2 xs => simp
+  | case3 xs ys rest IH => simp [IH]
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
