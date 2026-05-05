@@ -315,6 +315,274 @@ noncomputable def negCoords (P : ECPoint E) : Option (ZMod E.q × ZMod E.q) :=
   | WeierstrassCurve.Affine.Point.zero => none
   | WeierstrassCurve.Affine.Point.some (x := x) (y := y) _ => some (x, -y)
 
+/-! ## Constructive local multiplicity, independent of `ordAt`
+
+The definitions below are deliberately parallel to the local-order
+construction in `OrdP.Uniformizer`, but they do not mention `ordAt`.
+They are the polynomial recursion needed for the stronger Landmark
+invariant: on a non-2-torsion sheet, a twin-sheet zero cancels one
+vertical factor `(X - x₀)` from both coordinates and recurses; a lone
+sheet zero is measured by the root multiplicity of the norm polynomial.
+
+This gives a local, point/sheet-level multiplicity suitable for
+combine-step bookkeeping without importing divisor identities. -/
+
+noncomputable def localMultTwoTorsion
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q) : ℕ := by
+  classical
+  exact
+    if D.a = 0 ∧ D.b = 0 then 0
+    else if D.a = 0 then 2 * rootMultiplicity P.1 D.b + 1
+    else if D.b = 0 then 2 * rootMultiplicity P.1 D.a
+    else min (2 * rootMultiplicity P.1 D.a) (2 * rootMultiplicity P.1 D.b + 1)
+
+noncomputable def localMultNonTwoAux :
+    ℕ → CoordRingElt E.q → (ZMod E.q × ZMod E.q) → ℕ
+  | 0,       _, _ => 0
+  | fuel + 1, D, P =>
+      if D.a = 0 ∧ D.b = 0 then 0
+      else if D.eval P.1 P.2 ≠ 0 then 0
+      else if D.eval P.1 (-P.2) ≠ 0 then rootMultiplicity P.1 (normPoly E D)
+      else 1 + localMultNonTwoAux fuel (D.divLin P.1) P
+
+noncomputable def localMultNonTwo
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q) : ℕ :=
+  localMultNonTwoAux E (D.a.natDegree + D.b.natDegree + 1) D P
+
+noncomputable def localMult
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q) : ℕ := by
+  classical
+  exact
+    if P ∈ E.points ∧ ¬ (D.a = 0 ∧ D.b = 0) then
+      if P.2 = 0 then localMultTwoTorsion E D P
+      else localMultNonTwo E D P
+    else 0
+
+theorem localMult_eq_zero_of_offE_or_zero
+    (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (h : ¬ (P ∈ E.points ∧ ¬ (D.a = 0 ∧ D.b = 0))) :
+    localMult E D P = 0 := by
+  classical
+  unfold localMult
+  rw [if_neg h]
+
+theorem localMult_eq_dispatch
+    (D : CoordRingElt E.q) {P : ZMod E.q × ZMod E.q}
+    (hP : P ∈ E.points) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    localMult E D P =
+      (if P.2 = 0 then localMultTwoTorsion E D P
+       else localMultNonTwo E D P) := by
+  classical
+  unfold localMult
+  rw [if_pos ⟨hP, hD⟩]
+
+theorem localMultTwoTorsion_eq_zero_of_eval_ne_zero
+    (D : CoordRingElt E.q) {x₀ : ZMod E.q}
+    (h : D.eval x₀ 0 ≠ 0) :
+    localMultTwoTorsion E D (x₀, 0) = 0 := by
+  classical
+  have ha_ne : D.a.eval x₀ ≠ 0 := by
+    have := h
+    unfold CoordRingElt.eval at this
+    simpa using this
+  have hRootA : Polynomial.rootMultiplicity x₀ D.a = 0 :=
+    Polynomial.rootMultiplicity_eq_zero ha_ne
+  have ha_poly_ne : D.a ≠ 0 := by
+    intro hzero
+    apply ha_ne
+    rw [hzero]
+    simp
+  unfold localMultTwoTorsion
+  by_cases hb : D.b = 0
+  · simp [ha_poly_ne, hb, hRootA]
+  · simp [ha_poly_ne, hb, hRootA]
+
+theorem localMultNonTwo_eq_zero_of_eval_ne_zero
+    (D : CoordRingElt E.q) {P : ZMod E.q × ZMod E.q}
+    (h : D.eval P.1 P.2 ≠ 0) :
+    localMultNonTwo E D P = 0 := by
+  classical
+  unfold localMultNonTwo localMultNonTwoAux
+  by_cases hZero : D.a = 0 ∧ D.b = 0
+  · exfalso
+    apply h
+    obtain ⟨ha, hb⟩ := hZero
+    unfold CoordRingElt.eval
+    rw [ha, hb]
+    simp
+  · simp [hZero, h]
+
+theorem localMult_eq_zero_of_eval_ne_zero
+    (D : CoordRingElt E.q) {P : ZMod E.q × ZMod E.q}
+    (hP : P ∈ E.points)
+    (hEval : D.eval P.1 P.2 ≠ 0) :
+    localMult E D P = 0 := by
+  classical
+  have hD : ¬ (D.a = 0 ∧ D.b = 0) := by
+    intro ⟨ha, hb⟩
+    apply hEval
+    unfold CoordRingElt.eval
+    rw [ha, hb]
+    simp
+  rw [localMult_eq_dispatch E D hP hD]
+  by_cases h2 : P.2 = 0
+  · rw [if_pos h2]
+    have hPeq : P = (P.1, 0) := by
+      ext <;> simp [h2]
+    rw [hPeq]
+    apply localMultTwoTorsion_eq_zero_of_eval_ne_zero E D
+    rw [show D.eval P.1 0 = D.eval P.1 P.2 from by rw [h2]]
+    exact hEval
+  · rw [if_neg h2]
+    exact localMultNonTwo_eq_zero_of_eval_ne_zero E D hEval
+
+theorem eval_eq_zero_of_localMult_pos
+    (D : CoordRingElt E.q) {P : ZMod E.q × ZMod E.q}
+    (hP : P ∈ E.points) (hpos : 0 < localMult E D P) :
+    D.eval P.1 P.2 = 0 := by
+  classical
+  by_contra hne
+  have hzero := localMult_eq_zero_of_eval_ne_zero E D hP hne
+  omega
+
+/-! ## Target multiplicity carried by a Landmark accumulator -/
+
+noncomputable def target
+    (xs : List (ZMod E.q × ZMod E.q)) (R : ECPoint E)
+    (P : ZMod E.q × ZMod E.q) : ℕ := by
+  classical
+  exact xs.count P + if negCoords E R = some P then 1 else 0
+
+noncomputable def targetMass
+    (xs : List (ZMod E.q × ZMod E.q)) (R : ECPoint E) : ℕ :=
+  ∑ P ∈ E.points, target E xs R P
+
+theorem target_def
+    (xs : List (ZMod E.q × ZMod E.q)) (R : ECPoint E)
+    (P : ZMod E.q × ZMod E.q) :
+    target E xs R P =
+      xs.count P + if negCoords E R = some P then 1 else 0 := by
+  classical
+  rfl
+
+@[simp] theorem target_nil_zero (P : ZMod E.q × ZMod E.q) :
+    target E [] (0 : ECPoint E) P = 0 := by
+  classical
+  simp [target, negCoords]
+
+theorem target_append
+    (xs ys : List (ZMod E.q × ZMod E.q)) (R : ECPoint E)
+    (P : ZMod E.q × ZMod E.q) :
+    target E (xs ++ ys) R P = target E xs R P + ys.count P := by
+  classical
+  simp [target, List.count_append]
+  omega
+
+theorem one_le_target_of_mem
+    {xs : List (ZMod E.q × ZMod E.q)} {R : ECPoint E}
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ xs) :
+    1 ≤ target E xs R P := by
+  classical
+  unfold target
+  have hcount : 0 < xs.count P := List.count_pos_iff.mpr hP
+  omega
+
+theorem one_le_target_of_residue
+    {xs : List (ZMod E.q × ZMod E.q)} {R : ECPoint E}
+    {P : ZMod E.q × ZMod E.q}
+    (hR : negCoords E R = some P) :
+    1 ≤ target E xs R P := by
+  classical
+  unfold target
+  rw [if_pos hR]
+  omega
+
+/-! ## Strengthened Landmark invariant sketch
+
+`LandmarkInvStrong xs a` is the intended replacement for the older
+vanishing-only invariant.  The pointwise lower bound says the
+accumulator polynomial has at least the required sheet-level
+multiplicity at every affine point of `E`; the `natDegree` equality
+keeps the old global mass accounting. -/
+
+noncomputable def LandmarkInvStrong
+    (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E) : Prop :=
+  a.point = sumOnE E xs ∧
+  (∀ P : ZMod E.q × ZMod E.q,
+    P ∈ E.points → target E xs a.point P ≤ localMult E a.poly P) ∧
+  letI : Decidable (a.point = (0 : ECPoint E)) :=
+    Classical.dec _
+  (normPoly E a.poly).natDegree =
+    xs.length + (if a.point = (0 : ECPoint E) then 0 else 1)
+
+theorem LandmarkInvStrong.running_sum
+    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
+    (h : LandmarkInvStrong E xs a) :
+    a.point = sumOnE E xs := h.1
+
+theorem LandmarkInvStrong.target_le
+    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
+    (h : LandmarkInvStrong E xs a) :
+    ∀ P : ZMod E.q × ZMod E.q,
+      P ∈ E.points → target E xs a.point P ≤ localMult E a.poly P := h.2.1
+
+theorem LandmarkInvStrong.natDegree
+    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
+    (h : LandmarkInvStrong E xs a) :
+    letI : Decidable (a.point = (0 : ECPoint E)) :=
+      Classical.dec _
+    (normPoly E a.poly).natDegree =
+      xs.length + (if a.point = (0 : ECPoint E) then 0 else 1) := h.2.2
+
+theorem LandmarkInvStrong.vanish_of_mem
+    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
+    (h : LandmarkInvStrong E xs a)
+    {P : ZMod E.q × ZMod E.q} (hPxs : P ∈ xs) (hPon : P ∈ E.points) :
+    a.poly.eval P.1 P.2 = 0 := by
+  have htarget : 1 ≤ target E xs a.point P :=
+    one_le_target_of_mem E hPxs
+  have hle := LandmarkInvStrong.target_le E h P hPon
+  exact eval_eq_zero_of_localMult_pos E a.poly hPon (by omega)
+
+theorem LandmarkInvStrong.vanish_of_residue
+    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
+    (h : LandmarkInvStrong E xs a)
+    {P : ZMod E.q × ZMod E.q}
+    (hR : negCoords E a.point = some P) (hPon : P ∈ E.points) :
+    a.poly.eval P.1 P.2 = 0 := by
+  have htarget : 1 ≤ target E xs a.point P :=
+    one_le_target_of_residue E hR
+  have hle := LandmarkInvStrong.target_le E h P hPon
+  exact eval_eq_zero_of_localMult_pos E a.poly hPon (by omega)
+
+/-!
+Major follow-up obligations needed to make `PairwiseCombineHyp`
+unconditional:
+
+* `localMult_mulCoordRingElt_ge_add`:
+  lower-bound multiplicity of a product by the sum of local
+  multiplicities.
+
+* `localMult_divLin_same_fiber`:
+  if both coordinates of `D` are divisible by `X - C P.1`, then
+  `localMult E (D.divLin P.1) P + verticalTarget P =
+   localMult E D P`.
+
+* `localMult_chordCoordRingElt_exact`:
+  pointwise local multiplicity of `chordCoordRingElt E A B`; this is
+  the `L(A,B)` term in the identity, including tangent double contact.
+
+* `landmarkInvStrong_combine_oo`, `landmarkInvStrong_combine_ol`,
+  `landmarkInvStrong_combine_or`, `landmarkInvStrong_combine_vertical`,
+  `landmarkInvStrong_combine_distinct`, `landmarkInvStrong_combine_tangent`:
+  the five-plus preservation cases against `LandmarkInvStrong`.
+
+* `pairwiseCombineHyp_of_landmarkInvStrong`:
+  convert the strengthened preservation theorem back to the existing
+  `Landmark.PairwiseCombineHyp E`, or replace downstream uses of the
+  old invariant with `LandmarkInvStrong` directly.
+-/
+
 noncomputable def LandmarkInv
     (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E) : Prop :=
   a.point = sumOnE E xs ∧
@@ -328,6 +596,22 @@ noncomputable def LandmarkInv
     Classical.dec _
   (normPoly E a.poly).natDegree =
     xs.length + (if a.point = (0 : ECPoint E) then 0 else 1)
+
+theorem LandmarkInvStrong.to_LandmarkInv
+    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
+    (h : LandmarkInvStrong E xs a)
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (hres_on : ∀ P : ZMod E.q × ZMod E.q,
+      negCoords E a.point = some P → P ∈ E.points) :
+    LandmarkInv E xs a := by
+  classical
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact LandmarkInvStrong.running_sum E h
+  · intro P hP
+    exact LandmarkInvStrong.vanish_of_mem E h hP (hxs_on P hP)
+  · intro P hP
+    exact LandmarkInvStrong.vanish_of_residue E h hP (hres_on P hP)
+  · exact LandmarkInvStrong.natDegree E h
 
 /-- The synchronized `Forall₂` form: a list of absorbed sub-lists
     and a list of accumulators, pointwise satisfying `LandmarkInv`. -/
