@@ -1620,6 +1620,69 @@ theorem combine_higher_distinct_prod_eval_factor
   rw [h_pa_eval, h_pb_eval, h_da_a_eval, h_da_b_eval]
   ring
 
+/-! ### Combine step: vanishing at third intersection point
+
+Combine.poly.eval at `(Q₀x, Q₀y)` (the third intersection of the chord
+through a.point and b.point) is zero. Follows from
+prod_eval_factor and chord vanishing at third point. -/
+
+theorem combine_higher_distinct_eval_third_zero
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (h_Q₀x_ne_a : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                    - a.point.1 - b.point.1) ≠ a.point.1)
+    (h_Q₀x_ne_b : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                    - a.point.1 - b.point.1) ≠ b.point.1) :
+    let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+    let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+    let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+    (EagenAccum.combine_higher_distinct E a b h_xx).poly.eval Q₀x Q₀y = 0 := by
+  classical
+  intro lam Q₀x Q₀y
+  have h_a_pt : a.point ∈ E.points := h_acc_a.1
+  have h_b_pt : b.point ∈ E.points := h_acc_b.1
+  -- prod_eval at (Q₀x, Q₀y) = (Q₀x - a.x)(Q₀x - b.x) · combine.eval(Q₀x, Q₀y)
+  have h_factor :=
+    combine_higher_distinct_prod_eval_factor (E := E)
+      h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ Q₀x Q₀y
+  -- prod.eval at (Q₀x, Q₀y) = chord · a · b at (Q₀x, Q₀y) (Q₀ ∈ E).
+  have hQ₀_on_E : (Q₀x, Q₀y) ∈ E.points := by
+    apply E.hComplete
+    exact chord_third_point_on_E E a.point b.point h_a_pt h_b_pt h_xx
+  have h_prod_eval :
+      (mulCoordRingElt E (mulCoordRingElt E
+          (chordCoordRingElt E a.point b.point) a.poly) b.poly).eval Q₀x Q₀y
+        = ((chordCoordRingElt E a.point b.point).eval Q₀x Q₀y)
+          * (a.poly.eval Q₀x Q₀y) * (b.poly.eval Q₀x Q₀y) := by
+    rw [mulCoordRingElt_eval_on_E E _ b.poly hQ₀_on_E]
+    rw [mulCoordRingElt_eval_on_E E _ a.poly hQ₀_on_E]
+  -- chord vanishes at (Q₀x, Q₀y).
+  have h_chord_zero :
+      (chordCoordRingElt E a.point b.point).eval Q₀x Q₀y = 0 :=
+    chordCoordRingElt_eval_thirdPoint_chord E h_a_pt h_b_pt h_xx
+  -- prod.eval = 0.
+  have h_prod_zero :
+      (mulCoordRingElt E (mulCoordRingElt E
+          (chordCoordRingElt E a.point b.point) a.poly) b.poly).eval Q₀x Q₀y = 0 := by
+    rw [h_prod_eval, h_chord_zero, zero_mul, zero_mul]
+  -- Now use the factor: (Q₀x - a.x)(Q₀x - b.x) ≠ 0 ⇒ combine.eval = 0.
+  have h_diff_a : Q₀x - a.point.1 ≠ 0 := sub_ne_zero.mpr h_Q₀x_ne_a
+  have h_diff_b : Q₀x - b.point.1 ≠ 0 := sub_ne_zero.mpr h_Q₀x_ne_b
+  rw [h_prod_zero] at h_factor
+  -- 0 = (Q₀x - a.x) * (Q₀x - b.x) * combine.eval.
+  have : (Q₀x - a.point.1) * (Q₀x - b.point.1)
+        * (EagenAccum.combine_higher_distinct E a b h_xx).poly.eval Q₀x Q₀y = 0 :=
+    h_factor.symm
+  rcases mul_eq_zero.mp this with h | h
+  · rcases mul_eq_zero.mp h with h | h
+    · exact absurd h h_diff_a
+    · exact absurd h h_diff_b
+  · exact h
+
 /-! ### Combine step: at-affine off-support divisor identity
 
 When R = `ECPoint.affine x y` has x ≠ a.point.1, x ≠ b.point.1, and
