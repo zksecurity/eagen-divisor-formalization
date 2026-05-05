@@ -5939,6 +5939,19 @@ theorem eagenBuild_eq_singleton_poly_when_converged
         | _ => { a := 1, b := 0 }) = acc.poly
   rw [h]
 
+/-! ### eagenBuild on empty input -/
+
+theorem eagenBuild_nil :
+    eagenBuild E ([] : List (ZMod E.q × ZMod E.q))
+      = ({ a := 1, b := 0 } : CoordRingElt E.q) := by
+  show (match eagenBuild_iterate E ([] : List (ZMod E.q × ZMod E.q)).length
+              (eagenBuild_level0 E []) with
+        | [] => ({ a := 1, b := 0 } : CoordRingElt E.q)
+        | [single] => single.poly
+        | _ => { a := 1, b := 0 }) = { a := 1, b := 0 }
+  rw [eagenBuild_level0_nil]
+  rw [eagenBuild_iterate_nil]
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
