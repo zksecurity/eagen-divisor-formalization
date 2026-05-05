@@ -6239,6 +6239,23 @@ theorem accsListChordStep_length_eq
             simp only [List.length_cons]
             omega
 
+/-! ### Iterate AccInvList preservation: one-step formulation
+
+Composes the level_step preservation with a single iterate step. -/
+
+theorem accInvList_preservation_under_iterate_one_step
+    (xss : List (List (ZMod E.q × ZMod E.q)))
+    (accs : List (EagenAccum E))
+    (h_acc_list : AccInvList E xss accs)
+    (h_chord_step : AccsListChordStep E xss accs)
+    (h_gt_one : ¬ accs.length ≤ 1) :
+    AccInvList E (mergeAdjacentPairs xss)
+      (eagenBuild_iterate E 1 accs) := by
+  rw [eagenBuild_iterate_succ_of_length_gt_one E 0 accs h_gt_one,
+      eagenBuild_iterate_zero]
+  exact accInvList_preservation_under_level_step E accs.length xss accs
+    (le_refl _) h_acc_list h_chord_step
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
