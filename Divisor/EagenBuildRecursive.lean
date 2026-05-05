@@ -1654,6 +1654,122 @@ theorem accInv_combine_higher_distinct_divisor_at_off_support_zero
   rw [ordAt_eq_zero_of_eval_ne_zero E combine.poly hP h_combine_eval]
   rfl
 
+/-! ### AccInv form of off-support combine identity
+
+When R is off all relevant supports (xs, ys, ±a.lift, ±b.lift,
+±combine.lift), both LHS (divisorOfD combine.poly R) and RHS
+(formalDivisorOfList (xs++ys) R + residueDivisor combine.lift R)
+are zero, matching the AccInv shape. -/
+
+theorem accInv_combine_higher_distinct_divisor_at_off_support_AccInv_form
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    {x y : ZMod E.q} (hP : (x, y) ∈ E.points)
+    (h_chord_pos : (chordCoordRingElt E a.point b.point).eval x y ≠ 0)
+    (h_a_pos : a.poly.eval x y ≠ 0)
+    (h_b_pos : b.poly.eval x y ≠ 0)
+    (h_x_ne_a : x ≠ a.point.1) (h_x_ne_b : x ≠ b.point.1)
+    (h_x_ne_combine : x ≠ (EagenAccum.combine_higher_distinct E a b h_xx).point.1)
+    (h_xy_not_in_xs : (x, y) ∉ xs) (h_xy_not_in_ys : (x, y) ∉ ys) :
+    let combine := EagenAccum.combine_higher_distinct E a b h_xx
+    ∃ h_combine_pt : combine.point ∈ E.points,
+      divisorOfD E combine.poly (ECPoint.affine E x y)
+        = formalDivisorOfList E (xs ++ ys) (ECPoint.affine E x y)
+          + residueDivisor E (ECPoint.affineOfMem E h_combine_pt)
+              (ECPoint.affine E x y) := by
+  classical
+  intro combine
+  have h_a_pt : a.point ∈ E.points := h_acc_a.1
+  have h_b_pt : b.point ∈ E.points := h_acc_b.1
+  -- combine.point ∈ E.points.
+  obtain ⟨h_combine_pt, _⟩ := combine_higher_distinct_running_sum
+    E a b h_a_pt h_b_pt h_xx
+  refine ⟨h_combine_pt, ?_⟩
+  -- LHS: divisorOfD combine.poly R = 0 via off_support_zero.
+  rw [accInv_combine_higher_distinct_divisor_at_off_support_zero (E := E)
+        h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
+        hP h_chord_pos h_a_pos h_b_pos h_x_ne_a h_x_ne_b]
+  -- RHS: formalDivisorOfList (xs++ys) R = 0 (R-affine ∉ xs ∪ ys).
+  have h_formal_zero : formalDivisorOfList E (xs ++ ys)
+      (ECPoint.affine E x y) = 0 := by
+    have hns : E.toW.toAffine.Nonsingular x y :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hP))
+    rw [ECPoint.affine_of_nonsingular E hns]
+    rw [formalDivisorOfList_append, show
+      formalDivisorOfList E xs (WeierstrassCurve.Affine.Point.some hns
+                                : ECPoint E)
+      = ((xs.filter (fun P => P = (x, y))).length : ℤ) from rfl,
+      show formalDivisorOfList E ys (WeierstrassCurve.Affine.Point.some hns
+                                     : ECPoint E)
+      = ((ys.filter (fun P => P = (x, y))).length : ℤ) from rfl]
+    have h1 : xs.filter (fun P => P = (x, y)) = [] := by
+      apply List.filter_eq_nil_iff.mpr
+      intro P hP_in heq
+      apply h_xy_not_in_xs
+      rwa [decide_eq_true_eq.mp heq] at hP_in
+    have h2 : ys.filter (fun P => P = (x, y)) = [] := by
+      apply List.filter_eq_nil_iff.mpr
+      intro P hP_in heq
+      apply h_xy_not_in_ys
+      rwa [decide_eq_true_eq.mp heq] at hP_in
+    rw [h1, h2]; simp
+  -- RHS: residueDivisor combine.lift R = 0 (R ≠ -combine.lift, R ≠ 0).
+  -- The "≠ -combine.lift" follows since x ≠ a.x ≠ b.x but combine.lift's
+  -- x-coord is the third intersection x, which isn't a or b. But this
+  -- could equal x. Hmm — without more hypotheses, can't conclude. We
+  -- need an extra hypothesis.
+  -- For now, fall back to assuming R ≠ -combine.lift via
+  -- a generic chord-third-intersection mismatch.
+  -- Simpler: include `R ≠ ECPoint.affine E x y` as an extra hypothesis.
+  -- However, for the off-support purposes, we'd typically also have
+  -- (x, y) ∉ {(combine.point.1, combine.point.2)} (i.e. R isn't
+  -- the third-intersection-point's negation).
+  rw [h_formal_zero, zero_add]
+  -- Need: residueDivisor (lift) R = 0.
+  -- R ≠ -lift since -lift's x-coord = combine.point.1 (lift = -third pt),
+  -- and h_x_ne_combine ensures x ≠ combine.point.1, so R ≠ -lift.
+  -- R ≠ 0 since R is affine.
+  symm
+  apply residueDivisor_at_other
+  · -- R ≠ -(combine.lift) = ECPoint.affine combine.point.1 (-combine.point.2).
+    intro h_eq
+    -- ECPoint.affine x y = -ECPoint.affine combine.point.1 combine.point.2
+    --   = ECPoint.affine combine.point.1 (-combine.point.2)
+    rw [show -(ECPoint.affineOfMem E h_combine_pt : ECPoint E)
+          = ECPoint.affine E combine.point.1 (-combine.point.2) from ?_] at h_eq
+    · -- Now (x, y) and (combine.point.1, -combine.point.2) match.
+      -- ECPoint.affine equality forces .1 = .1 and .2 = .2, so x = combine.point.1.
+      have h_xeq : x = combine.point.1 := by
+        have hns_l : E.toW.toAffine.Nonsingular x y :=
+          E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hP))
+        rw [ECPoint.affine_of_nonsingular E hns_l] at h_eq
+        have hC_pt : (combine.point.1, -combine.point.2) ∈ E.points := by
+          apply E.hComplete
+          have hC := E.hOnCurve _ h_combine_pt
+          show (-combine.point.2) ^ 2
+              = combine.point.1 ^ 3 + E.curveA * combine.point.1 + E.curveB
+          rw [neg_pow_two]; exact hC
+        have hns_r : E.toW.toAffine.Nonsingular combine.point.1 (-combine.point.2) :=
+          E.equation_iff_nonsingular.mp
+            ((E.equation_iff _ _).mpr (E.hOnCurve _ hC_pt))
+        rw [ECPoint.affine_of_nonsingular E hns_r] at h_eq
+        cases h_eq
+        rfl
+      exact h_x_ne_combine h_xeq
+    · -- -ECPoint.affineOfMem combine.point = ECPoint.affine combine.point.1 (-combine.point.2)
+      rw [← ECPoint.affine_eq_affineOfMem E h_combine_pt]
+      exact ECPoint.affine_neg E combine.point.1 combine.point.2
+  · -- R ≠ 0.
+    intro h_eq
+    have hns : E.toW.toAffine.Nonsingular x y :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hP))
+    rw [ECPoint.affine_of_nonsingular E hns] at h_eq
+    cases h_eq
+
 /-! ## General-k correctness: status
 
 Progress so far:
