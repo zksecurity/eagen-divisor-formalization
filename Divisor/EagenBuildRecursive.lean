@@ -5057,6 +5057,61 @@ The list length bound `level_step.length ≤ xs.length` and the strict
 `level_step.length < xs.length` (when |xs| ≥ 2) follow by induction
 under all-distinct hypothesis. Implementation deferred. -/
 
+/-! ### Tangent-free predicate
+
+Recursive predicate on accumulator lists: every adjacent pair of
+elements (at level_step's pairing positions) is distinct or vertical
+(NOT tangent). -/
+
+def LevelStepTangentFree : List (EagenAccum E) → Prop
+  | [] => True
+  | [_] => True
+  | a :: b :: rest =>
+      ((a.point.1 ≠ b.point.1) ∨ (a.point.2 = -b.point.2))
+        ∧ LevelStepTangentFree rest
+
+/-- Length-preservation: level_step doesn't increase list length under
+the tangent-free assumption. Strong induction on length. -/
+theorem eagenBuild_level_step_length_le_of_tangent_free
+    (n : ℕ) (xs : List (EagenAccum E))
+    (h_len : xs.length ≤ n) (h : LevelStepTangentFree E xs) :
+    (eagenBuild_level_step E xs).length ≤ xs.length := by
+  classical
+  induction n generalizing xs with
+  | zero =>
+    -- xs = [] (length 0).
+    have : xs.length = 0 := by omega
+    rw [List.length_eq_zero_iff] at this
+    rw [this, eagenBuild_level_step_nil]
+  | succ n IH =>
+    cases xs with
+    | nil =>
+      rw [eagenBuild_level_step_nil]
+    | cons a rest =>
+      cases rest with
+      | nil =>
+        rw [eagenBuild_level_step_singleton]
+      | cons b rest' =>
+        have h_pair := h.1
+        have h_rest := h.2
+        -- rest'.length ≤ n.
+        have h_rest_len : rest'.length ≤ n := by
+          have : (a :: b :: rest').length = rest'.length + 2 := by simp [List.length]
+          omega
+        have IH_rest := IH rest' h_rest_len h_rest
+        -- Dispatch on h_pair.
+        rcases h_pair with h_xx | h_yy
+        · rw [eagenBuild_level_step_cons_cons_distinct E a b rest' h_xx]
+          simp only [List.length_cons]
+          omega
+        · by_cases h_xx_neq : a.point.1 ≠ b.point.1
+          · rw [eagenBuild_level_step_cons_cons_distinct E a b rest' h_xx_neq]
+            simp only [List.length_cons]
+            omega
+          · rw [eagenBuild_level_step_cons_cons_vertical E a b rest' h_xx_neq h_yy]
+            simp only [List.length_cons]
+            omega
+
 /-! ## General-k correctness: status
 
 Progress so far:
