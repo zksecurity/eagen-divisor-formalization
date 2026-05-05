@@ -6266,6 +6266,18 @@ theorem accInvList_preservation_under_iterate_zero
   rw [eagenBuild_iterate_zero]
   exact h_acc_list
 
+/-! ### mergeAdjacentPairs is identity at length ≤ 1 -/
+
+theorem mergeAdjacentPairs_eq_self_of_length_le_one {α : Type _}
+    (xss : List (List α)) (h : xss.length ≤ 1) :
+    mergeAdjacentPairs xss = xss := by
+  cases xss with
+  | nil => rfl
+  | cons xs rest =>
+    cases rest with
+    | nil => rfl
+    | cons _ _ => simp at h
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
