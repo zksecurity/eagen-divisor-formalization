@@ -837,38 +837,21 @@ theorem points_neg_y {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) :
   rw [neg_pow_two]; exact hOC
 
 
-/-! ## TODO: combine_distinct, combine_tangent_torsion, combine_tangent_smooth
+/-! ## TODO: combine_tangent_torsion, combine_tangent_smooth
 
-See in-file roadmap above (commit 404ce03). The chained-divLin and
-points_neg_y helpers prepare the ground; the full proofs are deferred. -/
+The two tangent-doubling cases need (X - C xa)^2 divisibility into
+the product polynomial, which requires either a derivative-based
+argument (Taylor expansion on q.a, q.b) or strengthening the
+LandmarkInv invariant to track multiplicity at running-sum fibers.
+Deferred. -/
 
-/-! ## Preservation: `combine_distinct` (chord case, distinct x)
-
-Two affine accumulators with `xa ≠ xb`. Combined polynomial:
-`((line · a.poly · b.poly).divLin xa).divLin xb`.
-
-Same template as combine_vertical: at each fiber `x ∈ {xa, xb}`,
-two sheets vanish (one from chord/line, one from a/b residue),
-giving univariate vanishing of `q.a, q.b` at xa AND xb, hence
-divisibility by `(X - C xa)(X - C xb)`. Since xa ≠ xb, factors
-coprime; chained divLin works.
-
-Conditional hypotheses:
-  - No `P ∈ xs ++ ys` has `P.1 ∈ {xa, xb}`.
-  - Third intersection x-coord `Qx ∉ {xa, xb}`. -/
-
-/-! ## Helper: nonzero from positive natDegree -/
+/-! ## Helpers (re-positioned for forward reference) -/
 
 theorem Polynomial_ne_zero_of_natDegree_pos
     {p : (ZMod E.q)[X]} (h : 0 < p.natDegree) : p ≠ 0 := by
   intro h0
   rw [h0, Polynomial.natDegree_zero] at h
   exact Nat.lt_irrefl _ h
-
-/-! ## Helper: chord nonvertical normPoly nonzero
-
-A non-vertical chord/tangent line has `normPoly` of natDegree 3,
-hence nonzero. -/
 
 theorem chordCoordRingElt_normPoly_ne_zero_of_xx_ne
     {P Q : ZMod E.q × ZMod E.q} (h_xx : P.1 ≠ Q.1) :
@@ -887,6 +870,112 @@ theorem chordCoordRingElt_natDegree_normPoly_of_xx_ne
   unfold chordCoordRingElt
   rw [dif_neg h_xx]
   exact natDegree_normPoly_chordCoordRingElt_nonvertical E _ _
+
+/-! ## levelInitPair satisfies LandmarkInv (chord case)
+
+For an input pair `(P, Q)` on `E` with `P.1 ≠ Q.1`, the level-0
+output `levelInitPair P Q` satisfies `LandmarkInv [P, Q]`. -/
+
+theorem landmarkInv_levelInitPair_chord
+    {P Q : ZMod E.q × ZMod E.q}
+    (hP : P ∈ E.points) (hQ : Q ∈ E.points)
+    (h_xx : P.1 ≠ Q.1) :
+    LandmarkInv E [P, Q] (levelInitPair E P Q) := by
+  classical
+  -- thirdPoint = some (Qx, Qy). levelInitPair gives chord polynomial,
+  -- result.point = ECPoint.affine E Qx (-Qy).
+  have hns_P : E.toW.toAffine.Nonsingular P.1 P.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP))
+  have hns_Q : E.toW.toAffine.Nonsingular Q.1 Q.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff Q.1 Q.2).mpr (E.hOnCurve _ hQ))
+  set Qx := slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1 with hQx_def
+  set Qy := slopeOf P.1 P.2 Q.1 Q.2 * Qx + (P.2 - slopeOf P.1 P.2 Q.1 Q.2 * P.1)
+    with hQy_def
+  have hT : thirdPoint E P Q = some (Qx, Qy) := by
+    unfold thirdPoint
+    rw [if_neg h_xx]
+    simp [Qx, Qy, slopeOf]
+  have h_QxQy_on : (Qx, Qy) ∈ E.points :=
+    third_point_on_curve E P Q hP hQ hT
+  have h_QxQy_neg_on : (Qx, -Qy) ∈ E.points := points_neg_y E h_QxQy_on
+  have hns_Qneg : E.toW.toAffine.Nonsingular Qx (-Qy) :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff Qx (-Qy)).mpr (E.hOnCurve _ h_QxQy_neg_on))
+  -- levelInitPair unfolds.
+  have h_levelInit_pt : (levelInitPair E P Q).point = ECPoint.affine E Qx (-Qy) := by
+    unfold levelInitPair
+    rw [hT]
+  have h_levelInit_poly : (levelInitPair E P Q).poly = chordCoordRingElt E P Q := by
+    unfold levelInitPair
+    rw [hT]
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · -- result.point = sumOnE [P, Q] = ECPoint.affineOfMem hP + ECPoint.affineOfMem hQ.
+    rw [h_levelInit_pt]
+    show ECPoint.affine E Qx (-Qy) = sumOnE E [P, Q]
+    rw [show sumOnE E [P, Q] = ECPoint.affineOfMem E hP + sumOnE E [Q] from sumOnE_cons E hP]
+    rw [show sumOnE E [Q] = ECPoint.affineOfMem E hQ + sumOnE E [] from sumOnE_cons E hQ]
+    rw [sumOnE_nil, add_zero]
+    have heq_P : ECPoint.affineOfMem E hP = (.some hns_P : ECPoint E) := rfl
+    have heq_Q : ECPoint.affineOfMem E hQ = (.some hns_Q : ECPoint E) := rfl
+    rw [heq_P, heq_Q]
+    rw [ECPoint.affine_of_nonsingular E hns_Qneg]
+    -- (.some hns_P) + (.some hns_Q) = -(.some hns_Qpos) = .some hns_Qneg.
+    have hSum := thirdPoint_some_eq_neg_add (E := E) hP hQ hT
+    have heq_QxQy : ECPoint.affineOfMem E h_QxQy_on
+        = (.some (E.equation_iff_nonsingular.mp
+                  ((E.equation_iff Qx Qy).mpr (E.hOnCurve _ h_QxQy_on))) : ECPoint E) := rfl
+    rw [heq_P, heq_Q, heq_QxQy] at hSum
+    -- (.some hns_Qneg) = -(.some hns_third).
+    set hns_third := E.equation_iff_nonsingular.mp ((E.equation_iff Qx Qy).mpr (E.hOnCurve _ h_QxQy_on))
+    have h_neg : (.some hns_Qneg : ECPoint E) = -(.some hns_third : ECPoint E) := by
+      simp [WeierstrassCurve.Affine.Point.neg_some]
+    rw [h_neg]
+    exact hSum.symm
+  · -- Vanishing at P and Q.
+    intro pt hpt
+    rw [h_levelInit_poly]
+    rcases List.mem_cons.mp hpt with h | h
+    · rw [h]; exact chordCoordRingElt_eval_left E P Q
+    · rcases List.mem_singleton.mp h with h_eq
+      rw [h_eq]; exact chordCoordRingElt_eval_right E P Q
+  · -- Residue: result.point = ECPoint.affine E Qx (-Qy); negCoords = some (Qx, Qy).
+    -- chord vanishes at (Qx, Qy) by chordCoordRingElt_eval_thirdPoint_chord.
+    intro pt hpt_neg
+    rw [h_levelInit_pt] at hpt_neg
+    rw [ECPoint.affine_of_nonsingular E hns_Qneg] at hpt_neg
+    have hpt_eq : pt = (Qx, Qy) := by
+      have : negCoords E (.some hns_Qneg : ECPoint E) = some (Qx, Qy) := by
+        show some (Qx, -(-Qy)) = some (Qx, Qy)
+        rw [neg_neg]
+      rw [this] at hpt_neg
+      exact (Option.some.inj hpt_neg).symm
+    rw [hpt_eq, h_levelInit_poly]
+    have := chordCoordRingElt_eval_thirdPoint_chord (E := E) hP hQ h_xx
+    simp [Qx, Qy, slopeOf] at this ⊢
+    exact this
+  · -- Degree: natDegree(normPoly chord) = 3 = 2 + 1.
+    rw [h_levelInit_poly, h_levelInit_pt]
+    -- result.point = ECPoint.affine E Qx (-Qy), nonzero.
+    have h_pt_ne : ECPoint.affine E Qx (-Qy) ≠ (0 : ECPoint E) := by
+      rw [ECPoint.affine_of_nonsingular E hns_Qneg]
+      exact WeierstrassCurve.Affine.Point.some_ne_zero hns_Qneg
+    rw [if_neg h_pt_ne]
+    rw [chordCoordRingElt_natDegree_normPoly_of_xx_ne E h_xx]
+    rfl
+
+/-! ## Preservation: `combine_distinct` (chord case, distinct x)
+
+Two affine accumulators with `xa ≠ xb`. Combined polynomial:
+`((line · a.poly · b.poly).divLin xa).divLin xb`.
+
+Same template as combine_vertical: at each fiber `x ∈ {xa, xb}`,
+two sheets vanish (one from chord/line, one from a/b residue),
+giving univariate vanishing of `q.a, q.b` at xa AND xb, hence
+divisibility by `(X - C xa)(X - C xb)`. Since xa ≠ xb, factors
+coprime; chained divLin works.
+
+Conditional hypotheses:
+  - No `P ∈ xs ++ ys` has `P.1 ∈ {xa, xb}`.
+  - Third intersection x-coord `Qx ∉ {xa, xb}`. -/
 
 theorem landmarkInv_combine_distinct_no_collision
     {xs ys : List (ZMod E.q × ZMod E.q)}
