@@ -5271,6 +5271,27 @@ theorem LevelStepTangentFree_of_AllDistinctECPoints
               (by simp [List.mem_cons]; right; right; exact h_b') h_xx_eq
           exact IH rest' h_rest_len h_rest_ad h_rest_pn
 
+/-! ### AllDistinctECPoints preservation under level_step (open)
+
+Preserving AllDistinctECPoints under level_step is structurally
+hard because combining adjacent pairs can produce equal new points:
+
+  combine(a, b).point = -(a.point + b.point)
+  combine(c, d).point = -(c.point + d.point)
+
+These are equal iff a + b = c + d in the EC group. Even with
+all-distinct input points, this can occur (subsum collisions).
+
+Encoding the preservation in Lean requires either:
+(a) A stronger predicate "AllDistinctSubsumsAtLevel" tracking that
+    no two adjacent pairs have equal sums.
+(b) A list-of-absorbed-sublists invariant tracking the original
+    input partition for each accumulator.
+
+Both options require nontrivial group-theoretic genericity on the
+*original* input list propagating through levels. Implementation
+deferred to a follow-up specialized session. -/
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
