@@ -6256,6 +6256,16 @@ theorem accInvList_preservation_under_iterate_one_step
   exact accInvList_preservation_under_level_step E accs.length xss accs
     (le_refl _) h_acc_list h_chord_step
 
+/-! ### iterate AccInvList preservation: zero-fuel base case -/
+
+theorem accInvList_preservation_under_iterate_zero
+    (xss : List (List (ZMod E.q × ZMod E.q)))
+    (accs : List (EagenAccum E))
+    (h_acc_list : AccInvList E xss accs) :
+    AccInvList E xss (eagenBuild_iterate E 0 accs) := by
+  rw [eagenBuild_iterate_zero]
+  exact h_acc_list
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
