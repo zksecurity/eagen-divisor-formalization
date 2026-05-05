@@ -233,6 +233,29 @@ def AccInv (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E) : Prop :=
           = formalDivisorOfList E xs R
             + residueDivisor E (ECPoint.affineOfMem E h) R
 
+/-! ### Helper lemmas for residue and formalDivisor -/
+
+/-- residueDivisor evaluated at `-S` is `1` (when -S ≠ 0). -/
+theorem residueDivisor_at_neg_self
+    (S : ECPoint E) (h_neg_ne_zero : (-S : ECPoint E) ≠ 0) :
+    residueDivisor E S (-S) = 1 := by
+  unfold residueDivisor
+  rw [if_pos rfl]
+  rw [if_neg h_neg_ne_zero]
+  ring
+
+/-- residueDivisor at any R that is neither `-S` nor `0` is zero. -/
+theorem residueDivisor_at_other
+    (S R : ECPoint E) (h_ne_neg : R ≠ -S) (h_ne_zero : R ≠ 0) :
+    residueDivisor E S R = 0 := by
+  unfold residueDivisor
+  rw [if_neg h_ne_neg, if_neg h_ne_zero]
+  ring
+
+/-- formalDivisorOfList at infinity = -(list length). -/
+theorem formalDivisorOfList_at_infinity (Ps : List (ZMod E.q × ZMod E.q)) :
+    formalDivisorOfList E Ps (0 : ECPoint E) = -((Ps.length : ℤ)) := rfl
+
 /-- Sanity check: residueDivisor at infinity is -1 when S ≠ 0. -/
 theorem residueDivisor_at_infinity_of_S_ne_zero
     (S : ECPoint E) (hS : S ≠ 0) :
