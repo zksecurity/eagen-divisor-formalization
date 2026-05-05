@@ -1023,12 +1023,97 @@ theorem chordCoordRingElt_eq_vertical_of_sum_zero
   · subst hPQ
     rw [dif_pos rfl, if_pos hP_zero]
 
-/-! ## TODO: levelInitPair_vertical, levelInitPair_tangent
+/-! ## Codex insight: levelInitSingleton bypasses levelInitPair
 
-Vertical and tangent base cases for levelInitPair require careful
-group-law reasoning about ECPoint negation/2-torsion. The `simp
-[WeierstrassCurve.Affine.Point.neg_some]` reductions need precise
-form matching that's tangled. Deferred. -/
+Per Codex consultation, the cleanest level-0 construction is to
+make every input point an "absorbed singleton": each P becomes the
+accumulator `{ point := ECPoint.affine E P.1 P.2, poly := (X - C P.1, 0) }`,
+which satisfies `LandmarkInv [P]` directly. Then level_step
+handles all the pairing logic uniformly.
+
+The vertical line `(X - C P.1, 0)` has divisor on E:
+  - vanishes at (P.1, P.2) and (P.1, -P.2) (the fiber).
+  - infinity coefficient: -(normPoly).natDegree = -2.
+
+For LandmarkInv [P]:
+  - point = ECPoint.affine E P.1 P.2 = sumOnE [P] ✓
+  - vanishing at P (and at -P via residue) ✓
+  - normPoly natDegree = 2 = 1 (xs.length) + 1 (point ≠ 0) ✓ -/
+
+/-- The on-curve assumption is unused at the data level (Junk if off-curve
+    via `ECPoint.affine`'s `dif_*` fallback to 0). LandmarkInv requires it. -/
+noncomputable def levelInitSingleton
+    (P : ZMod E.q × ZMod E.q) : EagenAccum E :=
+  { point := ECPoint.affine E P.1 P.2,
+    poly := { a := X - C P.1, b := 0 } }
+
+theorem landmarkInv_levelInitSingleton
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) :
+    LandmarkInv E [P] (levelInitSingleton E P) := by
+  classical
+  have hns : E.toW.toAffine.Nonsingular P.1 P.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP))
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · -- point = sumOnE [P].
+    show (levelInitSingleton E P).point = sumOnE E [P]
+    rw [show sumOnE E [P] = ECPoint.affineOfMem E hP + sumOnE E [] from sumOnE_cons E hP]
+    rw [sumOnE_nil, add_zero]
+    show ECPoint.affine E P.1 P.2 = ECPoint.affineOfMem E hP
+    exact ECPoint.affine_eq_affineOfMem E hP
+  · -- Vanishing at every Q ∈ [P].
+    intro Q hQ
+    rw [List.mem_singleton] at hQ
+    rw [hQ]
+    show (X - C P.1).eval P.1 - (0 : (ZMod E.q)[X]).eval P.1 * P.2 = 0
+    simp
+  · -- Residue: vertical line vanishes at (P.1, -P.2) too.
+    intro Q hQ
+    show ((X - C P.1 : (ZMod E.q)[X])).eval Q.1 - ((0 : (ZMod E.q)[X])).eval Q.1 * Q.2 = 0
+    have h_levelInit_pt : (levelInitSingleton E P).point = ECPoint.affine E P.1 P.2 := rfl
+    rw [h_levelInit_pt] at hQ
+    rw [ECPoint.affine_of_nonsingular E hns] at hQ
+    have hQ_eq : Q = (P.1, -P.2) := by
+      have : negCoords E (.some hns : ECPoint E) = some (P.1, -P.2) := rfl
+      rw [this] at hQ
+      exact (Option.some.inj hQ).symm
+    rw [hQ_eq]
+    show (X - C P.1).eval P.1 - (0 : (ZMod E.q)[X]).eval P.1 * (-P.2) = 0
+    simp
+  · -- Degree.
+    show (normPoly E { a := X - C P.1, b := 0 }).natDegree
+        = [P].length + (if (levelInitSingleton E P).point = (0 : ECPoint E) then 0 else 1)
+    have h_levelInit_pt : (levelInitSingleton E P).point = ECPoint.affine E P.1 P.2 := rfl
+    have h_pt_ne : (levelInitSingleton E P).point ≠ (0 : ECPoint E) := by
+      rw [h_levelInit_pt, ECPoint.affine_of_nonsingular E hns]
+      exact WeierstrassCurve.Affine.Point.some_ne_zero hns
+    rw [if_neg h_pt_ne]
+    show (normPoly E { a := X - C P.1, b := 0 }).natDegree = 2
+    rw [normPoly_eq]
+    show ((X - C P.1) ^ 2 - 0 ^ 2 * curveX E).natDegree = 2
+    simp [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C]
+
+/-- Singletonized level-0: each input becomes a vertical-line accumulator. -/
+noncomputable def level0_singletons (Ps : List (ZMod E.q × ZMod E.q)) :
+    List (EagenAccum E) :=
+  Ps.map (levelInitSingleton E)
+
+theorem landmarkInvList_level0_singletons
+    (Ps : List (ZMod E.q × ZMod E.q))
+    (hPs_on : ∀ P ∈ Ps, P ∈ E.points) :
+    LandmarkInvList E (Ps.map (fun P => [P])) (level0_singletons E Ps) := by
+  classical
+  induction Ps with
+  | nil =>
+    show List.Forall₂ _ [] []
+    exact List.Forall₂.nil
+  | cons P rest ih =>
+    have h_rest_on : ∀ Q ∈ rest, Q ∈ E.points :=
+      fun Q hQ => hPs_on Q (List.mem_cons_of_mem P hQ)
+    have h_ih := ih h_rest_on
+    show List.Forall₂ _ ([P] :: rest.map (fun P => [P]))
+        (levelInitSingleton E P :: rest.map (levelInitSingleton E))
+    refine List.Forall₂.cons ?_ h_ih
+    exact landmarkInv_levelInitSingleton E P (hPs_on P (List.mem_cons_self))
 
 theorem landmarkInv_combine_distinct_no_collision
     {xs ys : List (ZMod E.q × ZMod E.q)}
