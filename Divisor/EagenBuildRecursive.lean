@@ -5444,6 +5444,31 @@ theorem eagenBuild_level0_length_le
             simp only [List.length_cons]
             omega
 
+/-! ### AccInvList: list-of-AccInvs invariant via List.Forall₂ -/
+
+def AccInvList (xss : List (List (ZMod E.q × ZMod E.q)))
+    (accs : List (EagenAccum E)) : Prop :=
+  List.Forall₂ (AccInv E) xss accs
+
+theorem accInvList_nil_iff (accs : List (EagenAccum E)) :
+    AccInvList E [] accs ↔ accs = [] := by
+  unfold AccInvList
+  constructor
+  · intro h; cases h; rfl
+  · intro h; rw [h]; exact List.Forall₂.nil
+
+theorem accInvList_cons_iff (xs : List (ZMod E.q × ZMod E.q))
+    (xss : List (List (ZMod E.q × ZMod E.q)))
+    (a : EagenAccum E) (accs : List (EagenAccum E)) :
+    AccInvList E (xs :: xss) (a :: accs) ↔
+      AccInv E xs a ∧ AccInvList E xss accs := by
+  unfold AccInvList
+  constructor
+  · intro h; cases h with
+    | cons h_head h_rest => exact ⟨h_head, h_rest⟩
+  · intro ⟨h_head, h_rest⟩
+    exact List.Forall₂.cons h_head h_rest
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
