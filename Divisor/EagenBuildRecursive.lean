@@ -4326,6 +4326,87 @@ theorem divisorOfD_vertical_at_any_R
       rw [this]
       ring
 
+/-! ### Vertical combine: divLin subtract + residue-vert cancellation
+
+For combine_higher_vertical (a.point = -b.point case):
+  divisorOfD combined.poly R
+    = divisorOfD (a.poly · b.poly) R - divisorOfD vert(a.x) R
+
+Pure structural identity. Uses divLin_subtract once + divisibility from
+fact that a.poly vanishes at -a.lift (residue) and b.poly vanishes at
+-b.lift = a.lift (residue), so (a.poly · b.poly) vanishes on the
+full a.x fiber (both sheets), hence (X - C a.x) divides both .a and .b. -/
+
+theorem combine_higher_vertical_divisor_via_mul_minus_vert
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 = b.point.1) (h_yy : a.point.2 = -b.point.2)
+    (hY_a : a.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (R : ECPoint E) :
+    divisorOfD E (EagenAccum.combine_higher_vertical E a b h_xx h_yy).poly R
+      = divisorOfD E (mulCoordRingElt E a.poly b.poly) R
+        - divisorOfD E ({ a := Polynomial.X - Polynomial.C a.point.1, b := 0 }
+                        : CoordRingElt E.q) R := by
+  classical
+  set mul_ab := mulCoordRingElt E a.poly b.poly with hmul_def
+  -- a.poly vanishes at (a.x, -a.y): from accInv_poly_vanishes_at_neg_point.
+  have h_neg_a_pt : (a.point.1, -a.point.2) ∈ E.points := by
+    apply E.hComplete
+    have hC := E.hOnCurve _ h_acc_a.1
+    show (-a.point.2) ^ 2 = a.point.1 ^ 3 + E.curveA * a.point.1 + E.curveB
+    rw [neg_pow_two]; exact hC
+  have h_a_at_neg_a : a.poly.eval a.point.1 (-a.point.2) = 0 :=
+    accInv_poly_vanishes_at_neg_point E h_acc_a h_neg_a_pt hY_a h_a_poly_NZ
+  -- b.poly vanishes at (b.x, -b.y) = (a.x, a.y) (since b.x = a.x, -b.y = a.y).
+  have h_neg_b_pt : (b.point.1, -b.point.2) ∈ E.points := by
+    apply E.hComplete
+    have hC := E.hOnCurve _ h_acc_b.1
+    show (-b.point.2) ^ 2 = b.point.1 ^ 3 + E.curveA * b.point.1 + E.curveB
+    rw [neg_pow_two]; exact hC
+  have hY_b : b.point.2 ≠ 0 := by
+    intro h_eq
+    apply hY_a
+    rw [h_yy, h_eq, neg_zero]
+  have h_b_at_neg_b : b.poly.eval b.point.1 (-b.point.2) = 0 :=
+    accInv_poly_vanishes_at_neg_point E h_acc_b h_neg_b_pt hY_b h_b_poly_NZ
+  -- (b.x, -b.y) = (a.x, a.y).
+  have h_b_at_a_y : b.poly.eval a.point.1 a.point.2 = 0 := by
+    rw [show a.point.1 = b.point.1 from h_xx,
+        show a.point.2 = -b.point.2 from h_yy]
+    exact h_b_at_neg_b
+  -- mul_ab.eval at (a.x, a.y) = a.poly.eval(a.x, a.y) · b.poly.eval(a.x, a.y) (via on-E).
+  -- mul_ab.eval at (a.x, -a.y) similarly.
+  have h_a_pt : a.point ∈ E.points := h_acc_a.1
+  have h_a_pt_pair : (a.point.1, a.point.2) ∈ E.points := h_a_pt
+  have h_mul_at_a : mul_ab.eval a.point.1 a.point.2 = 0 := by
+    rw [hmul_def, mulCoordRingElt_eval_on_E E a.poly b.poly h_a_pt_pair]
+    rw [h_b_at_a_y, mul_zero]
+  have h_mul_at_neg_a : mul_ab.eval a.point.1 (-a.point.2) = 0 := by
+    rw [hmul_def, mulCoordRingElt_eval_on_E E a.poly b.poly h_neg_a_pt]
+    rw [h_a_at_neg_a, zero_mul]
+  -- Both sheets vanish ⟹ (X - C a.x) divides mul_ab.a and mul_ab.b.
+  have h_mul_at_x := Da_Db_eval_zero_of_both_sheets_zero E mul_ab hY_a
+    h_mul_at_a h_mul_at_neg_a
+  have h_pa_dvd : (Polynomial.X - Polynomial.C a.point.1) ∣ mul_ab.a :=
+    Polynomial.dvd_iff_isRoot.mpr h_mul_at_x.1
+  have h_pb_dvd : (Polynomial.X - Polynomial.C a.point.1) ∣ mul_ab.b :=
+    Polynomial.dvd_iff_isRoot.mpr h_mul_at_x.2
+  have h_mul_NZ : ¬ (mul_ab.a = 0 ∧ mul_ab.b = 0) := by
+    intro ⟨ha', hb'⟩
+    have hN : normPoly E mul_ab = 0 := by rw [normPoly_eq, ha', hb']; ring
+    rw [hmul_def, normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E a.poly h_a_poly_NZ)
+      (normPoly_ne_zero E b.poly h_b_poly_NZ)) hN
+  -- Apply divLin_subtract.
+  show divisorOfD E (mul_ab.divLin a.point.1) R
+      = divisorOfD E mul_ab R
+        - divisorOfD E ({ a := Polynomial.X - Polynomial.C a.point.1, b := 0 }
+                        : CoordRingElt E.q) R
+  exact divisorOfD_divLin_subtract (E := E) mul_ab a.point.1
+    h_pa_dvd h_pb_dvd h_mul_NZ R
+
 /-! ## General-k correctness: status
 
 Progress so far:
