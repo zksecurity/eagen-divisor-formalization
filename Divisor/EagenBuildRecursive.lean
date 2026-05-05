@@ -5180,6 +5180,42 @@ theorem eagenBuild_iterate_length_le_one_of_tangent_free
         h_preserve xs h
       exact IH _ h_step_len h_step_tf
 
+/-! ### Tangent-free preservation (open)
+
+The remaining structural hypothesis for `eagenBuild_iterate_length_le_one_of_tangent_free`:
+
+  ∀ ys, LevelStepTangentFree E ys → LevelStepTangentFree E (eagenBuild_level_step E ys).
+
+This says: combining adjacent pairs (via combine_higher_distinct or
+combine_higher_vertical) produces a list whose new adjacent pairs
+are also tangent-free.
+
+The combined accumulators' points are:
+* combine_higher_distinct(a, b).point = (Q₀_{ab} x, -Q₀_{ab} y) where
+  Q₀_{ab} = thirdPoint(a.point, b.point) (chord case).
+* combine_higher_vertical(a, b).point = a.point (vertical case;
+  this is the terminal step so the result list might be ill-formed
+  for further iteration, but we typically stop at this point).
+
+For two consecutive combined accumulators a' = combine(a, b) and
+c' = combine(c, d), tangent collision means a'.point = c'.point as
+ECPoints, i.e., -((a + b)) = -((c + d)) in EC group, i.e.,
+a + b = c + d.
+
+Under "all input ECPoints distinct" + further generic conditions
+(no zero subsums beyond the global zero sum, etc.), this never
+happens. Encoding this propagation in Lean requires either:
+
+(a) A list-of-ECPoints invariant tracking the "absorbed sublist"
+    for each accumulator, with disjointness across accumulators;
+    plus generic conditions on the input partition.
+
+(b) An explicit "all-distinct-and-non-zero-subsum" predicate on the
+    accumulator list.
+
+Option (b) is simpler but requires nontrivial group-theoretic
+genericity. Implementation deferred. -/
+
 /-! ## General-k correctness: status
 
 Progress so far:
