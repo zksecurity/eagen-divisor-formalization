@@ -781,4 +781,76 @@ theorem landmarkInv_combine_vertical_no_collision
     rw [List.length_append]
     omega
 
+/-! ## TODO: combine_distinct, combine_tangent_torsion, combine_tangent_smooth
+
+### combine_distinct (chord case, distinct x-coords)
+
+Hypotheses needed:
+  - xa ≠ xb (chord branch).
+  - (xa, ya), (xa, -ya), (xb, yb), (xb, -yb) all in E.points.
+  - ya ≠ 0, yb ≠ 0 (non-2-torsion).
+  - No P ∈ xs ++ ys has P.1 = xa OR P.1 = xb.
+  - LandmarkInv on a, b. nonzero normPolys.
+
+Strategy:
+  1. From `chordCoordRingElt_eval_left/_right`: chord vanishes at (xa, ya)
+     and (xb, yb).
+  2. From a's residue conjunct: a.poly vanishes at (xa, -ya).
+     From b's residue conjunct: b.poly vanishes at (xb, -yb).
+  3. Product chord · a.poly · b.poly vanishes on:
+       (xa, ya) (chord), (xa, -ya) (a.poly · b.poly via a residue, requires
+                                    b.poly evaluation at (xa, -ya) on E),
+       (xb, yb) (chord), (xb, -yb) (a.poly · b.poly via b residue).
+  4. At fiber x = xa: both sheets vanish ⇒ qa_qb_eval_zero_of_double_fiber_vanish
+     gives (X - C xa) | q.a, q.b. Same at xb.
+  5. divLin xa: result divisible by (X - C xb) (since xa ≠ xb, factors coprime).
+  6. divLin xb: clean polynomial.
+  7. Vanishing at P with P.1 ∉ {xa, xb}: divLin_eval_zero_of_x_ne twice.
+  8. Residue: combined.point = ECPoint.affine E Qx (-Qy) where (Qx, Qy) is
+     thirdPoint. negCoords = some (Qx, Qy). chordCoordRingElt_eval_thirdPoint_chord
+     gives chord vanishes at (Qx, Qy). After two divLin operations and Qx ≠ xa,
+     Qx ≠ xb (need to add hypothesis), residue vanishing preserved.
+  9. Group-law sum: thirdPoint_some_eq_neg_add gives a.point + b.point =
+     -ECPoint(third intersection). With negation, combined.point = -third = a + b.
+ 10. Degree: chord normPoly natDegree = 3. Total: 3 + (xs+1) + (ys+1) = xs+ys+5.
+     Two divLin operations drop natDegree by 4 (each factor of (X-C x)² lost).
+     Result: xs + ys + 1 = (xs ++ ys).length + 1, matches LandmarkInv with
+     combined.point ≠ 0. ✓
+
+Estimated proof length: ~200-250 LOC.
+
+### combine_tangent_torsion (2-torsion doubling)
+
+Different from combine_vertical despite same data definition: the fiber at
+x = xa has only one point (xa, 0), so the double-fiber-vanishing argument
+doesn't apply directly. Need to derive divisibility from a different
+structural fact (e.g., a.poly's b-component vanishing at xa, which would
+require strengthening the invariant).
+
+Estimated: ~100-150 LOC, harder than vertical.
+
+### combine_tangent_smooth (tangent doubling, non-2-torsion)
+
+Tangent line at (xa, ya) with ya ≠ 0. Third intersection at (x₂, y₂) where
+x₂ = lam² - 2·xa, lam = (3·xa² + curveA)/(2·ya). Two divLin operations at xa
+(line vanishes doubly at (xa, ya) on the tangent sheet, plus a.poly's residue
+at (xa, -ya)).
+
+Strategy similar to combine_vertical but with the tangent line factor giving
+extra multiplicity at one sheet only.
+
+Estimated: ~250-300 LOC.
+
+### After all four affine cases:
+
+  - LandmarkInvList preservation under level_step (per-pair dispatch).
+  - Iterate preservation.
+  - levelInitPair satisfies LandmarkInv (level-0 base case).
+  - Final landmark theorem assembly.
+  - Bridge to full divisor identity.
+  - IsHonestForBinary structure + bridge.
+  - ma_completeness_for_binary thin compositions.
+
+Total remaining: ~1500-2000 LOC across multiple sessions. -/
+
 end Divisor.Landmark
