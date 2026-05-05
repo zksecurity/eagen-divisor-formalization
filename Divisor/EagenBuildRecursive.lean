@@ -6313,6 +6313,15 @@ theorem not_accsListChordStep_cons_nil
     ¬ AccsListChordStep E (xs :: rest) [] := by
   unfold AccsListChordStep; simp
 
+/-! ### iterate composition: split fuel -/
+
+theorem eagenBuild_iterate_split (m k : ℕ) (xs : List (EagenAccum E))
+    (h_gt_one : ¬ xs.length ≤ 1) :
+    eagenBuild_iterate E (m + k + 1) xs
+      = eagenBuild_iterate E (m + k) (eagenBuild_level_step E xs) := by
+  rw [show m + k + 1 = (m + k) + 1 from by omega]
+  exact eagenBuild_iterate_succ_of_length_gt_one E (m + k) xs h_gt_one
+
 /-! ## Session summary: combine-step assembly + general-k inductive steps
 
 This file has accumulated ~340 commits of general-k correctness work
