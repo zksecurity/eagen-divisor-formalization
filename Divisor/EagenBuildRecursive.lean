@@ -1034,16 +1034,22 @@ Progress so far:
 * `accInv_level0_chord_divisor_identity_at_{infinity, P, Q, A₂, off_support}` ✓
 * `accInv_level0_chord_divisor_identity` (universal ∀ R) ✓
 * `accInv_level0_chord_case` (full level-0 chord AccInv) ✓
+* `terminalInv_vertical_at_{infinity, off_x₀, P, negP}` ✓
+* `terminalInv_level0_vertical_case` (full TerminalInv for `(P, -P)`) ✓
 
 Remaining (multi-firing):
 
-* `terminalInv_level0_vertical_case`: TerminalInv for `(P, -P)` input.
-* `accInv_singleton_carry`: handle odd-length carry (singleton accumulator
-  with identity poly carries no points yet).
+* `accInv_singleton_carry`: odd-length carry needs special handling (the
+  carried point isn't yet absorbed; subtle).
 * `accInv_combine_higher_distinct_step`: AccInv preserved on append for
-  the chord combine.
+  the chord combine. Algebraic skeleton:
+  ```
+  div(combine(a, b)) = div(chord_ab) + div(a.poly) + div(b.poly)
+                       - div(vert(a.point.1)) - div(vert(b.point.1))
+                     = formalDivisor(xs ++ ys) + residue(a.point + b.point)
+  ```
 * `terminalInv_combine_higher_vertical_step`: TerminalInv for sum-zero
-  combine.
+  combine (when a.point + b.point = O).
 * `eagenBuild_correctness`: ∀ sum-zero `Ps`, `divisorOfD (eagenBuild Ps) =
   formalDivisor Ps`. -/
 
