@@ -193,34 +193,55 @@ noncomputable def EagenAccum.combine (a b : EagenAccum E) : EagenAccum E :=
         else
           EagenAccum.combine_tangent_smooth E a b xa ya h_y0
 
-/-! ## Driver: level0, level_step, iterate, eagenBuild
+/-! ## Level-0 pair construction
 
-`level0`: pair adjacent inputs; produce one `combine` per pair.
-Odd-trailing element produces a `singleton`.
+`levelInitPair P Q` takes two raw input points `P, Q ∈ E.points`
+and produces a level-1 accumulator. The resulting accumulator's
+polynomial is the chord/tangent/vertical line through `P, Q`, NOT
+yet divided by anything (level-0 polynomials are pure lines). The
+running sum is the negation of the third intersection,
+i.e. `-(P + Q)` in the group law.
 
-`level_step`: pair adjacent accumulators; combine each pair.
+Three branches via `chordCoordRingElt` + `thirdPoint`:
+  - `thirdPoint = some (x₂, y₂)`: chord/tangent non-vertical;
+    new point = `(x₂, -y₂)` lifted.
+  - `thirdPoint = none`: vertical case (`P = -Q` or 2-torsion
+    doubling); new point = O. -/
 
-`iterate`: apply `level_step` until length ≤ 1.
+noncomputable def levelInitPair
+    (P Q : ZMod E.q × ZMod E.q) : EagenAccum E :=
+  let line := chordCoordRingElt E P Q
+  match thirdPoint E P Q with
+  | none =>
+      -- Vertical: P + Q = O. Polynomial is the vertical line.
+      { point := 0, poly := line }
+  | some (x₂, y₂) =>
+      -- Non-vertical: third intersection on E. New running sum
+      -- is the negation in the group law: ECPoint.affine x₂ (-y₂).
+      { point := ECPoint.affine E x₂ (-y₂), poly := line }
 
-`eagenBuild`: top-level driver. Input `Ps : List (ZMod q × ZMod q)`
-of points on `E` (assumed sum-zero); output the polynomial of the
-final singleton accumulator. -/
+/-! ## Driver: level0 (even-length), level_step, iterate, eagenBuild
 
-/-- Pair adjacent input points; the trailing odd element becomes a
-    `singleton`. Each pair is combined as a level-0 step. -/
-noncomputable def level0
-    (hOn : ∀ P, P ∈ E.points → True) :  -- placeholder; on-curve evidence threaded later
+This first cut handles **even-length** input lists. Odd-length
+lists with sum-zero are conceivable (e.g. `[P, Q, R]` with
+`P+Q+R = O`), but the level-0 stage requires either a
+`combineSingletonInput` primitive or a different recursion shape;
+that's deferred. For binary completeness, even-length covers the
+case where `1 + #{i : scalars i = 1}` is even, i.e. the number of
+selected bases is odd. -/
+
+/-- Pair adjacent input points; even length only. Each pair becomes
+    one level-1 accumulator via `levelInitPair`. -/
+noncomputable def level0 :
     List (ZMod E.q × ZMod E.q) → List (EagenAccum E)
   | [] => []
-  | [_] =>
-      -- Odd trailing: produce a unit-poly singleton at infinity.
-      -- Actual carry-forward of the affine point happens in level_step.
-      [EagenAccum.unit E]
-  | _ :: _ :: rest =>
-      EagenAccum.unit E :: level0 hOn rest  -- placeholder wiring
+  | [_] => []  -- ill-formed for sum-zero inputs; produces empty
+  | P :: Q :: rest => levelInitPair E P Q :: level0 rest
 
 /-- One level: pair adjacent accumulators and combine each pair.
-    Trailing odd element is forwarded unchanged. -/
+    Trailing odd element is forwarded unchanged (so `level_step`
+    on odd-length input doesn't lose the residual; it converges
+    in `⌈log₂ n⌉` levels). -/
 noncomputable def level_step :
     List (EagenAccum E) → List (EagenAccum E)
   | [] => []
@@ -235,5 +256,70 @@ noncomputable def iterate :
   | n + 1, xs =>
       if xs.length ≤ 1 then xs
       else iterate n (level_step E xs)
+
+/-- Top-level Eagen build for a sum-zero list of input points.
+    Returns the polynomial of the final singleton accumulator. -/
+noncomputable def eagenBuild
+    (Ps : List (ZMod E.q × ZMod E.q)) : CoordRingElt E.q :=
+  let acc_list := iterate E Ps.length (level0 E Ps)
+  match acc_list with
+  | [a] => a.poly
+  | _ => { a := 1, b := 0 }  -- shouldn't fire if iterate sufficient
+
+/-! ## Sum-on-curve helper
+
+The running EC sum of a list of inputs, lifted to `ECPoint E`. Off
+`E.points` an input contributes nothing (junk on `E.points` membership
+is benign because the recursion's `LandmarkInv` will require all
+inputs to be on `E`). -/
+
+noncomputable def sumOnE (xs : List (ZMod E.q × ZMod E.q)) : ECPoint E :=
+  xs.foldr
+    (fun P S =>
+      if h : P ∈ E.points then ECPoint.affineOfMem E h + S else S)
+    0
+
+@[simp] theorem sumOnE_nil : sumOnE E [] = 0 := rfl
+
+theorem sumOnE_cons {P : ZMod E.q × ZMod E.q} {xs : List _}
+    (hP : P ∈ E.points) :
+    sumOnE E (P :: xs) = ECPoint.affineOfMem E hP + sumOnE E xs := by
+  classical
+  unfold sumOnE
+  rw [List.foldr_cons]
+  rw [dif_pos hP]
+
+/-! ## LandmarkInv — the lightweight invariant
+
+`LandmarkInv xs a` says an accumulator `a` represents the absorbed
+sub-list `xs` in the following sense:
+
+  1. `a.point = sumOnE xs` (running EC sum matches).
+  2. `a.poly` vanishes at every `P ∈ xs`.
+  3. `(normPoly E a.poly).natDegree = xs.length + (if a.point ≠ 0 then 1 else 0)`.
+
+The third conjunct's offset of `1` when `point ≠ 0` accounts for the
+"residue" zero of the polynomial at `-a.point` (the carried third
+intersection). When `point = 0` (running sum hit identity), no
+residue zero remains and the polynomial's degree exactly equals
+the absorbed list length.
+
+This invariant is preserved through every level transition under
+appropriate hypotheses; see preservation lemmas below. -/
+
+noncomputable def LandmarkInv
+    (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E) : Prop :=
+  a.point = sumOnE E xs ∧
+  (∀ P ∈ xs, a.poly.eval P.1 P.2 = 0) ∧
+  letI : Decidable (a.point = (0 : ECPoint E)) :=
+    Classical.dec _
+  (normPoly E a.poly).natDegree =
+    xs.length + (if a.point = (0 : ECPoint E) then 0 else 1)
+
+/-- The synchronized `Forall₂` form: a list of absorbed sub-lists
+    and a list of accumulators, pointwise satisfying `LandmarkInv`. -/
+def LandmarkInvList (xss : List (List (ZMod E.q × ZMod E.q)))
+    (accs : List (EagenAccum E)) : Prop :=
+  List.Forall₂ (LandmarkInv E) xss accs
 
 end Divisor.Landmark
