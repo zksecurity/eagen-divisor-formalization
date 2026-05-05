@@ -3611,6 +3611,109 @@ theorem accInv_combine_higher_distinct_divisor_at_general_off_chord_AccInv_form
   rw [formalDivisorOfList_append]
   ring
 
+/-! ### Combine step strong-genericity bundle
+
+A `Prop` packaging all the per-point evaluation and ECPoint-inequality
+hypotheses required for the combine-step divisor identity dispatch.
+Encapsulates "Eagen's algorithm-stable assumption": the inputs are
+sufficiently generic that no support overlaps occur between accumulator
+factors at the new chord-line zeros and residues. -/
+
+structure CombineStrongGeneric
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1) : Prop where
+  -- Q₀ hypotheses (third intersection): Q₀ non-2-torsion, off both endpoints.
+  hQ₀x_ne_a : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                  - a.point.1 - b.point.1) ≠ a.point.1
+  hQ₀x_ne_b : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                  - a.point.1 - b.point.1) ≠ b.point.1
+  hQ₀y_ne_zero : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+                    * (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                       - a.point.1 - b.point.1)
+                    + (a.point.2 - slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+                       * a.point.1)) ≠ 0
+  -- Off-fiber non-vanishing (b on a fiber, a on b fiber, both on Q₀ fiber).
+  hb_at_a : b.poly.eval a.point.1 a.point.2 ≠ 0
+  hb_at_neg_a : b.poly.eval a.point.1 (-a.point.2) ≠ 0
+  ha_at_b : a.poly.eval b.point.1 b.point.2 ≠ 0
+  ha_at_neg_b : a.poly.eval b.point.1 (-b.point.2) ≠ 0
+  ha_at_Q₀ :
+      let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+      let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+      let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+      a.poly.eval Q₀x Q₀y ≠ 0
+  ha_at_neg_Q₀ :
+      let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+      let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+      let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+      a.poly.eval Q₀x (-Q₀y) ≠ 0
+  hb_at_Q₀ :
+      let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+      let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+      let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+      b.poly.eval Q₀x Q₀y ≠ 0
+  hb_at_neg_Q₀ :
+      let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+      let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+      let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+      b.poly.eval Q₀x (-Q₀y) ≠ 0
+  -- xs/ys disjoint from chord-fiber support points.
+  hQ₀_not_in_xs :
+      let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+      let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+      let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+      (Q₀x, Q₀y) ∉ xs
+  hQ₀_not_in_ys :
+      let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+      let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+      let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+      (Q₀x, Q₀y) ∉ ys
+  hnegQ₀_not_in_xs :
+      let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+      let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+      let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+      (Q₀x, -Q₀y) ∉ xs
+  hnegQ₀_not_in_ys :
+      let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+      let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+      let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+      (Q₀x, -Q₀y) ∉ ys
+  -- ECPoint inequalities: a.lift ≠ ±b.lift, etc.
+  ha_lift_ne_neg_b_lift :
+      ECPoint.affineOfMem E h_acc_a.1
+        ≠ -(ECPoint.affineOfMem E h_acc_b.1 : ECPoint E)
+  hneg_a_lift_ne_neg_b_lift :
+      (-(ECPoint.affineOfMem E h_acc_a.1) : ECPoint E)
+        ≠ -(ECPoint.affineOfMem E h_acc_b.1 : ECPoint E)
+  hb_lift_ne_neg_a_lift :
+      ECPoint.affineOfMem E h_acc_b.1
+        ≠ -(ECPoint.affineOfMem E h_acc_a.1 : ECPoint E)
+  hneg_b_lift_ne_neg_a_lift :
+      (-(ECPoint.affineOfMem E h_acc_b.1) : ECPoint E)
+        ≠ -(ECPoint.affineOfMem E h_acc_a.1 : ECPoint E)
+  -- ECPoint inequalities w.r.t. combine.lift.
+  ha_lift_ne_neg_combine_lift :
+      ECPoint.affineOfMem E h_acc_a.1
+        ≠ -(ECPoint.affineOfMem E
+            (combine_higher_distinct_running_sum E a b
+                h_acc_a.1 h_acc_b.1 h_xx).choose : ECPoint E)
+  hneg_a_lift_ne_neg_combine_lift :
+      (-(ECPoint.affineOfMem E h_acc_a.1) : ECPoint E)
+        ≠ -(ECPoint.affineOfMem E
+            (combine_higher_distinct_running_sum E a b
+                h_acc_a.1 h_acc_b.1 h_xx).choose : ECPoint E)
+  hb_lift_ne_neg_combine_lift :
+      ECPoint.affineOfMem E h_acc_b.1
+        ≠ -(ECPoint.affineOfMem E
+            (combine_higher_distinct_running_sum E a b
+                h_acc_a.1 h_acc_b.1 h_xx).choose : ECPoint E)
+  hneg_b_lift_ne_neg_combine_lift :
+      (-(ECPoint.affineOfMem E h_acc_b.1) : ECPoint E)
+        ≠ -(ECPoint.affineOfMem E
+            (combine_higher_distinct_running_sum E a b
+                h_acc_a.1 h_acc_b.1 h_xx).choose : ECPoint E)
+
 /-! ## General-k correctness: status
 
 Progress so far:
