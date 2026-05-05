@@ -2525,6 +2525,140 @@ theorem accInv_combine_higher_distinct_divisor_at_off_support_AccInv_form
     rw [ECPoint.affine_of_nonsingular E hns] at h_eq
     cases h_eq
 
+/-! ### AccInv form of divisor identity at +combine.lift
+
+R = combine.lift = ECPoint.affine Q₀x (-Q₀y) is NOT in chord's affine
+support (chord vanishes only at a, b, Q₀, not at -Q₀). With a.poly,
+b.poly nonvanish at -Q₀, the off-support-zero theorem gives LHS = 0.
+The RHS = formalDivisor(off-support) + residue(R, S=R, but R ≠ -S
+since Q₀y ≠ 0) = 0 + 0 = 0. -/
+
+theorem accInv_combine_higher_distinct_divisor_at_combine_lift_AccInv_form
+    {xs ys : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
+    (h_acc_a : AccInv E xs a) (h_acc_b : AccInv E ys b)
+    (h_xx : a.point.1 ≠ b.point.1)
+    (hY_a : a.point.2 ≠ 0) (hY_b : b.point.2 ≠ 0)
+    (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (h_Q₀x_ne_a : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                    - a.point.1 - b.point.1) ≠ a.point.1)
+    (h_Q₀x_ne_b : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                    - a.point.1 - b.point.1) ≠ b.point.1)
+    (h_Q₀y_ne_zero : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+                      * (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+                         - a.point.1 - b.point.1)
+                      + (a.point.2 - slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+                         * a.point.1)) ≠ 0)
+    (h_a_at_negQ₀ :
+        let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+        let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+        let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+        a.poly.eval Q₀x (-Q₀y) ≠ 0)
+    (h_b_at_negQ₀ :
+        let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+        let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+        let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+        b.poly.eval Q₀x (-Q₀y) ≠ 0)
+    (h_negQ₀_not_in_xs :
+        let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+        let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+        let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+        (Q₀x, -Q₀y) ∉ xs)
+    (h_negQ₀_not_in_ys :
+        let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+        let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+        let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+        (Q₀x, -Q₀y) ∉ ys) :
+    let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
+    let Q₀x := lam ^ 2 - a.point.1 - b.point.1
+    let Q₀y := lam * Q₀x + (a.point.2 - lam * a.point.1)
+    let combine := EagenAccum.combine_higher_distinct E a b h_xx
+    ∃ h_combine_pt : combine.point ∈ E.points,
+      divisorOfD E combine.poly (ECPoint.affine E Q₀x (-Q₀y))
+        = formalDivisorOfList E (xs ++ ys) (ECPoint.affine E Q₀x (-Q₀y))
+          + residueDivisor E (ECPoint.affineOfMem E h_combine_pt)
+              (ECPoint.affine E Q₀x (-Q₀y)) := by
+  classical
+  intro lam Q₀x Q₀y combine
+  have h_a_pt : a.point ∈ E.points := h_acc_a.1
+  have h_b_pt : b.point ∈ E.points := h_acc_b.1
+  obtain ⟨h_combine_pt, _⟩ := combine_higher_distinct_running_sum
+    E a b h_a_pt h_b_pt h_xx
+  refine ⟨h_combine_pt, ?_⟩
+  -- (Q₀x, Q₀y) ∈ E.points and (Q₀x, -Q₀y) ∈ E.points.
+  have hQ₀_on_E : (Q₀x, Q₀y) ∈ E.points := by
+    apply E.hComplete
+    exact chord_third_point_on_E E a.point b.point h_a_pt h_b_pt h_xx
+  have h_negQ₀_on_E : (Q₀x, -Q₀y) ∈ E.points := by
+    apply E.hComplete
+    have hC := E.hOnCurve _ hQ₀_on_E
+    show (-Q₀y) ^ 2 = Q₀x ^ 3 + E.curveA * Q₀x + E.curveB
+    rw [neg_pow_two]; exact hC
+  -- chord at (Q₀x, -Q₀y) ≠ 0.
+  have h_chord_neg : (chordCoordRingElt E a.point b.point).eval Q₀x (-Q₀y) ≠ 0 := by
+    rw [chordCoordRingElt_eval_at_neg_third E a b h_xx]
+    show (-2 : ZMod E.q) * Q₀y ≠ 0
+    have h2 : (2 : ZMod E.q) ≠ 0 := ZMod_two_ne_zero_of_E E
+    exact mul_ne_zero (neg_ne_zero.mpr h2) h_Q₀y_ne_zero
+  -- Apply off_support_zero at (Q₀x, -Q₀y).
+  rw [accInv_combine_higher_distinct_divisor_at_off_support_zero (E := E)
+        h_acc_a h_acc_b h_xx hY_a hY_b h_a_poly_NZ h_b_poly_NZ
+        h_negQ₀_on_E h_chord_neg h_a_at_negQ₀ h_b_at_negQ₀
+        h_Q₀x_ne_a h_Q₀x_ne_b]
+  -- formalDivisorOfList (xs++ys) at (Q₀x, -Q₀y) = 0.
+  have hns_neg : E.toW.toAffine.Nonsingular Q₀x (-Q₀y) :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ h_negQ₀_on_E))
+  have h_formal_zero : formalDivisorOfList E (xs ++ ys)
+      (ECPoint.affine E Q₀x (-Q₀y)) = 0 := by
+    rw [ECPoint.affine_of_nonsingular E hns_neg]
+    rw [formalDivisorOfList_append, show
+      formalDivisorOfList E xs (WeierstrassCurve.Affine.Point.some hns_neg
+                                : ECPoint E)
+      = ((xs.filter (fun P => P = (Q₀x, -Q₀y))).length : ℤ) from rfl,
+      show formalDivisorOfList E ys (WeierstrassCurve.Affine.Point.some hns_neg
+                                     : ECPoint E)
+      = ((ys.filter (fun P => P = (Q₀x, -Q₀y))).length : ℤ) from rfl]
+    have h1 : xs.filter (fun P => P = (Q₀x, -Q₀y)) = [] := by
+      apply List.filter_eq_nil_iff.mpr
+      intro P hP_in heq
+      apply h_negQ₀_not_in_xs
+      rwa [decide_eq_true_eq.mp heq] at hP_in
+    have h2 : ys.filter (fun P => P = (Q₀x, -Q₀y)) = [] := by
+      apply List.filter_eq_nil_iff.mpr
+      intro P hP_in heq
+      apply h_negQ₀_not_in_ys
+      rwa [decide_eq_true_eq.mp heq] at hP_in
+    rw [h1, h2]; simp
+  rw [h_formal_zero, zero_add]
+  -- residueDivisor combine.lift R = 0 (R = combine.lift ≠ -combine.lift since Q₀y ≠ 0).
+  symm
+  apply residueDivisor_at_other
+  · -- R ≠ -combine.lift.
+    intro h_eq
+    rw [show -(ECPoint.affineOfMem E h_combine_pt : ECPoint E)
+          = ECPoint.affine E Q₀x Q₀y from ?_] at h_eq
+    · rw [ECPoint.affine_of_nonsingular E hns_neg] at h_eq
+      have hQ₀ns : E.toW.toAffine.Nonsingular Q₀x Q₀y :=
+        E.equation_iff_nonsingular.mp
+          ((E.equation_iff _ _).mpr (E.hOnCurve _ hQ₀_on_E))
+      rw [ECPoint.affine_of_nonsingular E hQ₀ns] at h_eq
+      -- h_eq : .some hns_neg = .some hQ₀ns, forcing -Q₀y = Q₀y.
+      injection h_eq with _ h_y_eq
+      have h2 : (2 : ZMod E.q) ≠ 0 := ZMod_two_ne_zero_of_E E
+      apply h_Q₀y_ne_zero
+      have : (2 : ZMod E.q) * Q₀y = 0 := by linear_combination -h_y_eq
+      rcases mul_eq_zero.mp this with h | h
+      · exact absurd h h2
+      · exact h
+    · rw [← ECPoint.affine_eq_affineOfMem E h_combine_pt]
+      show -(ECPoint.affine E combine.point.1 combine.point.2 : ECPoint E)
+          = ECPoint.affine E Q₀x Q₀y
+      rw [show combine.point.1 = Q₀x from rfl, show combine.point.2 = -Q₀y from rfl]
+      rw [ECPoint.affine_neg E Q₀x (-Q₀y), neg_neg]
+  · intro h_eq
+    rw [ECPoint.affine_of_nonsingular E hns_neg] at h_eq
+    cases h_eq
+
 /-! ## General-k correctness: status
 
 Progress so far:
