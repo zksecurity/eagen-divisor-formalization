@@ -5529,7 +5529,6 @@ theorem rootMultiplicity_normPoly_eq_fiber_target_sum
     (D : CoordRingElt E.q) (xs : List (ZMod E.q × ZMod E.q))
     (R : ECPoint E)
     (_h : LandmarkInvStrong E xs (EagenAccum.mk R D))
-    (_hSplit : splitsOnE E D)
     (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) :
     Polynomial.rootMultiplicity P.1 (normPoly E D)
       = ∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1), localMult E D Q := by
@@ -5611,6 +5610,302 @@ theorem rootMult_le_two_preserved_under_combine
         (normPoly E (EagenAccum.combine E a b).poly) ≤ 2 := by
   exact rootMultiplicity_normPoly_le_two_of_fiber_localMult_le_two
     E (EagenAccum.combine E a b).poly h_fiber_localMult_le_two
+
+private theorem sum_count_eq_length_of_forall_mem
+    {α : Type*} [DecidableEq α] [BEq α] [LawfulBEq α]
+    (s : Finset α) (xs : List α) (hxs : ∀ x ∈ xs, x ∈ s) :
+    (∑ x ∈ s, xs.count x) = xs.length := by
+  classical
+  induction xs with
+  | nil =>
+      simp [List.count]
+  | cons y ys ih =>
+      have hy : y ∈ s := hxs y (by simp)
+      have hys : ∀ x ∈ ys, x ∈ s := by
+        intro x hx
+        exact hxs x (by simp [hx])
+      have hcount_cons :
+          (∑ x ∈ s, (y :: ys).count x)
+            = ∑ x ∈ s, ((if x = y then 1 else 0) + ys.count x) := by
+        apply Finset.sum_congr rfl
+        intro x _hx
+        by_cases hxy : x = y
+        · subst x
+          rw [List.count_cons_self]
+          simp
+          omega
+        · have hyx : y ≠ x := by
+            intro hyx
+            exact hxy hyx.symm
+          rw [List.count_cons_of_ne hyx]
+          simp [hxy]
+      have hsingle :
+          (∑ x ∈ s, if x = y then 1 else 0) = 1 := by
+        rw [Finset.sum_ite_eq']
+        simp [hy]
+      calc
+        (∑ x ∈ s, (y :: ys).count x)
+            = ∑ x ∈ s, ((if x = y then 1 else 0) + ys.count x) :=
+              hcount_cons
+        _ = (∑ x ∈ s, if x = y then 1 else 0)
+              + ∑ x ∈ s, ys.count x := Finset.sum_add_distrib
+        _ = 1 + ys.length := by rw [hsingle, ih hys]
+        _ = (y :: ys).length := by simp; omega
+
+theorem negCoords_mem_points_of_some
+    {R : ECPoint E} {P : ZMod E.q × ZMod E.q}
+    (hR : negCoords E R = some P) :
+    P ∈ E.points := by
+  match R with
+  | WeierstrassCurve.Affine.Point.zero =>
+      simp [negCoords] at hR
+  | WeierstrassCurve.Affine.Point.some (x := x) (y := y) hns =>
+      simp [negCoords] at hR
+      subst P
+      have hEq : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB :=
+        (E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hns)
+      exact E.hComplete x (-y) (by
+        rw [neg_pow_two]
+        exact hEq)
+
+theorem residue_indicator_sum_eq
+    (R : ECPoint E) :
+    letI : Decidable (R = (0 : ECPoint E)) := Classical.dec _
+    (∑ P ∈ E.points, if negCoords E R = some P then 1 else 0)
+      = if R = (0 : ECPoint E) then 0 else 1 := by
+  classical
+  match R with
+  | WeierstrassCurve.Affine.Point.zero =>
+      simp [negCoords]
+  | WeierstrassCurve.Affine.Point.some (x := x) (y := y) hns =>
+      have hmem : (x, -y) ∈ E.points := by
+        have hEq : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB :=
+          (E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hns)
+        exact E.hComplete x (-y) (by
+          rw [neg_pow_two]
+          exact hEq)
+      have hsum :
+          (∑ P ∈ E.points, if P = (x, -y) then 1 else 0) = 1 := by
+        rw [Finset.sum_ite_eq']
+        simp [hmem]
+      simpa [negCoords, hmem, eq_comm] using hsum
+
+theorem targetMass_eq_natDegree_of_landmarkInvStrong
+    (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E)
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (h : LandmarkInvStrong E xs a) :
+    targetMass E xs a.point = (normPoly E a.poly).natDegree := by
+  classical
+  unfold targetMass
+  calc
+    (∑ P ∈ E.points, target E xs a.point P)
+        = (∑ P ∈ E.points, xs.count P)
+          + ∑ P ∈ E.points,
+              (if negCoords E a.point = some P then 1 else 0) := by
+            simp [target, Finset.sum_add_distrib]
+    _ = xs.length + (if a.point = (0 : ECPoint E) then 0 else 1) := by
+          rw [sum_count_eq_length_of_forall_mem E.points xs hxs_on,
+            residue_indicator_sum_eq E a.point]
+    _ = (normPoly E a.poly).natDegree :=
+          (LandmarkInvStrong.natDegree E h).symm
+
+theorem sum_localMult_le_natDegree_of_ne_zero
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
+    (∑ P ∈ E.points, localMult E D P) ≤ (normPoly E D).natDegree := by
+  classical
+  have hlocal_ord :
+      (∑ P ∈ E.points, localMult E D P)
+        = ∑ P ∈ E.points, ordAt E D P := by
+    apply Finset.sum_congr rfl
+    intro P _hP
+    exact localMult_eq_ordAt E D P
+  calc
+    (∑ P ∈ E.points, localMult E D P)
+        = ∑ P ∈ E.points, ordAt E D P := hlocal_ord
+    _ = ∑ x₀ : ZMod E.q,
+          ∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E D P := by
+          rw [sum_E_points_eq_sum_fiberwise E (fun P => ordAt E D P)]
+    _ ≤ ∑ x₀ : ZMod E.q, rootMultiplicity x₀ (normPoly E D) :=
+          Finset.sum_le_sum
+            (fun x₀ _hx₀ => sum_ordAt_fst_eq_le E D hD x₀)
+    _ ≤ (normPoly E D).natDegree :=
+          sum_rootMultiplicity_le_natDegree E (normPoly E D)
+
+theorem localMult_eq_target_of_landmarkInvStrong
+    (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E)
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (h : LandmarkInvStrong E xs a)
+    (hD : ¬ (a.poly.a = 0 ∧ a.poly.b = 0)) :
+    ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+      localMult E a.poly P = target E xs a.point P := by
+  classical
+  have htarget_sum :
+      targetMass E xs a.point = (normPoly E a.poly).natDegree :=
+    targetMass_eq_natDegree_of_landmarkInvStrong E xs a hxs_on h
+  have hlocal_le :
+      (∑ P ∈ E.points, localMult E a.poly P)
+        ≤ (normPoly E a.poly).natDegree :=
+    sum_localMult_le_natDegree_of_ne_zero E a.poly hD
+  have htarget_le_local_sum :
+      targetMass E xs a.point ≤ ∑ P ∈ E.points, localMult E a.poly P := by
+    unfold targetMass
+    exact Finset.sum_le_sum
+      (fun P hP => LandmarkInvStrong.target_le E h P hP)
+  have hlocal_sum_eq_target :
+      (∑ P ∈ E.points, localMult E a.poly P) = targetMass E xs a.point :=
+    le_antisymm (by
+      rw [htarget_sum]
+      exact hlocal_le) htarget_le_local_sum
+  intro P hP
+  have htarget_le := LandmarkInvStrong.target_le E h P hP
+  refine le_antisymm ?_ htarget_le
+  by_contra hnot
+  have hstrict :
+      target E xs a.point P < localMult E a.poly P := by
+    omega
+  have hsum_strict :
+      targetMass E xs a.point < ∑ Q ∈ E.points, localMult E a.poly Q := by
+    unfold targetMass
+    exact Finset.sum_lt_sum
+      (fun Q hQ => LandmarkInvStrong.target_le E h Q hQ)
+      ⟨P, hP, hstrict⟩
+  rw [hlocal_sum_eq_target] at hsum_strict
+  exact (lt_irrefl _ hsum_strict).elim
+
+private theorem target_fiber_sum_le_three_of_nodup
+    (xs : List (ZMod E.q × ZMod E.q)) (R : ECPoint E)
+    (hNodup : xs.Nodup) (P : ZMod E.q × ZMod E.q) :
+    (∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1), target E xs R Q) ≤ 3 := by
+  classical
+  set fiber := E.points.filter (fun Q => Q.1 = P.1)
+  have hcount_sum_le :
+      (∑ Q ∈ fiber, xs.count Q) ≤ 2 := by
+    calc
+      (∑ Q ∈ fiber, xs.count Q)
+          ≤ ∑ Q ∈ fiber, (1 : ℕ) := by
+            apply Finset.sum_le_sum
+            intro Q _hQ
+            rw [List.Nodup.count hNodup]
+            by_cases hQxs : Q ∈ xs <;> simp [hQxs]
+      _ = fiber.card := by
+            rw [← Finset.card_eq_sum_ones]
+      _ ≤ 2 := by
+            simpa [fiber] using card_points_with_fst_eq_le E P.1
+  have hres_sum_le :
+      (∑ Q ∈ fiber, if negCoords E R = some Q then 1 else 0) ≤ 1 := by
+    cases hR : negCoords E R with
+    | none =>
+        simp
+    | some S =>
+        have hsum :
+            (∑ Q ∈ fiber, if some S = some Q then 1 else 0)
+              = if S ∈ fiber then 1 else 0 := by
+          calc
+            (∑ Q ∈ fiber, if some S = some Q then 1 else 0)
+                = ∑ Q ∈ fiber, if Q = S then 1 else 0 := by
+                    apply Finset.sum_congr rfl
+                    intro Q _hQ
+                    by_cases hQS : Q = S
+                    · subst Q
+                      simp
+                    · have hSQ : S ≠ Q := by
+                        intro h
+                        exact hQS h.symm
+                      simp [hQS, hSQ]
+            _ = if S ∈ fiber then 1 else 0 := by
+                    rw [Finset.sum_ite_eq']
+        rw [hsum]
+        by_cases hS : S ∈ fiber <;> simp [hS]
+  calc
+    (∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1), target E xs R Q)
+        = (∑ Q ∈ fiber, xs.count Q)
+          + ∑ Q ∈ fiber, (if negCoords E R = some Q then 1 else 0) := by
+            simp [fiber, target, Finset.sum_add_distrib]
+    _ ≤ 2 + 1 := Nat.add_le_add hcount_sum_le hres_sum_le
+    _ = 3 := by norm_num
+
+private theorem target_fiber_sum_le_two_of_nodup_when_zero
+    (xs : List (ZMod E.q × ZMod E.q)) (R : ECPoint E)
+    (hNodup : xs.Nodup) (hR : R = (0 : ECPoint E))
+    (P : ZMod E.q × ZMod E.q) :
+    (∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1), target E xs R Q) ≤ 2 := by
+  classical
+  subst R
+  set fiber := E.points.filter (fun Q => Q.1 = P.1)
+  have hcount_sum_le :
+      (∑ Q ∈ fiber, xs.count Q) ≤ 2 := by
+    calc
+      (∑ Q ∈ fiber, xs.count Q)
+          ≤ ∑ Q ∈ fiber, (1 : ℕ) := by
+            apply Finset.sum_le_sum
+            intro Q _hQ
+            rw [List.Nodup.count hNodup]
+            by_cases hQxs : Q ∈ xs <;> simp [hQxs]
+      _ = fiber.card := by
+            rw [← Finset.card_eq_sum_ones]
+      _ ≤ 2 := by
+            simpa [fiber] using card_points_with_fst_eq_le E P.1
+  calc
+    (∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1),
+        target E xs (0 : ECPoint E) Q)
+        = ∑ Q ∈ fiber, xs.count Q := by
+            simp [fiber, target, negCoords]
+    _ ≤ 2 := hcount_sum_le
+
+theorem rootMult_le_three_of_nodup_landmarkInvStrong
+    (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E)
+    (hNodup : xs.Nodup)
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (h : LandmarkInvStrong E xs a)
+    (hD : ¬ (a.poly.a = 0 ∧ a.poly.b = 0)) :
+    ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+      Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 3 := by
+  classical
+  intro P hP
+  have hlocal_target :
+      ∀ Q : ZMod E.q × ZMod E.q, Q ∈ E.points →
+        localMult E a.poly Q = target E xs a.point Q :=
+    localMult_eq_target_of_landmarkInvStrong E xs a hxs_on h hD
+  calc
+    Polynomial.rootMultiplicity P.1 (normPoly E a.poly)
+        = ∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1),
+            localMult E a.poly Q :=
+          rootMultiplicity_normPoly_eq_fiber_target_sum E a.poly xs a.point h P hP
+    _ = ∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1),
+          target E xs a.point Q := by
+          apply Finset.sum_congr rfl
+          intro Q hQ
+          exact hlocal_target Q (Finset.mem_filter.mp hQ).1
+    _ ≤ 3 :=
+          target_fiber_sum_le_three_of_nodup E xs a.point hNodup P
+
+theorem rootMult_le_two_of_nodup_landmarkInvStrong_when_zero_point
+    (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E)
+    (hNodup : xs.Nodup)
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (h : LandmarkInvStrong E xs a)
+    (hPoint : a.point = (0 : ECPoint E))
+    (hD : ¬ (a.poly.a = 0 ∧ a.poly.b = 0)) :
+    ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+      Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2 := by
+  classical
+  intro P hP
+  have hlocal_target :
+      ∀ Q : ZMod E.q × ZMod E.q, Q ∈ E.points →
+        localMult E a.poly Q = target E xs a.point Q :=
+    localMult_eq_target_of_landmarkInvStrong E xs a hxs_on h hD
+  calc
+    Polynomial.rootMultiplicity P.1 (normPoly E a.poly)
+        = ∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1),
+            localMult E a.poly Q :=
+          rootMultiplicity_normPoly_eq_fiber_target_sum E a.poly xs a.point h P hP
+    _ = ∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1),
+          target E xs a.point Q := by
+          apply Finset.sum_congr rfl
+          intro Q hQ
+          exact hlocal_target Q (Finset.mem_filter.mp hQ).1
+    _ ≤ 2 :=
+          target_fiber_sum_le_two_of_nodup_when_zero E xs a.point hNodup hPoint P
 
 /-! ## Helper: nonzero from positive natDegree -/
 /-- `eagenBuild` of a sum-zero pair is the vertical line at `P.1`. -/
