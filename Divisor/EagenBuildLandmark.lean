@@ -5515,6 +5515,74 @@ theorem landmarkInvStrong_combine_when_rootMult_le_two
             rw [hcombine]
             exact hcase
 
+/-! ## Root multiplicity bound after combine
+
+The unconditional statement "the combined norm has root multiplicity at
+most two on every rational fiber" needs a support/no-collision invariant
+stronger than `(xs ++ ys).Nodup`: residues carried by one accumulator can
+collide with a full vertical fiber already absorbed by the other
+accumulator.  The lemma below isolates the exact final condition needed
+by the per-fiber norm identity: the sum of sheet-level local
+multiplicities on each combined fiber is at most two. -/
+
+theorem rootMultiplicity_normPoly_le_two_of_fiber_localMult_le_two
+    (D : CoordRingElt E.q)
+    (h_fiber_localMult_le_two :
+      ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+        (∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1), localMult E D Q) ≤ 2) :
+    ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+      Polynomial.rootMultiplicity P.1 (normPoly E D) ≤ 2 := by
+  classical
+  intro P hPon
+  by_cases hD : ¬ (D.a = 0 ∧ D.b = 0)
+  · have hsum :=
+      sum_ordAt_fst_eq_eq_rootMult E D hD P.1 ⟨P, hPon, rfl⟩
+    have hlocal_ord :
+        (∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1), localMult E D Q)
+          = ∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1), ordAt E D Q := by
+      apply Finset.sum_congr rfl
+      intro Q _hQ
+      exact localMult_eq_ordAt E D Q
+    calc
+      Polynomial.rootMultiplicity P.1 (normPoly E D)
+          = ∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1), ordAt E D Q := hsum.symm
+      _ = ∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1), localMult E D Q :=
+            hlocal_ord.symm
+      _ ≤ 2 := h_fiber_localMult_le_two P hPon
+  · push_neg at hD
+    have hnorm_zero : normPoly E D = 0 := by
+      rw [normPoly_eq, hD.1, hD.2]
+      ring
+    rw [hnorm_zero, Polynomial.rootMultiplicity_zero]
+    norm_num
+
+/-- Partial form of root-multiplicity preservation under `combine`.
+
+The extra hypothesis `h_fiber_localMult_le_two` is the explicit
+no-overfull-final-fiber condition.  It is intentionally stated on the
+combined polynomial, so each combine branch can discharge it with its
+own chord/tangent/vertical multiplicity arithmetic. -/
+theorem rootMult_le_two_preserved_under_combine
+    (a b : EagenAccum E)
+    (xs ys : List (ZMod E.q × ZMod E.q))
+    (_hxs_nodup : (xs ++ ys).Nodup)
+    (_hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (_hys_on : ∀ P ∈ ys, P ∈ E.points)
+    (_ha : LandmarkInvStrong E xs a) (_hb : LandmarkInvStrong E ys b)
+    (_h_mult_a : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+      Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2)
+    (_h_mult_b : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+      Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 2)
+    (h_fiber_localMult_le_two :
+      ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+        (∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1),
+          localMult E (EagenAccum.combine E a b).poly Q) ≤ 2) :
+    ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+      Polynomial.rootMultiplicity P.1
+        (normPoly E (EagenAccum.combine E a b).poly) ≤ 2 := by
+  exact rootMultiplicity_normPoly_le_two_of_fiber_localMult_le_two
+    E (EagenAccum.combine E a b).poly h_fiber_localMult_le_two
+
 /-! ## Helper: nonzero from positive natDegree -/
 /-- `eagenBuild` of a sum-zero pair is the vertical line at `P.1`. -/
 theorem eagenBuild_pair_vertical
