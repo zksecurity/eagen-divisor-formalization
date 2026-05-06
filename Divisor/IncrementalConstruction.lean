@@ -3578,6 +3578,28 @@ private theorem normPoly_derivative_eval_eq_zero_of_rootMultiplicity_eq_two
   rw [Polynomial.one_lt_rootMultiplicity_iff_isRoot hNnz] at hlt
   exact hlt.2
 
+private theorem normPoly_derivative_eval_eq_zero_of_rootMultiplicity_eq_three
+    (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    {x₀ : ZMod E.q}
+    (hm : Polynomial.rootMultiplicity x₀ (normPoly E D) = 3) :
+    (normPoly E D).derivative.eval x₀ = 0 := by
+  have hlt : 1 < Polynomial.rootMultiplicity x₀ (normPoly E D) := by omega
+  have hroot :=
+    Polynomial.isRoot_iterate_derivative_of_lt_rootMultiplicity
+      (p := normPoly E D) (t := x₀) (n := 1) hlt
+  simpa [Polynomial.IsRoot] using hroot
+
+private theorem normPoly_secondDerivative_eval_eq_zero_of_rootMultiplicity_eq_three
+    (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0))
+    {x₀ : ZMod E.q}
+    (hm : Polynomial.rootMultiplicity x₀ (normPoly E D) = 3) :
+    (normPoly E D).derivative.derivative.eval x₀ = 0 := by
+  have hlt : 2 < Polynomial.rootMultiplicity x₀ (normPoly E D) := by omega
+  have hroot :=
+    Polynomial.isRoot_iterate_derivative_of_lt_rootMultiplicity
+      (p := normPoly E D) (t := x₀) (n := 2) hlt
+  simpa [Polynomial.IsRoot] using hroot
+
 private theorem dvd_X_sub_C_sq_of_eval_derivative_zero
     {p : (ZMod E.q)[X]} {x₀ : ZMod E.q}
     (h_eval : p.eval x₀ = 0) (h_deriv : p.derivative.eval x₀ = 0) :
@@ -3602,6 +3624,46 @@ private theorem dvd_X_sub_C_sq_of_eval_derivative_zero
   rw [hq, hr]
   ring
 
+private theorem dvd_X_sub_C_cube_of_eval_derivative_secondDeriv_zero
+    {p : (ZMod E.q)[X]} {x₀ : ZMod E.q}
+    (h_eval : p.eval x₀ = 0)
+    (h_deriv : p.derivative.eval x₀ = 0)
+    (h_secondDeriv : p.derivative.derivative.eval x₀ = 0) :
+    (Polynomial.X - Polynomial.C x₀) ^ 3 ∣ p := by
+  have h1 : (Polynomial.X - Polynomial.C x₀) ∣ p := by
+    rw [Polynomial.dvd_iff_isRoot]
+    exact h_eval
+  obtain ⟨q, hq⟩ := h1
+  have hq_eval : q.eval x₀ = 0 := by
+    have hderiv' : p.derivative = q + (Polynomial.X - Polynomial.C x₀) * q.derivative := by
+      rw [hq, Polynomial.derivative_mul]
+      simp [Polynomial.derivative_X, Polynomial.derivative_C]
+    rw [hderiv'] at h_deriv
+    simp [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+      Polynomial.eval_X, Polynomial.eval_C] at h_deriv
+    exact h_deriv
+  have hq_deriv : q.derivative.eval x₀ = 0 := by
+    have hsecond' :
+        p.derivative.derivative =
+          q.derivative + (q.derivative +
+            (Polynomial.X - Polynomial.C x₀) * q.derivative.derivative) := by
+      rw [hq, Polynomial.derivative_mul]
+      simp [Polynomial.derivative_add, Polynomial.derivative_mul,
+        Polynomial.derivative_X, Polynomial.derivative_C]
+    rw [hsecond'] at h_secondDeriv
+    simp [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+      Polynomial.eval_X, Polynomial.eval_C] at h_secondDeriv
+    have htwice : (2 : ZMod E.q) * q.derivative.eval x₀ = 0 := by
+      linear_combination h_secondDeriv
+    exact (mul_eq_zero.mp htwice).resolve_left (two_ne_zero_zmod_of_setup E)
+  have hq_sq :
+      (Polynomial.X - Polynomial.C x₀) ^ 2 ∣ q :=
+    dvd_X_sub_C_sq_of_eval_derivative_zero E hq_eval hq_deriv
+  obtain ⟨r, hr⟩ := hq_sq
+  refine ⟨r, ?_⟩
+  rw [hq, hr]
+  ring
+
 private theorem commonRootMultRat_two_le_of_sq_dvd
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) (x₀ : ZMod E.q)
     (ha₂ : (Polynomial.X - Polynomial.C x₀) ^ 2 ∣ D.a)
@@ -3619,6 +3681,24 @@ private theorem commonRootMultRat_two_le_of_sq_dvd
     · rw [if_neg hb]
       exact le_min ((Polynomial.le_rootMultiplicity_iff ha).mpr ha₂)
         ((Polynomial.le_rootMultiplicity_iff hb).mpr hb₂)
+
+private theorem commonRootMultRat_three_le_of_cube_dvd
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) (x₀ : ZMod E.q)
+    (ha₃ : (Polynomial.X - Polynomial.C x₀) ^ 3 ∣ D.a)
+    (hb₃ : (Polynomial.X - Polynomial.C x₀) ^ 3 ∣ D.b) :
+    3 ≤ commonRootMultRat E D x₀ := by
+  unfold commonRootMultRat
+  by_cases ha : D.a = 0
+  · rw [if_pos ha]
+    have hb : D.b ≠ 0 := fun h => hD ⟨ha, h⟩
+    exact (Polynomial.le_rootMultiplicity_iff hb).mpr hb₃
+  · rw [if_neg ha]
+    by_cases hb : D.b = 0
+    · rw [if_pos hb]
+      exact (Polynomial.le_rootMultiplicity_iff ha).mpr ha₃
+    · rw [if_neg hb]
+      exact le_min ((Polynomial.le_rootMultiplicity_iff ha).mpr ha₃)
+        ((Polynomial.le_rootMultiplicity_iff hb).mpr hb₃)
 
 theorem rootMultiplicity_normPoly_ge_twice_commonRootMultRat
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) (x₀ : ZMod E.q) :
@@ -3642,6 +3722,167 @@ theorem rootMultiplicity_normPoly_ge_twice_commonRootMultRat
   rw [Polynomial.le_rootMultiplicity_iff hNnz]
   rw [normPoly_eq]
   exact dvd_sub hda_sq hdb_sq_curveX
+
+private theorem cross_case_mul_a_b_derivative_vanish_of_normPoly_derivatives_zero
+    {D₁ D₂ : CoordRingElt E.q}
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₁negP : D₁.eval P.1 (-P.2) ≠ 0)
+    (hD₂P : D₂.eval P.1 P.2 ≠ 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0)
+    (hNder₁ : (normPoly E D₁).derivative.eval P.1 = 0)
+    (hNder₂ : (normPoly E D₂).derivative.eval P.1 = 0) :
+    (mulCoordRingElt E D₁ D₂).a.derivative.eval P.1 = 0
+    ∧ (mulCoordRingElt E D₁ D₂).b.derivative.eval P.1 = 0 := by
+  have hB₁ : D₁.b.eval P.1 ≠ 0 :=
+    cross_case_D1_b_eval_ne_zero E hY hD₁P hD₁negP
+  have hB₂ : D₂.b.eval P.1 ≠ 0 :=
+    cross_case_D2_b_eval_ne_zero E hY hD₂P hD₂negP
+  have hTder :
+      ((mulCoordRingElt E D₁ D₂).a -
+        (mulCoordRingElt E D₁ D₂).b * Polynomial.C P.2).derivative.eval P.1 = 0 := by
+    have hId := cross_case_T_deriv_eq_normPoly_deriv E D₁ D₂ hP hD₁P hD₂negP
+    rw [hNder₁, mul_zero] at hId
+    rcases mul_eq_zero.mp hId with hb | hT
+    · exact False.elim (hB₁ hb)
+    · exact hT
+  have hMP : (P.1, -P.2) ∈ E.points := by
+    apply E.hComplete
+    have hOC : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := E.hOnCurve P hP
+    show (-P.2) ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB
+    linear_combination hOC
+  have hD₁P_negneg : D₁.eval P.1 (-(-P.2)) = 0 := by
+    rw [neg_neg]
+    exact hD₁P
+  have hUder :
+      ((mulCoordRingElt E D₁ D₂).a -
+        (mulCoordRingElt E D₁ D₂).b * Polynomial.C (-P.2)).derivative.eval P.1 = 0 := by
+    have hId := cross_case_T_deriv_eq_normPoly_deriv E D₂ D₁ hMP hD₂negP hD₁P_negneg
+    rw [hNder₂, mul_zero] at hId
+    rw [mulCoordRingElt_comm E D₂ D₁] at hId
+    rcases mul_eq_zero.mp hId with hb | hU
+    · exact False.elim (hB₂ hb)
+    · exact hU
+  have hT :
+      (mulCoordRingElt E D₁ D₂).a.derivative.eval P.1
+        - (mulCoordRingElt E D₁ D₂).b.derivative.eval P.1 * P.2 = 0 := by
+    simpa only [Polynomial.derivative_sub, Polynomial.derivative_mul,
+      Polynomial.derivative_C, mul_zero, add_zero, Polynomial.eval_sub,
+      Polynomial.eval_mul, Polynomial.eval_C] using hTder
+  have hU :
+      (mulCoordRingElt E D₁ D₂).a.derivative.eval P.1
+        - (mulCoordRingElt E D₁ D₂).b.derivative.eval P.1 * (-P.2) = 0 := by
+    simpa only [Polynomial.derivative_sub, Polynomial.derivative_mul,
+      Polynomial.derivative_C, mul_zero, add_zero, Polynomial.eval_sub,
+      Polynomial.eval_mul, Polynomial.eval_C] using hUder
+  have h2 : (2 : ZMod E.q) ≠ 0 := two_ne_zero_zmod_of_setup E
+  have ha_der : (mulCoordRingElt E D₁ D₂).a.derivative.eval P.1 = 0 := by
+    have hsum :
+        (2 : ZMod E.q) * (mulCoordRingElt E D₁ D₂).a.derivative.eval P.1 = 0 := by
+      linear_combination hT + hU
+    exact (mul_eq_zero.mp hsum).resolve_left h2
+  have hby :
+      (mulCoordRingElt E D₁ D₂).b.derivative.eval P.1 * P.2 = 0 := by
+    have hdiff :
+        (2 : ZMod E.q) *
+          ((mulCoordRingElt E D₁ D₂).b.derivative.eval P.1 * P.2) = 0 := by
+      linear_combination hU - hT
+    exact (mul_eq_zero.mp hdiff).resolve_left h2
+  have hb_der : (mulCoordRingElt E D₁ D₂).b.derivative.eval P.1 = 0 := by
+    exact (mul_eq_zero.mp hby).resolve_right hY
+  exact ⟨ha_der, hb_der⟩
+
+private theorem cross_case_T_mul_b_add_normPoly_identity
+    (D₁ D₂ : CoordRingElt E.q) (y₀ : ZMod E.q) :
+    D₁.b *
+        ((mulCoordRingElt E D₁ D₂).a -
+          (mulCoordRingElt E D₁ D₂).b * Polynomial.C y₀)
+      + D₂.b * normPoly E D₁
+      = (D₁.a - D₁.b * Polynomial.C y₀) *
+          (mulCoordRingElt E D₁ D₂).b := by
+  rw [normPoly_eq]
+  show D₁.b *
+        (D₁.a * D₂.a + D₁.b * D₂.b * curveX E
+          - (D₁.a * D₂.b + D₂.a * D₁.b) * Polynomial.C y₀)
+      + D₂.b * (D₁.a ^ 2 - D₁.b ^ 2 * curveX E)
+      = (D₁.a - D₁.b * Polynomial.C y₀) *
+          (D₁.a * D₂.b + D₂.a * D₁.b)
+  ring
+
+private theorem cross_case_T_mul_b_add_normPoly_identity_right
+    (D₁ D₂ : CoordRingElt E.q) (y₀ : ZMod E.q) :
+    D₂.b *
+        ((mulCoordRingElt E D₁ D₂).a -
+          (mulCoordRingElt E D₁ D₂).b * Polynomial.C y₀)
+      + D₁.b * normPoly E D₂
+      = (D₂.a - D₂.b * Polynomial.C y₀) *
+          (mulCoordRingElt E D₁ D₂).b := by
+  rw [normPoly_eq]
+  show D₂.b *
+        (D₁.a * D₂.a + D₁.b * D₂.b * curveX E
+          - (D₁.a * D₂.b + D₂.a * D₁.b) * Polynomial.C y₀)
+      + D₁.b * (D₂.a ^ 2 - D₂.b ^ 2 * curveX E)
+      = (D₂.a - D₂.b * Polynomial.C y₀) *
+          (D₁.a * D₂.b + D₂.a * D₁.b)
+  ring
+
+private theorem cross_case_T_secondDeriv_eq_normPoly_secondDeriv
+    (D₁ D₂ : CoordRingElt E.q) (x₀ y₀ : ZMod E.q)
+    (hT_eval :
+      ((mulCoordRingElt E D₁ D₂).a -
+        (mulCoordRingElt E D₁ D₂).b * Polynomial.C y₀).eval x₀ = 0)
+    (hD₁₂a_der : (mulCoordRingElt E D₁ D₂).a.derivative.eval x₀ = 0)
+    (hN_eval : (normPoly E D₁).eval x₀ = 0)
+    (hN_der : (normPoly E D₁).derivative.eval x₀ = 0)
+    (hT₁_eval : (D₁.a - D₁.b * Polynomial.C y₀).eval x₀ = 0)
+    (hD₁₂b_eval : (mulCoordRingElt E D₁ D₂).b.eval x₀ = 0)
+    (hD₁₂b_der : (mulCoordRingElt E D₁ D₂).b.derivative.eval x₀ = 0) :
+    D₁.b.eval x₀ *
+        ((mulCoordRingElt E D₁ D₂).a -
+          (mulCoordRingElt E D₁ D₂).b * Polynomial.C y₀).derivative.derivative.eval x₀
+      = -(D₂.b.eval x₀) * (normPoly E D₁).derivative.derivative.eval x₀ := by
+  have hId := cross_case_T_mul_b_add_normPoly_identity E D₁ D₂ y₀
+  have hDer2 := congrArg
+    (fun p : (ZMod E.q)[X] => p.derivative.derivative.eval x₀) hId
+  have hsum :
+      D₁.b.eval x₀ *
+          ((mulCoordRingElt E D₁ D₂).a -
+            (mulCoordRingElt E D₁ D₂).b * Polynomial.C y₀).derivative.derivative.eval x₀
+        + D₂.b.eval x₀ * (normPoly E D₁).derivative.derivative.eval x₀ = 0 := by
+    simpa only [Polynomial.derivative_add, Polynomial.derivative_sub,
+      Polynomial.derivative_mul, Polynomial.derivative_C, mul_zero, add_zero,
+      zero_add, zero_mul, sub_self, Polynomial.eval_add, Polynomial.eval_sub,
+      Polynomial.eval_mul, Polynomial.eval_C, hT_eval, hD₁₂a_der, hN_eval, hN_der,
+      hT₁_eval, hD₁₂b_eval, hD₁₂b_der] using hDer2
+  linear_combination hsum
+
+private theorem cross_case_T_secondDeriv_eq_normPoly_secondDeriv_right
+    (D₁ D₂ : CoordRingElt E.q) (x₀ y₀ : ZMod E.q)
+    (hT_eval :
+      ((mulCoordRingElt E D₁ D₂).a -
+        (mulCoordRingElt E D₁ D₂).b * Polynomial.C y₀).eval x₀ = 0)
+    (hD₁₂a_der : (mulCoordRingElt E D₁ D₂).a.derivative.eval x₀ = 0)
+    (hN_eval : (normPoly E D₂).eval x₀ = 0)
+    (hN_der : (normPoly E D₂).derivative.eval x₀ = 0)
+    (hT₂_eval : (D₂.a - D₂.b * Polynomial.C y₀).eval x₀ = 0)
+    (hD₁₂b_eval : (mulCoordRingElt E D₁ D₂).b.eval x₀ = 0)
+    (hD₁₂b_der : (mulCoordRingElt E D₁ D₂).b.derivative.eval x₀ = 0) :
+    D₂.b.eval x₀ *
+        ((mulCoordRingElt E D₁ D₂).a -
+          (mulCoordRingElt E D₁ D₂).b * Polynomial.C y₀).derivative.derivative.eval x₀
+      = -(D₁.b.eval x₀) * (normPoly E D₂).derivative.derivative.eval x₀ := by
+  have hId := cross_case_T_mul_b_add_normPoly_identity_right E D₁ D₂ y₀
+  have hDer2 := congrArg
+    (fun p : (ZMod E.q)[X] => p.derivative.derivative.eval x₀) hId
+  have hsum :
+      D₂.b.eval x₀ *
+          ((mulCoordRingElt E D₁ D₂).a -
+            (mulCoordRingElt E D₁ D₂).b * Polynomial.C y₀).derivative.derivative.eval x₀
+        + D₁.b.eval x₀ * (normPoly E D₂).derivative.derivative.eval x₀ = 0 := by
+    simpa only [Polynomial.derivative_add, Polynomial.derivative_sub,
+      Polynomial.derivative_mul, Polynomial.derivative_C, mul_zero, add_zero,
+      zero_add, zero_mul, sub_self, Polynomial.eval_add, Polynomial.eval_sub,
+      Polynomial.eval_mul, Polynomial.eval_C, hT_eval, hD₁₂a_der, hN_eval, hN_der,
+      hT₂_eval, hD₁₂b_eval, hD₁₂b_der] using hDer2
+  linear_combination hsum
 
 private theorem cross_case_mul_a_b_derivative_vanish_when_m_eq_two
     {D₁ D₂ : CoordRingElt E.q}
@@ -3714,6 +3955,101 @@ private theorem cross_case_mul_a_b_derivative_vanish_when_m_eq_two
   have hb_der : (mulCoordRingElt E D₁ D₂).b.derivative.eval P.1 = 0 := by
     exact (mul_eq_zero.mp hby).resolve_right hY
   exact ⟨ha_der, hb_der⟩
+
+private theorem cross_case_mul_a_b_secondDerivative_vanish_when_m_eq_three
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₁negP : D₁.eval P.1 (-P.2) ≠ 0)
+    (hD₂P : D₂.eval P.1 P.2 ≠ 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0)
+    (hm₁ : Polynomial.rootMultiplicity P.1 (normPoly E D₁) = 3)
+    (hm₂ : Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 3) :
+    (mulCoordRingElt E D₁ D₂).a.derivative.derivative.eval P.1 = 0
+    ∧ (mulCoordRingElt E D₁ D₂).b.derivative.derivative.eval P.1 = 0 := by
+  have hB₁ : D₁.b.eval P.1 ≠ 0 :=
+    cross_case_D1_b_eval_ne_zero E hY hD₁P hD₁negP
+  have hB₂ : D₂.b.eval P.1 ≠ 0 :=
+    cross_case_D2_b_eval_ne_zero E hY hD₂P hD₂negP
+  have hNder₁ : (normPoly E D₁).derivative.eval P.1 = 0 :=
+    normPoly_derivative_eval_eq_zero_of_rootMultiplicity_eq_three E D₁ h₁ hm₁
+  have hNder₂ : (normPoly E D₂).derivative.eval P.1 = 0 :=
+    normPoly_derivative_eval_eq_zero_of_rootMultiplicity_eq_three E D₂ h₂ hm₂
+  have hNsecond₁ : (normPoly E D₁).derivative.derivative.eval P.1 = 0 :=
+    normPoly_secondDerivative_eval_eq_zero_of_rootMultiplicity_eq_three E D₁ h₁ hm₁
+  have hNsecond₂ : (normPoly E D₂).derivative.derivative.eval P.1 = 0 :=
+    normPoly_secondDerivative_eval_eq_zero_of_rootMultiplicity_eq_three E D₂ h₂ hm₂
+  have hVanish :
+      (mulCoordRingElt E D₁ D₂).a.eval P.1 = 0
+        ∧ (mulCoordRingElt E D₁ D₂).b.eval P.1 = 0 :=
+    cross_case_mul_a_b_vanish E hP hY hD₁P hD₂negP
+  have hDeriv :
+      (mulCoordRingElt E D₁ D₂).a.derivative.eval P.1 = 0
+        ∧ (mulCoordRingElt E D₁ D₂).b.derivative.eval P.1 = 0 :=
+    cross_case_mul_a_b_derivative_vanish_of_normPoly_derivatives_zero E hP hY
+      hD₁P hD₁negP hD₂P hD₂negP hNder₁ hNder₂
+  have hN₁_eval : (normPoly E D₁).eval P.1 = 0 := by
+    rw [normPoly_eval_eq_D_mul_D_neg E D₁ hP, hD₁P, zero_mul]
+  have hN₂_eval : (normPoly E D₂).eval P.1 = 0 := by
+    rw [normPoly_eval_eq_D_mul_D_neg E D₂ hP, hD₂negP, mul_zero]
+  have hT_eval :
+      ((mulCoordRingElt E D₁ D₂).a -
+        (mulCoordRingElt E D₁ D₂).b * Polynomial.C P.2).eval P.1 = 0 := by
+    simp [Polynomial.eval_mul, Polynomial.eval_C,
+      hVanish.1, hVanish.2]
+  have hU_eval :
+      ((mulCoordRingElt E D₁ D₂).a -
+        (mulCoordRingElt E D₁ D₂).b * Polynomial.C (-P.2)).eval P.1 = 0 := by
+    simp [Polynomial.eval_mul, Polynomial.eval_C,
+      hVanish.1, hVanish.2]
+  have hT₁_eval : (D₁.a - D₁.b * Polynomial.C P.2).eval P.1 = 0 := by
+    simpa [CoordRingElt.eval, Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C]
+      using hD₁P
+  have hT₂_eval : (D₂.a - D₂.b * Polynomial.C (-P.2)).eval P.1 = 0 := by
+    simpa [CoordRingElt.eval, Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C]
+      using hD₂negP
+  have hTsecond :
+      ((mulCoordRingElt E D₁ D₂).a -
+        (mulCoordRingElt E D₁ D₂).b * Polynomial.C P.2).derivative.derivative.eval P.1 = 0 := by
+    have hId := cross_case_T_secondDeriv_eq_normPoly_secondDeriv E D₁ D₂
+      P.1 P.2 hT_eval hDeriv.1 hN₁_eval hNder₁ hT₁_eval hVanish.2 hDeriv.2
+    rw [hNsecond₁, mul_zero] at hId
+    exact (mul_eq_zero.mp hId).resolve_left hB₁
+  have hUsecond :
+      ((mulCoordRingElt E D₁ D₂).a -
+        (mulCoordRingElt E D₁ D₂).b * Polynomial.C (-P.2)).derivative.derivative.eval P.1 = 0 := by
+    have hId := cross_case_T_secondDeriv_eq_normPoly_secondDeriv_right E D₁ D₂
+      P.1 (-P.2) hU_eval hDeriv.1 hN₂_eval hNder₂ hT₂_eval hVanish.2 hDeriv.2
+    rw [hNsecond₂, mul_zero] at hId
+    exact (mul_eq_zero.mp hId).resolve_left hB₂
+  have hT :
+      (mulCoordRingElt E D₁ D₂).a.derivative.derivative.eval P.1
+        - (mulCoordRingElt E D₁ D₂).b.derivative.derivative.eval P.1 * P.2 = 0 := by
+    simpa only [Polynomial.derivative_sub, Polynomial.derivative_mul,
+      Polynomial.derivative_C, mul_zero, add_zero, Polynomial.eval_sub,
+      Polynomial.eval_mul, Polynomial.eval_C] using hTsecond
+  have hU :
+      (mulCoordRingElt E D₁ D₂).a.derivative.derivative.eval P.1
+        - (mulCoordRingElt E D₁ D₂).b.derivative.derivative.eval P.1 * (-P.2) = 0 := by
+    simpa only [Polynomial.derivative_sub, Polynomial.derivative_mul,
+      Polynomial.derivative_C, mul_zero, add_zero, Polynomial.eval_sub,
+      Polynomial.eval_mul, Polynomial.eval_C] using hUsecond
+  have h2 : (2 : ZMod E.q) ≠ 0 := two_ne_zero_zmod_of_setup E
+  have ha_second : (mulCoordRingElt E D₁ D₂).a.derivative.derivative.eval P.1 = 0 := by
+    have hsum :
+        (2 : ZMod E.q) *
+          (mulCoordRingElt E D₁ D₂).a.derivative.derivative.eval P.1 = 0 := by
+      linear_combination hT + hU
+    exact (mul_eq_zero.mp hsum).resolve_left h2
+  have hby :
+      (mulCoordRingElt E D₁ D₂).b.derivative.derivative.eval P.1 * P.2 = 0 := by
+    have hdiff :
+        (2 : ZMod E.q) *
+          ((mulCoordRingElt E D₁ D₂).b.derivative.derivative.eval P.1 * P.2) = 0 := by
+      linear_combination hU - hT
+    exact (mul_eq_zero.mp hdiff).resolve_left h2
+  have hb_second : (mulCoordRingElt E D₁ D₂).b.derivative.derivative.eval P.1 = 0 := by
+    exact (mul_eq_zero.mp hby).resolve_right hY
+  exact ⟨ha_second, hb_second⟩
 
 /-! ## Cross-case multiplicativity when m₂ = 1 (eagenBuild's needed case)
 
@@ -4141,6 +4477,109 @@ theorem cross_iterDivLin_invariant_at_m_eq_two
     rw [hFactor, Polynomial.rootMultiplicity_mul hProd_nz]
     rw [show (((Polynomial.X - Polynomial.C P.1) ^ 2) ^ 2 : (ZMod E.q)[X])
           = (Polynomial.X - Polynomial.C P.1) ^ 4 by ring]
+    rw [Polynomial.rootMultiplicity_X_sub_C_pow]
+  rw [hNormMul] at hRootFactor
+  omega
+
+/--
+The `m₁ = m₂ = 3` cross-case instance of the iterated-`divLin`
+invariant.  The proof is the cubic analogue of
+`cross_iterDivLin_invariant_at_m_eq_two`: the product coefficients have
+a triple common `(X - P.1)` factor from zeroth-, first-, and
+second-derivative vanishing, while the product norm has root
+multiplicity `3 + 3 = 6`, forcing the common coefficient multiplicity to
+be exactly `3`.  A vanishing residual after three `divLin` steps would
+force one more root in the residual norm and hence multiplicity at least
+`7`, contradicting the same product norm count.
+-/
+theorem cross_iterDivLin_invariant_at_m_eq_three
+    {D₁ D₂ : CoordRingElt E.q}
+    (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    (hD₁P : D₁.eval P.1 P.2 = 0) (hD₁negP : D₁.eval P.1 (-P.2) ≠ 0)
+    (hD₂P : D₂.eval P.1 P.2 ≠ 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0)
+    (hm₁ : Polynomial.rootMultiplicity P.1 (normPoly E D₁) = 3)
+    (hm₂ : Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 3) :
+    commonRootMultRat E (mulCoordRingElt E D₁ D₂) P.1 = 3
+    ∧ (iterDivLin E (mulCoordRingElt E D₁ D₂) P.1 3).eval P.1 P.2 ≠ 0 := by
+  classical
+  set D₁₂ := mulCoordRingElt E D₁ D₂ with hD₁₂
+  have hMul_NZ : ¬ (D₁₂.a = 0 ∧ D₁₂.b = 0) := by
+    intro ⟨ha, hb⟩
+    have hN : normPoly E D₁₂ = 0 := by
+      rw [normPoly_eq, ha, hb]
+      ring
+    rw [hD₁₂, normPoly_mul_eq] at hN
+    exact (mul_ne_zero (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂)) hN
+  have hNormMul :
+      Polynomial.rootMultiplicity P.1 (normPoly E D₁₂) = 6 := by
+    rw [hD₁₂, normPoly_mul_eq]
+    rw [Polynomial.rootMultiplicity_mul
+      (mul_ne_zero (normPoly_ne_zero E D₁ h₁) (normPoly_ne_zero E D₂ h₂))]
+    rw [hm₁, hm₂]
+  have hVanish : D₁₂.a.eval P.1 = 0 ∧ D₁₂.b.eval P.1 = 0 := by
+    rw [hD₁₂]
+    exact cross_case_mul_a_b_vanish E hP hY hD₁P hD₂negP
+  have hNder₁ : (normPoly E D₁).derivative.eval P.1 = 0 :=
+    normPoly_derivative_eval_eq_zero_of_rootMultiplicity_eq_three E D₁ h₁ hm₁
+  have hNder₂ : (normPoly E D₂).derivative.eval P.1 = 0 :=
+    normPoly_derivative_eval_eq_zero_of_rootMultiplicity_eq_three E D₂ h₂ hm₂
+  have hDeriv : D₁₂.a.derivative.eval P.1 = 0 ∧ D₁₂.b.derivative.eval P.1 = 0 := by
+    rw [hD₁₂]
+    exact cross_case_mul_a_b_derivative_vanish_of_normPoly_derivatives_zero E hP hY
+      hD₁P hD₁negP hD₂P hD₂negP hNder₁ hNder₂
+  have hSecond :
+      D₁₂.a.derivative.derivative.eval P.1 = 0
+        ∧ D₁₂.b.derivative.derivative.eval P.1 = 0 := by
+    rw [hD₁₂]
+    exact cross_case_mul_a_b_secondDerivative_vanish_when_m_eq_three E h₁ h₂ hP hY
+      hD₁P hD₁negP hD₂P hD₂negP hm₁ hm₂
+  have ha₃ : (Polynomial.X - Polynomial.C P.1) ^ 3 ∣ D₁₂.a :=
+    dvd_X_sub_C_cube_of_eval_derivative_secondDeriv_zero E
+      hVanish.1 hDeriv.1 hSecond.1
+  have hb₃ : (Polynomial.X - Polynomial.C P.1) ^ 3 ∣ D₁₂.b :=
+    dvd_X_sub_C_cube_of_eval_derivative_secondDeriv_zero E
+      hVanish.2 hDeriv.2 hSecond.2
+  have hLower : 3 ≤ commonRootMultRat E D₁₂ P.1 :=
+    commonRootMultRat_three_le_of_cube_dvd E D₁₂ hMul_NZ P.1 ha₃ hb₃
+  have hUpper : commonRootMultRat E D₁₂ P.1 ≤ 3 := by
+    have hBound := rootMultiplicity_normPoly_ge_twice_commonRootMultRat E D₁₂ hMul_NZ P.1
+    rw [hNormMul] at hBound
+    omega
+  have hCommon : commonRootMultRat E D₁₂ P.1 = 3 := by omega
+  refine ⟨by simpa [hD₁₂] using hCommon, ?_⟩
+  intro hResidual
+  have hFactor := normPoly_iterDivLin_factor E 3 D₁₂ P.1 ha₃ hb₃
+  have hN₁₂_nz : normPoly E D₁₂ ≠ 0 := normPoly_ne_zero E D₁₂ hMul_NZ
+  have hResidualNorm_nz :
+      normPoly E (iterDivLin E D₁₂ P.1 3) ≠ 0 := by
+    intro hZ
+    apply hN₁₂_nz
+    rw [hFactor, hZ, mul_zero]
+  have hResidualNorm_eval :
+      (normPoly E (iterDivLin E D₁₂ P.1 3)).eval P.1 = 0 := by
+    rw [normPoly_eval_eq_D_mul_D_neg E (iterDivLin E D₁₂ P.1 3) hP]
+    rw [hResidual]
+    ring
+  have hResidualRoot_pos :
+      0 < Polynomial.rootMultiplicity P.1
+        (normPoly E (iterDivLin E D₁₂ P.1 3)) := by
+    rw [Polynomial.rootMultiplicity_pos hResidualNorm_nz]
+    exact hResidualNorm_eval
+  have hPow_nz :
+      (((Polynomial.X - Polynomial.C P.1) ^ 3) ^ 2 : (ZMod E.q)[X]) ≠ 0 := by
+    exact pow_ne_zero 2 (pow_ne_zero 3 (X_sub_C_ne_zero P.1))
+  have hProd_nz :
+      ((Polynomial.X - Polynomial.C P.1) ^ 3) ^ 2
+          * normPoly E (iterDivLin E D₁₂ P.1 3) ≠ 0 :=
+    mul_ne_zero hPow_nz hResidualNorm_nz
+  have hRootFactor :
+      Polynomial.rootMultiplicity P.1 (normPoly E D₁₂)
+        = 6 + Polynomial.rootMultiplicity P.1
+            (normPoly E (iterDivLin E D₁₂ P.1 3)) := by
+    rw [hFactor, Polynomial.rootMultiplicity_mul hProd_nz]
+    rw [show (((Polynomial.X - Polynomial.C P.1) ^ 3) ^ 2 : (ZMod E.q)[X])
+          = (Polynomial.X - Polynomial.C P.1) ^ 6 by ring]
     rw [Polynomial.rootMultiplicity_X_sub_C_pow]
   rw [hNormMul] at hRootFactor
   omega
