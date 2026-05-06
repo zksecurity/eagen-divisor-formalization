@@ -2905,6 +2905,24 @@ theorem localMult_mulCoordRingElt_eq_add_when_rootMult_le_two
     ordAt_mul_add_when_normPoly_D2_le_two_of_iterDivLin
       (E := E) hD₁ hD₂ hP hRoot hRoot₁ hCross₁₂ hCross₂₁
 
+theorem localMult_mulCoordRingElt_eq_add_when_rootMult_le_two_unconditional
+    (D₁ D₂ : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (hP : P ∈ E.points)
+    (hD₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0))
+    (hD₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    (hRoot : Polynomial.rootMultiplicity P.1 (normPoly E D₂) ≤ 2)
+    (hRoot₁ : Polynomial.rootMultiplicity P.1 (normPoly E D₁) ≤ 2) :
+    localMult E (mulCoordRingElt E D₁ D₂) P
+      = localMult E D₁ P + localMult E D₂ P := by
+  refine localMult_mulCoordRingElt_eq_add_when_rootMult_le_two
+    (E := E) D₁ D₂ P hP hD₁ hD₂ hRoot hRoot₁ ?_ ?_
+  · intro hY hD₁P hD₁negP hD₂P hD₂negP hm₁ hm₂
+    exact Divisor.cross_iterDivLin_invariant_at_m_eq_two
+      (E := E) hD₁ hD₂ hP hY hD₁P hD₁negP hD₂P hD₂negP hm₁ hm₂
+  · intro hY hD₂P hD₂negP hD₁P hD₁negP hm₂ hm₁
+    exact Divisor.cross_iterDivLin_invariant_at_m_eq_two
+      (E := E) hD₂ hD₁ hP hY hD₂P hD₂negP hD₁P hD₁negP hm₂ hm₁
+
 theorem landmarkInvStrong_combine_distinct_when_rootMult_le_one
     {xs ys : List (ZMod E.q × ZMod E.q)}
     {a b : EagenAccum E}
