@@ -5525,6 +5525,35 @@ accumulator.  The lemma below isolates the exact final condition needed
 by the per-fiber norm identity: the sum of sheet-level local
 multiplicities on each combined fiber is at most two. -/
 
+theorem rootMultiplicity_normPoly_eq_fiber_target_sum
+    (D : CoordRingElt E.q) (xs : List (ZMod E.q × ZMod E.q))
+    (R : ECPoint E)
+    (_h : LandmarkInvStrong E xs (EagenAccum.mk R D))
+    (_hSplit : splitsOnE E D)
+    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) :
+    Polynomial.rootMultiplicity P.1 (normPoly E D)
+      = ∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1), localMult E D Q := by
+  classical
+  by_cases hD : ¬ (D.a = 0 ∧ D.b = 0)
+  · have hsum :=
+      sum_ordAt_fst_eq_eq_rootMult E D hD P.1 ⟨P, hP, rfl⟩
+    have hlocal_ord :
+        (∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1), localMult E D Q)
+          = ∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1), ordAt E D Q := by
+      apply Finset.sum_congr rfl
+      intro Q _hQ
+      exact localMult_eq_ordAt E D Q
+    rw [← hsum, hlocal_ord]
+  · push_neg at hD
+    have hnorm_zero : normPoly E D = 0 := by
+      rw [normPoly_eq, hD.1, hD.2]
+      ring
+    have hlocal_zero :
+        ∀ Q ∈ E.points.filter (fun Q => Q.1 = P.1), localMult E D Q = 0 := by
+      intro Q _hQ
+      exact localMult_eq_zero_of_offE_or_zero E D Q (by simp [hD])
+    rw [hnorm_zero, Polynomial.rootMultiplicity_zero, Finset.sum_eq_zero hlocal_zero]
+
 theorem rootMultiplicity_normPoly_le_two_of_fiber_localMult_le_two
     (D : CoordRingElt E.q)
     (h_fiber_localMult_le_two :
