@@ -2923,6 +2923,674 @@ theorem localMult_mulCoordRingElt_eq_add_when_rootMult_le_two_unconditional
     exact Divisor.cross_iterDivLin_invariant_at_m_eq_two
       (E := E) hD₂ hD₁ hP hY hD₂P hD₂negP hD₁P hD₁negP hm₂ hm₁
 
+theorem localMult_mulCoordRingElt_ge_add_when_rootMult_le_two
+    (D₁ D₂ : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
+    (hP : P ∈ E.points)
+    (hD₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0))
+    (hD₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
+    (hRoot₁ : Polynomial.rootMultiplicity P.1 (normPoly E D₁) ≤ 2)
+    (hRoot₂ : Polynomial.rootMultiplicity P.1 (normPoly E D₂) ≤ 2) :
+    localMult E D₁ P + localMult E D₂ P
+      ≤ localMult E (mulCoordRingElt E D₁ D₂) P := by
+  have hEq := localMult_mulCoordRingElt_eq_add_when_rootMult_le_two_unconditional
+    (E := E) D₁ D₂ P hP hD₁ hD₂ hRoot₂ hRoot₁
+  exact le_of_eq hEq.symm
+
+theorem landmarkInvStrong_combine_oo_when_rootMult_le_two
+    {xs ys : List (ZMod E.q × ZMod E.q)}
+    {a b : EagenAccum E}
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (hys_on : ∀ P ∈ ys, P ∈ E.points)
+    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha_pt : a.point = (0 : ECPoint E))
+    (hb_pt : b.point = (0 : ECPoint E))
+    (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
+    (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+      Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2
+      ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 2) :
+    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine_oo E a b) := by
+  classical
+  have _hxs_on := hxs_on
+  have _hys_on := hys_on
+  have ha_poly_nz : ¬ (a.poly.a = 0 ∧ a.poly.b = 0) := by
+    intro hzero
+    apply ha_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have hb_poly_nz : ¬ (b.poly.a = 0 ∧ b.poly.b = 0) := by
+    intro hzero
+    apply hb_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  refine ⟨?_, ?_, ?_⟩
+  · show (0 : ECPoint E) = sumOnE E (xs ++ ys)
+    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
+      ← LandmarkInvStrong.running_sum E hb, ha_pt, hb_pt, zero_add]
+  · intro P hPon
+    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
+    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_count_le : xs.count P ≤ localMult E a.poly P := by
+      have htarget : target E xs a.point P = xs.count P := by
+        rw [ha_pt]
+        simp [target, negCoords]
+      simpa [htarget] using ha_target_le
+    have hb_count_le : ys.count P ≤ localMult E b.poly P := by
+      have htarget : target E ys b.point P = ys.count P := by
+        rw [hb_pt]
+        simp [target, negCoords]
+      simpa [htarget] using hb_target_le
+    have hprod_le :
+        localMult E a.poly P + localMult E b.poly P
+          ≤ localMult E (mulCoordRingElt E a.poly b.poly) P := by
+      exact localMult_mulCoordRingElt_ge_add_when_rootMult_le_two
+        E a.poly b.poly P hPon ha_poly_nz hb_poly_nz
+        (h_root_le P hPon).1 (h_root_le P hPon).2
+    calc
+      target E (xs ++ ys) (EagenAccum.combine_oo E a b).point P
+          = xs.count P + ys.count P := by
+            simp [target, EagenAccum.combine_oo, negCoords, List.count_append]
+      _ ≤ localMult E a.poly P + localMult E b.poly P :=
+            Nat.add_le_add ha_count_le hb_count_le
+      _ ≤ localMult E (EagenAccum.combine_oo E a b).poly P := by
+            simpa [EagenAccum.combine_oo] using hprod_le
+  · show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree =
+        (xs ++ ys).length + (if (EagenAccum.combine_oo E a b).point
+          = (0 : ECPoint E) then 0 else 1)
+    rw [normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
+    have ha_deg := LandmarkInvStrong.natDegree E ha
+    have hb_deg := LandmarkInvStrong.natDegree E hb
+    rw [if_pos ha_pt] at ha_deg
+    rw [if_pos hb_pt] at hb_deg
+    have h_combined_zero : (EagenAccum.combine_oo E a b).point = (0 : ECPoint E) := rfl
+    rw [if_pos h_combined_zero, ha_deg, hb_deg, List.length_append]
+    omega
+
+theorem landmarkInvStrong_combine_ol_when_rootMult_le_two
+    {xs ys : List (ZMod E.q × ZMod E.q)}
+    {a b : EagenAccum E}
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (hys_on : ∀ P ∈ ys, P ∈ E.points)
+    (h_neg_b_on : ∀ Q : ZMod E.q × ZMod E.q,
+      negCoords E b.point = some Q → Q ∈ E.points)
+    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha_pt : a.point = (0 : ECPoint E))
+    (hb_pt : b.point ≠ (0 : ECPoint E))
+    (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
+    (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+      Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2
+      ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 2) :
+    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine_ol E a b) := by
+  classical
+  have _hxs_on := hxs_on
+  have _hys_on := hys_on
+  have _h_neg_b_on := h_neg_b_on
+  have ha_poly_nz : ¬ (a.poly.a = 0 ∧ a.poly.b = 0) := by
+    intro hzero
+    apply ha_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have hb_poly_nz : ¬ (b.poly.a = 0 ∧ b.poly.b = 0) := by
+    intro hzero
+    apply hb_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  refine ⟨?_, ?_, ?_⟩
+  · show b.point = sumOnE E (xs ++ ys)
+    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
+      ← LandmarkInvStrong.running_sum E hb, ha_pt, zero_add]
+  · intro P hPon
+    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
+    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_count_le : xs.count P ≤ localMult E a.poly P := by
+      have htarget : target E xs a.point P = xs.count P := by
+        rw [ha_pt]
+        simp [target, negCoords]
+      simpa [htarget] using ha_target_le
+    have hprod_le :
+        localMult E a.poly P + localMult E b.poly P
+          ≤ localMult E (mulCoordRingElt E a.poly b.poly) P := by
+      exact localMult_mulCoordRingElt_ge_add_when_rootMult_le_two
+        E a.poly b.poly P hPon ha_poly_nz hb_poly_nz
+        (h_root_le P hPon).1 (h_root_le P hPon).2
+    calc
+      target E (xs ++ ys) (EagenAccum.combine_ol E a b).point P
+          = xs.count P + target E ys b.point P := by
+            simp [target, EagenAccum.combine_ol, List.count_append]
+            omega
+      _ ≤ localMult E a.poly P + localMult E b.poly P :=
+            Nat.add_le_add ha_count_le hb_target_le
+      _ ≤ localMult E (EagenAccum.combine_ol E a b).poly P := by
+            simpa [EagenAccum.combine_ol] using hprod_le
+  · show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree =
+        (xs ++ ys).length + (if (EagenAccum.combine_ol E a b).point
+          = (0 : ECPoint E) then 0 else 1)
+    rw [normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
+    have ha_deg := LandmarkInvStrong.natDegree E ha
+    have hb_deg := LandmarkInvStrong.natDegree E hb
+    rw [if_pos ha_pt] at ha_deg
+    rw [if_neg hb_pt] at hb_deg
+    have h_combined_pt : (EagenAccum.combine_ol E a b).point = b.point := rfl
+    rw [h_combined_pt, if_neg hb_pt, ha_deg, hb_deg, List.length_append]
+    omega
+
+theorem landmarkInvStrong_combine_or_when_rootMult_le_two
+    {xs ys : List (ZMod E.q × ZMod E.q)}
+    {a b : EagenAccum E}
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (hys_on : ∀ P ∈ ys, P ∈ E.points)
+    (h_neg_a_on : ∀ Q : ZMod E.q × ZMod E.q,
+      negCoords E a.point = some Q → Q ∈ E.points)
+    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha_pt : a.point ≠ (0 : ECPoint E))
+    (hb_pt : b.point = (0 : ECPoint E))
+    (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
+    (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+      Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2
+      ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 2) :
+    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine_or E a b) := by
+  classical
+  have _hxs_on := hxs_on
+  have _hys_on := hys_on
+  have _h_neg_a_on := h_neg_a_on
+  have ha_poly_nz : ¬ (a.poly.a = 0 ∧ a.poly.b = 0) := by
+    intro hzero
+    apply ha_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have hb_poly_nz : ¬ (b.poly.a = 0 ∧ b.poly.b = 0) := by
+    intro hzero
+    apply hb_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  refine ⟨?_, ?_, ?_⟩
+  · show a.point = sumOnE E (xs ++ ys)
+    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
+      ← LandmarkInvStrong.running_sum E hb, hb_pt, add_zero]
+  · intro P hPon
+    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
+    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have hb_count_le : ys.count P ≤ localMult E b.poly P := by
+      have htarget : target E ys b.point P = ys.count P := by
+        rw [hb_pt]
+        simp [target, negCoords]
+      simpa [htarget] using hb_target_le
+    have hprod_le :
+        localMult E a.poly P + localMult E b.poly P
+          ≤ localMult E (mulCoordRingElt E a.poly b.poly) P := by
+      exact localMult_mulCoordRingElt_ge_add_when_rootMult_le_two
+        E a.poly b.poly P hPon ha_poly_nz hb_poly_nz
+        (h_root_le P hPon).1 (h_root_le P hPon).2
+    calc
+      target E (xs ++ ys) (EagenAccum.combine_or E a b).point P
+          = target E xs a.point P + ys.count P := by
+            simp [target, EagenAccum.combine_or, List.count_append]
+            omega
+      _ ≤ localMult E a.poly P + localMult E b.poly P :=
+            Nat.add_le_add ha_target_le hb_count_le
+      _ ≤ localMult E (EagenAccum.combine_or E a b).poly P := by
+            simpa [EagenAccum.combine_or] using hprod_le
+  · show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree =
+        (xs ++ ys).length + (if (EagenAccum.combine_or E a b).point
+          = (0 : ECPoint E) then 0 else 1)
+    rw [normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
+    have ha_deg := LandmarkInvStrong.natDegree E ha
+    have hb_deg := LandmarkInvStrong.natDegree E hb
+    rw [if_neg ha_pt] at ha_deg
+    rw [if_pos hb_pt] at hb_deg
+    have h_combined_pt : (EagenAccum.combine_or E a b).point = a.point := rfl
+    rw [h_combined_pt, if_neg ha_pt, ha_deg, hb_deg, List.length_append]
+    omega
+
+theorem landmarkInvStrong_combine_vertical_when_rootMult_le_two
+    {xs ys : List (ZMod E.q × ZMod E.q)}
+    {a b : EagenAccum E}
+    {xa ya : ZMod E.q}
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (hys_on : ∀ P ∈ ys, P ∈ E.points)
+    (hxy_on : (xa, ya) ∈ E.points)
+    (hxy_neg_on : (xa, -ya) ∈ E.points)
+    (hy_ne : ya ≠ 0)
+    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha_pt_eq : a.point = ECPoint.affine E xa ya)
+    (hb_pt_eq : b.point = ECPoint.affine E xa (-ya))
+    (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
+    (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+      Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2
+      ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 2) :
+    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine_vertical E a b xa) := by
+  classical
+  have _hxs_on := hxs_on
+  have _hys_on := hys_on
+  have ha_poly_nz : ¬ (a.poly.a = 0 ∧ a.poly.b = 0) := by
+    intro hzero
+    apply ha_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have hb_poly_nz : ¬ (b.poly.a = 0 ∧ b.poly.b = 0) := by
+    intro hzero
+    apply hb_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have ha_neg : negCoords E a.point = some (xa, -ya) := by
+    rw [ha_pt_eq]
+    have hns : E.toW.toAffine.Nonsingular xa ya :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxy_on))
+    rw [ECPoint.affine_of_nonsingular E hns]
+    rfl
+  have hb_neg : negCoords E b.point = some (xa, ya) := by
+    rw [hb_pt_eq]
+    have hns : E.toW.toAffine.Nonsingular xa (-ya) :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff xa (-ya)).mpr (E.hOnCurve _ hxy_neg_on))
+    rw [ECPoint.affine_of_nonsingular E hns]
+    show some (xa, -(-ya)) = some (xa, ya)
+    rw [neg_neg]
+  have ha_van_neg : a.poly.eval xa (-ya) = 0 :=
+    LandmarkInvStrong.vanish_of_residue E ha ha_neg hxy_neg_on
+  have hb_van_pos : b.poly.eval xa ya = 0 :=
+    LandmarkInvStrong.vanish_of_residue E hb hb_neg hxy_on
+  set q := mulCoordRingElt E a.poly b.poly with hq_def
+  have hq_eval_pos : q.eval xa ya = 0 := by
+    rw [hq_def, mulCoordRingElt_eval_on_E E _ _ hxy_on, hb_van_pos]
+    ring
+  have hq_eval_neg : q.eval xa (-ya) = 0 := by
+    rw [hq_def, mulCoordRingElt_eval_on_E E _ _ hxy_neg_on, ha_van_neg]
+    ring
+  obtain ⟨h_qa_xa, h_qb_xa⟩ :=
+    qa_qb_eval_zero_of_double_fiber_vanish E q xa ya hy_ne hq_eval_pos hq_eval_neg
+  have h_dvd_a : (X - C xa) ∣ q.a := dvd_X_sub_C_of_eval_eq_zero E h_qa_xa
+  have h_dvd_b : (X - C xa) ∣ q.b := dvd_X_sub_C_of_eval_eq_zero E h_qb_xa
+  have hq_nz : normPoly E q ≠ 0 := by
+    rw [hq_def, normPoly_mul_eq]
+    exact mul_ne_zero ha_nz hb_nz
+  have hq_poly_nz : ¬ (q.a = 0 ∧ q.b = 0) := by
+    intro hzero
+    apply hq_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have hq_div_nz : ¬ ((q.divLin xa).a = 0 ∧ (q.divLin xa).b = 0) :=
+    divLin_not_both_zero E q hq_poly_nz h_qa_xa h_qb_xa
+  let Lv : CoordRingElt E.q := { a := X - C xa, b := 0 }
+  have hq_recomp : q = mulCoordRingElt E (q.divLin xa) Lv := by
+    simpa [Lv] using mulCoordRingElt_divLin_vertical_recompose E q xa h_dvd_a h_dvd_b
+  refine ⟨?_, ?_, ?_⟩
+  · show (0 : ECPoint E) = sumOnE E (xs ++ ys)
+    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
+      ← LandmarkInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
+    have hns_a : E.toW.toAffine.Nonsingular xa ya :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxy_on))
+    have hns_b : E.toW.toAffine.Nonsingular xa (-ya) :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff xa (-ya)).mpr (E.hOnCurve _ hxy_neg_on))
+    rw [ECPoint.affine_of_nonsingular E hns_a, ECPoint.affine_of_nonsingular E hns_b]
+    show (0 : ECPoint E) = (.some hns_a + .some hns_b : ECPoint E)
+    have h_neg : (.some hns_b : ECPoint E) = -(.some hns_a) := by
+      show WeierstrassCurve.Affine.Point.some hns_b
+            = -WeierstrassCurve.Affine.Point.some hns_a
+      simp [WeierstrassCurve.Affine.Point.neg_some]
+    rw [h_neg]
+    show (0 : ECPoint E) = .some hns_a + (-.some hns_a)
+    rw [add_neg_cancel]
+  · intro P hPon
+    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
+    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le' :
+        xs.count P + (if negCoords E a.point = some P then 1 else 0)
+          ≤ localMult E a.poly P := by
+      simpa [target] using ha_target_le
+    have hb_target_le' :
+        ys.count P + (if negCoords E b.point = some P then 1 else 0)
+          ≤ localMult E b.poly P := by
+      simpa [target] using hb_target_le
+    have hLv_bound :
+        localMult E Lv P
+          ≤ (if negCoords E a.point = some P then 1 else 0)
+            + (if negCoords E b.point = some P then 1 else 0) := by
+      by_cases hPx : P.1 = xa
+      · have hP_eq_x : P = (xa, P.2) := by
+          ext
+          · exact hPx
+          · rfl
+        have hP_on_x : (xa, P.2) ∈ E.points := by
+          rwa [← hP_eq_x]
+        have hy_dich : ya = P.2 ∨ ya = -P.2 :=
+          ECPoints_same_x_y_eq_or_neg E hxy_on hP_on_x
+        rcases hy_dich with hy_eq | hy_eq_neg
+        · have hP_eq : P = (xa, ya) := by
+            ext
+            · exact hPx
+            · exact hy_eq.symm
+          have hLv_eq : localMult E Lv P = 1 := by
+            calc
+              localMult E Lv P = ordAt E Lv P := localMult_eq_ordAt E Lv P
+              _ = ordAt E Lv (xa, ya) := by rw [hP_eq]
+              _ = 1 := by
+                simpa [Lv] using ord_vertical_at_x₀_nonTwoTorsion E xa ya hxy_on hy_ne
+          rw [hLv_eq, hP_eq, if_pos hb_neg]
+          omega
+        · have hP_eq : P = (xa, -ya) := by
+            ext
+            · exact hPx
+            · rw [hy_eq_neg, neg_neg]
+          have hneg_ne : -ya ≠ 0 := by
+            simpa using (neg_ne_zero.mpr hy_ne)
+          have hLv_eq : localMult E Lv P = 1 := by
+            calc
+              localMult E Lv P = ordAt E Lv P := localMult_eq_ordAt E Lv P
+              _ = ordAt E Lv (xa, -ya) := by rw [hP_eq]
+              _ = 1 := by
+                simpa [Lv] using
+                  ord_vertical_at_x₀_nonTwoTorsion E xa (-ya) hxy_neg_on hneg_ne
+          rw [hLv_eq, hP_eq, if_pos ha_neg]
+          omega
+      · have hLv_eval_ne : Lv.eval P.1 P.2 ≠ 0 := by
+          have hsub : P.1 - xa ≠ 0 := sub_ne_zero.mpr hPx
+          simpa [Lv, CoordRingElt.eval] using hsub
+        have hLv_eq : localMult E Lv P = 0 :=
+          localMult_eq_zero_of_eval_ne_zero E Lv hPon hLv_eval_ne
+        rw [hLv_eq]
+        omega
+    have htargets_plus_vertical_le :
+        xs.count P + ys.count P + localMult E Lv P
+          ≤ localMult E a.poly P + localMult E b.poly P := by
+      omega
+    have hprod_le :
+        localMult E a.poly P + localMult E b.poly P
+          ≤ localMult E q P := by
+      rw [hq_def]
+      exact localMult_mulCoordRingElt_ge_add_when_rootMult_le_two
+        E a.poly b.poly P hPon ha_poly_nz hb_poly_nz
+        (h_root_le P hPon).1 (h_root_le P hPon).2
+    have hq_local_eq :
+        localMult E q P = localMult E (q.divLin xa) P + localMult E Lv P := by
+      have h := ordAt_mul_vertical_add E (q.divLin xa) hq_div_nz xa hPon
+      calc
+        localMult E q P = ordAt E q P := localMult_eq_ordAt E q P
+        _ = ordAt E (mulCoordRingElt E (q.divLin xa) Lv) P :=
+          congrArg (fun D => ordAt E D P) hq_recomp
+        _ = ordAt E (q.divLin xa) P + ordAt E Lv P := by simpa [Lv] using h
+        _ = localMult E (q.divLin xa) P + localMult E Lv P := by
+          rw [← localMult_eq_ordAt E (q.divLin xa) P,
+              ← localMult_eq_ordAt E Lv P]
+    calc
+      target E (xs ++ ys) (EagenAccum.combine_vertical E a b xa).point P
+          = xs.count P + ys.count P := by
+            simp [target, EagenAccum.combine_vertical, negCoords, List.count_append]
+      _ ≤ localMult E (q.divLin xa) P := by
+            have h :
+                xs.count P + ys.count P + localMult E Lv P
+                  ≤ localMult E (q.divLin xa) P + localMult E Lv P := by
+              calc
+                xs.count P + ys.count P + localMult E Lv P
+                    ≤ localMult E a.poly P + localMult E b.poly P :=
+                      htargets_plus_vertical_le
+                _ ≤ localMult E q P := hprod_le
+                _ = localMult E (q.divLin xa) P + localMult E Lv P := hq_local_eq
+            omega
+      _ = localMult E (EagenAccum.combine_vertical E a b xa).poly P := by
+            simp [EagenAccum.combine_vertical, hq_def]
+  · show (normPoly E (q.divLin xa)).natDegree
+        = (xs ++ ys).length + (if (EagenAccum.combine_vertical E a b xa).point
+                                  = (0 : ECPoint E) then 0 else 1)
+    have h_combined_zero : (EagenAccum.combine_vertical E a b xa).point
+        = (0 : ECPoint E) := rfl
+    rw [if_pos h_combined_zero]
+    have h_factorize := normPoly_eq_X_sub_C_sq_mul_normPoly_divLin
+      E q xa h_dvd_a h_dvd_b
+    have hX_sub_ne : (X - C xa : (ZMod E.q)[X]) ≠ 0 := X_sub_C_ne_zero _
+    have hSq_ne : ((X - C xa) ^ 2 : (ZMod E.q)[X]) ≠ 0 := pow_ne_zero _ hX_sub_ne
+    have h_div_nz : normPoly E (q.divLin xa) ≠ 0 := by
+      intro hzero
+      apply hq_nz
+      rw [h_factorize, hzero, mul_zero]
+    have h_natDeg : (normPoly E q).natDegree
+        = ((X - C xa) ^ 2 : (ZMod E.q)[X]).natDegree
+          + (normPoly E (q.divLin xa)).natDegree := by
+      rw [h_factorize, Polynomial.natDegree_mul hSq_ne h_div_nz]
+    have h_X_sq_deg : ((X - C xa) ^ 2 : (ZMod E.q)[X]).natDegree = 2 := by
+      rw [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C]
+    have h_qnp : (normPoly E q).natDegree = xs.length + ys.length + 2 := by
+      rw [hq_def, normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
+      have hap : a.point ≠ (0 : ECPoint E) := by
+        rw [ha_pt_eq]
+        intro h
+        have hns : E.toW.toAffine.Nonsingular xa ya :=
+          E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxy_on))
+        rw [ECPoint.affine_of_nonsingular E hns] at h
+        exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
+      have hbp : b.point ≠ (0 : ECPoint E) := by
+        rw [hb_pt_eq]
+        intro h
+        have hns : E.toW.toAffine.Nonsingular xa (-ya) :=
+          E.equation_iff_nonsingular.mp ((E.equation_iff xa (-ya)).mpr (E.hOnCurve _ hxy_neg_on))
+        rw [ECPoint.affine_of_nonsingular E hns] at h
+        exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
+      have ha_deg := LandmarkInvStrong.natDegree E ha
+      have hb_deg := LandmarkInvStrong.natDegree E hb
+      rw [if_neg hap] at ha_deg
+      rw [if_neg hbp] at hb_deg
+      omega
+    rw [List.length_append]
+    omega
+
+theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_two
+    {xs ys : List (ZMod E.q × ZMod E.q)}
+    {a b : EagenAccum E}
+    {xa : ZMod E.q}
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (hys_on : ∀ P ∈ ys, P ∈ E.points)
+    (hxy_on : (xa, (0 : ZMod E.q)) ∈ E.points)
+    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha_pt_eq : a.point = ECPoint.affine E xa 0)
+    (hb_pt_eq : b.point = ECPoint.affine E xa 0)
+    (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
+    (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+      Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2
+      ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 2) :
+    LandmarkInvStrong E (xs ++ ys)
+      (EagenAccum.combine_tangent_torsion E a b xa) := by
+  classical
+  have _hxs_on := hxs_on
+  have _hys_on := hys_on
+  have ha_poly_nz : ¬ (a.poly.a = 0 ∧ a.poly.b = 0) := by
+    intro hzero
+    apply ha_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have hb_poly_nz : ¬ (b.poly.a = 0 ∧ b.poly.b = 0) := by
+    intro hzero
+    apply hb_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have ha_neg : negCoords E a.point = some (xa, (0 : ZMod E.q)) := by
+    rw [ha_pt_eq]
+    have hns : E.toW.toAffine.Nonsingular xa 0 :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff xa 0).mpr (E.hOnCurve _ hxy_on))
+    rw [ECPoint.affine_of_nonsingular E hns]
+    show some (xa, -(0 : ZMod E.q)) = some (xa, 0)
+    rw [neg_zero]
+  have hb_neg : negCoords E b.point = some (xa, (0 : ZMod E.q)) := by
+    rw [hb_pt_eq]
+    have hns : E.toW.toAffine.Nonsingular xa 0 :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff xa 0).mpr (E.hOnCurve _ hxy_on))
+    rw [ECPoint.affine_of_nonsingular E hns]
+    show some (xa, -(0 : ZMod E.q)) = some (xa, 0)
+    rw [neg_zero]
+  have ha_van : a.poly.eval xa 0 = 0 :=
+    LandmarkInvStrong.vanish_of_residue E ha ha_neg hxy_on
+  have hb_van : b.poly.eval xa 0 = 0 :=
+    LandmarkInvStrong.vanish_of_residue E hb hb_neg hxy_on
+  set q := mulCoordRingElt E a.poly b.poly with hq_def
+  obtain ⟨h_qa_xa, h_qb_xa⟩ : q.a.eval xa = 0 ∧ q.b.eval xa = 0 := by
+    rw [hq_def]
+    exact mul_components_eval_zero_at_twoTorsion E a.poly b.poly hxy_on ha_van hb_van
+  have h_dvd_a : (X - C xa) ∣ q.a := dvd_X_sub_C_of_eval_eq_zero E h_qa_xa
+  have h_dvd_b : (X - C xa) ∣ q.b := dvd_X_sub_C_of_eval_eq_zero E h_qb_xa
+  have hq_nz : normPoly E q ≠ 0 := by
+    rw [hq_def, normPoly_mul_eq]
+    exact mul_ne_zero ha_nz hb_nz
+  have hq_poly_nz : ¬ (q.a = 0 ∧ q.b = 0) := by
+    intro hzero
+    apply hq_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have _hdrop_torsion :
+      localMult E q (xa, (0 : ZMod E.q))
+        = 2 + localMult E (q.divLin xa) (xa, (0 : ZMod E.q)) :=
+    localMult_divLin_decreases_by_two_at_twoTorsion_fiber
+      E q (xa, (0 : ZMod E.q)) hxy_on rfl h_dvd_a h_dvd_b hq_poly_nz
+  have hq_div_nz : ¬ ((q.divLin xa).a = 0 ∧ (q.divLin xa).b = 0) :=
+    divLin_not_both_zero E q hq_poly_nz h_qa_xa h_qb_xa
+  let Lv : CoordRingElt E.q := { a := X - C xa, b := 0 }
+  have hq_recomp : q = mulCoordRingElt E (q.divLin xa) Lv := by
+    simpa [Lv] using mulCoordRingElt_divLin_vertical_recompose E q xa h_dvd_a h_dvd_b
+  refine ⟨?_, ?_, ?_⟩
+  · show (0 : ECPoint E) = sumOnE E (xs ++ ys)
+    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
+      ← LandmarkInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
+    have hns : E.toW.toAffine.Nonsingular xa 0 :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff xa 0).mpr (E.hOnCurve _ hxy_on))
+    rw [ECPoint.affine_of_nonsingular E hns]
+    show (0 : ECPoint E) = (.some hns + .some hns : ECPoint E)
+    have hself_neg : (-(.some hns : ECPoint E)) = .some hns := by
+      show -(WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+          = WeierstrassCurve.Affine.Point.some hns
+      simp [WeierstrassCurve.Affine.Point.neg_some]
+    calc
+      (0 : ECPoint E) = (.some hns : ECPoint E) + (-.some hns) := by
+        rw [add_neg_cancel]
+      _ = (.some hns : ECPoint E) + .some hns := by
+        rw [hself_neg]
+  · intro P hPon
+    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
+    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le' :
+        xs.count P + (if negCoords E a.point = some P then 1 else 0)
+          ≤ localMult E a.poly P := by
+      simpa [target] using ha_target_le
+    have hb_target_le' :
+        ys.count P + (if negCoords E b.point = some P then 1 else 0)
+          ≤ localMult E b.poly P := by
+      simpa [target] using hb_target_le
+    have hLv_bound :
+        localMult E Lv P
+          ≤ (if negCoords E a.point = some P then 1 else 0)
+            + (if negCoords E b.point = some P then 1 else 0) := by
+      by_cases hPx : P.1 = xa
+      · have hP_eq_x : P = (xa, P.2) := by
+          ext
+          · exact hPx
+          · rfl
+        have hP_on_x : (xa, P.2) ∈ E.points := by
+          rwa [← hP_eq_x]
+        have hy_dich : (0 : ZMod E.q) = P.2 ∨ (0 : ZMod E.q) = -P.2 :=
+          ECPoints_same_x_y_eq_or_neg E hxy_on hP_on_x
+        have hP_eq : P = (xa, (0 : ZMod E.q)) := by
+          rcases hy_dich with hy_eq | hy_eq_neg
+          · ext
+            · exact hPx
+            · exact hy_eq.symm
+          · ext
+            · exact hPx
+            · exact neg_eq_zero.mp hy_eq_neg.symm
+        have hLv_eq : localMult E Lv P = 2 := by
+          calc
+            localMult E Lv P = ordAt E Lv P := localMult_eq_ordAt E Lv P
+            _ = ordAt E Lv (xa, (0 : ZMod E.q)) := by rw [hP_eq]
+            _ = 2 := by
+              simpa [Lv] using ord_vertical_at_x₀_twoTorsion E xa hxy_on
+        rw [hLv_eq, hP_eq, if_pos ha_neg, if_pos hb_neg]
+      · have hLv_eval_ne : Lv.eval P.1 P.2 ≠ 0 := by
+          have hsub : P.1 - xa ≠ 0 := sub_ne_zero.mpr hPx
+          simpa [Lv, CoordRingElt.eval] using hsub
+        have hLv_eq : localMult E Lv P = 0 :=
+          localMult_eq_zero_of_eval_ne_zero E Lv hPon hLv_eval_ne
+        rw [hLv_eq]
+        omega
+    have htargets_plus_vertical_le :
+        xs.count P + ys.count P + localMult E Lv P
+          ≤ localMult E a.poly P + localMult E b.poly P := by
+      omega
+    have hprod_le :
+        localMult E a.poly P + localMult E b.poly P
+          ≤ localMult E q P := by
+      rw [hq_def]
+      exact localMult_mulCoordRingElt_ge_add_when_rootMult_le_two
+        E a.poly b.poly P hPon ha_poly_nz hb_poly_nz
+        (h_root_le P hPon).1 (h_root_le P hPon).2
+    have hq_local_eq :
+        localMult E q P = localMult E (q.divLin xa) P + localMult E Lv P := by
+      have h := ordAt_mul_vertical_add E (q.divLin xa) hq_div_nz xa hPon
+      calc
+        localMult E q P = ordAt E q P := localMult_eq_ordAt E q P
+        _ = ordAt E (mulCoordRingElt E (q.divLin xa) Lv) P :=
+          congrArg (fun D => ordAt E D P) hq_recomp
+        _ = ordAt E (q.divLin xa) P + ordAt E Lv P := by simpa [Lv] using h
+        _ = localMult E (q.divLin xa) P + localMult E Lv P := by
+          rw [← localMult_eq_ordAt E (q.divLin xa) P,
+              ← localMult_eq_ordAt E Lv P]
+    calc
+      target E (xs ++ ys) (EagenAccum.combine_tangent_torsion E a b xa).point P
+          = xs.count P + ys.count P := by
+            simp [target, EagenAccum.combine_tangent_torsion,
+              EagenAccum.combine_vertical, negCoords, List.count_append]
+      _ ≤ localMult E (q.divLin xa) P := by
+            have h :
+                xs.count P + ys.count P + localMult E Lv P
+                  ≤ localMult E (q.divLin xa) P + localMult E Lv P := by
+              calc
+                xs.count P + ys.count P + localMult E Lv P
+                    ≤ localMult E a.poly P + localMult E b.poly P :=
+                      htargets_plus_vertical_le
+                _ ≤ localMult E q P := hprod_le
+                _ = localMult E (q.divLin xa) P + localMult E Lv P := hq_local_eq
+            omega
+      _ = localMult E (EagenAccum.combine_tangent_torsion E a b xa).poly P := by
+            simp [EagenAccum.combine_tangent_torsion,
+              EagenAccum.combine_vertical, hq_def]
+  · show (normPoly E (q.divLin xa)).natDegree
+        = (xs ++ ys).length
+          + (if (EagenAccum.combine_tangent_torsion E a b xa).point
+                = (0 : ECPoint E) then 0 else 1)
+    have h_combined_zero : (EagenAccum.combine_tangent_torsion E a b xa).point
+        = (0 : ECPoint E) := rfl
+    rw [if_pos h_combined_zero]
+    have h_factorize := normPoly_eq_X_sub_C_sq_mul_normPoly_divLin
+      E q xa h_dvd_a h_dvd_b
+    have hX_sub_ne : (X - C xa : (ZMod E.q)[X]) ≠ 0 := X_sub_C_ne_zero _
+    have hSq_ne : ((X - C xa) ^ 2 : (ZMod E.q)[X]) ≠ 0 := pow_ne_zero _ hX_sub_ne
+    have h_div_nz : normPoly E (q.divLin xa) ≠ 0 := by
+      intro hzero
+      apply hq_nz
+      rw [h_factorize, hzero, mul_zero]
+    have h_natDeg : (normPoly E q).natDegree
+        = ((X - C xa) ^ 2 : (ZMod E.q)[X]).natDegree
+          + (normPoly E (q.divLin xa)).natDegree := by
+      rw [h_factorize, Polynomial.natDegree_mul hSq_ne h_div_nz]
+    have h_X_sq_deg : ((X - C xa) ^ 2 : (ZMod E.q)[X]).natDegree = 2 := by
+      rw [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C]
+    have h_qnp : (normPoly E q).natDegree = xs.length + ys.length + 2 := by
+      rw [hq_def, normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
+      have hap : a.point ≠ (0 : ECPoint E) := by
+        rw [ha_pt_eq]
+        intro h
+        have hns : E.toW.toAffine.Nonsingular xa 0 :=
+          E.equation_iff_nonsingular.mp ((E.equation_iff xa 0).mpr (E.hOnCurve _ hxy_on))
+        rw [ECPoint.affine_of_nonsingular E hns] at h
+        exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
+      have hbp : b.point ≠ (0 : ECPoint E) := by
+        rw [hb_pt_eq]
+        intro h
+        have hns : E.toW.toAffine.Nonsingular xa 0 :=
+          E.equation_iff_nonsingular.mp ((E.equation_iff xa 0).mpr (E.hOnCurve _ hxy_on))
+        rw [ECPoint.affine_of_nonsingular E hns] at h
+        exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
+      have ha_deg := LandmarkInvStrong.natDegree E ha
+      have hb_deg := LandmarkInvStrong.natDegree E hb
+      rw [if_neg hap] at ha_deg
+      rw [if_neg hbp] at hb_deg
+      omega
+    rw [List.length_append]
+    omega
+
 theorem landmarkInvStrong_combine_distinct_when_rootMult_le_one
     {xs ys : List (ZMod E.q × ZMod E.q)}
     {a b : EagenAccum E}
@@ -3486,6 +4154,556 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_one
     rw [h_natDeg2, h_natDeg1, h_qnp, List.length_append]
     omega
 
+theorem landmarkInvStrong_combine_distinct_when_rootMult_le_two
+    {xs ys : List (ZMod E.q × ZMod E.q)}
+    {a b : EagenAccum E}
+    {xa ya xb yb : ZMod E.q}
+    (h_xx : xa ≠ xb)
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (hys_on : ∀ P ∈ ys, P ∈ E.points)
+    (hxa_on : (xa, ya) ∈ E.points)
+    (hxb_on : (xb, yb) ∈ E.points)
+    (hya_ne : ya ≠ 0)
+    (hyb_ne : yb ≠ 0)
+    (h_third_xa : (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xa)
+    (h_third_xb : (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xb)
+    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha_pt_eq : a.point = ECPoint.affine E xa ya)
+    (hb_pt_eq : b.point = ECPoint.affine E xb yb)
+    (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
+    (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+      Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2
+      ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 2) :
+    LandmarkInvStrong E (xs ++ ys)
+      (EagenAccum.combine_distinct E a b xa ya xb yb h_xx) := by
+  classical
+  have _hxs_on := hxs_on
+  have _hys_on := hys_on
+  set Qx := slopeOf xa ya xb yb ^ 2 - xa - xb with hQx_def
+  set Qy := slopeOf xa ya xb yb * Qx + (ya - slopeOf xa ya xb yb * xa) with hQy_def
+  set line := chordCoordRingElt E (xa, ya) (xb, yb) with hline_def
+  set q := mulCoordRingElt E (mulCoordRingElt E line a.poly) b.poly with hq_def
+  let Lva : CoordRingElt E.q := { a := X - C xa, b := 0 }
+  let Lvb : CoordRingElt E.q := { a := X - C xb, b := 0 }
+  have hQx_ne_xa : Qx ≠ xa := by simpa [hQx_def] using h_third_xa
+  have hQx_ne_xb : Qx ≠ xb := by simpa [hQx_def] using h_third_xb
+  have hxa_ne_Qx : xa ≠ Qx := fun h => hQx_ne_xa h.symm
+  have hxb_ne_Qx : xb ≠ Qx := fun h => hQx_ne_xb h.symm
+  have hT : thirdPoint E (xa, ya) (xb, yb) = some (Qx, Qy) := by
+    unfold thirdPoint
+    rw [if_neg h_xx]
+    simp [hQx_def, hQy_def, slopeOf]
+  have hQ_on : (Qx, Qy) ∈ E.points :=
+    third_point_on_curve E (xa, ya) (xb, yb) hxa_on hxb_on hT
+  have hQ_neg_on : (Qx, -Qy) ∈ E.points := points_neg_y E hQ_on
+  have hxa_neg_on : (xa, -ya) ∈ E.points := points_neg_y E hxa_on
+  have hxb_neg_on : (xb, -yb) ∈ E.points := points_neg_y E hxb_on
+  have ha_poly_nz : ¬ (a.poly.a = 0 ∧ a.poly.b = 0) := by
+    intro hzero
+    apply ha_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have hb_poly_nz : ¬ (b.poly.a = 0 ∧ b.poly.b = 0) := by
+    intro hzero
+    apply hb_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have hline_poly_nz : ¬ (line.a = 0 ∧ line.b = 0) := by
+    rw [hline_def]
+    exact chordCoordRingElt_ne_zero E (xa, ya) (xb, yb)
+  have hline_nz : normPoly E line ≠ 0 := normPoly_ne_zero E line hline_poly_nz
+  have hline_root_le :
+      ∀ x : ZMod E.q, Polynomial.rootMultiplicity x (normPoly E line) ≤ 1 := by
+    intro x
+    rw [hline_def]
+    exact chordCoordRingElt_normPoly_rootMult_le_one_at_distinct_chord
+      E (xa, ya) (xb, yb) hxa_on hxb_on h_xx hxa_ne_Qx hxb_ne_Qx x
+  have hlinea_nz : normPoly E (mulCoordRingElt E line a.poly) ≠ 0 := by
+    rw [normPoly_mul_eq]
+    exact mul_ne_zero hline_nz ha_nz
+  have hlinea_poly_nz :
+      ¬ ((mulCoordRingElt E line a.poly).a = 0 ∧
+          (mulCoordRingElt E line a.poly).b = 0) := by
+    intro hzero
+    apply hlinea_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have hlineb_nz : normPoly E (mulCoordRingElt E line b.poly) ≠ 0 := by
+    rw [normPoly_mul_eq]
+    exact mul_ne_zero hline_nz hb_nz
+  have hlineb_poly_nz :
+      ¬ ((mulCoordRingElt E line b.poly).a = 0 ∧
+          (mulCoordRingElt E line b.poly).b = 0) := by
+    intro hzero
+    apply hlineb_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have ha_neg : negCoords E a.point = some (xa, -ya) := by
+    rw [ha_pt_eq]
+    have hns : E.toW.toAffine.Nonsingular xa ya :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxa_on))
+    rw [ECPoint.affine_of_nonsingular E hns]
+    rfl
+  have hb_neg : negCoords E b.point = some (xb, -yb) := by
+    rw [hb_pt_eq]
+    have hns : E.toW.toAffine.Nonsingular xb yb :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff xb yb).mpr (E.hOnCurve _ hxb_on))
+    rw [ECPoint.affine_of_nonsingular E hns]
+    rfl
+  have ha_neg_eval : a.poly.eval xa (-ya) = 0 :=
+    LandmarkInvStrong.vanish_of_residue E ha ha_neg hxa_neg_on
+  have hb_neg_eval : b.poly.eval xb (-yb) = 0 :=
+    LandmarkInvStrong.vanish_of_residue E hb hb_neg hxb_neg_on
+  have hline_eval_a : line.eval xa ya = 0 := by
+    rw [hline_def]
+    exact chordCoordRingElt_eval_left E (xa, ya) (xb, yb)
+  have hline_eval_b : line.eval xb yb = 0 := by
+    rw [hline_def]
+    exact chordCoordRingElt_eval_right E (xa, ya) (xb, yb)
+  have hq_eval_xa_pos : q.eval xa ya = 0 := by
+    rw [hq_def]
+    rw [mulCoordRingElt_eval_on_E E _ b.poly hxa_on]
+    rw [mulCoordRingElt_eval_on_E E line a.poly hxa_on]
+    rw [hline_eval_a]
+    ring
+  have hq_eval_xa_neg : q.eval xa (-ya) = 0 := by
+    rw [hq_def]
+    rw [mulCoordRingElt_eval_on_E E _ b.poly hxa_neg_on]
+    rw [mulCoordRingElt_eval_on_E E line a.poly hxa_neg_on]
+    rw [ha_neg_eval]
+    ring
+  have hq_eval_xb_pos : q.eval xb yb = 0 := by
+    rw [hq_def]
+    rw [mulCoordRingElt_eval_on_E E _ b.poly hxb_on]
+    rw [mulCoordRingElt_eval_on_E E line a.poly hxb_on]
+    rw [hline_eval_b]
+    ring
+  have hq_eval_xb_neg : q.eval xb (-yb) = 0 := by
+    rw [hq_def]
+    rw [mulCoordRingElt_eval_on_E E _ b.poly hxb_neg_on]
+    rw [mulCoordRingElt_eval_on_E E line a.poly hxb_neg_on]
+    rw [hb_neg_eval]
+    ring
+  obtain ⟨h_qa_xa, h_qb_xa⟩ :=
+    qa_qb_eval_zero_of_double_fiber_vanish E q xa ya hya_ne hq_eval_xa_pos hq_eval_xa_neg
+  obtain ⟨h_qa_xb, h_qb_xb⟩ :=
+    qa_qb_eval_zero_of_double_fiber_vanish E q xb yb hyb_ne hq_eval_xb_pos hq_eval_xb_neg
+  have h_dvd_qa_xa : (X - C xa) ∣ q.a := dvd_X_sub_C_of_eval_eq_zero E h_qa_xa
+  have h_dvd_qb_xa : (X - C xa) ∣ q.b := dvd_X_sub_C_of_eval_eq_zero E h_qb_xa
+  have h_dvd_qa_xb : (X - C xb) ∣ q.a := dvd_X_sub_C_of_eval_eq_zero E h_qa_xb
+  have h_dvd_qb_xb : (X - C xb) ∣ q.b := dvd_X_sub_C_of_eval_eq_zero E h_qb_xb
+  have h_dvd_a_after : (X - C xb) ∣ (q.divLin xa).a := by
+    rw [CoordRingElt.divLin_a]
+    exact dvd_X_sub_C_divByMonic_X_sub_C_of_ne E h_dvd_qa_xa h_dvd_qa_xb h_xx
+  have h_dvd_b_after : (X - C xb) ∣ (q.divLin xa).b := by
+    rw [CoordRingElt.divLin_b]
+    exact dvd_X_sub_C_divByMonic_X_sub_C_of_ne E h_dvd_qb_xa h_dvd_qb_xb h_xx
+  have hq_nz : normPoly E q ≠ 0 := by
+    rw [hq_def, normPoly_mul_eq, normPoly_mul_eq]
+    exact mul_ne_zero (mul_ne_zero hline_nz ha_nz) hb_nz
+  have hq_poly_nz : ¬ (q.a = 0 ∧ q.b = 0) := by
+    intro hzero
+    apply hq_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have _hdrop_xa := localMult_divLin_decreases_at_fiber
+    E q (xa, ya) hxa_on h_dvd_qa_xa h_dvd_qb_xa hq_poly_nz
+  have _hdrop_xb := localMult_divLin_decreases_at_fiber
+    E (q.divLin xa) (xb, yb) hxb_on h_dvd_a_after h_dvd_b_after
+      (by
+        have h_factor1 := normPoly_eq_X_sub_C_sq_mul_normPoly_divLin
+          E q xa h_dvd_qa_xa h_dvd_qb_xa
+        have h_div1_nz : normPoly E (q.divLin xa) ≠ 0 := by
+          intro hzero
+          apply hq_nz
+          rw [h_factor1, hzero, mul_zero]
+        intro hzero
+        apply h_div1_nz
+        rw [normPoly_eq, hzero.1, hzero.2]
+        ring)
+  have h_factor1 := normPoly_eq_X_sub_C_sq_mul_normPoly_divLin
+    E q xa h_dvd_qa_xa h_dvd_qb_xa
+  have h_factor2 := normPoly_eq_X_sub_C_sq_mul_normPoly_divLin
+    E (q.divLin xa) xb h_dvd_a_after h_dvd_b_after
+  have h_div1_nz : normPoly E (q.divLin xa) ≠ 0 := by
+    intro hzero
+    apply hq_nz
+    rw [h_factor1, hzero, mul_zero]
+  have h_div1_poly_nz : ¬ ((q.divLin xa).a = 0 ∧ (q.divLin xa).b = 0) := by
+    intro hzero
+    apply h_div1_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have h_div2_nz : normPoly E ((q.divLin xa).divLin xb) ≠ 0 := by
+    intro hzero
+    apply h_div1_nz
+    rw [h_factor2, hzero, mul_zero]
+  have h_div2_poly_nz :
+      ¬ (((q.divLin xa).divLin xb).a = 0 ∧
+          ((q.divLin xa).divLin xb).b = 0) := by
+    intro hzero
+    apply h_div2_nz
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have hq_recomp : q = mulCoordRingElt E (q.divLin xa) Lva := by
+    simpa [Lva] using
+      mulCoordRingElt_divLin_vertical_recompose E q xa h_dvd_qa_xa h_dvd_qb_xa
+  have hdiv1_recomp :
+      q.divLin xa = mulCoordRingElt E ((q.divLin xa).divLin xb) Lvb := by
+    simpa [Lvb] using
+      mulCoordRingElt_divLin_vertical_recompose E (q.divLin xa) xb
+        h_dvd_a_after h_dvd_b_after
+  have hns_Qneg : E.toW.toAffine.Nonsingular Qx (-Qy) :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff Qx (-Qy)).mpr (E.hOnCurve _ hQ_neg_on))
+  have h_combined_neg :
+      negCoords E (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point
+        = some (Qx, Qy) := by
+    show negCoords E (ECPoint.affine E Qx (-Qy)) = some (Qx, Qy)
+    rw [ECPoint.affine_of_nonsingular E hns_Qneg]
+    show some (Qx, -(-Qy)) = some (Qx, Qy)
+    rw [neg_neg]
+  refine ⟨?_, ?_, ?_⟩
+  · show (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point = sumOnE E (xs ++ ys)
+    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
+      ← LandmarkInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
+    have hns_a : E.toW.toAffine.Nonsingular xa ya :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxa_on))
+    have hns_b : E.toW.toAffine.Nonsingular xb yb :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff xb yb).mpr (E.hOnCurve _ hxb_on))
+    rw [ECPoint.affine_of_nonsingular E hns_a, ECPoint.affine_of_nonsingular E hns_b]
+    show ECPoint.affine E Qx (-Qy) = (.some hns_a + .some hns_b : ECPoint E)
+    have hSum := thirdPoint_some_eq_neg_add (E := E) hxa_on hxb_on hT
+    have hns_Q : E.toW.toAffine.Nonsingular Qx Qy :=
+      E.equation_iff_nonsingular.mp ((E.equation_iff Qx Qy).mpr (E.hOnCurve _ hQ_on))
+    have heq_a : ECPoint.affineOfMem E hxa_on = (.some hns_a : ECPoint E) := rfl
+    have heq_b : ECPoint.affineOfMem E hxb_on = (.some hns_b : ECPoint E) := rfl
+    have heq_Q : ECPoint.affineOfMem E hQ_on = (.some hns_Q : ECPoint E) := rfl
+    rw [heq_a, heq_b, heq_Q] at hSum
+    rw [ECPoint.affine_of_nonsingular E hns_Qneg]
+    have h_neg_third : (.some hns_Qneg : ECPoint E) = -(.some hns_Q : ECPoint E) := by
+      simp [WeierstrassCurve.Affine.Point.neg_some]
+    rw [h_neg_third]
+    exact hSum.symm
+  · intro P hPon
+    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
+    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le' :
+        xs.count P + (if P = (xa, -ya) then 1 else 0)
+          ≤ localMult E a.poly P := by
+      simpa [target, ha_neg, eq_comm] using ha_target_le
+    have hb_target_le' :
+        ys.count P + (if P = (xb, -yb) then 1 else 0)
+          ≤ localMult E b.poly P := by
+      simpa [target, hb_neg, eq_comm] using hb_target_le
+    have hline_left : 1 ≤ localMult E line (xa, ya) := by
+      rw [hline_def]
+      exact localMult_chordCoordRingElt_at_left E hxa_on
+    have hline_right : 1 ≤ localMult E line (xb, yb) := by
+      rw [hline_def]
+      exact localMult_chordCoordRingElt_at_right E hxb_on
+    have hline_third : 1 ≤ localMult E line (Qx, Qy) := by
+      rw [hline_def]
+      simpa [hQx_def, hQy_def, slopeOf] using
+        (localMult_chordCoordRingElt_at_third (E := E)
+          (P := (xa, ya)) (Q := (xb, yb)) hxa_on hxb_on h_xx)
+    have hline_markers :
+        (if P = (xa, ya) then 1 else 0)
+          + (if P = (xb, yb) then 1 else 0)
+          + (if P = (Qx, Qy) then 1 else 0)
+          ≤ localMult E line P := by
+      by_cases hPa : P = (xa, ya)
+      · subst P
+        have hA_ne_B : (xa, ya) ≠ (xb, yb) := by
+          intro h
+          exact h_xx (congrArg Prod.fst h)
+        have hA_ne_Q : (xa, ya) ≠ (Qx, Qy) := by
+          intro h
+          exact hQx_ne_xa (congrArg Prod.fst h).symm
+        rw [if_pos rfl, if_neg hA_ne_B, if_neg hA_ne_Q]
+        omega
+      · by_cases hPb : P = (xb, yb)
+        · subst P
+          have hB_ne_A : (xb, yb) ≠ (xa, ya) := by
+            intro h
+            exact h_xx (congrArg Prod.fst h).symm
+          have hB_ne_Q : (xb, yb) ≠ (Qx, Qy) := by
+            intro h
+            exact hQx_ne_xb (congrArg Prod.fst h).symm
+          rw [if_neg hB_ne_A, if_pos rfl, if_neg hB_ne_Q]
+          omega
+        · by_cases hPQ : P = (Qx, Qy)
+          · subst P
+            have hQ_ne_A : (Qx, Qy) ≠ (xa, ya) := by
+              intro h
+              exact hQx_ne_xa (congrArg Prod.fst h)
+            have hQ_ne_B : (Qx, Qy) ≠ (xb, yb) := by
+              intro h
+              exact hQx_ne_xb (congrArg Prod.fst h)
+            rw [if_neg hQ_ne_A, if_neg hQ_ne_B, if_pos rfl]
+            omega
+          · rw [if_neg hPa, if_neg hPb, if_neg hPQ]
+            omega
+    have hLva_bound :
+        localMult E Lva P
+          ≤ (if P = (xa, ya) then 1 else 0)
+            + (if P = (xa, -ya) then 1 else 0) := by
+      by_cases hPx : P.1 = xa
+      · have hP_eq_x : P = (xa, P.2) := by
+          ext
+          · exact hPx
+          · rfl
+        have hP_on_x : (xa, P.2) ∈ E.points := by
+          rwa [← hP_eq_x]
+        have hy_dich : ya = P.2 ∨ ya = -P.2 :=
+          ECPoints_same_x_y_eq_or_neg E hxa_on hP_on_x
+        rcases hy_dich with hy_eq | hy_eq_neg
+        · have hP_eq : P = (xa, ya) := by
+            ext
+            · exact hPx
+            · exact hy_eq.symm
+          have hLv_eq : localMult E Lva P = 1 := by
+            calc
+              localMult E Lva P = ordAt E Lva P := localMult_eq_ordAt E Lva P
+              _ = ordAt E Lva (xa, ya) := by rw [hP_eq]
+              _ = 1 := by
+                simpa [Lva] using ord_vertical_at_x₀_nonTwoTorsion E xa ya hxa_on hya_ne
+          rw [hLv_eq, hP_eq, if_pos rfl]
+          by_cases hsame : (xa, ya) = (xa, -ya)
+          · rw [if_pos hsame]
+            omega
+          · rw [if_neg hsame]
+        · have hP_eq : P = (xa, -ya) := by
+            ext
+            · exact hPx
+            · rw [hy_eq_neg, neg_neg]
+          have hneg_ne : -ya ≠ 0 := by simpa using (neg_ne_zero.mpr hya_ne)
+          have hLv_eq : localMult E Lva P = 1 := by
+            calc
+              localMult E Lva P = ordAt E Lva P := localMult_eq_ordAt E Lva P
+              _ = ordAt E Lva (xa, -ya) := by rw [hP_eq]
+              _ = 1 := by
+                simpa [Lva] using
+                  ord_vertical_at_x₀_nonTwoTorsion E xa (-ya) hxa_neg_on hneg_ne
+          rw [hLv_eq, hP_eq, if_pos rfl]
+          by_cases hsame : (xa, -ya) = (xa, ya)
+          · rw [if_pos hsame]
+            omega
+          · rw [if_neg hsame]
+      · have hLv_eval_ne : Lva.eval P.1 P.2 ≠ 0 := by
+          have hsub : P.1 - xa ≠ 0 := sub_ne_zero.mpr hPx
+          simpa [Lva, CoordRingElt.eval] using hsub
+        have hLv_eq : localMult E Lva P = 0 :=
+          localMult_eq_zero_of_eval_ne_zero E Lva hPon hLv_eval_ne
+        rw [hLv_eq]
+        omega
+    have hLvb_bound :
+        localMult E Lvb P
+          ≤ (if P = (xb, yb) then 1 else 0)
+            + (if P = (xb, -yb) then 1 else 0) := by
+      by_cases hPx : P.1 = xb
+      · have hP_eq_x : P = (xb, P.2) := by
+          ext
+          · exact hPx
+          · rfl
+        have hP_on_x : (xb, P.2) ∈ E.points := by
+          rwa [← hP_eq_x]
+        have hy_dich : yb = P.2 ∨ yb = -P.2 :=
+          ECPoints_same_x_y_eq_or_neg E hxb_on hP_on_x
+        rcases hy_dich with hy_eq | hy_eq_neg
+        · have hP_eq : P = (xb, yb) := by
+            ext
+            · exact hPx
+            · exact hy_eq.symm
+          have hLv_eq : localMult E Lvb P = 1 := by
+            calc
+              localMult E Lvb P = ordAt E Lvb P := localMult_eq_ordAt E Lvb P
+              _ = ordAt E Lvb (xb, yb) := by rw [hP_eq]
+              _ = 1 := by
+                simpa [Lvb] using ord_vertical_at_x₀_nonTwoTorsion E xb yb hxb_on hyb_ne
+          rw [hLv_eq, hP_eq, if_pos rfl]
+          by_cases hsame : (xb, yb) = (xb, -yb)
+          · rw [if_pos hsame]
+            omega
+          · rw [if_neg hsame]
+        · have hP_eq : P = (xb, -yb) := by
+            ext
+            · exact hPx
+            · rw [hy_eq_neg, neg_neg]
+          have hneg_ne : -yb ≠ 0 := by simpa using (neg_ne_zero.mpr hyb_ne)
+          have hLv_eq : localMult E Lvb P = 1 := by
+            calc
+              localMult E Lvb P = ordAt E Lvb P := localMult_eq_ordAt E Lvb P
+              _ = ordAt E Lvb (xb, -yb) := by rw [hP_eq]
+              _ = 1 := by
+                simpa [Lvb] using
+                  ord_vertical_at_x₀_nonTwoTorsion E xb (-yb) hxb_neg_on hneg_ne
+          rw [hLv_eq, hP_eq, if_pos rfl]
+          by_cases hsame : (xb, -yb) = (xb, yb)
+          · rw [if_pos hsame]
+            omega
+          · rw [if_neg hsame]
+      · have hLv_eval_ne : Lvb.eval P.1 P.2 ≠ 0 := by
+          have hsub : P.1 - xb ≠ 0 := sub_ne_zero.mpr hPx
+          simpa [Lvb, CoordRingElt.eval] using hsub
+        have hLv_eq : localMult E Lvb P = 0 :=
+          localMult_eq_zero_of_eval_ne_zero E Lvb hPon hLv_eval_ne
+        rw [hLv_eq]
+        omega
+    have hprod_all_ge :
+        localMult E a.poly P + localMult E b.poly P + localMult E line P
+          ≤ localMult E q P := by
+      have hab_nz : normPoly E (mulCoordRingElt E a.poly b.poly) ≠ 0 := by
+        rw [normPoly_mul_eq]
+        exact mul_ne_zero ha_nz hb_nz
+      have hab_poly_nz :
+          ¬ ((mulCoordRingElt E a.poly b.poly).a = 0 ∧
+              (mulCoordRingElt E a.poly b.poly).b = 0) := by
+        intro hzero
+        apply hab_nz
+        rw [normPoly_eq, hzero.1, hzero.2]
+        ring
+      have hab_ge :
+          localMult E a.poly P + localMult E b.poly P
+            ≤ localMult E (mulCoordRingElt E a.poly b.poly) P := by
+        exact localMult_mulCoordRingElt_ge_add_when_rootMult_le_two
+          E a.poly b.poly P hPon ha_poly_nz hb_poly_nz
+          (h_root_le P hPon).1 (h_root_le P hPon).2
+      have hline_ab_ge :
+          localMult E line P + localMult E (mulCoordRingElt E a.poly b.poly) P
+            ≤ localMult E q P := by
+        have hmul := localMult_mulCoordRingElt_ge_add_general
+          E line (mulCoordRingElt E a.poly b.poly) P
+          hPon hline_poly_nz hab_poly_nz (Or.inr (hline_root_le P.1))
+        have hq_assoc :
+            mulCoordRingElt E line (mulCoordRingElt E a.poly b.poly) = q := by
+          rw [hq_def]
+          exact (mulCoordRingElt_assoc E line a.poly b.poly).symm
+        simpa [hq_assoc] using hmul
+      omega
+    have hmarkers_plus_vertical_le :
+        xs.count P + ys.count P + (if P = (Qx, Qy) then 1 else 0)
+            + localMult E Lvb P + localMult E Lva P
+          ≤ localMult E a.poly P + localMult E b.poly P + localMult E line P := by
+      omega
+    have hq_local_eq_raw :
+        localMult E q P = localMult E (q.divLin xa) P + localMult E Lva P := by
+      have h := ordAt_mul_vertical_add E (q.divLin xa) h_div1_poly_nz xa hPon
+      calc
+        localMult E q P = ordAt E q P := localMult_eq_ordAt E q P
+        _ = ordAt E (mulCoordRingElt E (q.divLin xa) Lva) P :=
+              congrArg (fun D => ordAt E D P) hq_recomp
+        _ = ordAt E (q.divLin xa) P + ordAt E Lva P := by
+              simpa [Lva] using h
+        _ = localMult E (q.divLin xa) P + localMult E Lva P := by
+              rw [← localMult_eq_ordAt E (q.divLin xa) P,
+                ← localMult_eq_ordAt E Lva P]
+    have hdiv1_local_eq :
+        localMult E (q.divLin xa) P =
+          localMult E ((q.divLin xa).divLin xb) P + localMult E Lvb P := by
+      have h := ordAt_mul_vertical_add E ((q.divLin xa).divLin xb)
+        h_div2_poly_nz xb hPon
+      calc
+        localMult E (q.divLin xa) P = ordAt E (q.divLin xa) P :=
+          localMult_eq_ordAt E (q.divLin xa) P
+        _ = ordAt E (mulCoordRingElt E ((q.divLin xa).divLin xb) Lvb) P :=
+              congrArg (fun D => ordAt E D P) hdiv1_recomp
+        _ = ordAt E ((q.divLin xa).divLin xb) P + ordAt E Lvb P := by
+              simpa [Lvb] using h
+        _ = localMult E ((q.divLin xa).divLin xb) P + localMult E Lvb P := by
+              rw [← localMult_eq_ordAt E ((q.divLin xa).divLin xb) P,
+                ← localMult_eq_ordAt E Lvb P]
+    have hq_local_eq :
+        localMult E q P =
+          localMult E ((q.divLin xa).divLin xb) P
+            + localMult E Lvb P + localMult E Lva P := by
+      rw [hq_local_eq_raw, hdiv1_local_eq]
+    have htarget_base_le_after :
+        xs.count P + ys.count P + (if P = (Qx, Qy) then 1 else 0)
+          ≤ localMult E ((q.divLin xa).divLin xb) P := by
+      have h :
+          xs.count P + ys.count P + (if P = (Qx, Qy) then 1 else 0)
+              + localMult E Lvb P + localMult E Lva P
+            ≤ localMult E ((q.divLin xa).divLin xb) P
+                + localMult E Lvb P + localMult E Lva P := by
+        calc
+          xs.count P + ys.count P + (if P = (Qx, Qy) then 1 else 0)
+              + localMult E Lvb P + localMult E Lva P
+              ≤ localMult E a.poly P + localMult E b.poly P + localMult E line P :=
+                hmarkers_plus_vertical_le
+          _ ≤ localMult E q P := hprod_all_ge
+          _ = localMult E ((q.divLin xa).divLin xb) P
+                + localMult E Lvb P + localMult E Lva P := hq_local_eq
+      omega
+    calc
+      target E (xs ++ ys) (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point P
+          = xs.count P + ys.count P + (if P = (Qx, Qy) then 1 else 0) := by
+            simp [target, h_combined_neg, List.count_append, eq_comm]
+      _ ≤ localMult E ((q.divLin xa).divLin xb) P := htarget_base_le_after
+      _ = localMult E (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).poly P := by
+            simp [EagenAccum.combine_distinct, hq_def, hline_def]
+  · show (normPoly E ((q.divLin xa).divLin xb)).natDegree
+        = (xs ++ ys).length
+          + (if (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point
+                = (0 : ECPoint E) then 0 else 1)
+    have h_combined_ne :
+        (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point
+          ≠ (0 : ECPoint E) := by
+      show ECPoint.affine E Qx (-Qy) ≠ (0 : ECPoint E)
+      rw [ECPoint.affine_of_nonsingular E hns_Qneg]
+      exact WeierstrassCurve.Affine.Point.some_ne_zero hns_Qneg
+    rw [if_neg h_combined_ne]
+    have h_X_sub_a_pow_ne : ((X - C xa) ^ 2 : (ZMod E.q)[X]) ≠ 0 :=
+      pow_ne_zero _ (X_sub_C_ne_zero _)
+    have h_X_sub_b_pow_ne : ((X - C xb) ^ 2 : (ZMod E.q)[X]) ≠ 0 :=
+      pow_ne_zero _ (X_sub_C_ne_zero _)
+    have h_natDeg1 : (normPoly E (q.divLin xa)).natDegree
+        = (normPoly E q).natDegree - 2 := by
+      have hh : (normPoly E q).natDegree
+          = ((X - C xa) ^ 2 : (ZMod E.q)[X]).natDegree
+            + (normPoly E (q.divLin xa)).natDegree := by
+        rw [h_factor1, Polynomial.natDegree_mul h_X_sub_a_pow_ne h_div1_nz]
+      have hp : ((X - C xa) ^ 2 : (ZMod E.q)[X]).natDegree = 2 := by
+        rw [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C]
+      omega
+    have h_natDeg2 : (normPoly E ((q.divLin xa).divLin xb)).natDegree
+        = (normPoly E (q.divLin xa)).natDegree - 2 := by
+      have hh : (normPoly E (q.divLin xa)).natDegree
+          = ((X - C xb) ^ 2 : (ZMod E.q)[X]).natDegree
+            + (normPoly E ((q.divLin xa).divLin xb)).natDegree := by
+        rw [h_factor2, Polynomial.natDegree_mul h_X_sub_b_pow_ne h_div2_nz]
+      have hp : ((X - C xb) ^ 2 : (ZMod E.q)[X]).natDegree = 2 := by
+        rw [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C]
+      omega
+    have h_line_deg : (normPoly E line).natDegree = 3 := by
+      rw [hline_def]
+      exact chordCoordRingElt_natDegree_normPoly_of_xx_ne E h_xx
+    have hap : a.point ≠ (0 : ECPoint E) := by
+      rw [ha_pt_eq]
+      intro h
+      have hns : E.toW.toAffine.Nonsingular xa ya :=
+        E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxa_on))
+      rw [ECPoint.affine_of_nonsingular E hns] at h
+      exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
+    have hbp : b.point ≠ (0 : ECPoint E) := by
+      rw [hb_pt_eq]
+      intro h
+      have hns : E.toW.toAffine.Nonsingular xb yb :=
+        E.equation_iff_nonsingular.mp ((E.equation_iff xb yb).mpr (E.hOnCurve _ hxb_on))
+      rw [ECPoint.affine_of_nonsingular E hns] at h
+      exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
+    have ha_deg := LandmarkInvStrong.natDegree E ha
+    have hb_deg := LandmarkInvStrong.natDegree E hb
+    rw [if_neg hap] at ha_deg
+    rw [if_neg hbp] at hb_deg
+    have h_qnp : (normPoly E q).natDegree = xs.length + ys.length + 5 := by
+      rw [hq_def, normPoly_mul_eq, normPoly_mul_eq]
+      rw [Polynomial.natDegree_mul (mul_ne_zero hline_nz ha_nz) hb_nz,
+          Polynomial.natDegree_mul hline_nz ha_nz]
+      rw [h_line_deg, ha_deg, hb_deg]
+      omega
+    rw [h_natDeg2, h_natDeg1, h_qnp, List.length_append]
+    omega
+
 /-- Tangent-smooth preservation, with the two tangent-specific arithmetic
 hypotheses made explicit:
 
@@ -3897,6 +5115,47 @@ theorem landmarkInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
     rw [h_natDeg2, h_natDeg1, h_qnp, List.length_append]
     omega
 
+theorem landmarkInvStrong_combine_tangent_smooth_when_rootMult_le_two
+    {xs ys : List (ZMod E.q × ZMod E.q)}
+    {a b : EagenAccum E}
+    {xa ya : ZMod E.q}
+    (hxy_on : (xa, ya) ∈ E.points)
+    (hxy_neg_on : (xa, -ya) ∈ E.points)
+    (hy_ne : ya ≠ 0)
+    (h_third_xa :
+      ((3 * xa ^ 2 + E.curveA) * (2 * ya)⁻¹) ^ 2 - 2 * xa ≠ xa)
+    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha_pt_eq : a.point = ECPoint.affine E xa ya)
+    (hb_pt_eq : b.point = ECPoint.affine E xa ya)
+    (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
+    (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+      Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2
+      ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 2)
+    (h_dvd_qa_sq :
+      (X - C xa) ^ 2 ∣
+        (mulCoordRingElt E
+          (mulCoordRingElt E (chordCoordRingElt E (xa, ya) (xa, ya)) a.poly)
+          b.poly).a)
+    (h_dvd_qb_sq :
+      (X - C xa) ^ 2 ∣
+        (mulCoordRingElt E
+          (mulCoordRingElt E (chordCoordRingElt E (xa, ya) (xa, ya)) a.poly)
+          b.poly).b)
+    (hprod_all_ge :
+      ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+        localMult E a.poly P + localMult E b.poly P
+          + localMult E (chordCoordRingElt E (xa, ya) (xa, ya)) P
+        ≤ localMult E
+            (mulCoordRingElt E
+              (mulCoordRingElt E (chordCoordRingElt E (xa, ya) (xa, ya)) a.poly)
+              b.poly) P) :
+    LandmarkInvStrong E (xs ++ ys)
+      (EagenAccum.combine_tangent_smooth E a b xa ya hy_ne) := by
+  have _h_root_le := h_root_le
+  exact landmarkInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
+    E hxy_on hxy_neg_on hy_ne h_third_xa ha hb ha_pt_eq hb_pt_eq
+    ha_nz hb_nz h_dvd_qa_sq h_dvd_qb_sq hprod_all_ge
+
 /-- Extra affine-affine hypotheses needed by the strong `combine`
 dispatcher beyond the point-shape case split.
 
@@ -4080,6 +5339,172 @@ theorem landmarkInvStrong_combine_when_rootMult_le_one
               landmarkInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
                 E hxa_on hxy_neg_on hya_zero h_third_xa ha hb
                 ha_pt_eq hb_smooth_pt ha_nz hb_nz
+                h_dvd_qa_sq h_dvd_qb_sq hprod_all_ge
+            have hcombine :
+                EagenAccum.combine E a b =
+                  EagenAccum.combine_tangent_smooth E a b xa ya hya_zero := by
+              unfold EagenAccum.combine
+              rw [hpa, hpb]
+              simp [hxeq, h_yy, hya_zero]
+            rw [hcombine]
+            exact hcase
+
+theorem landmarkInvStrong_combine_when_rootMult_le_two
+    {xs ys : List (ZMod E.q × ZMod E.q)}
+    {a b : EagenAccum E}
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (hys_on : ∀ P ∈ ys, P ∈ E.points)
+    (h_neg_a_on : ∀ Q : ZMod E.q × ZMod E.q,
+      negCoords E a.point = some Q → Q ∈ E.points)
+    (h_neg_b_on : ∀ Q : ZMod E.q × ZMod E.q,
+      negCoords E b.point = some Q → Q ∈ E.points)
+    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
+    (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+      Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2
+      ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 2)
+    (h_aff_aff_extras : LandmarkInvStrongCombineAffineExtras E a b) :
+    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine E a b) := by
+  classical
+  match hpa : a.point, hpb : b.point with
+  | WeierstrassCurve.Affine.Point.zero, WeierstrassCurve.Affine.Point.zero =>
+      have hcase := landmarkInvStrong_combine_oo_when_rootMult_le_two
+        E hxs_on hys_on ha hb hpa hpb ha_nz hb_nz h_root_le
+      have hcombine :
+          EagenAccum.combine E a b = EagenAccum.combine_oo E a b := by
+        unfold EagenAccum.combine
+        rw [hpa, hpb]
+      rw [hcombine]
+      exact hcase
+  | WeierstrassCurve.Affine.Point.zero,
+    WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) hns_b =>
+      have hb_ne : b.point ≠ (0 : ECPoint E) := by
+        rw [hpb]
+        exact WeierstrassCurve.Affine.Point.some_ne_zero hns_b
+      have hcase := landmarkInvStrong_combine_ol_when_rootMult_le_two
+        E hxs_on hys_on h_neg_b_on ha hb hpa hb_ne ha_nz hb_nz h_root_le
+      have hcombine :
+          EagenAccum.combine E a b = EagenAccum.combine_ol E a b := by
+        unfold EagenAccum.combine
+        rw [hpa, hpb]
+      rw [hcombine]
+      exact hcase
+  | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) hns_a,
+    WeierstrassCurve.Affine.Point.zero =>
+      have ha_ne : a.point ≠ (0 : ECPoint E) := by
+        rw [hpa]
+        exact WeierstrassCurve.Affine.Point.some_ne_zero hns_a
+      have hcase := landmarkInvStrong_combine_or_when_rootMult_le_two
+        E hxs_on hys_on h_neg_a_on ha hb ha_ne hpb ha_nz hb_nz h_root_le
+      have hcombine :
+          EagenAccum.combine E a b = EagenAccum.combine_or E a b := by
+        unfold EagenAccum.combine
+        rw [hpa, hpb]
+      rw [hcombine]
+      exact hcase
+  | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) hns_a,
+    WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) hns_b =>
+      have hxa_on : (xa, ya) ∈ E.points :=
+        E.hComplete xa ya
+          ((E.equation_iff xa ya).mp ((E.equation_iff_nonsingular).mpr hns_a))
+      have hxb_on : (xb, yb) ∈ E.points :=
+        E.hComplete xb yb
+          ((E.equation_iff xb yb).mp ((E.equation_iff_nonsingular).mpr hns_b))
+      have ha_pt_eq : a.point = ECPoint.affine E xa ya := by
+        rw [hpa, ECPoint.affine_of_nonsingular E hns_a]
+      have hb_pt_eq : b.point = ECPoint.affine E xb yb := by
+        rw [hpb, ECPoint.affine_of_nonsingular E hns_b]
+      by_cases h_xx : xa ≠ xb
+      · obtain ⟨hya_ne, hyb_ne, h_third_xa, h_third_xb⟩ :=
+          (h_aff_aff_extras ha_pt_eq hb_pt_eq).1 h_xx
+        have hcase := landmarkInvStrong_combine_distinct_when_rootMult_le_two
+          E h_xx hxs_on hys_on hxa_on hxb_on hya_ne hyb_ne
+          h_third_xa h_third_xb ha hb ha_pt_eq hb_pt_eq
+          ha_nz hb_nz h_root_le
+        have hcombine :
+            EagenAccum.combine E a b =
+              EagenAccum.combine_distinct E a b xa ya xb yb h_xx := by
+          unfold EagenAccum.combine
+          rw [hpa, hpb]
+          simp [h_xx]
+        rw [hcombine]
+        exact hcase
+      · have hxeq : xa = xb := by exact not_not.mp h_xx
+        by_cases h_yy : ya = -yb
+        · by_cases hya_zero : ya = 0
+          · have hyb_zero : yb = 0 := by
+              have hneg_yb_zero : -yb = 0 := by
+                simpa [hya_zero] using h_yy.symm
+              simpa using (neg_eq_zero.mp hneg_yb_zero)
+            have hxy_on : (xa, (0 : ZMod E.q)) ∈ E.points := by
+              simpa [hya_zero] using hxa_on
+            have ha_torsion_pt :
+                a.point = ECPoint.affine E xa (0 : ZMod E.q) := by
+              simpa [hya_zero] using ha_pt_eq
+            have hb_torsion_pt :
+                b.point = ECPoint.affine E xa (0 : ZMod E.q) := by
+              calc
+                b.point = ECPoint.affine E xb yb := hb_pt_eq
+                _ = ECPoint.affine E xa (0 : ZMod E.q) := by
+                  rw [← hxeq, hyb_zero]
+            have hcase := landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_two
+              E hxs_on hys_on hxy_on ha hb ha_torsion_pt hb_torsion_pt
+              ha_nz hb_nz h_root_le
+            have hcombine :
+                EagenAccum.combine E a b = EagenAccum.combine_vertical E a b xa := by
+              unfold EagenAccum.combine
+              rw [hpa, hpb]
+              simp [hxeq, h_yy]
+            rw [hcombine]
+            simpa [EagenAccum.combine_tangent_torsion] using hcase
+          · have hyb_eq_neg : yb = -ya := by
+              have hneg := congrArg Neg.neg h_yy
+              simpa [neg_neg] using hneg.symm
+            have hxy_neg_on : (xa, -ya) ∈ E.points := points_neg_y E hxa_on
+            have hb_vertical_pt : b.point = ECPoint.affine E xa (-ya) := by
+              calc
+                b.point = ECPoint.affine E xb yb := hb_pt_eq
+                _ = ECPoint.affine E xa (-ya) := by
+                  rw [← hxeq, hyb_eq_neg]
+            have hcase := landmarkInvStrong_combine_vertical_when_rootMult_le_two
+              E hxs_on hys_on hxa_on hxy_neg_on hya_zero ha hb
+              ha_pt_eq hb_vertical_pt ha_nz hb_nz h_root_le
+            have hcombine :
+                EagenAccum.combine E a b = EagenAccum.combine_vertical E a b xa := by
+              unfold EagenAccum.combine
+              rw [hpa, hpb]
+              simp [hxeq, h_yy]
+            rw [hcombine]
+            exact hcase
+        · by_cases hya_zero : ya = 0
+          · have hyb_zero : yb = 0 := by
+              have hy_dich : ya = yb ∨ ya = -yb := by
+                have hxb_as_xa : (xa, yb) ∈ E.points := by
+                  simpa [hxeq] using hxb_on
+                exact ECPoints_same_x_y_eq_or_neg E hxa_on hxb_as_xa
+              rcases hy_dich with hy_eq | hy_neg
+              · simp [← hy_eq, hya_zero]
+              · exact False.elim (h_yy hy_neg)
+            exact False.elim (h_yy (by simp [hya_zero, hyb_zero]))
+          · have hxb_as_xa : (xa, yb) ∈ E.points := by
+              simpa [hxeq] using hxb_on
+            have hy_eq : ya = yb := by
+              rcases ECPoints_same_x_y_eq_or_neg E hxa_on hxb_as_xa with hy_same | hy_neg
+              · exact hy_same
+              · exact False.elim (h_yy hy_neg)
+            have hb_smooth_pt : b.point = ECPoint.affine E xa ya := by
+              calc
+                b.point = ECPoint.affine E xb yb := hb_pt_eq
+                _ = ECPoint.affine E xa ya := by
+                  rw [← hxeq, ← hy_eq]
+            have hxy_neg_on : (xa, -ya) ∈ E.points := points_neg_y E hxa_on
+            obtain ⟨h_third_xa, h_dvd_qa_sq, h_dvd_qb_sq, hprod_all_ge⟩ :=
+              (h_aff_aff_extras ha_pt_eq hb_pt_eq).2 hxeq h_yy hya_zero
+            have hcase :=
+              landmarkInvStrong_combine_tangent_smooth_when_rootMult_le_two
+                E hxa_on hxy_neg_on hya_zero h_third_xa ha hb
+                ha_pt_eq hb_smooth_pt ha_nz hb_nz
+                h_root_le
                 h_dvd_qa_sq h_dvd_qb_sq hprod_all_ge
             have hcombine :
                 EagenAccum.combine E a b =
