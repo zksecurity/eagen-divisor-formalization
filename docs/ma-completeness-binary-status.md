@@ -161,6 +161,35 @@ Architectural notes (per codex review):
   tangent), so the heavy tangent-branch obligations only fire when
   needed.
 
+### admSet specialization (commits 2ad01a5, 6568eb5)
+
+Modular normalization framework with swap-friendly architecture:
+
+**Foundation (`DefsPre.lean`)**:
+- `CoordRingElt.instSMul` (`ZMod q`-action), `smul_a`/`smul_b`/`eval_smul`.
+
+**Scaled binary structure (`IsHonestForBinary.lean`)**:
+- `IsHonestForBinaryScaled`: alternative IsHonestForBinary where
+  `msg.toD = c • eagenBuild_singletons E Ps` for non-zero scalar `c`.
+- `IsHonestForBinaryScaled.ofBinary`: coercion from `c = 1` case.
+- `splitsOnE_smul`, `divisor_identity_smul` invariance lemmas.
+- `ma_completeness_for_binary_with_scalar` — admSet-agnostic helper
+  that's the lever for all admSet specializations.
+
+**Per-admSet specializations**:
+- `admSetMax`: `ma_completeness_for_binary_admSetMax_unconditional` (no
+  normalization — D non-zero from landmark theorem).
+- `admSetParker` (coeff(a,1) = 1): `ma_completeness_for_binary_admSetParker_unconditional`,
+  `ma_completeness_for_binary_chord_chain_admSetParker_unconditional`.
+  Precondition: `(eagenBuild_singletons E Ps).a.coeff 1 ≠ 0`. Scalar:
+  `(a.coeff 1)⁻¹`.
+
+**Adding more admSets is now mechanical** — admSetEagen, admSetHash
+each become ~30-line thin wrappers picking their own scalar from
+preconditions. The heavy lifting is in the `with_scalar` helper.
+
+All closures match `ma_completeness*` exactly.
+
 Closures of all four corollaries exactly match `ma_completeness*`.
 
 The length-4 chord-case (`9039704`) handles the typical binary
