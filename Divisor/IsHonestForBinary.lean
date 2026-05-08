@@ -383,6 +383,235 @@ theorem ma_completeness_clean_for_binary_length2_unconditional
   exact ma_completeness_clean_for_binary_unconditional E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm hQ
 
+namespace Landmark
+
+theorem levelInitSingleton_chord_combine_extras
+    (E : ECSetup) (P Q : ZMod E.q × ZMod E.q)
+    (hP_on : P ∈ E.points) (hQ_on : Q ∈ E.points)
+    (h_x_ne : P.1 ≠ Q.1)
+    (hP_y_ne : P.2 ≠ 0) (hQ_y_ne : Q.2 ≠ 0)
+    (hThird_ne_P :
+      (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) ≠ P.1)
+    (hThird_ne_Q :
+      (slopeOf P.1 P.2 Q.1 Q.2 ^ 2 - P.1 - Q.1) ≠ Q.1) :
+    LandmarkInvStrongCombineExtras E
+      (levelInitSingleton E P) (levelInitSingleton E Q) := by
+  classical
+  intro _ _ xa ya xb yb h_a_pt h_b_pt
+  have h_a_eq : (levelInitSingleton E P).point = ECPoint.affine E P.1 P.2 := rfl
+  have h_b_eq : (levelInitSingleton E Q).point = ECPoint.affine E Q.1 Q.2 := rfl
+  have hP_ns : E.toW.toAffine.Nonsingular P.1 P.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP_on))
+  have hQ_ns : E.toW.toAffine.Nonsingular Q.1 Q.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff Q.1 Q.2).mpr (E.hOnCurve _ hQ_on))
+  rw [ECPoint.affine_of_nonsingular E hP_ns] at h_a_eq
+  rw [ECPoint.affine_of_nonsingular E hQ_ns] at h_b_eq
+  have h_a_eq2 : ECPoint.affine E xa ya = (.some hP_ns : ECPoint E) := by
+    rw [← h_a_pt, h_a_eq]
+  have h_b_eq2 : ECPoint.affine E xb yb = (.some hQ_ns : ECPoint E) := by
+    rw [← h_b_pt, h_b_eq]
+  have hxa_eq : xa = P.1 ∧ ya = P.2 := by
+    unfold ECPoint.affine at h_a_eq2
+    by_cases hns : E.toW.toAffine.Nonsingular xa ya
+    · rw [dif_pos hns] at h_a_eq2
+      exact WeierstrassCurve.Affine.Point.some.inj h_a_eq2
+    · rw [dif_neg hns] at h_a_eq2
+      exfalso
+      exact (WeierstrassCurve.Affine.Point.some_ne_zero hP_ns) h_a_eq2.symm
+  have hxb_eq : xb = Q.1 ∧ yb = Q.2 := by
+    unfold ECPoint.affine at h_b_eq2
+    by_cases hns : E.toW.toAffine.Nonsingular xb yb
+    · rw [dif_pos hns] at h_b_eq2
+      exact WeierstrassCurve.Affine.Point.some.inj h_b_eq2
+    · rw [dif_neg hns] at h_b_eq2
+      exfalso
+      exact (WeierstrassCurve.Affine.Point.some_ne_zero hQ_ns) h_b_eq2.symm
+  obtain ⟨hxa, hya⟩ := hxa_eq
+  obtain ⟨hxb, hyb⟩ := hxb_eq
+  refine ⟨?_, ?_⟩
+  · intro _h_xa_ne_xb
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · simpa [hya] using hP_y_ne
+    · simpa [hyb] using hQ_y_ne
+    · simpa [hxa, hya, hxb, hyb] using hThird_ne_P
+    · simpa [hxa, hya, hxb, hyb] using hThird_ne_Q
+  · intro h_xa_eq_xb _ _
+    rw [hxa, hxb] at h_xa_eq_xb
+    exact False.elim (h_x_ne h_xa_eq_xb)
+
+theorem length4_chord_level1_extras
+    (E : ECSetup) (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀_on : P₀ ∈ E.points) (hP₁_on : P₁ ∈ E.points)
+    (hP₂_on : P₂ ∈ E.points) (hP₃_on : P₃ ∈ E.points)
+    (hNodup : ([P₀, P₁, P₂, P₃] : List (ZMod E.q × ZMod E.q)).Nodup)
+    (hPair01 :
+      LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₀) (levelInitSingleton E P₁))
+    (hPair23 :
+      LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₂) (levelInitSingleton E P₃))
+    (hSumZero : sumOnE E [P₀, P₁, P₂, P₃] = 0) :
+    LandmarkInvStrongCombineExtras E
+      (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
+      (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)) := by
+  classical
+  let xss : List (List (ZMod E.q × ZMod E.q)) := [[P₀], [P₁], [P₂], [P₃]]
+  let accs : List (EagenAccum E) :=
+    [levelInitSingleton E P₀, levelInitSingleton E P₁,
+     levelInitSingleton E P₂, levelInitSingleton E P₃]
+  have hxss_on : ∀ xs ∈ xss, ∀ P ∈ xs, P ∈ E.points := by
+    intro xs hxs P hP
+    simp [xss] at hxs
+    rcases hxs with rfl | rfl | rfl | rfl
+    · rw [List.mem_singleton] at hP
+      rw [hP]
+      exact hP₀_on
+    · rw [List.mem_singleton] at hP
+      rw [hP]
+      exact hP₁_on
+    · rw [List.mem_singleton] at hP
+      rw [hP]
+      exact hP₂_on
+    · rw [List.mem_singleton] at hP
+      rw [hP]
+      exact hP₃_on
+  have hxss_ne : ∀ xs ∈ xss, xs ≠ [] := by
+    intro xs hxs
+    simp [xss] at hxs
+    rcases hxs with rfl | rfl | rfl | rfl <;> simp
+  have hNodup_concat : xss.flatten.Nodup := by
+    simpa [xss] using hNodup
+  have h_init : LandmarkInvStrongList E xss accs := by
+    subst xss
+    subst accs
+    simpa [level0_singletons] using
+      landmarkInvStrongList_level0_singletons E [P₀, P₁, P₂, P₃]
+        (by
+          intro P hP
+          simp at hP
+          rcases hP with rfl | rfl | rfl | rfl
+          · exact hP₀_on
+          · exact hP₁_on
+          · exact hP₂_on
+          · exact hP₃_on)
+  have h_level0_extras : LevelStepCombineExtras E accs := by
+    subst accs
+    change LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₀) (levelInitSingleton E P₁) ∧
+      (LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₂) (levelInitSingleton E P₃) ∧ True)
+    exact ⟨hPair01, hPair23, trivial⟩
+  have h_step :=
+    (landmarkInvStrongList_level_step E xss accs h_init
+      hxss_on hNodup_concat hxss_ne h_level0_extras).1
+  have h_step' :
+      LandmarkInvStrongList E [[P₀, P₁], [P₂, P₃]]
+        [EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁),
+         EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)] := by
+    simpa [xss, accs, level_step_lists, pairUp, level_step] using h_step
+  obtain ⟨h01, h_step_tail⟩ := List.forall₂_cons.mp h_step'
+  obtain ⟨h23, _⟩ := List.forall₂_cons.mp h_step_tail
+  have h01_sum :
+      (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁)).point =
+        sumOnE E [P₀, P₁] :=
+    LandmarkInvStrong.running_sum E h01
+  have h23_sum :
+      (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)).point =
+        sumOnE E [P₂, P₃] :=
+    LandmarkInvStrong.running_sum E h23
+  have hSumPairs : sumOnE E [P₀, P₁] + sumOnE E [P₂, P₃] = 0 := by
+    calc
+      sumOnE E [P₀, P₁] + sumOnE E [P₂, P₃]
+          = sumOnE E ([P₀, P₁] ++ [P₂, P₃]) := by
+            rw [sumOnE_append]
+      _ = sumOnE E [P₀, P₁, P₂, P₃] := rfl
+      _ = 0 := hSumZero
+  have h_inverse :
+      (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)).point =
+        -((EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁)).point) := by
+    rw [h01_sum, h23_sum]
+    exact eq_neg_of_add_eq_zero_left (by simpa [add_comm] using hSumPairs)
+  by_cases h_left_zero :
+      (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁)).point =
+        (0 : ECPoint E)
+  · exact combine_extras_vacuous_of_left_zero E _ _ h_left_zero
+  · intro _ _
+    exact affine_extras_vacuous_on_inverse_affine_points E _ _ h_inverse h_left_zero
+
+theorem h_extras_holds_for_length4_chord_pairs
+    (E : ECSetup) (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
+    (hP₀_on : P₀ ∈ E.points) (hP₁_on : P₁ ∈ E.points)
+    (hP₂_on : P₂ ∈ E.points) (hP₃_on : P₃ ∈ E.points)
+    (hNodup : ([P₀, P₁, P₂, P₃] : List (ZMod E.q × ZMod E.q)).Nodup)
+    (hSumZero : sumOnE E [P₀, P₁, P₂, P₃] = 0)
+    (h01_x_ne : P₀.1 ≠ P₁.1) (h23_x_ne : P₂.1 ≠ P₃.1)
+    (hP₀_y_ne : P₀.2 ≠ 0) (hP₁_y_ne : P₁.2 ≠ 0)
+    (hP₂_y_ne : P₂.2 ≠ 0) (hP₃_y_ne : P₃.2 ≠ 0)
+    (hThird01_ne_P₀ :
+      (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) ≠ P₀.1)
+    (hThird01_ne_P₁ :
+      (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) ≠ P₁.1)
+    (hThird23_ne_P₂ :
+      (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) ≠ P₂.1)
+    (hThird23_ne_P₃ :
+      (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) ≠ P₃.1) :
+    ∀ k < ([P₀, P₁, P₂, P₃] : List (ZMod E.q × ZMod E.q)).length,
+      LevelStepCombineExtras E
+        (iterate E k (level0_singletons E [P₀, P₁, P₂, P₃])) := by
+  classical
+  have hPair01 :
+      LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₀) (levelInitSingleton E P₁) :=
+    levelInitSingleton_chord_combine_extras E P₀ P₁ hP₀_on hP₁_on h01_x_ne
+      hP₀_y_ne hP₁_y_ne hThird01_ne_P₀ hThird01_ne_P₁
+  have hPair23 :
+      LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₂) (levelInitSingleton E P₃) :=
+    levelInitSingleton_chord_combine_extras E P₂ P₃ hP₂_on hP₃_on h23_x_ne
+      hP₂_y_ne hP₃_y_ne hThird23_ne_P₂ hThird23_ne_P₃
+  have hLevel1 :
+      LandmarkInvStrongCombineExtras E
+        (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
+        (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)) :=
+    length4_chord_level1_extras E P₀ P₁ P₂ P₃ hP₀_on hP₁_on hP₂_on hP₃_on
+      hNodup hPair01 hPair23 hSumZero
+  intro k hk
+  have hk_lt4 : k < 4 := by simpa using hk
+  interval_cases k
+  · show LevelStepCombineExtras E
+      [levelInitSingleton E P₀, levelInitSingleton E P₁,
+       levelInitSingleton E P₂, levelInitSingleton E P₃]
+    change LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₀) (levelInitSingleton E P₁) ∧
+      (LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₂) (levelInitSingleton E P₃) ∧ True)
+    exact ⟨hPair01, hPair23, trivial⟩
+  · have h_iter_eq :
+        iterate E 1 (level0_singletons E [P₀, P₁, P₂, P₃])
+          = level_step E (level0_singletons E [P₀, P₁, P₂, P₃]) := by
+      show (if (level0_singletons E [P₀, P₁, P₂, P₃]).length ≤ 1 then _ else _) = _
+      have h_len :
+          (level0_singletons E [P₀, P₁, P₂, P₃]).length = 4 := by
+        simp [level0_singletons]
+      rw [if_neg (by rw [h_len]; omega)]
+      rfl
+    rw [h_iter_eq]
+    show LevelStepCombineExtras E
+      (level_step E
+        [levelInitSingleton E P₀, levelInitSingleton E P₁,
+         levelInitSingleton E P₂, levelInitSingleton E P₃])
+    show LevelStepCombineExtras E
+      [EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁),
+       EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)]
+    change LandmarkInvStrongCombineExtras E
+      (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
+      (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)) ∧ True
+    exact ⟨hLevel1, trivial⟩
+  · simp [iterate, level0_singletons, level_step, LevelStepCombineExtras]
+  · simp [iterate, level0_singletons, level_step, LevelStepCombineExtras]
+
+end Landmark
+
 /-! ## Length-4 fully-unconditional binary completeness.
 
 For `Ps = [P₀, -P₀, P₂, -P₂]`, level-0 extras are the two length-2
@@ -469,6 +698,127 @@ theorem ma_completeness_clean_for_binary_length4_unconditional
     rw [hPs_eq]
     exact Landmark.h_extras_holds_for_length4_two_inverse_pairs
       E P₀ P₂ hP₀_on hP₂_on
+  exact ma_completeness_clean_for_binary_unconditional E stmt msg wit hk hkm
+    h_binary hLen h_extras hValid hDeg hDegK hAdm hQ
+
+theorem ma_completeness_for_binary_length4_chord_unconditional
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (hkm : stmt.k = msg.k)
+    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    (h_length4 : ∃ P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q,
+      h_binary.Ps = [P₀, P₁, P₂, P₃] ∧
+      P₀.1 ≠ P₁.1 ∧ P₂.1 ≠ P₃.1 ∧
+      P₀.2 ≠ 0 ∧ P₁.2 ≠ 0 ∧ P₂.2 ≠ 0 ∧ P₃.2 ≠ 0 ∧
+      (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) ≠ P₀.1 ∧
+      (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) ≠ P₁.1 ∧
+      (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) ≠ P₂.1 ∧
+      (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) ≠ P₃.1)
+    (hValid : relDlog E stmt wit)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+  obtain ⟨P₀, P₁, P₂, P₃, hPs_eq, h01_x_ne, h23_x_ne,
+    hP₀_y_ne, hP₁_y_ne, hP₂_y_ne, hP₃_y_ne,
+    hThird01_ne_P₀, hThird01_ne_P₁,
+    hThird23_ne_P₂, hThird23_ne_P₃⟩ := h_length4
+  have hLen : 2 ≤ h_binary.Ps.length := by
+    rw [hPs_eq]
+    simp
+  have hP₀_on : P₀ ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]
+    simp
+  have hP₁_on : P₁ ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]
+    simp
+  have hP₂_on : P₂ ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]
+    simp
+  have hP₃_on : P₃ ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]
+    simp
+  have hNodup : ([P₀, P₁, P₂, P₃] : List (ZMod E.q × ZMod E.q)).Nodup := by
+    simpa [hPs_eq] using h_binary.hNodup
+  have hSumZero : Landmark.sumOnE E [P₀, P₁, P₂, P₃] = 0 := by
+    simpa [hPs_eq] using h_binary.hSumZero
+  have h_extras :
+      ∀ k < h_binary.Ps.length,
+        Landmark.LevelStepCombineExtras E
+          (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
+    rw [hPs_eq]
+    exact Landmark.h_extras_holds_for_length4_chord_pairs E P₀ P₁ P₂ P₃
+      hP₀_on hP₁_on hP₂_on hP₃_on hNodup hSumZero
+      h01_x_ne h23_x_ne hP₀_y_ne hP₁_y_ne hP₂_y_ne hP₃_y_ne
+      hThird01_ne_P₀ hThird01_ne_P₁ hThird23_ne_P₂ hThird23_ne_P₃
+  exact ma_completeness_for_binary_unconditional E stmt msg wit hk hkm
+    h_binary hLen h_extras hValid hDeg hDegK hAdm
+
+theorem ma_completeness_clean_for_binary_length4_chord_unconditional
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (hkm : stmt.k = msg.k)
+    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    (h_length4 : ∃ P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q,
+      h_binary.Ps = [P₀, P₁, P₂, P₃] ∧
+      P₀.1 ≠ P₁.1 ∧ P₂.1 ≠ P₃.1 ∧
+      P₀.2 ≠ 0 ∧ P₁.2 ≠ 0 ∧ P₂.2 ≠ 0 ∧ P₃.2 ≠ 0 ∧
+      (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) ≠ P₀.1 ∧
+      (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) ≠ P₁.1 ∧
+      (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) ≠ P₂.1 ∧
+      (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) ≠ P₃.1)
+    (hValid : relDlog E stmt wit)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hQ : 5 ≤ E.q) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
+  obtain ⟨P₀, P₁, P₂, P₃, hPs_eq, h01_x_ne, h23_x_ne,
+    hP₀_y_ne, hP₁_y_ne, hP₂_y_ne, hP₃_y_ne,
+    hThird01_ne_P₀, hThird01_ne_P₁,
+    hThird23_ne_P₂, hThird23_ne_P₃⟩ := h_length4
+  have hLen : 2 ≤ h_binary.Ps.length := by
+    rw [hPs_eq]
+    simp
+  have hP₀_on : P₀ ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]
+    simp
+  have hP₁_on : P₁ ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]
+    simp
+  have hP₂_on : P₂ ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]
+    simp
+  have hP₃_on : P₃ ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]
+    simp
+  have hNodup : ([P₀, P₁, P₂, P₃] : List (ZMod E.q × ZMod E.q)).Nodup := by
+    simpa [hPs_eq] using h_binary.hNodup
+  have hSumZero : Landmark.sumOnE E [P₀, P₁, P₂, P₃] = 0 := by
+    simpa [hPs_eq] using h_binary.hSumZero
+  have h_extras :
+      ∀ k < h_binary.Ps.length,
+        Landmark.LevelStepCombineExtras E
+          (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
+    rw [hPs_eq]
+    exact Landmark.h_extras_holds_for_length4_chord_pairs E P₀ P₁ P₂ P₃
+      hP₀_on hP₁_on hP₂_on hP₃_on hNodup hSumZero
+      h01_x_ne h23_x_ne hP₀_y_ne hP₁_y_ne hP₂_y_ne hP₃_y_ne
+      hThird01_ne_P₀ hThird01_ne_P₁ hThird23_ne_P₂ hThird23_ne_P₃
   exact ma_completeness_clean_for_binary_unconditional E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm hQ
 
