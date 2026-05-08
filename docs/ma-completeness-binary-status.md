@@ -190,6 +190,23 @@ preconditions. The heavy lifting is in the `with_scalar` helper.
 
 All closures match `ma_completeness*` exactly.
 
+### Full admSet coverage (commit `ea8a7d2`)
+
+All four admissible sets in the paper now have unconditional binary
+completeness wrappers:
+
+| admSet         | Precondition                 | Scalar               |
+|----------------|------------------------------|----------------------|
+| `admSetMax`    | (auto: D non-zero)           | identity             |
+| `admSetParker` | `(D.a).coeff 1 ≠ 0`          | `((D.a).coeff 1)⁻¹`  |
+| `admSetEagen`  | `(D.a).coeff 0 ≠ 0`          | `((D.a).coeff 0)⁻¹`  |
+| `admSetHash r` | `admSetHashInner r D ≠ 0`    | `(admSetHashInner)⁻¹`|
+
+Each admSet has both an `h_extras`-conditional theorem
+(`ma_completeness_for_binary_admSet*_unconditional`) and a chord-chain
+certificate variant
+(`ma_completeness_for_binary_chord_chain_admSet*_unconditional`).
+
 Closures of all four corollaries exactly match `ma_completeness*`.
 
 The length-4 chord-case (`9039704`) handles the typical binary
