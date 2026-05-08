@@ -8981,4 +8981,61 @@ theorem h_extras_holds_for_length2_sum_zero
     show True
     trivial
 
+/-! ## Affine extras vacuous on inverse pairs.
+
+When two accumulator points are inverses on `E` (`b.point = -a.point`),
+both branches of `LandmarkInvStrongCombineAffineExtras` have failing
+hypotheses, since the inverse has the same x-coordinate but flipped y.
+
+The `a.point ≠ 0` hypothesis is needed to ensure the universal
+quantification over `xa, ya` is reachable only when `a.point` actually
+has affine coordinates. -/
+theorem affine_extras_vacuous_on_inverse_affine_points
+    (a b : EagenAccum E)
+    (h_neg : b.point = -a.point)
+    (h_a_ne : a.point ≠ (0 : ECPoint E)) :
+    LandmarkInvStrongCombineAffineExtras E a b := by
+  classical
+  intro xa ya xb yb h_a_eq h_b_eq
+  -- a.point = ECPoint.affine xa ya, and a.point ≠ 0, so (xa, ya) is non-singular.
+  have hns_a : E.toW.toAffine.Nonsingular xa ya := by
+    by_contra h
+    have h_zero : ECPoint.affine E xa ya = (0 : ECPoint E) := by
+      unfold ECPoint.affine; rw [dif_neg h]
+    rw [h_zero] at h_a_eq
+    exact h_a_ne h_a_eq
+  -- b.point = -a.point = -(ECPoint.affine xa ya) = ECPoint.affine xa (-ya).
+  have h_b_pt : b.point = ECPoint.affine E xa (-ya) := by
+    rw [h_neg, h_a_eq, ECPoint.affine_neg]
+  -- Combined with h_b_eq : b.point = ECPoint.affine xb yb.
+  -- So ECPoint.affine xa (-ya) = ECPoint.affine xb yb.
+  have h_b_eq2 : ECPoint.affine E xa (-ya) = ECPoint.affine E xb yb := by
+    rw [← h_b_pt]; exact h_b_eq
+  -- (xa, -ya) is non-singular (negation preserves non-singularity).
+  have hns_a_neg : E.toW.toAffine.Nonsingular xa (-ya) := by
+    have := (WeierstrassCurve.Affine.nonsingular_neg
+              (W' := E.toW.toAffine) xa ya).mpr hns_a
+    rwa [E.negY_eq_neg] at this
+  rw [ECPoint.affine_of_nonsingular E hns_a_neg] at h_b_eq2
+  -- (xb, yb) is non-singular (else h_b_eq2 says some = 0, contradiction).
+  by_cases hns_b : E.toW.toAffine.Nonsingular xb yb
+  · rw [ECPoint.affine_of_nonsingular E hns_b] at h_b_eq2
+    have ⟨hxb_eq, hyb_eq⟩ := WeierstrassCurve.Affine.Point.some.inj h_b_eq2
+    -- xb = xa, yb = -ya.
+    refine ⟨?_, ?_⟩
+    · -- Branch 1: xa ≠ xb. Hypothesis fails.
+      intro h_xa_ne_xb
+      exact absurd hxb_eq h_xa_ne_xb
+    · -- Branch 2: ya ≠ -yb. Hypothesis fails since yb = -ya ⟹ -yb = ya.
+      intro _ h_ya_ne_neg_yb _
+      exfalso
+      apply h_ya_ne_neg_yb
+      rw [← hyb_eq]; ring
+  · -- (xb, yb) singular: ECPoint.affine xb yb = 0, but h_b_eq2 says some = 0. Contradiction.
+    exfalso
+    have h_zero : ECPoint.affine E xb yb = (0 : ECPoint E) := by
+      unfold ECPoint.affine; rw [dif_neg hns_b]
+    rw [h_zero] at h_b_eq2
+    exact (WeierstrassCurve.Affine.Point.some_ne_zero hns_a_neg) h_b_eq2
+
 end Divisor.Landmark
