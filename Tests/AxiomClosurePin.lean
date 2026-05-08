@@ -158,3 +158,11 @@ example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
 -/
 #print axioms Divisor.ma_completeness_for_binary_unconditional
 #print axioms Divisor.ma_completeness_clean_for_binary_unconditional
+
+/-! Fully-unconditional binary completeness corollaries (no `h_extras`):
+  - `ma_completeness_for_binary_length2_unconditional` — `Ps = [P, -P]`.
+  - `ma_completeness_for_binary_length4_unconditional` — two inverse pairs. -/
+#print axioms Divisor.ma_completeness_for_binary_length2_unconditional
+#print axioms Divisor.ma_completeness_clean_for_binary_length2_unconditional
+#print axioms Divisor.ma_completeness_for_binary_length4_unconditional
+#print axioms Divisor.ma_completeness_clean_for_binary_length4_unconditional
