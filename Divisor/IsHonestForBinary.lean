@@ -308,6 +308,81 @@ theorem ma_completeness_clean_for_binary_unconditional
     (isHonestFor_of_isHonestForBinary_unconditional (E := E) h_binary hLen h_extras)
     hD hQ
 
+/-! ## Length-2 fully-unconditional binary completeness.
+
+For `Ps = [P, Q]` with `P + Q = 0` on `E`, both branches of the
+`LandmarkInvStrongCombineAffineExtras` predicate have failing
+hypotheses, so `h_extras` is discharged by
+`Landmark.h_extras_holds_for_length2_sum_zero`.
+
+The result is a fully unconditional binary completeness theorem for
+length-2 inputs (no `h_extras`, no `PairwiseCombineHyp`). -/
+
+theorem ma_completeness_for_binary_length2_unconditional
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (hkm : stmt.k = msg.k)
+    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    (h_length2 : ∃ P Q : ZMod E.q × ZMod E.q,
+      h_binary.Ps = [P, Q] ∧ P.1 = Q.1 ∧ Q.2 = -P.2)
+    (hValid : relDlog E stmt wit)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+  obtain ⟨P, Q, hPs_eq, hxx, hyy⟩ := h_length2
+  have hLen : 2 ≤ h_binary.Ps.length := by rw [hPs_eq]; simp
+  have hP_on : P ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]; simp
+  have hQ_on : Q ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]; simp
+  have h_extras :
+      ∀ k < h_binary.Ps.length,
+        Landmark.LevelStepCombineExtras E
+          (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
+    rw [hPs_eq]
+    exact Landmark.h_extras_holds_for_length2_sum_zero E P Q hP_on hQ_on hxx hyy
+  exact ma_completeness_for_binary_unconditional E stmt msg wit hk hkm
+    h_binary hLen h_extras hValid hDeg hDegK hAdm
+
+theorem ma_completeness_clean_for_binary_length2_unconditional
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (hkm : stmt.k = msg.k)
+    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    (h_length2 : ∃ P Q : ZMod E.q × ZMod E.q,
+      h_binary.Ps = [P, Q] ∧ P.1 = Q.1 ∧ Q.2 = -P.2)
+    (hValid : relDlog E stmt wit)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hQ : 5 ≤ E.q) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
+  obtain ⟨P, R, hPs_eq, hxx, hyy⟩ := h_length2
+  have hLen : 2 ≤ h_binary.Ps.length := by rw [hPs_eq]; simp
+  have hP_on : P ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]; simp
+  have hR_on : R ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]; simp
+  have h_extras :
+      ∀ k < h_binary.Ps.length,
+        Landmark.LevelStepCombineExtras E
+          (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
+    rw [hPs_eq]
+    exact Landmark.h_extras_holds_for_length2_sum_zero E P R hP_on hR_on hxx hyy
+  exact ma_completeness_clean_for_binary_unconditional E stmt msg wit hk hkm
+    h_binary hLen h_extras hValid hDeg hDegK hAdm hQ
+
 /-- Hasse-clean form of `ma_completeness_for_binary_M_eq_3`. -/
 theorem ma_completeness_clean_for_binary_M_eq_3
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
