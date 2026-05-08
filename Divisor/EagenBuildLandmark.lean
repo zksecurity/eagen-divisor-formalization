@@ -7795,6 +7795,20 @@ def pairUp {α : Type*} : List (List α) → List (List α)
   | [xs] => [xs]
   | xs :: ys :: rest => (xs ++ ys) :: pairUp rest
 
+/-- The strengthened invariant tracks the same data-level pairing as
+    `level_step` does on accumulators. -/
+def level_step_lists {α : Type*} : List (List α) → List (List α) :=
+  pairUp
+
+/-- Adjacent accumulator pairs at one level satisfy the affine-affine
+    side conditions required by the current strong combine dispatcher. -/
+def LevelStepCombineExtras : List (EagenAccum E) → Prop
+  | [] => True
+  | [_] => True
+  | a :: b :: rest =>
+      LandmarkInvStrongCombineAffineExtras E a b ∧
+      LevelStepCombineExtras rest
+
 theorem landmarkInvList_preservation_under_level_step
     (xss : List (List (ZMod E.q × ZMod E.q)))
     (accs : List (EagenAccum E))
@@ -7936,6 +7950,156 @@ theorem map_singleton_flatten {α : Type*} (Ps : List α) :
     rw [List.cons_append, List.nil_append]
     rw [ih]
 
+theorem level_step_lists_flatten {α : Type*} (xss : List (List α)) :
+    (level_step_lists xss).flatten = xss.flatten := by
+  simpa [level_step_lists] using pairUp_flatten xss
+
+theorem level_step_lists_forall_mem
+    (xss : List (List (ZMod E.q × ZMod E.q)))
+    (h : ∀ xs ∈ xss, ∀ P ∈ xs, P ∈ E.points) :
+    ∀ xs ∈ level_step_lists xss, ∀ P ∈ xs, P ∈ E.points := by
+  intro xs hxs P hP
+  have hflat : P ∈ (level_step_lists xss).flatten :=
+    List.mem_flatten.mpr ⟨xs, hxs, hP⟩
+  rw [level_step_lists_flatten] at hflat
+  obtain ⟨ys, hys, hPys⟩ := List.mem_flatten.mp hflat
+  exact h ys hys P hPys
+
+theorem level_step_lists_forall_ne {α : Type*}
+    (xss : List (List α)) (h : ∀ xs ∈ xss, xs ≠ []) :
+    ∀ xs ∈ level_step_lists xss, xs ≠ [] := by
+  match xss with
+  | [] =>
+      intro xs hxs
+      simp [level_step_lists, pairUp] at hxs
+  | [xs] =>
+      intro ys hys
+      simp [level_step_lists, pairUp] at hys
+      subst ys
+      exact h xs (by simp)
+  | xs :: ys :: rest =>
+      intro zs hzs
+      simp [level_step_lists, pairUp] at hzs
+      rcases hzs with hhead | htail
+      · subst zs
+        exact List.append_ne_nil_of_left_ne_nil (h xs (by simp)) ys
+      · exact level_step_lists_forall_ne rest
+          (fun zs hzs => h zs
+            (List.mem_cons_of_mem xs (List.mem_cons_of_mem ys hzs)))
+          zs htail
+
+theorem landmarkInvStrong_not_both_zero_of_nonempty
+    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
+    (hxs_ne : xs ≠ []) (h : LandmarkInvStrong E xs a) :
+    ¬ (a.poly.a = 0 ∧ a.poly.b = 0) := by
+  intro hzero
+  have hnorm : normPoly E a.poly = 0 := by
+    rw [normPoly_eq, hzero.1, hzero.2]
+    ring
+  have hdeg := LandmarkInvStrong.natDegree E h
+  rw [hnorm, Polynomial.natDegree_zero] at hdeg
+  have hlen_pos : 0 < xs.length := (List.length_pos_iff).mpr hxs_ne
+  omega
+
+theorem landmarkInvStrong_normPoly_ne_zero_of_nonempty
+    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
+    (hxs_ne : xs ≠ []) (h : LandmarkInvStrong E xs a) :
+    normPoly E a.poly ≠ 0 :=
+  normPoly_ne_zero E a.poly
+    (landmarkInvStrong_not_both_zero_of_nonempty E hxs_ne h)
+
+/-- Strong one-level preservation for nonempty absorbed blocks.
+
+The current strong combine theorem still exposes branch-specific
+affine-affine side conditions, so this one-step list theorem carries
+exactly those conditions for each adjacent accumulator pair. -/
+theorem landmarkInvStrongList_level_step
+    (xss : List (List (ZMod E.q × ZMod E.q))) (accs : List (EagenAccum E))
+    (h : LandmarkInvStrongList E xss accs)
+    (hxss_on : ∀ xs ∈ xss, ∀ P ∈ xs, P ∈ E.points)
+    (hNodup_concat : (xss.flatten).Nodup)
+    (hxss_ne : ∀ xs ∈ xss, xs ≠ [])
+    (h_extras : LevelStepCombineExtras E accs) :
+    LandmarkInvStrongList E (level_step_lists xss) (level_step E accs)
+    ∧ ((level_step_lists xss).flatten).Nodup
+    ∧ (∀ xs ∈ level_step_lists xss, ∀ P ∈ xs, P ∈ E.points) := by
+  classical
+  refine ⟨?_, ?_, ?_⟩
+  · match xss, accs, h, h_extras with
+    | [], [], _, _ =>
+        show LandmarkInvStrongList E (level_step_lists []) (level_step E [])
+        show List.Forall₂ _ [] []
+        exact List.Forall₂.nil
+    | [xs], [a], h, _ =>
+        show LandmarkInvStrongList E (level_step_lists [xs]) (level_step E [a])
+        simpa [LandmarkInvStrongList, level_step_lists, pairUp, level_step] using h
+    | xs :: ys :: rest_xs, a :: b :: rest_acc, h, h_extras =>
+        obtain ⟨h_a, h_rest⟩ := List.forall₂_cons.mp h
+        obtain ⟨h_b, h_rest_rest⟩ := List.forall₂_cons.mp h_rest
+        obtain ⟨h_extra_ab, h_extra_rest⟩ := h_extras
+        have hxs_on : ∀ P ∈ xs, P ∈ E.points :=
+          hxss_on xs (by simp)
+        have hys_on : ∀ P ∈ ys, P ∈ E.points :=
+          hxss_on ys (by simp)
+        have hrest_on : ∀ zs ∈ rest_xs, ∀ P ∈ zs, P ∈ E.points := by
+          intro zs hzs
+          exact hxss_on zs
+            (List.mem_cons_of_mem xs (List.mem_cons_of_mem ys hzs))
+        have hxs_ne : xs ≠ [] := hxss_ne xs (by simp)
+        have hys_ne : ys ≠ [] := hxss_ne ys (by simp)
+        have hrest_ne : ∀ zs ∈ rest_xs, zs ≠ [] := by
+          intro zs hzs
+          exact hxss_ne zs
+            (List.mem_cons_of_mem xs (List.mem_cons_of_mem ys hzs))
+        have hNodup_norm : (xs ++ (ys ++ rest_xs.flatten)).Nodup := by
+          simpa [List.flatten] using hNodup_concat
+        have hNodup_xs : xs.Nodup :=
+          (List.nodup_append.mp hNodup_norm).1
+        have hNodup_yrest : (ys ++ rest_xs.flatten).Nodup :=
+          (List.nodup_append.mp hNodup_norm).2.1
+        have hNodup_ys : ys.Nodup :=
+          (List.nodup_append.mp hNodup_yrest).1
+        have hNodup_rest : rest_xs.flatten.Nodup :=
+          (List.nodup_append.mp hNodup_yrest).2.1
+        have haD : ¬ (a.poly.a = 0 ∧ a.poly.b = 0) :=
+          landmarkInvStrong_not_both_zero_of_nonempty E hxs_ne h_a
+        have hbD : ¬ (b.poly.a = 0 ∧ b.poly.b = 0) :=
+          landmarkInvStrong_not_both_zero_of_nonempty E hys_ne h_b
+        have ha_nz : normPoly E a.poly ≠ 0 :=
+          normPoly_ne_zero E a.poly haD
+        have hb_nz : normPoly E b.poly ≠ 0 :=
+          normPoly_ne_zero E b.poly hbD
+        have h_root_le :
+            ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+              Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 3
+              ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 3 := by
+          intro P hP
+          exact ⟨
+            rootMult_le_three_of_nodup_landmarkInvStrong
+              E xs a hNodup_xs hxs_on h_a haD P hP,
+            rootMult_le_three_of_nodup_landmarkInvStrong
+              E ys b hNodup_ys hys_on h_b hbD P hP⟩
+        have h_head :
+            LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine E a b) :=
+          landmarkInvStrong_combine_when_rootMult_le_three
+            E hxs_on hys_on
+            (fun Q hQ => negCoords_mem_points_of_some E hQ)
+            (fun Q hQ => negCoords_mem_points_of_some E hQ)
+            h_a h_b ha_nz hb_nz h_root_le h_extra_ab
+        have h_tail_all :=
+          landmarkInvStrongList_level_step rest_xs rest_acc h_rest_rest
+            hrest_on hNodup_rest hrest_ne h_extra_rest
+        show LandmarkInvStrongList E
+            (level_step_lists (xs :: ys :: rest_xs))
+            (level_step E (a :: b :: rest_acc))
+        show List.Forall₂ (LandmarkInvStrong E)
+            ((xs ++ ys) :: level_step_lists rest_xs)
+            (EagenAccum.combine E a b :: level_step E rest_acc)
+        exact List.Forall₂.cons h_head h_tail_all.1
+  · rw [level_step_lists_flatten]
+    exact hNodup_concat
+  · exact level_step_lists_forall_mem E xss hxss_on
+
 /-! ## Landmark theorem (conditional on per-pair combine)
 
 Combining levelInitSingleton, level_step preservation, iterate
@@ -8035,6 +8199,152 @@ theorem iterate_length_le_one_of_fuel_geq
       -- xs.length ≥ 2, so (level_step xs).length ≤ (xs.length + 1) / 2 ≤ xs.length - 1 ≤ k.
       -- Specifically: xs.length ≤ k + 1 and xs.length ≥ 2, so (xs.length + 1)/2 ≤ k.
       omega
+
+theorem landmarkInvStrongList_preservation_under_iterate
+    (n : ℕ)
+    (xss : List (List (ZMod E.q × ZMod E.q)))
+    (accs : List (EagenAccum E))
+    (h : LandmarkInvStrongList E xss accs)
+    (hxss_on : ∀ xs ∈ xss, ∀ P ∈ xs, P ∈ E.points)
+    (hNodup_concat : xss.flatten.Nodup)
+    (hxss_ne : ∀ xs ∈ xss, xs ≠ [])
+    (h_extras : ∀ k < n, LevelStepCombineExtras E (iterate E k accs)) :
+    LandmarkInvStrongList E (pairUpN n xss) (iterate E n accs)
+    ∧ (pairUpN n xss).flatten.Nodup
+    ∧ (∀ xs ∈ pairUpN n xss, ∀ P ∈ xs, P ∈ E.points)
+    ∧ (∀ xs ∈ pairUpN n xss, xs ≠ []) := by
+  classical
+  induction n generalizing xss accs with
+  | zero =>
+      exact ⟨h, hNodup_concat, hxss_on, hxss_ne⟩
+  | succ n ih =>
+      have h_lengths : xss.length = accs.length := List.Forall₂.length_eq h
+      rw [iterate_succ_eq, pairUpN_succ_eq]
+      by_cases hLen : accs.length ≤ 1
+      · have h_xss_len : xss.length ≤ 1 := by
+          rw [h_lengths]
+          exact hLen
+        rw [if_pos hLen, if_pos h_xss_len]
+        exact ⟨h, hNodup_concat, hxss_on, hxss_ne⟩
+      · have h_xss_len : ¬ xss.length ≤ 1 := by
+          intro hx
+          exact hLen (by
+            rw [← h_lengths]
+            exact hx)
+        rw [if_neg hLen, if_neg h_xss_len]
+        have h_extra_now : LevelStepCombineExtras E accs := by
+          simpa [iterate] using h_extras 0 (Nat.zero_lt_succ n)
+        have h_step_all :=
+          landmarkInvStrongList_level_step (E := E) xss accs h
+            hxss_on hNodup_concat hxss_ne h_extra_now
+        have h_step : LandmarkInvStrongList E (pairUp xss) (level_step E accs) := by
+          simpa [level_step_lists] using h_step_all.1
+        have hNodup_step : (pairUp xss).flatten.Nodup := by
+          simpa [level_step_lists] using h_step_all.2.1
+        have h_on_step :
+            ∀ xs ∈ pairUp xss, ∀ P ∈ xs, P ∈ E.points := by
+          simpa [level_step_lists] using h_step_all.2.2
+        have h_ne_step : ∀ xs ∈ pairUp xss, xs ≠ [] := by
+          simpa [level_step_lists] using level_step_lists_forall_ne xss hxss_ne
+        have h_extras_tail :
+            ∀ k < n, LevelStepCombineExtras E (iterate E k (level_step E accs)) := by
+          intro k hk
+          have h_iter :
+              iterate E (k + 1) accs = iterate E k (level_step E accs) := by
+            show (if accs.length ≤ 1 then accs else iterate E k (level_step E accs))
+                = iterate E k (level_step E accs)
+            rw [if_neg hLen]
+          simpa [h_iter] using h_extras (k + 1) (Nat.succ_lt_succ hk)
+        exact ih (pairUp xss) (level_step E accs) h_step
+          h_on_step hNodup_step h_ne_step h_extras_tail
+
+theorem landmarkInvStrong_eagenBuild_singletons
+    (xs : List (ZMod E.q × ZMod E.q))
+    (hxs_on : ∀ P ∈ xs, P ∈ E.points)
+    (hNodup : xs.Nodup)
+    (hSum : sumOnE E xs = 0)
+    (hLen : 2 ≤ xs.length)
+    (h_extras : ∀ k < xs.length,
+      LevelStepCombineExtras E (iterate E k (level0_singletons E xs))) :
+    ∃ a : EagenAccum E,
+      iterate E xs.length (level0_singletons E xs) = [a]
+      ∧ LandmarkInvStrong E xs a
+      ∧ a.point = (0 : ECPoint E) := by
+  classical
+  have h_init : LandmarkInvStrongList E (xs.map (fun P => [P]))
+      (level0_singletons E xs) :=
+    landmarkInvStrongList_level0_singletons E xs hxs_on
+  have h_init_on :
+      ∀ ys ∈ xs.map (fun P => [P]), ∀ P ∈ ys, P ∈ E.points := by
+    intro ys hys P hP
+    obtain ⟨Q, hQ, rfl⟩ := List.mem_map.mp hys
+    simp at hP
+    subst P
+    exact hxs_on Q hQ
+  have h_init_ne :
+      ∀ ys ∈ xs.map (fun P => [P]), ys ≠ [] := by
+    intro ys hys
+    obtain ⟨_Q, _hQ, rfl⟩ := List.mem_map.mp hys
+    simp
+  have h_init_nodup : (xs.map (fun P => [P])).flatten.Nodup := by
+    rw [map_singleton_flatten]
+    exact hNodup
+  have h_iter_all :=
+    landmarkInvStrongList_preservation_under_iterate (E := E)
+      xs.length (xs.map (fun P => [P])) (level0_singletons E xs)
+      h_init h_init_on h_init_nodup h_init_ne h_extras
+  have h_inv_list := h_iter_all.1
+  have h_init_len : (level0_singletons E xs).length = xs.length := by
+    show (xs.map _).length = xs.length
+    exact List.length_map ..
+  have h_iter_le : (iterate E xs.length (level0_singletons E xs)).length ≤ 1 :=
+    iterate_length_le_one_of_fuel_geq E xs.length _ (by rw [h_init_len])
+  have h_lens : (pairUpN xs.length (xs.map (fun P => [P]))).length
+      = (iterate E xs.length (level0_singletons E xs)).length :=
+    List.Forall₂.length_eq h_inv_list
+  have h_pair_flatten : (pairUpN xs.length (xs.map (fun P => [P]))).flatten
+      = xs := by
+    rw [pairUpN_flatten, map_singleton_flatten]
+  have hxs_ne : xs ≠ [] := by
+    intro hnil
+    rw [hnil] at hLen
+    simp at hLen
+  have h_pair_ne_empty : pairUpN xs.length (xs.map (fun P => [P])) ≠ [] := by
+    intro hnil
+    rw [hnil] at h_pair_flatten
+    simp at h_pair_flatten
+    exact hxs_ne h_pair_flatten
+  have h_pair_len_pos : 1 ≤ (pairUpN xs.length (xs.map (fun P => [P]))).length := by
+    cases hpair : pairUpN xs.length (xs.map (fun P => [P])) with
+    | nil => exact (h_pair_ne_empty hpair).elim
+    | cons _ _ => simp
+  have h_pair_len_one : (pairUpN xs.length (xs.map (fun P => [P]))).length = 1 := by
+    rw [h_lens]
+    omega
+  have h_pair_eq_singleton :
+      pairUpN xs.length (xs.map (fun P => [P])) = [xs] := by
+    have hsingle :=
+      pairUpN_eq_singleton_of_len_one xs.length (xs.map (fun P => [P]))
+        h_pair_len_one
+    rw [hsingle, map_singleton_flatten]
+  match h_iter_eq : iterate E xs.length (level0_singletons E xs) with
+  | [] =>
+      rw [h_iter_eq] at h_lens
+      simp at h_lens
+      rw [h_lens] at h_pair_len_one
+      simp at h_pair_len_one
+  | [a] =>
+      rw [h_pair_eq_singleton, h_iter_eq] at h_inv_list
+      have h_inv : LandmarkInvStrong E xs a := by
+        cases h_inv_list with
+        | cons h_head _ => exact h_head
+      have h_point_zero : a.point = (0 : ECPoint E) := by
+        rw [LandmarkInvStrong.running_sum E h_inv]
+        exact hSum
+      exact ⟨a, rfl, h_inv, h_point_zero⟩
+  | _ :: _ :: _ =>
+      rw [h_iter_eq] at h_iter_le
+      simp at h_iter_le
 
 /-! ## Final landmark theorem (conditional on combine) -/
 
