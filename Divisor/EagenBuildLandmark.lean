@@ -563,6 +563,82 @@ theorem localMult_mulCoordRingElt_ge_add_general
       _ = localMult E (mulCoordRingElt E D₁ D₂) P := by
         rw [mulCoordRingElt_comm E D₁ D₂]
 
+/-- The smooth tangent branch excludes the flex/3-torsion situation where the
+third tangent intersection has the same x-coordinate as the doubling point. -/
+def not_3_torsion_at (xa ya : ZMod E.q) : Prop :=
+  ((3 * xa ^ 2 + E.curveA) * (2 * ya)⁻¹) ^ 2 - 2 * xa ≠ xa
+
+theorem not_3_torsion_at_iff (xa ya : ZMod E.q) :
+    not_3_torsion_at E xa ya ↔
+      ((3 * xa ^ 2 + E.curveA) * (2 * ya)⁻¹) ^ 2 - 2 * xa ≠ xa := by
+  rfl
+
+/-- If both coordinate components of the left factor have a common polynomial
+factor, then both coordinate components of the product have that factor. -/
+theorem mulCoordRingElt_components_dvd_of_left
+    (D₁ D₂ : CoordRingElt E.q) (p : (ZMod E.q)[X])
+    (ha : p ∣ D₁.a) (hb : p ∣ D₁.b) :
+    p ∣ (mulCoordRingElt E D₁ D₂).a ∧
+      p ∣ (mulCoordRingElt E D₁ D₂).b := by
+  obtain ⟨qa, hqa⟩ := ha
+  obtain ⟨qb, hqb⟩ := hb
+  constructor
+  · refine ⟨qa * D₂.a + qb * D₂.b * curveX E, ?_⟩
+    unfold mulCoordRingElt
+    rw [hqa, hqb]
+    ring
+  · refine ⟨qa * D₂.b + D₂.a * qb, ?_⟩
+    unfold mulCoordRingElt
+    rw [hqa, hqb]
+    ring
+
+/-- If both coordinate components of the right factor have a common polynomial
+factor, then both coordinate components of the product have that factor. -/
+theorem mulCoordRingElt_components_dvd_of_right
+    (D₁ D₂ : CoordRingElt E.q) (p : (ZMod E.q)[X])
+    (ha : p ∣ D₂.a) (hb : p ∣ D₂.b) :
+    p ∣ (mulCoordRingElt E D₁ D₂).a ∧
+      p ∣ (mulCoordRingElt E D₁ D₂).b := by
+  simpa [mulCoordRingElt_comm E D₁ D₂] using
+    mulCoordRingElt_components_dvd_of_left E D₂ D₁ p ha hb
+
+/-- If both factors have a common coordinate factor `p`, their product has
+`p^2` in both coordinate components. -/
+theorem mulCoordRingElt_components_sq_dvd_of_common_factor
+    (D₁ D₂ : CoordRingElt E.q) (p : (ZMod E.q)[X])
+    (h1a : p ∣ D₁.a) (h1b : p ∣ D₁.b)
+    (h2a : p ∣ D₂.a) (h2b : p ∣ D₂.b) :
+    p ^ 2 ∣ (mulCoordRingElt E D₁ D₂).a ∧
+      p ^ 2 ∣ (mulCoordRingElt E D₁ D₂).b := by
+  obtain ⟨a₁, ha₁⟩ := h1a
+  obtain ⟨b₁, hb₁⟩ := h1b
+  obtain ⟨a₂, ha₂⟩ := h2a
+  obtain ⟨b₂, hb₂⟩ := h2b
+  constructor
+  · refine ⟨a₁ * a₂ + b₁ * b₂ * curveX E, ?_⟩
+    unfold mulCoordRingElt
+    rw [ha₁, hb₁, ha₂, hb₂]
+    ring
+  · refine ⟨a₁ * b₂ + a₂ * b₁, ?_⟩
+    unfold mulCoordRingElt
+    rw [ha₁, hb₁, ha₂, hb₂]
+    ring
+
+/-- In a nested product `(line * a) * b`, common coordinate factors in `a`
+and `b` supply a square common coordinate factor in the final product. -/
+theorem mulCoordRingElt_nested_components_sq_dvd_of_common_factor
+    (line a b : CoordRingElt E.q) (p : (ZMod E.q)[X])
+    (haa : p ∣ a.a) (hab : p ∣ a.b)
+    (hba : p ∣ b.a) (hbb : p ∣ b.b) :
+    p ^ 2 ∣ (mulCoordRingElt E (mulCoordRingElt E line a) b).a ∧
+      p ^ 2 ∣ (mulCoordRingElt E (mulCoordRingElt E line a) b).b := by
+  have hleft :
+      p ∣ (mulCoordRingElt E line a).a ∧
+        p ∣ (mulCoordRingElt E line a).b :=
+    mulCoordRingElt_components_dvd_of_right E line a p haa hab
+  exact mulCoordRingElt_components_sq_dvd_of_common_factor
+    E (mulCoordRingElt E line a) b p hleft.1 hleft.2 hba hbb
+
 theorem localMult_divLin_decreases_at_fiber
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     (hP : P ∈ E.points)
@@ -1314,6 +1390,45 @@ theorem qa_qb_eval_zero_of_double_fiber_vanish
     have hmid : q.b.eval x₀ * y₀ = 0 :=
       (mul_eq_zero.mp hprod).resolve_left h2_ne
     exact (mul_eq_zero.mp hmid).resolve_right hy_ne
+
+/-- Vanishing on both non-2-torsion sheets over `x₀` gives a common
+`X - C x₀` factor in both coordinate components. -/
+theorem coordRingElt_components_dvd_X_sub_C_of_two_sheet_vanish
+    (D : CoordRingElt E.q) {x₀ y₀ : ZMod E.q}
+    (hy_ne : y₀ ≠ 0)
+    (hpos : D.eval x₀ y₀ = 0)
+    (hneg : D.eval x₀ (-y₀) = 0) :
+    (X - C x₀) ∣ D.a ∧ (X - C x₀) ∣ D.b := by
+  obtain ⟨ha_eval, hb_eval⟩ :=
+    qa_qb_eval_zero_of_double_fiber_vanish E D x₀ y₀ hy_ne hpos hneg
+  exact ⟨dvd_X_sub_C_of_eval_eq_zero E ha_eval,
+    dvd_X_sub_C_of_eval_eq_zero E hb_eval⟩
+
+/-- Tangent-doubling product divisibility helper: if both accumulator
+polynomials vanish on both sheets over the doubling x-coordinate, then the
+tangent product has `(X - C xa)^2` in both coordinate components. -/
+theorem mulCoordRingElt_a_b_dvd_X_sub_C_sq_at_doubling_point
+    (a b : CoordRingElt E.q) {xa ya : ZMod E.q}
+    (hy_ne : ya ≠ 0)
+    (ha_pos : a.eval xa ya = 0)
+    (ha_neg : a.eval xa (-ya) = 0)
+    (hb_pos : b.eval xa ya = 0)
+    (hb_neg : b.eval xa (-ya) = 0) :
+    let line := chordCoordRingElt E (xa, ya) (xa, ya)
+    let q := mulCoordRingElt E (mulCoordRingElt E line a) b
+    (X - C xa) ^ 2 ∣ q.a ∧ (X - C xa) ^ 2 ∣ q.b := by
+  intro line q
+  have ha_common :
+      (X - C xa) ∣ a.a ∧ (X - C xa) ∣ a.b :=
+    coordRingElt_components_dvd_X_sub_C_of_two_sheet_vanish
+      E a hy_ne ha_pos ha_neg
+  have hb_common :
+      (X - C xa) ∣ b.a ∧ (X - C xa) ∣ b.b :=
+    coordRingElt_components_dvd_X_sub_C_of_two_sheet_vanish
+      E b hy_ne hb_pos hb_neg
+  exact mulCoordRingElt_nested_components_sq_dvd_of_common_factor
+    E line a b (X - C xa)
+    ha_common.1 ha_common.2 hb_common.1 hb_common.2
 
 theorem mul_components_eval_zero_at_twoTorsion
     (D₁ D₂ : CoordRingElt E.q) {x₀ : ZMod E.q}
