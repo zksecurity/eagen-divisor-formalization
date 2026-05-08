@@ -150,11 +150,29 @@ structure CoordRingElt (q : ℕ) [Fact (Nat.Prime q)] where
   a : Polynomial (ZMod q)
   b : Polynomial (ZMod q)
 
+noncomputable instance CoordRingElt.instSMul {q : ℕ} [Fact (Nat.Prime q)] :
+    SMul (ZMod q) (CoordRingElt q) where
+  smul c D := { a := c • D.a, b := c • D.b }
+
+@[simp] theorem CoordRingElt.smul_a {q : ℕ} [Fact (Nat.Prime q)]
+    (c : ZMod q) (D : CoordRingElt q) :
+    (c • D).a = c • D.a := rfl
+
+@[simp] theorem CoordRingElt.smul_b {q : ℕ} [Fact (Nat.Prime q)]
+    (c : ZMod q) (D : CoordRingElt q) :
+    (c • D).b = c • D.b := rfl
+
 noncomputable def CoordRingElt.degE (D : CoordRingElt q) : ℕ :=
   max (2 * D.a.natDegree) (3 + 2 * D.b.natDegree)
 
 def CoordRingElt.eval (D : CoordRingElt q) (x y : ZMod q) : ZMod q :=
   D.a.eval x - D.b.eval x * y
+
+@[simp] theorem CoordRingElt.eval_smul {q : ℕ} [Fact (Nat.Prime q)]
+    (c : ZMod q) (D : CoordRingElt q) (x y : ZMod q) :
+    (c • D).eval x y = c * D.eval x y := by
+  unfold CoordRingElt.eval
+  simp [mul_sub, mul_assoc]
 
 def zeros (D : CoordRingElt q) (pts : Finset (ZMod q × ZMod q)) :
     Finset (ZMod q × ZMod q) :=

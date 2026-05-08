@@ -28,6 +28,7 @@ import Divisor.ChordSumResidue
 import Divisor.ChordLogDerivProof
 import Divisor.HasPrincipalDivisor
 import Divisor.CoordinateRingBridge
+import Divisor.CoordRingElt.Smul
 import Divisor.PolyGBridge
 import Divisor.PolyGDensity
 import Divisor.Protocol
