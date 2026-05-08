@@ -180,3 +180,9 @@ example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
 #print axioms Divisor.ma_completeness_for_binary_chord_chain_admSetEagen_unconditional
 #print axioms Divisor.ma_completeness_for_binary_admSetHash_unconditional
 #print axioms Divisor.ma_completeness_for_binary_chord_chain_admSetHash_unconditional
+
+/-! Top-level all-in-one user-facing theorems (commit a0fd520) -/
+#print axioms Divisor.ma_completeness_binary
+#print axioms Divisor.ma_completeness_binary_admSetParker
+#print axioms Divisor.ma_completeness_binary_admSetEagen
+#print axioms Divisor.ma_completeness_binary_admSetHash
