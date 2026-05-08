@@ -100,6 +100,23 @@ The `ma_completeness_for_binary_length2_unconditional` corollary
 fails since `Q.2 = -P.2`). The closure exactly matches
 `ma_completeness*`.
 
+### Reusable extras-vacuity helper
+
+`affine_extras_vacuous_on_inverse_affine_points` (commit `6ca60f3`)
+shows that for any two accumulators with `b.point = -a.point` and
+`a.point ≠ 0` (i.e., the running sums are inverses on `E`), the
+affine-affine extras are vacuous.
+
+**Implication for length-4 sum-zero**: at iterate level 1, the two
+accumulators have running sums `(P_0+P_1)` and `(P_2+P_3)` whose total
+is zero (by sum-zero of the original `Ps`), so they're inverses. Level-1
+extras therefore hold automatically.
+
+**What's left for length 4**: only the level-0 extras for the two
+adjacent pairs `(P_0, P_1)` and `(P_2, P_3)`. These are dischargeable
+by `h_extras_holds_for_length2_sum_zero` if the pair is a vertical
+pair (`P_1 = -P_0`), or by explicit chord conditions otherwise.
+
 ## Path to fully unconditional general `ma_completeness_for_binary`
 
 Two routes:
