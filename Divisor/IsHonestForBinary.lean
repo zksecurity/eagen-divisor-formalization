@@ -2863,4 +2863,384 @@ theorem ma_completeness_clean_for_binary_M_eq_3
   exact ma_completeness_clean_for_length4Simple E stmt msg h_simple wit hk
     h_scalars hValid hDeg hDegK hAdm hQ
 
+/-! ## Automatic binary support constructors -/
+
+/-- The binary support list: `(-target)` followed by every statement base
+    whose transported binary witness scalar is `1`. -/
+noncomputable def binarySupport
+    {E : ECSetup} (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k)
+    (_h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1) :
+    List (ZMod E.q × ZMod E.q) :=
+  (stmt.target.1, -stmt.target.2) ::
+    (List.finRange wit.k).filterMap (fun i =>
+      if wit.scalars i = 1 then
+        some (stmt.bases (Fin.cast hk.symm i))
+      else
+        none)
+
+private theorem sumOnE_filterMap_binary
+    {E : ECSetup} {α : Type*} [DecidableEq α]
+    (xs : List α) (hxs : xs.Nodup)
+    (f : α → ZMod E.q × ZMod E.q) (s : α → ℤ)
+    (h_binary : ∀ i ∈ xs, s i = 0 ∨ s i = 1)
+    (h_on : ∀ i ∈ xs, s i = 1 → f i ∈ E.points) :
+    Landmark.sumOnE E
+        (xs.filterMap (fun i => if s i = 1 then some (f i) else none))
+      =
+    ECPoint.weightedSum E xs.toFinset
+      (fun i => ECPoint.zsmul E (s i)
+        (ECPoint.affine E (f i).1 (f i).2)) := by
+  classical
+  induction xs with
+  | nil =>
+      simp [Landmark.sumOnE, ECPoint.weightedSum]
+  | cons a xs ih =>
+      have ha_not_mem : a ∉ xs := by
+        exact (List.nodup_cons.mp hxs).1
+      have ha_not_mem_finset : a ∉ xs.toFinset := by
+        simpa [List.mem_toFinset] using ha_not_mem
+      have hxs_tail : xs.Nodup := hxs.of_cons
+      have hbin_a : s a = 0 ∨ s a = 1 := h_binary a (by simp)
+      have hbin_tail : ∀ i ∈ xs, s i = 0 ∨ s i = 1 := by
+        intro i hi
+        exact h_binary i (by simp [hi])
+      have hon_tail : ∀ i ∈ xs, s i = 1 → f i ∈ E.points := by
+        intro i hi hs
+        exact h_on i (by simp [hi]) hs
+      have ih_tail := ih hxs_tail hbin_tail hon_tail
+      rw [List.filterMap_cons, List.toFinset_cons]
+      unfold ECPoint.weightedSum
+      rw [Finset.sum_insert ha_not_mem_finset]
+      by_cases hs1 : s a = 1
+      · have ha_on : f a ∈ E.points := h_on a (by simp) hs1
+        rw [if_pos hs1]
+        rw [Landmark.sumOnE_cons E ha_on, ih_tail]
+        rw [hs1, ECPoint.zsmul_one]
+        rw [← ECPoint.affine_eq_affineOfMem E ha_on]
+      · have hs0 : s a = 0 := hbin_a.resolve_right hs1
+        rw [if_neg hs1, ih_tail]
+        rw [hs0, ECPoint.zsmul_zero, zero_add]
+
+private theorem length_filter_filterMap_binary_eq_sum
+    {α β : Type*} [DecidableEq α] [DecidableEq β]
+    (xs : List α) (hxs : xs.Nodup)
+    (f : α → β) (s : α → ℤ)
+    (h_binary : ∀ i ∈ xs, s i = 0 ∨ s i = 1) (Q : β) :
+    ((((xs.filterMap (fun i => if s i = 1 then some (f i) else none)).filter
+        (fun P => P = Q)).length : ℤ))
+      =
+    ∑ i ∈ xs.toFinset, if f i = Q then s i else 0 := by
+  classical
+  induction xs with
+  | nil =>
+      simp
+  | cons a xs ih =>
+      have ha_not_mem : a ∉ xs := by
+        exact (List.nodup_cons.mp hxs).1
+      have ha_not_mem_finset : a ∉ xs.toFinset := by
+        simpa [List.mem_toFinset] using ha_not_mem
+      have hxs_tail : xs.Nodup := hxs.of_cons
+      have hbin_a : s a = 0 ∨ s a = 1 := h_binary a (by simp)
+      have hbin_tail : ∀ i ∈ xs, s i = 0 ∨ s i = 1 := by
+        intro i hi
+        exact h_binary i (by simp [hi])
+      have ih_tail := ih hxs_tail hbin_tail
+      rw [List.filterMap_cons, List.toFinset_cons]
+      rw [Finset.sum_insert ha_not_mem_finset]
+      by_cases hs1 : s a = 1
+      · rw [if_pos hs1]
+        by_cases hQ : f a = Q
+        · simp [hQ, hs1, ih_tail]
+          ring
+        · simp [hQ, ih_tail]
+      · have hs0 : s a = 0 := hbin_a.resolve_right hs1
+        rw [if_neg hs1]
+        by_cases hQ : f a = Q
+        · simp [hQ, hs0, ih_tail]
+        · simp [hQ, ih_tail]
+
+private theorem relDlog_weightedSum_with_hk
+    {E : ECSetup} (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit) :
+    (ECPoint.affine E stmt.target.1 stmt.target.2 : ECPoint E)
+      =
+    ECPoint.weightedSum E (Finset.univ : Finset (Fin wit.k))
+      (fun i => ECPoint.zsmul E (wit.scalars i)
+        (ECPoint.affine E
+          (stmt.bases (Fin.cast hk.symm i)).1
+          (stmt.bases (Fin.cast hk.symm i)).2)) := by
+  obtain ⟨hkRel, hRel⟩ := hValid
+  have hkRel_eq : hkRel = hk := Subsingleton.elim _ _
+  simpa [hkRel_eq] using hRel
+
+private theorem finCongr_symm_sum_binary
+    {E : ECSetup} (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k) (Q : ZMod E.q × ZMod E.q) :
+    (∑ i ∈ (Finset.univ : Finset (Fin wit.k)),
+        if stmt.bases (Fin.cast hk.symm i) = Q then wit.scalars i else 0)
+      =
+    ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)),
+        if stmt.bases i = Q then wit.scalars (hk ▸ i) else 0 := by
+  classical
+  let e : Fin wit.k ≃ Fin stmt.k := finCongr hk.symm
+  refine Finset.sum_equiv e (fun _ => by simp) ?_
+  intro i _hi
+  have hcast : hk ▸ Fin.cast hk.symm i = i := by
+    rw [eqRec_eq_cast]
+    rw [← Fin.cast_eq_cast hk]
+    rw [Fin.cast_cast]
+    rw [Fin.cast_eq_self]
+  simp [e, hcast]
+
+/-- The binary support sums to zero on `E` under the dlog relation. -/
+theorem binarySupport_sumOnE_eq_zero
+    {E : ECSetup} (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k)
+    (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
+    (hValid : relDlog E stmt wit)
+    (hPs_on : ∀ P ∈ binarySupport stmt wit hk h_binary, P ∈ E.points) :
+    Landmark.sumOnE E (binarySupport stmt wit hk h_binary) = 0 := by
+  classical
+  let selected : List (ZMod E.q × ZMod E.q) :=
+    (List.finRange wit.k).filterMap (fun i =>
+      if wit.scalars i = 1 then
+        some (stmt.bases (Fin.cast hk.symm i))
+      else
+        none)
+  have h_selected_sum :
+      Landmark.sumOnE E selected
+        =
+      ECPoint.weightedSum E (Finset.univ : Finset (Fin wit.k))
+        (fun i => ECPoint.zsmul E (wit.scalars i)
+          (ECPoint.affine E
+            (stmt.bases (Fin.cast hk.symm i)).1
+            (stmt.bases (Fin.cast hk.symm i)).2)) := by
+    have h_on_selected :
+        ∀ i ∈ List.finRange wit.k, wit.scalars i = 1 →
+          stmt.bases (Fin.cast hk.symm i) ∈ E.points := by
+      intro i hi hs
+      apply hPs_on
+      rw [binarySupport, List.mem_cons, List.mem_filterMap]
+      right
+      refine ⟨i, hi, ?_⟩
+      simp [hs]
+    simpa [selected, List.toFinset_finRange, ECPoint.weightedSum] using
+      (sumOnE_filterMap_binary
+        (E := E) (xs := List.finRange wit.k) (f := fun i =>
+          stmt.bases (Fin.cast hk.symm i)) (s := fun i => wit.scalars i)
+        (List.nodup_finRange wit.k)
+        (by intro i _hi; exact h_binary i)
+        h_on_selected)
+  have h_target_on :
+      (stmt.target.1, -stmt.target.2) ∈ E.points := by
+    apply hPs_on
+    simp [binarySupport]
+  have hRel := relDlog_weightedSum_with_hk stmt wit hk hValid
+  rw [binarySupport]
+  change Landmark.sumOnE E ((stmt.target.1, -stmt.target.2) :: selected) = 0
+  rw [Landmark.sumOnE_cons E h_target_on, h_selected_sum]
+  rw [← ECPoint.affine_eq_affineOfMem E h_target_on]
+  rw [← ECPoint.affine_neg E stmt.target.1 stmt.target.2]
+  rw [← hRel]
+  simp
+
+/-- The formal divisor of `binarySupport` agrees with
+    `honestDivisorCoeffs`, provided the committed divisor has the
+    matching degree at infinity. -/
+theorem binarySupport_formalDivisorOfList_eq_honestDivisorCoeffs
+    {E : ECSetup} (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k)
+    (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
+    (msg : MAProverMsg E.q)
+    (h_degE_eq :
+      msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
+    (R : ECPoint E) :
+    Landmark.formalDivisorOfList E (binarySupport stmt wit hk h_binary) R
+      = honestDivisorCoeffs E stmt wit hk msg R := by
+  classical
+  match R with
+  | WeierstrassCurve.Affine.Point.zero =>
+      show -(((binarySupport stmt wit hk h_binary).length : ℤ))
+        = -((msg.toD.degE : ℤ))
+      rw [h_degE_eq]
+  | @WeierstrassCurve.Affine.Point.some _ _ _ x y _ =>
+      let Q : ZMod E.q × ZMod E.q := (x, y)
+      let selected : List (ZMod E.q × ZMod E.q) :=
+        (List.finRange wit.k).filterMap (fun i =>
+          if wit.scalars i = 1 then
+            some (stmt.bases (Fin.cast hk.symm i))
+          else
+            none)
+      have h_count :
+          (((selected.filter (fun P => P = Q)).length : ℤ))
+            =
+          ∑ i ∈ (Finset.univ : Finset (Fin wit.k)),
+              if stmt.bases (Fin.cast hk.symm i) = Q then wit.scalars i else 0 := by
+        simpa [selected, List.toFinset_finRange] using
+          (length_filter_filterMap_binary_eq_sum
+            (xs := List.finRange wit.k)
+            (f := fun i => stmt.bases (Fin.cast hk.symm i))
+            (s := fun i => wit.scalars i)
+            (List.nodup_finRange wit.k)
+            (by intro i _hi; exact h_binary i)
+            Q)
+      have h_cast_sum :
+          (∑ i ∈ (Finset.univ : Finset (Fin wit.k)),
+              if stmt.bases (Fin.cast hk.symm i) = Q then wit.scalars i else 0)
+            =
+          ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)),
+              if stmt.bases i = Q then wit.scalars (hk ▸ i) else 0 :=
+        finCongr_symm_sum_binary stmt wit hk Q
+      have h_filter_sum :
+          (∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
+              (fun i => stmt.bases i = Q), wit.scalars (hk ▸ i))
+            =
+          ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)),
+              if stmt.bases i = Q then wit.scalars (hk ▸ i) else 0 := by
+        rw [Finset.sum_filter]
+      unfold Landmark.formalDivisorOfList honestDivisorCoeffs binarySupport
+      change (((((stmt.target.1, -stmt.target.2) :: selected).filter
+          (fun P => P = Q)).length : ℤ))
+        =
+        (if Q = (stmt.target.1, -stmt.target.2) then 1 else 0) +
+          ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
+            (fun i => stmt.bases i = Q), wit.scalars (hk ▸ i)
+      calc
+        (((((stmt.target.1, -stmt.target.2) :: selected).filter
+            (fun P => P = Q)).length : ℤ))
+            =
+          (if (stmt.target.1, -stmt.target.2) = Q then (1 : ℤ) else 0) +
+            ((selected.filter (fun P => P = Q)).length : ℤ) := by
+              by_cases hT : (stmt.target.1, -stmt.target.2) = Q <;>
+                simp [hT, add_comm]
+        _ =
+          (if Q = (stmt.target.1, -stmt.target.2) then 1 else 0) +
+            ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
+              (fun i => stmt.bases i = Q), wit.scalars (hk ▸ i) := by
+              rw [h_count, h_cast_sum, ← h_filter_sum]
+              by_cases hT : Q = (stmt.target.1, -stmt.target.2) <;>
+                simp [hT, eq_comm]
+
+namespace MAProverMsg.IsHonestForBinary
+
+/-- Build binary honesty data directly from a binary witness and its
+    derived support list. -/
+noncomputable def fromWitness
+    (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
+    (hValid : relDlog E stmt wit)
+    (h_toD_eq : msg.toD = Landmark.eagenBuild_singletons E
+                  (binarySupport stmt wit hk h_binary))
+    (h_degE_eq :
+      msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
+    (h_scalars_match : ∀ i : Fin stmt.k,
+      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+    (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
+    (h_bases_on_curve : ∀ i : Fin stmt.k, stmt.bases i ∈ E.points)
+    (hNodup : (binarySupport stmt wit hk h_binary).Nodup) :
+    MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm where
+  h_binary := h_binary
+  Ps := binarySupport stmt wit hk h_binary
+  h_toD_eq := h_toD_eq
+  hPs_on := by
+    intro P hP
+    rw [binarySupport, List.mem_cons, List.mem_filterMap] at hP
+    rcases hP with hP | ⟨i, _hi, hSome⟩
+    · rw [hP]
+      exact h_target_on_curve
+    · by_cases hs : wit.scalars i = 1
+      · simp [hs] at hSome
+        rw [← hSome]
+        exact h_bases_on_curve (Fin.cast hk.symm i)
+      · simp [hs] at hSome
+  hSumZero := by
+    apply binarySupport_sumOnE_eq_zero stmt wit hk h_binary hValid
+    intro P hP
+    rw [binarySupport, List.mem_cons, List.mem_filterMap] at hP
+    rcases hP with hP | ⟨i, _hi, hSome⟩
+    · rw [hP]
+      exact h_target_on_curve
+    · by_cases hs : wit.scalars i = 1
+      · simp [hs] at hSome
+        rw [← hSome]
+        exact h_bases_on_curve (Fin.cast hk.symm i)
+      · simp [hs] at hSome
+  hNonEmpty := by
+    simp [binarySupport]
+  hNodup := hNodup
+  h_scalars_match := h_scalars_match
+  h_formal_eq_honest := by
+    intro R
+    exact binarySupport_formalDivisorOfList_eq_honestDivisorCoeffs
+      stmt wit hk h_binary msg h_degE_eq R
+  h_target_on_curve := h_target_on_curve
+  h_bases_on_curve := h_bases_on_curve
+
+end MAProverMsg.IsHonestForBinary
+
+namespace MAProverMsg.IsHonestForBinaryScaled
+
+/-- Build scaled binary honesty data directly from a binary witness and its
+    derived support list. -/
+noncomputable def fromWitness
+    (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (c : ZMod E.q) (h_c_ne : c ≠ 0)
+    (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
+    (hValid : relDlog E stmt wit)
+    (h_toD_eq : msg.toD = c • Landmark.eagenBuild_singletons E
+                  (binarySupport stmt wit hk h_binary))
+    (h_degE_eq :
+      msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
+    (h_scalars_match : ∀ i : Fin stmt.k,
+      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+    (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
+    (h_bases_on_curve : ∀ i : Fin stmt.k, stmt.bases i ∈ E.points)
+    (hNodup : (binarySupport stmt wit hk h_binary).Nodup) :
+    MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm where
+  h_binary := h_binary
+  Ps := binarySupport stmt wit hk h_binary
+  c := c
+  h_c_ne := h_c_ne
+  h_toD_eq := h_toD_eq
+  hPs_on := by
+    intro P hP
+    rw [binarySupport, List.mem_cons, List.mem_filterMap] at hP
+    rcases hP with hP | ⟨i, _hi, hSome⟩
+    · rw [hP]
+      exact h_target_on_curve
+    · by_cases hs : wit.scalars i = 1
+      · simp [hs] at hSome
+        rw [← hSome]
+        exact h_bases_on_curve (Fin.cast hk.symm i)
+      · simp [hs] at hSome
+  hSumZero := by
+    apply binarySupport_sumOnE_eq_zero stmt wit hk h_binary hValid
+    intro P hP
+    rw [binarySupport, List.mem_cons, List.mem_filterMap] at hP
+    rcases hP with hP | ⟨i, _hi, hSome⟩
+    · rw [hP]
+      exact h_target_on_curve
+    · by_cases hs : wit.scalars i = 1
+      · simp [hs] at hSome
+        rw [← hSome]
+        exact h_bases_on_curve (Fin.cast hk.symm i)
+      · simp [hs] at hSome
+  hNonEmpty := by
+    simp [binarySupport]
+  hNodup := hNodup
+  h_scalars_match := h_scalars_match
+  h_formal_eq_honest := by
+    intro R
+    exact binarySupport_formalDivisorOfList_eq_honestDivisorCoeffs
+      stmt wit hk h_binary msg h_degE_eq R
+  h_target_on_curve := h_target_on_curve
+  h_bases_on_curve := h_bases_on_curve
+
+end MAProverMsg.IsHonestForBinaryScaled
+
 end Divisor
