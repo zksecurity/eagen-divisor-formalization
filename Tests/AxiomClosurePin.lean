@@ -168,3 +168,4 @@ example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
 #print axioms Divisor.ma_completeness_clean_for_binary_length4_unconditional
 #print axioms Divisor.ma_completeness_for_binary_length4_chord_unconditional
 #print axioms Divisor.ma_completeness_clean_for_binary_length4_chord_unconditional
+#print axioms Divisor.ma_completeness_for_binary_length6_chord_unconditional
