@@ -117,6 +117,22 @@ adjacent pairs `(P_0, P_1)` and `(P_2, P_3)`. These are dischargeable
 by `h_extras_holds_for_length2_sum_zero` if the pair is a vertical
 pair (`P_1 = -P_0`), or by explicit chord conditions otherwise.
 
+### Length-4 unconditional corollaries (all fully proven)
+
+| Theorem                                                  | Configuration                                       |
+|----------------------------------------------------------|-----------------------------------------------------|
+| `ma_completeness_for_binary_length4_unconditional`       | `Ps = [P_0, -P_0, P_2, -P_2]` (two inverse pairs)   |
+| `ma_completeness_for_binary_length4_chord_unconditional` | `Ps = [P_0, P_1, P_2, P_3]` with explicit chord conditions |
+| (`_clean` variants exist for both)                       |                                                     |
+
+Closures of all four corollaries exactly match `ma_completeness*`.
+
+The length-4 chord-case (`9039704`) handles the typical binary
+protocol configuration: `P_0 = -target`, `P_1, P_2, P_3` are selected
+bases with `target = P_1 + P_2 + P_3`, the level-0 pairs `(P_0, P_1)`
+and `(P_2, P_3)` are non-degenerate chord configurations (no
+2-torsion, chord not tangent at endpoints).
+
 ## Path to fully unconditional general `ma_completeness_for_binary`
 
 Two routes:
