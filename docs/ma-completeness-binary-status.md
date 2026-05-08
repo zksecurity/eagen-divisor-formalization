@@ -207,6 +207,24 @@ Each admSet has both an `h_extras`-conditional theorem
 certificate variant
 (`ma_completeness_for_binary_chord_chain_admSet*_unconditional`).
 
+### Auto-construct Ps from wit.scalars (commit `8d71b24`)
+
+Gap 1 closed: `binarySupport stmt wit hk h_binary` derives the support
+list automatically from `(-target) :: filter (wit.scalars i = 1) bases`.
+Two bridge lemmas establish:
+- `binarySupport_sumOnE_eq_zero`: from `relDlog` (witness validity), the
+  support sums to zero on E.
+- `binarySupport_formalDivisorOfList_eq_honestDivisorCoeffs`: the formal
+  divisor of `binarySupport` extensionally matches `honestDivisorCoeffs`.
+
+`MAProverMsg.IsHonestForBinary.fromWitness` (and its `Scaled` variant)
+take `(stmt, wit, msg, h_binary, hValid, h_toD_eq, hNodup, ...)` and
+produce the structure automatically — no manual `Ps`/`h_formal_eq_honest`
+proof.
+
+Closure for the new bridges: ONLY `propext, Classical.choice, Quot.sound`
+(combinatorial reasoning).
+
 Closures of all four corollaries exactly match `ma_completeness*`.
 
 The length-4 chord-case (`9039704`) handles the typical binary
