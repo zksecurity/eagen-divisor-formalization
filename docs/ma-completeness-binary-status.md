@@ -91,6 +91,15 @@ The `ma_completeness_for_binary_M_eq_3` constructive bridge through
 `length-4-simple` (committed earlier) is fully unconditional for `k = 3`
 because it bypasses iterate entirely.
 
+The `ma_completeness_for_binary_length2_unconditional` corollary
+(commit `aab80bb`) is **fully unconditional** for `Ps = [P, Q]` with
+`P + Q = 0` on `E` (i.e., `Q = -P`). `h_extras` is discharged by
+`h_extras_holds_for_length2_sum_zero` because both branches of
+`LandmarkInvStrongCombineAffineExtras` have failing hypotheses
+(branch 1: `xa ≠ xb` fails since `Q.1 = P.1`; branch 2: `ya ≠ -yb`
+fails since `Q.2 = -P.2`). The closure exactly matches
+`ma_completeness*`.
+
 ## Path to fully unconditional general `ma_completeness_for_binary`
 
 Two routes:
