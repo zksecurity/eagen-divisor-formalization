@@ -6820,6 +6820,17 @@ def LandmarkInvStrongCombineAffineExtras
           localMult E a.poly P + localMult E b.poly P + localMult E line P
             ≤ localMult E q P)
 
+/-- Pair-level strong-combine extras, gated to the branch where the
+    dispatcher can actually use affine-affine side conditions.  When one
+    accumulator point is `0`, `ECPoint.affine`'s off-curve fallback makes
+    the full universally-quantified affine predicate too strong; the
+    `combine` dispatcher never consults it outside the nonzero/nonzero
+    affine branch. -/
+def LandmarkInvStrongCombineExtras (a b : EagenAccum E) : Prop :=
+  a.point ≠ (0 : ECPoint E) →
+  b.point ≠ (0 : ECPoint E) →
+    LandmarkInvStrongCombineAffineExtras E a b
+
 /-- Unified dispatcher for the case-specific strong combine lemmas. -/
 theorem landmarkInvStrong_combine_when_rootMult_le_one
     {xs ys : List (ZMod E.q × ZMod E.q)}
@@ -7166,7 +7177,7 @@ theorem landmarkInvStrong_combine_when_rootMult_le_three
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 3
       ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 3)
-    (h_aff_aff_extras : LandmarkInvStrongCombineAffineExtras E a b) :
+    (h_aff_aff_extras : LandmarkInvStrongCombineExtras E a b) :
     LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine E a b) := by
   classical
   match hpa : a.point, hpb : b.point with
@@ -7207,6 +7218,15 @@ theorem landmarkInvStrong_combine_when_rootMult_le_three
       exact hcase
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) hns_a,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) hns_b =>
+      have ha_ne : a.point ≠ (0 : ECPoint E) := by
+        rw [hpa]
+        exact WeierstrassCurve.Affine.Point.some_ne_zero hns_a
+      have hb_ne : b.point ≠ (0 : ECPoint E) := by
+        rw [hpb]
+        exact WeierstrassCurve.Affine.Point.some_ne_zero hns_b
+      have h_aff_aff_extras_full :
+          LandmarkInvStrongCombineAffineExtras E a b :=
+        h_aff_aff_extras ha_ne hb_ne
       have hxa_on : (xa, ya) ∈ E.points :=
         E.hComplete xa ya
           ((E.equation_iff xa ya).mp ((E.equation_iff_nonsingular).mpr hns_a))
@@ -7219,7 +7239,7 @@ theorem landmarkInvStrong_combine_when_rootMult_le_three
         rw [hpb, ECPoint.affine_of_nonsingular E hns_b]
       by_cases h_xx : xa ≠ xb
       · obtain ⟨hya_ne, hyb_ne, h_third_xa, h_third_xb⟩ :=
-          (h_aff_aff_extras ha_pt_eq hb_pt_eq).1 h_xx
+          (h_aff_aff_extras_full ha_pt_eq hb_pt_eq).1 h_xx
         have hcase := landmarkInvStrong_combine_distinct_when_rootMult_le_three
           E h_xx hxs_on hys_on hxa_on hxb_on hya_ne hyb_ne
           h_third_xa h_third_xb ha hb ha_pt_eq hb_pt_eq
@@ -7302,7 +7322,7 @@ theorem landmarkInvStrong_combine_when_rootMult_le_three
                   rw [← hxeq, ← hy_eq]
             have hxy_neg_on : (xa, -ya) ∈ E.points := points_neg_y E hxa_on
             obtain ⟨h_third_xa, h_dvd_qa_sq, h_dvd_qb_sq, hprod_all_ge⟩ :=
-              (h_aff_aff_extras ha_pt_eq hb_pt_eq).2 hxeq h_yy hya_zero
+              (h_aff_aff_extras_full ha_pt_eq hb_pt_eq).2 hxeq h_yy hya_zero
             have hcase :=
               landmarkInvStrong_combine_tangent_smooth_when_rootMult_le_three
                 E hxa_on hxy_neg_on hya_zero h_third_xa ha hb
@@ -7806,7 +7826,7 @@ def LevelStepCombineExtras : List (EagenAccum E) → Prop
   | [] => True
   | [_] => True
   | a :: b :: rest =>
-      LandmarkInvStrongCombineAffineExtras E a b ∧
+      LandmarkInvStrongCombineExtras E a b ∧
       LevelStepCombineExtras rest
 
 theorem landmarkInvList_preservation_under_level_step
@@ -8896,12 +8916,12 @@ theorem h_extras_holds_for_length2_sum_zero
     -- level0_singletons E [P, Q] = [levelInitSingleton P, levelInitSingleton Q].
     show LevelStepCombineExtras E [levelInitSingleton E P, levelInitSingleton E Q]
     -- LevelStepCombineExtras [a, b] = (affine_extras a b) ∧ True.
-    show LandmarkInvStrongCombineAffineExtras E
+    show LandmarkInvStrongCombineExtras E
             (levelInitSingleton E P) (levelInitSingleton E Q)
           ∧ LevelStepCombineExtras E []
     refine ⟨?_, ?_⟩
     · -- affine_extras: both branches have failing hypotheses.
-      intro xa ya xb yb h_a_pt h_b_pt
+      intro _ _ xa ya xb yb h_a_pt h_b_pt
       -- a.point = ECPoint.affine xa ya AND a.point = ECPoint.affine P.1 P.2.
       -- The current accumulator is `levelInitSingleton P`, so a.point = ECPoint.affine P.1 P.2.
       have h_a_eq : (levelInitSingleton E P).point = ECPoint.affine E P.1 P.2 := rfl
@@ -9037,5 +9057,121 @@ theorem affine_extras_vacuous_on_inverse_affine_points
       unfold ECPoint.affine; rw [dif_neg hns_b]
     rw [h_zero] at h_b_eq2
     exact (WeierstrassCurve.Affine.Point.some_ne_zero hns_a_neg) h_b_eq2
+
+/-- Under the nonzero gate in `LandmarkInvStrongCombineExtras`, a pair whose
+    left accumulator is the point at infinity needs no affine-affine data. -/
+theorem combine_extras_vacuous_of_left_zero
+    (a b : EagenAccum E)
+    (ha_zero : a.point = (0 : ECPoint E)) :
+    LandmarkInvStrongCombineExtras E a b := by
+  intro ha_ne _
+  exact False.elim (ha_ne ha_zero)
+
+/-- Combining a singleton with its inverse goes through the vertical branch
+    and has point at infinity. -/
+theorem combine_levelInitSingleton_inverse_point_eq_zero
+    (P : ZMod E.q × ZMod E.q)
+    (hP_on : P ∈ E.points) :
+    (EagenAccum.combine E (levelInitSingleton E P)
+      (levelInitSingleton E (P.1, -P.2))).point = (0 : ECPoint E) := by
+  classical
+  have hP_neg_on : (P.1, -P.2) ∈ E.points := points_neg_y E hP_on
+  have hP_ns : E.toW.toAffine.Nonsingular P.1 P.2 :=
+    E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP_on))
+  have hP_neg_ns : E.toW.toAffine.Nonsingular P.1 (-P.2) :=
+    E.equation_iff_nonsingular.mp
+      ((E.equation_iff P.1 (-P.2)).mpr (E.hOnCurve _ hP_neg_on))
+  unfold EagenAccum.combine
+  rw [show (levelInitSingleton E P).point = ECPoint.affine E P.1 P.2 from rfl]
+  rw [show (levelInitSingleton E (P.1, -P.2)).point =
+      ECPoint.affine E P.1 (-P.2) from rfl]
+  rw [ECPoint.affine_of_nonsingular E hP_ns,
+      ECPoint.affine_of_nonsingular E hP_neg_ns]
+  simp [EagenAccum.combine_vertical]
+
+/-- Length-4 inverse-pair inputs have all per-level combine extras needed by
+    the singleton Eagen landmark theorem.  Level 0 reduces to the length-2
+    inverse-pair lemma for each adjacent pair; level 1 has two zero-point
+    accumulators; later levels are singletons. -/
+theorem h_extras_holds_for_length4_two_inverse_pairs
+    (P R : ZMod E.q × ZMod E.q)
+    (hP_on : P ∈ E.points) (hR_on : R ∈ E.points) :
+    ∀ k < ([P, (P.1, -P.2), R, (R.1, -R.2)] :
+        List (ZMod E.q × ZMod E.q)).length,
+      LevelStepCombineExtras E
+        (iterate E k
+          (level0_singletons E [P, (P.1, -P.2), R, (R.1, -R.2)])) := by
+  classical
+  have hP_neg_on : (P.1, -P.2) ∈ E.points := points_neg_y E hP_on
+  have hR_neg_on : (R.1, -R.2) ∈ E.points := points_neg_y E hR_on
+  have hP_pair :
+      LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P)
+        (levelInitSingleton E (P.1, -P.2)) := by
+    have h :=
+      h_extras_holds_for_length2_sum_zero E P (P.1, -P.2)
+        hP_on hP_neg_on rfl rfl 0 (by simp)
+    change LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P)
+        (levelInitSingleton E (P.1, -P.2)) ∧
+        LevelStepCombineExtras E [] at h
+    exact h.1
+  have hR_pair :
+      LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E R)
+        (levelInitSingleton E (R.1, -R.2)) := by
+    have h :=
+      h_extras_holds_for_length2_sum_zero E R (R.1, -R.2)
+        hR_on hR_neg_on rfl rfl 0 (by simp)
+    change LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E R)
+        (levelInitSingleton E (R.1, -R.2)) ∧
+        LevelStepCombineExtras E [] at h
+    exact h.1
+  intro k hk
+  have hk_lt4 : k < 4 := by simpa using hk
+  interval_cases k
+  · show LevelStepCombineExtras E
+      [levelInitSingleton E P, levelInitSingleton E (P.1, -P.2),
+       levelInitSingleton E R, levelInitSingleton E (R.1, -R.2)]
+    change LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P)
+        (levelInitSingleton E (P.1, -P.2)) ∧
+      (LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E R)
+        (levelInitSingleton E (R.1, -R.2)) ∧ True)
+    exact ⟨hP_pair, hR_pair, trivial⟩
+  · have h_iter_eq :
+        iterate E 1
+          (level0_singletons E [P, (P.1, -P.2), R, (R.1, -R.2)])
+        = level_step E
+          (level0_singletons E [P, (P.1, -P.2), R, (R.1, -R.2)]) := by
+      show (if (level0_singletons E
+          [P, (P.1, -P.2), R, (R.1, -R.2)]).length ≤ 1 then _ else _) = _
+      have h_len :
+          (level0_singletons E [P, (P.1, -P.2), R, (R.1, -R.2)]).length = 4 := by
+        simp [level0_singletons]
+      rw [if_neg (by rw [h_len]; omega)]
+      rfl
+    rw [h_iter_eq]
+    show LevelStepCombineExtras E
+      (level_step E
+        [levelInitSingleton E P, levelInitSingleton E (P.1, -P.2),
+         levelInitSingleton E R, levelInitSingleton E (R.1, -R.2)])
+    show LevelStepCombineExtras E
+      [EagenAccum.combine E (levelInitSingleton E P)
+          (levelInitSingleton E (P.1, -P.2)),
+       EagenAccum.combine E (levelInitSingleton E R)
+          (levelInitSingleton E (R.1, -R.2))]
+    change LandmarkInvStrongCombineExtras E
+      (EagenAccum.combine E (levelInitSingleton E P)
+        (levelInitSingleton E (P.1, -P.2)))
+      (EagenAccum.combine E (levelInitSingleton E R)
+        (levelInitSingleton E (R.1, -R.2))) ∧ True
+    refine ⟨?_, trivial⟩
+    exact combine_extras_vacuous_of_left_zero E _ _
+      (combine_levelInitSingleton_inverse_point_eq_zero E P hP_on)
+  · simp [iterate, level0_singletons, level_step, LevelStepCombineExtras]
+  · simp [iterate, level0_singletons, level_step, LevelStepCombineExtras]
 
 end Divisor.Landmark
