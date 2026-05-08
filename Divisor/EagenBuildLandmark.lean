@@ -7193,6 +7193,102 @@ theorem landmarkInvStrongCombineExtras_of_combineCanFire
   exact landmarkInvStrongCombineAffineExtras_of_combineCanFire
     E a b h ha_ne hb_ne
 
+/-- Certifying affine-affine extras from `combineCanFire`, with the smooth
+tangent square-divisibility obligation discharged from pointwise vanishing of
+the accumulator polynomials at their affine points.
+
+The final nonzero point hypotheses are the same gate used by
+`LandmarkInvStrongCombineExtras`: when an accumulator point is infinity,
+`ECPoint.affine`'s off-curve fallback makes the full affine predicate too
+strong, and the combine dispatcher never consults it. -/
+theorem landmarkInvStrongCombineAffineExtras_of_combineCanFire_full
+    (a b : EagenAccum E) (h : combineCanFire E a b)
+    (h_a_vanish : ∀ xa ya, a.point = ECPoint.affine E xa ya →
+      a.poly.a.eval xa = 0 ∧ a.poly.b.eval xa = 0)
+    (h_b_vanish : ∀ xa ya, b.point = ECPoint.affine E xa ya →
+      b.poly.a.eval xa = 0 ∧ b.poly.b.eval xa = 0)
+    (_h_a_nz : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (_h_b_nz : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
+    (ha_ne : a.point ≠ (0 : ECPoint E))
+    (hb_ne : b.point ≠ (0 : ECPoint E)) :
+    LandmarkInvStrongCombineAffineExtras E a b := by
+  classical
+  have hbase :
+      LandmarkInvStrongCombineAffineExtras E a b :=
+    landmarkInvStrongCombineAffineExtras_of_combineCanFire
+      E a b h ha_ne hb_ne
+  intro xa ya xb yb h_a_pt h_b_pt
+  have hbase_at := hbase h_a_pt h_b_pt
+  refine ⟨hbase_at.1, ?_⟩
+  intro hxeq hy_not_neg hy_ne
+  have hsmooth := hbase_at.2 hxeq hy_not_neg hy_ne
+  have hns_a : E.toW.toAffine.Nonsingular xa ya := by
+    by_contra hns
+    have hzero : ECPoint.affine E xa ya = (0 : ECPoint E) := by
+      unfold ECPoint.affine
+      rw [dif_neg hns]
+    exact ha_ne (by rw [h_a_pt, hzero])
+  have hns_b : E.toW.toAffine.Nonsingular xb yb := by
+    by_contra hns
+    have hzero : ECPoint.affine E xb yb = (0 : ECPoint E) := by
+      unfold ECPoint.affine
+      rw [dif_neg hns]
+    exact hb_ne (by rw [h_b_pt, hzero])
+  have hxa_on : (xa, ya) ∈ E.points :=
+    E.hComplete xa ya
+      ((E.equation_iff xa ya).mp ((E.equation_iff_nonsingular).mpr hns_a))
+  have hxb_on : (xb, yb) ∈ E.points :=
+    E.hComplete xb yb
+      ((E.equation_iff xb yb).mp ((E.equation_iff_nonsingular).mpr hns_b))
+  have hxb_as_xa : (xa, yb) ∈ E.points := by
+    simpa [hxeq] using hxb_on
+  have hy_eq : ya = yb := by
+    rcases ECPoints_same_x_y_eq_or_neg E hxa_on hxb_as_xa with hsame | hneg
+    · exact hsame
+    · exact False.elim (hy_not_neg hneg)
+  have hb_pt_smooth : b.point = ECPoint.affine E xa ya := by
+    calc
+      b.point = ECPoint.affine E xb yb := h_b_pt
+      _ = ECPoint.affine E xa ya := by
+        rw [← hxeq, ← hy_eq]
+  have ha_components := h_a_vanish xa ya h_a_pt
+  have hb_components := h_b_vanish xa ya hb_pt_smooth
+  have ha_pos : a.poly.eval xa ya = 0 := by
+    unfold CoordRingElt.eval
+    rw [ha_components.1, ha_components.2]
+    ring
+  have ha_neg : a.poly.eval xa (-ya) = 0 := by
+    unfold CoordRingElt.eval
+    rw [ha_components.1, ha_components.2]
+    ring
+  have hb_pos : b.poly.eval xa ya = 0 := by
+    unfold CoordRingElt.eval
+    rw [hb_components.1, hb_components.2]
+    ring
+  have hb_neg : b.poly.eval xa (-ya) = 0 := by
+    unfold CoordRingElt.eval
+    rw [hb_components.1, hb_components.2]
+    ring
+  have hdvd :=
+    mulCoordRingElt_a_b_dvd_X_sub_C_sq_at_doubling_point
+      E a.poly b.poly hy_ne ha_pos ha_neg hb_pos hb_neg
+  exact ⟨hsmooth.1, hdvd.1, hdvd.2, hsmooth.2.2.2⟩
+
+/-- Gated strong-combine extras wrapper using the smooth-tangent vanishing
+certificate for square divisibility. -/
+theorem landmarkInvStrongCombineExtras_of_combineCanFire_full
+    (a b : EagenAccum E) (h : combineCanFire E a b)
+    (h_a_vanish : ∀ xa ya, a.point = ECPoint.affine E xa ya →
+      a.poly.a.eval xa = 0 ∧ a.poly.b.eval xa = 0)
+    (h_b_vanish : ∀ xa ya, b.point = ECPoint.affine E xa ya →
+      b.poly.a.eval xa = 0 ∧ b.poly.b.eval xa = 0)
+    (h_a_nz : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
+    (h_b_nz : ¬ (b.poly.a = 0 ∧ b.poly.b = 0)) :
+    LandmarkInvStrongCombineExtras E a b := by
+  intro ha_ne hb_ne
+  exact landmarkInvStrongCombineAffineExtras_of_combineCanFire_full
+    E a b h h_a_vanish h_b_vanish h_a_nz h_b_nz ha_ne hb_ne
+
 theorem landmarkInvStrongCombineExtras_of_chordCase
     (a b : EagenAccum E) (h : combineCanFire.chordCase E a b) :
     LandmarkInvStrongCombineExtras E a b :=
