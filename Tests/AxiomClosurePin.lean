@@ -186,3 +186,7 @@ example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
 #print axioms Divisor.ma_completeness_binary_admSetParker
 #print axioms Divisor.ma_completeness_binary_admSetEagen
 #print axioms Divisor.ma_completeness_binary_admSetHash
+
+/-! Certifying-wrapper bridges (commits fd7da92, 618a2b2, c33c200) -/
+#print axioms Divisor.Landmark.landmarkInvStrongCombineAffineExtras_of_combineCanFire_full
+#print axioms Divisor.Landmark.landmarkInvStrongCombineExtras_of_combineCanFire_full
