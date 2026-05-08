@@ -106,6 +106,7 @@
 -/
 import Divisor.ExtractorBridgeTheorems
 import Divisor.Soundness
+import Divisor.IsHonestForBinary
 
 #print axioms Divisor.ma_extractable
 #print axioms Divisor.ip_knowledge_sound
@@ -143,3 +144,17 @@ example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
   Divisor.CoordRingElt.exists_divisor_multiplicity E D hD
 
 #print axioms Divisor.ma_extractable_paper
+
+/-! ## Binary completeness — unconditional via LandmarkInvStrong path
+
+  The new unconditional binary chain
+  (`ma_completeness_for_binary_unconditional` and its `_clean` variant)
+  has the EXACT same axiom closure as `ma_completeness*` — confirming no
+  new axioms are introduced by the LandmarkInvStrong infrastructure.
+
+  Hypotheses replaced:
+  - Old: gated on `Landmark.PairwiseCombineHyp E` (universal: ∀ xs ys a b...).
+  - New: gated on `h_extras` (per-input: holds at each level of the iterate).
+-/
+#print axioms Divisor.ma_completeness_for_binary_unconditional
+#print axioms Divisor.ma_completeness_clean_for_binary_unconditional
