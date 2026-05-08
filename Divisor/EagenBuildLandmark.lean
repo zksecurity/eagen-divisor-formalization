@@ -8792,4 +8792,85 @@ theorem eagenBuild_singletons_divisor_identity
     divisorOfD_eq_formalDivisorOfList_of_landmark
       E Ps D hPs_on hNodup hD hVan hDeg hSplit
 
+/-! ## Unconditional landmark theorems (using `LandmarkInvStrong`) -/
+
+/-- Unconditional landmark theorem: derived from `landmarkInvStrong_eagenBuild_singletons`,
+    requires only Nodup, on-curve, sum-zero, length ≥ 2, plus per-input `h_extras`
+    (geometric side conditions for each level of iterate).
+
+    Eliminates the `PairwiseCombineHyp E` quantifying over all xs/ys/a/b — replaced by
+    `h_extras`, which is a SPECIFIC condition on this `Ps`'s iterate states. -/
+theorem eagenBuild_singletons_landmark_unconditional
+    (Ps : List (ZMod E.q × ZMod E.q))
+    (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
+    (hSumZero : sumOnE E Ps = 0)
+    (hNodup : Ps.Nodup)
+    (hLen : 2 ≤ Ps.length)
+    (h_extras : ∀ k < Ps.length,
+      LevelStepCombineExtras E (iterate E k (level0_singletons E Ps))) :
+    let D := eagenBuild_singletons E Ps
+    ¬ (D.a = 0 ∧ D.b = 0) ∧
+    (∀ P ∈ Ps, D.eval P.1 P.2 = 0) ∧
+    (normPoly E D).natDegree = Ps.length := by
+  classical
+  obtain ⟨a, h_iter_eq, h_inv, h_point_zero⟩ :=
+    landmarkInvStrong_eagenBuild_singletons E Ps hPs_on hNodup hSumZero hLen h_extras
+  have h_D_eq : eagenBuild_singletons E Ps = a.poly := by
+    show (match iterate E Ps.length (level0_singletons E Ps) with
+          | [a] => a.poly
+          | _ => { a := 1, b := 0 }) = a.poly
+    rw [h_iter_eq]
+  have h_natDegree :
+      (normPoly E a.poly).natDegree = Ps.length + (if a.point = (0 : ECPoint E) then 0 else 1) :=
+    LandmarkInvStrong.natDegree E h_inv
+  have h_natDegree' : (normPoly E a.poly).natDegree = Ps.length := by
+    rw [h_natDegree, if_pos h_point_zero, Nat.add_zero]
+  have h_natDegree_pos : 0 < (normPoly E a.poly).natDegree := by
+    rw [h_natDegree']; omega
+  have h_normPoly_ne : normPoly E a.poly ≠ 0 := by
+    intro h
+    rw [h, Polynomial.natDegree_zero] at h_natDegree_pos
+    exact absurd h_natDegree_pos (lt_irrefl 0)
+  have h_not_both_zero : ¬ (a.poly.a = 0 ∧ a.poly.b = 0) := by
+    intro ⟨ha, hb⟩
+    apply h_normPoly_ne
+    rw [normPoly_eq, ha, hb]
+    ring
+  refine ⟨?_, ?_, ?_⟩
+  · rw [h_D_eq]
+    exact h_not_both_zero
+  · intro P hP
+    rw [h_D_eq]
+    exact LandmarkInvStrong.vanish_of_mem E h_inv hP (hPs_on P hP)
+  · rw [h_D_eq]
+    exact h_natDegree'
+
+/-- Unconditional divisor identity: derived from the unconditional landmark theorem
+    plus the existing `splitsOnE_of_landmark` and `divisorOfD_eq_formalDivisorOfList_of_landmark`. -/
+theorem eagenBuild_singletons_divisor_identity_unconditional
+    (Ps : List (ZMod E.q × ZMod E.q))
+    (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
+    (hSumZero : sumOnE E Ps = 0)
+    (hNodup : Ps.Nodup)
+    (hLen : 2 ≤ Ps.length)
+    (h_extras : ∀ k < Ps.length,
+      LevelStepCombineExtras E (iterate E k (level0_singletons E Ps))) :
+    ∀ R : ECPoint E,
+      divisorOfD E (eagenBuild_singletons E Ps) R
+        = formalDivisorOfList E Ps R := by
+  classical
+  let D := eagenBuild_singletons E Ps
+  have h_landmark :
+      ¬ (D.a = 0 ∧ D.b = 0) ∧
+      (∀ P ∈ Ps, D.eval P.1 P.2 = 0) ∧
+      (normPoly E D).natDegree = Ps.length := by
+    simpa [D] using
+      eagenBuild_singletons_landmark_unconditional E Ps hPs_on hSumZero hNodup hLen h_extras
+  obtain ⟨hD, hVan, hDeg⟩ := h_landmark
+  have hSplit : splitsOnE E D :=
+    splitsOnE_of_landmark E Ps D hPs_on hNodup hD hVan hDeg
+  simpa [D] using
+    divisorOfD_eq_formalDivisorOfList_of_landmark
+      E Ps D hPs_on hNodup hD hVan hDeg hSplit
+
 end Divisor.Landmark
