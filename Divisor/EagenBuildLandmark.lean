@@ -8873,4 +8873,112 @@ theorem eagenBuild_singletons_divisor_identity_unconditional
     divisorOfD_eq_formalDivisorOfList_of_landmark
       E Ps D hPs_on hNodup hD hVan hDeg hSplit
 
+/-! ## Length-2 sum-zero: `h_extras` holds vacuously.
+
+For `Ps = [P, Q]` with `P + Q = 0` on `E`, the only adjacent pair at
+level 0 has `xa = xb` (since `Q.1 = P.1`) and `ya = -yb` (since
+`Q = -P`), so both branches of `LandmarkInvStrongCombineAffineExtras`
+have failing hypotheses — extras hold vacuously. -/
+theorem h_extras_holds_for_length2_sum_zero
+    (P Q : ZMod E.q × ZMod E.q)
+    (hP_on : P ∈ E.points) (hQ_on : Q ∈ E.points)
+    (hxx : P.1 = Q.1)
+    (hyy : Q.2 = -P.2) :
+    ∀ k < ([P, Q] : List (ZMod E.q × ZMod E.q)).length,
+      LevelStepCombineExtras E
+        (iterate E k (level0_singletons E [P, Q])) := by
+  classical
+  intro k hk
+  have hk_lt2 : k < 2 := by simpa using hk
+  -- Only k = 0 and k = 1 are possible.
+  interval_cases k
+  · -- k = 0: extras at level0_singletons.
+    -- level0_singletons E [P, Q] = [levelInitSingleton P, levelInitSingleton Q].
+    show LevelStepCombineExtras E [levelInitSingleton E P, levelInitSingleton E Q]
+    -- LevelStepCombineExtras [a, b] = (affine_extras a b) ∧ True.
+    show LandmarkInvStrongCombineAffineExtras E
+            (levelInitSingleton E P) (levelInitSingleton E Q)
+          ∧ LevelStepCombineExtras E []
+    refine ⟨?_, ?_⟩
+    · -- affine_extras: both branches have failing hypotheses.
+      intro xa ya xb yb h_a_pt h_b_pt
+      -- a.point = ECPoint.affine xa ya AND a.point = ECPoint.affine P.1 P.2.
+      -- The current accumulator is `levelInitSingleton P`, so a.point = ECPoint.affine P.1 P.2.
+      have h_a_eq : (levelInitSingleton E P).point = ECPoint.affine E P.1 P.2 := rfl
+      have h_b_eq : (levelInitSingleton E Q).point = ECPoint.affine E Q.1 Q.2 := rfl
+      -- Equating: ECPoint.affine xa ya = ECPoint.affine P.1 P.2.
+      -- We need: xa = P.1 (from match), ya = P.2.
+      -- Use P ∈ E.points (so affine is .some), Q ∈ E.points similarly.
+      have hP_ns : E.toW.toAffine.Nonsingular P.1 P.2 :=
+        E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP_on))
+      have hQ_ns : E.toW.toAffine.Nonsingular Q.1 Q.2 :=
+        E.equation_iff_nonsingular.mp ((E.equation_iff Q.1 Q.2).mpr (E.hOnCurve _ hQ_on))
+      rw [ECPoint.affine_of_nonsingular E hP_ns] at h_a_eq
+      rw [ECPoint.affine_of_nonsingular E hQ_ns] at h_b_eq
+      have h_a_eq2 : ECPoint.affine E xa ya = (.some hP_ns : ECPoint E) := by
+        rw [← h_a_pt, h_a_eq]
+      have h_b_eq2 : ECPoint.affine E xb yb = (.some hQ_ns : ECPoint E) := by
+        rw [← h_b_pt, h_b_eq]
+      -- Extract xa = P.1, ya = P.2 from h_a_eq2 ; xb = Q.1, yb = Q.2 from h_b_eq2.
+      have hxa_eq : xa = P.1 ∧ ya = P.2 := by
+        unfold ECPoint.affine at h_a_eq2
+        by_cases hns : E.toW.toAffine.Nonsingular xa ya
+        · rw [dif_pos hns] at h_a_eq2
+          have := WeierstrassCurve.Affine.Point.some.inj h_a_eq2
+          exact this
+        · rw [dif_neg hns] at h_a_eq2
+          exfalso
+          exact (WeierstrassCurve.Affine.Point.some_ne_zero hP_ns) h_a_eq2.symm
+      have hxb_eq : xb = Q.1 ∧ yb = Q.2 := by
+        unfold ECPoint.affine at h_b_eq2
+        by_cases hns : E.toW.toAffine.Nonsingular xb yb
+        · rw [dif_pos hns] at h_b_eq2
+          have := WeierstrassCurve.Affine.Point.some.inj h_b_eq2
+          exact this
+        · rw [dif_neg hns] at h_b_eq2
+          exfalso
+          exact (WeierstrassCurve.Affine.Point.some_ne_zero hQ_ns) h_b_eq2.symm
+      obtain ⟨hxa, hya⟩ := hxa_eq
+      obtain ⟨hxb, hyb⟩ := hxb_eq
+      refine ⟨?_, ?_⟩
+      · -- Branch 1: xa ≠ xb hypothesis fails (since P.1 = Q.1).
+        intro h_xa_ne_xb
+        rw [hxa, hxb] at h_xa_ne_xb
+        exact absurd hxx h_xa_ne_xb
+      · -- Branch 2: hypothesis `ya ≠ -yb` fails: ya = P.2 = -Q.2 = -yb.
+        intro _ h_ya_ne_neg_yb _
+        exfalso
+        apply h_ya_ne_neg_yb
+        rw [hya, hyb, hyy]
+        ring
+    · -- LevelStepCombineExtras E [] = True.
+      show True
+      trivial
+  · -- k = 1: iterate E 1 [a, b] = level_step [a, b] = [combined], length 1.
+    -- LevelStepCombineExtras [single] = True.
+    show LevelStepCombineExtras E
+          (iterate E 1 (level0_singletons E [P, Q]))
+    -- iterate E 1 list = if length ≤ 1 then list else iterate E 0 (level_step list).
+    -- level0_singletons E [P, Q] has length 2, NOT ≤ 1, so:
+    -- iterate E 1 [a, b] = iterate E 0 (level_step [a, b]) = level_step [a, b].
+    -- level_step [a, b] = [combine a b], a single accumulator.
+    -- LevelStepCombineExtras [_] = True.
+    have h_iter_eq :
+        iterate E 1 (level0_singletons E [P, Q])
+          = level_step E (level0_singletons E [P, Q]) := by
+      show (if (level0_singletons E [P, Q]).length ≤ 1 then _ else _) = _
+      have h_len : (level0_singletons E [P, Q]).length = 2 := by
+        show ([P, Q].map _).length = 2
+        simp
+      rw [if_neg (by rw [h_len]; omega)]
+      rfl
+    rw [h_iter_eq]
+    -- level_step [a, b] = [combine a b].
+    show LevelStepCombineExtras E
+          (level_step E [levelInitSingleton E P, levelInitSingleton E Q])
+    show LevelStepCombineExtras E
+          [EagenAccum.combine E (levelInitSingleton E P) (levelInitSingleton E Q)]
+    show True
+    trivial
+
 end Divisor.Landmark
