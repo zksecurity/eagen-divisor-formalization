@@ -7876,9 +7876,81 @@ private theorem iterate_succ_eq (n : ℕ) (xs : List (EagenAccum E)) :
     iterate E (n + 1) xs =
       if xs.length ≤ 1 then xs else iterate E n (level_step E xs) := rfl
 
+theorem level_step_eq_self_of_length_le_one
+    (xs : List (EagenAccum E)) (h : xs.length ≤ 1) :
+    level_step E xs = xs := by
+  match xs with
+  | [] => rfl
+  | [a] => rfl
+  | a :: b :: rest =>
+      simp at h
+
+theorem iterate_eq_self_of_length_le_one
+    (n : ℕ) (xs : List (EagenAccum E)) (h : xs.length ≤ 1) :
+    iterate E n xs = xs := by
+  induction n generalizing xs with
+  | zero => rfl
+  | succ n ih =>
+      show (if xs.length ≤ 1 then xs else iterate E n (level_step E xs)) = xs
+      rw [if_pos h]
+
+theorem iterate_succ_eq_iterate_level_step
+    (n : ℕ) (xs : List (EagenAccum E)) :
+    iterate E (n + 1) xs = iterate E n (level_step E xs) := by
+  by_cases hLen : xs.length ≤ 1
+  · rw [iterate_succ_eq, if_pos hLen]
+    rw [level_step_eq_self_of_length_le_one E xs hLen]
+    exact (iterate_eq_self_of_length_le_one E n xs hLen).symm
+  · rw [iterate_succ_eq, if_neg hLen]
+
 private theorem pairUpN_succ_eq (n : ℕ) (xss : List (List (ZMod E.q × ZMod E.q))) :
     pairUpN (n + 1) xss =
       if xss.length ≤ 1 then xss else pairUpN n (pairUp xss) := rfl
+
+/-- A certificate that each level in a chain of accumulator pairings has
+    the affine-affine side conditions needed by strong combine. -/
+def IteratedLevelStepCombineExtras : ℕ → List (EagenAccum E) → Prop
+  | 0, _ => True
+  | n + 1, accs =>
+      LevelStepCombineExtras E accs ∧
+      IteratedLevelStepCombineExtras n (level_step E accs)
+
+theorem iteratedLevelStepCombineExtras_iff_forall_lt
+    (n : ℕ) (accs : List (EagenAccum E)) :
+    IteratedLevelStepCombineExtras E n accs
+      ↔ ∀ k < n, LevelStepCombineExtras E (iterate E k accs) := by
+  induction n generalizing accs with
+  | zero =>
+      simp [IteratedLevelStepCombineExtras]
+  | succ n ih =>
+      constructor
+      · intro h k hk
+        cases k with
+        | zero =>
+            simpa [IteratedLevelStepCombineExtras, iterate] using h.1
+        | succ k =>
+            have hk' : k < n := Nat.succ_lt_succ_iff.mp hk
+            have h_tail :
+                LevelStepCombineExtras E (iterate E k (level_step E accs)) :=
+              (ih (level_step E accs)).mp h.2 k hk'
+            simpa [iterate_succ_eq_iterate_level_step] using h_tail
+      · intro h
+        refine ⟨?_, ?_⟩
+        · simpa [iterate] using h 0 (Nat.zero_lt_succ n)
+        · exact (ih (level_step E accs)).mpr (by
+            intro k hk
+            have h_next :
+                LevelStepCombineExtras E (iterate E (k + 1) accs) :=
+              h (k + 1) (Nat.succ_lt_succ hk)
+            simpa [iterate_succ_eq_iterate_level_step] using h_next)
+
+theorem h_extras_of_iteratedLevelStepCombineExtras
+    (Ps : List (ZMod E.q × ZMod E.q))
+    (h : IteratedLevelStepCombineExtras E Ps.length (level0_singletons E Ps)) :
+    ∀ k < Ps.length,
+      LevelStepCombineExtras E (iterate E k (level0_singletons E Ps)) :=
+  (iteratedLevelStepCombineExtras_iff_forall_lt E
+    Ps.length (level0_singletons E Ps)).mp h
 
 theorem landmarkInvList_preservation_under_iterate
     (n : ℕ)
