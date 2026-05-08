@@ -635,6 +635,69 @@ private theorem admSetParker_of_isHonestForBinaryScaled
   simp [CoordRingElt.smul_a, Polynomial.coeff_smul,
     inv_mul_cancel₀ hParker_pre]
 
+private theorem admSetEagen_of_isHonestForBinaryScaled
+    {E : ECSetup} {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
+    {wit : DlogWitness E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
+    (h_admSetEagen : stmt.admSet = admSetEagen (q := E.q))
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    (h_c_eq : h_binary.c =
+      ((Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 0)⁻¹)
+    (hEagen_pre :
+      (Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 0 ≠ 0) :
+    stmt.admSet (msg.polyA, msg.polyB) := by
+  rw [h_admSetEagen]
+  unfold admSetEagen
+  change msg.toD.a.coeff 0 = 1
+  rw [h_binary.h_toD_eq, h_c_eq]
+  simp [CoordRingElt.smul_a, Polynomial.coeff_smul,
+    inv_mul_cancel₀ hEagen_pre]
+
+private theorem admSetHashInner_smul
+    {q : ℕ} [Fact (Nat.Prime q)] (r : ℕ → ZMod q)
+    (c : ZMod q) (hc : c ≠ 0) (D : CoordRingElt q) :
+    admSetHashInner r ((c • D).a, (c • D).b) =
+      c * admSetHashInner r (D.a, D.b) := by
+  unfold admSetHashInner
+  rw [CoordRingElt.smul_a, CoordRingElt.smul_b,
+    Polynomial.natDegree_smul _ hc, Polynomial.natDegree_smul _ hc]
+  rw [mul_add, Finset.mul_sum, Finset.mul_sum]
+  congr 1
+  · refine Finset.sum_congr rfl ?_
+    intro i _hi
+    rw [Polynomial.coeff_smul, smul_eq_mul]
+    ring
+  · refine Finset.sum_congr rfl ?_
+    intro i _hi
+    rw [Polynomial.coeff_smul, smul_eq_mul]
+    ring
+
+private theorem admSetHash_of_isHonestForBinaryScaled
+    {E : ECSetup} {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
+    {wit : DlogWitness E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
+    (r : ℕ → ZMod E.q)
+    (h_admSetHash : stmt.admSet = admSetHash r)
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    (h_c_eq : h_binary.c =
+      (admSetHashInner r
+        ((Landmark.eagenBuild_singletons E h_binary.Ps).a,
+          (Landmark.eagenBuild_singletons E h_binary.Ps).b))⁻¹)
+    (hHash_pre :
+      admSetHashInner r
+        ((Landmark.eagenBuild_singletons E h_binary.Ps).a,
+          (Landmark.eagenBuild_singletons E h_binary.Ps).b) ≠ 0) :
+    stmt.admSet (msg.polyA, msg.polyB) := by
+  rw [h_admSetHash]
+  unfold admSetHash
+  change admSetHashInner r (msg.toD.a, msg.toD.b) ≠ 0
+  rw [h_binary.h_toD_eq]
+  set D := Landmark.eagenBuild_singletons E h_binary.Ps
+  have h_c_eq' : h_binary.c = (admSetHashInner r (D.a, D.b))⁻¹ := by
+    simpa [D] using h_c_eq
+  have hHash_pre' : admSetHashInner r (D.a, D.b) ≠ 0 := by
+    simpa [D] using hHash_pre
+  rw [admSetHashInner_smul r h_binary.c h_binary.h_c_ne D, h_c_eq']
+  simp [inv_mul_cancel₀ hHash_pre']
+
 theorem ma_completeness_for_binary_admSetMax_unconditional
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
@@ -682,6 +745,63 @@ theorem ma_completeness_for_binary_admSetParker_unconditional
     h_binary hLen h_extras hValid hDeg hDegK
     (admSetParker_of_isHonestForBinaryScaled
       h_admSetParker h_binary h_c_eq hParker_pre)
+
+theorem ma_completeness_for_binary_admSetEagen_unconditional
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (hkm : stmt.k = msg.k)
+    (h_admSetEagen : stmt.admSet = admSetEagen (q := E.q))
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    (h_c_eq : h_binary.c =
+      ((Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 0)⁻¹)
+    (hEagen_pre :
+      (Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 0 ≠ 0)
+    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_extras : ∀ k < h_binary.Ps.length,
+      Landmark.LevelStepCombineExtras E
+        (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)))
+    (hValid : relDlog E stmt wit)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
+  ma_completeness_for_binary_with_scalar_unconditional E stmt msg wit hk hkm
+    h_binary hLen h_extras hValid hDeg hDegK
+    (admSetEagen_of_isHonestForBinaryScaled
+      h_admSetEagen h_binary h_c_eq hEagen_pre)
+
+theorem ma_completeness_for_binary_admSetHash_unconditional
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (hkm : stmt.k = msg.k)
+    (r : ℕ → ZMod E.q)
+    (h_admSetHash : stmt.admSet = admSetHash r)
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    (h_c_eq : h_binary.c =
+      (admSetHashInner r
+        ((Landmark.eagenBuild_singletons E h_binary.Ps).a,
+          (Landmark.eagenBuild_singletons E h_binary.Ps).b))⁻¹)
+    (hHash_pre :
+      admSetHashInner r
+        ((Landmark.eagenBuild_singletons E h_binary.Ps).a,
+          (Landmark.eagenBuild_singletons E h_binary.Ps).b) ≠ 0)
+    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_extras : ∀ k < h_binary.Ps.length,
+      Landmark.LevelStepCombineExtras E
+        (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)))
+    (hValid : relDlog E stmt wit)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
+  ma_completeness_for_binary_with_scalar_unconditional E stmt msg wit hk hkm
+    h_binary hLen h_extras hValid hDeg hDegK
+    (admSetHash_of_isHonestForBinaryScaled
+      r h_admSetHash h_binary h_c_eq hHash_pre)
 
 theorem ma_completeness_for_binary_chord_chain_unconditional
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -734,6 +854,69 @@ theorem ma_completeness_for_binary_chord_chain_admSetParker_unconditional
     Landmark.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
   exact ma_completeness_for_binary_admSetParker_unconditional
     E stmt msg wit hk hkm h_admSetParker h_binary h_c_eq hParker_pre
+    hLen h_extras hValid hDeg hDegK
+
+theorem ma_completeness_for_binary_chord_chain_admSetEagen_unconditional
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (hkm : stmt.k = msg.k)
+    (h_admSetEagen : stmt.admSet = admSetEagen (q := E.q))
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    (h_c_eq : h_binary.c =
+      ((Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 0)⁻¹)
+    (hEagen_pre :
+      (Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 0 ≠ 0)
+    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_chain : Landmark.IteratedLevelStepCombineExtras E h_binary.Ps.length
+                  (Landmark.level0_singletons E h_binary.Ps))
+    (hValid : relDlog E stmt wit)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+  have h_extras :
+      ∀ k < h_binary.Ps.length,
+        Landmark.LevelStepCombineExtras E
+          (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) :=
+    Landmark.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
+  exact ma_completeness_for_binary_admSetEagen_unconditional
+    E stmt msg wit hk hkm h_admSetEagen h_binary h_c_eq hEagen_pre
+    hLen h_extras hValid hDeg hDegK
+
+theorem ma_completeness_for_binary_chord_chain_admSetHash_unconditional
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (hkm : stmt.k = msg.k)
+    (r : ℕ → ZMod E.q)
+    (h_admSetHash : stmt.admSet = admSetHash r)
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    (h_c_eq : h_binary.c =
+      (admSetHashInner r
+        ((Landmark.eagenBuild_singletons E h_binary.Ps).a,
+          (Landmark.eagenBuild_singletons E h_binary.Ps).b))⁻¹)
+    (hHash_pre :
+      admSetHashInner r
+        ((Landmark.eagenBuild_singletons E h_binary.Ps).a,
+          (Landmark.eagenBuild_singletons E h_binary.Ps).b) ≠ 0)
+    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_chain : Landmark.IteratedLevelStepCombineExtras E h_binary.Ps.length
+                  (Landmark.level0_singletons E h_binary.Ps))
+    (hValid : relDlog E stmt wit)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+  have h_extras :
+      ∀ k < h_binary.Ps.length,
+        Landmark.LevelStepCombineExtras E
+          (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) :=
+    Landmark.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
+  exact ma_completeness_for_binary_admSetHash_unconditional
+    E stmt msg wit hk hkm r h_admSetHash h_binary h_c_eq hHash_pre
     hLen h_extras hValid hDeg hDegK
 
 theorem ma_completeness_clean_for_binary_chord_chain_unconditional

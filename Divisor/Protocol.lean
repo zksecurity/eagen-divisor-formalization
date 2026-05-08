@@ -61,21 +61,25 @@ theorem admSetEagen_excludes_zero : ¬ (admSetEagen (q := q) (0, 0)) := by
   change (0 : Polynomial (ZMod q)).coeff 0 = 1 at h
   simp at h
 
+/-- Hash inner product against the concatenated coefficient vector of
+    `(a, b)`. -/
+def admSetHashInner (r : ℕ → ZMod q)
+    (ab : Polynomial (ZMod q) × Polynomial (ZMod q)) : ZMod q :=
+  (∑ i ∈ Finset.range (ab.1.natDegree + 1), r i * ab.1.coeff i) +
+  (∑ i ∈ Finset.range (ab.2.natDegree + 1), r (ab.1.natDegree + 1 + i) * ab.2.coeff i)
+
 /-- Hash: `{(a, b) : ⟨r, (coeffs a ‖ coeffs b)⟩ ≠ 0}` for some challenge
     `r : ℕ → ZMod q`. The zero polynomial has all-zero coefficients, so
     the inner product is `0`, hence excluded. -/
 def admSetHash (r : ℕ → ZMod q) :
     Polynomial (ZMod q) × Polynomial (ZMod q) → Prop :=
-  fun ab =>
-    (∑ i ∈ Finset.range (ab.1.natDegree + 1), r i * ab.1.coeff i) +
-    (∑ i ∈ Finset.range (ab.2.natDegree + 1), r (ab.1.natDegree + 1 + i) * ab.2.coeff i)
-    ≠ 0
+  fun ab => admSetHashInner r ab ≠ 0
 
 theorem admSetHash_excludes_zero (r : ℕ → ZMod q) :
     ¬ (admSetHash r (0, 0)) := by
   intro h
   apply h
-  simp
+  simp [admSetHashInner]
 
 /-- Witness for the discrete-log relation.
 
