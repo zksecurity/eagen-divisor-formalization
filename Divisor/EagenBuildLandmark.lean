@@ -6831,6 +6831,259 @@ def LandmarkInvStrongCombineExtras (a b : EagenAccum E) : Prop :=
   b.point ≠ (0 : ECPoint E) →
     LandmarkInvStrongCombineAffineExtras E a b
 
+/-- Branch-shaped certificate for the affine-affine extras used by
+`EagenAccum.combine`.
+
+The predicate follows the actual dispatcher. Branches that do not consult
+affine-affine extras are `True`. The distinct-x chord branch exposes only the
+four simple inequalities needed by `landmarkInvStrong_combine_distinct_*`.
+The smooth tangent branch exposes the remaining divisibility and local
+multiplicity obligations. This is an `abbrev` so concrete non-smooth branches
+can reduce before `native_decide` looks for a `Decidable` instance. -/
+abbrev combineCanFire (a b : EagenAccum E) : Prop :=
+  match a.point, b.point with
+  | WeierstrassCurve.Affine.Point.zero, _ => True
+  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero => True
+  | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
+    WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ =>
+      match decEq xa xb with
+      | isFalse _ =>
+          ya ≠ 0 ∧ yb ≠ 0 ∧
+          (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xa ∧
+          (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xb
+      | isTrue _ =>
+          match decEq ya (-yb) with
+          | isTrue _ => True
+          | isFalse _ =>
+              match decEq ya 0 with
+              | isTrue _ => True
+              | isFalse _ =>
+                  let line := chordCoordRingElt E (xa, ya) (xa, ya)
+                  let q :=
+                    mulCoordRingElt E (mulCoordRingElt E line a.poly) b.poly
+                  ((3 * xa ^ 2 + E.curveA) * (2 * ya)⁻¹) ^ 2 - 2 * xa ≠ xa ∧
+                  (X - C xa) ^ 2 ∣ q.a ∧
+                  (X - C xa) ^ 2 ∣ q.b ∧
+                  ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+                    localMult E a.poly P + localMult E b.poly P + localMult E line P
+                      ≤ localMult E q P
+
+namespace combineCanFire
+
+/-- Decidable subcertificate for runs where the smooth tangent branch is not
+expected to fire. The smooth branch is `False`; all other branches mirror
+`combineCanFire`. -/
+abbrev chordCase (a b : EagenAccum E) : Prop :=
+  match a.point, b.point with
+  | WeierstrassCurve.Affine.Point.zero, _ => True
+  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero => True
+  | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
+    WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ =>
+      match decEq xa xb with
+      | isFalse _ =>
+          ya ≠ 0 ∧ yb ≠ 0 ∧
+          (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xa ∧
+          (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xb
+      | isTrue _ =>
+          match decEq ya (-yb) with
+          | isTrue _ => True
+          | isFalse _ =>
+              match decEq ya 0 with
+              | isTrue _ => True
+              | isFalse _ => False
+
+instance chordCase_decidable (a b : EagenAccum E) :
+    Decidable (combineCanFire.chordCase E a b) := by
+  match hpa : a.point, hpb : b.point with
+  | WeierstrassCurve.Affine.Point.zero, _ =>
+      simpa [chordCase, hpa, hpb] using (isTrue True.intro : Decidable True)
+  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero =>
+      simpa [chordCase, hpa, hpb] using (isTrue True.intro : Decidable True)
+  | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
+    WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ =>
+      cases hxx : decEq xa xb with
+      | isFalse h_x_ne =>
+          simpa [chordCase, hpa, hpb, hxx] using
+            (inferInstance :
+              Decidable
+                (ya ≠ 0 ∧ yb ≠ 0 ∧
+                (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xa ∧
+                (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xb))
+      | isTrue h_x_eq =>
+          cases hyy : decEq ya (-yb) with
+          | isTrue h_y_neg =>
+              simpa [chordCase, hpa, hpb, hxx, hyy] using
+                (isTrue True.intro : Decidable True)
+          | isFalse h_y_not_neg =>
+              cases hy0 : decEq ya 0 with
+              | isTrue h_y_zero =>
+                  simpa [chordCase, hpa, hpb, hxx, hyy, hy0] using
+                    (isTrue True.intro : Decidable True)
+              | isFalse h_y_ne_zero =>
+                  simpa [chordCase, hpa, hpb, hxx, hyy, hy0] using
+                    (isFalse (fun hFalse : False => hFalse) : Decidable False)
+
+theorem of_chordCase {a b : EagenAccum E}
+    (h : combineCanFire.chordCase E a b) :
+    combineCanFire E a b := by
+  match hpa : a.point, hpb : b.point with
+  | WeierstrassCurve.Affine.Point.zero, _ =>
+      simpa [combineCanFire, hpa, hpb]
+  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero =>
+      simpa [combineCanFire, hpa, hpb]
+  | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) hns_a,
+    WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) hns_b =>
+      cases hxx : decEq xa xb with
+      | isFalse h_x_ne =>
+          simpa [combineCanFire, chordCase, hpa, hpb, hxx] using h
+      | isTrue h_x_eq =>
+          cases hyy : decEq ya (-yb) with
+          | isTrue h_y_neg =>
+              simpa [combineCanFire, hpa, hpb, hxx, hyy]
+          | isFalse h_y_not_neg =>
+              cases hy0 : decEq ya 0 with
+              | isTrue h_y_zero =>
+                  simpa [combineCanFire, hpa, hpb, hxx, hyy, hy0]
+              | isFalse h_y_ne_zero =>
+                  have hfalse : False := by
+                    simpa [chordCase, hpa, hpb, hxx, hyy, hy0] using h
+                  exact False.elim hfalse
+
+end combineCanFire
+
+private theorem affine_eq_some_coords
+    {x y xa ya : ZMod E.q}
+    (hns : E.toW.toAffine.Nonsingular x y)
+    (h : ECPoint.affine E xa ya =
+      (WeierstrassCurve.Affine.Point.some hns : ECPoint E)) :
+    xa = x ∧ ya = y := by
+  unfold ECPoint.affine at h
+  by_cases hns' : E.toW.toAffine.Nonsingular xa ya
+  · rw [dif_pos hns'] at h
+    exact WeierstrassCurve.Affine.Point.some.inj h
+  · rw [dif_neg hns'] at h
+    exfalso
+    exact (WeierstrassCurve.Affine.Point.some_ne_zero hns) h.symm
+
+theorem landmarkInvStrongCombineAffineExtras_of_combineCanFire
+    (a b : EagenAccum E) (h : combineCanFire E a b)
+    (ha_ne : a.point ≠ (0 : ECPoint E))
+    (hb_ne : b.point ≠ (0 : ECPoint E)) :
+    LandmarkInvStrongCombineAffineExtras E a b := by
+  match hpa : a.point, hpb : b.point with
+  | WeierstrassCurve.Affine.Point.zero, _ =>
+      exact False.elim (ha_ne hpa)
+  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero =>
+      exact False.elim (hb_ne hpb)
+  | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) hns_a,
+    WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) hns_b =>
+      have hxa_on : (xa, ya) ∈ E.points :=
+        E.hComplete xa ya
+          ((E.equation_iff xa ya).mp ((E.equation_iff_nonsingular).mpr hns_a))
+      have hxb_on : (xb, yb) ∈ E.points :=
+        E.hComplete xb yb
+          ((E.equation_iff xb yb).mp ((E.equation_iff_nonsingular).mpr hns_b))
+      intro xa' ya' xb' yb' h_a_pt h_b_pt
+      have h_a_eq_some :
+          ECPoint.affine E xa' ya' =
+            (WeierstrassCurve.Affine.Point.some hns_a : ECPoint E) := by
+        rw [← h_a_pt, hpa]
+      have h_b_eq_some :
+          ECPoint.affine E xb' yb' =
+            (WeierstrassCurve.Affine.Point.some hns_b : ECPoint E) := by
+        rw [← h_b_pt, hpb]
+      have hxa' : xa' = xa ∧ ya' = ya :=
+        affine_eq_some_coords E hns_a h_a_eq_some
+      have hxb' : xb' = xb ∧ yb' = yb :=
+        affine_eq_some_coords E hns_b h_b_eq_some
+      obtain ⟨hxa'_eq, hya'_eq⟩ := hxa'
+      obtain ⟨hxb'_eq, hyb'_eq⟩ := hxb'
+      cases hxx : decEq xa xb with
+      | isFalse h_x_ne =>
+          have h_chord :
+              ya ≠ 0 ∧ yb ≠ 0 ∧
+              (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xa ∧
+              (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xb := by
+            simpa [combineCanFire, hpa, hpb, hxx] using h
+          refine ⟨?_, ?_⟩
+          · intro _h_x_ne
+            refine ⟨?_, ?_, ?_, ?_⟩
+            · simpa [hya'_eq] using h_chord.1
+            · simpa [hyb'_eq] using h_chord.2.1
+            · simpa [hxa'_eq, hya'_eq, hxb'_eq, hyb'_eq] using h_chord.2.2.1
+            · simpa [hxa'_eq, hya'_eq, hxb'_eq, hyb'_eq] using h_chord.2.2.2
+          · intro h_x_eq _ _
+            exfalso
+            apply h_x_ne
+            calc
+              xa = xa' := hxa'_eq.symm
+              _ = xb' := h_x_eq
+              _ = xb := hxb'_eq
+      | isTrue h_x_eq =>
+          cases hyy : decEq ya (-yb) with
+          | isTrue h_y_neg =>
+              refine ⟨?_, ?_⟩
+              · intro h_x_ne
+                exfalso
+                apply h_x_ne
+                calc
+                  xa' = xa := hxa'_eq
+                  _ = xb := h_x_eq
+                  _ = xb' := hxb'_eq.symm
+              · intro _ h_y_not_neg _
+                exfalso
+                apply h_y_not_neg
+                rw [hya'_eq, hyb'_eq]
+                exact h_y_neg
+          | isFalse h_y_not_neg =>
+              cases hy0 : decEq ya 0 with
+              | isTrue h_y_zero =>
+                  have hxb_as_xa : (xa, yb) ∈ E.points := by
+                    simpa [h_x_eq] using hxb_on
+                  have h_y_neg : ya = -yb := by
+                    rcases ECPoints_same_x_y_eq_or_neg E hxa_on hxb_as_xa with h_same | h_neg
+                    · have hyb_zero : yb = 0 := by
+                        rw [← h_same, h_y_zero]
+                      rw [h_y_zero, hyb_zero]
+                      simp
+                    · exact h_neg
+                  exact False.elim (h_y_not_neg h_y_neg)
+              | isFalse h_y_ne_zero =>
+                  have h_smooth :
+                      (let line := chordCoordRingElt E (xa, ya) (xa, ya)
+                       let q :=
+                        mulCoordRingElt E (mulCoordRingElt E line a.poly) b.poly
+                       ((3 * xa ^ 2 + E.curveA) * (2 * ya)⁻¹) ^ 2 - 2 * xa ≠ xa ∧
+                       (X - C xa) ^ 2 ∣ q.a ∧
+                       (X - C xa) ^ 2 ∣ q.b ∧
+                       ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
+                        localMult E a.poly P + localMult E b.poly P + localMult E line P
+                          ≤ localMult E q P) := by
+                    simpa [combineCanFire, hpa, hpb, hxx, hyy, hy0] using h
+                  refine ⟨?_, ?_⟩
+                  · intro h_x_ne
+                    exfalso
+                    apply h_x_ne
+                    calc
+                      xa' = xa := hxa'_eq
+                      _ = xb := h_x_eq
+                      _ = xb' := hxb'_eq.symm
+                  · intro _ _ _
+                    simpa [hxa'_eq, hya'_eq] using h_smooth
+
+theorem landmarkInvStrongCombineExtras_of_combineCanFire
+    (a b : EagenAccum E) (h : combineCanFire E a b) :
+    LandmarkInvStrongCombineExtras E a b := by
+  intro ha_ne hb_ne
+  exact landmarkInvStrongCombineAffineExtras_of_combineCanFire
+    E a b h ha_ne hb_ne
+
+theorem landmarkInvStrongCombineExtras_of_chordCase
+    (a b : EagenAccum E) (h : combineCanFire.chordCase E a b) :
+    LandmarkInvStrongCombineExtras E a b :=
+  landmarkInvStrongCombineExtras_of_combineCanFire E a b
+    (combineCanFire.of_chordCase E h)
+
 /-- Unified dispatcher for the case-specific strong combine lemmas. -/
 theorem landmarkInvStrong_combine_when_rootMult_le_one
     {xs ys : List (ZMod E.q × ZMod E.q)}
@@ -7829,6 +8082,65 @@ def LevelStepCombineExtras : List (EagenAccum E) → Prop
       LandmarkInvStrongCombineExtras E a b ∧
       LevelStepCombineExtras rest
 
+/-- Adjacent-pair certificates following the `combine` dispatcher. This is the
+pair-list analogue of `combineCanFire`; it converts to the existing
+`LevelStepCombineExtras` shape. -/
+def LevelStepCombineCanFire : List (EagenAccum E) → Prop
+  | [] => True
+  | [_] => True
+  | a :: b :: rest =>
+      combineCanFire E a b ∧
+      LevelStepCombineCanFire rest
+
+/-- Decidable adjacent-pair certificates for the no-smooth-tangent path. -/
+def LevelStepCombineChordCase : List (EagenAccum E) → Prop
+  | [] => True
+  | [_] => True
+  | a :: b :: rest =>
+      combineCanFire.chordCase E a b ∧
+      LevelStepCombineChordCase rest
+
+def levelStepCombineChordCaseDecidable :
+    (accs : List (EagenAccum E)) → Decidable (LevelStepCombineChordCase E accs)
+  | [] => isTrue trivial
+  | [_] => isTrue trivial
+  | a :: b :: rest => by
+      unfold LevelStepCombineChordCase
+      haveI : Decidable (LevelStepCombineChordCase E rest) :=
+        levelStepCombineChordCaseDecidable rest
+      infer_instance
+
+instance levelStepCombineChordCase_decidable (accs : List (EagenAccum E)) :
+    Decidable (LevelStepCombineChordCase E accs) :=
+  levelStepCombineChordCaseDecidable E accs
+
+theorem levelStepCombineCanFire_of_chordCase :
+    ∀ (accs : List (EagenAccum E)),
+      LevelStepCombineChordCase E accs → LevelStepCombineCanFire E accs
+  | [], _ => trivial
+  | [_], _ => trivial
+  | a :: b :: rest, h => by
+      obtain ⟨hab, hrest⟩ := h
+      exact ⟨combineCanFire.of_chordCase E hab,
+        levelStepCombineCanFire_of_chordCase rest hrest⟩
+
+theorem levelStepCombineExtras_of_canFire :
+    ∀ (accs : List (EagenAccum E)),
+      LevelStepCombineCanFire E accs → LevelStepCombineExtras E accs
+  | [], _ => trivial
+  | [_], _ => trivial
+  | a :: b :: rest, h => by
+      obtain ⟨hab, hrest⟩ := h
+      exact ⟨landmarkInvStrongCombineExtras_of_combineCanFire E a b hab,
+        levelStepCombineExtras_of_canFire rest hrest⟩
+
+theorem levelStepCombineExtras_of_chordCase
+    (accs : List (EagenAccum E))
+    (h : LevelStepCombineChordCase E accs) :
+    LevelStepCombineExtras E accs :=
+  @levelStepCombineExtras_of_canFire E accs
+    (@levelStepCombineCanFire_of_chordCase E accs h)
+
 theorem landmarkInvList_preservation_under_level_step
     (xss : List (List (ZMod E.q × ZMod E.q)))
     (accs : List (EagenAccum E))
@@ -7914,6 +8226,68 @@ def IteratedLevelStepCombineExtras : ℕ → List (EagenAccum E) → Prop
   | n + 1, accs =>
       LevelStepCombineExtras E accs ∧
       IteratedLevelStepCombineExtras n (level_step E accs)
+
+/-- Iterated branch certificates following the `combine` dispatcher. -/
+def IteratedLevelStepCombineCanFire : ℕ → List (EagenAccum E) → Prop
+  | 0, _ => True
+  | n + 1, accs =>
+      LevelStepCombineCanFire E accs ∧
+      IteratedLevelStepCombineCanFire n (level_step E accs)
+
+/-- Iterated no-smooth-tangent certificates. These are intended for concrete
+chains where `native_decide` can discharge the chord/vacuous conditions. -/
+def IteratedLevelStepCombineChordCase : ℕ → List (EagenAccum E) → Prop
+  | 0, _ => True
+  | n + 1, accs =>
+      LevelStepCombineChordCase E accs ∧
+      IteratedLevelStepCombineChordCase n (level_step E accs)
+
+theorem iteratedLevelStepCombineCanFire_of_chordCase
+    (n : ℕ) (accs : List (EagenAccum E))
+    (h : IteratedLevelStepCombineChordCase E n accs) :
+    IteratedLevelStepCombineCanFire E n accs := by
+  induction n generalizing accs with
+  | zero =>
+      trivial
+  | succ n ih =>
+      obtain ⟨hnow, htail⟩ := h
+      exact ⟨@levelStepCombineCanFire_of_chordCase E accs hnow,
+        ih (level_step E accs) htail⟩
+
+theorem iteratedLevelStepCombineExtras_of_canFire
+    (n : ℕ) (accs : List (EagenAccum E))
+    (h : IteratedLevelStepCombineCanFire E n accs) :
+    IteratedLevelStepCombineExtras E n accs := by
+  induction n generalizing accs with
+  | zero =>
+      trivial
+  | succ n ih =>
+      obtain ⟨hnow, htail⟩ := h
+      exact ⟨@levelStepCombineExtras_of_canFire E accs hnow,
+        ih (level_step E accs) htail⟩
+
+theorem iteratedLevelStepCombineExtras_of_chordCase
+    (n : ℕ) (accs : List (EagenAccum E))
+    (h : IteratedLevelStepCombineChordCase E n accs) :
+    IteratedLevelStepCombineExtras E n accs :=
+  @iteratedLevelStepCombineExtras_of_canFire E n accs
+    (@iteratedLevelStepCombineCanFire_of_chordCase E n accs h)
+
+/-- Decidable instance for `IteratedLevelStepCombineChordCase`. Recurses on
+    the iterate count, using the per-level `LevelStepCombineChordCase`
+    decidability. This enables `decide` / `native_decide` discharge for
+    concrete inputs at any length. -/
+noncomputable instance iteratedLevelStepCombineChordCase_decidable :
+    ∀ (n : ℕ) (accs : List (EagenAccum E)),
+      Decidable (IteratedLevelStepCombineChordCase E n accs)
+  | 0, _ => isTrue trivial
+  | n + 1, accs => by
+      classical
+      unfold IteratedLevelStepCombineChordCase
+      have h1 : Decidable (LevelStepCombineChordCase E accs) := inferInstance
+      have h2 : Decidable (IteratedLevelStepCombineChordCase E n (level_step E accs)) :=
+        iteratedLevelStepCombineChordCase_decidable n (level_step E accs)
+      exact instDecidableAnd
 
 theorem iteratedLevelStepCombineExtras_iff_forall_lt
     (n : ℕ) (accs : List (EagenAccum E)) :
