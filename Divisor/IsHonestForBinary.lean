@@ -1042,6 +1042,373 @@ theorem h_extras_holds_for_length6_chord_pairs
   · simp [iterate, level0_singletons, level_step, LevelStepCombineExtras]
   · simp [iterate, level0_singletons, level_step, LevelStepCombineExtras]
 
+theorem length8_chord_level2_extras
+    (E : ECSetup)
+    (P₀ P₁ P₂ P₃ P₄ P₅ P₆ P₇ : ZMod E.q × ZMod E.q)
+    (hP₀_on : P₀ ∈ E.points) (hP₁_on : P₁ ∈ E.points)
+    (hP₂_on : P₂ ∈ E.points) (hP₃_on : P₃ ∈ E.points)
+    (hP₄_on : P₄ ∈ E.points) (hP₅_on : P₅ ∈ E.points)
+    (hP₆_on : P₆ ∈ E.points) (hP₇_on : P₇ ∈ E.points)
+    (hNodup : ([P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] :
+      List (ZMod E.q × ZMod E.q)).Nodup)
+    (hPair01 :
+      LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₀) (levelInitSingleton E P₁))
+    (hPair23 :
+      LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₂) (levelInitSingleton E P₃))
+    (hPair45 :
+      LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₄) (levelInitSingleton E P₅))
+    (hPair67 :
+      LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₆) (levelInitSingleton E P₇))
+    (hLevel1Left :
+      LandmarkInvStrongCombineExtras E
+        (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
+        (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)))
+    (hLevel1Right :
+      LandmarkInvStrongCombineExtras E
+        (EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅))
+        (EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇)))
+    (hSumZero : sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] = 0) :
+    LandmarkInvStrongCombineExtras E
+      (EagenAccum.combine E
+        (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
+        (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)))
+      (EagenAccum.combine E
+        (EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅))
+        (EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇))) := by
+  classical
+  let xss : List (List (ZMod E.q × ZMod E.q)) :=
+    [[P₀], [P₁], [P₂], [P₃], [P₄], [P₅], [P₆], [P₇]]
+  let accs : List (EagenAccum E) :=
+    [levelInitSingleton E P₀, levelInitSingleton E P₁,
+     levelInitSingleton E P₂, levelInitSingleton E P₃,
+     levelInitSingleton E P₄, levelInitSingleton E P₅,
+     levelInitSingleton E P₆, levelInitSingleton E P₇]
+  have hxss_on : ∀ xs ∈ xss, ∀ P ∈ xs, P ∈ E.points := by
+    intro xs hxs P hP
+    simp [xss] at hxs
+    rcases hxs with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · rw [List.mem_singleton] at hP
+      rw [hP]
+      exact hP₀_on
+    · rw [List.mem_singleton] at hP
+      rw [hP]
+      exact hP₁_on
+    · rw [List.mem_singleton] at hP
+      rw [hP]
+      exact hP₂_on
+    · rw [List.mem_singleton] at hP
+      rw [hP]
+      exact hP₃_on
+    · rw [List.mem_singleton] at hP
+      rw [hP]
+      exact hP₄_on
+    · rw [List.mem_singleton] at hP
+      rw [hP]
+      exact hP₅_on
+    · rw [List.mem_singleton] at hP
+      rw [hP]
+      exact hP₆_on
+    · rw [List.mem_singleton] at hP
+      rw [hP]
+      exact hP₇_on
+  have hxss_ne : ∀ xs ∈ xss, xs ≠ [] := by
+    intro xs hxs
+    simp [xss] at hxs
+    rcases hxs with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp
+  have hNodup_concat : xss.flatten.Nodup := by
+    simpa [xss] using hNodup
+  have h_init : LandmarkInvStrongList E xss accs := by
+    subst xss
+    subst accs
+    simpa [level0_singletons] using
+      landmarkInvStrongList_level0_singletons E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇]
+        (by
+          intro P hP
+          simp at hP
+          rcases hP with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+          · exact hP₀_on
+          · exact hP₁_on
+          · exact hP₂_on
+          · exact hP₃_on
+          · exact hP₄_on
+          · exact hP₅_on
+          · exact hP₆_on
+          · exact hP₇_on)
+  have h_level0_extras : LevelStepCombineExtras E accs := by
+    subst accs
+    change LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₀) (levelInitSingleton E P₁) ∧
+      (LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₂) (levelInitSingleton E P₃) ∧
+      (LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₄) (levelInitSingleton E P₅) ∧
+      (LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₆) (levelInitSingleton E P₇) ∧ True)))
+    exact ⟨hPair01, hPair23, hPair45, hPair67, trivial⟩
+  have h_step1_all :=
+    landmarkInvStrongList_level_step E xss accs h_init
+      hxss_on hNodup_concat hxss_ne h_level0_extras
+  have h_step1 :
+      LandmarkInvStrongList E [[P₀, P₁], [P₂, P₃], [P₄, P₅], [P₆, P₇]]
+        [EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁),
+         EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃),
+         EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅),
+         EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇)] := by
+    simpa [xss, accs, level_step_lists, pairUp, level_step] using h_step1_all.1
+  have hxss_on1 : ∀ xs ∈ ([[P₀, P₁], [P₂, P₃], [P₄, P₅], [P₆, P₇]] :
+      List (List (ZMod E.q × ZMod E.q))), ∀ P ∈ xs, P ∈ E.points := by
+    simpa [xss, level_step_lists, pairUp] using h_step1_all.2.2
+  have hNodup1 : (([[P₀, P₁], [P₂, P₃], [P₄, P₅], [P₆, P₇]] :
+      List (List (ZMod E.q × ZMod E.q))).flatten).Nodup := by
+    simpa [xss, level_step_lists, pairUp] using h_step1_all.2.1
+  have hxss_ne1 : ∀ xs ∈ ([[P₀, P₁], [P₂, P₃], [P₄, P₅], [P₆, P₇]] :
+      List (List (ZMod E.q × ZMod E.q))), xs ≠ [] := by
+    simp
+  have h_level1_extras :
+      LevelStepCombineExtras E
+        [EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁),
+         EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃),
+         EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅),
+         EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇)] := by
+    change LandmarkInvStrongCombineExtras E
+        (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
+        (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)) ∧
+      (LandmarkInvStrongCombineExtras E
+        (EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅))
+        (EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇)) ∧ True)
+    exact ⟨hLevel1Left, hLevel1Right, trivial⟩
+  have h_step2_all :=
+    landmarkInvStrongList_level_step E
+      ([[P₀, P₁], [P₂, P₃], [P₄, P₅], [P₆, P₇]] :
+        List (List (ZMod E.q × ZMod E.q)))
+      [EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁),
+       EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃),
+       EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅),
+       EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇)]
+      h_step1 hxss_on1 hNodup1 hxss_ne1 h_level1_extras
+  have h_step2 :
+      LandmarkInvStrongList E [[P₀, P₁, P₂, P₃], [P₄, P₅, P₆, P₇]]
+        [EagenAccum.combine E
+            (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
+            (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)),
+         EagenAccum.combine E
+            (EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅))
+            (EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇))] := by
+    simpa [level_step_lists, pairUp, level_step] using h_step2_all.1
+  obtain ⟨h0123, h_step2_tail⟩ := List.forall₂_cons.mp h_step2
+  obtain ⟨h4567, _⟩ := List.forall₂_cons.mp h_step2_tail
+  have h0123_sum :
+      (EagenAccum.combine E
+        (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
+        (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃))).point =
+        sumOnE E [P₀, P₁, P₂, P₃] :=
+    LandmarkInvStrong.running_sum E h0123
+  have h4567_sum :
+      (EagenAccum.combine E
+        (EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅))
+        (EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇))).point =
+        sumOnE E [P₄, P₅, P₆, P₇] :=
+    LandmarkInvStrong.running_sum E h4567
+  have hSumPairs : sumOnE E [P₀, P₁, P₂, P₃] + sumOnE E [P₄, P₅, P₆, P₇] = 0 := by
+    calc
+      sumOnE E [P₀, P₁, P₂, P₃] + sumOnE E [P₄, P₅, P₆, P₇]
+          = sumOnE E ([P₀, P₁, P₂, P₃] ++ [P₄, P₅, P₆, P₇]) := by
+            rw [sumOnE_append]
+      _ = sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] := rfl
+      _ = 0 := hSumZero
+  have h_inverse :
+      (EagenAccum.combine E
+        (EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅))
+        (EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇))).point =
+        -((EagenAccum.combine E
+          (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
+          (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃))).point) := by
+    rw [h0123_sum, h4567_sum]
+    exact eq_neg_of_add_eq_zero_left (by simpa [add_comm] using hSumPairs)
+  by_cases h_left_zero :
+      (EagenAccum.combine E
+        (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
+        (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃))).point =
+        (0 : ECPoint E)
+  · exact combine_extras_vacuous_of_left_zero E _ _ h_left_zero
+  · intro _ _
+    exact affine_extras_vacuous_on_inverse_affine_points E _ _ h_inverse h_left_zero
+
+theorem h_extras_holds_for_length8_chord_pairs
+    (E : ECSetup)
+    (P₀ P₁ P₂ P₃ P₄ P₅ P₆ P₇ : ZMod E.q × ZMod E.q)
+    (hP₀_on : P₀ ∈ E.points) (hP₁_on : P₁ ∈ E.points)
+    (hP₂_on : P₂ ∈ E.points) (hP₃_on : P₃ ∈ E.points)
+    (hP₄_on : P₄ ∈ E.points) (hP₅_on : P₅ ∈ E.points)
+    (hP₆_on : P₆ ∈ E.points) (hP₇_on : P₇ ∈ E.points)
+    (hNodup : ([P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] :
+      List (ZMod E.q × ZMod E.q)).Nodup)
+    (hSumZero : sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] = 0)
+    (h01_x_ne : P₀.1 ≠ P₁.1) (h23_x_ne : P₂.1 ≠ P₃.1)
+    (h45_x_ne : P₄.1 ≠ P₅.1) (h67_x_ne : P₆.1 ≠ P₇.1)
+    (hP₀_y_ne : P₀.2 ≠ 0) (hP₁_y_ne : P₁.2 ≠ 0)
+    (hP₂_y_ne : P₂.2 ≠ 0) (hP₃_y_ne : P₃.2 ≠ 0)
+    (hP₄_y_ne : P₄.2 ≠ 0) (hP₅_y_ne : P₅.2 ≠ 0)
+    (hP₆_y_ne : P₆.2 ≠ 0) (hP₇_y_ne : P₇.2 ≠ 0)
+    (hThird01_ne_P₀ :
+      (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) ≠ P₀.1)
+    (hThird01_ne_P₁ :
+      (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) ≠ P₁.1)
+    (hThird23_ne_P₂ :
+      (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) ≠ P₂.1)
+    (hThird23_ne_P₃ :
+      (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) ≠ P₃.1)
+    (hThird45_ne_P₄ :
+      (slopeOf P₄.1 P₄.2 P₅.1 P₅.2 ^ 2 - P₄.1 - P₅.1) ≠ P₄.1)
+    (hThird45_ne_P₅ :
+      (slopeOf P₄.1 P₄.2 P₅.1 P₅.2 ^ 2 - P₄.1 - P₅.1) ≠ P₅.1)
+    (hThird67_ne_P₆ :
+      (slopeOf P₆.1 P₆.2 P₇.1 P₇.2 ^ 2 - P₆.1 - P₇.1) ≠ P₆.1)
+    (hThird67_ne_P₇ :
+      (slopeOf P₆.1 P₆.2 P₇.1 P₇.2 ^ 2 - P₆.1 - P₇.1) ≠ P₇.1)
+    (hLevel1Left : Length6Level1ChordConditions E P₀ P₁ P₂ P₃)
+    (hLevel1Right : Length6Level1ChordConditions E P₄ P₅ P₆ P₇) :
+    ∀ k < ([P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] :
+        List (ZMod E.q × ZMod E.q)).length,
+      LevelStepCombineExtras E
+        (iterate E k (level0_singletons E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇])) := by
+  classical
+  have hPair01 :
+      LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₀) (levelInitSingleton E P₁) :=
+    levelInitSingleton_chord_combine_extras E P₀ P₁ hP₀_on hP₁_on h01_x_ne
+      hP₀_y_ne hP₁_y_ne hThird01_ne_P₀ hThird01_ne_P₁
+  have hPair23 :
+      LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₂) (levelInitSingleton E P₃) :=
+    levelInitSingleton_chord_combine_extras E P₂ P₃ hP₂_on hP₃_on h23_x_ne
+      hP₂_y_ne hP₃_y_ne hThird23_ne_P₂ hThird23_ne_P₃
+  have hPair45 :
+      LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₄) (levelInitSingleton E P₅) :=
+    levelInitSingleton_chord_combine_extras E P₄ P₅ hP₄_on hP₅_on h45_x_ne
+      hP₄_y_ne hP₅_y_ne hThird45_ne_P₄ hThird45_ne_P₅
+  have hPair67 :
+      LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₆) (levelInitSingleton E P₇) :=
+    levelInitSingleton_chord_combine_extras E P₆ P₇ hP₆_on hP₇_on h67_x_ne
+      hP₆_y_ne hP₇_y_ne hThird67_ne_P₆ hThird67_ne_P₇
+  have hLevel1LeftExtra :
+      LandmarkInvStrongCombineExtras E
+        (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
+        (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)) :=
+    length6_chord_level1_extras E P₀ P₁ P₂ P₃
+      hP₀_on hP₁_on hP₂_on hP₃_on h01_x_ne h23_x_ne hLevel1Left
+  have hLevel1RightExtra :
+      LandmarkInvStrongCombineExtras E
+        (EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅))
+        (EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇)) :=
+    length6_chord_level1_extras E P₄ P₅ P₆ P₇
+      hP₄_on hP₅_on hP₆_on hP₇_on h45_x_ne h67_x_ne hLevel1Right
+  have hLevel2 :
+      LandmarkInvStrongCombineExtras E
+        (EagenAccum.combine E
+          (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
+          (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)))
+        (EagenAccum.combine E
+          (EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅))
+          (EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇))) :=
+    length8_chord_level2_extras E P₀ P₁ P₂ P₃ P₄ P₅ P₆ P₇
+      hP₀_on hP₁_on hP₂_on hP₃_on hP₄_on hP₅_on hP₆_on hP₇_on hNodup
+      hPair01 hPair23 hPair45 hPair67 hLevel1LeftExtra hLevel1RightExtra hSumZero
+  intro k hk
+  have hk_lt8 : k < 8 := by simpa using hk
+  interval_cases k
+  · show LevelStepCombineExtras E
+      [levelInitSingleton E P₀, levelInitSingleton E P₁,
+       levelInitSingleton E P₂, levelInitSingleton E P₃,
+       levelInitSingleton E P₄, levelInitSingleton E P₅,
+       levelInitSingleton E P₆, levelInitSingleton E P₇]
+    change LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₀) (levelInitSingleton E P₁) ∧
+      (LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₂) (levelInitSingleton E P₃) ∧
+      (LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₄) (levelInitSingleton E P₅) ∧
+      (LandmarkInvStrongCombineExtras E
+        (levelInitSingleton E P₆) (levelInitSingleton E P₇) ∧ True)))
+    exact ⟨hPair01, hPair23, hPair45, hPair67, trivial⟩
+  · have h_iter_eq :
+        iterate E 1 (level0_singletons E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇])
+          = level_step E (level0_singletons E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇]) := by
+      show (if (level0_singletons E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇]).length ≤ 1 then _ else _) = _
+      have h_len :
+          (level0_singletons E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇]).length = 8 := by
+        simp [level0_singletons]
+      rw [if_neg (by rw [h_len]; omega)]
+      rfl
+    rw [h_iter_eq]
+    show LevelStepCombineExtras E
+      (level_step E
+        [levelInitSingleton E P₀, levelInitSingleton E P₁,
+         levelInitSingleton E P₂, levelInitSingleton E P₃,
+         levelInitSingleton E P₄, levelInitSingleton E P₅,
+         levelInitSingleton E P₆, levelInitSingleton E P₇])
+    show LevelStepCombineExtras E
+      [EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁),
+       EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃),
+       EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅),
+       EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇)]
+    change LandmarkInvStrongCombineExtras E
+      (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
+      (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)) ∧
+      (LandmarkInvStrongCombineExtras E
+        (EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅))
+        (EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇)) ∧ True)
+    exact ⟨hLevel1LeftExtra, hLevel1RightExtra, trivial⟩
+  · have h_iter_eq :
+        iterate E 2 (level0_singletons E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇])
+          = level_step E
+              (level_step E (level0_singletons E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇])) := by
+      show (if (level0_singletons E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇]).length ≤ 1 then _ else _) = _
+      have h_len0 :
+          (level0_singletons E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇]).length = 8 := by
+        simp [level0_singletons]
+      rw [if_neg (by rw [h_len0]; omega)]
+      show (if (level_step E (level0_singletons E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇])).length ≤ 1 then _ else _) = _
+      have h_len1 :
+          (level_step E (level0_singletons E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇])).length = 4 := by
+        simp [level0_singletons, level_step]
+      rw [if_neg (by rw [h_len1]; omega)]
+      rfl
+    rw [h_iter_eq]
+    show LevelStepCombineExtras E
+      (level_step E
+        (level_step E
+          [levelInitSingleton E P₀, levelInitSingleton E P₁,
+           levelInitSingleton E P₂, levelInitSingleton E P₃,
+           levelInitSingleton E P₄, levelInitSingleton E P₅,
+           levelInitSingleton E P₆, levelInitSingleton E P₇]))
+    show LevelStepCombineExtras E
+      [EagenAccum.combine E
+          (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
+          (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)),
+       EagenAccum.combine E
+          (EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅))
+          (EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇))]
+    change LandmarkInvStrongCombineExtras E
+      (EagenAccum.combine E
+        (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
+        (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)))
+      (EagenAccum.combine E
+        (EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅))
+        (EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇))) ∧ True
+    exact ⟨hLevel2, trivial⟩
+  · simp [iterate, level0_singletons, level_step, LevelStepCombineExtras]
+  · simp [iterate, level0_singletons, level_step, LevelStepCombineExtras]
+  · simp [iterate, level0_singletons, level_step, LevelStepCombineExtras]
+  · simp [iterate, level0_singletons, level_step, LevelStepCombineExtras]
+  · simp [iterate, level0_singletons, level_step, LevelStepCombineExtras]
+
 end Landmark
 
 /-! ## Length-4 fully-unconditional binary completeness.
@@ -1276,6 +1643,131 @@ theorem ma_completeness_for_binary_length6_chord_unconditional
       hThird23_ne_P₂ hThird23_ne_P₃
       hThird45_ne_P₄ hThird45_ne_P₅
       hLevel1
+  exact ma_completeness_for_binary_unconditional E stmt msg wit hk hkm
+    h_binary hLen h_extras hValid hDeg hDegK hAdm
+
+theorem ma_completeness_for_binary_length8_chord_unconditional
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (hkm : stmt.k = msg.k)
+    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    (h_length8 : ∃ P₀ P₁ P₂ P₃ P₄ P₅ P₆ P₇ : ZMod E.q × ZMod E.q,
+      h_binary.Ps = [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] ∧
+      P₀.1 ≠ P₁.1 ∧ P₂.1 ≠ P₃.1 ∧ P₄.1 ≠ P₅.1 ∧ P₆.1 ≠ P₇.1 ∧
+      P₀.2 ≠ 0 ∧ P₁.2 ≠ 0 ∧ P₂.2 ≠ 0 ∧ P₃.2 ≠ 0 ∧
+      P₄.2 ≠ 0 ∧ P₅.2 ≠ 0 ∧ P₆.2 ≠ 0 ∧ P₇.2 ≠ 0 ∧
+      (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) ≠ P₀.1 ∧
+      (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) ≠ P₁.1 ∧
+      (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) ≠ P₂.1 ∧
+      (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) ≠ P₃.1 ∧
+      (slopeOf P₄.1 P₄.2 P₅.1 P₅.2 ^ 2 - P₄.1 - P₅.1) ≠ P₄.1 ∧
+      (slopeOf P₄.1 P₄.2 P₅.1 P₅.2 ^ 2 - P₄.1 - P₅.1) ≠ P₅.1 ∧
+      (slopeOf P₆.1 P₆.2 P₇.1 P₇.2 ^ 2 - P₆.1 - P₇.1) ≠ P₆.1 ∧
+      (slopeOf P₆.1 P₆.2 P₇.1 P₇.2 ^ 2 - P₆.1 - P₇.1) ≠ P₇.1 ∧
+      Landmark.chordSumX E P₀ P₁ ≠ Landmark.chordSumX E P₂ P₃ ∧
+      Landmark.chordSumY E P₀ P₁ ≠ 0 ∧
+      Landmark.chordSumY E P₂ P₃ ≠ 0 ∧
+      (slopeOf (Landmark.chordSumX E P₀ P₁) (Landmark.chordSumY E P₀ P₁)
+          (Landmark.chordSumX E P₂ P₃) (Landmark.chordSumY E P₂ P₃) ^ 2 -
+          Landmark.chordSumX E P₀ P₁ - Landmark.chordSumX E P₂ P₃) ≠
+        Landmark.chordSumX E P₀ P₁ ∧
+      (slopeOf (Landmark.chordSumX E P₀ P₁) (Landmark.chordSumY E P₀ P₁)
+          (Landmark.chordSumX E P₂ P₃) (Landmark.chordSumY E P₂ P₃) ^ 2 -
+          Landmark.chordSumX E P₀ P₁ - Landmark.chordSumX E P₂ P₃) ≠
+        Landmark.chordSumX E P₂ P₃ ∧
+      Landmark.chordSumX E P₄ P₅ ≠ Landmark.chordSumX E P₆ P₇ ∧
+      Landmark.chordSumY E P₄ P₅ ≠ 0 ∧
+      Landmark.chordSumY E P₆ P₇ ≠ 0 ∧
+      (slopeOf (Landmark.chordSumX E P₄ P₅) (Landmark.chordSumY E P₄ P₅)
+          (Landmark.chordSumX E P₆ P₇) (Landmark.chordSumY E P₆ P₇) ^ 2 -
+          Landmark.chordSumX E P₄ P₅ - Landmark.chordSumX E P₆ P₇) ≠
+        Landmark.chordSumX E P₄ P₅ ∧
+      (slopeOf (Landmark.chordSumX E P₄ P₅) (Landmark.chordSumY E P₄ P₅)
+          (Landmark.chordSumX E P₆ P₇) (Landmark.chordSumY E P₆ P₇) ^ 2 -
+          Landmark.chordSumX E P₄ P₅ - Landmark.chordSumX E P₆ P₇) ≠
+        Landmark.chordSumX E P₆ P₇)
+    (hValid : relDlog E stmt wit)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+  obtain ⟨P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇, hPs_eq,
+    h01_x_ne, h23_x_ne, h45_x_ne, h67_x_ne,
+    hP₀_y_ne, hP₁_y_ne, hP₂_y_ne, hP₃_y_ne,
+    hP₄_y_ne, hP₅_y_ne, hP₆_y_ne, hP₇_y_ne,
+    hThird01_ne_P₀, hThird01_ne_P₁,
+    hThird23_ne_P₂, hThird23_ne_P₃,
+    hThird45_ne_P₄, hThird45_ne_P₅,
+    hThird67_ne_P₆, hThird67_ne_P₇,
+    h01_23_x_ne, h01_y_ne, h23_y_ne,
+    hThird0123_ne_01, hThird0123_ne_23,
+    h45_67_x_ne, h45_y_ne, h67_y_ne,
+    hThird4567_ne_45, hThird4567_ne_67⟩ := h_length8
+  have hLen : 2 ≤ h_binary.Ps.length := by
+    rw [hPs_eq]
+    simp
+  have hP₀_on : P₀ ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]
+    simp
+  have hP₁_on : P₁ ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]
+    simp
+  have hP₂_on : P₂ ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]
+    simp
+  have hP₃_on : P₃ ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]
+    simp
+  have hP₄_on : P₄ ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]
+    simp
+  have hP₅_on : P₅ ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]
+    simp
+  have hP₆_on : P₆ ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]
+    simp
+  have hP₇_on : P₇ ∈ E.points := by
+    apply h_binary.hPs_on
+    rw [hPs_eq]
+    simp
+  have hNodup : ([P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] :
+      List (ZMod E.q × ZMod E.q)).Nodup := by
+    simpa [hPs_eq] using h_binary.hNodup
+  have hSumZero :
+      Landmark.sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] = 0 := by
+    simpa [hPs_eq] using h_binary.hSumZero
+  have hLevel1Left : Landmark.Length6Level1ChordConditions E P₀ P₁ P₂ P₃ :=
+    ⟨h01_23_x_ne, h01_y_ne, h23_y_ne, hThird0123_ne_01, hThird0123_ne_23⟩
+  have hLevel1Right : Landmark.Length6Level1ChordConditions E P₄ P₅ P₆ P₇ :=
+    ⟨h45_67_x_ne, h45_y_ne, h67_y_ne, hThird4567_ne_45, hThird4567_ne_67⟩
+  have h_extras :
+      ∀ k < h_binary.Ps.length,
+        Landmark.LevelStepCombineExtras E
+          (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
+    rw [hPs_eq]
+    exact Landmark.h_extras_holds_for_length8_chord_pairs E
+      P₀ P₁ P₂ P₃ P₄ P₅ P₆ P₇
+      hP₀_on hP₁_on hP₂_on hP₃_on hP₄_on hP₅_on hP₆_on hP₇_on
+      hNodup hSumZero
+      h01_x_ne h23_x_ne h45_x_ne h67_x_ne
+      hP₀_y_ne hP₁_y_ne hP₂_y_ne hP₃_y_ne
+      hP₄_y_ne hP₅_y_ne hP₆_y_ne hP₇_y_ne
+      hThird01_ne_P₀ hThird01_ne_P₁
+      hThird23_ne_P₂ hThird23_ne_P₃
+      hThird45_ne_P₄ hThird45_ne_P₅
+      hThird67_ne_P₆ hThird67_ne_P₇
+      hLevel1Left hLevel1Right
   exact ma_completeness_for_binary_unconditional E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm
 
