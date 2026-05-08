@@ -131,6 +131,36 @@ Pattern for length 2N (N ≥ 2): need `2N - 2` chord conditions
 (every combine except the final inverse-vacuous one at the top
 level).
 
+### Generic chord-chain theorem (commit `e57cc25`)
+
+`ma_completeness_for_binary_chord_chain_unconditional` takes a single
+recursive certificate `IteratedLevelStepCombineExtras E n accs` defined
+as:
+
+```
+IteratedLevelStepCombineExtras 0 _ := True
+IteratedLevelStepCombineExtras (n+1) accs :=
+  LevelStepCombineExtras E accs ∧
+  IteratedLevelStepCombineExtras n (level_step E accs)
+```
+
+This collapses all per-length scaffolding into a single accumulator-only
+recursive predicate. `iteratedLevelStepCombineExtras_iff_forall_lt`
+proves equivalence with the universally-quantified `h_extras`.
+
+Per-length corollaries become thin chord-chain certificates instead of
+~500 lines of repetitive `interval_cases` / iterator unfolding.
+
+Architectural notes (per codex review):
+- Predicate is **accumulator-only** (no `xss` parameter; the proof
+  doesn't need it).
+- The certifying predicate `LandmarkInvStrongCombineAffineExtras`
+  remains the per-pair condition — but for `native_decide`-friendly
+  use, we'd want a thinner certifying wrapper that case-splits on the
+  combine dispatcher's actual shape (zero / inverse / distinct chord /
+  tangent), so the heavy tangent-branch obligations only fire when
+  needed.
+
 Closures of all four corollaries exactly match `ma_completeness*`.
 
 The length-4 chord-case (`9039704`) handles the typical binary
