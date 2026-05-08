@@ -117,13 +117,19 @@ adjacent pairs `(P_0, P_1)` and `(P_2, P_3)`. These are dischargeable
 by `h_extras_holds_for_length2_sum_zero` if the pair is a vertical
 pair (`P_1 = -P_0`), or by explicit chord conditions otherwise.
 
-### Length-4 unconditional corollaries (all fully proven)
+### Fully unconditional corollaries (all proven, closure matches `ma_completeness*`)
 
-| Theorem                                                  | Configuration                                       |
-|----------------------------------------------------------|-----------------------------------------------------|
-| `ma_completeness_for_binary_length4_unconditional`       | `Ps = [P_0, -P_0, P_2, -P_2]` (two inverse pairs)   |
-| `ma_completeness_for_binary_length4_chord_unconditional` | `Ps = [P_0, P_1, P_2, P_3]` with explicit chord conditions |
-| (`_clean` variants exist for both)                       |                                                     |
+| Theorem                                                  | Configuration                                       | Conditions |
+|----------------------------------------------------------|-----------------------------------------------------|------------|
+| `ma_completeness_for_binary_length2_unconditional`       | `Ps = [P, -P]`                                      | 0 (vacuous)|
+| `ma_completeness_for_binary_length4_unconditional`       | `Ps = [P_0, -P_0, P_2, -P_2]` (two inverse pairs)   | 0 (vacuous)|
+| `ma_completeness_for_binary_length4_chord_unconditional` | `Ps = [P_0, P_1, P_2, P_3]` with explicit chord conditions | 2 chord pairs at level 0 |
+| `ma_completeness_for_binary_length6_chord_unconditional` | length 6 chord-pairs                                | 3 level-0 + 1 level-1 = 4 |
+| `ma_completeness_for_binary_length8_chord_unconditional` | length 8 chord-pairs                                | 4 level-0 + 2 level-1 = 6 |
+
+Pattern for length 2N (N ≥ 2): need `2N - 2` chord conditions
+(every combine except the final inverse-vacuous one at the top
+level).
 
 Closures of all four corollaries exactly match `ma_completeness*`.
 
