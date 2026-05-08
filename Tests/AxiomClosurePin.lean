@@ -174,3 +174,5 @@ example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
 #print axioms Divisor.ma_completeness_clean_for_binary_chord_chain_unconditional
 #print axioms Divisor.ma_completeness_for_binary_admSetMax_unconditional
 #print axioms Divisor.ma_completeness_for_binary_chord_chain_admSetMax_unconditional
+#print axioms Divisor.ma_completeness_for_binary_admSetParker_unconditional
+#print axioms Divisor.ma_completeness_for_binary_chord_chain_admSetParker_unconditional
