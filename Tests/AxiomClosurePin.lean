@@ -160,16 +160,16 @@ example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
 #print axioms Divisor.ma_completeness_clean_for_binary_unconditional
 
 /-! Fully-unconditional binary completeness corollaries (no `h_extras`):
-  - `ma_completeness_for_binary_length2_unconditional` — `Ps = [P, -P]`.
-  - `ma_completeness_for_binary_length4_unconditional` — two inverse pairs. -/
-#print axioms Divisor.ma_completeness_for_binary_length2_unconditional
-#print axioms Divisor.ma_completeness_clean_for_binary_length2_unconditional
-#print axioms Divisor.ma_completeness_for_binary_length4_unconditional
-#print axioms Divisor.ma_completeness_clean_for_binary_length4_unconditional
-#print axioms Divisor.ma_completeness_for_binary_length4_chord_unconditional
-#print axioms Divisor.ma_completeness_clean_for_binary_length4_chord_unconditional
-#print axioms Divisor.ma_completeness_for_binary_length6_chord_unconditional
-#print axioms Divisor.ma_completeness_for_binary_length8_chord_unconditional
+  - `ma_completeness_binary_length2` — `Ps = [P, -P]`.
+  - `ma_completeness_binary_length4` — two inverse pairs. -/
+#print axioms Divisor.ma_completeness_binary_length2
+#print axioms Divisor.ma_completeness_binary_length2_clean
+#print axioms Divisor.ma_completeness_binary_length4
+#print axioms Divisor.ma_completeness_binary_length4_clean
+#print axioms Divisor.ma_completeness_binary_length4_chord
+#print axioms Divisor.ma_completeness_binary_length4_chord_clean
+#print axioms Divisor.ma_completeness_binary_length6_chord
+#print axioms Divisor.ma_completeness_binary_length8_chord
 #print axioms Divisor.ma_completeness_binary_chain
 #print axioms Divisor.ma_completeness_clean_for_binary_chord_chain_unconditional
 #print axioms Divisor.ma_completeness_binary_admSetMax_extras

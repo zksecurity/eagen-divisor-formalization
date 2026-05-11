@@ -978,7 +978,7 @@ hypotheses, so `h_extras` is discharged by
 The result is a fully unconditional binary completeness theorem for
 length-2 inputs (no `h_extras`, no `PairwiseCombineHyp`). -/
 
-theorem ma_completeness_for_binary_length2_unconditional
+theorem ma_completeness_binary_length2
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -1010,7 +1010,7 @@ theorem ma_completeness_for_binary_length2_unconditional
   exact ma_completeness_for_binary_unconditional E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm
 
-theorem ma_completeness_clean_for_binary_length2_unconditional
+theorem ma_completeness_binary_length2_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -2077,7 +2077,7 @@ For `Ps = [P₀, -P₀, P₂, -P₂]`, level-0 extras are the two length-2
 inverse-pair discharges, level 1 combines two zero-point accumulators,
 and later levels are singleton/vacuous. -/
 
-theorem ma_completeness_for_binary_length4_unconditional
+theorem ma_completeness_binary_length4
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -2118,7 +2118,7 @@ theorem ma_completeness_for_binary_length4_unconditional
   exact ma_completeness_for_binary_unconditional E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm
 
-theorem ma_completeness_clean_for_binary_length4_unconditional
+theorem ma_completeness_binary_length4_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -2160,7 +2160,7 @@ theorem ma_completeness_clean_for_binary_length4_unconditional
   exact ma_completeness_clean_for_binary_unconditional E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm hQ
 
-theorem ma_completeness_for_binary_length4_chord_unconditional
+theorem ma_completeness_binary_length4_chord
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -2256,7 +2256,7 @@ theorem ma_completeness_for_binary_length2_admSetMax_unconditional
   exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
     h_admSetMax h_binary hLen h_extras hValid hDeg hDegK
 
-theorem ma_completeness_for_binary_length6_chord_unconditional
+theorem ma_completeness_binary_length6_chord
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -2443,7 +2443,7 @@ theorem ma_completeness_for_binary_length4_chord_admSetMax_unconditional
   exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
     h_admSetMax h_binary hLen h_extras hValid hDeg hDegK
 
-theorem ma_completeness_for_binary_length8_chord_unconditional
+theorem ma_completeness_binary_length8_chord
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -2779,7 +2779,7 @@ theorem ma_completeness_for_binary_length8_chord_admSetMax_unconditional
   exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
     h_admSetMax h_binary hLen h_extras hValid hDeg hDegK
 
-theorem ma_completeness_clean_for_binary_length4_chord_unconditional
+theorem ma_completeness_binary_length4_chord_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
