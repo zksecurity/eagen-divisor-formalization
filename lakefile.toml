@@ -1,8 +1,17 @@
 name = "Divisor"
-defaultTargets = ["Divisor"]
+defaultTargets = ["Divisor", "Tests"]
 
 [[lean_lib]]
 name = "Divisor"
+srcDir = "."
+leanOptions = [
+  { name = "pp.unicode.fun", value = true },
+  { name = "autoImplicit", value = false },
+  { name = "relaxedAutoImplicit", value = false },
+]
+
+[[lean_lib]]
+name = "Tests"
 srcDir = "."
 leanOptions = [
   { name = "pp.unicode.fun", value = true },
