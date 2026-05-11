@@ -170,16 +170,16 @@ example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
 #print axioms Divisor.ma_completeness_clean_for_binary_length4_chord_unconditional
 #print axioms Divisor.ma_completeness_for_binary_length6_chord_unconditional
 #print axioms Divisor.ma_completeness_for_binary_length8_chord_unconditional
-#print axioms Divisor.ma_completeness_for_binary_chord_chain_unconditional
+#print axioms Divisor.ma_completeness_binary_chain
 #print axioms Divisor.ma_completeness_clean_for_binary_chord_chain_unconditional
 #print axioms Divisor.ma_completeness_for_binary_admSetMax_unconditional
-#print axioms Divisor.ma_completeness_for_binary_chord_chain_admSetMax_unconditional
+#print axioms Divisor.ma_completeness_binary_chain_admSetMax
 #print axioms Divisor.ma_completeness_for_binary_admSetParker_unconditional
-#print axioms Divisor.ma_completeness_for_binary_chord_chain_admSetParker_unconditional
+#print axioms Divisor.ma_completeness_binary_chain_admSetParker
 #print axioms Divisor.ma_completeness_for_binary_admSetEagen_unconditional
-#print axioms Divisor.ma_completeness_for_binary_chord_chain_admSetEagen_unconditional
+#print axioms Divisor.ma_completeness_binary_chain_admSetEagen
 #print axioms Divisor.ma_completeness_for_binary_admSetHash_unconditional
-#print axioms Divisor.ma_completeness_for_binary_chord_chain_admSetHash_unconditional
+#print axioms Divisor.ma_completeness_binary_chain_admSetHash
 
 /-! Top-level all-in-one user-facing theorems (commit a0fd520) -/
 #print axioms Divisor.ma_completeness_binary

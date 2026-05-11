@@ -133,7 +133,7 @@ level).
 
 ### Generic chord-chain theorem (commit `e57cc25`)
 
-`ma_completeness_for_binary_chord_chain_unconditional` takes a single
+`ma_completeness_binary_chain` takes a single
 recursive certificate `IteratedLevelStepCombineExtras E n accs` defined
 as:
 
@@ -180,7 +180,7 @@ Modular normalization framework with swap-friendly architecture:
 - `admSetMax`: `ma_completeness_for_binary_admSetMax_unconditional` (no
   normalization — D non-zero from landmark theorem).
 - `admSetParker` (coeff(a,1) = 1): `ma_completeness_for_binary_admSetParker_unconditional`,
-  `ma_completeness_for_binary_chord_chain_admSetParker_unconditional`.
+  `ma_completeness_binary_chain_admSetParker`.
   Precondition: `(eagenBuild_singletons E Ps).a.coeff 1 ≠ 0`. Scalar:
   `(a.coeff 1)⁻¹`.
 

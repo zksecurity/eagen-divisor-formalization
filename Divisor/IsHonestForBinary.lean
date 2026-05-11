@@ -803,7 +803,7 @@ theorem ma_completeness_for_binary_admSetHash_unconditional
     (admSetHash_of_isHonestForBinaryScaled
       r h_admSetHash h_binary h_c_eq hHash_pre)
 
-theorem ma_completeness_for_binary_chord_chain_unconditional
+theorem ma_completeness_binary_chain
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -827,7 +827,7 @@ theorem ma_completeness_for_binary_chord_chain_unconditional
   exact ma_completeness_for_binary_unconditional E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm
 
-theorem ma_completeness_for_binary_chord_chain_admSetParker_unconditional
+theorem ma_completeness_binary_chain_admSetParker
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -856,7 +856,7 @@ theorem ma_completeness_for_binary_chord_chain_admSetParker_unconditional
     E stmt msg wit hk hkm h_admSetParker h_binary h_c_eq hParker_pre
     hLen h_extras hValid hDeg hDegK
 
-theorem ma_completeness_for_binary_chord_chain_admSetEagen_unconditional
+theorem ma_completeness_binary_chain_admSetEagen
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -885,7 +885,7 @@ theorem ma_completeness_for_binary_chord_chain_admSetEagen_unconditional
     E stmt msg wit hk hkm h_admSetEagen h_binary h_c_eq hEagen_pre
     hLen h_extras hValid hDeg hDegK
 
-theorem ma_completeness_for_binary_chord_chain_admSetHash_unconditional
+theorem ma_completeness_binary_chain_admSetHash
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -944,7 +944,7 @@ theorem ma_completeness_clean_for_binary_chord_chain_unconditional
   exact ma_completeness_clean_for_binary_unconditional E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm hQ
 
-theorem ma_completeness_for_binary_chord_chain_admSetMax_unconditional
+theorem ma_completeness_binary_chain_admSetMax
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -3358,7 +3358,7 @@ theorem ma_completeness_binary
       Landmark.IteratedLevelStepCombineExtras E h_honest.Ps.length
         (Landmark.level0_singletons E h_honest.Ps) := by
     simpa [h_honest] using h_chain
-  exact ma_completeness_for_binary_chord_chain_admSetMax_unconditional
+  exact ma_completeness_binary_chain_admSetMax
     E stmt msg wit hk hkm h_admSetMax h_honest hLen hChain
     hValid hDeg hDegK
 
@@ -3418,7 +3418,7 @@ theorem ma_completeness_binary_admSetParker
   have hPre :
       (Landmark.eagenBuild_singletons E h_honest.Ps).a.coeff 1 ≠ 0 := by
     simpa [h_honest] using hParker_pre
-  exact ma_completeness_for_binary_chord_chain_admSetParker_unconditional
+  exact ma_completeness_binary_chain_admSetParker
     E stmt msg wit hk hkm h_admSetParker h_honest hc_eq hPre
     hLen hChain hValid hDeg hDegK
 
@@ -3478,7 +3478,7 @@ theorem ma_completeness_binary_admSetEagen
   have hPre :
       (Landmark.eagenBuild_singletons E h_honest.Ps).a.coeff 0 ≠ 0 := by
     simpa [h_honest] using hEagen_pre
-  exact ma_completeness_for_binary_chord_chain_admSetEagen_unconditional
+  exact ma_completeness_binary_chain_admSetEagen
     E stmt msg wit hk hkm h_admSetEagen h_honest hc_eq hPre
     hLen hChain hValid hDeg hDegK
 
@@ -3552,7 +3552,7 @@ theorem ma_completeness_binary_admSetHash
         ((Landmark.eagenBuild_singletons E h_honest.Ps).a,
           (Landmark.eagenBuild_singletons E h_honest.Ps).b) ≠ 0 := by
     simpa [h_honest] using hHash_pre
-  exact ma_completeness_for_binary_chord_chain_admSetHash_unconditional
+  exact ma_completeness_binary_chain_admSetHash
     E stmt msg wit hk hkm r h_admSetHash h_honest hc_eq hPre
     hLen hChain hValid hDeg hDegK
 
