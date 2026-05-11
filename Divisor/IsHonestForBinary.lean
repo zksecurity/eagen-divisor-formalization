@@ -150,7 +150,7 @@ private theorem eagenBuild_singletons_landmark_of_isHonestForBinary
     h_binary.hPs_on h_binary.hSumZero h_binary.hNonEmpty h_combine
 
 /-- The binary singleton build splits over `E`. -/
-theorem splitsOnE_msg_toD_for_binary
+theorem splitsOnE_msg_toD_binary_via_combineHyp
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
@@ -170,7 +170,7 @@ theorem splitsOnE_msg_toD_for_binary
 
 /-- The divisor of the binary singleton build is the protocol honest
     divisor. -/
-theorem divisor_identity_for_binary
+theorem divisor_identity_binary_via_combineHyp
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
@@ -190,8 +190,8 @@ theorem divisor_identity_for_binary
           h_binary.h_formal_eq_honest R
 
 /-- Bridge from binary construction data to the protocol-level honest
-    prover predicate. -/
-theorem isHonestFor_of_isHonestForBinary
+    prover predicate (legacy: uses universal `PairwiseCombineHyp`). -/
+theorem isHonestFor_of_isHonestForBinary_via_combineHyp
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
@@ -199,13 +199,13 @@ theorem isHonestFor_of_isHonestForBinary
     msg.isHonestFor E stmt wit hk hkm := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · exact h_binary.h_scalars_match
-  · exact splitsOnE_msg_toD_for_binary h_binary h_combine
-  · exact divisor_identity_for_binary h_binary h_combine
+  · exact splitsOnE_msg_toD_binary_via_combineHyp h_binary h_combine
+  · exact divisor_identity_binary_via_combineHyp h_binary h_combine
   · exact h_binary.h_target_on_curve
   · exact h_binary.h_bases_on_curve
 
 /-- The scaled binary singleton build splits over `E`. -/
-theorem splitsOnE_msg_toD_for_binary_scaled
+theorem splitsOnE_msg_toD_binary_scaled_via_combineHyp
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
@@ -227,7 +227,7 @@ theorem splitsOnE_msg_toD_for_binary_scaled
 
 /-- The divisor of a scaled binary singleton build is the protocol honest
     divisor. -/
-theorem divisor_identity_for_binary_scaled
+theorem divisor_identity_binary_scaled_via_combineHyp
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
@@ -249,8 +249,8 @@ theorem divisor_identity_for_binary_scaled
           h_binary.h_formal_eq_honest R
 
 /-- Bridge from scaled binary construction data to the protocol-level honest
-    prover predicate. -/
-theorem isHonestFor_of_isHonestForBinaryScaled
+    prover predicate (legacy: uses universal `PairwiseCombineHyp`). -/
+theorem isHonestFor_of_isHonestForBinaryScaled_via_combineHyp
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
@@ -258,8 +258,8 @@ theorem isHonestFor_of_isHonestForBinaryScaled
     msg.isHonestFor E stmt wit hk hkm := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · exact h_binary.h_scalars_match
-  · exact splitsOnE_msg_toD_for_binary_scaled h_binary h_combine
-  · exact divisor_identity_for_binary_scaled h_binary h_combine
+  · exact splitsOnE_msg_toD_binary_scaled_via_combineHyp h_binary h_combine
+  · exact divisor_identity_binary_scaled_via_combineHyp h_binary h_combine
   · exact h_binary.h_target_on_curve
   · exact h_binary.h_bases_on_curve
 
@@ -278,7 +278,7 @@ theorem ma_completeness_binary_via_combineHyp
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm
-    (isHonestFor_of_isHonestForBinary (E := E) h_binary h_combine)
+    (isHonestFor_of_isHonestForBinary_via_combineHyp (E := E) h_binary h_combine)
 
 theorem ma_completeness_binary_with_scalar_via_combineHyp
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -295,7 +295,7 @@ theorem ma_completeness_binary_with_scalar_via_combineHyp
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm
-    (isHonestFor_of_isHonestForBinaryScaled (E := E) h_binary h_combine)
+    (isHonestFor_of_isHonestForBinaryScaled_via_combineHyp (E := E) h_binary h_combine)
 
 theorem ma_completeness_binary_via_combineHyp_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -315,7 +315,7 @@ theorem ma_completeness_binary_via_combineHyp_clean
   have hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg hAdm
   exact ma_completeness_clean E stmt wit hk hValid msg hkm hDeg hDegK hAdm
-    (isHonestFor_of_isHonestForBinary (E := E) h_binary h_combine)
+    (isHonestFor_of_isHonestForBinary_via_combineHyp (E := E) h_binary h_combine)
     hD hQ
 
 theorem ma_completeness_binary_with_scalar_via_combineHyp_clean
@@ -336,7 +336,7 @@ theorem ma_completeness_binary_with_scalar_via_combineHyp_clean
   have hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg hAdm
   exact ma_completeness_clean E stmt wit hk hValid msg hkm hDeg hDegK hAdm
-    (isHonestFor_of_isHonestForBinaryScaled (E := E) h_binary h_combine)
+    (isHonestFor_of_isHonestForBinaryScaled_via_combineHyp (E := E) h_binary h_combine)
     hD hQ
 
 /-- M=3 binary completeness via the constructive length-4 simple bridge.
@@ -374,7 +374,7 @@ The new conditional hypothesis `h_extras` is a per-input geometric side
 condition (no chord/tangent collinearities at any iterate level), strictly
 weaker than the universal `PairwiseCombineHyp E`. -/
 
-theorem splitsOnE_msg_toD_for_binary_unconditional
+theorem splitsOnE_msg_toD_binary
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
@@ -396,7 +396,7 @@ theorem splitsOnE_msg_toD_for_binary_unconditional
     h_binary.hPs_on h_binary.hNodup
     h_landmark.1 h_landmark.2.1 h_landmark.2.2
 
-theorem divisor_identity_for_binary_unconditional
+theorem divisor_identity_binary
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
@@ -418,7 +418,7 @@ theorem divisor_identity_for_binary_unconditional
     _ = honestDivisorCoeffs E stmt wit hk msg R :=
           h_binary.h_formal_eq_honest R
 
-theorem isHonestFor_of_isHonestForBinary_unconditional
+theorem isHonestFor_of_isHonestForBinary
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
@@ -429,12 +429,12 @@ theorem isHonestFor_of_isHonestForBinary_unconditional
     msg.isHonestFor E stmt wit hk hkm := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · exact h_binary.h_scalars_match
-  · exact splitsOnE_msg_toD_for_binary_unconditional h_binary hLen h_extras
-  · exact divisor_identity_for_binary_unconditional h_binary hLen h_extras
+  · exact splitsOnE_msg_toD_binary h_binary hLen h_extras
+  · exact divisor_identity_binary h_binary hLen h_extras
   · exact h_binary.h_target_on_curve
   · exact h_binary.h_bases_on_curve
 
-theorem splitsOnE_msg_toD_for_binary_scaled_unconditional
+theorem splitsOnE_msg_toD_binary_scaled
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
@@ -457,7 +457,7 @@ theorem splitsOnE_msg_toD_for_binary_scaled_unconditional
       h_binary.hPs_on h_binary.hNodup
       h_landmark.1 h_landmark.2.1 h_landmark.2.2)
 
-theorem divisor_identity_for_binary_scaled_unconditional
+theorem divisor_identity_binary_scaled
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
@@ -481,7 +481,7 @@ theorem divisor_identity_for_binary_scaled_unconditional
     _ = honestDivisorCoeffs E stmt wit hk msg R :=
           h_binary.h_formal_eq_honest R
 
-theorem isHonestFor_of_isHonestForBinaryScaled_unconditional
+theorem isHonestFor_of_isHonestForBinaryScaled
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
@@ -492,8 +492,8 @@ theorem isHonestFor_of_isHonestForBinaryScaled_unconditional
     msg.isHonestFor E stmt wit hk hkm := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · exact h_binary.h_scalars_match
-  · exact splitsOnE_msg_toD_for_binary_scaled_unconditional h_binary hLen h_extras
-  · exact divisor_identity_for_binary_scaled_unconditional h_binary hLen h_extras
+  · exact splitsOnE_msg_toD_binary_scaled h_binary hLen h_extras
+  · exact divisor_identity_binary_scaled h_binary hLen h_extras
   · exact h_binary.h_target_on_curve
   · exact h_binary.h_bases_on_curve
 
@@ -515,7 +515,7 @@ theorem ma_completeness_binary_extras
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm
-    (isHonestFor_of_isHonestForBinary_unconditional (E := E) h_binary hLen h_extras)
+    (isHonestFor_of_isHonestForBinary (E := E) h_binary hLen h_extras)
 
 theorem ma_completeness_binary_with_scalar_extras
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -535,7 +535,7 @@ theorem ma_completeness_binary_with_scalar_extras
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm
-    (isHonestFor_of_isHonestForBinaryScaled_unconditional (E := E)
+    (isHonestFor_of_isHonestForBinaryScaled (E := E)
       h_binary hLen h_extras)
 
 theorem ma_completeness_binary_extras_clean
@@ -559,7 +559,7 @@ theorem ma_completeness_binary_extras_clean
   have hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg hAdm
   exact ma_completeness_clean E stmt wit hk hValid msg hkm hDeg hDegK hAdm
-    (isHonestFor_of_isHonestForBinary_unconditional (E := E) h_binary hLen h_extras)
+    (isHonestFor_of_isHonestForBinary (E := E) h_binary hLen h_extras)
     hD hQ
 
 theorem ma_completeness_binary_with_scalar_extras_clean
@@ -583,11 +583,11 @@ theorem ma_completeness_binary_with_scalar_extras_clean
   have hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg hAdm
   exact ma_completeness_clean E stmt wit hk hValid msg hkm hDeg hDegK hAdm
-    (isHonestFor_of_isHonestForBinaryScaled_unconditional (E := E)
+    (isHonestFor_of_isHonestForBinaryScaled (E := E)
       h_binary hLen h_extras)
     hD hQ
 
-private theorem admSetMax_of_isHonestForBinary_unconditional
+private theorem admSetMax_of_isHonestForBinary
     {E : ECSetup} {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
     {wit : DlogWitness E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
@@ -717,7 +717,7 @@ theorem ma_completeness_binary_admSetMax_extras
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness_binary_extras E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK
-    (admSetMax_of_isHonestForBinary_unconditional
+    (admSetMax_of_isHonestForBinary
       h_admSetMax h_binary hLen h_extras)
 
 theorem ma_completeness_binary_admSetParker_extras
