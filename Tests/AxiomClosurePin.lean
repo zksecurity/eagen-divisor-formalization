@@ -190,3 +190,9 @@ example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
 /-! Certifying-wrapper bridges (commits fd7da92, 618a2b2, c33c200) -/
 #print axioms Divisor.Landmark.landmarkInvStrongCombineAffineExtras_of_combineCanFire_full
 #print axioms Divisor.Landmark.landmarkInvStrongCombineExtras_of_combineCanFire_full
+
+/-! Point-skeleton certificate (commit 600c442) — Decidable, native_decide-able -/
+#print axioms Divisor.ma_completeness_binary_point_certificate
+#print axioms Divisor.ma_completeness_binary_admSetParker_point_certificate
+#print axioms Divisor.ma_completeness_binary_admSetEagen_point_certificate
+#print axioms Divisor.ma_completeness_binary_admSetHash_point_certificate
