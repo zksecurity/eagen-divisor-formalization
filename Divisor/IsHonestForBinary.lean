@@ -698,7 +698,7 @@ private theorem admSetHash_of_isHonestForBinaryScaled
   rw [admSetHashInner_smul r h_binary.c h_binary.h_c_ne D, h_c_eq']
   simp [inv_mul_cancel₀ hHash_pre']
 
-theorem ma_completeness_for_binary_admSetMax_unconditional
+theorem ma_completeness_binary_admSetMax_extras
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -720,7 +720,7 @@ theorem ma_completeness_for_binary_admSetMax_unconditional
     (admSetMax_of_isHonestForBinary_unconditional
       h_admSetMax h_binary hLen h_extras)
 
-theorem ma_completeness_for_binary_admSetParker_unconditional
+theorem ma_completeness_binary_admSetParker_extras
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -746,7 +746,7 @@ theorem ma_completeness_for_binary_admSetParker_unconditional
     (admSetParker_of_isHonestForBinaryScaled
       h_admSetParker h_binary h_c_eq hParker_pre)
 
-theorem ma_completeness_for_binary_admSetEagen_unconditional
+theorem ma_completeness_binary_admSetEagen_extras
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -772,7 +772,7 @@ theorem ma_completeness_for_binary_admSetEagen_unconditional
     (admSetEagen_of_isHonestForBinaryScaled
       h_admSetEagen h_binary h_c_eq hEagen_pre)
 
-theorem ma_completeness_for_binary_admSetHash_unconditional
+theorem ma_completeness_binary_admSetHash_extras
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -852,7 +852,7 @@ theorem ma_completeness_binary_chain_admSetParker
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) :=
     Landmark.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
-  exact ma_completeness_for_binary_admSetParker_unconditional
+  exact ma_completeness_binary_admSetParker_extras
     E stmt msg wit hk hkm h_admSetParker h_binary h_c_eq hParker_pre
     hLen h_extras hValid hDeg hDegK
 
@@ -881,7 +881,7 @@ theorem ma_completeness_binary_chain_admSetEagen
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) :=
     Landmark.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
-  exact ma_completeness_for_binary_admSetEagen_unconditional
+  exact ma_completeness_binary_admSetEagen_extras
     E stmt msg wit hk hkm h_admSetEagen h_binary h_c_eq hEagen_pre
     hLen h_extras hValid hDeg hDegK
 
@@ -915,7 +915,7 @@ theorem ma_completeness_binary_chain_admSetHash
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) :=
     Landmark.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
-  exact ma_completeness_for_binary_admSetHash_unconditional
+  exact ma_completeness_binary_admSetHash_extras
     E stmt msg wit hk hkm r h_admSetHash h_binary h_c_eq hHash_pre
     hLen h_extras hValid hDeg hDegK
 
@@ -965,7 +965,7 @@ theorem ma_completeness_binary_chain_admSetMax
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) :=
     Landmark.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
-  exact ma_completeness_for_binary_admSetMax_unconditional E stmt msg wit hk hkm
+  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
     h_admSetMax h_binary hLen h_extras hValid hDeg hDegK
 
 /-! ## Length-2 fully-unconditional binary completeness.
@@ -2253,7 +2253,7 @@ theorem ma_completeness_for_binary_length2_admSetMax_unconditional
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
     rw [hPs_eq]
     exact Landmark.h_extras_holds_for_length2_sum_zero E P Q hP_on hQ_on hxx hyy
-  exact ma_completeness_for_binary_admSetMax_unconditional E stmt msg wit hk hkm
+  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
     h_admSetMax h_binary hLen h_extras hValid hDeg hDegK
 
 theorem ma_completeness_for_binary_length6_chord_unconditional
@@ -2380,7 +2380,7 @@ theorem ma_completeness_for_binary_length4_admSetMax_unconditional
     rw [hPs_eq]
     exact Landmark.h_extras_holds_for_length4_two_inverse_pairs
       E P₀ P₂ hP₀_on hP₂_on
-  exact ma_completeness_for_binary_admSetMax_unconditional E stmt msg wit hk hkm
+  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
     h_admSetMax h_binary hLen h_extras hValid hDeg hDegK
 
 theorem ma_completeness_for_binary_length4_chord_admSetMax_unconditional
@@ -2440,7 +2440,7 @@ theorem ma_completeness_for_binary_length4_chord_admSetMax_unconditional
       hP₀_on hP₁_on hP₂_on hP₃_on hNodup hSumZero
       h01_x_ne h23_x_ne hP₀_y_ne hP₁_y_ne hP₂_y_ne hP₃_y_ne
       hThird01_ne_P₀ hThird01_ne_P₁ hThird23_ne_P₂ hThird23_ne_P₃
-  exact ma_completeness_for_binary_admSetMax_unconditional E stmt msg wit hk hkm
+  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
     h_admSetMax h_binary hLen h_extras hValid hDeg hDegK
 
 theorem ma_completeness_for_binary_length8_chord_unconditional
@@ -2651,7 +2651,7 @@ theorem ma_completeness_for_binary_length6_chord_admSetMax_unconditional
       hThird23_ne_P₂ hThird23_ne_P₃
       hThird45_ne_P₄ hThird45_ne_P₅
       hLevel1
-  exact ma_completeness_for_binary_admSetMax_unconditional E stmt msg wit hk hkm
+  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
     h_admSetMax h_binary hLen h_extras hValid hDeg hDegK
 
 theorem ma_completeness_for_binary_length8_chord_admSetMax_unconditional
@@ -2776,7 +2776,7 @@ theorem ma_completeness_for_binary_length8_chord_admSetMax_unconditional
       hThird45_ne_P₄ hThird45_ne_P₅
       hThird67_ne_P₆ hThird67_ne_P₇
       hLevel1Left hLevel1Right
-  exact ma_completeness_for_binary_admSetMax_unconditional E stmt msg wit hk hkm
+  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
     h_admSetMax h_binary hLen h_extras hValid hDeg hDegK
 
 theorem ma_completeness_clean_for_binary_length4_chord_unconditional
