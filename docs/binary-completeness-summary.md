@@ -111,14 +111,16 @@ NO new axioms introduced. Verified by `Tests/AxiomClosurePin.lean`.
 
 ## Remaining gaps
 
-1. **`h_chain` discharge** for arbitrary lengths. Currently
-   per-length-specific (lengths 2-8 done). The pattern continues but
-   doesn't terminate — each length needs `2N - 2` chord conditions.
-   Unconditional discharge requires either:
-   - A structural input invariant on `Ps` (via `pairUp` tree's block
-     sums) implying chord-safety at every level.
-   - A `Decidable` instance + `native_decide` for concrete inputs.
-   - A different (non-Eagen) construction avoiding per-level geometry.
+1. **`h_chain` discharge** for arbitrary lengths.
+   - ✅ Per-length corollaries for lengths 2, 4, 6, 8 (chord configurations).
+   - ✅ **`native_decide` path** via the point-skeleton certificate (commit `600c442`):
+     `ma_completeness_binary_*_point_certificate` takes `IteratedPointChordCase`
+     (computable / Decidable predicate over `List (ECPoint E)`) instead of `h_chain`.
+     Users can write `(h_point_chain := by native_decide)` for concrete numerical
+     inputs at any length. The bridge to the full polynomial-side certificate is
+     proved once: `iteratedLevelStepCombineExtras_of_iteratedPointChordCase`.
+   - **Theoretically remaining**: unconditional structural genericity predicate on
+     the input list that implies chord-safety without per-input numerical check.
 
 2. **`Ps.Nodup` restriction**. Lifting requires multiplicativity at
    `rootMult > 3`, which would either:
