@@ -263,7 +263,7 @@ theorem isHonestFor_of_isHonestForBinaryScaled
   · exact h_binary.h_target_on_curve
   · exact h_binary.h_bases_on_curve
 
-theorem ma_completeness_for_binary
+theorem ma_completeness_binary_via_combineHyp
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -280,7 +280,7 @@ theorem ma_completeness_for_binary
   ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm
     (isHonestFor_of_isHonestForBinary (E := E) h_binary h_combine)
 
-theorem ma_completeness_for_binary_with_scalar
+theorem ma_completeness_binary_with_scalar_via_combineHyp
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -297,7 +297,7 @@ theorem ma_completeness_for_binary_with_scalar
   ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm
     (isHonestFor_of_isHonestForBinaryScaled (E := E) h_binary h_combine)
 
-theorem ma_completeness_clean_for_binary
+theorem ma_completeness_binary_via_combineHyp_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -318,7 +318,7 @@ theorem ma_completeness_clean_for_binary
     (isHonestFor_of_isHonestForBinary (E := E) h_binary h_combine)
     hD hQ
 
-theorem ma_completeness_clean_for_binary_with_scalar
+theorem ma_completeness_binary_with_scalar_via_combineHyp_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -343,11 +343,11 @@ theorem ma_completeness_clean_for_binary_with_scalar
 
 This is the all-selected binary case: `stmt.k = msg.k = 3` is carried by
 `h_simple`, and every witness scalar is `1`.  Unlike
-`ma_completeness_for_binary`, this corollary does not need
+`ma_completeness_binary_via_combineHyp`, this corollary does not need
 `PairwiseCombineHyp`; it composes through the existing
 `ma_completeness_for_length4Simple` proof, whose divisor witness is
 `eagenBuild_length4_explicit`. -/
-theorem ma_completeness_for_binary_M_eq_3
+theorem ma_completeness_binary_M_eq_3
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -497,7 +497,7 @@ theorem isHonestFor_of_isHonestForBinaryScaled_unconditional
   · exact h_binary.h_target_on_curve
   · exact h_binary.h_bases_on_curve
 
-theorem ma_completeness_for_binary_unconditional
+theorem ma_completeness_binary_extras
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -517,7 +517,7 @@ theorem ma_completeness_for_binary_unconditional
   ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm
     (isHonestFor_of_isHonestForBinary_unconditional (E := E) h_binary hLen h_extras)
 
-theorem ma_completeness_for_binary_with_scalar_unconditional
+theorem ma_completeness_binary_with_scalar_extras
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -538,7 +538,7 @@ theorem ma_completeness_for_binary_with_scalar_unconditional
     (isHonestFor_of_isHonestForBinaryScaled_unconditional (E := E)
       h_binary hLen h_extras)
 
-theorem ma_completeness_clean_for_binary_unconditional
+theorem ma_completeness_binary_extras_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -562,7 +562,7 @@ theorem ma_completeness_clean_for_binary_unconditional
     (isHonestFor_of_isHonestForBinary_unconditional (E := E) h_binary hLen h_extras)
     hD hQ
 
-theorem ma_completeness_clean_for_binary_with_scalar_unconditional
+theorem ma_completeness_binary_with_scalar_extras_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -715,7 +715,7 @@ theorem ma_completeness_binary_admSetMax_extras
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness_for_binary_unconditional E stmt msg wit hk hkm
+  ma_completeness_binary_extras E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK
     (admSetMax_of_isHonestForBinary_unconditional
       h_admSetMax h_binary hLen h_extras)
@@ -741,7 +741,7 @@ theorem ma_completeness_binary_admSetParker_extras
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness_for_binary_with_scalar_unconditional E stmt msg wit hk hkm
+  ma_completeness_binary_with_scalar_extras E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK
     (admSetParker_of_isHonestForBinaryScaled
       h_admSetParker h_binary h_c_eq hParker_pre)
@@ -767,7 +767,7 @@ theorem ma_completeness_binary_admSetEagen_extras
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness_for_binary_with_scalar_unconditional E stmt msg wit hk hkm
+  ma_completeness_binary_with_scalar_extras E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK
     (admSetEagen_of_isHonestForBinaryScaled
       h_admSetEagen h_binary h_c_eq hEagen_pre)
@@ -798,7 +798,7 @@ theorem ma_completeness_binary_admSetHash_extras
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness_for_binary_with_scalar_unconditional E stmt msg wit hk hkm
+  ma_completeness_binary_with_scalar_extras E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK
     (admSetHash_of_isHonestForBinaryScaled
       r h_admSetHash h_binary h_c_eq hHash_pre)
@@ -824,7 +824,7 @@ theorem ma_completeness_binary_chain
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) :=
     Landmark.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
-  exact ma_completeness_for_binary_unconditional E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm
 
 theorem ma_completeness_binary_chain_admSetParker
@@ -919,7 +919,7 @@ theorem ma_completeness_binary_chain_admSetHash
     E stmt msg wit hk hkm r h_admSetHash h_binary h_c_eq hHash_pre
     hLen h_extras hValid hDeg hDegK
 
-theorem ma_completeness_clean_for_binary_chord_chain_unconditional
+theorem ma_completeness_binary_chain_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -941,7 +941,7 @@ theorem ma_completeness_clean_for_binary_chord_chain_unconditional
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) :=
     Landmark.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
-  exact ma_completeness_clean_for_binary_unconditional E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras_clean E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm hQ
 
 theorem ma_completeness_binary_chain_admSetMax
@@ -1007,7 +1007,7 @@ theorem ma_completeness_binary_length2
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
     rw [hPs_eq]
     exact Landmark.h_extras_holds_for_length2_sum_zero E P Q hP_on hQ_on hxx hyy
-  exact ma_completeness_for_binary_unconditional E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm
 
 theorem ma_completeness_binary_length2_clean
@@ -1040,7 +1040,7 @@ theorem ma_completeness_binary_length2_clean
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
     rw [hPs_eq]
     exact Landmark.h_extras_holds_for_length2_sum_zero E P R hP_on hR_on hxx hyy
-  exact ma_completeness_clean_for_binary_unconditional E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras_clean E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm hQ
 
 namespace Landmark
@@ -2115,7 +2115,7 @@ theorem ma_completeness_binary_length4
     rw [hPs_eq]
     exact Landmark.h_extras_holds_for_length4_two_inverse_pairs
       E P₀ P₂ hP₀_on hP₂_on
-  exact ma_completeness_for_binary_unconditional E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm
 
 theorem ma_completeness_binary_length4_clean
@@ -2157,7 +2157,7 @@ theorem ma_completeness_binary_length4_clean
     rw [hPs_eq]
     exact Landmark.h_extras_holds_for_length4_two_inverse_pairs
       E P₀ P₂ hP₀_on hP₂_on
-  exact ma_completeness_clean_for_binary_unconditional E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras_clean E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm hQ
 
 theorem ma_completeness_binary_length4_chord
@@ -2217,10 +2217,10 @@ theorem ma_completeness_binary_length4_chord
       hP₀_on hP₁_on hP₂_on hP₃_on hNodup hSumZero
       h01_x_ne h23_x_ne hP₀_y_ne hP₁_y_ne hP₂_y_ne hP₃_y_ne
       hThird01_ne_P₀ hThird01_ne_P₁ hThird23_ne_P₂ hThird23_ne_P₃
-  exact ma_completeness_for_binary_unconditional E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm
 
-theorem ma_completeness_for_binary_length2_admSetMax_unconditional
+theorem ma_completeness_binary_length2_admSetMax
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -2339,10 +2339,10 @@ theorem ma_completeness_binary_length6_chord
       hThird23_ne_P₂ hThird23_ne_P₃
       hThird45_ne_P₄ hThird45_ne_P₅
       hLevel1
-  exact ma_completeness_for_binary_unconditional E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm
 
-theorem ma_completeness_for_binary_length4_admSetMax_unconditional
+theorem ma_completeness_binary_length4_admSetMax
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -2383,7 +2383,7 @@ theorem ma_completeness_for_binary_length4_admSetMax_unconditional
   exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
     h_admSetMax h_binary hLen h_extras hValid hDeg hDegK
 
-theorem ma_completeness_for_binary_length4_chord_admSetMax_unconditional
+theorem ma_completeness_binary_length4_chord_admSetMax
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -2565,10 +2565,10 @@ theorem ma_completeness_binary_length8_chord
       hThird45_ne_P₄ hThird45_ne_P₅
       hThird67_ne_P₆ hThird67_ne_P₇
       hLevel1Left hLevel1Right
-  exact ma_completeness_for_binary_unconditional E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm
 
-theorem ma_completeness_for_binary_length6_chord_admSetMax_unconditional
+theorem ma_completeness_binary_length6_chord_admSetMax
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -2654,7 +2654,7 @@ theorem ma_completeness_for_binary_length6_chord_admSetMax_unconditional
   exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
     h_admSetMax h_binary hLen h_extras hValid hDeg hDegK
 
-theorem ma_completeness_for_binary_length8_chord_admSetMax_unconditional
+theorem ma_completeness_binary_length8_chord_admSetMax
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
@@ -2837,11 +2837,11 @@ theorem ma_completeness_binary_length4_chord_clean
       hP₀_on hP₁_on hP₂_on hP₃_on hNodup hSumZero
       h01_x_ne h23_x_ne hP₀_y_ne hP₁_y_ne hP₂_y_ne hP₃_y_ne
       hThird01_ne_P₀ hThird01_ne_P₁ hThird23_ne_P₂ hThird23_ne_P₃
-  exact ma_completeness_clean_for_binary_unconditional E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras_clean E stmt msg wit hk hkm
     h_binary hLen h_extras hValid hDeg hDegK hAdm hQ
 
-/-- Hasse-clean form of `ma_completeness_for_binary_M_eq_3`. -/
-theorem ma_completeness_clean_for_binary_M_eq_3
+/-- Hasse-clean form of `ma_completeness_binary_M_eq_3`. -/
+theorem ma_completeness_binary_M_eq_3_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)

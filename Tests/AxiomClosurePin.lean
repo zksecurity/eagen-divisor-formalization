@@ -148,7 +148,7 @@ example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
 /-! ## Binary completeness — unconditional via LandmarkInvStrong path
 
   The new unconditional binary chain
-  (`ma_completeness_for_binary_unconditional` and its `_clean` variant)
+  (`ma_completeness_binary_extras` and its `_clean` variant)
   has the EXACT same axiom closure as `ma_completeness*` — confirming no
   new axioms are introduced by the LandmarkInvStrong infrastructure.
 
@@ -156,8 +156,8 @@ example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
   - Old: gated on `Landmark.PairwiseCombineHyp E` (universal: ∀ xs ys a b...).
   - New: gated on `h_extras` (per-input: holds at each level of the iterate).
 -/
-#print axioms Divisor.ma_completeness_for_binary_unconditional
-#print axioms Divisor.ma_completeness_clean_for_binary_unconditional
+#print axioms Divisor.ma_completeness_binary_extras
+#print axioms Divisor.ma_completeness_binary_extras_clean
 
 /-! Fully-unconditional binary completeness corollaries (no `h_extras`):
   - `ma_completeness_binary_length2` — `Ps = [P, -P]`.
@@ -171,7 +171,7 @@ example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
 #print axioms Divisor.ma_completeness_binary_length6_chord
 #print axioms Divisor.ma_completeness_binary_length8_chord
 #print axioms Divisor.ma_completeness_binary_chain
-#print axioms Divisor.ma_completeness_clean_for_binary_chord_chain_unconditional
+#print axioms Divisor.ma_completeness_binary_chain_clean
 #print axioms Divisor.ma_completeness_binary_admSetMax_extras
 #print axioms Divisor.ma_completeness_binary_chain_admSetMax
 #print axioms Divisor.ma_completeness_binary_admSetParker_extras
