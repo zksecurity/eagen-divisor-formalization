@@ -2867,7 +2867,7 @@ theorem ma_completeness_clean_for_binary_M_eq_3
 
 /-- The binary support list: `(-target)` followed by every statement base
     whose transported binary witness scalar is `1`. -/
-noncomputable def binarySupport
+def binarySupport
     {E : ECSetup} (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k)
     (_h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1) :
@@ -3555,5 +3555,186 @@ theorem ma_completeness_binary_admSetHash
   exact ma_completeness_for_binary_chord_chain_admSetHash_unconditional
     E stmt msg wit hk hkm r h_admSetHash h_honest hc_eq hPre
     hLen hChain hValid hDeg hDegK
+
+/-- End-to-end binary completeness for the maximal admissible set, with the
+    level-chain certificate supplied by the computable point skeleton. -/
+theorem ma_completeness_binary_point_certificate
+    (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
+    (hValid : relDlog E stmt wit)
+    (h_toD_eq : msg.toD =
+       Landmark.eagenBuild_singletons E
+         (binarySupport stmt wit hk h_binary))
+    (h_degE_eq :
+       msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
+    (h_scalars_match : ∀ i : Fin stmt.k,
+       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+    (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
+    (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
+    (hNodup : (binarySupport stmt wit hk h_binary).Nodup)
+    (h_point_chain : Landmark.IteratedPointChordCase E
+                  (binarySupport stmt wit hk h_binary).length
+                  (Landmark.level0SingletonPoints E
+                    (binarySupport stmt wit hk h_binary)))
+    (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+  have h_chain :
+      Landmark.IteratedLevelStepCombineExtras E
+        (binarySupport stmt wit hk h_binary).length
+        (Landmark.level0_singletons E
+          (binarySupport stmt wit hk h_binary)) :=
+    Landmark.iteratedLevelStepCombineExtras_of_level0SingletonPoints
+      E (binarySupport stmt wit hk h_binary) h_point_chain
+  exact ma_completeness_binary E stmt wit hk msg hkm h_binary hValid
+    h_toD_eq h_degE_eq h_scalars_match h_target_on_curve h_bases_on_curve
+    hNodup h_chain h_admSetMax hDeg hDegK
+
+/-- Parker-normalized binary completeness with a computable point-chain
+    certificate. -/
+theorem ma_completeness_binary_admSetParker_point_certificate
+    (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
+    (hValid : relDlog E stmt wit)
+    (hParker_pre :
+      (Landmark.eagenBuild_singletons E
+        (binarySupport stmt wit hk h_binary)).a.coeff 1 ≠ 0)
+    (h_toD_eq : msg.toD =
+       ((Landmark.eagenBuild_singletons E
+          (binarySupport stmt wit hk h_binary)).a.coeff 1)⁻¹ •
+        Landmark.eagenBuild_singletons E
+          (binarySupport stmt wit hk h_binary))
+    (h_degE_eq :
+       msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
+    (h_scalars_match : ∀ i : Fin stmt.k,
+       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+    (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
+    (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
+    (hNodup : (binarySupport stmt wit hk h_binary).Nodup)
+    (h_point_chain : Landmark.IteratedPointChordCase E
+                  (binarySupport stmt wit hk h_binary).length
+                  (Landmark.level0SingletonPoints E
+                    (binarySupport stmt wit hk h_binary)))
+    (h_admSetParker : stmt.admSet = admSetParker (q := E.q))
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+  have h_chain :
+      Landmark.IteratedLevelStepCombineExtras E
+        (binarySupport stmt wit hk h_binary).length
+        (Landmark.level0_singletons E
+          (binarySupport stmt wit hk h_binary)) :=
+    Landmark.iteratedLevelStepCombineExtras_of_level0SingletonPoints
+      E (binarySupport stmt wit hk h_binary) h_point_chain
+  exact ma_completeness_binary_admSetParker E stmt wit hk msg hkm
+    h_binary hValid hParker_pre h_toD_eq h_degE_eq h_scalars_match
+    h_target_on_curve h_bases_on_curve hNodup h_chain h_admSetParker
+    hDeg hDegK
+
+/-- Eagen-normalized binary completeness with a computable point-chain
+    certificate. -/
+theorem ma_completeness_binary_admSetEagen_point_certificate
+    (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
+    (hValid : relDlog E stmt wit)
+    (hEagen_pre :
+      (Landmark.eagenBuild_singletons E
+        (binarySupport stmt wit hk h_binary)).a.coeff 0 ≠ 0)
+    (h_toD_eq : msg.toD =
+       ((Landmark.eagenBuild_singletons E
+          (binarySupport stmt wit hk h_binary)).a.coeff 0)⁻¹ •
+        Landmark.eagenBuild_singletons E
+          (binarySupport stmt wit hk h_binary))
+    (h_degE_eq :
+       msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
+    (h_scalars_match : ∀ i : Fin stmt.k,
+       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+    (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
+    (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
+    (hNodup : (binarySupport stmt wit hk h_binary).Nodup)
+    (h_point_chain : Landmark.IteratedPointChordCase E
+                  (binarySupport stmt wit hk h_binary).length
+                  (Landmark.level0SingletonPoints E
+                    (binarySupport stmt wit hk h_binary)))
+    (h_admSetEagen : stmt.admSet = admSetEagen (q := E.q))
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+  have h_chain :
+      Landmark.IteratedLevelStepCombineExtras E
+        (binarySupport stmt wit hk h_binary).length
+        (Landmark.level0_singletons E
+          (binarySupport stmt wit hk h_binary)) :=
+    Landmark.iteratedLevelStepCombineExtras_of_level0SingletonPoints
+      E (binarySupport stmt wit hk h_binary) h_point_chain
+  exact ma_completeness_binary_admSetEagen E stmt wit hk msg hkm
+    h_binary hValid hEagen_pre h_toD_eq h_degE_eq h_scalars_match
+    h_target_on_curve h_bases_on_curve hNodup h_chain h_admSetEagen
+    hDeg hDegK
+
+/-- Hash-normalized binary completeness with a computable point-chain
+    certificate. -/
+theorem ma_completeness_binary_admSetHash_point_certificate
+    (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (r : ℕ → ZMod E.q)
+    (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
+    (hValid : relDlog E stmt wit)
+    (hHash_pre :
+      admSetHashInner r
+        ((Landmark.eagenBuild_singletons E
+          (binarySupport stmt wit hk h_binary)).a,
+         (Landmark.eagenBuild_singletons E
+          (binarySupport stmt wit hk h_binary)).b) ≠ 0)
+    (h_toD_eq : msg.toD =
+       (admSetHashInner r
+          ((Landmark.eagenBuild_singletons E
+            (binarySupport stmt wit hk h_binary)).a,
+           (Landmark.eagenBuild_singletons E
+            (binarySupport stmt wit hk h_binary)).b))⁻¹ •
+        Landmark.eagenBuild_singletons E
+          (binarySupport stmt wit hk h_binary))
+    (h_degE_eq :
+       msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
+    (h_scalars_match : ∀ i : Fin stmt.k,
+       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+    (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
+    (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
+    (hNodup : (binarySupport stmt wit hk h_binary).Nodup)
+    (h_point_chain : Landmark.IteratedPointChordCase E
+                  (binarySupport stmt wit hk h_binary).length
+                  (Landmark.level0SingletonPoints E
+                    (binarySupport stmt wit hk h_binary)))
+    (h_admSetHash : stmt.admSet = admSetHash r)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    ((E.points ×ˢ E.points).filter
+        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+  have h_chain :
+      Landmark.IteratedLevelStepCombineExtras E
+        (binarySupport stmt wit hk h_binary).length
+        (Landmark.level0_singletons E
+          (binarySupport stmt wit hk h_binary)) :=
+    Landmark.iteratedLevelStepCombineExtras_of_level0SingletonPoints
+      E (binarySupport stmt wit hk h_binary) h_point_chain
+  exact ma_completeness_binary_admSetHash E stmt wit hk msg hkm r
+    h_binary hValid hHash_pre h_toD_eq h_degE_eq h_scalars_match
+    h_target_on_curve h_bases_on_curve hNodup h_chain h_admSetHash
+    hDeg hDegK
 
 end Divisor

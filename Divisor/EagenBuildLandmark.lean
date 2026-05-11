@@ -249,6 +249,36 @@ noncomputable def level_step :
   | a :: b :: rest =>
       EagenAccum.combine E a b :: level_step rest
 
+/-- The point projection of one `EagenAccum.combine` dispatch.
+    This skips the polynomial side and is computable. -/
+def pointCombine (p q : ECPoint E) : ECPoint E :=
+  match p, q with
+  | WeierstrassCurve.Affine.Point.zero, _ => q
+  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero => p
+  | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
+    WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ =>
+      if _h_xx : xa ≠ xb then
+        let lam := slopeOf xa ya xb yb
+        let Qx := lam ^ 2 - xa - xb
+        let Qy := lam * Qx + (ya - lam * xa)
+        ECPoint.affine E Qx (-Qy)
+      else if _h_yy : ya = -yb then
+        0
+      else if _h_y0 : ya = 0 then
+        0
+      else
+        let lam : ZMod E.q := (3 * xa ^ 2 + E.curveA) * (2 * ya)⁻¹
+        let Qx := lam ^ 2 - 2 * xa
+        let Qy := lam * Qx + (ya - lam * xa)
+        ECPoint.affine E Qx (-Qy)
+
+/-- The point-projection of `level_step`: operates only on accumulator
+    points, mirroring the `EagenAccum.combine` dispatcher. -/
+def pointLevelStep : List (ECPoint E) → List (ECPoint E)
+  | [] => []
+  | [p] => [p]
+  | p :: q :: rest => pointCombine E p q :: pointLevelStep rest
+
 /-- Iterate `level_step` `n` times (or until length ≤ 1). -/
 noncomputable def iterate :
     ℕ → List (EagenAccum E) → List (EagenAccum E)
@@ -2566,6 +2596,16 @@ theorem landmarkInvStrong_levelInitSingleton
 noncomputable def level0_singletons (Ps : List (ZMod E.q × ZMod E.q)) :
     List (EagenAccum E) :=
   Ps.map (levelInitSingleton E)
+
+/-- The computable point projection of `level0_singletons`. -/
+def level0SingletonPoints (Ps : List (ZMod E.q × ZMod E.q)) :
+    List (ECPoint E) :=
+  Ps.map (fun P => ECPoint.affine E P.1 P.2)
+
+@[simp] theorem level0_singletons_point_projection
+    (Ps : List (ZMod E.q × ZMod E.q)) :
+    (level0_singletons E Ps).map (·.point) = level0SingletonPoints E Ps := by
+  simp [level0_singletons, level0SingletonPoints, levelInitSingleton]
 
 theorem landmarkInvList_level0_singletons
     (Ps : List (ZMod E.q × ZMod E.q))
@@ -8311,6 +8351,133 @@ def LevelStepCombineChordCase : List (EagenAccum E) → Prop
       combineCanFire.chordCase E a b ∧
       LevelStepCombineChordCase rest
 
+/-- Computable adjacent-pair certificate on points only. In the distinct-x
+    chord branch it carries the same simple inequalities as
+    `combineCanFire.chordCase`; vertical/identity branches are vacuous,
+    and smooth tangent doubling is intentionally rejected. -/
+def PointChordCase (p q : ECPoint E) : Prop :=
+  match p, q with
+  | WeierstrassCurve.Affine.Point.zero, _ => True
+  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero => True
+  | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
+    WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ =>
+      match decEq xa xb with
+      | isFalse _ =>
+          ya ≠ 0 ∧ yb ≠ 0 ∧
+          (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xa ∧
+          (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xb
+      | isTrue _ =>
+          match decEq ya (-yb) with
+          | isTrue _ => True
+          | isFalse _ =>
+              match decEq ya 0 with
+              | isTrue _ => True
+              | isFalse _ => False
+
+def pointChordCaseDecidable :
+    (p q : ECPoint E) → Decidable (PointChordCase E p q)
+  | WeierstrassCurve.Affine.Point.zero, _ => isTrue trivial
+  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero =>
+      isTrue trivial
+  | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
+    WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ => by
+      cases hxx : decEq xa xb with
+      | isFalse h_x_ne =>
+          simpa [PointChordCase, hxx] using
+            (inferInstance :
+              Decidable
+                (ya ≠ 0 ∧ yb ≠ 0 ∧
+                (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xa ∧
+                (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xb))
+      | isTrue h_x_eq =>
+          cases hyy : decEq ya (-yb) with
+          | isTrue h_y_neg =>
+              simpa [PointChordCase, hxx, hyy] using
+                (isTrue True.intro : Decidable True)
+          | isFalse h_y_not_neg =>
+              cases hy0 : decEq ya 0 with
+              | isTrue h_y_zero =>
+                  simpa [PointChordCase, hxx, hyy, hy0] using
+                    (isTrue True.intro : Decidable True)
+              | isFalse h_y_ne_zero =>
+                  simpa [PointChordCase, hxx, hyy, hy0] using
+                    (isFalse (fun hFalse : False => hFalse) : Decidable False)
+
+instance pointChordCase_decidable (p q : ECPoint E) :
+    Decidable (PointChordCase E p q) :=
+  pointChordCaseDecidable E p q
+
+def LevelStepPointChordCase : List (ECPoint E) → Prop
+  | [] => True
+  | [_] => True
+  | p :: q :: rest =>
+      PointChordCase E p q ∧
+      LevelStepPointChordCase rest
+
+def levelStepPointChordCaseDecidable :
+    (points : List (ECPoint E)) → Decidable (LevelStepPointChordCase E points)
+  | [] => isTrue trivial
+  | [_] => isTrue trivial
+  | p :: q :: rest => by
+      unfold LevelStepPointChordCase
+      haveI : Decidable (LevelStepPointChordCase E rest) :=
+        levelStepPointChordCaseDecidable rest
+      infer_instance
+
+instance levelStepPointChordCase_decidable (points : List (ECPoint E)) :
+    Decidable (LevelStepPointChordCase E points) :=
+  levelStepPointChordCaseDecidable E points
+
+def IteratedPointChordCase : ℕ → List (ECPoint E) → Prop
+  | 0, _ => True
+  | n + 1, points =>
+      LevelStepPointChordCase E points ∧
+      IteratedPointChordCase n (pointLevelStep E points)
+
+instance iteratedPointChordCase_decidable :
+    ∀ (n : ℕ) (points : List (ECPoint E)),
+      Decidable (IteratedPointChordCase E n points)
+  | 0, _ => isTrue trivial
+  | n + 1, points => by
+      unfold IteratedPointChordCase
+      have h1 : Decidable (LevelStepPointChordCase E points) := inferInstance
+      have h2 : Decidable (IteratedPointChordCase E n (pointLevelStep E points)) :=
+        iteratedPointChordCase_decidable n (pointLevelStep E points)
+      exact instDecidableAnd
+
+theorem combine_point_eq_pointCombine (a b : EagenAccum E) :
+    (EagenAccum.combine E a b).point = pointCombine E a.point b.point := by
+  rcases a with ⟨pa, Da⟩
+  rcases b with ⟨pb, Db⟩
+  cases pa <;> cases pb <;>
+    simp [EagenAccum.combine, pointCombine,
+      EagenAccum.combine_oo, EagenAccum.combine_ol, EagenAccum.combine_or,
+      EagenAccum.combine_distinct, EagenAccum.combine_vertical,
+      EagenAccum.combine_tangent_torsion, EagenAccum.combine_tangent_smooth]
+  repeat
+    first
+    | split
+    | simp
+
+theorem level_step_point_projection :
+    ∀ (accs : List (EagenAccum E)),
+      (level_step E accs).map (·.point) = pointLevelStep E (accs.map (·.point))
+  | [] => rfl
+  | [a] => rfl
+  | a :: b :: rest => by
+      simp [level_step, pointLevelStep, combine_point_eq_pointCombine,
+        level_step_point_projection rest]
+
+theorem PointChordCase.to_combineCanFire_chordCase
+    (a b : EagenAccum E)
+  (h : PointChordCase E a.point b.point) :
+    combineCanFire.chordCase E a b := by
+  cases hpa : a.point <;> cases hpb : b.point
+  · simp [combineCanFire.chordCase, hpa, hpb]
+  · simp [combineCanFire.chordCase, hpa, hpb]
+  · simp [combineCanFire.chordCase, hpa, hpb]
+  · simpa [PointChordCase, combineCanFire.chordCase, hpa, hpb] using h
+
 def levelStepCombineChordCaseDecidable :
     (accs : List (EagenAccum E)) → Decidable (LevelStepCombineChordCase E accs)
   | [] => isTrue trivial
@@ -8351,6 +8518,19 @@ theorem levelStepCombineExtras_of_chordCase
     LevelStepCombineExtras E accs :=
   @levelStepCombineExtras_of_canFire E accs
     (@levelStepCombineCanFire_of_chordCase E accs h)
+
+theorem levelStepCombineChordCase_of_levelStepPointChordCase :
+    ∀ (accs : List (EagenAccum E)),
+      LevelStepPointChordCase E (accs.map (·.point)) →
+      LevelStepCombineChordCase E accs
+  | [], _ => trivial
+  | [_], _ => trivial
+  | a :: b :: rest, h => by
+      change
+        PointChordCase E a.point b.point ∧
+          LevelStepPointChordCase E (rest.map (·.point)) at h
+      exact ⟨PointChordCase.to_combineCanFire_chordCase E a b h.1,
+        levelStepCombineChordCase_of_levelStepPointChordCase rest h.2⟩
 
 theorem landmarkInvList_preservation_under_level_step
     (xss : List (List (ZMod E.q × ZMod E.q)))
@@ -8483,6 +8663,63 @@ theorem iteratedLevelStepCombineExtras_of_chordCase
     IteratedLevelStepCombineExtras E n accs :=
   @iteratedLevelStepCombineExtras_of_canFire E n accs
     (@iteratedLevelStepCombineCanFire_of_chordCase E n accs h)
+
+theorem iteratedLevelStepCombineChordCase_of_iteratedPointChordCase
+    (n : ℕ) (accs : List (EagenAccum E))
+    (h : IteratedPointChordCase E n (accs.map (·.point))) :
+    IteratedLevelStepCombineChordCase E n accs := by
+  induction n generalizing accs with
+  | zero =>
+      trivial
+  | succ n ih =>
+      obtain ⟨hnow, htail⟩ := h
+      refine ⟨levelStepCombineChordCase_of_levelStepPointChordCase E accs hnow, ?_⟩
+      exact ih (level_step E accs) (by
+        simpa [level_step_point_projection E accs] using htail)
+
+theorem iteratedLevelStepCombineExtras_of_iteratedPointChordCase
+    (n : ℕ) (accs : List (EagenAccum E))
+    (h : IteratedPointChordCase E n (accs.map (·.point))) :
+    IteratedLevelStepCombineExtras E n accs :=
+  iteratedLevelStepCombineExtras_of_chordCase E n accs
+    (iteratedLevelStepCombineChordCase_of_iteratedPointChordCase E n accs h)
+
+theorem iteratedLevelStepCombineExtras_of_level0SingletonPoints
+    (Ps : List (ZMod E.q × ZMod E.q))
+    (h : IteratedPointChordCase E Ps.length (level0SingletonPoints E Ps)) :
+    IteratedLevelStepCombineExtras E Ps.length (level0_singletons E Ps) := by
+  apply iteratedLevelStepCombineExtras_of_iteratedPointChordCase E
+  simpa [level0_singletons_point_projection] using h
+
+namespace PointSkeletonSmoke
+
+private def pointsF17 : Finset (ZMod 17 × ZMod 17) :=
+  (Finset.univ : Finset (ZMod 17 × ZMod 17)).filter
+    (fun p => p.2 ^ 2 = p.1 ^ 3 + (0 : ZMod 17) * p.1 + (1 : ZMod 17))
+
+private def E17 : ECSetup where
+  q := 17
+  hq_prime := by decide
+  curveA := 0
+  curveB := 1
+  points := pointsF17
+  hOnCurve := by
+    intro p hp
+    exact (Finset.mem_filter.mp hp).2
+  hComplete := by
+    intro x y h
+    exact Finset.mem_filter.mpr ⟨Finset.mem_univ (x, y), h⟩
+  hDisc := by native_decide
+  numPoints := pointsF17.card + 1
+  hNumPoints := rfl
+  hq_ge := by decide
+
+example :
+    IteratedPointChordCase E17 4
+      (level0SingletonPoints E17 [(0, 1), (1, 6), (2, 3), (6, 8)]) := by
+  native_decide
+
+end PointSkeletonSmoke
 
 /-- Decidable instance for `IteratedLevelStepCombineChordCase`. Recurses on
     the iterate count, using the per-level `LevelStepCombineChordCase`

@@ -126,6 +126,11 @@ theorem ECSetup.equation_iff_nonsingular (E : ECSetup) {x y : ZMod E.q} :
     E.toW.toAffine.Equation x y ↔ E.toW.toAffine.Nonsingular x y :=
   Affine.equation_iff_nonsingular_of_Δ_ne_zero E.toW_Δ_ne_zero
 
+instance ECSetup.nonsingularDecidable (E : ECSetup) (x y : ZMod E.q) :
+    Decidable (E.toW.toAffine.Nonsingular x y) :=
+  decidable_of_iff (y ^ 2 = x ^ 3 + E.curveA * x + E.curveB)
+    ((E.equation_iff x y).symm.trans E.equation_iff_nonsingular)
+
 /-! ## Lines -/
 
 structure Line (q : ℕ) [Fact (Nat.Prime q)] where
@@ -219,12 +224,12 @@ variable {E : ECSetup}
 abbrev infinity : ECPoint E := WeierstrassCurve.Affine.Point.zero
 
 /-- Smart constructor for an affine point given on-curve evidence. -/
-noncomputable def affineOfEqn (E : ECSetup) {x y : ZMod E.q}
+def affineOfEqn (E : ECSetup) {x y : ZMod E.q}
     (h : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB) : ECPoint E :=
   .some (E.equation_iff_nonsingular.mp ((E.equation_iff x y).mpr h))
 
 /-- Smart constructor for an affine point given membership in `E.points`. -/
-noncomputable def affineOfMem (E : ECSetup) {p : ZMod E.q × ZMod E.q}
+def affineOfMem (E : ECSetup) {p : ZMod E.q × ZMod E.q}
     (hp : p ∈ E.points) : ECPoint E :=
   affineOfEqn E (E.hOnCurve p hp)
 
@@ -233,8 +238,7 @@ noncomputable def affineOfMem (E : ECSetup) {p : ZMod E.q × ZMod E.q}
     to `0` (the point at infinity). Convenient for total-function lambdas
     in `weightedSum` where off-curve coefficients are zero anyway, so
     the junk fallback is never observed. -/
-noncomputable def affine (E : ECSetup) (x y : ZMod E.q) : ECPoint E :=
-  open Classical in
+def affine (E : ECSetup) (x y : ZMod E.q) : ECPoint E :=
   if h : E.toW.toAffine.Nonsingular x y then .some h else 0
 
 /-- `ECPoint.affine E x y = .some h` whenever `(x, y)` is nonsingular. -/
