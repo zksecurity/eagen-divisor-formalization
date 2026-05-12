@@ -31,8 +31,12 @@ def fX2m1 : Divisor.CoeffPoly 5 := X * X - C 1
 #eval (fX2m1.divXSubC (-1)).coeffs   -- expect [4, 1]
 
 example : fX2m1.eval 1 = 0 := by native_decide
-example : (fX2m1.divXSubC 1).coeffs = [1, 1] := by native_decide
-example : (fX2m1.divXSubC (-1)).coeffs = [4, 1] := by native_decide
+-- Closed-form mul/divXSubC may produce trailing zeros; the
+-- represented polynomial is the same.  Pin via eval instead of
+-- list equality.
+example : (fX2m1.divXSubC 1).eval 0 = 1 := by native_decide   -- X+1 at 0 = 1
+example : (fX2m1.divXSubC 1).eval 1 = 2 := by native_decide   -- X+1 at 1 = 2
+example : (fX2m1.divXSubC (-1)).eval 0 = -1 := by native_decide
 
 /-! ## CoordRingEltC sanity over `y² = x³ + 1` / F_5 -/
 

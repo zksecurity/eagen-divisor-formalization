@@ -90,15 +90,15 @@ def smul (c : ZMod q) (p : CoeffPoly q) : CoeffPoly q :=
 
 instance : SMul (ZMod q) (CoeffPoly q) := ⟨smul⟩
 
-/-- Polynomial multiplication via convolution. -/
-def mul : CoeffPoly q → CoeffPoly q → CoeffPoly q
-  | ⟨as⟩, ⟨bs⟩ => ⟨mulList as bs⟩
-where
-  mulList : List (ZMod q) → List (ZMod q) → List (ZMod q)
-    | [], _ => []
-    | _, [] => []
-    | a :: as', bs =>
-        add.addList (bs.map (a * ·)) (0 :: mulList as' bs)
+/-- Polynomial multiplication via coefficient convolution.
+
+    Closed-form: coefficient `n` of the product is
+    `∑ k ∈ range (n+1), p₁.coeff k * p₂.coeff (n - k)`,
+    matching `Polynomial.coeff_mul`.  Output length is
+    `p₁.length + p₂.length` (overestimate; trailing zeros tolerated). -/
+def mul (p₁ p₂ : CoeffPoly q) : CoeffPoly q :=
+  ⟨(List.range (p₁.coeffs.length + p₂.coeffs.length)).map fun n =>
+    (Finset.range (n + 1)).sum fun k => p₁.coeff k * p₂.coeff (n - k)⟩
 
 instance : Mul (CoeffPoly q) := ⟨mul⟩
 
@@ -323,6 +323,79 @@ theorem toPolynomial_add (p₁ p₂ : CoeffPoly q) :
   intro n
   rw [toPolynomial_coeff, Polynomial.coeff_add, toPolynomial_coeff,
       toPolynomial_coeff, coeff_add]
+
+/-! ### `mul` bridge -/
+
+/-- Coefficient formula for `mul`, matching `Polynomial.coeff_mul`. -/
+theorem coeff_mul (p₁ p₂ : CoeffPoly q) (n : ℕ) :
+    (p₁ * p₂).coeff n =
+      if n < p₁.coeffs.length + p₂.coeffs.length then
+        (Finset.range (n + 1)).sum fun k => p₁.coeff k * p₂.coeff (n - k)
+      else 0 := by
+  show ((p₁.mul p₂).coeffs[n]?).getD 0 = _
+  show (((List.range (p₁.coeffs.length + p₂.coeffs.length)).map
+      (fun n => (Finset.range (n + 1)).sum
+        fun k => p₁.coeff k * p₂.coeff (n - k)))[n]?).getD 0 = _
+  by_cases hn : n < p₁.coeffs.length + p₂.coeffs.length
+  · rw [if_pos hn, List.getElem?_map]
+    have hlen : n < (List.range (p₁.coeffs.length + p₂.coeffs.length)).length := by
+      rw [List.length_range]; exact hn
+    rw [List.getElem?_eq_getElem hlen]
+    simp [List.getElem_range]
+  · push_neg at hn
+    rw [if_neg hn.not_gt]
+    have hlen : (List.range (p₁.coeffs.length + p₂.coeffs.length)).length ≤ n := by
+      rw [List.length_range]; exact hn
+    rw [List.getElem?_eq_none (l := (List.range _).map _)
+      (i := n) (by rw [List.length_map]; exact hlen)]
+    rfl
+
+/-- Mul bridge: `CoeffPoly.mul` agrees with `Polynomial.mul`. -/
+theorem toPolynomial_mul (p₁ p₂ : CoeffPoly q) :
+    toPolynomial (p₁ * p₂) = toPolynomial p₁ * toPolynomial p₂ := by
+  apply Polynomial.ext
+  intro n
+  rw [toPolynomial_coeff, Polynomial.coeff_mul, coeff_mul]
+  -- Polynomial.coeff_mul gives sum over Finset.antidiagonal; our
+  -- coeff_mul gives sum over Finset.range (n+1) with index pair (k, n-k).
+  -- Both sums are over (i, j) with i + j = n.
+  by_cases hn : n < p₁.coeffs.length + p₂.coeffs.length
+  · rw [if_pos hn]
+    -- LHS uses `range (n+1)` sum; RHS uses `antidiagonal n`.  Both
+    -- enumerate pairs (i, j) with i + j = n.  `Finset.sum_antidiagonal_eq_sum_range_succ`
+    -- bridges them.
+    rw [Finset.Nat.sum_antidiagonal_eq_sum_range_succ
+      (f := fun a b => (toPolynomial p₁).coeff a * (toPolynomial p₂).coeff b)]
+    apply Finset.sum_congr rfl
+    intro k _
+    rw [toPolynomial_coeff, toPolynomial_coeff]
+  · push_neg at hn
+    rw [if_neg hn.not_gt]
+    -- RHS is 0 when natDeg(p₁) + natDeg(p₂) < n.
+    -- We have p₁.coeff i = 0 for i ≥ length(p₁), and similarly p₂.
+    -- For any (i, j) ∈ antidiagonal n with i + j = n, if i ≥ length(p₁)
+    -- and j ≥ length(p₂), at least one coeff is 0.
+    -- More carefully: i + j = n ≥ length(p₁) + length(p₂), so either
+    -- i ≥ length(p₁) or j ≥ length(p₂).
+    symm
+    apply Finset.sum_eq_zero
+    rintro ⟨i, j⟩ hij
+    rw [Finset.mem_antidiagonal] at hij
+    rw [toPolynomial_coeff, toPolynomial_coeff]
+    by_cases hi : i < p₁.coeffs.length
+    · have hj : ¬ j < p₂.coeffs.length := by omega
+      push_neg at hj
+      have h2 : p₂.coeff j = 0 := by
+        unfold coeff
+        have := List.getElem?_eq_none (l := p₂.coeffs) (i := j) hj
+        simp [this]
+      rw [h2, mul_zero]
+    · push_neg at hi
+      have h1 : p₁.coeff i = 0 := by
+        unfold coeff
+        have := List.getElem?_eq_none (l := p₁.coeffs) (i := i) hi
+        simp [this]
+      rw [h1, zero_mul]
 
 /-! ### `divXSubC` bridge
 
