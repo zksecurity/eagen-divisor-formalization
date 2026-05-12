@@ -42,13 +42,13 @@ structure MAProverMsg.IsHonestForBinary (E : ECSetup)
   /-- The committed coordinate-ring element is the singleton Eagen build. -/
   h_toD_eq : msg.toD = Landmark.eagenBuild_singletons E Ps
   /-- Every support point is rational on `E`. -/
-  hPs_on : forall P, P ∈ Ps -> P ∈ E.points
+  h_ps_on : forall P, P ∈ Ps -> P ∈ E.points
   /-- The support list sums to zero in the elliptic-curve group. -/
-  hSumZero : Landmark.sumOnE E Ps = 0
+  h_sum_zero : Landmark.sumOnE E Ps = 0
   /-- The support list is non-empty. -/
-  hNonEmpty : Ps ≠ []
+  h_nonempty : Ps ≠ []
   /-- The support list has no duplicate points. -/
-  hNodup : Ps.Nodup
+  h_nodup : Ps.Nodup
   /-- The message scalars reduce the integer witness scalars modulo `E.q`. -/
   h_scalars_match :
     forall i : Fin stmt.k,
@@ -85,13 +85,13 @@ structure MAProverMsg.IsHonestForBinaryScaled (E : ECSetup)
   /-- The committed coordinate-ring element is the scaled singleton Eagen build. -/
   h_toD_eq : msg.toD = c • Landmark.eagenBuild_singletons E Ps
   /-- Every support point is rational on `E`. -/
-  hPs_on : forall P, P ∈ Ps -> P ∈ E.points
+  h_ps_on : forall P, P ∈ Ps -> P ∈ E.points
   /-- The support list sums to zero in the elliptic-curve group. -/
-  hSumZero : Landmark.sumOnE E Ps = 0
+  h_sum_zero : Landmark.sumOnE E Ps = 0
   /-- The support list is non-empty. -/
-  hNonEmpty : Ps ≠ []
+  h_nonempty : Ps ≠ []
   /-- The support list has no duplicate points. -/
-  hNodup : Ps.Nodup
+  h_nodup : Ps.Nodup
   /-- The message scalars reduce the integer witness scalars modulo `E.q`. -/
   h_scalars_match :
     forall i : Fin stmt.k,
@@ -124,10 +124,10 @@ def ofBinary
     | mk a b =>
       rw [CoordRingElt.mk.injEq]
       simp
-  hPs_on := h_binary.hPs_on
-  hSumZero := h_binary.hSumZero
-  hNonEmpty := h_binary.hNonEmpty
-  hNodup := h_binary.hNodup
+  h_ps_on := h_binary.h_ps_on
+  h_sum_zero := h_binary.h_sum_zero
+  h_nonempty := h_binary.h_nonempty
+  h_nodup := h_binary.h_nodup
   h_scalars_match := h_binary.h_scalars_match
   h_formal_eq_honest := h_binary.h_formal_eq_honest
   h_target_on_curve := h_binary.h_target_on_curve
@@ -147,7 +147,7 @@ private theorem eagenBuild_singletons_landmark_of_isHonestForBinary
     (∀ P ∈ h_binary.Ps, D.eval P.1 P.2 = 0) ∧
     (normPoly E D).natDegree = h_binary.Ps.length := by
   exact Landmark.eagenBuild_singletons_landmark E h_binary.Ps
-    h_binary.hPs_on h_binary.hSumZero h_binary.hNonEmpty h_combine
+    h_binary.h_ps_on h_binary.h_sum_zero h_binary.h_nonempty h_combine
 
 /-- The binary singleton build splits over `E`. -/
 theorem splitsOnE_msg_toD_binary_via_combineHyp
@@ -165,7 +165,7 @@ theorem splitsOnE_msg_toD_binary_via_combineHyp
     simpa [D] using
       eagenBuild_singletons_landmark_of_isHonestForBinary h_binary h_combine
   exact Landmark.splitsOnE_of_landmark E h_binary.Ps D
-    h_binary.hPs_on h_binary.hNodup
+    h_binary.h_ps_on h_binary.h_nodup
     h_landmark.1 h_landmark.2.1 h_landmark.2.2
 
 /-- The divisor of the binary singleton build is the protocol honest
@@ -184,8 +184,8 @@ theorem divisor_identity_binary_via_combineHyp
     divisorOfD E (Landmark.eagenBuild_singletons E h_binary.Ps) R
         = Landmark.formalDivisorOfList E h_binary.Ps R := by
           exact Landmark.eagenBuild_singletons_divisor_identity E h_binary.Ps
-            h_binary.hPs_on h_binary.hSumZero h_binary.hNonEmpty
-            h_binary.hNodup h_combine R
+            h_binary.h_ps_on h_binary.h_sum_zero h_binary.h_nonempty
+            h_binary.h_nodup h_combine R
     _ = honestDivisorCoeffs E stmt wit hk msg R :=
           h_binary.h_formal_eq_honest R
 
@@ -219,10 +219,10 @@ theorem splitsOnE_msg_toD_binary_scaled_via_combineHyp
       (normPoly E D).natDegree = h_binary.Ps.length := by
     simpa [D] using
       Landmark.eagenBuild_singletons_landmark E h_binary.Ps
-        h_binary.hPs_on h_binary.hSumZero h_binary.hNonEmpty h_combine
+        h_binary.h_ps_on h_binary.h_sum_zero h_binary.h_nonempty h_combine
   exact (splitsOnE_smul E h_binary.c h_binary.h_c_ne D).mpr
     (Landmark.splitsOnE_of_landmark E h_binary.Ps D
-      h_binary.hPs_on h_binary.hNodup
+      h_binary.h_ps_on h_binary.h_nodup
       h_landmark.1 h_landmark.2.1 h_landmark.2.2)
 
 /-- The divisor of a scaled binary singleton build is the protocol honest
@@ -243,8 +243,8 @@ theorem divisor_identity_binary_scaled_via_combineHyp
         = divisorOfD E D R := divisorOfD_smul E h_binary.c h_binary.h_c_ne D R
     _ = Landmark.formalDivisorOfList E h_binary.Ps R := by
           exact Landmark.eagenBuild_singletons_divisor_identity E h_binary.Ps
-            h_binary.hPs_on h_binary.hSumZero h_binary.hNonEmpty
-            h_binary.hNodup h_combine R
+            h_binary.h_ps_on h_binary.h_sum_zero h_binary.h_nonempty
+            h_binary.h_nodup h_combine R
     _ = honestDivisorCoeffs E stmt wit hk msg R :=
           h_binary.h_formal_eq_honest R
 
@@ -269,15 +269,15 @@ theorem ma_completeness_binary_via_combineHyp
     (hkm : stmt.k = msg.k)
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
     (h_combine : Landmark.PairwiseCombineHyp E)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm
+  ma_completeness E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinary_via_combineHyp (E := E) h_binary h_combine)
 
 theorem ma_completeness_binary_with_scalar_via_combineHyp
@@ -286,15 +286,15 @@ theorem ma_completeness_binary_with_scalar_via_combineHyp
     (hkm : stmt.k = msg.k)
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
     (h_combine : Landmark.PairwiseCombineHyp E)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm
+  ma_completeness E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinaryScaled_via_combineHyp (E := E) h_binary h_combine)
 
 theorem ma_completeness_binary_via_combineHyp_clean
@@ -303,20 +303,20 @@ theorem ma_completeness_binary_via_combineHyp_clean
     (hkm : stmt.k = msg.k)
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
     (h_combine : Landmark.PairwiseCombineHyp E)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hQ : 5 ≤ E.q) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
+    (h_q : 5 ≤ E.q) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
-  have hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
-    admSet_implies_toD_nonzero stmt msg hAdm
-  exact ma_completeness_clean E stmt wit hk hValid msg hkm hDeg hDegK hAdm
+  have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
+    admSet_implies_toD_nonzero stmt msg h_adm
+  exact ma_completeness_clean E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinary_via_combineHyp (E := E) h_binary h_combine)
-    hD hQ
+    h_d h_q
 
 theorem ma_completeness_binary_with_scalar_via_combineHyp_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -324,20 +324,20 @@ theorem ma_completeness_binary_with_scalar_via_combineHyp_clean
     (hkm : stmt.k = msg.k)
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
     (h_combine : Landmark.PairwiseCombineHyp E)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hQ : 5 ≤ E.q) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
+    (h_q : 5 ≤ E.q) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
-  have hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
-    admSet_implies_toD_nonzero stmt msg hAdm
-  exact ma_completeness_clean E stmt wit hk hValid msg hkm hDeg hDegK hAdm
+  have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
+    admSet_implies_toD_nonzero stmt msg h_adm
+  exact ma_completeness_clean E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinaryScaled_via_combineHyp (E := E) h_binary h_combine)
-    hD hQ
+    h_d h_q
 
 /-- M=3 binary completeness via the constructive length-4 simple bridge.
 
@@ -353,10 +353,10 @@ theorem ma_completeness_binary_M_eq_3
     (hkm : stmt.k = msg.k)
     (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
     (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
@@ -366,7 +366,7 @@ theorem ma_completeness_binary_M_eq_3
     Subsingleton.elim _ _
   rw [hkm_eq]
   exact ma_completeness_for_length4Simple E stmt msg h_simple wit hk
-    h_scalars hValid hDeg hDegK hAdm
+    h_scalars h_valid h_deg h_deg_k h_adm
 
 /-! ## Unconditional binary completeness — discharges `PairwiseCombineHyp`.
 
@@ -378,7 +378,7 @@ theorem splitsOnE_msg_toD_binary
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       Landmark.LevelStepCombineExtras E
         (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps))) :
@@ -391,16 +391,16 @@ theorem splitsOnE_msg_toD_binary
       (normPoly E D).natDegree = h_binary.Ps.length := by
     simpa [D] using
       Landmark.eagenBuild_singletons_landmark_unconditional E h_binary.Ps
-        h_binary.hPs_on h_binary.hSumZero h_binary.hNodup hLen h_extras
+        h_binary.h_ps_on h_binary.h_sum_zero h_binary.h_nodup h_len h_extras
   exact Landmark.splitsOnE_of_landmark E h_binary.Ps D
-    h_binary.hPs_on h_binary.hNodup
+    h_binary.h_ps_on h_binary.h_nodup
     h_landmark.1 h_landmark.2.1 h_landmark.2.2
 
 theorem divisor_identity_binary
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       Landmark.LevelStepCombineExtras E
         (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps))) :
@@ -413,8 +413,8 @@ theorem divisor_identity_binary
     divisorOfD E (Landmark.eagenBuild_singletons E h_binary.Ps) R
         = Landmark.formalDivisorOfList E h_binary.Ps R := by
           exact Landmark.eagenBuild_singletons_divisor_identity_unconditional E
-            h_binary.Ps h_binary.hPs_on h_binary.hSumZero
-            h_binary.hNodup hLen h_extras R
+            h_binary.Ps h_binary.h_ps_on h_binary.h_sum_zero
+            h_binary.h_nodup h_len h_extras R
     _ = honestDivisorCoeffs E stmt wit hk msg R :=
           h_binary.h_formal_eq_honest R
 
@@ -422,15 +422,15 @@ theorem isHonestFor_of_isHonestForBinary
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       Landmark.LevelStepCombineExtras E
         (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps))) :
     msg.isHonestFor E stmt wit hk hkm := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · exact h_binary.h_scalars_match
-  · exact splitsOnE_msg_toD_binary h_binary hLen h_extras
-  · exact divisor_identity_binary h_binary hLen h_extras
+  · exact splitsOnE_msg_toD_binary h_binary h_len h_extras
+  · exact divisor_identity_binary h_binary h_len h_extras
   · exact h_binary.h_target_on_curve
   · exact h_binary.h_bases_on_curve
 
@@ -438,7 +438,7 @@ theorem splitsOnE_msg_toD_binary_scaled
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       Landmark.LevelStepCombineExtras E
         (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps))) :
@@ -451,17 +451,17 @@ theorem splitsOnE_msg_toD_binary_scaled
       (normPoly E D).natDegree = h_binary.Ps.length := by
     simpa [D] using
       Landmark.eagenBuild_singletons_landmark_unconditional E h_binary.Ps
-        h_binary.hPs_on h_binary.hSumZero h_binary.hNodup hLen h_extras
+        h_binary.h_ps_on h_binary.h_sum_zero h_binary.h_nodup h_len h_extras
   exact (splitsOnE_smul E h_binary.c h_binary.h_c_ne D).mpr
     (Landmark.splitsOnE_of_landmark E h_binary.Ps D
-      h_binary.hPs_on h_binary.hNodup
+      h_binary.h_ps_on h_binary.h_nodup
       h_landmark.1 h_landmark.2.1 h_landmark.2.2)
 
 theorem divisor_identity_binary_scaled
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       Landmark.LevelStepCombineExtras E
         (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps))) :
@@ -476,8 +476,8 @@ theorem divisor_identity_binary_scaled
         = divisorOfD E D R := divisorOfD_smul E h_binary.c h_binary.h_c_ne D R
     _ = Landmark.formalDivisorOfList E h_binary.Ps R := by
           exact Landmark.eagenBuild_singletons_divisor_identity_unconditional E
-            h_binary.Ps h_binary.hPs_on h_binary.hSumZero
-            h_binary.hNodup hLen h_extras R
+            h_binary.Ps h_binary.h_ps_on h_binary.h_sum_zero
+            h_binary.h_nodup h_len h_extras R
     _ = honestDivisorCoeffs E stmt wit hk msg R :=
           h_binary.h_formal_eq_honest R
 
@@ -485,15 +485,15 @@ theorem isHonestFor_of_isHonestForBinaryScaled
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
     {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       Landmark.LevelStepCombineExtras E
         (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps))) :
     msg.isHonestFor E stmt wit hk hkm := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · exact h_binary.h_scalars_match
-  · exact splitsOnE_msg_toD_binary_scaled h_binary hLen h_extras
-  · exact divisor_identity_binary_scaled h_binary hLen h_extras
+  · exact splitsOnE_msg_toD_binary_scaled h_binary h_len h_extras
+  · exact divisor_identity_binary_scaled h_binary h_len h_extras
   · exact h_binary.h_target_on_curve
   · exact h_binary.h_bases_on_curve
 
@@ -502,97 +502,97 @@ theorem ma_completeness_binary_extras
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       Landmark.LevelStepCombineExtras E
         (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)))
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm
-    (isHonestFor_of_isHonestForBinary (E := E) h_binary hLen h_extras)
+  ma_completeness E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+    (isHonestFor_of_isHonestForBinary (E := E) h_binary h_len h_extras)
 
 theorem ma_completeness_binary_with_scalar_extras
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       Landmark.LevelStepCombineExtras E
         (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)))
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm
+  ma_completeness E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinaryScaled (E := E)
-      h_binary hLen h_extras)
+      h_binary h_len h_extras)
 
 theorem ma_completeness_binary_extras_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       Landmark.LevelStepCombineExtras E
         (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)))
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hQ : 5 ≤ E.q) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
+    (h_q : 5 ≤ E.q) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
-  have hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
-    admSet_implies_toD_nonzero stmt msg hAdm
-  exact ma_completeness_clean E stmt wit hk hValid msg hkm hDeg hDegK hAdm
-    (isHonestFor_of_isHonestForBinary (E := E) h_binary hLen h_extras)
-    hD hQ
+  have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
+    admSet_implies_toD_nonzero stmt msg h_adm
+  exact ma_completeness_clean E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+    (isHonestFor_of_isHonestForBinary (E := E) h_binary h_len h_extras)
+    h_d h_q
 
 theorem ma_completeness_binary_with_scalar_extras_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       Landmark.LevelStepCombineExtras E
         (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)))
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hQ : 5 ≤ E.q) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
+    (h_q : 5 ≤ E.q) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
-  have hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
-    admSet_implies_toD_nonzero stmt msg hAdm
-  exact ma_completeness_clean E stmt wit hk hValid msg hkm hDeg hDegK hAdm
+  have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
+    admSet_implies_toD_nonzero stmt msg h_adm
+  exact ma_completeness_clean E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinaryScaled (E := E)
-      h_binary hLen h_extras)
-    hD hQ
+      h_binary h_len h_extras)
+    h_d h_q
 
 private theorem admSetMax_of_isHonestForBinary
     {E : ECSetup} {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
     {wit : DlogWitness E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       Landmark.LevelStepCombineExtras E
         (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps))) :
@@ -604,7 +604,7 @@ private theorem admSetMax_of_isHonestForBinary
       (normPoly E D).natDegree = h_binary.Ps.length := by
     simpa [D] using
       Landmark.eagenBuild_singletons_landmark_unconditional E h_binary.Ps
-        h_binary.hPs_on h_binary.hSumZero h_binary.hNodup hLen h_extras
+        h_binary.h_ps_on h_binary.h_sum_zero h_binary.h_nodup h_len h_extras
   have hD_msg : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) := by
     rw [h_binary.h_toD_eq]
     exact h_landmark.1
@@ -625,7 +625,7 @@ private theorem admSetParker_of_isHonestForBinaryScaled
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
     (h_c_eq : h_binary.c =
       ((Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 1)⁻¹)
-    (hParker_pre :
+    (h_parker_pre :
       (Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 1 ≠ 0) :
     stmt.admSet (msg.polyA, msg.polyB) := by
   rw [h_admSetParker]
@@ -633,7 +633,7 @@ private theorem admSetParker_of_isHonestForBinaryScaled
   change msg.toD.a.coeff 1 = 1
   rw [h_binary.h_toD_eq, h_c_eq]
   simp [CoordRingElt.smul_a, Polynomial.coeff_smul,
-    inv_mul_cancel₀ hParker_pre]
+    inv_mul_cancel₀ h_parker_pre]
 
 private theorem admSetEagen_of_isHonestForBinaryScaled
     {E : ECSetup} {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
@@ -642,7 +642,7 @@ private theorem admSetEagen_of_isHonestForBinaryScaled
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
     (h_c_eq : h_binary.c =
       ((Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 0)⁻¹)
-    (hEagen_pre :
+    (h_eagen_pre :
       (Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 0 ≠ 0) :
     stmt.admSet (msg.polyA, msg.polyB) := by
   rw [h_admSetEagen]
@@ -650,7 +650,7 @@ private theorem admSetEagen_of_isHonestForBinaryScaled
   change msg.toD.a.coeff 0 = 1
   rw [h_binary.h_toD_eq, h_c_eq]
   simp [CoordRingElt.smul_a, Polynomial.coeff_smul,
-    inv_mul_cancel₀ hEagen_pre]
+    inv_mul_cancel₀ h_eagen_pre]
 
 private theorem admSetHashInner_smul
     {q : ℕ} [Fact (Nat.Prime q)] (r : ℕ → ZMod q)
@@ -681,7 +681,7 @@ private theorem admSetHash_of_isHonestForBinaryScaled
       (admSetHashInner r
         ((Landmark.eagenBuild_singletons E h_binary.Ps).a,
           (Landmark.eagenBuild_singletons E h_binary.Ps).b))⁻¹)
-    (hHash_pre :
+    (h_hash_pre :
       admSetHashInner r
         ((Landmark.eagenBuild_singletons E h_binary.Ps).a,
           (Landmark.eagenBuild_singletons E h_binary.Ps).b) ≠ 0) :
@@ -693,10 +693,10 @@ private theorem admSetHash_of_isHonestForBinaryScaled
   set D := Landmark.eagenBuild_singletons E h_binary.Ps
   have h_c_eq' : h_binary.c = (admSetHashInner r (D.a, D.b))⁻¹ := by
     simpa [D] using h_c_eq
-  have hHash_pre' : admSetHashInner r (D.a, D.b) ≠ 0 := by
-    simpa [D] using hHash_pre
+  have h_hash_pre' : admSetHashInner r (D.a, D.b) ≠ 0 := by
+    simpa [D] using h_hash_pre
   rw [admSetHashInner_smul r h_binary.c h_binary.h_c_ne D, h_c_eq']
-  simp [inv_mul_cancel₀ hHash_pre']
+  simp [inv_mul_cancel₀ h_hash_pre']
 
 theorem ma_completeness_binary_admSetMax_extras
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -704,21 +704,21 @@ theorem ma_completeness_binary_admSetMax_extras
     (hkm : stmt.k = msg.k)
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       Landmark.LevelStepCombineExtras E
         (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)))
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness_binary_extras E stmt msg wit hk hkm
-    h_binary hLen h_extras hValid hDeg hDegK
+    h_binary h_len h_extras h_valid h_deg h_deg_k
     (admSetMax_of_isHonestForBinary
-      h_admSetMax h_binary hLen h_extras)
+      h_admSetMax h_binary h_len h_extras)
 
 theorem ma_completeness_binary_admSetParker_extras
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -728,23 +728,23 @@ theorem ma_completeness_binary_admSetParker_extras
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
     (h_c_eq : h_binary.c =
       ((Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 1)⁻¹)
-    (hParker_pre :
+    (h_parker_pre :
       (Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 1 ≠ 0)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       Landmark.LevelStepCombineExtras E
         (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)))
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness_binary_with_scalar_extras E stmt msg wit hk hkm
-    h_binary hLen h_extras hValid hDeg hDegK
+    h_binary h_len h_extras h_valid h_deg h_deg_k
     (admSetParker_of_isHonestForBinaryScaled
-      h_admSetParker h_binary h_c_eq hParker_pre)
+      h_admSetParker h_binary h_c_eq h_parker_pre)
 
 theorem ma_completeness_binary_admSetEagen_extras
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -754,23 +754,23 @@ theorem ma_completeness_binary_admSetEagen_extras
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
     (h_c_eq : h_binary.c =
       ((Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 0)⁻¹)
-    (hEagen_pre :
+    (h_eagen_pre :
       (Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 0 ≠ 0)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       Landmark.LevelStepCombineExtras E
         (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)))
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness_binary_with_scalar_extras E stmt msg wit hk hkm
-    h_binary hLen h_extras hValid hDeg hDegK
+    h_binary h_len h_extras h_valid h_deg h_deg_k
     (admSetEagen_of_isHonestForBinaryScaled
-      h_admSetEagen h_binary h_c_eq hEagen_pre)
+      h_admSetEagen h_binary h_c_eq h_eagen_pre)
 
 theorem ma_completeness_binary_admSetHash_extras
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -783,38 +783,38 @@ theorem ma_completeness_binary_admSetHash_extras
       (admSetHashInner r
         ((Landmark.eagenBuild_singletons E h_binary.Ps).a,
           (Landmark.eagenBuild_singletons E h_binary.Ps).b))⁻¹)
-    (hHash_pre :
+    (h_hash_pre :
       admSetHashInner r
         ((Landmark.eagenBuild_singletons E h_binary.Ps).a,
           (Landmark.eagenBuild_singletons E h_binary.Ps).b) ≠ 0)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       Landmark.LevelStepCombineExtras E
         (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)))
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness_binary_with_scalar_extras E stmt msg wit hk hkm
-    h_binary hLen h_extras hValid hDeg hDegK
+    h_binary h_len h_extras h_valid h_deg h_deg_k
     (admSetHash_of_isHonestForBinaryScaled
-      r h_admSetHash h_binary h_c_eq hHash_pre)
+      r h_admSetHash h_binary h_c_eq h_hash_pre)
 
 theorem ma_completeness_binary_chain
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_chain : Landmark.IteratedLevelStepCombineExtras E h_binary.Ps.length
                   (Landmark.level0_singletons E h_binary.Ps))
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
@@ -825,7 +825,7 @@ theorem ma_completeness_binary_chain
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) :=
     Landmark.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
   exact ma_completeness_binary_extras E stmt msg wit hk hkm
-    h_binary hLen h_extras hValid hDeg hDegK hAdm
+    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 theorem ma_completeness_binary_chain_admSetParker
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -835,14 +835,14 @@ theorem ma_completeness_binary_chain_admSetParker
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
     (h_c_eq : h_binary.c =
       ((Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 1)⁻¹)
-    (hParker_pre :
+    (h_parker_pre :
       (Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 1 ≠ 0)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_chain : Landmark.IteratedLevelStepCombineExtras E h_binary.Ps.length
                   (Landmark.level0_singletons E h_binary.Ps))
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
@@ -853,8 +853,8 @@ theorem ma_completeness_binary_chain_admSetParker
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) :=
     Landmark.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
   exact ma_completeness_binary_admSetParker_extras
-    E stmt msg wit hk hkm h_admSetParker h_binary h_c_eq hParker_pre
-    hLen h_extras hValid hDeg hDegK
+    E stmt msg wit hk hkm h_admSetParker h_binary h_c_eq h_parker_pre
+    h_len h_extras h_valid h_deg h_deg_k
 
 theorem ma_completeness_binary_chain_admSetEagen
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -864,14 +864,14 @@ theorem ma_completeness_binary_chain_admSetEagen
     (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
     (h_c_eq : h_binary.c =
       ((Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 0)⁻¹)
-    (hEagen_pre :
+    (h_eagen_pre :
       (Landmark.eagenBuild_singletons E h_binary.Ps).a.coeff 0 ≠ 0)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_chain : Landmark.IteratedLevelStepCombineExtras E h_binary.Ps.length
                   (Landmark.level0_singletons E h_binary.Ps))
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
@@ -882,8 +882,8 @@ theorem ma_completeness_binary_chain_admSetEagen
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) :=
     Landmark.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
   exact ma_completeness_binary_admSetEagen_extras
-    E stmt msg wit hk hkm h_admSetEagen h_binary h_c_eq hEagen_pre
-    hLen h_extras hValid hDeg hDegK
+    E stmt msg wit hk hkm h_admSetEagen h_binary h_c_eq h_eagen_pre
+    h_len h_extras h_valid h_deg h_deg_k
 
 theorem ma_completeness_binary_chain_admSetHash
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -896,16 +896,16 @@ theorem ma_completeness_binary_chain_admSetHash
       (admSetHashInner r
         ((Landmark.eagenBuild_singletons E h_binary.Ps).a,
           (Landmark.eagenBuild_singletons E h_binary.Ps).b))⁻¹)
-    (hHash_pre :
+    (h_hash_pre :
       admSetHashInner r
         ((Landmark.eagenBuild_singletons E h_binary.Ps).a,
           (Landmark.eagenBuild_singletons E h_binary.Ps).b) ≠ 0)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_chain : Landmark.IteratedLevelStepCombineExtras E h_binary.Ps.length
                   (Landmark.level0_singletons E h_binary.Ps))
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
@@ -916,22 +916,22 @@ theorem ma_completeness_binary_chain_admSetHash
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) :=
     Landmark.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
   exact ma_completeness_binary_admSetHash_extras
-    E stmt msg wit hk hkm r h_admSetHash h_binary h_c_eq hHash_pre
-    hLen h_extras hValid hDeg hDegK
+    E stmt msg wit hk hkm r h_admSetHash h_binary h_c_eq h_hash_pre
+    h_len h_extras h_valid h_deg h_deg_k
 
 theorem ma_completeness_binary_chain_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (hkm : stmt.k = msg.k)
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_chain : Landmark.IteratedLevelStepCombineExtras E h_binary.Ps.length
                   (Landmark.level0_singletons E h_binary.Ps))
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hQ : 5 ≤ E.q) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
+    (h_q : 5 ≤ E.q) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
@@ -942,7 +942,7 @@ theorem ma_completeness_binary_chain_clean
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) :=
     Landmark.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
   exact ma_completeness_binary_extras_clean E stmt msg wit hk hkm
-    h_binary hLen h_extras hValid hDeg hDegK hAdm hQ
+    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm h_q
 
 theorem ma_completeness_binary_chain_admSetMax
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -950,12 +950,12 @@ theorem ma_completeness_binary_chain_admSetMax
     (hkm : stmt.k = msg.k)
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
-    (hLen : 2 ≤ h_binary.Ps.length)
+    (h_len : 2 ≤ h_binary.Ps.length)
     (h_chain : Landmark.IteratedLevelStepCombineExtras E h_binary.Ps.length
                   (Landmark.level0_singletons E h_binary.Ps))
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
@@ -966,7 +966,7 @@ theorem ma_completeness_binary_chain_admSetMax
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) :=
     Landmark.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
   exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
-    h_admSetMax h_binary hLen h_extras hValid hDeg hDegK
+    h_admSetMax h_binary h_len h_extras h_valid h_deg h_deg_k
 
 /-! ## Length-2 fully-unconditional binary completeness.
 
@@ -985,30 +985,30 @@ theorem ma_completeness_binary_length2
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
     (h_length2 : ∃ P Q : ZMod E.q × ZMod E.q,
       h_binary.Ps = [P, Q] ∧ P.1 = Q.1 ∧ Q.2 = -P.2)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  obtain ⟨P, Q, hPs_eq, hxx, hyy⟩ := h_length2
-  have hLen : 2 ≤ h_binary.Ps.length := by rw [hPs_eq]; simp
+  obtain ⟨P, Q, h_ps_eq, hxx, hyy⟩ := h_length2
+  have h_len : 2 ≤ h_binary.Ps.length := by rw [h_ps_eq]; simp
   have hP_on : P ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]; simp
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]; simp
   have hQ_on : Q ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]; simp
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]; simp
   have h_extras :
       ∀ k < h_binary.Ps.length,
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
-    rw [hPs_eq]
+    rw [h_ps_eq]
     exact Landmark.h_extras_holds_for_length2_sum_zero E P Q hP_on hQ_on hxx hyy
   exact ma_completeness_binary_extras E stmt msg wit hk hkm
-    h_binary hLen h_extras hValid hDeg hDegK hAdm
+    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 theorem ma_completeness_binary_length2_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -1017,31 +1017,31 @@ theorem ma_completeness_binary_length2_clean
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
     (h_length2 : ∃ P Q : ZMod E.q × ZMod E.q,
       h_binary.Ps = [P, Q] ∧ P.1 = Q.1 ∧ Q.2 = -P.2)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hQ : 5 ≤ E.q) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
+    (h_q : 5 ≤ E.q) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
-  obtain ⟨P, R, hPs_eq, hxx, hyy⟩ := h_length2
-  have hLen : 2 ≤ h_binary.Ps.length := by rw [hPs_eq]; simp
+  obtain ⟨P, R, h_ps_eq, hxx, hyy⟩ := h_length2
+  have h_len : 2 ≤ h_binary.Ps.length := by rw [h_ps_eq]; simp
   have hP_on : P ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]; simp
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]; simp
   have hR_on : R ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]; simp
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]; simp
   have h_extras :
       ∀ k < h_binary.Ps.length,
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
-    rw [hPs_eq]
+    rw [h_ps_eq]
     exact Landmark.h_extras_holds_for_length2_sum_zero E P R hP_on hR_on hxx hyy
   exact ma_completeness_binary_extras_clean E stmt msg wit hk hkm
-    h_binary hLen h_extras hValid hDeg hDegK hAdm hQ
+    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm h_q
 
 namespace Landmark
 
@@ -1236,14 +1236,14 @@ theorem length4_chord_level1_extras
     (E : ECSetup) (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
     (hP₀_on : P₀ ∈ E.points) (hP₁_on : P₁ ∈ E.points)
     (hP₂_on : P₂ ∈ E.points) (hP₃_on : P₃ ∈ E.points)
-    (hNodup : ([P₀, P₁, P₂, P₃] : List (ZMod E.q × ZMod E.q)).Nodup)
+    (h_nodup : ([P₀, P₁, P₂, P₃] : List (ZMod E.q × ZMod E.q)).Nodup)
     (hPair01 :
       LandmarkInvStrongCombineExtras E
         (levelInitSingleton E P₀) (levelInitSingleton E P₁))
     (hPair23 :
       LandmarkInvStrongCombineExtras E
         (levelInitSingleton E P₂) (levelInitSingleton E P₃))
-    (hSumZero : sumOnE E [P₀, P₁, P₂, P₃] = 0) :
+    (h_sum_zero : sumOnE E [P₀, P₁, P₂, P₃] = 0) :
     LandmarkInvStrongCombineExtras E
       (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
       (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)) := by
@@ -1272,8 +1272,8 @@ theorem length4_chord_level1_extras
     intro xs hxs
     simp [xss] at hxs
     rcases hxs with rfl | rfl | rfl | rfl <;> simp
-  have hNodup_concat : xss.flatten.Nodup := by
-    simpa [xss] using hNodup
+  have h_nodup_concat : xss.flatten.Nodup := by
+    simpa [xss] using h_nodup
   have h_init : LandmarkInvStrongList E xss accs := by
     subst xss
     subst accs
@@ -1296,7 +1296,7 @@ theorem length4_chord_level1_extras
     exact ⟨hPair01, hPair23, trivial⟩
   have h_step :=
     (landmarkInvStrongList_level_step E xss accs h_init
-      hxss_on hNodup_concat hxss_ne h_level0_extras).1
+      hxss_on h_nodup_concat hxss_ne h_level0_extras).1
   have h_step' :
       LandmarkInvStrongList E [[P₀, P₁], [P₂, P₃]]
         [EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁),
@@ -1318,7 +1318,7 @@ theorem length4_chord_level1_extras
           = sumOnE E ([P₀, P₁] ++ [P₂, P₃]) := by
             rw [sumOnE_append]
       _ = sumOnE E [P₀, P₁, P₂, P₃] := rfl
-      _ = 0 := hSumZero
+      _ = 0 := h_sum_zero
   have h_inverse :
       (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)).point =
         -((EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁)).point) := by
@@ -1335,8 +1335,8 @@ theorem h_extras_holds_for_length4_chord_pairs
     (E : ECSetup) (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
     (hP₀_on : P₀ ∈ E.points) (hP₁_on : P₁ ∈ E.points)
     (hP₂_on : P₂ ∈ E.points) (hP₃_on : P₃ ∈ E.points)
-    (hNodup : ([P₀, P₁, P₂, P₃] : List (ZMod E.q × ZMod E.q)).Nodup)
-    (hSumZero : sumOnE E [P₀, P₁, P₂, P₃] = 0)
+    (h_nodup : ([P₀, P₁, P₂, P₃] : List (ZMod E.q × ZMod E.q)).Nodup)
+    (h_sum_zero : sumOnE E [P₀, P₁, P₂, P₃] = 0)
     (h01_x_ne : P₀.1 ≠ P₁.1) (h23_x_ne : P₂.1 ≠ P₃.1)
     (hP₀_y_ne : P₀.2 ≠ 0) (hP₁_y_ne : P₁.2 ≠ 0)
     (hP₂_y_ne : P₂.2 ≠ 0) (hP₃_y_ne : P₃.2 ≠ 0)
@@ -1367,7 +1367,7 @@ theorem h_extras_holds_for_length4_chord_pairs
         (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
         (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)) :=
     length4_chord_level1_extras E P₀ P₁ P₂ P₃ hP₀_on hP₁_on hP₂_on hP₃_on
-      hNodup hPair01 hPair23 hSumZero
+      h_nodup hPair01 hPair23 h_sum_zero
   intro k hk
   have hk_lt4 : k < 4 := by simpa using hk
   interval_cases k
@@ -1409,7 +1409,7 @@ theorem length6_chord_level2_extras
     (hP₀_on : P₀ ∈ E.points) (hP₁_on : P₁ ∈ E.points)
     (hP₂_on : P₂ ∈ E.points) (hP₃_on : P₃ ∈ E.points)
     (hP₄_on : P₄ ∈ E.points) (hP₅_on : P₅ ∈ E.points)
-    (hNodup : ([P₀, P₁, P₂, P₃, P₄, P₅] :
+    (h_nodup : ([P₀, P₁, P₂, P₃, P₄, P₅] :
       List (ZMod E.q × ZMod E.q)).Nodup)
     (hPair01 :
       LandmarkInvStrongCombineExtras E
@@ -1424,7 +1424,7 @@ theorem length6_chord_level2_extras
       LandmarkInvStrongCombineExtras E
         (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
         (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)))
-    (hSumZero : sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅] = 0) :
+    (h_sum_zero : sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅] = 0) :
     LandmarkInvStrongCombineExtras E
       (EagenAccum.combine E
         (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
@@ -1463,8 +1463,8 @@ theorem length6_chord_level2_extras
     intro xs hxs
     simp [xss] at hxs
     rcases hxs with rfl | rfl | rfl | rfl | rfl | rfl <;> simp
-  have hNodup_concat : xss.flatten.Nodup := by
-    simpa [xss] using hNodup
+  have h_nodup_concat : xss.flatten.Nodup := by
+    simpa [xss] using h_nodup
   have h_init : LandmarkInvStrongList E xss accs := by
     subst xss
     subst accs
@@ -1491,7 +1491,7 @@ theorem length6_chord_level2_extras
     exact ⟨hPair01, hPair23, hPair45, trivial⟩
   have h_step1_all :=
     landmarkInvStrongList_level_step E xss accs h_init
-      hxss_on hNodup_concat hxss_ne h_level0_extras
+      hxss_on h_nodup_concat hxss_ne h_level0_extras
   have h_step1 :
       LandmarkInvStrongList E [[P₀, P₁], [P₂, P₃], [P₄, P₅]]
         [EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁),
@@ -1501,7 +1501,7 @@ theorem length6_chord_level2_extras
   have hxss_on1 : ∀ xs ∈ ([[P₀, P₁], [P₂, P₃], [P₄, P₅]] :
       List (List (ZMod E.q × ZMod E.q))), ∀ P ∈ xs, P ∈ E.points := by
     simpa [xss, level_step_lists, pairUp] using h_step1_all.2.2
-  have hNodup1 : (([[P₀, P₁], [P₂, P₃], [P₄, P₅]] :
+  have h_nodup1 : (([[P₀, P₁], [P₂, P₃], [P₄, P₅]] :
       List (List (ZMod E.q × ZMod E.q))).flatten).Nodup := by
     simpa [xss, level_step_lists, pairUp] using h_step1_all.2.1
   have hxss_ne1 : ∀ xs ∈ ([[P₀, P₁], [P₂, P₃], [P₄, P₅]] :
@@ -1523,7 +1523,7 @@ theorem length6_chord_level2_extras
       [EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁),
        EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃),
        EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅)]
-      h_step1 hxss_on1 hNodup1 hxss_ne1 h_level1_extras
+      h_step1 hxss_on1 h_nodup1 hxss_ne1 h_level1_extras
   have h_step2 :
       LandmarkInvStrongList E [[P₀, P₁, P₂, P₃], [P₄, P₅]]
         [EagenAccum.combine E
@@ -1549,7 +1549,7 @@ theorem length6_chord_level2_extras
           = sumOnE E ([P₀, P₁, P₂, P₃] ++ [P₄, P₅]) := by
             rw [sumOnE_append]
       _ = sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅] := rfl
-      _ = 0 := hSumZero
+      _ = 0 := h_sum_zero
   have h_inverse :
       (EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅)).point =
         -((EagenAccum.combine E
@@ -1572,9 +1572,9 @@ theorem h_extras_holds_for_length6_chord_pairs
     (hP₀_on : P₀ ∈ E.points) (hP₁_on : P₁ ∈ E.points)
     (hP₂_on : P₂ ∈ E.points) (hP₃_on : P₃ ∈ E.points)
     (hP₄_on : P₄ ∈ E.points) (hP₅_on : P₅ ∈ E.points)
-    (hNodup : ([P₀, P₁, P₂, P₃, P₄, P₅] :
+    (h_nodup : ([P₀, P₁, P₂, P₃, P₄, P₅] :
       List (ZMod E.q × ZMod E.q)).Nodup)
-    (hSumZero : sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅] = 0)
+    (h_sum_zero : sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅] = 0)
     (h01_x_ne : P₀.1 ≠ P₁.1) (h23_x_ne : P₂.1 ≠ P₃.1)
     (h45_x_ne : P₄.1 ≠ P₅.1)
     (hP₀_y_ne : P₀.2 ≠ 0) (hP₁_y_ne : P₁.2 ≠ 0)
@@ -1626,8 +1626,8 @@ theorem h_extras_holds_for_length6_chord_pairs
           (EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃)))
         (EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅)) :=
     length6_chord_level2_extras E P₀ P₁ P₂ P₃ P₄ P₅
-      hP₀_on hP₁_on hP₂_on hP₃_on hP₄_on hP₅_on hNodup
-      hPair01 hPair23 hPair45 hLevel1Extra hSumZero
+      hP₀_on hP₁_on hP₂_on hP₃_on hP₄_on hP₅_on h_nodup
+      hPair01 hPair23 hPair45 hLevel1Extra h_sum_zero
   intro k hk
   have hk_lt6 : k < 6 := by simpa using hk
   interval_cases k
@@ -1709,7 +1709,7 @@ theorem length8_chord_level2_extras
     (hP₂_on : P₂ ∈ E.points) (hP₃_on : P₃ ∈ E.points)
     (hP₄_on : P₄ ∈ E.points) (hP₅_on : P₅ ∈ E.points)
     (hP₆_on : P₆ ∈ E.points) (hP₇_on : P₇ ∈ E.points)
-    (hNodup : ([P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] :
+    (h_nodup : ([P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] :
       List (ZMod E.q × ZMod E.q)).Nodup)
     (hPair01 :
       LandmarkInvStrongCombineExtras E
@@ -1731,7 +1731,7 @@ theorem length8_chord_level2_extras
       LandmarkInvStrongCombineExtras E
         (EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅))
         (EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇)))
-    (hSumZero : sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] = 0) :
+    (h_sum_zero : sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] = 0) :
     LandmarkInvStrongCombineExtras E
       (EagenAccum.combine E
         (EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁))
@@ -1779,8 +1779,8 @@ theorem length8_chord_level2_extras
     intro xs hxs
     simp [xss] at hxs
     rcases hxs with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp
-  have hNodup_concat : xss.flatten.Nodup := by
-    simpa [xss] using hNodup
+  have h_nodup_concat : xss.flatten.Nodup := by
+    simpa [xss] using h_nodup
   have h_init : LandmarkInvStrongList E xss accs := by
     subst xss
     subst accs
@@ -1811,7 +1811,7 @@ theorem length8_chord_level2_extras
     exact ⟨hPair01, hPair23, hPair45, hPair67, trivial⟩
   have h_step1_all :=
     landmarkInvStrongList_level_step E xss accs h_init
-      hxss_on hNodup_concat hxss_ne h_level0_extras
+      hxss_on h_nodup_concat hxss_ne h_level0_extras
   have h_step1 :
       LandmarkInvStrongList E [[P₀, P₁], [P₂, P₃], [P₄, P₅], [P₆, P₇]]
         [EagenAccum.combine E (levelInitSingleton E P₀) (levelInitSingleton E P₁),
@@ -1822,7 +1822,7 @@ theorem length8_chord_level2_extras
   have hxss_on1 : ∀ xs ∈ ([[P₀, P₁], [P₂, P₃], [P₄, P₅], [P₆, P₇]] :
       List (List (ZMod E.q × ZMod E.q))), ∀ P ∈ xs, P ∈ E.points := by
     simpa [xss, level_step_lists, pairUp] using h_step1_all.2.2
-  have hNodup1 : (([[P₀, P₁], [P₂, P₃], [P₄, P₅], [P₆, P₇]] :
+  have h_nodup1 : (([[P₀, P₁], [P₂, P₃], [P₄, P₅], [P₆, P₇]] :
       List (List (ZMod E.q × ZMod E.q))).flatten).Nodup := by
     simpa [xss, level_step_lists, pairUp] using h_step1_all.2.1
   have hxss_ne1 : ∀ xs ∈ ([[P₀, P₁], [P₂, P₃], [P₄, P₅], [P₆, P₇]] :
@@ -1849,7 +1849,7 @@ theorem length8_chord_level2_extras
        EagenAccum.combine E (levelInitSingleton E P₂) (levelInitSingleton E P₃),
        EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅),
        EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇)]
-      h_step1 hxss_on1 hNodup1 hxss_ne1 h_level1_extras
+      h_step1 hxss_on1 h_nodup1 hxss_ne1 h_level1_extras
   have h_step2 :
       LandmarkInvStrongList E [[P₀, P₁, P₂, P₃], [P₄, P₅, P₆, P₇]]
         [EagenAccum.combine E
@@ -1879,7 +1879,7 @@ theorem length8_chord_level2_extras
           = sumOnE E ([P₀, P₁, P₂, P₃] ++ [P₄, P₅, P₆, P₇]) := by
             rw [sumOnE_append]
       _ = sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] := rfl
-      _ = 0 := hSumZero
+      _ = 0 := h_sum_zero
   have h_inverse :
       (EagenAccum.combine E
         (EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅))
@@ -1905,9 +1905,9 @@ theorem h_extras_holds_for_length8_chord_pairs
     (hP₂_on : P₂ ∈ E.points) (hP₃_on : P₃ ∈ E.points)
     (hP₄_on : P₄ ∈ E.points) (hP₅_on : P₅ ∈ E.points)
     (hP₆_on : P₆ ∈ E.points) (hP₇_on : P₇ ∈ E.points)
-    (hNodup : ([P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] :
+    (h_nodup : ([P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] :
       List (ZMod E.q × ZMod E.q)).Nodup)
-    (hSumZero : sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] = 0)
+    (h_sum_zero : sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] = 0)
     (h01_x_ne : P₀.1 ≠ P₁.1) (h23_x_ne : P₂.1 ≠ P₃.1)
     (h45_x_ne : P₄.1 ≠ P₅.1) (h67_x_ne : P₆.1 ≠ P₇.1)
     (hP₀_y_ne : P₀.2 ≠ 0) (hP₁_y_ne : P₁.2 ≠ 0)
@@ -1978,8 +1978,8 @@ theorem h_extras_holds_for_length8_chord_pairs
           (EagenAccum.combine E (levelInitSingleton E P₄) (levelInitSingleton E P₅))
           (EagenAccum.combine E (levelInitSingleton E P₆) (levelInitSingleton E P₇))) :=
     length8_chord_level2_extras E P₀ P₁ P₂ P₃ P₄ P₅ P₆ P₇
-      hP₀_on hP₁_on hP₂_on hP₃_on hP₄_on hP₅_on hP₆_on hP₇_on hNodup
-      hPair01 hPair23 hPair45 hPair67 hLevel1LeftExtra hLevel1RightExtra hSumZero
+      hP₀_on hP₁_on hP₂_on hP₃_on hP₄_on hP₅_on hP₆_on hP₇_on h_nodup
+      hPair01 hPair23 hPair45 hPair67 hLevel1LeftExtra hLevel1RightExtra h_sum_zero
   intro k hk
   have hk_lt8 : k < 8 := by simpa using hk
   interval_cases k
@@ -2086,37 +2086,37 @@ theorem ma_completeness_binary_length4
       h_binary.Ps = [P₀, P₁, P₂, P₃] ∧
       P₁ = (P₀.1, -P₀.2) ∧
       P₃ = (P₂.1, -P₂.2))
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  obtain ⟨P₀, P₁, P₂, P₃, hPs_eq, hP₁, hP₃⟩ := h_length4
+  obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, hP₁, hP₃⟩ := h_length4
   subst P₁
   subst P₃
-  have hLen : 2 ≤ h_binary.Ps.length := by
-    rw [hPs_eq]
+  have h_len : 2 ≤ h_binary.Ps.length := by
+    rw [h_ps_eq]
     simp
   have hP₀_on : P₀ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₂_on : P₂ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have h_extras :
       ∀ k < h_binary.Ps.length,
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
-    rw [hPs_eq]
+    rw [h_ps_eq]
     exact Landmark.h_extras_holds_for_length4_two_inverse_pairs
       E P₀ P₂ hP₀_on hP₂_on
   exact ma_completeness_binary_extras E stmt msg wit hk hkm
-    h_binary hLen h_extras hValid hDeg hDegK hAdm
+    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 theorem ma_completeness_binary_length4_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -2127,38 +2127,38 @@ theorem ma_completeness_binary_length4_clean
       h_binary.Ps = [P₀, P₁, P₂, P₃] ∧
       P₁ = (P₀.1, -P₀.2) ∧
       P₃ = (P₂.1, -P₂.2))
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hQ : 5 ≤ E.q) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
+    (h_q : 5 ≤ E.q) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
-  obtain ⟨P₀, P₁, P₂, P₃, hPs_eq, hP₁, hP₃⟩ := h_length4
+  obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, hP₁, hP₃⟩ := h_length4
   subst P₁
   subst P₃
-  have hLen : 2 ≤ h_binary.Ps.length := by
-    rw [hPs_eq]
+  have h_len : 2 ≤ h_binary.Ps.length := by
+    rw [h_ps_eq]
     simp
   have hP₀_on : P₀ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₂_on : P₂ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have h_extras :
       ∀ k < h_binary.Ps.length,
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
-    rw [hPs_eq]
+    rw [h_ps_eq]
     exact Landmark.h_extras_holds_for_length4_two_inverse_pairs
       E P₀ P₂ hP₀_on hP₂_on
   exact ma_completeness_binary_extras_clean E stmt msg wit hk hkm
-    h_binary hLen h_extras hValid hDeg hDegK hAdm hQ
+    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm h_q
 
 theorem ma_completeness_binary_length4_chord
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -2173,52 +2173,52 @@ theorem ma_completeness_binary_length4_chord
       (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) ≠ P₁.1 ∧
       (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) ≠ P₂.1 ∧
       (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) ≠ P₃.1)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  obtain ⟨P₀, P₁, P₂, P₃, hPs_eq, h01_x_ne, h23_x_ne,
+  obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, h01_x_ne, h23_x_ne,
     hP₀_y_ne, hP₁_y_ne, hP₂_y_ne, hP₃_y_ne,
     hThird01_ne_P₀, hThird01_ne_P₁,
     hThird23_ne_P₂, hThird23_ne_P₃⟩ := h_length4
-  have hLen : 2 ≤ h_binary.Ps.length := by
-    rw [hPs_eq]
+  have h_len : 2 ≤ h_binary.Ps.length := by
+    rw [h_ps_eq]
     simp
   have hP₀_on : P₀ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₁_on : P₁ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₂_on : P₂ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₃_on : P₃ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
-  have hNodup : ([P₀, P₁, P₂, P₃] : List (ZMod E.q × ZMod E.q)).Nodup := by
-    simpa [hPs_eq] using h_binary.hNodup
-  have hSumZero : Landmark.sumOnE E [P₀, P₁, P₂, P₃] = 0 := by
-    simpa [hPs_eq] using h_binary.hSumZero
+  have h_nodup : ([P₀, P₁, P₂, P₃] : List (ZMod E.q × ZMod E.q)).Nodup := by
+    simpa [h_ps_eq] using h_binary.h_nodup
+  have h_sum_zero : Landmark.sumOnE E [P₀, P₁, P₂, P₃] = 0 := by
+    simpa [h_ps_eq] using h_binary.h_sum_zero
   have h_extras :
       ∀ k < h_binary.Ps.length,
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
-    rw [hPs_eq]
+    rw [h_ps_eq]
     exact Landmark.h_extras_holds_for_length4_chord_pairs E P₀ P₁ P₂ P₃
-      hP₀_on hP₁_on hP₂_on hP₃_on hNodup hSumZero
+      hP₀_on hP₁_on hP₂_on hP₃_on h_nodup h_sum_zero
       h01_x_ne h23_x_ne hP₀_y_ne hP₁_y_ne hP₂_y_ne hP₃_y_ne
       hThird01_ne_P₀ hThird01_ne_P₁ hThird23_ne_P₂ hThird23_ne_P₃
   exact ma_completeness_binary_extras E stmt msg wit hk hkm
-    h_binary hLen h_extras hValid hDeg hDegK hAdm
+    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 theorem ma_completeness_binary_length2_admSetMax
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -2228,33 +2228,33 @@ theorem ma_completeness_binary_length2_admSetMax
     (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
     (h_length2 : ∃ P Q : ZMod E.q × ZMod E.q,
       h_binary.Ps = [P, Q] ∧ P.1 = Q.1 ∧ Q.2 = -P.2)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  obtain ⟨P, Q, hPs_eq, hxx, hyy⟩ := h_length2
-  have hLen : 2 ≤ h_binary.Ps.length := by
-    rw [hPs_eq]
+  obtain ⟨P, Q, h_ps_eq, hxx, hyy⟩ := h_length2
+  have h_len : 2 ≤ h_binary.Ps.length := by
+    rw [h_ps_eq]
     simp
   have hP_on : P ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hQ_on : Q ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have h_extras :
       ∀ k < h_binary.Ps.length,
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
-    rw [hPs_eq]
+    rw [h_ps_eq]
     exact Landmark.h_extras_holds_for_length2_sum_zero E P Q hP_on hQ_on hxx hyy
   exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
-    h_admSetMax h_binary hLen h_extras hValid hDeg hDegK
+    h_admSetMax h_binary h_len h_extras h_valid h_deg h_deg_k
 
 theorem ma_completeness_binary_length6_chord
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -2276,63 +2276,63 @@ theorem ma_completeness_binary_length6_chord
       ∀ P₀ P₁ P₂ P₃ P₄ P₅ : ZMod E.q × ZMod E.q,
         h_binary.Ps = [P₀, P₁, P₂, P₃, P₄, P₅] →
           Landmark.Length6Level1ChordConditions E P₀ P₁ P₂ P₃)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  obtain ⟨P₀, P₁, P₂, P₃, P₄, P₅, hPs_eq,
+  obtain ⟨P₀, P₁, P₂, P₃, P₄, P₅, h_ps_eq,
     h01_x_ne, h23_x_ne, h45_x_ne,
     hP₀_y_ne, hP₁_y_ne, hP₂_y_ne,
     hP₃_y_ne, hP₄_y_ne, hP₅_y_ne,
     hThird01_ne_P₀, hThird01_ne_P₁,
     hThird23_ne_P₂, hThird23_ne_P₃,
     hThird45_ne_P₄, hThird45_ne_P₅⟩ := h_length6
-  have hLen : 2 ≤ h_binary.Ps.length := by
-    rw [hPs_eq]
+  have h_len : 2 ≤ h_binary.Ps.length := by
+    rw [h_ps_eq]
     simp
   have hP₀_on : P₀ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₁_on : P₁ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₂_on : P₂ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₃_on : P₃ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₄_on : P₄ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₅_on : P₅ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
-  have hNodup : ([P₀, P₁, P₂, P₃, P₄, P₅] :
+  have h_nodup : ([P₀, P₁, P₂, P₃, P₄, P₅] :
       List (ZMod E.q × ZMod E.q)).Nodup := by
-    simpa [hPs_eq] using h_binary.hNodup
-  have hSumZero :
+    simpa [h_ps_eq] using h_binary.h_nodup
+  have h_sum_zero :
       Landmark.sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅] = 0 := by
-    simpa [hPs_eq] using h_binary.hSumZero
+    simpa [h_ps_eq] using h_binary.h_sum_zero
   have hLevel1 : Landmark.Length6Level1ChordConditions E P₀ P₁ P₂ P₃ :=
-    h_extras_level1 P₀ P₁ P₂ P₃ P₄ P₅ hPs_eq
+    h_extras_level1 P₀ P₁ P₂ P₃ P₄ P₅ h_ps_eq
   have h_extras :
       ∀ k < h_binary.Ps.length,
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
-    rw [hPs_eq]
+    rw [h_ps_eq]
     exact Landmark.h_extras_holds_for_length6_chord_pairs E P₀ P₁ P₂ P₃ P₄ P₅
-      hP₀_on hP₁_on hP₂_on hP₃_on hP₄_on hP₅_on hNodup hSumZero
+      hP₀_on hP₁_on hP₂_on hP₃_on hP₄_on hP₅_on h_nodup h_sum_zero
       h01_x_ne h23_x_ne h45_x_ne
       hP₀_y_ne hP₁_y_ne hP₂_y_ne hP₃_y_ne hP₄_y_ne hP₅_y_ne
       hThird01_ne_P₀ hThird01_ne_P₁
@@ -2340,7 +2340,7 @@ theorem ma_completeness_binary_length6_chord
       hThird45_ne_P₄ hThird45_ne_P₅
       hLevel1
   exact ma_completeness_binary_extras E stmt msg wit hk hkm
-    h_binary hLen h_extras hValid hDeg hDegK hAdm
+    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 theorem ma_completeness_binary_length4_admSetMax
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -2352,36 +2352,36 @@ theorem ma_completeness_binary_length4_admSetMax
       h_binary.Ps = [P₀, P₁, P₂, P₃] ∧
       P₁ = (P₀.1, -P₀.2) ∧
       P₃ = (P₂.1, -P₂.2))
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  obtain ⟨P₀, P₁, P₂, P₃, hPs_eq, hP₁, hP₃⟩ := h_length4
+  obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, hP₁, hP₃⟩ := h_length4
   subst P₁
   subst P₃
-  have hLen : 2 ≤ h_binary.Ps.length := by
-    rw [hPs_eq]
+  have h_len : 2 ≤ h_binary.Ps.length := by
+    rw [h_ps_eq]
     simp
   have hP₀_on : P₀ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₂_on : P₂ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have h_extras :
       ∀ k < h_binary.Ps.length,
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
-    rw [hPs_eq]
+    rw [h_ps_eq]
     exact Landmark.h_extras_holds_for_length4_two_inverse_pairs
       E P₀ P₂ hP₀_on hP₂_on
   exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
-    h_admSetMax h_binary hLen h_extras hValid hDeg hDegK
+    h_admSetMax h_binary h_len h_extras h_valid h_deg h_deg_k
 
 theorem ma_completeness_binary_length4_chord_admSetMax
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -2397,51 +2397,51 @@ theorem ma_completeness_binary_length4_chord_admSetMax
       (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) ≠ P₁.1 ∧
       (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) ≠ P₂.1 ∧
       (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) ≠ P₃.1)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  obtain ⟨P₀, P₁, P₂, P₃, hPs_eq, h01_x_ne, h23_x_ne,
+  obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, h01_x_ne, h23_x_ne,
     hP₀_y_ne, hP₁_y_ne, hP₂_y_ne, hP₃_y_ne,
     hThird01_ne_P₀, hThird01_ne_P₁,
     hThird23_ne_P₂, hThird23_ne_P₃⟩ := h_length4
-  have hLen : 2 ≤ h_binary.Ps.length := by
-    rw [hPs_eq]
+  have h_len : 2 ≤ h_binary.Ps.length := by
+    rw [h_ps_eq]
     simp
   have hP₀_on : P₀ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₁_on : P₁ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₂_on : P₂ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₃_on : P₃ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
-  have hNodup : ([P₀, P₁, P₂, P₃] : List (ZMod E.q × ZMod E.q)).Nodup := by
-    simpa [hPs_eq] using h_binary.hNodup
-  have hSumZero : Landmark.sumOnE E [P₀, P₁, P₂, P₃] = 0 := by
-    simpa [hPs_eq] using h_binary.hSumZero
+  have h_nodup : ([P₀, P₁, P₂, P₃] : List (ZMod E.q × ZMod E.q)).Nodup := by
+    simpa [h_ps_eq] using h_binary.h_nodup
+  have h_sum_zero : Landmark.sumOnE E [P₀, P₁, P₂, P₃] = 0 := by
+    simpa [h_ps_eq] using h_binary.h_sum_zero
   have h_extras :
       ∀ k < h_binary.Ps.length,
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
-    rw [hPs_eq]
+    rw [h_ps_eq]
     exact Landmark.h_extras_holds_for_length4_chord_pairs E P₀ P₁ P₂ P₃
-      hP₀_on hP₁_on hP₂_on hP₃_on hNodup hSumZero
+      hP₀_on hP₁_on hP₂_on hP₃_on h_nodup h_sum_zero
       h01_x_ne h23_x_ne hP₀_y_ne hP₁_y_ne hP₂_y_ne hP₃_y_ne
       hThird01_ne_P₀ hThird01_ne_P₁ hThird23_ne_P₂ hThird23_ne_P₃
   exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
-    h_admSetMax h_binary hLen h_extras hValid hDeg hDegK
+    h_admSetMax h_binary h_len h_extras h_valid h_deg h_deg_k
 
 theorem ma_completeness_binary_length8_chord
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -2483,15 +2483,15 @@ theorem ma_completeness_binary_length8_chord
           (Landmark.chordSumX E P₆ P₇) (Landmark.chordSumY E P₆ P₇) ^ 2 -
           Landmark.chordSumX E P₄ P₅ - Landmark.chordSumX E P₆ P₇) ≠
         Landmark.chordSumX E P₆ P₇)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  obtain ⟨P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇, hPs_eq,
+  obtain ⟨P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇, h_ps_eq,
     h01_x_ne, h23_x_ne, h45_x_ne, h67_x_ne,
     hP₀_y_ne, hP₁_y_ne, hP₂_y_ne, hP₃_y_ne,
     hP₄_y_ne, hP₅_y_ne, hP₆_y_ne, hP₇_y_ne,
@@ -2503,47 +2503,47 @@ theorem ma_completeness_binary_length8_chord
     hThird0123_ne_01, hThird0123_ne_23,
     h45_67_x_ne, h45_y_ne, h67_y_ne,
     hThird4567_ne_45, hThird4567_ne_67⟩ := h_length8
-  have hLen : 2 ≤ h_binary.Ps.length := by
-    rw [hPs_eq]
+  have h_len : 2 ≤ h_binary.Ps.length := by
+    rw [h_ps_eq]
     simp
   have hP₀_on : P₀ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₁_on : P₁ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₂_on : P₂ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₃_on : P₃ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₄_on : P₄ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₅_on : P₅ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₆_on : P₆ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₇_on : P₇ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
-  have hNodup : ([P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] :
+  have h_nodup : ([P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] :
       List (ZMod E.q × ZMod E.q)).Nodup := by
-    simpa [hPs_eq] using h_binary.hNodup
-  have hSumZero :
+    simpa [h_ps_eq] using h_binary.h_nodup
+  have h_sum_zero :
       Landmark.sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] = 0 := by
-    simpa [hPs_eq] using h_binary.hSumZero
+    simpa [h_ps_eq] using h_binary.h_sum_zero
   have hLevel1Left : Landmark.Length6Level1ChordConditions E P₀ P₁ P₂ P₃ :=
     ⟨h01_23_x_ne, h01_y_ne, h23_y_ne, hThird0123_ne_01, hThird0123_ne_23⟩
   have hLevel1Right : Landmark.Length6Level1ChordConditions E P₄ P₅ P₆ P₇ :=
@@ -2552,11 +2552,11 @@ theorem ma_completeness_binary_length8_chord
       ∀ k < h_binary.Ps.length,
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
-    rw [hPs_eq]
+    rw [h_ps_eq]
     exact Landmark.h_extras_holds_for_length8_chord_pairs E
       P₀ P₁ P₂ P₃ P₄ P₅ P₆ P₇
       hP₀_on hP₁_on hP₂_on hP₃_on hP₄_on hP₅_on hP₆_on hP₇_on
-      hNodup hSumZero
+      h_nodup h_sum_zero
       h01_x_ne h23_x_ne h45_x_ne h67_x_ne
       hP₀_y_ne hP₁_y_ne hP₂_y_ne hP₃_y_ne
       hP₄_y_ne hP₅_y_ne hP₆_y_ne hP₇_y_ne
@@ -2566,7 +2566,7 @@ theorem ma_completeness_binary_length8_chord
       hThird67_ne_P₆ hThird67_ne_P₇
       hLevel1Left hLevel1Right
   exact ma_completeness_binary_extras E stmt msg wit hk hkm
-    h_binary hLen h_extras hValid hDeg hDegK hAdm
+    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 theorem ma_completeness_binary_length6_chord_admSetMax
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -2589,62 +2589,62 @@ theorem ma_completeness_binary_length6_chord_admSetMax
       ∀ P₀ P₁ P₂ P₃ P₄ P₅ : ZMod E.q × ZMod E.q,
         h_binary.Ps = [P₀, P₁, P₂, P₃, P₄, P₅] →
           Landmark.Length6Level1ChordConditions E P₀ P₁ P₂ P₃)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  obtain ⟨P₀, P₁, P₂, P₃, P₄, P₅, hPs_eq,
+  obtain ⟨P₀, P₁, P₂, P₃, P₄, P₅, h_ps_eq,
     h01_x_ne, h23_x_ne, h45_x_ne,
     hP₀_y_ne, hP₁_y_ne, hP₂_y_ne,
     hP₃_y_ne, hP₄_y_ne, hP₅_y_ne,
     hThird01_ne_P₀, hThird01_ne_P₁,
     hThird23_ne_P₂, hThird23_ne_P₃,
     hThird45_ne_P₄, hThird45_ne_P₅⟩ := h_length6
-  have hLen : 2 ≤ h_binary.Ps.length := by
-    rw [hPs_eq]
+  have h_len : 2 ≤ h_binary.Ps.length := by
+    rw [h_ps_eq]
     simp
   have hP₀_on : P₀ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₁_on : P₁ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₂_on : P₂ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₃_on : P₃ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₄_on : P₄ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₅_on : P₅ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
-  have hNodup : ([P₀, P₁, P₂, P₃, P₄, P₅] :
+  have h_nodup : ([P₀, P₁, P₂, P₃, P₄, P₅] :
       List (ZMod E.q × ZMod E.q)).Nodup := by
-    simpa [hPs_eq] using h_binary.hNodup
-  have hSumZero :
+    simpa [h_ps_eq] using h_binary.h_nodup
+  have h_sum_zero :
       Landmark.sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅] = 0 := by
-    simpa [hPs_eq] using h_binary.hSumZero
+    simpa [h_ps_eq] using h_binary.h_sum_zero
   have hLevel1 : Landmark.Length6Level1ChordConditions E P₀ P₁ P₂ P₃ :=
-    h_extras_level1 P₀ P₁ P₂ P₃ P₄ P₅ hPs_eq
+    h_extras_level1 P₀ P₁ P₂ P₃ P₄ P₅ h_ps_eq
   have h_extras :
       ∀ k < h_binary.Ps.length,
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
-    rw [hPs_eq]
+    rw [h_ps_eq]
     exact Landmark.h_extras_holds_for_length6_chord_pairs E P₀ P₁ P₂ P₃ P₄ P₅
-      hP₀_on hP₁_on hP₂_on hP₃_on hP₄_on hP₅_on hNodup hSumZero
+      hP₀_on hP₁_on hP₂_on hP₃_on hP₄_on hP₅_on h_nodup h_sum_zero
       h01_x_ne h23_x_ne h45_x_ne
       hP₀_y_ne hP₁_y_ne hP₂_y_ne hP₃_y_ne hP₄_y_ne hP₅_y_ne
       hThird01_ne_P₀ hThird01_ne_P₁
@@ -2652,7 +2652,7 @@ theorem ma_completeness_binary_length6_chord_admSetMax
       hThird45_ne_P₄ hThird45_ne_P₅
       hLevel1
   exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
-    h_admSetMax h_binary hLen h_extras hValid hDeg hDegK
+    h_admSetMax h_binary h_len h_extras h_valid h_deg h_deg_k
 
 theorem ma_completeness_binary_length8_chord_admSetMax
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -2695,14 +2695,14 @@ theorem ma_completeness_binary_length8_chord_admSetMax
           (Landmark.chordSumX E P₆ P₇) (Landmark.chordSumY E P₆ P₇) ^ 2 -
           Landmark.chordSumX E P₄ P₅ - Landmark.chordSumX E P₆ P₇) ≠
         Landmark.chordSumX E P₆ P₇)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  obtain ⟨P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇, hPs_eq,
+  obtain ⟨P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇, h_ps_eq,
     h01_x_ne, h23_x_ne, h45_x_ne, h67_x_ne,
     hP₀_y_ne, hP₁_y_ne, hP₂_y_ne, hP₃_y_ne,
     hP₄_y_ne, hP₅_y_ne, hP₆_y_ne, hP₇_y_ne,
@@ -2714,47 +2714,47 @@ theorem ma_completeness_binary_length8_chord_admSetMax
     hThird0123_ne_01, hThird0123_ne_23,
     h45_67_x_ne, h45_y_ne, h67_y_ne,
     hThird4567_ne_45, hThird4567_ne_67⟩ := h_length8
-  have hLen : 2 ≤ h_binary.Ps.length := by
-    rw [hPs_eq]
+  have h_len : 2 ≤ h_binary.Ps.length := by
+    rw [h_ps_eq]
     simp
   have hP₀_on : P₀ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₁_on : P₁ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₂_on : P₂ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₃_on : P₃ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₄_on : P₄ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₅_on : P₅ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₆_on : P₆ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₇_on : P₇ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
-  have hNodup : ([P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] :
+  have h_nodup : ([P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] :
       List (ZMod E.q × ZMod E.q)).Nodup := by
-    simpa [hPs_eq] using h_binary.hNodup
-  have hSumZero :
+    simpa [h_ps_eq] using h_binary.h_nodup
+  have h_sum_zero :
       Landmark.sumOnE E [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] = 0 := by
-    simpa [hPs_eq] using h_binary.hSumZero
+    simpa [h_ps_eq] using h_binary.h_sum_zero
   have hLevel1Left : Landmark.Length6Level1ChordConditions E P₀ P₁ P₂ P₃ :=
     ⟨h01_23_x_ne, h01_y_ne, h23_y_ne, hThird0123_ne_01, hThird0123_ne_23⟩
   have hLevel1Right : Landmark.Length6Level1ChordConditions E P₄ P₅ P₆ P₇ :=
@@ -2763,11 +2763,11 @@ theorem ma_completeness_binary_length8_chord_admSetMax
       ∀ k < h_binary.Ps.length,
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
-    rw [hPs_eq]
+    rw [h_ps_eq]
     exact Landmark.h_extras_holds_for_length8_chord_pairs E
       P₀ P₁ P₂ P₃ P₄ P₅ P₆ P₇
       hP₀_on hP₁_on hP₂_on hP₃_on hP₄_on hP₅_on hP₆_on hP₇_on
-      hNodup hSumZero
+      h_nodup h_sum_zero
       h01_x_ne h23_x_ne h45_x_ne h67_x_ne
       hP₀_y_ne hP₁_y_ne hP₂_y_ne hP₃_y_ne
       hP₄_y_ne hP₅_y_ne hP₆_y_ne hP₇_y_ne
@@ -2777,7 +2777,7 @@ theorem ma_completeness_binary_length8_chord_admSetMax
       hThird67_ne_P₆ hThird67_ne_P₇
       hLevel1Left hLevel1Right
   exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
-    h_admSetMax h_binary hLen h_extras hValid hDeg hDegK
+    h_admSetMax h_binary h_len h_extras h_valid h_deg h_deg_k
 
 theorem ma_completeness_binary_length4_chord_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -2792,53 +2792,53 @@ theorem ma_completeness_binary_length4_chord_clean
       (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1) ≠ P₁.1 ∧
       (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) ≠ P₂.1 ∧
       (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1) ≠ P₃.1)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hQ : 5 ≤ E.q) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
+    (h_q : 5 ≤ E.q) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
-  obtain ⟨P₀, P₁, P₂, P₃, hPs_eq, h01_x_ne, h23_x_ne,
+  obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, h01_x_ne, h23_x_ne,
     hP₀_y_ne, hP₁_y_ne, hP₂_y_ne, hP₃_y_ne,
     hThird01_ne_P₀, hThird01_ne_P₁,
     hThird23_ne_P₂, hThird23_ne_P₃⟩ := h_length4
-  have hLen : 2 ≤ h_binary.Ps.length := by
-    rw [hPs_eq]
+  have h_len : 2 ≤ h_binary.Ps.length := by
+    rw [h_ps_eq]
     simp
   have hP₀_on : P₀ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₁_on : P₁ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₂_on : P₂ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
   have hP₃_on : P₃ ∈ E.points := by
-    apply h_binary.hPs_on
-    rw [hPs_eq]
+    apply h_binary.h_ps_on
+    rw [h_ps_eq]
     simp
-  have hNodup : ([P₀, P₁, P₂, P₃] : List (ZMod E.q × ZMod E.q)).Nodup := by
-    simpa [hPs_eq] using h_binary.hNodup
-  have hSumZero : Landmark.sumOnE E [P₀, P₁, P₂, P₃] = 0 := by
-    simpa [hPs_eq] using h_binary.hSumZero
+  have h_nodup : ([P₀, P₁, P₂, P₃] : List (ZMod E.q × ZMod E.q)).Nodup := by
+    simpa [h_ps_eq] using h_binary.h_nodup
+  have h_sum_zero : Landmark.sumOnE E [P₀, P₁, P₂, P₃] = 0 := by
+    simpa [h_ps_eq] using h_binary.h_sum_zero
   have h_extras :
       ∀ k < h_binary.Ps.length,
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) := by
-    rw [hPs_eq]
+    rw [h_ps_eq]
     exact Landmark.h_extras_holds_for_length4_chord_pairs E P₀ P₁ P₂ P₃
-      hP₀_on hP₁_on hP₂_on hP₃_on hNodup hSumZero
+      hP₀_on hP₁_on hP₂_on hP₃_on h_nodup h_sum_zero
       h01_x_ne h23_x_ne hP₀_y_ne hP₁_y_ne hP₂_y_ne hP₃_y_ne
       hThird01_ne_P₀ hThird01_ne_P₁ hThird23_ne_P₂ hThird23_ne_P₃
   exact ma_completeness_binary_extras_clean E stmt msg wit hk hkm
-    h_binary hLen h_extras hValid hDeg hDegK hAdm hQ
+    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm h_q
 
 /-- Hasse-clean form of `ma_completeness_binary_M_eq_3`. -/
 theorem ma_completeness_binary_M_eq_3_clean
@@ -2847,11 +2847,11 @@ theorem ma_completeness_binary_M_eq_3_clean
     (hkm : stmt.k = msg.k)
     (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
     (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hQ : 5 ≤ E.q) :
+    (h_valid : relDlog E stmt wit)
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
+    (h_q : 5 ≤ E.q) :
     ((E.points ×ˢ E.points).filter
         (fun p =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
@@ -2861,7 +2861,7 @@ theorem ma_completeness_binary_M_eq_3_clean
     Subsingleton.elim _ _
   rw [hkm_eq]
   exact ma_completeness_clean_for_length4Simple E stmt msg h_simple wit hk
-    h_scalars hValid hDeg hDegK hAdm hQ
+    h_scalars h_valid h_deg h_deg_k h_adm h_q
 
 /-! ## Automatic binary support constructors -/
 
@@ -2950,19 +2950,19 @@ private theorem length_filter_filterMap_binary_eq_sum
       rw [Finset.sum_insert ha_not_mem_finset]
       by_cases hs1 : s a = 1
       · rw [if_pos hs1]
-        by_cases hQ : f a = Q
-        · simp [hQ, hs1, ih_tail]
+        by_cases h_q : f a = Q
+        · simp [h_q, hs1, ih_tail]
           ring
-        · simp [hQ, ih_tail]
+        · simp [h_q, ih_tail]
       · have hs0 : s a = 0 := hbin_a.resolve_right hs1
         rw [if_neg hs1]
-        by_cases hQ : f a = Q
-        · simp [hQ, hs0, ih_tail]
-        · simp [hQ, ih_tail]
+        by_cases h_q : f a = Q
+        · simp [h_q, hs0, ih_tail]
+        · simp [h_q, ih_tail]
 
 private theorem relDlog_weightedSum_with_hk
     {E : ECSetup} (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit) :
+    (hk : stmt.k = wit.k) (h_valid : relDlog E stmt wit) :
     (ECPoint.affine E stmt.target.1 stmt.target.2 : ECPoint E)
       =
     ECPoint.weightedSum E (Finset.univ : Finset (Fin wit.k))
@@ -2970,7 +2970,7 @@ private theorem relDlog_weightedSum_with_hk
         (ECPoint.affine E
           (stmt.bases (Fin.cast hk.symm i)).1
           (stmt.bases (Fin.cast hk.symm i)).2)) := by
-  obtain ⟨hkRel, hRel⟩ := hValid
+  obtain ⟨hkRel, hRel⟩ := h_valid
   have hkRel_eq : hkRel = hk := Subsingleton.elim _ _
   simpa [hkRel_eq] using hRel
 
@@ -2998,8 +2998,8 @@ theorem binarySupport_sumOnE_eq_zero
     {E : ECSetup} (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (hValid : relDlog E stmt wit)
-    (hPs_on : ∀ P ∈ binarySupport stmt wit hk h_binary, P ∈ E.points) :
+    (h_valid : relDlog E stmt wit)
+    (h_ps_on : ∀ P ∈ binarySupport stmt wit hk h_binary, P ∈ E.points) :
     Landmark.sumOnE E (binarySupport stmt wit hk h_binary) = 0 := by
   classical
   let selected : List (ZMod E.q × ZMod E.q) :=
@@ -3020,7 +3020,7 @@ theorem binarySupport_sumOnE_eq_zero
         ∀ i ∈ List.finRange wit.k, wit.scalars i = 1 →
           stmt.bases (Fin.cast hk.symm i) ∈ E.points := by
       intro i hi hs
-      apply hPs_on
+      apply h_ps_on
       rw [binarySupport, List.mem_cons, List.mem_filterMap]
       right
       refine ⟨i, hi, ?_⟩
@@ -3034,9 +3034,9 @@ theorem binarySupport_sumOnE_eq_zero
         h_on_selected)
   have h_target_on :
       (stmt.target.1, -stmt.target.2) ∈ E.points := by
-    apply hPs_on
+    apply h_ps_on
     simp [binarySupport]
-  have hRel := relDlog_weightedSum_with_hk stmt wit hk hValid
+  have hRel := relDlog_weightedSum_with_hk stmt wit hk h_valid
   rw [binarySupport]
   change Landmark.sumOnE E ((stmt.target.1, -stmt.target.2) :: selected) = 0
   rw [Landmark.sumOnE_cons E h_target_on, h_selected_sum]
@@ -3131,7 +3131,7 @@ noncomputable def fromWitness
     (hk : stmt.k = wit.k)
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (hValid : relDlog E stmt wit)
+    (h_valid : relDlog E stmt wit)
     (h_toD_eq : msg.toD = Landmark.eagenBuild_singletons E
                   (binarySupport stmt wit hk h_binary))
     (h_degE_eq :
@@ -3140,12 +3140,12 @@ noncomputable def fromWitness
       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i : Fin stmt.k, stmt.bases i ∈ E.points)
-    (hNodup : (binarySupport stmt wit hk h_binary).Nodup) :
+    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup) :
     MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm where
   h_binary := h_binary
   Ps := binarySupport stmt wit hk h_binary
   h_toD_eq := h_toD_eq
-  hPs_on := by
+  h_ps_on := by
     intro P hP
     rw [binarySupport, List.mem_cons, List.mem_filterMap] at hP
     rcases hP with hP | ⟨i, _hi, hSome⟩
@@ -3156,8 +3156,8 @@ noncomputable def fromWitness
         rw [← hSome]
         exact h_bases_on_curve (Fin.cast hk.symm i)
       · simp [hs] at hSome
-  hSumZero := by
-    apply binarySupport_sumOnE_eq_zero stmt wit hk h_binary hValid
+  h_sum_zero := by
+    apply binarySupport_sumOnE_eq_zero stmt wit hk h_binary h_valid
     intro P hP
     rw [binarySupport, List.mem_cons, List.mem_filterMap] at hP
     rcases hP with hP | ⟨i, _hi, hSome⟩
@@ -3168,9 +3168,9 @@ noncomputable def fromWitness
         rw [← hSome]
         exact h_bases_on_curve (Fin.cast hk.symm i)
       · simp [hs] at hSome
-  hNonEmpty := by
+  h_nonempty := by
     simp [binarySupport]
-  hNodup := hNodup
+  h_nodup := h_nodup
   h_scalars_match := h_scalars_match
   h_formal_eq_honest := by
     intro R
@@ -3191,7 +3191,7 @@ noncomputable def fromWitness
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (c : ZMod E.q) (h_c_ne : c ≠ 0)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (hValid : relDlog E stmt wit)
+    (h_valid : relDlog E stmt wit)
     (h_toD_eq : msg.toD = c • Landmark.eagenBuild_singletons E
                   (binarySupport stmt wit hk h_binary))
     (h_degE_eq :
@@ -3200,14 +3200,14 @@ noncomputable def fromWitness
       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i : Fin stmt.k, stmt.bases i ∈ E.points)
-    (hNodup : (binarySupport stmt wit hk h_binary).Nodup) :
+    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup) :
     MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm where
   h_binary := h_binary
   Ps := binarySupport stmt wit hk h_binary
   c := c
   h_c_ne := h_c_ne
   h_toD_eq := h_toD_eq
-  hPs_on := by
+  h_ps_on := by
     intro P hP
     rw [binarySupport, List.mem_cons, List.mem_filterMap] at hP
     rcases hP with hP | ⟨i, _hi, hSome⟩
@@ -3218,8 +3218,8 @@ noncomputable def fromWitness
         rw [← hSome]
         exact h_bases_on_curve (Fin.cast hk.symm i)
       · simp [hs] at hSome
-  hSumZero := by
-    apply binarySupport_sumOnE_eq_zero stmt wit hk h_binary hValid
+  h_sum_zero := by
+    apply binarySupport_sumOnE_eq_zero stmt wit hk h_binary h_valid
     intro P hP
     rw [binarySupport, List.mem_cons, List.mem_filterMap] at hP
     rcases hP with hP | ⟨i, _hi, hSome⟩
@@ -3230,9 +3230,9 @@ noncomputable def fromWitness
         rw [← hSome]
         exact h_bases_on_curve (Fin.cast hk.symm i)
       · simp [hs] at hSome
-  hNonEmpty := by
+  h_nonempty := by
     simp [binarySupport]
-  hNodup := hNodup
+  h_nodup := h_nodup
   h_scalars_match := h_scalars_match
   h_formal_eq_honest := by
     intro R
@@ -3249,7 +3249,7 @@ private theorem binarySupport_length_ge_two
     {E : ECSetup} (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (hValid : relDlog E stmt wit)
+    (h_valid : relDlog E stmt wit)
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points) :
     2 ≤ (binarySupport stmt wit hk h_binary).length := by
   classical
@@ -3260,13 +3260,13 @@ private theorem binarySupport_length_ge_two
       else
         none)
   by_contra hlt
-  have hLen_le : (binarySupport stmt wit hk h_binary).length ≤ 1 := by
+  have h_len_le : (binarySupport stmt wit hk h_binary).length ≤ 1 := by
     omega
-  have hLen_eq :
+  have h_len_eq :
       (binarySupport stmt wit hk h_binary).length = selected.length + 1 := by
     simp [binarySupport, selected]
   have hSelected_len : selected.length = 0 := by
-    rw [hLen_eq] at hLen_le
+    rw [h_len_eq] at h_len_le
     omega
   have hSelected_nil : selected = [] := List.length_eq_zero_iff.mp hSelected_len
   have h_no_one : ∀ i : Fin wit.k, wit.scalars i ≠ 1 := by
@@ -3295,7 +3295,7 @@ private theorem binarySupport_length_ge_two
     apply Finset.sum_eq_zero
     intro i _hi
     simp [h_zero i]
-  have hRel := relDlog_weightedSum_with_hk stmt wit hk hValid
+  have hRel := relDlog_weightedSum_with_hk stmt wit hk h_valid
   have hTarget_zero :
       ECPoint.affine E stmt.target.1 stmt.target.2 = (0 : ECPoint E) := by
     rw [hRel, h_weighted_zero]
@@ -3324,7 +3324,7 @@ theorem ma_completeness_binary
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (hValid : relDlog E stmt wit)
+    (h_valid : relDlog E stmt wit)
     (h_toD_eq : msg.toD =
        Landmark.eagenBuild_singletons E
          (binarySupport stmt wit hk h_binary))
@@ -3334,41 +3334,41 @@ theorem ma_completeness_binary
        msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
-    (hNodup : (binarySupport stmt wit hk h_binary).Nodup)
+    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
     (h_chain : Landmark.IteratedLevelStepCombineExtras E
                   (binarySupport stmt wit hk h_binary).length
                   (Landmark.level0_singletons E
                     (binarySupport stmt wit hk h_binary)))
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   let h_honest : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm :=
     MAProverMsg.IsHonestForBinary.fromWitness E stmt wit hk msg hkm
-      h_binary hValid h_toD_eq h_degE_eq h_scalars_match
-      h_target_on_curve h_bases_on_curve hNodup
-  have hLen : 2 ≤ h_honest.Ps.length := by
+      h_binary h_valid h_toD_eq h_degE_eq h_scalars_match
+      h_target_on_curve h_bases_on_curve h_nodup
+  have h_len : 2 ≤ h_honest.Ps.length := by
     simpa [h_honest] using
-      binarySupport_length_ge_two stmt wit hk h_binary hValid
+      binarySupport_length_ge_two stmt wit hk h_binary h_valid
         h_target_on_curve
-  have hChain :
+  have h_chain :
       Landmark.IteratedLevelStepCombineExtras E h_honest.Ps.length
         (Landmark.level0_singletons E h_honest.Ps) := by
     simpa [h_honest] using h_chain
   exact ma_completeness_binary_chain_admSetMax
-    E stmt msg wit hk hkm h_admSetMax h_honest hLen hChain
-    hValid hDeg hDegK
+    E stmt msg wit hk hkm h_admSetMax h_honest h_len h_chain
+    h_valid h_deg h_deg_k
 
 /-- End-to-end binary completeness for Parker normalization. -/
 theorem ma_completeness_binary_admSetParker
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (hValid : relDlog E stmt wit)
-    (hParker_pre :
+    (h_valid : relDlog E stmt wit)
+    (h_parker_pre :
       (Landmark.eagenBuild_singletons E
         (binarySupport stmt wit hk h_binary)).a.coeff 1 ≠ 0)
     (h_toD_eq : msg.toD =
@@ -3382,14 +3382,14 @@ theorem ma_completeness_binary_admSetParker
        msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
-    (hNodup : (binarySupport stmt wit hk h_binary).Nodup)
+    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
     (h_chain : Landmark.IteratedLevelStepCombineExtras E
                   (binarySupport stmt wit hk h_binary).length
                   (Landmark.level0_singletons E
                     (binarySupport stmt wit hk h_binary)))
     (h_admSetParker : stmt.admSet = admSetParker (q := E.q))
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
@@ -3398,16 +3398,16 @@ theorem ma_completeness_binary_admSetParker
     ((Landmark.eagenBuild_singletons E
       (binarySupport stmt wit hk h_binary)).a.coeff 1)⁻¹
   have hc_ne : c ≠ 0 := by
-    exact inv_ne_zero hParker_pre
+    exact inv_ne_zero h_parker_pre
   let h_honest : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm :=
     MAProverMsg.IsHonestForBinaryScaled.fromWitness E stmt wit hk msg hkm
-      c hc_ne h_binary hValid h_toD_eq h_degE_eq h_scalars_match
-      h_target_on_curve h_bases_on_curve hNodup
-  have hLen : 2 ≤ h_honest.Ps.length := by
+      c hc_ne h_binary h_valid h_toD_eq h_degE_eq h_scalars_match
+      h_target_on_curve h_bases_on_curve h_nodup
+  have h_len : 2 ≤ h_honest.Ps.length := by
     simpa [h_honest] using
-      binarySupport_length_ge_two stmt wit hk h_binary hValid
+      binarySupport_length_ge_two stmt wit hk h_binary h_valid
         h_target_on_curve
-  have hChain :
+  have h_chain :
       Landmark.IteratedLevelStepCombineExtras E h_honest.Ps.length
         (Landmark.level0_singletons E h_honest.Ps) := by
     simpa [h_honest] using h_chain
@@ -3415,20 +3415,20 @@ theorem ma_completeness_binary_admSetParker
       h_honest.c =
         ((Landmark.eagenBuild_singletons E h_honest.Ps).a.coeff 1)⁻¹ := by
     simp [h_honest, MAProverMsg.IsHonestForBinaryScaled.fromWitness, c]
-  have hPre :
+  have h_pre :
       (Landmark.eagenBuild_singletons E h_honest.Ps).a.coeff 1 ≠ 0 := by
-    simpa [h_honest] using hParker_pre
+    simpa [h_honest] using h_parker_pre
   exact ma_completeness_binary_chain_admSetParker
-    E stmt msg wit hk hkm h_admSetParker h_honest hc_eq hPre
-    hLen hChain hValid hDeg hDegK
+    E stmt msg wit hk hkm h_admSetParker h_honest hc_eq h_pre
+    h_len h_chain h_valid h_deg h_deg_k
 
 /-- End-to-end binary completeness for Eagen normalization. -/
 theorem ma_completeness_binary_admSetEagen
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (hValid : relDlog E stmt wit)
-    (hEagen_pre :
+    (h_valid : relDlog E stmt wit)
+    (h_eagen_pre :
       (Landmark.eagenBuild_singletons E
         (binarySupport stmt wit hk h_binary)).a.coeff 0 ≠ 0)
     (h_toD_eq : msg.toD =
@@ -3442,14 +3442,14 @@ theorem ma_completeness_binary_admSetEagen
        msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
-    (hNodup : (binarySupport stmt wit hk h_binary).Nodup)
+    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
     (h_chain : Landmark.IteratedLevelStepCombineExtras E
                   (binarySupport stmt wit hk h_binary).length
                   (Landmark.level0_singletons E
                     (binarySupport stmt wit hk h_binary)))
     (h_admSetEagen : stmt.admSet = admSetEagen (q := E.q))
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
@@ -3458,16 +3458,16 @@ theorem ma_completeness_binary_admSetEagen
     ((Landmark.eagenBuild_singletons E
       (binarySupport stmt wit hk h_binary)).a.coeff 0)⁻¹
   have hc_ne : c ≠ 0 := by
-    exact inv_ne_zero hEagen_pre
+    exact inv_ne_zero h_eagen_pre
   let h_honest : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm :=
     MAProverMsg.IsHonestForBinaryScaled.fromWitness E stmt wit hk msg hkm
-      c hc_ne h_binary hValid h_toD_eq h_degE_eq h_scalars_match
-      h_target_on_curve h_bases_on_curve hNodup
-  have hLen : 2 ≤ h_honest.Ps.length := by
+      c hc_ne h_binary h_valid h_toD_eq h_degE_eq h_scalars_match
+      h_target_on_curve h_bases_on_curve h_nodup
+  have h_len : 2 ≤ h_honest.Ps.length := by
     simpa [h_honest] using
-      binarySupport_length_ge_two stmt wit hk h_binary hValid
+      binarySupport_length_ge_two stmt wit hk h_binary h_valid
         h_target_on_curve
-  have hChain :
+  have h_chain :
       Landmark.IteratedLevelStepCombineExtras E h_honest.Ps.length
         (Landmark.level0_singletons E h_honest.Ps) := by
     simpa [h_honest] using h_chain
@@ -3475,12 +3475,12 @@ theorem ma_completeness_binary_admSetEagen
       h_honest.c =
         ((Landmark.eagenBuild_singletons E h_honest.Ps).a.coeff 0)⁻¹ := by
     simp [h_honest, MAProverMsg.IsHonestForBinaryScaled.fromWitness, c]
-  have hPre :
+  have h_pre :
       (Landmark.eagenBuild_singletons E h_honest.Ps).a.coeff 0 ≠ 0 := by
-    simpa [h_honest] using hEagen_pre
+    simpa [h_honest] using h_eagen_pre
   exact ma_completeness_binary_chain_admSetEagen
-    E stmt msg wit hk hkm h_admSetEagen h_honest hc_eq hPre
-    hLen hChain hValid hDeg hDegK
+    E stmt msg wit hk hkm h_admSetEagen h_honest hc_eq h_pre
+    h_len h_chain h_valid h_deg h_deg_k
 
 /-- End-to-end binary completeness for hash normalization. -/
 theorem ma_completeness_binary_admSetHash
@@ -3488,8 +3488,8 @@ theorem ma_completeness_binary_admSetHash
     (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (r : ℕ → ZMod E.q)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (hValid : relDlog E stmt wit)
-    (hHash_pre :
+    (h_valid : relDlog E stmt wit)
+    (h_hash_pre :
       admSetHashInner r
         ((Landmark.eagenBuild_singletons E
           (binarySupport stmt wit hk h_binary)).a,
@@ -3509,14 +3509,14 @@ theorem ma_completeness_binary_admSetHash
        msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
-    (hNodup : (binarySupport stmt wit hk h_binary).Nodup)
+    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
     (h_chain : Landmark.IteratedLevelStepCombineExtras E
                   (binarySupport stmt wit hk h_binary).length
                   (Landmark.level0_singletons E
                     (binarySupport stmt wit hk h_binary)))
     (h_admSetHash : stmt.admSet = admSetHash r)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
@@ -3528,16 +3528,16 @@ theorem ma_completeness_binary_admSetHash
        (Landmark.eagenBuild_singletons E
         (binarySupport stmt wit hk h_binary)).b))⁻¹
   have hc_ne : c ≠ 0 := by
-    exact inv_ne_zero hHash_pre
+    exact inv_ne_zero h_hash_pre
   let h_honest : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm :=
     MAProverMsg.IsHonestForBinaryScaled.fromWitness E stmt wit hk msg hkm
-      c hc_ne h_binary hValid h_toD_eq h_degE_eq h_scalars_match
-      h_target_on_curve h_bases_on_curve hNodup
-  have hLen : 2 ≤ h_honest.Ps.length := by
+      c hc_ne h_binary h_valid h_toD_eq h_degE_eq h_scalars_match
+      h_target_on_curve h_bases_on_curve h_nodup
+  have h_len : 2 ≤ h_honest.Ps.length := by
     simpa [h_honest] using
-      binarySupport_length_ge_two stmt wit hk h_binary hValid
+      binarySupport_length_ge_two stmt wit hk h_binary h_valid
         h_target_on_curve
-  have hChain :
+  have h_chain :
       Landmark.IteratedLevelStepCombineExtras E h_honest.Ps.length
         (Landmark.level0_singletons E h_honest.Ps) := by
     simpa [h_honest] using h_chain
@@ -3547,14 +3547,14 @@ theorem ma_completeness_binary_admSetHash
           ((Landmark.eagenBuild_singletons E h_honest.Ps).a,
             (Landmark.eagenBuild_singletons E h_honest.Ps).b))⁻¹ := by
     simp [h_honest, MAProverMsg.IsHonestForBinaryScaled.fromWitness, c]
-  have hPre :
+  have h_pre :
       admSetHashInner r
         ((Landmark.eagenBuild_singletons E h_honest.Ps).a,
           (Landmark.eagenBuild_singletons E h_honest.Ps).b) ≠ 0 := by
-    simpa [h_honest] using hHash_pre
+    simpa [h_honest] using h_hash_pre
   exact ma_completeness_binary_chain_admSetHash
-    E stmt msg wit hk hkm r h_admSetHash h_honest hc_eq hPre
-    hLen hChain hValid hDeg hDegK
+    E stmt msg wit hk hkm r h_admSetHash h_honest hc_eq h_pre
+    h_len h_chain h_valid h_deg h_deg_k
 
 /-- End-to-end binary completeness for the maximal admissible set, with the
     level-chain certificate supplied by the computable point skeleton. -/
@@ -3562,7 +3562,7 @@ theorem ma_completeness_binary_point_certificate
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (hValid : relDlog E stmt wit)
+    (h_valid : relDlog E stmt wit)
     (h_toD_eq : msg.toD =
        Landmark.eagenBuild_singletons E
          (binarySupport stmt wit hk h_binary))
@@ -3572,14 +3572,14 @@ theorem ma_completeness_binary_point_certificate
        msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
-    (hNodup : (binarySupport stmt wit hk h_binary).Nodup)
+    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
     (h_point_chain : Landmark.IteratedPointChordCase E
                   (binarySupport stmt wit hk h_binary).length
                   (Landmark.level0SingletonPoints E
                     (binarySupport stmt wit hk h_binary)))
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
@@ -3591,9 +3591,9 @@ theorem ma_completeness_binary_point_certificate
           (binarySupport stmt wit hk h_binary)) :=
     Landmark.iteratedLevelStepCombineExtras_of_level0SingletonPoints
       E (binarySupport stmt wit hk h_binary) h_point_chain
-  exact ma_completeness_binary E stmt wit hk msg hkm h_binary hValid
+  exact ma_completeness_binary E stmt wit hk msg hkm h_binary h_valid
     h_toD_eq h_degE_eq h_scalars_match h_target_on_curve h_bases_on_curve
-    hNodup h_chain h_admSetMax hDeg hDegK
+    h_nodup h_chain h_admSetMax h_deg h_deg_k
 
 /-- Parker-normalized binary completeness with a computable point-chain
     certificate. -/
@@ -3601,8 +3601,8 @@ theorem ma_completeness_binary_admSetParker_point_certificate
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (hValid : relDlog E stmt wit)
-    (hParker_pre :
+    (h_valid : relDlog E stmt wit)
+    (h_parker_pre :
       (Landmark.eagenBuild_singletons E
         (binarySupport stmt wit hk h_binary)).a.coeff 1 ≠ 0)
     (h_toD_eq : msg.toD =
@@ -3616,14 +3616,14 @@ theorem ma_completeness_binary_admSetParker_point_certificate
        msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
-    (hNodup : (binarySupport stmt wit hk h_binary).Nodup)
+    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
     (h_point_chain : Landmark.IteratedPointChordCase E
                   (binarySupport stmt wit hk h_binary).length
                   (Landmark.level0SingletonPoints E
                     (binarySupport stmt wit hk h_binary)))
     (h_admSetParker : stmt.admSet = admSetParker (q := E.q))
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
@@ -3636,9 +3636,9 @@ theorem ma_completeness_binary_admSetParker_point_certificate
     Landmark.iteratedLevelStepCombineExtras_of_level0SingletonPoints
       E (binarySupport stmt wit hk h_binary) h_point_chain
   exact ma_completeness_binary_admSetParker E stmt wit hk msg hkm
-    h_binary hValid hParker_pre h_toD_eq h_degE_eq h_scalars_match
-    h_target_on_curve h_bases_on_curve hNodup h_chain h_admSetParker
-    hDeg hDegK
+    h_binary h_valid h_parker_pre h_toD_eq h_degE_eq h_scalars_match
+    h_target_on_curve h_bases_on_curve h_nodup h_chain h_admSetParker
+    h_deg h_deg_k
 
 /-- Eagen-normalized binary completeness with a computable point-chain
     certificate. -/
@@ -3646,8 +3646,8 @@ theorem ma_completeness_binary_admSetEagen_point_certificate
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (hValid : relDlog E stmt wit)
-    (hEagen_pre :
+    (h_valid : relDlog E stmt wit)
+    (h_eagen_pre :
       (Landmark.eagenBuild_singletons E
         (binarySupport stmt wit hk h_binary)).a.coeff 0 ≠ 0)
     (h_toD_eq : msg.toD =
@@ -3661,14 +3661,14 @@ theorem ma_completeness_binary_admSetEagen_point_certificate
        msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
-    (hNodup : (binarySupport stmt wit hk h_binary).Nodup)
+    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
     (h_point_chain : Landmark.IteratedPointChordCase E
                   (binarySupport stmt wit hk h_binary).length
                   (Landmark.level0SingletonPoints E
                     (binarySupport stmt wit hk h_binary)))
     (h_admSetEagen : stmt.admSet = admSetEagen (q := E.q))
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
@@ -3681,9 +3681,9 @@ theorem ma_completeness_binary_admSetEagen_point_certificate
     Landmark.iteratedLevelStepCombineExtras_of_level0SingletonPoints
       E (binarySupport stmt wit hk h_binary) h_point_chain
   exact ma_completeness_binary_admSetEagen E stmt wit hk msg hkm
-    h_binary hValid hEagen_pre h_toD_eq h_degE_eq h_scalars_match
-    h_target_on_curve h_bases_on_curve hNodup h_chain h_admSetEagen
-    hDeg hDegK
+    h_binary h_valid h_eagen_pre h_toD_eq h_degE_eq h_scalars_match
+    h_target_on_curve h_bases_on_curve h_nodup h_chain h_admSetEagen
+    h_deg h_deg_k
 
 /-- Hash-normalized binary completeness with a computable point-chain
     certificate. -/
@@ -3692,8 +3692,8 @@ theorem ma_completeness_binary_admSetHash_point_certificate
     (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (r : ℕ → ZMod E.q)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (hValid : relDlog E stmt wit)
-    (hHash_pre :
+    (h_valid : relDlog E stmt wit)
+    (h_hash_pre :
       admSetHashInner r
         ((Landmark.eagenBuild_singletons E
           (binarySupport stmt wit hk h_binary)).a,
@@ -3713,14 +3713,14 @@ theorem ma_completeness_binary_admSetHash_point_certificate
        msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
-    (hNodup : (binarySupport stmt wit hk h_binary).Nodup)
+    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
     (h_point_chain : Landmark.IteratedPointChordCase E
                   (binarySupport stmt wit hk h_binary).length
                   (Landmark.level0SingletonPoints E
                     (binarySupport stmt wit hk h_binary)))
     (h_admSetHash : stmt.admSet = admSetHash r)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound) :
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
@@ -3733,8 +3733,8 @@ theorem ma_completeness_binary_admSetHash_point_certificate
     Landmark.iteratedLevelStepCombineExtras_of_level0SingletonPoints
       E (binarySupport stmt wit hk h_binary) h_point_chain
   exact ma_completeness_binary_admSetHash E stmt wit hk msg hkm r
-    h_binary hValid hHash_pre h_toD_eq h_degE_eq h_scalars_match
-    h_target_on_curve h_bases_on_curve hNodup h_chain h_admSetHash
-    hDeg hDegK
+    h_binary h_valid h_hash_pre h_toD_eq h_degE_eq h_scalars_match
+    h_target_on_curve h_bases_on_curve h_nodup h_chain h_admSetHash
+    h_deg h_deg_k
 
 end Divisor

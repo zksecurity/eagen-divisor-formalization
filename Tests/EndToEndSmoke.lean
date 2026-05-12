@@ -53,7 +53,7 @@ private def wit : DlogWitness E17.q where
 
 private theorem hk : stmt.k = wit.k := rfl
 
-private theorem hBinary :
+private theorem h_binary :
     ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1 := by
   intro i
   right
@@ -63,16 +63,16 @@ private def support : List (ZMod E17.q × ZMod E17.q) :=
   [(1, 6), (1, 11), (0, 1), (0, 16)]
 
 private theorem binarySupport_eq_support :
-    binarySupport stmt wit hk hBinary = support := by
+    binarySupport stmt wit hk h_binary = support := by
   native_decide
 
 private noncomputable def msg : MAProverMsg E17.q where
   k := 3
   m := fun _ => 1
   polyA := (Landmark.eagenBuild_singletons E17
-    (binarySupport stmt wit hk hBinary)).a
+    (binarySupport stmt wit hk h_binary)).a
   polyB := (Landmark.eagenBuild_singletons E17
-    (binarySupport stmt wit hk hBinary)).b
+    (binarySupport stmt wit hk h_binary)).b
 
 private theorem hkm : stmt.k = msg.k := rfl
 
@@ -122,7 +122,7 @@ private theorem support_degE :
   rw [hnat]
   norm_num
 
-private theorem hValid : relDlog E17 stmt wit := by
+private theorem h_valid : relDlog E17 stmt wit := by
   refine ⟨hk, ?_⟩
   simp [stmt, wit, ECPoint.weightedSum]
   rw [Fin.sum_univ_three]
@@ -135,38 +135,38 @@ example :
         (fun p : (ZMod E17.q × ZMod E17.q) × (ZMod E17.q × ZMod E17.q) =>
           ¬ maVerifierAccepts E17 stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E17 msg.toD + 4) * E17.numAffine := by
-  have hSupportLen : (binarySupport stmt wit hk hBinary).length = 4 := by
+  have h_support_len : (binarySupport stmt wit hk h_binary).length = 4 := by
     native_decide
-  have hToD : msg.toD = Landmark.eagenBuild_singletons E17
-      (binarySupport stmt wit hk hBinary) := rfl
-  have hDegE : msg.toD.degE = (binarySupport stmt wit hk hBinary).length := by
-    rw [hToD, binarySupport_eq_support, support_degE]
-  have hScalars : ∀ i : Fin stmt.k,
+  have h_toD : msg.toD = Landmark.eagenBuild_singletons E17
+      (binarySupport stmt wit hk h_binary) := rfl
+  have h_deg_e : msg.toD.degE = (binarySupport stmt wit hk h_binary).length := by
+    rw [h_toD, binarySupport_eq_support, support_degE]
+  have h_scalars : ∀ i : Fin stmt.k,
       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E17.q)) := by
     intro i
     fin_cases i <;> rfl
-  have hTargetOn : (stmt.target.1, -stmt.target.2) ∈ E17.points := by
+  have h_target_on : (stmt.target.1, -stmt.target.2) ∈ E17.points := by
     native_decide
-  have hBasesOn : ∀ i, stmt.bases i ∈ E17.points := by
+  have h_bases_on : ∀ i, stmt.bases i ∈ E17.points := by
     intro i
     fin_cases i <;> native_decide
-  have hNodup : (binarySupport stmt wit hk hBinary).Nodup := by
+  have h_nodup : (binarySupport stmt wit hk h_binary).Nodup := by
     native_decide
-  have hPointChain : Landmark.IteratedPointChordCase E17
-      (binarySupport stmt wit hk hBinary).length
+  have h_point_chain : Landmark.IteratedPointChordCase E17
+      (binarySupport stmt wit hk h_binary).length
       (Landmark.level0SingletonPoints E17
-        (binarySupport stmt wit hk hBinary)) := by
+        (binarySupport stmt wit hk h_binary)) := by
     rw [binarySupport_eq_support]
     native_decide
-  have hDeg : msg.toD.degE ≤ wit.degBound := by
-    rw [hDegE, hSupportLen]
+  have h_deg : msg.toD.degE ≤ wit.degBound := by
+    rw [h_deg_e, h_support_len]
     norm_num [wit]
-  have hDegK : msg.toD.degE ≤ stmt.degBound := by
-    rw [hDegE, hSupportLen]
+  have h_deg_k : msg.toD.degE ≤ stmt.degBound := by
+    rw [h_deg_e, h_support_len]
     norm_num [stmt]
   exact ma_completeness_binary_point_certificate E17 stmt wit hk msg hkm
-    hBinary hValid hToD hDegE hScalars hTargetOn hBasesOn hNodup hPointChain
-    rfl hDeg hDegK
+    h_binary h_valid h_toD h_deg_e h_scalars h_target_on h_bases_on h_nodup h_point_chain
+    rfl h_deg h_deg_k
 
 end EndToEndSmoke
 end Divisor

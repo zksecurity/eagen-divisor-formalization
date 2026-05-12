@@ -21,7 +21,7 @@ No new axioms. Verified by `Tests/AxiomClosurePin.lean` (commit `7a61b42`).
 
 The new theorems take the same data as the old `ma_completeness_for_binary`:
 `MAProverMsg.IsHonestForBinary` (binary witness, `Ps` support list,
-`hSumZero`, `hNodup`, etc.). Hypothesis change:
+`h_sum_zero`, `h_nodup`, etc.). Hypothesis change:
 
 | Old conditional             | New conditional           |
 |-----------------------------|---------------------------|
@@ -218,7 +218,7 @@ Two bridge lemmas establish:
   divisor of `binarySupport` extensionally matches `honestDivisorCoeffs`.
 
 `MAProverMsg.IsHonestForBinary.fromWitness` (and its `Scaled` variant)
-take `(stmt, wit, msg, h_binary, hValid, h_toD_eq, hNodup, ...)` and
+take `(stmt, wit, msg, h_binary, h_valid, h_toD_eq, h_nodup, ...)` and
 produce the structure automatically — no manual `Ps`/`h_formal_eq_honest`
 proof.
 

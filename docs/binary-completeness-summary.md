@@ -10,10 +10,10 @@ For any binary witness (`wit.scalars i ∈ {0, 1}`) with valid
 
 ```lean
 ma_completeness_binary E stmt wit hk msg hkm
-  h_binary hValid h_toD_eq
+  h_binary h_valid h_toD_eq
   h_scalars_match h_target_on_curve h_bases_on_curve
-  hNodup h_chain h_admSetMax
-  hDeg hDegK
+  h_nodup h_chain h_admSetMax
+  h_deg h_deg_k
 ```
 
 returning the standard `ma_completeness` bound.
@@ -152,15 +152,15 @@ For a typical binary protocol with Parker admSet:
 ```lean
 ma_completeness_binary_admSetParker
   E stmt wit hk msg hkm
-  h_binary hValid hParker_pre
+  h_binary h_valid h_parker_pre
   h_admSetParker
   h_toD_eq
   h_scalars_match h_target_on_curve h_bases_on_curve
-  hNodup h_chain
-  hDeg hDegK
+  h_nodup h_chain
+  h_deg h_deg_k
 ```
 
-For users with concrete numerical inputs and small length, `hNodup`
+For users with concrete numerical inputs and small length, `h_nodup`
 and `h_chain` can be discharged by `decide` / `native_decide` (after
 a future certifying-wrapper PR for `LandmarkInvStrongCombineAffineExtras`).
 
