@@ -39,10 +39,7 @@ def divLin (D : CoordRingEltC q) (x₀ : ZMod q) : CoordRingEltC q :=
         = (a₁·a₂ + b₁·b₂·(X³ + A·X + B)) − (a₁·b₂ + a₂·b₁) · Y`. -/
 def mul (curveA curveB : ZMod q) (D₁ D₂ : CoordRingEltC q) :
     CoordRingEltC q :=
-  let curveXP : CoeffPoly q :=
-    -- X^3 + curveA · X + curveB, coeffs [B, A, 0, 1]
-    ⟨[curveB, curveA, 0, 1]⟩
-  { a := D₁.a * D₂.a + (D₁.b * D₂.b) * curveXP
+  { a := D₁.a * D₂.a + (D₁.b * D₂.b) * (⟨[curveB, curveA, 0, 1]⟩ : CoeffPoly q)
     b := D₁.a * D₂.b + D₂.a * D₁.b }
 
 /-! ## Chord-line constructor
