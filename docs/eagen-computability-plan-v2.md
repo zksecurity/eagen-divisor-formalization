@@ -210,20 +210,22 @@ algebraic. Defer unless explicitly requested.
 
 ## Acceptance criteria — status
 
+All criteria satisfied:
+
 * ✓ `eagenBuildC : ZMod q × ZMod q → ... → CoordRingEltC q` is a
   plain `def` with all dependencies computable.
-* PARTIAL: `(eagenBuildC E Ps).toCoordRingElt = eagenBuild E Ps`.
-  Per-operation bridges (`mul_toCoordRingElt`,
-  `divLin_toCoordRingElt`, `curveX_coeff` bridge) proved.
-  `chord_toCoordRingElt` and the recursive bridge deferred —
-  mechanical case analysis on top of the foundational bridges.
+* ✓ `(eagenBuildC E.curveA E.curveB Ps).toCoordRingElt = eagenBuild E Ps`
+  proved (`eagenBuildC_toCoordRingElt_eq_eagenBuild` in
+  `Divisor/EagenBuildComputable/Bridge.lean`).  Per-operation
+  bridges (`chord_toCoordRingElt`, `mul_toCoordRingElt`,
+  `divLin_toCoordRingElt`) and recursive driver bridges
+  (level0, level_step, iterate) all proved.
 * ✓ `#eval (eagenBuildC ... [P₀..P₃]).a.coeffs` produces a concrete
   `List (ZMod q)`.
 * ✓ `native_decide`-pinned equality of `D.eval` to expected values
   at input points (= 0) and off-support points (≠ 0).
-* ✓ No regression: full project rebuilds at 8109 jobs successfully;
-  existing axiom closures untouched (`Tests/AxiomClosurePin.lean`
-  unchanged).
+* ✓ No regression: full project rebuilds at 8109 jobs; existing
+  axiom closures byte-for-byte unchanged.
 * ✓ No `open Classical` in any computable-layer file.
 
 ## Risk register
