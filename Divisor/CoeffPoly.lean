@@ -281,6 +281,86 @@ theorem toPolynomial_eval (p : CoeffPoly q) (x : ZMod q) :
     rw [Polynomial.coeff_X]
     simp
 
+/-! ### `add` bridge -/
+
+/-- Coefficient of `add.addList`. -/
+theorem coeff_addList (as bs : List (ZMod q)) (n : ℕ) :
+    ((⟨add.addList as bs⟩ : CoeffPoly q).coeff n) =
+      (⟨as⟩ : CoeffPoly q).coeff n + (⟨bs⟩ : CoeffPoly q).coeff n := by
+  induction as generalizing bs n with
+  | nil =>
+    show (⟨add.addList [] bs⟩ : CoeffPoly q).coeff n
+      = (⟨[]⟩ : CoeffPoly q).coeff n + (⟨bs⟩ : CoeffPoly q).coeff n
+    show (((add.addList [] bs : List (ZMod q)))[n]?).getD 0
+      = ((([] : List (ZMod q))[n]?).getD 0)
+        + ((bs : List (ZMod q))[n]?).getD 0
+    show ((bs : List (ZMod q))[n]?).getD 0
+      = ((([] : List (ZMod q))[n]?).getD 0)
+        + ((bs : List (ZMod q))[n]?).getD 0
+    simp
+  | cons a as' ih =>
+    cases bs with
+    | nil =>
+      show (⟨add.addList (a :: as') []⟩ : CoeffPoly q).coeff n
+        = (⟨a :: as'⟩ : CoeffPoly q).coeff n + (⟨[]⟩ : CoeffPoly q).coeff n
+      show (((a :: as' : List (ZMod q)))[n]?).getD 0
+        = ((a :: as' : List (ZMod q))[n]?).getD 0
+          + ((([] : List (ZMod q))[n]?).getD 0)
+      simp
+    | cons b bs' =>
+      cases n with
+      | zero =>
+        show (⟨add.addList (a :: as') (b :: bs')⟩ : CoeffPoly q).coeff 0
+          = (⟨a :: as'⟩ : CoeffPoly q).coeff 0 + (⟨b :: bs'⟩ : CoeffPoly q).coeff 0
+        show ((((a + b) :: add.addList as' bs' : List (ZMod q)))[0]?).getD 0
+          = ((a :: as' : List (ZMod q))[0]?).getD 0
+            + ((b :: bs' : List (ZMod q))[0]?).getD 0
+        simp
+      | succ k =>
+        show (⟨add.addList (a :: as') (b :: bs')⟩ : CoeffPoly q).coeff (k + 1)
+          = (⟨a :: as'⟩ : CoeffPoly q).coeff (k + 1)
+            + (⟨b :: bs'⟩ : CoeffPoly q).coeff (k + 1)
+        show ((((a + b) :: add.addList as' bs' : List (ZMod q)))[k + 1]?).getD 0
+          = ((a :: as' : List (ZMod q))[k + 1]?).getD 0
+            + ((b :: bs' : List (ZMod q))[k + 1]?).getD 0
+        simp only [List.getElem?_cons_succ]
+        exact ih bs' k
+
+/-- Coefficient bridge for `add`. -/
+@[simp] theorem coeff_add (p₁ p₂ : CoeffPoly q) (n : ℕ) :
+    (p₁ + p₂).coeff n = p₁.coeff n + p₂.coeff n := by
+  show (p₁.add p₂).coeff n = _
+  obtain ⟨as⟩ := p₁
+  obtain ⟨bs⟩ := p₂
+  unfold add
+  exact coeff_addList as bs n
+
+theorem toPolynomial_add (p₁ p₂ : CoeffPoly q) :
+    toPolynomial (p₁ + p₂) = toPolynomial p₁ + toPolynomial p₂ := by
+  apply Polynomial.ext
+  intro n
+  rw [toPolynomial_coeff, Polynomial.coeff_add, toPolynomial_coeff,
+      toPolynomial_coeff, coeff_add]
+
+/-! ### Deferred bridges
+
+The following bridges connect the computable layer to mathlib's
+`Polynomial`-valued operations and are required for the
+`eagenBuildC → eagenBuild` correctness theorem.  They are stated
+here as documentation; proofs are deferred to a follow-up file.
+
+* `toPolynomial_mul` : `toPolynomial (p₁ * p₂) = toPolynomial p₁ *
+  toPolynomial p₂`.  Requires connecting `CoeffPoly.mul` (list
+  convolution) to `Polynomial.mul` via `Polynomial.coeff_mul`.
+
+* `toPolynomial_divXSubC` : `toPolynomial (p.divXSubC x₀) =
+  toPolynomial p /ₘ (Polynomial.X − Polynomial.C x₀)`.  Connects
+  Horner-style synthetic division to mathlib's `coeff_divByMonic_X_sub_C`.
+
+These let us derive the chord / mul / divLin bridges at the
+`CoordRingEltC` layer and, by induction, the
+`eagenBuildC_toCoordRingElt_eq_eagenBuild` corollary. -/
+
 end CoeffPoly
 
 end Divisor
