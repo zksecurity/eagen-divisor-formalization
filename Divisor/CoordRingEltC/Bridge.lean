@@ -113,6 +113,23 @@ theorem mul_toCoordRingElt (E : ECSetup) (D₁ D₂ : CoordRingEltC E.q) :
   · rw [CoeffPoly.toPolynomial_add, CoeffPoly.toPolynomial_mul,
         CoeffPoly.toPolynomial_mul]
 
+/-! ### Deferred bridges
+
+The following bridges complete the picture but require additional
+plumbing and are deferred:
+
+* `chord_toCoordRingElt` — three-branch case analysis (chord,
+  tangent, vertical) requires `toPolynomial_neg`, `toPolynomial_sub`,
+  and monomial-level identities for `-(C lam) * X - C mu`.
+
+* `eagenBuildC_toCoordRingElt_eq_eagenBuild` — recursive bridge,
+  proved by induction over the level fuel using the per-step
+  bridges (`chord_toCoordRingElt`, `mul_toCoordRingElt`,
+  `divLin_toCoordRingElt`).
+
+All foundational operation bridges (add, mul, divXSubC, eval, C, X)
+are in place, so the deferred work is mechanical case analysis. -/
+
 end CoordRingEltC
 
 end Divisor
