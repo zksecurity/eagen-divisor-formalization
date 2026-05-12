@@ -324,6 +324,38 @@ theorem toPolynomial_add (p₁ p₂ : CoeffPoly q) :
   rw [toPolynomial_coeff, Polynomial.coeff_add, toPolynomial_coeff,
       toPolynomial_coeff, coeff_add]
 
+/-! ### `neg` and `sub` bridges -/
+
+@[simp] theorem coeff_neg (p : CoeffPoly q) (n : ℕ) :
+    (-p).coeff n = -(p.coeff n) := by
+  show (p.neg).coeff n = _
+  obtain ⟨cs⟩ := p
+  show ((cs.map (-·) : List (ZMod q))[n]?).getD 0
+    = -((cs : List (ZMod q))[n]?).getD 0
+  rw [List.getElem?_map]
+  cases h : (cs : List (ZMod q))[n]? with
+  | none => simp
+  | some v => simp
+
+theorem toPolynomial_neg (p : CoeffPoly q) :
+    toPolynomial (-p) = -(toPolynomial p) := by
+  apply Polynomial.ext
+  intro n
+  rw [toPolynomial_coeff, Polynomial.coeff_neg, toPolynomial_coeff, coeff_neg]
+
+@[simp] theorem coeff_sub (p₁ p₂ : CoeffPoly q) (n : ℕ) :
+    (p₁ - p₂).coeff n = p₁.coeff n - p₂.coeff n := by
+  show (p₁ + (-p₂)).coeff n = _
+  rw [coeff_add, coeff_neg]
+  ring
+
+theorem toPolynomial_sub (p₁ p₂ : CoeffPoly q) :
+    toPolynomial (p₁ - p₂) = toPolynomial p₁ - toPolynomial p₂ := by
+  apply Polynomial.ext
+  intro n
+  rw [toPolynomial_coeff, Polynomial.coeff_sub, toPolynomial_coeff,
+      toPolynomial_coeff, coeff_sub]
+
 /-! ### `mul` bridge -/
 
 /-- Coefficient formula for `mul`, matching `Polynomial.coeff_mul`. -/

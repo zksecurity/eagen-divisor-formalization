@@ -113,22 +113,142 @@ theorem mul_toCoordRingElt (E : ECSetup) (D₁ D₂ : CoordRingEltC E.q) :
   · rw [CoeffPoly.toPolynomial_add, CoeffPoly.toPolynomial_mul,
         CoeffPoly.toPolynomial_mul]
 
-/-! ### Deferred bridges
+/-! ### Helper bridges built from foundations -/
 
-The following bridges complete the picture but require additional
-plumbing and are deferred:
+/-- `toPolynomial (X - C c) = X - C c` in mathlib. -/
+theorem toPolynomial_X_sub_C (c : ZMod q) :
+    (CoeffPoly.X - CoeffPoly.C c : CoeffPoly q).toPolynomial
+      = Polynomial.X - Polynomial.C c := by
+  rw [CoeffPoly.toPolynomial_sub, CoeffPoly.toPolynomial_X,
+      CoeffPoly.toPolynomial_C]
 
-* `chord_toCoordRingElt` — three-branch case analysis (chord,
-  tangent, vertical) requires `toPolynomial_neg`, `toPolynomial_sub`,
-  and monomial-level identities for `-(C lam) * X - C mu`.
+/-- `toPolynomial (-(C λ) * X - C μ) = -(C λ) * X - C μ` in mathlib. -/
+theorem toPolynomial_nonvertical_chord (lam mu : ZMod q) :
+    (-(CoeffPoly.C lam) * CoeffPoly.X - CoeffPoly.C mu : CoeffPoly q).toPolynomial
+      = -(Polynomial.C lam) * Polynomial.X - Polynomial.C mu := by
+  rw [CoeffPoly.toPolynomial_sub, CoeffPoly.toPolynomial_mul,
+      CoeffPoly.toPolynomial_neg, CoeffPoly.toPolynomial_C,
+      CoeffPoly.toPolynomial_X, CoeffPoly.toPolynomial_C]
 
-* `eagenBuildC_toCoordRingElt_eq_eagenBuild` — recursive bridge,
-  proved by induction over the level fuel using the per-step
-  bridges (`chord_toCoordRingElt`, `mul_toCoordRingElt`,
-  `divLin_toCoordRingElt`).
+/-- `toPolynomial (1 : CoeffPoly q) = 1` in mathlib. -/
+theorem toPolynomial_one :
+    ((1 : CoeffPoly q) : CoeffPoly q).toPolynomial = (1 : Polynomial (ZMod q)) := by
+  apply Polynomial.ext
+  intro n
+  rw [CoeffPoly.toPolynomial_coeff]
+  match n with
+  | 0 => simp [Polynomial.coeff_one]
+  | k + 1 =>
+    show (1 : CoeffPoly q).coeff (k + 1) = (1 : Polynomial (ZMod q)).coeff (k + 1)
+    show (CoeffPoly.one : CoeffPoly q).coeff (k + 1) = _
+    show (([1] : List (ZMod q))[k + 1]?).getD 0 = _
+    rw [show ([1] : List (ZMod q))[k + 1]? = none from rfl]
+    simp [Polynomial.coeff_one]
 
-All foundational operation bridges (add, mul, divXSubC, eval, C, X)
-are in place, so the deferred work is mechanical case analysis. -/
+/-- `toPolynomial (-1 : CoeffPoly q) = -1` in mathlib. -/
+theorem toPolynomial_neg_one :
+    ((-1 : CoeffPoly q) : CoeffPoly q).toPolynomial = (-1 : Polynomial (ZMod q)) := by
+  show ((-(1 : CoeffPoly q)) : CoeffPoly q).toPolynomial = -1
+  rw [CoeffPoly.toPolynomial_neg, toPolynomial_one]
+
+/-! ### `chord` bridge -/
+
+private theorem chord_toCoordRingElt_aux_vertical
+    (E : ECSetup) (x : ZMod E.q) :
+    ((⟨CoeffPoly.X - CoeffPoly.C x, 0⟩ : CoordRingEltC E.q).toCoordRingElt
+      : CoordRingElt E.q)
+      = ⟨Polynomial.X - Polynomial.C x, 0⟩ := by
+  unfold toCoordRingElt
+  show (⟨(CoeffPoly.X - CoeffPoly.C x).toPolynomial,
+        (0 : CoeffPoly E.q).toPolynomial⟩ : CoordRingElt E.q)
+    = ⟨Polynomial.X - Polynomial.C x, 0⟩
+  have h_a : (CoeffPoly.X - CoeffPoly.C x : CoeffPoly E.q).toPolynomial
+    = Polynomial.X - Polynomial.C x := toPolynomial_X_sub_C x
+  have h_b : (0 : CoeffPoly E.q).toPolynomial = 0 := CoeffPoly.toPolynomial_zero
+  rw [h_a, h_b]
+
+private theorem chord_toCoordRingElt_aux_nonvertical
+    (E : ECSetup) (lam mu : ZMod E.q) :
+    ((⟨-(CoeffPoly.C lam) * CoeffPoly.X - CoeffPoly.C mu, -1⟩
+      : CoordRingEltC E.q).toCoordRingElt : CoordRingElt E.q)
+      = ⟨-(Polynomial.C lam) * Polynomial.X - Polynomial.C mu, -1⟩ := by
+  unfold toCoordRingElt
+  have h_a : (-(CoeffPoly.C lam) * CoeffPoly.X - CoeffPoly.C mu : CoeffPoly E.q).toPolynomial
+    = -(Polynomial.C lam) * Polynomial.X - Polynomial.C mu :=
+    toPolynomial_nonvertical_chord lam mu
+  have h_b : ((-1 : CoeffPoly E.q)).toPolynomial = (-1 : Polynomial (ZMod E.q)) :=
+    toPolynomial_neg_one
+  rw [h_a, h_b]
+
+theorem chord_toCoordRingElt (E : ECSetup) (P Q : ZMod E.q × ZMod E.q) :
+    (CoordRingEltC.chord E.curveA P Q).toCoordRingElt
+      = chordCoordRingElt E P Q := by
+  by_cases hxx : P.1 = Q.1
+  · by_cases hyy : P.2 = Q.2
+    · by_cases h2t : P.2 = 0
+      · have lhs : CoordRingEltC.chord E.curveA P Q
+            = ⟨CoeffPoly.X - CoeffPoly.C P.1, 0⟩ := by
+          unfold CoordRingEltC.chord
+          rw [if_pos hxx, if_pos hyy, if_pos h2t]
+        have rhs : chordCoordRingElt E P Q
+            = ⟨Polynomial.X - Polynomial.C P.1, 0⟩ := by
+          unfold chordCoordRingElt
+          rw [dif_pos hxx, dif_pos hyy, if_pos h2t]
+        rw [lhs, rhs]
+        exact chord_toCoordRingElt_aux_vertical E P.1
+      · have lhs : CoordRingEltC.chord E.curveA P Q
+            = ⟨-(CoeffPoly.C ((3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹))
+                * CoeffPoly.X
+                - CoeffPoly.C (P.2 - ((3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹) * P.1),
+              -1⟩ := by
+          unfold CoordRingEltC.chord
+          rw [if_pos hxx, if_pos hyy, if_neg h2t]
+        have rhs : chordCoordRingElt E P Q
+            = ⟨-(Polynomial.C ((3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹))
+                * Polynomial.X
+                - Polynomial.C (P.2 - ((3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹) * P.1),
+              -1⟩ := by
+          unfold chordCoordRingElt
+          rw [dif_pos hxx, dif_pos hyy, if_neg h2t]
+        rw [lhs, rhs]
+        exact chord_toCoordRingElt_aux_nonvertical E _ _
+    · have lhs : CoordRingEltC.chord E.curveA P Q
+          = ⟨CoeffPoly.X - CoeffPoly.C P.1, 0⟩ := by
+        unfold CoordRingEltC.chord
+        rw [if_pos hxx, if_neg hyy]
+      have rhs : chordCoordRingElt E P Q
+          = ⟨Polynomial.X - Polynomial.C P.1, 0⟩ := by
+        unfold chordCoordRingElt
+        rw [dif_pos hxx, dif_neg hyy]
+      rw [lhs, rhs]
+      exact chord_toCoordRingElt_aux_vertical E P.1
+  · have lhs : CoordRingEltC.chord E.curveA P Q
+        = ⟨-(CoeffPoly.C ((Q.2 - P.2) * (Q.1 - P.1)⁻¹))
+            * CoeffPoly.X
+            - CoeffPoly.C (P.2 - ((Q.2 - P.2) * (Q.1 - P.1)⁻¹) * P.1),
+          -1⟩ := by
+      unfold CoordRingEltC.chord
+      rw [if_neg hxx]
+    have rhs : chordCoordRingElt E P Q
+        = ⟨-(Polynomial.C ((Q.2 - P.2) * (Q.1 - P.1)⁻¹))
+            * Polynomial.X
+            - Polynomial.C (P.2 - ((Q.2 - P.2) * (Q.1 - P.1)⁻¹) * P.1),
+          -1⟩ := by
+      unfold chordCoordRingElt
+      rw [dif_neg hxx]
+    rw [lhs, rhs]
+    exact chord_toCoordRingElt_aux_nonvertical E _ _
+
+/-- `toPolynomial (one : CoeffPoly q) = 1` — re-exposed at this namespace
+    for downstream use. -/
+theorem toCoordRingElt_one (q : ℕ) [Fact (Nat.Prime q)] :
+    ((⟨1, 0⟩ : CoordRingEltC q).toCoordRingElt : CoordRingElt q)
+      = ⟨1, 0⟩ := by
+  unfold toCoordRingElt
+  have h_a : (1 : CoeffPoly q).toPolynomial = 1 := toPolynomial_one
+  have h_b : (0 : CoeffPoly q).toPolynomial = 0 := CoeffPoly.toPolynomial_zero
+  rw [show ((⟨1, 0⟩ : CoordRingEltC q).a = 1) from rfl,
+      show ((⟨1, 0⟩ : CoordRingEltC q).b = 0) from rfl, h_a, h_b]
 
 end CoordRingEltC
 
