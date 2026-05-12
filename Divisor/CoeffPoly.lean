@@ -175,13 +175,111 @@ These are noncomputable theorems used solely to relate the
 computable `CoeffPoly` operations back to the existing
 `Polynomial`-valued construction. -/
 
-open Polynomial in
 /-- Bridge: interpret a `CoeffPoly` as a mathlib `Polynomial`.  Sum
-    of `monomial i (coeffs[i])` over the support range. -/
+    of `monomial i (coeffs[i])` over `Finset.range p.coeffs.length`. -/
 noncomputable def toPolynomial (p : CoeffPoly q) [Fact (Nat.Prime q)] :
     Polynomial (ZMod q) :=
   (Finset.range p.coeffs.length).sum
     (fun i => Polynomial.monomial i (p.coeff i))
+
+variable [Fact (Nat.Prime q)]
+
+/-- Coefficient of `toPolynomial p` agrees with `CoeffPoly.coeff`. -/
+theorem toPolynomial_coeff (p : CoeffPoly q) (n : ℕ) :
+    (toPolynomial p).coeff n = p.coeff n := by
+  unfold toPolynomial
+  rw [Polynomial.finset_sum_coeff]
+  by_cases hn : n < p.coeffs.length
+  · rw [Finset.sum_eq_single n]
+    · rw [Polynomial.coeff_monomial, if_pos rfl]
+    · intro i _ hin
+      rw [Polynomial.coeff_monomial]
+      exact if_neg hin
+    · intro h; exact absurd (Finset.mem_range.mpr hn) h
+  · push_neg at hn
+    have hp : p.coeff n = 0 := by
+      unfold coeff
+      have := List.getElem?_eq_none (l := p.coeffs) (i := n) hn
+      simp [this]
+    rw [hp]
+    apply Finset.sum_eq_zero
+    intro i hi
+    have hi_lt : i < p.coeffs.length := Finset.mem_range.mp hi
+    rw [Polynomial.coeff_monomial]
+    have hne : ¬ i = n := fun h => by
+      rw [h] at hi_lt; exact absurd hi_lt hn.not_gt
+    exact if_neg hne
+
+/-- Evaluation bridge: `CoeffPoly.eval` matches `Polynomial.eval`. -/
+theorem toPolynomial_eval (p : CoeffPoly q) (x : ZMod q) :
+    (toPolynomial p).eval x = p.eval x := by
+  unfold toPolynomial
+  rw [Polynomial.eval_finset_sum]
+  simp only [Polynomial.eval_monomial]
+  -- Goal: ∑ i ∈ range length, coeff i * x^i = foldr ... 0 coeffs
+  unfold CoeffPoly.eval
+  -- Cast to the auxiliary statement for the underlying list, then
+  -- prove by list induction.
+  suffices h : ∀ (l : List (ZMod q)),
+      (∑ i ∈ Finset.range l.length,
+        ((⟨l⟩ : CoeffPoly q).coeff i) * x ^ i)
+        = l.foldr (fun c acc => acc * x + c) 0 from h p.coeffs
+  intro l
+  induction l with
+  | nil => simp
+  | cons c cs ih =>
+    -- (c :: cs).length = cs.length + 1 (defeq).
+    show (∑ i ∈ Finset.range (cs.length + 1),
+            (⟨c :: cs⟩ : CoeffPoly q).coeff i * x ^ i)
+        = (cs.foldr (fun c acc => acc * x + c) 0) * x + c
+    rw [Finset.sum_range_succ']
+    have hcoeff0 : (⟨c :: cs⟩ : CoeffPoly q).coeff 0 = c := by
+      show ((c :: cs : List (ZMod q))[0]?).getD 0 = c
+      simp
+    have hcoeffsucc : ∀ i, (⟨c :: cs⟩ : CoeffPoly q).coeff (i + 1)
+        = (⟨cs⟩ : CoeffPoly q).coeff i := by
+      intro i
+      show ((c :: cs : List (ZMod q))[i + 1]?).getD 0
+        = ((cs : List (ZMod q))[i]?).getD 0
+      simp
+    rw [hcoeff0, pow_zero, mul_one]
+    have : (∑ i ∈ Finset.range cs.length,
+              (⟨c :: cs⟩ : CoeffPoly q).coeff (i + 1) * x ^ (i + 1))
+        = (∑ i ∈ Finset.range cs.length,
+              (⟨cs⟩ : CoeffPoly q).coeff i * x ^ i) * x := by
+      rw [Finset.sum_mul]
+      apply Finset.sum_congr rfl
+      intro i _
+      rw [hcoeffsucc, pow_succ]
+      ring
+    rw [this, ih]
+
+@[simp] theorem toPolynomial_zero : toPolynomial (0 : CoeffPoly q) = 0 := by
+  unfold toPolynomial
+  show (Finset.range (([] : List (ZMod q)).length)).sum _ = 0
+  simp
+
+@[simp] theorem toPolynomial_C (c : ZMod q) :
+    toPolynomial (C c) = Polynomial.C c := by
+  apply Polynomial.ext
+  intro n
+  rw [toPolynomial_coeff]
+  match n with
+  | 0 => simp
+  | n + 1 => simp
+
+@[simp] theorem toPolynomial_X :
+    toPolynomial (X : CoeffPoly q) = Polynomial.X := by
+  apply Polynomial.ext
+  intro n
+  rw [toPolynomial_coeff]
+  match n with
+  | 0 => simp [Polynomial.coeff_X]
+  | 1 => simp [Polynomial.coeff_X]
+  | n + 2 =>
+    rw [coeff_X_succ_succ]
+    rw [Polynomial.coeff_X]
+    simp
 
 end CoeffPoly
 
