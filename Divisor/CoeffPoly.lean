@@ -132,35 +132,17 @@ def eval (p : CoeffPoly q) (x : ZMod q) : ZMod q :=
 /-- Synthetic division: returns the quotient `p / (X - C x₀)`.
     The (discarded) remainder is `p.eval x₀`.
 
-    Algorithm (Horner-style, top-down): process coeffs from high to
-    low.  For input `[c₀, c₁, ..., c_d]` (low→high), reverse to
-    `[c_d, ..., c₀]` and fold `acc ↦ c_k + x₀ * acc` starting from 0;
-    final `acc` is the remainder, intermediate `acc` values (taken
-    BEFORE consuming `c₀`) are the quotient coefficients high→low.
-    Reverse those to recover low→high. -/
-def divXSubC (p : CoeffPoly q) (x₀ : ZMod q) : CoeffPoly q :=
-  ⟨divXSubCList p.coeffs x₀⟩
-where
-  /-- Quotient coefficients (low → high) of `p / (X - x₀)`.
+    Closed-form: coefficient `n` of the quotient is
+    `∑ j ∈ Icc (n+1) (length-1), x₀^(j - (n+1)) * p.coeff j`,
+    matching mathlib's `Polynomial.coeff_divByMonic_X_sub_C`.
 
-      For input length ≤ 1 (constant or empty), output is `[]`.
-      Otherwise the input `[c₀, c₁, ..., c_d]` produces quotient
-      `[q₀, q₁, ..., q_{d-1}]` where `q_{d-1} = c_d` and
-      `q_{k-1} = c_k + x₀ * q_k`. -/
-  divXSubCList (cs : List (ZMod q)) (x₀ : ZMod q) : List (ZMod q) :=
-    match cs.reverse with
-    | [] => []
-    | top :: rest =>
-      let (_, qsRev) := List.foldl
-        (fun (acc : ZMod q × List (ZMod q)) (c : ZMod q) =>
-          let (cur, qs) := acc
-          let newCur := c + x₀ * cur
-          (newCur, newCur :: qs))
-        ((top : ZMod q), ([] : List (ZMod q)))
-        rest
-      match qsRev with
-      | [] => []
-      | _ :: qsCore => qsCore ++ [top]
+    Implementation: build the coefficient list directly via
+    `List.range`, evaluating the closed-form sum at each index.
+    Computable for `#eval`; bridges to mathlib become trivial. -/
+def divXSubC (p : CoeffPoly q) (x₀ : ZMod q) : CoeffPoly q :=
+  ⟨(List.range (p.coeffs.length - 1)).map fun n =>
+    (Finset.Icc (n + 1) (p.coeffs.length - 1)).sum
+      fun j => x₀ ^ (j - (n + 1)) * p.coeff j⟩
 
 /-- Power. -/
 def pow (p : CoeffPoly q) : ℕ → CoeffPoly q
@@ -342,24 +324,116 @@ theorem toPolynomial_add (p₁ p₂ : CoeffPoly q) :
   rw [toPolynomial_coeff, Polynomial.coeff_add, toPolynomial_coeff,
       toPolynomial_coeff, coeff_add]
 
-/-! ### Deferred bridges
+/-! ### `divXSubC` bridge
 
-The following bridges connect the computable layer to mathlib's
-`Polynomial`-valued operations and are required for the
-`eagenBuildC → eagenBuild` correctness theorem.  They are stated
-here as documentation; proofs are deferred to a follow-up file.
+Synthetic division on `CoeffPoly` agrees with mathlib's
+`Polynomial./ₘ (X − C x₀)`.  Since `divXSubC` is defined via the
+closed-form coefficient sum that mathlib also produces
+(`coeff_divByMonic_X_sub_C`), the bridge reduces to coefficient
+equality plus a `length`-vs-`natDegree` argument. -/
 
-* `toPolynomial_mul` : `toPolynomial (p₁ * p₂) = toPolynomial p₁ *
-  toPolynomial p₂`.  Requires connecting `CoeffPoly.mul` (list
-  convolution) to `Polynomial.mul` via `Polynomial.coeff_mul`.
+/-- Coefficient formula for `divXSubC`. -/
+theorem coeff_divXSubC (p : CoeffPoly q) (x₀ : ZMod q) (n : ℕ) :
+    (p.divXSubC x₀).coeff n =
+      if n < p.coeffs.length - 1 then
+        (Finset.Icc (n + 1) (p.coeffs.length - 1)).sum
+          fun j => x₀ ^ (j - (n + 1)) * p.coeff j
+      else 0 := by
+  show (((p.divXSubC x₀).coeffs)[n]?).getD 0 = _
+  show (((List.range (p.coeffs.length - 1)).map
+      (fun m => (Finset.Icc (m + 1) (p.coeffs.length - 1)).sum
+        fun j => x₀ ^ (j - (m + 1)) * p.coeff j))[n]?).getD 0 = _
+  by_cases hn : n < p.coeffs.length - 1
+  · rw [if_pos hn, List.getElem?_map]
+    have hlen : n < (List.range (p.coeffs.length - 1)).length := by
+      rw [List.length_range]; exact hn
+    rw [List.getElem?_eq_getElem hlen]
+    simp [List.getElem_range]
+  · push_neg at hn
+    rw [if_neg hn.not_gt]
+    have hlen : (List.range (p.coeffs.length - 1)).length ≤ n := by
+      rw [List.length_range]; exact hn
+    rw [List.getElem?_eq_none (l := (List.range (p.coeffs.length - 1)).map _)
+      (i := n) (by rw [List.length_map]; exact hlen)]
+    rfl
 
-* `toPolynomial_divXSubC` : `toPolynomial (p.divXSubC x₀) =
-  toPolynomial p /ₘ (Polynomial.X − Polynomial.C x₀)`.  Connects
-  Horner-style synthetic division to mathlib's `coeff_divByMonic_X_sub_C`.
+omit [Fact (Nat.Prime q)] in
+/-- The `natDegree` of `toPolynomial p` is at most `p.coeffs.length - 1`. -/
+theorem natDegree_toPolynomial_le (p : CoeffPoly q) [Fact (Nat.Prime q)] :
+    (toPolynomial p).natDegree ≤ p.coeffs.length - 1 := by
+  by_cases hL : p.coeffs.length = 0
+  · have : p.coeffs = [] := List.length_eq_zero_iff.mp hL
+    -- p = ⟨[]⟩ = 0 → natDegree = 0.
+    have hp : p = 0 := by cases p; cases this; rfl
+    rw [hp]; simp
+  · apply Polynomial.natDegree_le_iff_coeff_eq_zero.mpr
+    intro n hn
+    rw [toPolynomial_coeff]
+    unfold coeff
+    have : p.coeffs.length ≤ n := by omega
+    have hnone := List.getElem?_eq_none (l := p.coeffs) (i := n) this
+    simp [hnone]
 
-These let us derive the chord / mul / divLin bridges at the
-`CoordRingEltC` layer and, by induction, the
-`eagenBuildC_toCoordRingElt_eq_eagenBuild` corollary. -/
+/-- divXSubC bridge: matches mathlib's `/ₘ (X - C x₀)`. -/
+theorem toPolynomial_divXSubC (p : CoeffPoly q) (x₀ : ZMod q) :
+    toPolynomial (p.divXSubC x₀)
+      = toPolynomial p /ₘ (Polynomial.X - Polynomial.C x₀) := by
+  apply Polynomial.ext
+  intro n
+  rw [toPolynomial_coeff, Polynomial.coeff_divByMonic_X_sub_C,
+      coeff_divXSubC]
+  -- Both sides are sums of `x₀^(j - (n+1)) * p.coeff j` over a finite
+  -- index range.  The CoeffPoly side caps at `p.coeffs.length - 1`;
+  -- mathlib caps at `(toPolynomial p).natDegree`.  Differing trailing
+  -- indices contribute zero since `p.coeff j = 0` outside the support.
+  by_cases hn : n < p.coeffs.length - 1
+  · rw [if_pos hn]
+    -- Need: ∑ j ∈ Icc (n+1) (p.coeffs.length-1), ...
+    --     = ∑ j ∈ Icc (n+1) (toPolynomial p).natDegree, x₀^... * (toPolynomial p).coeff j
+    -- Replace coeff via toPolynomial_coeff and extend/shrink the range
+    -- by noting out-of-support coeffs are 0.
+    refine (Finset.sum_subset_zero_on_sdiff
+      (s₁ := Finset.Icc (n + 1) (toPolynomial p).natDegree)
+      (s₂ := Finset.Icc (n + 1) (p.coeffs.length - 1)) ?_ ?_ ?_).symm
+    · -- Icc (n+1) natDeg ⊆ Icc (n+1) (length-1).
+      intro j hj
+      rw [Finset.mem_Icc] at *
+      refine ⟨hj.1, ?_⟩
+      exact hj.2.trans (natDegree_toPolynomial_le p)
+    · -- On the difference, x₀^... * coeff = 0.
+      intro j hj
+      rw [Finset.mem_sdiff, Finset.mem_Icc] at hj
+      have hcoeff : p.coeff j = 0 := by
+        by_contra hne
+        apply hj.2
+        rw [Finset.mem_Icc]
+        refine ⟨hj.1.1, ?_⟩
+        -- p.coeff j ≠ 0 ⇒ j < length, so j ≤ length - 1.
+        -- Bound j via natDegree(toPolynomial p).
+        have hjlen : j < p.coeffs.length := by
+          by_contra h
+          push_neg at h
+          have hnone := List.getElem?_eq_none (l := p.coeffs) (i := j) h
+          unfold coeff at hne
+          simp [hnone] at hne
+        -- Actually we need j ≤ natDegree(toPolynomial p), not just j < length.
+        -- toPolynomial_coeff says coeff_eq via Polynomial.
+        have : (toPolynomial p).coeff j ≠ 0 := by
+          rw [toPolynomial_coeff]; exact hne
+        exact Polynomial.le_natDegree_of_ne_zero this
+      rw [hcoeff, mul_zero]
+    · intro j _
+      rw [toPolynomial_coeff]
+  · push_neg at hn
+    rw [if_neg hn.not_gt]
+    -- Need: 0 = ∑ j ∈ Icc (n+1) (toPolynomial p).natDegree, x₀^... * coeff j
+    -- The Icc has natDeg ≤ p.coeffs.length - 1 ≤ n, so n+1 > natDeg, so Icc is empty.
+    have hnd : (toPolynomial p).natDegree ≤ p.coeffs.length - 1 :=
+      natDegree_toPolynomial_le p
+    have hIcc : Finset.Icc (n + 1) (toPolynomial p).natDegree = ∅ := by
+      rw [Finset.Icc_eq_empty]
+      omega
+    rw [hIcc, Finset.sum_empty]
 
 end CoeffPoly
 
