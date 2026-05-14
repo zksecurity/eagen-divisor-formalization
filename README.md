@@ -241,6 +241,10 @@ $$
 The pinned theorem closures are checked by `#print axioms` in
 `Tests/AxiomClosurePin.lean`.
 
+The bridge-gap execution plan is tracked in
+[`axioms/gaps.md`](axioms/gaps.md). In that file, a gap means a
+textbook-to-Lean specialization gap, not a Lean `sorry`.
+
 `Divisor.ma_extractable` and `Divisor.ip_knowledge_sound` depend on the
 following project axioms, in addition to Lean/mathlib infrastructure
 (`propext`, `Classical.choice`, `Quot.sound`):
@@ -248,7 +252,7 @@ following project axioms, in addition to Lean/mathlib infrastructure
 ```text
 Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd
 Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
-Divisor.hasse_weil
+Divisor.hasse_weil_textbook
 Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
 ```
 
@@ -262,7 +266,7 @@ Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
 `Divisor.ma_completeness_clean` additionally uses:
 
 ```text
-Divisor.hasse_weil
+Divisor.hasse_weil_textbook
 ```
 
 ### Lean Axiom Inventory
@@ -271,21 +275,22 @@ These are the project-level `axiom` declarations. Some are headline
 dependencies; others are lower-level textbook targets or compatibility
 surfaces.
 
-#### `Divisor.hasse_weil`
+#### `Divisor.hasse_weil_textbook`
 
 Lean:
 ```lean
-axiom hasse_weil (E : ECSetup) :
-  ((E.numPoints : ℤ) - E.q - 1)^2 ≤ 4 * E.q
+axiom hasse_weil_textbook (E : ECSetup) :
+  |(((E.numPoints : ℤ) - E.q - 1 : ℤ) : ℝ)| ≤ 2 * Real.sqrt (E.q : ℝ)
 ```
 
 Source statement: Silverman, *The Arithmetic of Elliptic Curves*, Theorem
-V.1.1 states the Hasse bound
+V.1.1 states the Hasse bound verbatim
 $$
 \left|\#E(\mathbb{F}_q)-q-1\right| \le 2\sqrt{q}.
 $$
 
-Lean specialization: the equivalent integer-squared form
+This is the closure axiom. The legacy integer-squared form
+`Divisor.hasse_weil` is now a *theorem* derived from it:
 $$
 \left(\#E(\mathbb{F}_q)-q-1\right)^2 \le 4q.
 $$
@@ -568,6 +573,7 @@ Textbook snippets:
 Lean source: `Divisor/Axioms/AxiomWeilReciprocity.lean`.
 
 Related theorem-backed declarations: `CoordRingElt.exists_divisor_multiplicity`
-is proved from `ordAt`/`divisorClass_eq_zero_of_b_ne_zero`, and
+is proved from `ordAt`/`divisorClass_eq_zero_of_b_ne_zero`,
 `bivariate_poly_zeros_on_ExE_le` is a theorem whose project-axiom dependency is
-`Divisor.hasse_weil`.
+`Divisor.hasse_weil_textbook`, and `Divisor.hasse_weil` is itself a theorem
+derived from `Divisor.hasse_weil_textbook` for downstream compatibility.

@@ -10,6 +10,7 @@
   Supplementary: Stichtenoth, *Algebraic Function Fields and Codes*
   (GTM 254, 2nd ed.), Theorem 5.2.3 (Hasse-Weil Bound), p. 198.
 -/
+import Mathlib.Data.Real.Sqrt
 import Divisor.Defs
 
 namespace Divisor
@@ -34,10 +35,27 @@ one-sided bounds when needed.
 
 > "Theorem 1.1. (Hasse) Let E/F_q be an elliptic curve defined over a
 > finite field. Then
->     |#E(F_q) − q − 1| ≤ 2√q."
+>     |#E(F_q) − q − 1| ≤ 2√q." -/
+axiom hasse_weil_textbook :
+  |(((E.numPoints : ℤ) - E.q - 1 : ℤ) : ℝ)| ≤ 2 * Real.sqrt (E.q : ℝ)
 
-Our `(·)² ≤ 4q` form is equivalent: `|x| ≤ 2√q  ↔  x² ≤ 4q` for `x ∈ ℤ`. -/
-axiom hasse_weil :
+/-- Integer-squared form of Hasse-Weil used by the project. -/
+theorem hasse_weil :
   ((E.numPoints : ℤ) - E.q - 1)^2 ≤ 4 * E.q
+    := by
+  have hAbs := hasse_weil_textbook E
+  have hR :
+      (((E.numPoints : ℤ) - E.q - 1 : ℤ) : ℝ)^2
+        ≤ (4 * (E.q : ℝ)) := by
+    have hSq :
+        (((E.numPoints : ℤ) - E.q - 1 : ℤ) : ℝ)^2
+          ≤ (2 * Real.sqrt (E.q : ℝ))^2 := by
+      rw [sq_le_sq]
+      rw [abs_of_nonneg (mul_nonneg (by norm_num) (Real.sqrt_nonneg _))]
+      exact hAbs
+    have hSqrtSq : (Real.sqrt (E.q : ℝ))^2 = (E.q : ℝ) :=
+      Real.sq_sqrt (by positivity)
+    nlinarith
+  exact_mod_cast hR
 
 end Divisor

@@ -11,14 +11,16 @@
       propext, Classical.choice, Quot.sound,
       Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
       Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g,
-      Divisor.hasse_weil,
+      Divisor.hasse_weil_textbook,
       Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
 
     The Frobenius descent proof gap is closed: there is no `sorryAx` in
     the MA/IP closure. The headline theorem signatures no longer carry
     `hSplit : splitsOnE E D`; the `splitsOnE` predicate now only gates
-    the multiplicity-accounting test below. `hasse_weil` comes from the
-    geometric SZ bound on `E(F_q) × E(F_q)`. The remaining algebraic
+    the multiplicity-accounting test below. The Hasse bound now enters
+    the closure as `hasse_weil_textbook` (Silverman V.1.1 verbatim);
+    the legacy integer-squared `Divisor.hasse_weil` is a derived theorem
+    retained for downstream compatibility. The remaining algebraic
     assumptions are narrow:
     * divisor-of-norm divisibility (lower bound) for the concrete
       resultant: `chord_fiber_product_concrete_bar_zfiber_pow_dvd`
@@ -63,7 +65,7 @@
       propext, Classical.choice, Quot.sound,
       Divisor.chord_fiber_product_eq_normZ_under_split,
       Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g,
-      Divisor.hasse_weil
+      Divisor.hasse_weil_textbook
 
   The unsound `Divisor.weil_reciprocity_honest` axiom (which falsely
   claimed Eagen's eq. (1) on the diagonal `A_0 = A_1` where `slopeOf`
