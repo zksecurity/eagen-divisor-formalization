@@ -14,6 +14,7 @@ import Divisor.Defs
 import Divisor.BetaConstructive
 import Divisor.FunctionFieldZ
 import Divisor.ChordFiberProductConcrete
+import Divisor.Bridges.ChordFiberProductEqNormZUnderSplit
 import Divisor.Axioms.AxiomExistsDivisorMultiplicity
 
 open Polynomial
@@ -87,7 +88,7 @@ proportionality.
     The explicit `hβtrue` hypothesis prevents substituting a
     support-only or degree-only surrogate for the local-order
     multiplicity function. -/
-axiom chord_fiber_product_eq_normZ_under_split
+theorem chord_fiber_product_eq_normZ_under_split
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (hSplitOnE : splitsOnE E D)
@@ -98,6 +99,9 @@ axiom chord_fiber_product_eq_normZ_under_split
                   (normPoly E D).natDegree)
     (hβtrue : ∀ P, β_fun P = betaTrue E D hD P) :
     ∃ c : ZMod E.q, c ≠ 0 ∧
-      chord_fiber_product E lam D = C c * normZ E lam D β_fun
+      chord_fiber_product E lam D = C c * normZ E lam D β_fun := by
+  simpa [chord_fiber_product] using
+    chord_fiber_product_concrete_eq_normZ_under_split
+      E D lam hD hSplitOnE β_fun hβsup hβcov hAccount hβtrue
 
 end Divisor
