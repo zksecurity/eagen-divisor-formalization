@@ -4,7 +4,7 @@
   Hasse-Weil bound on #E(F_q).
 
   Reference: Silverman, *The Arithmetic of Elliptic Curves* (GTM 106),
-  Theorem V.1.1 (Hasse), p. 138. See `axioms/hasse_weil.md` +
+  Theorem V.1.1 (Hasse), p. 138. See
   `axioms/snippets/silverman-thm-V.1.1-hasse-155.png`.
 
   Supplementary: Stichtenoth, *Algebraic Function Fields and Codes*
@@ -19,6 +19,10 @@ variable (E : ECSetup)
 /-! ## Hasse-Weil Bound (Hasse 1936, Weil 1948)
 
 |#E(F_q) - (q + 1)| ≤ 2·√q, equivalently (#E - q - 1)² ≤ 4q.
+
+Human-readable version: the number of `F_q`-rational points on `E`
+differs from `q + 1` by at most `2 * sqrt(q)`. The Lean axiom records
+the equivalent integer-squared inequality.
 
 **Integer-squared form.** Stated as `((numPoints - q - 1) : ℤ)² ≤ 4q`
 because `2·Nat.sqrt q = 2·⌊√q⌋` is strictly smaller than `⌊2·√q⌋` in

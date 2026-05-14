@@ -4,7 +4,7 @@
   Characterisation of principal divisors on E.
 
   Reference: Silverman, *The Arithmetic of Elliptic Curves* (GTM 106),
-  Corollary III.3.5, p. 63. See `axioms/principal_divisor_iff.md` +
+  Corollary III.3.5, p. 63. See
   `axioms/snippets/silverman-cor-III.3.5-principal-divisor-081.png`.
 -/
 import Divisor.Defs
@@ -32,6 +32,11 @@ some nonzero rational function `f ∈ F_q(E)^×`.
     A finitely-supported coefficient function `coeffs : ECPoint E.q → ℤ`
     is the divisor of some nonzero rational function on `E` iff the
     degree and group-sum conditions hold.
+
+    Human-readable version: a finite divisor `D = sum_P n_P (P)` on an
+    elliptic curve is principal exactly when its integer degree
+    `sum_P n_P` is zero and its group-law sum `sum_P [n_P] P` is the
+    identity point.
 
     **Textbook statement (verbatim), Silverman AEC Corollary III.3.5, p.63:**
 

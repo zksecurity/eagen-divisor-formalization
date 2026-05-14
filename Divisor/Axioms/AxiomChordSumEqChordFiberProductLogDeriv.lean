@@ -17,9 +17,8 @@
   `logDerivTerm` — is mechanised in this file.
 
   Reference: Lang, *Algebra* (3rd ed., GTM 211), §VI.5 Theorem 5.1
-  (p. 285) + §VIII.5 Theorem 5.1 Case 1 (p. 370). See
-  `axioms/chord_sum_eq_chord_fiber_product_logDeriv.md` and
-  `axioms/resultant_logDeriv_at_split.md`.
+  (p. 285) + §VIII.5 Theorem 5.1 Case 1 (p. 370). The README links
+  the archived snippets for these source statements.
 -/
 import Divisor.Defs
 import Divisor.Axioms.AxiomChordFiberProductEqNormZUnderSplit

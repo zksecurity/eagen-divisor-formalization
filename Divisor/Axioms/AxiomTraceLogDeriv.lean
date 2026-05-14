@@ -18,8 +18,8 @@
   (p. 285) — norm and trace as products and sums over distinct
   embeddings of `E` in `k^a`; §VIII.5 Theorem 5.1 Case 1 (p. 370) —
   extension of a derivation to a separable algebraic extension via
-  the implicit-function formula `ξ' = -f^D(ξ) / f'(ξ)`. See
-  `axioms/trace_logDeriv.md`.
+  the implicit-function formula `ξ' = -f^D(ξ) / f'(ξ)`. The README
+  links the archived snippets for these source statements.
 -/
 import Mathlib.FieldTheory.Differential.Basic
 import Mathlib.RingTheory.Norm.Transitivity
@@ -59,6 +59,10 @@ the derivation extends compatibly:
 ```
 logDeriv (Algebra.norm F α) = Algebra.trace F K (logDeriv α)
 ```
+
+Human-readable version: in a finite separable extension of differential
+fields, taking the logarithmic derivative after applying the field norm
+is the same as taking the trace of the logarithmic derivative upstairs.
 
 This is the single textbook fact (Lang, *Algebra* GTM 211, §VI.5
 Thm 5.1 + §VIII.5 Thm 5.1 Case 1). The two ingredients are:

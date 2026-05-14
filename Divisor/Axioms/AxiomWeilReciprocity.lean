@@ -34,7 +34,13 @@ variable (E : ECSetup)
 /-- **Weil reciprocity (Silverman AEC Exercise II.2.11).** Placeholder
     axiom statement; the actual content is encoded inside the protocol
     residue lemma in `WeilReciprocityDescent.lean`, which is the form
-    actually consumed downstream. -/
+    actually consumed downstream.
+
+    Human-readable version: if two nonzero rational functions on `E`
+    have disjoint divisor supports, then evaluating `f` on the divisor
+    of `g` gives the same value as evaluating `g` on the divisor of `f`.
+    The Lean statement records the finite zero-product specialization
+    over `E.points`. -/
 axiom weil_reciprocity_textbook
     (E : ECSetup) (f g : CoordRingElt E.q)
     (hf : ¬ (f.a = 0 ∧ f.b = 0))

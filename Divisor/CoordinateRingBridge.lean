@@ -6,8 +6,7 @@
   an elliptic curve `E`) and mathlib's affine `CoordinateRing` of `E`.
 
   This file is the foundation for the discharge of
-  `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit` (see
-  `axioms/divisorClass_isPrincipal.md`). It supplies:
+  `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit`. It supplies:
 
   * `CoordRingElt.toBivar` — the bivariate polynomial form
     `C D.a − C D.b · Y` in `(ZMod q)[X][Y]`.

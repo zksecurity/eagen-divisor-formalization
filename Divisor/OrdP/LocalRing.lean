@@ -1308,7 +1308,12 @@ theorem CoordRingElt.divisorClass_isPrincipal_const_unit
     applied to the non-trivial case where `D` has both `X` and `Y`
     components, together with the local-order compatibility between
     `ordAt` and the affine prime ideals of
-    `E.toW.toAffine.CoordinateRing`. -/
+    `E.toW.toAffine.CoordinateRing`.
+
+    Human-readable version: for a nonzero function
+    `D = a(x) - b(x)y` with `b` nonzero and with its affine divisor
+    visible over `F_q`, the divisor cut out by `D` is principal, so its
+    class in the affine coordinate-ring class group is zero. -/
 axiom CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
     (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0))
     (_hSplit : splitsOnE E D)

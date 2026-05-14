@@ -13,12 +13,9 @@
 
       (chord_fiber_product_concrete D).natDegree ≤ (normPoly D).natDegree
 
-  (now a theorem in `Divisor/ChordFiberWeightedDegree.lean` via the
-  weighted-Sylvester analysis), the squeeze argument
+  from `Divisor/ChordFiberWeightedDegree.lean`, the squeeze argument
   (`Divisor.rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le`) forces
-  EQUALITY of multiplicities at every fibre, recovering the previously
-  axiomatized statement
-  `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image`.
+  equality of multiplicities at every fibre.
 
   Citation: Stacks Project,
   [Lemma 42.18.1 (Principal divisors and pushforward)](https://stacks.math.columbia.edu/tag/02RS).
@@ -47,15 +44,21 @@ concrete resultant), as a polynomial over `F_qbar`, is divisible by
 multiplicities at the points `Q ∈ gd.support` projecting to `z` under
 `zLambdaBar lam`.
 
+Human-readable version: under the chord projection `pi_lam`, every
+geometric zero `Q` of `D` contributes its local multiplicity to the
+zero divisor of the norm at `pi_lam(Q)`. After collecting all zeros in
+one fibre over `z`, the factor `(X - z)` divides the chord-fibre
+resultant to at least the summed multiplicity of that fibre.
+
 This is the lower-bound (≥) half of the divisor-of-norm pushforward
 identity at the place `(z)` of `F_qbar(zLambdaBar lam)`. The matching
-upper bound (the global natDegree inequality) is now a theorem
+upper bound is the global natDegree inequality
 (`chord_fiber_product_concrete_natDegree_le_normPoly_natDegree` in
 `Divisor/ChordFiberWeightedDegree.lean` via weighted Sylvester
 analysis).
 
-The k=1 case (single linear factor at each fibre) is already a theorem
-(`chord_fiber_product_concrete_bar_X_sub_C_zLambda_pow_one_dvd_of_mem_support`).
+The k=1 case (single linear factor at each fibre) follows from
+`chord_fiber_product_concrete_bar_X_sub_C_zLambda_pow_one_dvd_of_mem_support`.
 This axiom encapsulates the higher-multiplicity cases (k ≥ 2): when
 the affine multiplicities at points in the fibre sum to ≥ 2, the
 chord-projection norm absorbs that multiplicity. Mathematically this

@@ -16,8 +16,8 @@
   resultant and specialisation algebra.
 
   Reference: Lang, *Algebra* (3rd ed., GTM 211), §VI.5 Theorem 5.1
-  (p. 285) + §VIII.5 Theorem 5.1 Case 1 (p. 370). See
-  `axioms/resultant_logDeriv_at_split.md`.
+  (p. 285) + §VIII.5 Theorem 5.1 Case 1 (p. 370). The README links
+  the archived snippets for these source statements.
 -/
 import Mathlib.RingTheory.Polynomial.Resultant.Basic
 import Mathlib.Algebra.Polynomial.Derivative
@@ -339,7 +339,7 @@ theorem resultant_logDeriv_at_split_specialization_of_f_natDegree_eq_one
 /-- **Logarithmic derivative of a bivariate resultant at a split
 specialization** — narrowed to `2 ≤ f.natDegree` and `0 < g.natDegree`.
 
-Three sub-cases are now theorems and excluded from this axiom:
+Three sub-cases are handled by separate theorems and excluded from this axiom:
 * `f.natDegree = 0`:
   `resultant_logDeriv_at_split_specialization_of_natDegree_eq_zero`.
 * `g.natDegree = 0`:
@@ -397,6 +397,12 @@ where the partial derivatives are encoded directly via mathlib's
 The numerator `g_T · f_X - g_X · f_T` is the standard implicit-
 function chain-rule combination for `d/dt [g(x(t), t)]` along a
 moving chord root `x(t)` defined by `f(x(t), t) = 0`.
+
+Human-readable version: for `F(T) = Res_X(f(X,T), g(X,T))`, if
+`f(X,t0)` splits into simple roots and `g` does not vanish at those
+roots, then the logarithmic derivative `F'(t0)/F(t0)` is the sum over
+the roots of the logarithmic derivative of `g` along the corresponding
+moving root of `f`.
 
 Reference: Lang, *Algebra* GTM 211, §VI.5 Theorem 5.1
 (product-of-embeddings / norm-trace) + §VIII.5 Theorem 5.1 Case 1

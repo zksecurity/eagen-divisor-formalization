@@ -7,8 +7,8 @@
   Reference: Stacks Project Lemma 42.18.1 (principal divisors and
   pushforward), with Stichtenoth, *Algebraic Function Fields and Codes*
   (GTM 254, 2nd ed.), Proposition 3.1.9 (p. 73) and Theorem 3.1.11
-  (p. 74) as supporting function-field divisor/place accounting.
-  See `axioms/chord_fiber_product_eq_normZ_under_split.md`.
+  (p. 74) as supporting function-field divisor/place accounting. The
+  README links the archived source snippets.
 -/
 import Divisor.Defs
 import Divisor.BetaConstructive
@@ -24,7 +24,7 @@ variable (E : ECSetup)
 
 /-- The chord-fiber product: `∏ᵢ D(Aᵢ(z))` as a polynomial in `z`.
 
-    This is now the concrete resultant of the chord cubic against the
+    This is the concrete resultant of the chord cubic against the
     D-on-line lift, i.e. the function-field norm candidate
     `N_{F_q(E)/F_q(z)}(D)`. -/
 noncomputable def chord_fiber_product
@@ -74,16 +74,19 @@ proportionality.
 
     Parameterised over a multiplicity function `β_fun`, with an explicit
     pointwise hypothesis that `β_fun` is the true local-order witness
-    `betaTrue E D hD`. Support, coverage, and total accounting are kept
-    because the older rational chain consumes them separately, but they
-    do **not** by themselves determine the pointwise multiplicities.
+    `betaTrue E D hD`. Support, coverage, total accounting, and
+    pointwise truth are all explicit because support and total accounting
+    alone do not determine local multiplicities.
 
-    **Why `β_fun` is parameterised.** The previous formulation hard-
-    coded `β_fun = betaConstructive E D`, but `betaConstructive`'s
-    twin Nat-division surrogate is provably non-faithful to the true
-    ord_P (counterexample over F_5 documented at
-    `AxiomExistsDivisorMultiplicity.lean`), so the proportionality
-    against a `betaConstructive`-built `normZ` is in general false. -/
+    Human-readable version: if the zeros of `D` split over `E(F_q)` and
+    `β_fun` is the true local multiplicity function, then the chord-fiber
+    product, viewed as the norm of `D` along the chord projection, has the
+    same zero divisor as `normZ E lam D β_fun`; therefore the two
+    polynomials differ by a nonzero scalar.
+
+    The explicit `hβtrue` hypothesis prevents substituting a
+    support-only or degree-only surrogate for the local-order
+    multiplicity function. -/
 axiom chord_fiber_product_eq_normZ_under_split
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0))

@@ -295,7 +295,7 @@ variable (E : ECSetup)
       Mathematika 56 (2010) — Lemma A.3, p. 23 (alternative).
       PDF: `axioms/papers/EllenbergOberlinTao10.pdf`.
 
-    Full provenance at `axioms/bivariate_poly_zeros_on_ExE_le.md`. -/
+    Source PDFs are archived under `axioms/papers/`. -/
 theorem bivariate_poly_zeros_on_ExE_le
     (f : FourVarPoly E.q) (D : ℕ)
     (hDeg : total_degree_le E f D)
