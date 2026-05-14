@@ -25,10 +25,9 @@
 
   ## Status
 
-  This file is the foundation for a multi-session work: M1 (data
-  model), M2 (tangent combine), M3 (ungate chord/vertical), M4
-  (preservation), M5 (landmark + divisor-identity bridge). See
-  `docs/binary-completeness-plan.md`.
+  This file is the foundation for the binary completeness path: M1
+  (data model), M2 (tangent combine), M3 (ungate chord/vertical), M4
+  (preservation), M5 (landmark + divisor-identity bridge).
 -/
 import Divisor.Defs
 import Divisor.IncrementalConstruction

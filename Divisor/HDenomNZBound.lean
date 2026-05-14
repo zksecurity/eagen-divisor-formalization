@@ -3,8 +3,7 @@
 
   Bound on the count of "bad A₀" where the DAtA₂Scaled factor of
   denomScaledPoly vanishes mod curveEqPoly. This is the first piece
-  of the hDenomNZ discharge plan documented at
-  `docs/hDenomNZ-discharge-plan.md`.
+  of the hDenomNZ discharge.
 
   Key result: `badA₂Mod_card_mul_card_sub_two_le`. For
   `A₀ ∈ badA₂Mod` (i.e. `DAtA₂Scaled D A₀ %ₘ curveEqPoly E = 0`) and
@@ -498,4 +497,3 @@ theorem exists_A0_outside_bad
     simp only [hbaddef, Finset.mem_union]; right; exact hB
 
 end Divisor
-

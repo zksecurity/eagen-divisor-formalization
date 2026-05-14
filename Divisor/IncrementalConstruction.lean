@@ -2893,9 +2893,8 @@ Sub-cases:
 
 The cross sub-case requires the `cross_iterDivLin_invariant` lemma
 (commonRootMultRat (D₁·D₂) P.1 = min(m₁, m₂); branch determined by
-`lt_trichotomy m₁ m₂`). Proof strategy in
-`docs/eagen-session-progress.md`. Substantial sub-proof involving
-the algebraic computation of `T_r⁺(x_0) = (D₀⁺)^(r)(x_0)`. -/
+`lt_trichotomy m₁ m₂`). The substantial sub-proof is the algebraic
+computation of `T_r⁺(x_0) = (D₀⁺)^(r)(x_0)`. -/
 
 
 theorem iterDivLin_mul_left (k : ℕ) :

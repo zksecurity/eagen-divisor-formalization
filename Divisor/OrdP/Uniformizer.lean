@@ -184,8 +184,7 @@ theorem ordAt_eq_dispatch
 /-! ## Stage-2 lemma: non-vanishing implies `ordAt = 0`
 
 This is the easy case of the local-order ↔ recursive-`ordAt`
-compatibility (Stage 2 of the discharge plan in
-`docs/divisorClass-discharge-plan.md`). On the project side,
+compatibility needed by the divisor-class bridge. On the project side,
 non-vanishing of `D` at `P` collapses both branches of the
 trichotomy: 2-torsion via `rootMultiplicity = 0`, non-2-torsion via
 the early return `if D.eval ≠ 0 then 0`. -/

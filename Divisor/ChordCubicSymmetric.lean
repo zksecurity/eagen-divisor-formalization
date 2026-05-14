@@ -9,7 +9,8 @@
   intersections of the line `y = λ x + μ` with the elliptic curve
   `y² = x³ + A x + B` over `F_q`.
 
-  These identities are the algebraic levers of §5 of `docs/goal.md`:
+  These identities are the algebraic levers for the chord-residue and
+  log-derivative identities:
 
   * `e₁ = x₀ + x₁ + x₂ = λ²`
   * `e₂ = x₀ x₁ + x₀ x₂ + x₁ x₂ = A − 2 λ μ`

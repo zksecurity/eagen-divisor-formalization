@@ -5,7 +5,7 @@
   `Decidable` instances at every level. This is what enables
   `native_decide` discharge of `h_chain` for concrete numerical inputs.
 
-  See `docs/binary-completeness-summary.md` for the full picture.
+  This feeds the binary completeness point-certificate path.
 -/
 import Divisor.EagenBuildLandmark
 

@@ -1077,10 +1077,9 @@ theorem distinctM'_tail_group_invariant
   exact extractorGroupSum_congr_of_extractorBases_eq E stmt msg hkm
     (hspec.trans hj.symm)
 
-/-! ## Narrow polyG-bridge (scalar level) — replacement
+/-! ## Narrow polyG-bridge (scalar level)
 
-    The remaining classical content of the old composite
-    T4 bridge that is NOT covered by
+    The classical content of the T4 bridge that is NOT covered by
     `CoordRingElt.has_principal_divisor` (= Silverman III.3.5) is the
     paper's residue / denominator-clearing identity: if the scalar
     `logDerivCheckFn` vanishes on the defined non-vertical challenge
@@ -1088,18 +1087,15 @@ theorem distinctM'_tail_group_invariant
     `polyG` (formed with `D`'s divisor data `(Q, β)`) vanishes on the
     non-vertical subspace of `E × E`.
 
-    status: the former transient axiom
-    `polyG_zero_of_logDerivCheck_identically_zero` has been converted
-    to a theorem (by the narrowing strategy of Fallback C in
-    `docs/continuation-plan.md`). The theorem takes one additional
-    hypothesis — `hPolyGZero` — supplying the scalar conclusion
+    The theorem `polyG_zero_of_logDerivCheck_identically_zero` takes
+    one additional hypothesis — `hPolyGZero` — supplying the scalar conclusion
     (`polyG = 0` at every non-vertical pair) directly. This
     hypothesis packages the two remaining unmechanized pieces:
     `\ref{lem:log-derivative}`'s function-field chord-residue identity and the density
     argument transferring vanishing from defined pairs to all
     non-vertical pairs.
 
-    `ma_extractable` now takes `hPolyGZero` as an extra hypothesis,
+    `ma_extractable` uses `hPolyGZero` as an extra hypothesis,
     which a future phase can discharge by finishing `\ref{lem:log-derivative}`
     (requires mechanizing `chordLogDerivMatchesNormZ` from
     `Divisor/Lemma6.lean`; reduced `\ref{lem:log-derivative}` to that scalar
@@ -1117,10 +1113,9 @@ theorem distinctM'_tail_group_invariant
     vanishing, p. 19-26) + Ch III §3 (elliptic curves, principal
     divisors, Cor 3.5 on p. 63). -/
 
-/-- **replacement theorem** for the old narrow axiom
-    `polyG_zero_of_logDerivCheck_identically_zero`. The former
-    axiom's premises plus the new hypothesis `hPolyGZero` entail the
-    conclusion.
+/-- **Scalar bridge theorem** for
+    `polyG_zero_of_logDerivCheck_identically_zero`. Its premises plus
+    the hypothesis `hPolyGZero` entail the conclusion.
 
     Hypotheses encode `D`'s divisor data `(Q, β)` (obtainable via
     `CoordRingElt.has_principal_divisor`):
@@ -1408,10 +1403,9 @@ theorem logDerivCheckFn_eq_grouped
     in `Fin.cons`/`Fin (baseImageCount + 1)` form, matching `distinctRCons`
     and `distinctMCons`.
 
-    the old narrow axiom has become a theorem that
-    takes a `hPolyGZero` hypothesis. That hypothesis is threaded here
-    as `hPolyGZeroCons` (at the `distinctRCons` / `distinctMCons`
-    instantiation). -/
+    The scalar bridge takes a `hPolyGZero` hypothesis. That hypothesis
+    is threaded here as `hPolyGZeroCons` (at the `distinctRCons` /
+    `distinctMCons` instantiation). -/
 theorem polyG_distinct_zero_cons
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
@@ -2645,8 +2639,8 @@ The original `axiom polyG_zero_trace_formula` universally quantified over
 
     **All three hypotheses are essential**:
     * Without `hSplit` + `hAccount`, `\ref{lem:log-derivative}`
-      (`chord_sum_eq_residue_sum`) fails — see `docs/goal.md` §0 for
-      the concrete counterexample over `F_7`.
+      (`chord_sum_eq_residue_sum`) fails; concrete finite-field
+      counterexamples exist.
     * Without `hAllZero`, a cheating prover's `msg.m` can make
       `polyG ≠ 0` at some non-vertical pair (by the `polyG ⇔
       paperResidue` Step-5 equivalence).

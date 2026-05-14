@@ -1,68 +1,46 @@
-# Provenance gaps
+# Axiom Provenance and Bridge Gaps
 
-Axiom-by-axiom status of textbook coverage in `/Users/rot256/paper/crypto-books/`.
+This file tracks the Lean `axiom` declarations in the project and the
+textbook or paper statement supporting each one.
 
-| Axiom | Status |
-|---|---|
-| `principal_divisor_iff` | Covered — Silverman AEC Cor III.3.5 |
-| `CoordRingElt.divisorClass_eq_zero_of_b_ne_zero` | Open bridge — Abel-Jacobi zero-class statement, narrowed further to `D.b ≠ 0` (`D` actually has a `Y`-component). The `D.b = 0` case (polynomial-in-X) is now a *theorem* `divisorClass_eq_zero_of_b_zero`, proven via the y-flip involution `σ(x, y) = (x, -y)` plus fiber-cancellation primitives — without using the divisor-class axiom or `splitsOnE`. The trivial constant-unit case `(D.a = C c, D.b = 0, c ≠ 0)` falls under the `D.b = 0` theorem. Multiple re-exports as theorems: `_eq_zero_of_not_const_unit` (case-splits on D.b), `_isPrincipal_of_not_const_unit` (uses `I = 1`), `divisorClass_isPrincipal`, `ordAt_divisorClass_zero`. Stage-1 bridge primitives in `Divisor/CoordinateRingBridge.lean` and fiber-cancellation primitives in `Divisor/Defs.lean`; discharge plan in `docs/divisorClass-discharge-plan.md`. See `divisorClass_isPrincipal.md`. |
-| `hasse_weil` | Covered — Silverman AEC Thm V.1.1 + Stichtenoth Thm 5.2.3 |
-| `ECPoint.add_comm` | Covered — Silverman AEC Prop III.2.2(c) |
-| `ECPoint.add_assoc` | Covered — Silverman AEC Prop III.2.2(e) |
-| `ECPoint.neg_add_cancel` | Covered — Silverman AEC Prop III.2.2(d) |
-| `chord_fiber_product_eq_normZ_under_split` | **Legacy temporary bridge** — mathematically covered by divisor/norm pushforward plus Stichtenoth Prop 3.1.9 and Thm 3.1.11 place accounting; Thm 3.7.1 is only supporting background for a Galois-closure route. The statement is proof-specific (`chord_fiber_product`, `normZ`, `splitsOnE`). It now explicitly requires `β_fun = betaTrue` pointwise, avoiding the older too-broad arbitrary-β shape. It is no longer in the MA/IP headline closure. |
-| `chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image` | **Now a theorem** (no longer an axiom). Discharged via the squeeze argument from the strictly weaker divisibility axiom `chord_fiber_product_concrete_bar_zfiber_pow_dvd` plus the just-landed weighted-Sylvester upper bound `chord_fiber_product_concrete_natDegree_le_normPoly_natDegree`. |
-| `chord_fiber_product_concrete_bar_zfiber_pow_dvd` | **Narrow remaining divisibility axiom** — coefficientwise *lower bound* of the divisor pushforward under the chord projection: `(X − C z)^(fibre_sum) ∣ chord_fiber_product`. This *replaces* the older multiplicity-equality axiom. Stacks Project [02RS](https://stacks.math.columbia.edu/tag/02RS) is the direct pushforward-of-principal-divisor citation; the matching upper bound (the natDegree inequality) is a coordinate-native theorem via the weighted-Sylvester analysis in `Divisor/ChordFiberWeightedDegree.lean`. Detailed write-up in `axioms/chord_fiber_product_concrete_bar_zfiber_pow_dvd.md`; local HTML archive at `axioms/papers/stacks-02RS.html`. |
-| `chord_fiber_product_bar_eq_geom_prod` | **Theorem from the narrow multiplicity axiom** — no longer an independent axiom. |
-| `chord_fiber_product_logDeriv_eq_logDerivTerm_trace` | **Theorem** — derived from the strictly narrower generic axiom `Polynomial.resultant_logDeriv_at_split_specialization` plus chord-cubic-specific algebra. No longer in the headline closure. |
-| `Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g` | **Temporary generic trace bridge** — replaces the older project-shaped chord-specific axiom, but is still a composed polynomial/resultant specialisation. Now carries an explicit `Monic f` hypothesis that brings the statement in line with mathlib's `Polynomial.resultant_eq_prod_eval` (without monicity the per-root sum picks up an extra `d/dT log(lc(f)^{deg g})` term). Three sub-cases are now theorems: `f.natDegree = 0` via `Monic + natDegree = 0 ⇒ f = 1` (both sides collapse to `0`); `f.natDegree = 1` via `resultant_X_sub_C_left` plus the chain rule for `g.eval α` (proven from `Differential.deriv_aeval_eq` instantiated at the trivial algebra `K[X] / K[X]`); and `g.natDegree = 0` via `derivative_pow` plus the constant `(g.coeff 0)`'s logarithmic derivative being constant on the chord-root multiset. The unrestricted form `Polynomial.resultant_logDeriv_at_split_specialization` is a re-exported theorem case-splitting on both degrees and dispatching to the appropriate sub-case theorem or to this narrowed axiom. The final target is to prove the remaining `2 ≤ f.natDegree ∧ 0 < g.natDegree` axiom from the already-proved Galois theorem `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois` plus resultant and specialisation algebra. See `axioms/resultant_logDeriv_at_split.md`. |
-| `weil_reciprocity_honest` | Covered — Stichtenoth Cor 4.3.3 (Residue Theorem) + Silverman AEC Ex II.2.11. Descent skeleton in `Divisor/WeilReciprocityDescent.lean` (sorry'd; in-flight, see P3 of soundness plan). |
-| `CoordRingElt.exists_divisor_multiplicity` | **Proven modulo `CoordRingElt.divisorClass_isPrincipal`** — theorem-backed by `Divisor.exists_divisor_multiplicity_proved`; the new `CoordRingElt.exists_divisor_multiplicity_ecpoint` exposes the cleaner `ECPoint`-indexed form. Replaces the previously-listed `CoordRingElt.divisor_group_sum_zero`, which was provably unsound (counterexample over `F_5`; see file header in `Divisor/Axioms/AxiomExistsDivisorMultiplicity.lean`). |
-| `bivariate_poly_zeros_on_ExE_le` | **Proven** — derived from `hasse_weil` via fiber-counting (`Divisor/BivariateZerosOnExE.lean` + `Divisor/CurveEvalZerosHelper.lean`). No longer an axiom. |
+Here, a "bridge gap" is not a missing citation. It means the Lean statement is
+a project-specific specialization of a cited theorem, and the remaining work is
+the coordinate, resultant, local-order, or specialization plumbing needed to
+derive the Lean statement from the source theorem.
 
-## Status
+## Axiom Declarations
 
-The old false divisor-group axiom is removed. The current MA extraction
-closure has four narrow axioms:
+| Lean declaration | Source statement | Bridge gap |
+|---|---|---|
+| `Divisor.hasse_weil` | Silverman AEC Theorem V.1.1: `\|#E(F_q) - q - 1\| <= 2 sqrt q`. See `hasse_weil.md` and `snippets/silverman-thm-V.1.1-hasse-155.png`. | Only the integer-squared restatement `(#E(F_q) - q - 1)^2 <= 4q`. |
+| `Divisor.principal_divisor_iff` | Silverman AEC Corollary III.3.5: a divisor `Σ n_P(P)` on an elliptic curve is principal iff `Σ n_P = 0` and `Σ [n_P]P = O`. See `principal_divisor_iff.md` and `snippets/silverman-cor-III.3.5-principal-divisor-081.png`. | The Lean statement is restricted to the `ECPoint E` coefficient model; the citation note records the finite-field descent justification. |
+| `Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero` | Silverman II.3 defines divisors of rational functions by local orders; Stichtenoth Def. 1.4.2 names principal divisors; Silverman III.3.5 characterizes principal divisors on elliptic curves. See `divisorClass_isPrincipal.md`, `snippets/silverman-II.3-divisors-027.png`, `snippets/stichtenoth-def-1.4.2-principal-divisor-016.png`, and `snippets/silverman-cor-III.3.5-principal-divisor-081.png`. | Identify the project divisor `divisorOfD E D`, built from `ordAt`, with the principal divisor of the coordinate-ring element `D = a(x) - b(x)y`, then map that divisor to the class-group statement. |
+| `Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd` | Stacks Project tag 02RS: principal divisors and norm pushforward, `p_* div(f) = div(Nm(f))`. Stichtenoth Prop. 3.1.9 supplies supporting conorm/principal-divisor calculus. See `chord_fiber_product_concrete_bar_zfiber_pow_dvd.md`, `papers/stacks-02RS.html`, and `snippets/stichtenoth-prop-3.1.9-conorm-principal-084.png`. | Instantiate the norm-pushforward theorem for the chord projection and identify the pushed-forward local multiplicities with divisibility of the concrete resultant over `Fqbar E`. |
+| `Divisor.chord_fiber_product_eq_normZ_under_split` | Stacks Project tag 02RS plus Stichtenoth Prop. 3.1.9 and Thm. 3.1.11 place accounting. See `chord_fiber_product_eq_normZ_under_split.md`, `papers/stacks-02RS.html`, `snippets/stichtenoth-prop-3.1.9-conorm-principal-084.png`, and `snippets/stichtenoth-thm-3.1.11-fundamental-equality-074.png`. | Under `splitsOnE` and `β_fun = betaTrue`, identify the project polynomial `chord_fiber_product` and the split polynomial `normZ` as the same norm divisor up to a nonzero scalar. |
+| `Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g` | Lang IV.8 gives resultants as products over roots; Lang VI.5 gives norm/trace as products/sums over embeddings; Lang VIII.5 gives the separable derivative formula `ξ' = -f^D(ξ)/f'(ξ)`. See `resultant_logDeriv_at_split.md`, `snippets/lang-IV.8-prop-8.1-8.3-resultant-202.png`, `snippets/lang-VI.5-thm-5.1-norm-trace-300.png`, and `snippets/lang-VIII.5-thm-5.1-derivations-385.png`. | Construct the splitting-field/differential setup, identify `Res_X(f,g)` with the norm of `g`, and specialize the trace-of-log-derivative identity at `t₀`. |
+| `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv` | Lang VI.5 gives norm/trace over embeddings; Lang VIII.5 gives compatible derivation extension to separable algebraic extensions. See `trace_logDeriv.md`, `snippets/lang-VI.5-thm-5.1-norm-trace-300.png`, and `snippets/lang-VIII.5-thm-5.1-derivations-385.png`. | The Lean axiom is the finite-separable form. The Galois case is theorem-backed in `Divisor/Axioms/AxiomTraceLogDeriv.lean`; deriving the broader form requires reducing through a Galois closure or proving the non-Galois trace formula directly. |
+| `Divisor.weil_reciprocity_textbook` | Silverman AEC Exercise II.2.11 states Weil reciprocity `f(div g) = g(div f)` for disjoint supports; Stichtenoth Cor. 4.3.3 is the residue theorem supporting the logarithmic-differential proof. See `weil_reciprocity_honest.md`, `snippets/silverman-ex-II.2.11-weil-reciprocity-057.png`, and `snippets/stichtenoth-cor-4.3.3-residue-theorem-182.png`. | Match the project coordinate-ring product over `E.points` with divisor evaluation, including the support-disjointness and multiplicity conventions required by the textbook statement. |
 
-1. `Divisor.hasse_weil` — Hasse-Weil bound (textbook).
-2. `Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd` — chord
-   pushforward divisibility (Stacks 02RS lower bound). Replaces the
-   older multiplicity-equality axiom: the matching upper bound is now
-   a coordinate-native theorem via the weighted-Sylvester analysis.
-3. `Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`
-   — Lang's trace-of-log-derivative formula at a split specialisation,
-   narrowed to `2 ≤ f.natDegree`, `0 < g.natDegree`, and `Monic f`.
-4. `Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero`
-   — Abel-Jacobi zero-class statement for the regular function `D`,
-   narrowed to `D.b ≠ 0` (D has a Y-component). The `D.b = 0` case
-   is a theorem (`divisorClass_eq_zero_of_b_zero`).
+## Opaque Predicate
 
-The exact closure is pinned in `Tests/AxiomClosurePin.lean`.
+`Divisor.IsPrincipal` is an opaque predicate, not a Lean `axiom`
+declaration:
 
-The desired final boundary is tracked in
-[`docs/axiom-boundary-target.md`](../docs/axiom-boundary-target.md):
-Hasse-Weil is in the desired shape. The chord pushforward is now in
-divisibility-only Stacks-02RS shape. The trace/log-derivative boundary
-has made progress: the chord-specific axiom is a theorem, and the
-Galois norm/trace/log-derivative identity is proved from mathlib;
-remaining is the generic resultant-specialisation plumbing connecting
-`Polynomial.derivative` to mathlib's `Differential` typeclass (the
-typeclass instance for `K[T]` is now provided in
-`Divisor/PolynomialDifferential.lean`).
+```lean
+opaque IsPrincipal (E : ECSetup) (coeffs : ECPoint E → ℤ) : Prop
+```
 
-### `weil_reciprocity_honest`
+Its intended meaning is pinned by `Divisor.principal_divisor_iff`.
 
-Resolved by citing Stichtenoth **Corollary 4.3.3 (Residue Theorem)**, p. 171 — the underlying theorem — alongside Silverman AEC Ex II.2.11. Stichtenoth does not name "Weil reciprocity" as a standalone theorem; Rosen's "reciprocity law" is the unrelated d-th power reciprocity for function fields (quadratic-reciprocity analogue). The Residue Theorem is the standard textbook route: Weil reciprocity is its one-line corollary for `f · dg/g` and `g · df/f`.
+## Theorem-Backed Surfaces
 
-### `bivariate_poly_zeros_on_ExE_le`
+The following names are theorem-backed surfaces whose axiom dependencies are
+tracked through the declarations above:
 
-**Now proven** (no longer an axiom). Derived from `hasse_weil` plus elementary fiber-counting:
+- `CoordRingElt.exists_divisor_multiplicity`
+- `CoordRingElt.exists_divisor_multiplicity_ecpoint`
+- `Divisor.bivariate_poly_zeros_on_ExE_le`
+- `Divisor.chord_fiber_product_bar_eq_geom_prod`
+- `Divisor.chord_sum_eq_chord_fiber_product_logDeriv`
 
-1. Reduce a bivariate polynomial of total degree `d` modulo the Weierstrass relation `Y² = X³ + AX + B` to canonical form `α(X) + β(X)·Y` with `deg α, deg β ≤ ⌈3d/2⌉`.
-2. Bound zeros on `E(F_q)` via the norm polynomial `α² − β²·c(X)` and `rootMultiplicity ≥ 2` at common roots of α, β (paper-tight `≤ degE`, sharper than the previous `≤ 2·degE`).
-3. Lift to the 4-variate setting by specialising one coordinate, applying the per-curve bound to each fiber, and using Hasse–Weil's `2·|E(F_q)| ≤ 3q + 3` to absorb the bad-fiber contribution.
-
-Proof in `Divisor/BivariateZerosOnExE.lean` and `Divisor/CurveEvalZerosHelper.lean`. The `Divisor.bivariate_poly_zeros_on_ExE_le` theorem is declared at the bottom of `BivariateZerosOnExE.lean`.
-
-Provenance retained for documentation: Lang & Weil 1954 Thm 1 (`papers/lang-weil-1954.pdf`); DKL'14 Claim 7.2 (`papers/DvirKollarLovett14.pdf`); EOT'10 Lemma A.3 (`papers/EllenbergOberlinTao10.pdf`).
+The headline closure is pinned in `Tests/AxiomClosurePin.lean`.

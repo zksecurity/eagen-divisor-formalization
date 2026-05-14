@@ -3,7 +3,7 @@
 
   PROTOTYPE — concrete candidate for `chord_fiber_product`.
 
-  The current `chord_fiber_product E lam D : (ZMod E.q)[X]` is opaque
+  The `chord_fiber_product E lam D : (ZMod E.q)[X]` API is opaque
   (declared as `noncomputable opaque` in
   `Divisor/Axioms/AxiomChordFiberProductEqNormZUnderSplit.lean`) and
   pinned only via two axioms:
@@ -16,16 +16,15 @@
 
   The axiom-free *concrete plumbing* (bivariate setup, base-change to
   `F_qbar`, the resultant candidate `chord_fiber_product_concrete`,
-  the four already-proved evaluation/factorisation helpers, and the
-  proved non-vanishing theorem) has been promoted to the production
-  module `Divisor/ChordFiberProductConcrete.lean` and lives in
-  `namespace Divisor`. This file now contains only the three
-  outstanding `sorry`-bearing obligations against that candidate:
+  the evaluation/factorisation helpers, and the non-vanishing theorem)
+  lives in the production module `Divisor/ChordFiberProductConcrete.lean`
+  under `namespace Divisor`. This file contains the three
+  `sorry`-bearing obligations against that candidate:
   `chord_fiber_product_concrete_bar_eq_geom_prod`,
   `chord_fiber_product_concrete_eq_normZ_under_split`, and
   `chord_fiber_product_concrete_logDeriv`. Each is restated against
-  the production-namespace decl; the accompanying note
-  `docs/chord-fiber-product-concrete-sketch.md` categorises them. -/
+  the production-namespace decl; the axiom provenance files under
+  `axioms/` record the relevant citations. -/
 import Divisor.Axioms.AxiomChordFiberDivisibility
 import Divisor.Axioms.AxiomChordFiberProductBarFactored
 import Divisor.ChordFiberMultiplicativity
@@ -46,11 +45,11 @@ variable (E : ECSetup)
 
 Each `theorem` below mirrors a downstream consumer of the opaque
 `chord_fiber_product`. The proofs are stubbed with `sorry`; the
-accompanying doc note categorises them. -/
+surrounding comments record the remaining mathematical content. -/
 
 /-- **Narrow hard lemma: chord-projection multiplicity accounting.**
 
-This is the citable mathematical core of the old bar-factorisation axiom:
+This is the citable mathematical core of the bar-factorisation statement:
 the multiplicity of a chord intercept `z` as a root of the concrete
 resultant equals the sum of the local multiplicities of the geometric
 `D`-zeros in the fibre `zLambdaBar = z`.
@@ -69,9 +68,9 @@ theorem chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber
       (Polynomial.map (algebraMap (ZMod E.q) (Fqbar E))
         (chord_fiber_product_concrete E lam D)).rootMultiplicity z =
         ∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q :=
-  -- Discharged via the production theorem
-  -- (`AxiomChordFiberProductBarFactored.lean` makes this a theorem
-  -- using the new divisibility axiom + weighted-Sylvester natDegree).
+  -- Discharged via the production theorem in
+  -- `AxiomChordFiberProductBarFactored.lean`, using divisibility plus
+  -- weighted-Sylvester natDegree.
   Divisor.chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber E D lam hD gd
 
 /-! ### Discharge plan via the multiplicity squeeze helper
@@ -107,7 +106,7 @@ landed in `Divisor/ChordFiberMultiplicativity.lean`:
   (taking the resultant natDegree formula
   `Res(chordCubic, p.map C, 3, p.natDegree).natDegree = 2 · p.natDegree`
   as a hypothesis).
-* The resultant natDegree formula for any monic `p` is now a theorem
+* The resultant natDegree formula for any monic `p` is a theorem
   (`resultant_chordCubicBiv_pmap_C_natDegree_of_monic`) via the
   `SplittingField p` lift, so the inductive structure is fully closed
   modulo the gcd-1 base case.
@@ -129,7 +128,7 @@ This avoids any deep function-field theorem and uses only mathlib's
 /-- **Stub 1**: fibrewise divisibility for the chord-fibre product.
 
 The `(X - C z)^1` case (equivalently the per-Q `(X - C (zLambdaBar Q))^1`
-case for `Q ∈ gd.support`) is *not* a stub: it is now a theorem in
+case for `Q ∈ gd.support`) is covered by the theorem in
 `Divisor/ChordFiberProductConcrete.lean` —
 `chord_fiber_product_concrete_bar_X_sub_C_pow_one_dvd_of_mem_support_image`
 and `chord_fiber_product_concrete_bar_X_sub_C_zLambda_pow_one_dvd_of_mem_support`.
@@ -149,11 +148,9 @@ theorem chord_fiber_product_concrete_bar_zfiber_pow_dvd
       (∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q)
       ∣ (chord_fiber_product_concrete E lam D).map
           (algebraMap (ZMod E.q) (Fqbar E)) :=
-  -- The same statement is now exposed as a production axiom
+  -- Delegates to the production axiom
   -- (`Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd` in
-  -- `Divisor/Axioms/AxiomChordFiberDivisibility.lean`). The sketch
-  -- stub here previously bridged the proof; it now delegates to the
-  -- production axiom directly.
+  -- `Divisor/Axioms/AxiomChordFiberDivisibility.lean`).
   Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd E D lam hD gd z
 
 /-! **Stub 2a**: natDegree bound for the chord-fibre product against the
@@ -203,7 +200,7 @@ Two Lean-tractable proof routes for the *general* (non-splitting) p:
 Stated as `≤` (rather than `=`) because that is the form the squeeze
 helper consumes; the equality itself is not needed for the discharge.
 
-**Discharge plan** (now wired up to the gcd-extraction reduction):
+**Discharge plan** (gcd-extraction reduction):
 
 * The mapped natDegree is preserved by `algebraMap (ZMod E.q) (Fqbar E)`'s
   injectivity, so the bound is equivalent to
@@ -228,8 +225,8 @@ theorem chord_fiber_product_concrete_natDegree_le_of_coprime
     (chord_fiber_product_concrete E lam D).natDegree
       ≤ (normPoly E D).natDegree :=
   -- The weighted-Sylvester proof (`Divisor/ChordFiberWeightedDegree.lean`) is
-  -- *unconditional* — works for any D with `¬(D.a = 0 ∧ D.b = 0)`, no coprime
-  -- hypothesis needed. So this stub is now a theorem.
+  -- unconditional: it works for any D with `¬(D.a = 0 ∧ D.b = 0)`, with no
+  -- coprime hypothesis needed.
   chord_fiber_product_concrete_natDegree_le_normPoly_natDegree E lam D hD
 
 theorem chord_fiber_product_concrete_bar_natDegree_le_normPoly
@@ -251,7 +248,7 @@ theorem chord_fiber_product_concrete_bar_natDegree_le_normPoly
 
 /-- **Stub 2b**: natDegree bound restated against `∑ Q gd.mult Q`, using
 the `mult_sum_eq_normPoly_natDegree` identity from
-`Divisor/GeomLocalOrder.lean`. This is now a *theorem* (mod stub 2a). -/
+`Divisor/GeomLocalOrder.lean`. -/
 theorem chord_fiber_product_concrete_bar_natDegree_le
     (lam : ZMod E.q) (D : CoordRingElt E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0))

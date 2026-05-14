@@ -34,8 +34,7 @@ the textbook divisor-of-norm theorem together with the project-specific
 Final target: use a clean norm/divisor push-forward theorem for finite
 separable function-field extensions, then prove this rational split
 statement and the geometric `chord_fiber_product_bar_eq_geom_prod`
-statement as coordinate consequences. See
-`docs/axiom-boundary-target.md`.
+statement as coordinate consequences.
 
 ## Citation
 
