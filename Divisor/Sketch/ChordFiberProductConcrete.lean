@@ -23,8 +23,7 @@
   `chord_fiber_product_concrete_bar_eq_geom_prod`,
   `chord_fiber_product_concrete_eq_normZ_under_split`, and
   `chord_fiber_product_concrete_logDeriv`. Each is restated against
-  the production-namespace decl; the axiom provenance files under
-  `axioms/` record the relevant citations. -/
+  the production-namespace decl. -/
 import Divisor.Axioms.AxiomChordFiberDivisibility
 import Divisor.Axioms.AxiomChordFiberProductBarFactored
 import Divisor.ChordFiberMultiplicativity
