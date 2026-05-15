@@ -251,7 +251,7 @@ theorem extracted_scalars_valid_special
     The general-case bridge `extracted_scalars_valid` (combining the
     special case with the narrowed general case), the full
     knowledge-soundness theorem `ma_extractable`, and its IP-side
-    consequence `ip_knowledge_sound` have been moved to
+    consequence `ip_extractable` have been moved to
     `ExtractorBridge.lean`, which is the bottom-layer file in the
     import graph that can access both the extractor definitions
     (Soundness.lean) and the D4/D5 infrastructure + narrow T4 bridge
@@ -287,7 +287,7 @@ theorem extracted_scalars_valid_special
     identity in `Divisor.EagenBuildRecursive`) provide the hook
     without using the `weil_reciprocity_honest` axiom. -/
 
-theorem ma_completeness
+theorem ma_completeness_base
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
@@ -317,7 +317,7 @@ theorem ma_completeness
     the rejection-set cardinality is bounded by `6 · (d + 1) · q`.
     Matches paper's `\compErr ≤ 6(\degBound + 1)/q` after dividing by
     `|E|² ≥ q²/2`. -/
-theorem ma_completeness_clean
+theorem ma_completeness
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
@@ -330,7 +330,7 @@ theorem ma_completeness_clean
     ((E.points ×ˢ E.points).filter
         (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
-  have hMA := ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm hHonestDivisor
+  have hMA := ma_completeness_base E stmt wit hk hValid msg hkm hDeg hDegK hAdm hHonestDivisor
   have hNZ : numZeros E msg.toD ≤ stmt.degBound := by
     have h1 := numZeros_le_degE E msg.toD hD
     omega
@@ -340,13 +340,29 @@ theorem ma_completeness_clean
         apply Nat.mul_le_mul (by omega) hHasse
     _ ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by ring_nf; omega
 
+/-- Backward-compatible name for the Hasse-clean MA completeness theorem. -/
+theorem ma_completeness_clean
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hDeg : msg.toD.degE ≤ wit.degBound)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
+    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
+    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
+    (hQ : 5 ≤ E.q) :
+    ((E.points ×ˢ E.points).filter
+        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ (6 * (stmt.degBound + 1) + 6) * E.q :=
+  ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm hHonestDivisor hD hQ
+
 /-! ## Length-4 simple completeness via the constructive bridge
 
 For length-4 simple sum-zero quadruples (`P_0 + P_1 + P_2 + P_3 = O`
 on `E`) with all witness scalars equal to 1, the
 `isHonestFor_of_isHonestForLength4Simple` bridge supplies the
 strengthened `isHonestFor` predicate constructively. Composing with
-`ma_completeness` gives an axiom-clean completeness theorem for this
+`ma_completeness_base` gives an axiom-clean completeness theorem for this
 case, validating the bridge end-to-end. -/
 
 theorem ma_completeness_for_length4Simple
@@ -364,7 +380,7 @@ theorem ma_completeness_for_length4Simple
             ⟨p.1, p.2⟩
             (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm))).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness E stmt wit hk hValid msg
+  ma_completeness_base E stmt wit hk hValid msg
     (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm)
     hDeg hDegK hAdm
     (isHonestFor_of_isHonestForLength4Simple E h_simple hk h_scalars)

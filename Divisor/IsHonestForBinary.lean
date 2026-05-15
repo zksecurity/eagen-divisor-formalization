@@ -277,7 +277,7 @@ theorem ma_completeness_binary_via_combineHyp
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+  ma_completeness_base E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinary_via_combineHyp (E := E) h_binary h_combine)
 
 theorem ma_completeness_binary_with_scalar_via_combineHyp
@@ -294,7 +294,7 @@ theorem ma_completeness_binary_with_scalar_via_combineHyp
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+  ma_completeness_base E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinaryScaled_via_combineHyp (E := E) h_binary h_combine)
 
 theorem ma_completeness_binary_via_combineHyp_clean
@@ -514,7 +514,7 @@ theorem ma_completeness_binary_extras
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+  ma_completeness_base E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinary (E := E) h_binary h_len h_extras)
 
 theorem ma_completeness_binary_with_scalar_extras
@@ -534,7 +534,7 @@ theorem ma_completeness_binary_with_scalar_extras
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+  ma_completeness_base E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinaryScaled (E := E)
       h_binary h_len h_extras)
 

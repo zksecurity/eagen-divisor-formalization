@@ -16,13 +16,20 @@ import Divisor.Soundness
 
 open Divisor
 
--- Axiom closure of the headline soundness theorems.
+-- Axiom closure of the headline soundness/completeness theorems.
 -- Confirms the soundness restoration: the previous unsound axiom
 -- `Divisor.CoordRingElt.divisor_group_sum_zero` is no longer in the
 -- closure of the headline theorem.
 
 #print axioms Divisor.ma_extractable
 
-#print axioms Divisor.ip_knowledge_sound
+#print axioms Divisor.ip_extractable
 
 #print axioms Divisor.ma_completeness
+
+-- Raw point-count-dependent base forms remain available under `_base`.
+#print axioms Divisor.ma_extractable_base
+
+#print axioms Divisor.ip_extractable_base
+
+#print axioms Divisor.ma_completeness_base

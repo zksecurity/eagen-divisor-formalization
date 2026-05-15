@@ -4,9 +4,13 @@
   Headline theorems realising paper `\ref{thm:ma}` and `\ref{thm:ip}`:
 
     * `ma_extractable` — knowledge soundness of the MA protocol
-      (Theorem `\ref{thm:ma}`).
-    * `ip_knowledge_sound` — knowledge soundness of the 3-round IP
-      protocol (Theorem `\ref{thm:ip}`).
+      (Theorem `\ref{thm:ma}`), in the Hasse-clean single-`q` form.
+    * `ip_extractable` — knowledge soundness of the 3-round IP
+      protocol (Theorem `\ref{thm:ip}`), in the Hasse-clean single-`q`
+      form.
+
+  The raw point-count-dependent variants are named `ma_extractable_base`
+  and `ip_extractable_base`.
 
   Both theorems consume the infrastructure built up in
   `Divisor/ExtractorBridge.lean` (D3-D5, S1-S6, polyG bridges,
@@ -137,7 +141,7 @@ theorem badChallenges_card_le_clean
 /-- Internal conditional form of MA extractability.
 
     This is the geometric all-zero proof with its current technical
-    preconditions exposed. The public theorem `ma_extractable` below
+    preconditions exposed. The base theorem `ma_extractable_base` below
     removes the redundant smoothness hypothesis and handles messages
     failing the verifier's degree check by the small-accept-set branch. -/
 theorem ma_extractable_conditional
@@ -243,7 +247,7 @@ theorem ma_extractable_conditional
     failure is absorbed into `eventDegBound` via the `badDenomA0`
     count argument inside `sigma_data_of_gd_support_rational`. The
     headline now matches the paper's two-event accounting cleanly. -/
-theorem ma_extractable
+theorem ma_extractable_base
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
@@ -284,7 +288,7 @@ either the verifier check is undefined at the pair, or it is
 defined and the discrepancy `logDerivCheckFn` evaluates to zero.
 
 Combined with `badChallenges_card_le`, this gives the
-numerical headline of `ma_extractable` as a corollary. -/
+point-count-dependent headline of `ma_extractable_base` as a corollary. -/
 theorem maAcceptSet_subset_badChallenges
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k) :
@@ -338,7 +342,7 @@ theorem ma_extractable_paper
     The IP has the same knowledge guarantee as the MA (extractor-or-
     small-accept-set disjunction), plus uniqueness of the third-round
     response (which makes the IP-to-MA reduction tight). -/
-theorem ip_knowledge_sound
+theorem ip_extractable_base
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg1 : MAProverMsg E.q)
     (hkm : stmt.k = msg1.k)
@@ -365,17 +369,17 @@ theorem ip_knowledge_sound
         ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
         msg3 = msg3' := by
   refine ⟨?_, ?_⟩
-  · exact ma_extractable E stmt hd hd2 msg1 hkm
+  · exact ma_extractable_base E stmt hd hd2 msg1 hkm
            hTargetOnE hBasesOnE hLargeQ
   · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
 
-/-- **`\ref{thm:ip}` paper-tight form.** Same as `ip_knowledge_sound`
+/-- **`\ref{thm:ip}` paper-tight form.** Same as `ip_extractable_base`
     but with the bound branch as the unconditional paper-tight
     inclusion `acceptSet ⊆ badChallenges`. The numeric form follows by
     `badChallenges_card_le`. -/
-theorem ip_knowledge_sound_paper
+theorem ip_extractable_paper
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg1 : MAProverMsg E.q)
     (hkm : stmt.k = msg1.k)
@@ -409,11 +413,11 @@ theorem ip_knowledge_sound_paper
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
 
 /-- **MA extractability, Hasse-clean form.** Same disjunction as
-    `ma_extractable`, but with the cardinality bound consolidated to
-    a single `q`-term via Hasse (`|E| ≤ 2q` for `q ≥ 5`):
+    `ma_extractable_base`, but with the cardinality bound consolidated
+    to a single `q`-term via Hasse (`|E| ≤ 2q` for `q ≥ 5`):
 
       `≤ 36 · (d + k + 4) · q`. -/
-theorem ma_extractable_clean
+theorem ma_extractable
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
@@ -429,7 +433,7 @@ theorem ma_extractable_clean
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q := by
-  rcases ma_extractable E stmt hd hd2 msg hkm
+  rcases ma_extractable_base E stmt hd hd2 msg hkm
           hTargetOnE hBasesOnE hLargeQ with hWit | hBound
   · left; exact hWit
   · right
@@ -450,10 +454,29 @@ theorem ma_extractable_clean
           apply Nat.mul_le_mul_right
           omega
 
-/-- **`\ref{thm:ip}` Hasse-clean form.** Same as `ip_knowledge_sound`
+/-- Backward-compatible name for the Hasse-clean MA extractability theorem. -/
+theorem ma_extractable_clean
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (hQ : 5 ≤ E.q) :
+    (∃ wit : DlogWitness E.q,
+        maExtractor E stmt msg stmt.degBound hd hkm = some wit
+        ∧ relDlog E stmt wit) ∨
+    ((validPairs E).filter
+        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q :=
+  ma_extractable E stmt hd hd2 msg hkm hTargetOnE hBasesOnE hLargeQ hQ
+
+/-- **`\ref{thm:ip}` Hasse-clean form.** Same as `ip_extractable_base`
     but with the cardinality bound consolidated to a single `q`-term
     via Hasse: `≤ 36 · (d + k + 4) · q`. -/
-theorem ip_knowledge_sound_clean
+theorem ip_extractable
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg1 : MAProverMsg E.q)
     (hkm : stmt.k = msg1.k)
@@ -480,11 +503,40 @@ theorem ip_knowledge_sound_clean
         ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
         msg3 = msg3' := by
   refine ⟨?_, ?_⟩
-  · exact ma_extractable_clean E stmt hd hd2 msg1 hkm
+  · exact ma_extractable E stmt hd hd2 msg1 hkm
            hTargetOnE hBasesOnE hLargeQ hQ
   · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
+
+/-- Backward-compatible name for the Hasse-clean IP knowledge-soundness theorem. -/
+theorem ip_extractable_clean
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg1 : MAProverMsg E.q)
+    (hkm : stmt.k = msg1.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg1.toD.degE + stmt.k + 2) + 72)
+    (hQ : 5 ≤ E.q) :
+    ((∃ wit : DlogWitness E.q,
+         maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
+         ∧ relDlog E stmt wit) ∨
+     ((validPairs E).filter
+        (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
+      ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q)
+    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
+        (msg3 msg3' : IPProverMsg3 E.q),
+        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
+        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
+        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
+        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
+            stmt.target.1 (-stmt.target.2) ≠ 0 →
+        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
+        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
+        msg3 = msg3' :=
+  ip_extractable E stmt hd hd2 msg1 hkm hTargetOnE hBasesOnE hLargeQ hQ
 
 /-- Hasse-based lower bound on `|validPairs|` in terms of `q` only.
 For `q ≥ 9`: `(q − 3)·(q − 9) ≤ 4·|validPairs|`, equivalently
@@ -520,7 +572,7 @@ Multiplied form of `|accept|/|validPairs| ≤ 36·(d + k + 4)·q /
 ratio: any prover who beats this on a uniformly random valid
 challenge pair has a witness extracted.
 
-Combines `ma_extractable_clean` (numerator) with
+Combines `ma_extractable` (numerator) with
 `card_validPairs_lb` (denominator). -/
 theorem ma_soundness_probability
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
@@ -539,7 +591,7 @@ theorem ma_soundness_probability
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
       * (E.points.card * E.points.card - 3 * E.points.card)
       ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q * (validPairs E).card := by
-  rcases ma_extractable_clean E stmt hd hd2 msg hkm
+  rcases ma_extractable E stmt hd hd2 msg hkm
           hTargetOnE hBasesOnE hLargeQ hQ with hWit | hBound
   · left; exact hWit
   · right
@@ -591,7 +643,7 @@ theorem ma_soundness_probability_q_form
       * ((E.q - 3) * (E.q - 9))
       ≤ 144 * (stmt.degBound + stmt.k + 4) * E.q * (validPairs E).card := by
   have hQ5 : 5 ≤ E.q := by omega
-  rcases ma_extractable_clean E stmt hd hd2 msg hkm
+  rcases ma_extractable E stmt hd hd2 msg hkm
           hTargetOnE hBasesOnE hLargeQ hQ5 with hWit | hBound
   · left; exact hWit
   · right
@@ -644,7 +696,7 @@ theorem ma_extractable_witness_of_excess_ratio
   · exact absurd hBound (Nat.not_le.mpr hExcess)
 
 /-- **Auditing-friendly Hasse-clean form** (contrapositive of
-`ma_extractable_clean`). If accept-count exceeds `36·(d+k+4)·q`, the
+`ma_extractable`). If accept-count exceeds `36·(d+k+4)·q`, the
 extractor returns a witness. Cheap corollary of the ratio form for
 local counting arguments where `|validPairs|` cancellation isn't
 needed. -/
@@ -665,16 +717,16 @@ theorem ma_extractable_witness_of_excess_clean
     ∃ wit : DlogWitness E.q,
       maExtractor E stmt msg stmt.degBound hd hkm = some wit
       ∧ relDlog E stmt wit := by
-  rcases ma_extractable_clean E stmt hd hd2 msg hkm
+  rcases ma_extractable E stmt hd hd2 msg hkm
           hTargetOnE hBasesOnE hLargeQ hQ with hWit | hBound
   · exact hWit
   · exact absurd hBound (Nat.not_le.mpr hExcess)
 
 /-- **IP auditing-friendly ratio form** (contrapositive of
-`ip_knowledge_sound` ratio shape). If the prover's accept-set
+`ip_extractable` ratio shape). If the prover's accept-set
 exceeds the soundness ratio bound, the extractor returns a witness
 *and* the IP third-round message is uniquely determined. -/
-theorem ip_knowledge_sound_witness_of_excess_ratio
+theorem ip_extractable_witness_of_excess_ratio
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg1 : MAProverMsg E.q)
     (hkm : stmt.k = msg1.k)
@@ -710,8 +762,8 @@ theorem ip_knowledge_sound_witness_of_excess_ratio
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
 
 /-- **IP auditing-friendly Hasse-clean form** (contrapositive of
-`ip_knowledge_sound_clean`). -/
-theorem ip_knowledge_sound_witness_of_excess_clean
+`ip_extractable`). -/
+theorem ip_extractable_witness_of_excess_clean
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg1 : MAProverMsg E.q)
     (hkm : stmt.k = msg1.k)

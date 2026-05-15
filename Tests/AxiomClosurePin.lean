@@ -7,7 +7,7 @@
 
   Expected closures on the geometric-zero skeleton branch:
 
-  * `ma_extractable`, `ip_knowledge_sound`:
+  * `ma_extractable`, `ip_extractable`:
       propext, Classical.choice, Quot.sound,
       Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
       Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g,
@@ -56,14 +56,14 @@
     is proved from mathlib's Galois norm/trace and differential
     machinery; it is printed below to guard against drift.
 
-  * `ma_completeness`:
+  * `ma_completeness_base`:
       propext, Classical.choice, Quot.sound,
-      Divisor.chord_fiber_product_eq_normZ_under_split,
+      Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
       Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
 
-  * `ma_completeness_clean`:
+  * `ma_completeness`:
       propext, Classical.choice, Quot.sound,
-      Divisor.chord_fiber_product_eq_normZ_under_split,
+      Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
       Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g,
       Divisor.hasse_weil_textbook
 
@@ -87,10 +87,10 @@
 
   * `ma_completeness_for_length4Simple` and
     `ma_completeness_clean_for_length4Simple`:
-      same closure as `ma_completeness` (and `..._clean`) respectively.
+      same closure as `ma_completeness_base` (and `ma_completeness`) respectively.
 
   These compose `Divisor.isHonestFor_of_isHonestForLength4Simple` with
-  `ma_completeness`. The length-4-simple bridge supplies the strengthened
+  `ma_completeness_base`. The length-4-simple bridge supplies the strengthened
   `isHonestFor` constructively (without the unsound axiom), validating
   end-to-end that the strengthening admits a concrete witness.
 
@@ -111,8 +111,11 @@ import Divisor.Soundness
 import Divisor.IsHonestForBinary
 
 #print axioms Divisor.ma_extractable
-#print axioms Divisor.ip_knowledge_sound
+#print axioms Divisor.ip_extractable
+#print axioms Divisor.ma_extractable_base
+#print axioms Divisor.ip_extractable_base
 #print axioms Divisor.ma_completeness
+#print axioms Divisor.ma_completeness_base
 #print axioms Divisor.ma_completeness_clean
 #print axioms Divisor.ma_completeness_for_length4Simple
 #print axioms Divisor.ma_completeness_clean_for_length4Simple

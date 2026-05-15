@@ -16,7 +16,8 @@ Requires elan + Lean 4 toolchain (see `lean-toolchain`).
 ## Theorem Surface
 
 The headline theorems live in `Divisor/ExtractorBridgeTheorems.lean` and
-`Divisor/Soundness.lean`.
+`Divisor/Soundness.lean`. The public surface below is the Hasse-clean
+single-`q` surface.
 
 ### Soundness
 
@@ -39,7 +40,7 @@ variant IP — for the discrete-log relation. The shared objects:
   returns a candidate witness or fails.
 - `maVerifierAccepts` — the verifier's accept predicate on a challenge.
 
-The soundness theorems all share the same hypotheses; they are
+The soundness theorems share the same first-round hypotheses; they are
 enumerated in full for `ma_extractable` and referenced thereafter.
 
 #### `Divisor.ma_extractable`
@@ -47,61 +48,6 @@ enumerated in full for `ma_extractable` and referenced thereafter.
 Lean:
 ```lean
 theorem ma_extractable
-    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)
-    (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k)
-    (hTargetOnE : stmt.target ∈ E.points)
-    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hLargeQ : E.points.card >
-        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg.toD.degE + stmt.k + 2) + 72) :
-    (∃ wit : DlogWitness E.q,
-        maExtractor E stmt msg stmt.degBound hd hkm = some wit
-        ∧ relDlog E stmt wit) ∨
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ eventNotEqBound E stmt.degBound stmt.k +
-        eventDegBound E stmt.degBound stmt.k
-```
-
-Hypotheses:
-
-- `stmt : DlogStatement E.q` : the discrete-log relation we must extract a witness for
-- `hd : stmt.degBound < E.q` : the degree bound is below the field size.
-- `hd2 : 2 ≤ stmt.degBound` : the degree bound is at least 2.
-- `msg : MAProverMsg E.q` : the (cheating) prover's first-round message.
-- `hkm : stmt.k = msg.k` : the message arity matches the statement arity.
-- `hTargetOnE : stmt.target ∈ E.points` : the target is a curve point.
-- `hBasesOnE : ∀ j, stmt.bases j ∈ E.points` : every basis point is on the curve.
-- `hLargeQ : ...` : a large-field condition: the affine point count
-  `E.points.card` exceeds
-  `2·(5·(degE+k+2)+3) + 21·(degE+k+2) + 72`, where `degE = msg.toD.degE`
-  and `k = stmt.k`, so the counting argument has room. (The full point
-  count including infinity is `E.numPoints = E.points.card + 1`.)
-
-Conclusion: for *every* first-round message, honest or adversarial, one of two things holds:
-
-1. The extractor `maExtractor` run on `msg` returns `some wit`, and that `wit` is a genuine discrete-log witness for `stmt` (`relDlog`); or
-2. The set of challenges the verifier accepts is small: bounded by `eventNotEqBound + eventDegBound`, the defined-zero discrepancy bound plus the undefined-denominator bound.
-
-In words: a prover who cannot be extracted from is accepted only negligibly often (for a small set of challenges).
-
-Human form: either `msg` yields an extracted witness $w$ with
-$$
-T = \sum_i [w_i] B_i,
-$$
-or its accepting challenges are bounded by
-$$
-\left|\operatorname{AcceptingChallenges}(\mathrm{msg})\right|
-\le 18(d+k)q + (3d+9k+71)\left|E(\mathbb{F}_q)\right|.
-$$
-
-#### `Divisor.ma_extractable_clean`
-
-Lean:
-```lean
-theorem ma_extractable_clean
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)
     (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q)
@@ -120,11 +66,24 @@ theorem ma_extractable_clean
       ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q
 ```
 
-Hypotheses: identical to `ma_extractable`, plus
+Hypotheses:
 
-- `hQ : 5 ≤ E.q`: the field has at least 5 elements.
+- `stmt : DlogStatement E.q` — the discrete-log relation to extract a
+  witness for.
+- `hd : stmt.degBound < E.q` — the degree bound is below the field size.
+- `hd2 : 2 ≤ stmt.degBound` — the degree bound is at least 2.
+- `msg : MAProverMsg E.q` — the prover's first-round message.
+- `hkm : stmt.k = msg.k` — the message arity matches the statement arity.
+- `hTargetOnE : stmt.target ∈ E.points` — the target is a curve point.
+- `hBasesOnE : ∀ j, stmt.bases j ∈ E.points` — every basis point is on the curve.
+- `hLargeQ : ...` — the large-field condition needed by the counting
+  argument.
+- `hQ : 5 ≤ E.q` — the field has at least 5 elements, used to fold point
+  counts into a single expression in `q`.
 
-Conclusion: the same extractability disjunction, with the accept-set bound consolidated to `36·(d+k+4)·q`.
+Conclusion: for every first-round message, either the extractor returns
+`some wit` and `wit` is a valid discrete-log witness for `stmt`, or the
+accepting challenge set has cardinality at most `36·(d+k+4)·q`.
 
 Human form: either `msg` yields an extracted witness, or
 $$
@@ -132,64 +91,11 @@ $$
 \le 36(d+k+4)q.
 $$
 
-#### `Divisor.ip_knowledge_sound`
+#### `Divisor.ip_extractable`
 
 Lean:
 ```lean
-theorem ip_knowledge_sound
-    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)
-    (hd2 : 2 ≤ stmt.degBound)
-    (msg1 : MAProverMsg E.q)
-    (hkm : stmt.k = msg1.k)
-    (hTargetOnE : stmt.target ∈ E.points)
-    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hLargeQ : E.points.card >
-        2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg1.toD.degE + stmt.k + 2) + 72) :
-    ((∃ wit : DlogWitness E.q,
-         maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
-         ∧ relDlog E stmt wit) ∨
-     ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
-      ≤ eventNotEqBound E stmt.degBound stmt.k +
-        eventDegBound E stmt.degBound stmt.k)
-    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
-        (msg3 msg3' : IPProverMsg3 E.q),
-        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
-        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
-        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
-        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
-            stmt.target.1 (-stmt.target.2) ≠ 0 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
-        msg3 = msg3'
-```
-
-Hypotheses: identical to `ma_extractable` (with the first-round message
-named `msg1`).
-
-Conclusion: a conjunction of two parts.
-
-1. The same witness-or-small-accept-set guarantee as `ma_extractable`.
-2. *Uniqueness of the third-round response*: for any challenge `chal`,
-   any point `A₂`, and any third-message pair `msg3`, `msg3'` that the
-   IP verifier both accepts, `msg3 = msg3'` — provided the side
-   conditions hold: `msg1.toD` is non-vanishing at `chal.A₀`,
-   `chal.A₁`, and `A₂`, and the chord line through `A₀, A₁` does not
-   pass through `−target`.
-
-Human form:
-$$
-\text{IP soundness}
-= \text{MA extractability}
-\land \text{uniqueness of any accepted third-round response}.
-$$
-
-#### `Divisor.ip_knowledge_sound_clean`
-
-Lean:
-```lean
-theorem ip_knowledge_sound_clean
+theorem ip_extractable
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)
     (hd2 : 2 ≤ stmt.degBound)
     (msg1 : MAProverMsg E.q)
@@ -218,15 +124,20 @@ theorem ip_knowledge_sound_clean
         msg3 = msg3'
 ```
 
-Hypotheses: identical to `ip_knowledge_sound`, plus `hQ : 5 ≤ E.q`.
+Hypotheses: identical to `ma_extractable`, with the first-round message
+named `msg1`.
 
-Conclusion: the same conjunction, with the accept-set bound consolidated
-to `36·(d+k+4)·q` (as in `ma_extractable_clean`).
+Conclusion: a conjunction of two parts.
+
+1. The same witness-or-small-accept-set guarantee as `ma_extractable`.
+2. Uniqueness of the third-round response: for any accepted third-message
+   pair `msg3`, `msg3'`, the two messages are equal when the non-vanishing
+   side conditions hold.
 
 Human form:
 $$
-\text{IP clean soundness}
-= \text{MA clean extractability}
+\text{IP soundness}
+= \text{MA extractability}
 \land \text{uniqueness of any accepted third-round response}.
 $$
 
@@ -248,10 +159,12 @@ theorem ma_completeness
     (hDeg : msg.toD.degE ≤ wit.degBound)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm) :
+    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
+    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
+    (hQ : 5 ≤ E.q) :
     ((E.points ×ˢ E.points).filter
         (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine
+      ≤ (6 * (stmt.degBound + 1) + 6) * E.q
 ```
 
 Hypotheses:
@@ -268,56 +181,15 @@ Hypotheses:
 - `hDegK : msg.toD.degE ≤ stmt.degBound` — and within the statement
   degree bound.
 - `hAdm : stmt.admSet (msg.polyA, msg.polyB)` — the message polynomials
-  lie in the admissible set; in particular `msg.toD` is nonzero.
+  lie in the admissible set.
 - `hHonestDivisor : msg.isHonestFor E stmt wit hk hkm` — `msg` is the
-  honest message for `(stmt, wit)`. This is the conjunction of: the
-  residue vector `m` reduces to `wit.scalars` mod `q`; `splitsOnE E
-  msg.toD` (the norm polynomial of `msg.toD` splits over `F_q` and every
-  root has an `F_q`-rational fibre); the divisor of `msg.toD` matches
-  the honest target divisor `(−P) + Σ_i n_i·(B_i) − degE·(∞)` at every
-  point; `(−target)` is a curve point; and every basis `bases i` is a
-  curve point.
-
-Conclusion: the set of challenge pairs on which the verifier rejects is
-bounded by `(3·numZeros(msg.toD) + 4)·|E_aff(F_q)|`, where
-`numZeros(msg.toD)` is the number of affine zeros of the message
-divisor.
-
-Human form:
-$$
-\left|\operatorname{RejectingChallenges}(\mathrm{msg})\right|
-\le \left(3\,\operatorname{numZeros}(D)+4\right)
-   \left|E_{\mathrm{aff}}(\mathbb{F}_q)\right|.
-$$
-
-#### `Divisor.ma_completeness_clean`
-
-Lean:
-```lean
-theorem ma_completeness_clean
-    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
-    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
-    (hQ : 5 ≤ E.q) :
-    ((E.points ×ˢ E.points).filter
-        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (6 * (stmt.degBound + 1) + 6) * E.q
-```
-
-Hypotheses: identical to `ma_completeness`, plus
-
+  honest message for `(stmt, wit)`.
 - `hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)` — the message divisor is
   nonzero (stated directly, rather than via `admSet`).
 - `hQ : 5 ≤ E.q` — the field has at least 5 elements.
 
-Conclusion: the same reject-set bound, with the affine point count and
-zero count folded — through the Hasse point count — into a single
-expression in `q` and the statement degree bound.
+Conclusion: the verifier rejects the honest prover on at most
+`(6·(d+1)+6)q` challenge pairs.
 
 Human form:
 $$
@@ -333,7 +205,7 @@ rest on four named axioms, in addition to Lean/mathlib core
 (`propext`, `Classical.choice`, `Quot.sound`). The exact closures are
 pinned by `#print axioms` in `Tests/AxiomClosurePin.lean`.
 
-`Divisor.ma_extractable` and `Divisor.ip_knowledge_sound` depend on:
+`Divisor.ma_extractable` and `Divisor.ip_extractable` depend on:
 
 ```text
 Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd
@@ -347,10 +219,8 @@ Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
 ```text
 Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd
 Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
+Divisor.hasse_weil_textbook
 ```
-
-`Divisor.ma_completeness_clean` additionally uses
-`Divisor.hasse_weil_textbook`.
 
 All four axioms are dependencies of the headline theorems. Each is a
 piece of mathematical infrastructure — a point count, a resultant
@@ -381,8 +251,7 @@ Intuition: the number of `F_q`-rational points on the curve cannot
 stray far from `q + 1` — it lies within `2√q` of it. The project
 consumes this through the derived theorem `Divisor.hasse_weil`, the
 equivalent integer form `(#E − q − 1)² ≤ 4q`, which is what collapses a
-point-count-dependent bound into a bound purely in `q` (the `_clean`
-theorems).
+point-count-dependent bound into a bound purely in `q`.
 
 Lean source: `Divisor/Axioms/AxiomHasseWeil.lean`.
 
