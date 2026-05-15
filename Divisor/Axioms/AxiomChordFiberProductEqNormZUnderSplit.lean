@@ -4,11 +4,9 @@
   Divisor-of-norm identity: under splitting + accounting, the chord-
   fiber product equals a nonzero constant multiple of `normZ`.
 
-  Reference: Stacks Project Lemma 42.18.1 (principal divisors and
-  pushforward), with Stichtenoth, *Algebraic Function Fields and Codes*
-  (GTM 254, 2nd ed.), Proposition 3.1.9 (p. 73) and Theorem 3.1.11
-  (p. 74) as supporting function-field divisor/place accounting. The
-  README links the archived source snippets.
+  This statement is now a theorem (proved via the bridge file
+  `Divisor/Bridges/ChordFiberProductEqNormZUnderSplit.lean`), not an
+  axiom.
 -/
 import Divisor.Defs
 import Divisor.BetaConstructive
@@ -32,7 +30,7 @@ noncomputable def chord_fiber_product
     (E : ECSetup) (lam : ZMod E.q) (D : CoordRingElt E.q) : (ZMod E.q)[X] :=
   chord_fiber_product_concrete E lam D
 
-/-! ## Divisor-of-norm formula (Stacks 02RS / Stichtenoth 3.1.9)
+/-! ## Divisor-of-norm formula
 
 Under the splitting and pointwise true-multiplicity hypotheses, the
 chord-fiber product ∏ᵢ D(Aᵢ(z)) (the function-field norm) equals a
@@ -40,36 +38,10 @@ nonzero constant times normZ(z). Both polynomials have the same roots
 with the same multiplicities: the norm's roots are the z-coordinates of
 D's zeros on E, with multiplicities matching `betaTrue`.
 
-**Primary citation**: Stacks Project Lemma 42.18.1 (Principal divisors
-and pushforward), which states `p_* div(f) = div(Nm(f))`.
-
-**Supporting citation**: Stichtenoth, *Algebraic Function Fields and
-Codes*, 2nd ed., GTM 254, Proposition 3.1.9 (p. 73) — the conorm of a
-principal divisor is a principal divisor:
-  `Con_{F'/F}(div(x)) = div_{F'}(x)`,
-together with place accounting from Theorem 3.1.11 (p. 74). The
-divisor-of-norm identity, for `y ∈ F'`,
-  `div_F(N_{F'/F}(y)) = "Tr on divisors"(div_{F'}(y))`,
-identifies (under the splitting hypothesis) the roots and
-multiplicities of N(D)(z) with those of normZ(z), establishing
-proportionality.
-
-**Textbook statement (verbatim), Stichtenoth Proposition 3.1.9, p. 73:**
-
-> "Proposition 3.1.9. Let F′/K′ be an algebraic extension of the
-> function field F/K. For 0 ≠ x ∈ F let (x)₀^F, (x)∞^F, (x)^F resp.
-> (x)₀^{F′}, (x)∞^{F′}, (x)^{F′} denote the zero, pole, principal
-> divisor of x in Div(F) resp. in Div(F′). Then
->   Con_{F′/F}((x)₀^F) = (x)₀^{F′},
->   Con_{F′/F}((x)∞^F) = (x)∞^{F′},   and
->   Con_{F′/F}((x)^F)  = (x)^{F′}."
-
-**Supporting statement, Stichtenoth Theorem 3.7.1, p. 121:**
-
-> "Theorem 3.7.1. Let F′/K′ be a Galois extension of F/K and
-> P₁, P₂ ∈ IP_{F′} be extensions of P ∈ IP_F. Then P₂ = σ(P₁) for
-> some σ ∈ Gal(F′/F). In other words, the Galois group acts
-> transitively on the set of extensions of P." -/
+This is the divisor-of-norm pushforward identity `div(Nm(f))` =
+pushforward of `div(f)`, specialised to the chord projection: under the
+splitting hypothesis the roots and multiplicities of N(D)(z) match
+those of normZ(z), establishing proportionality. -/
 /-- **Chord-fiber product as a constant multiple of `normZ` under
     splitting + accounting.**
 

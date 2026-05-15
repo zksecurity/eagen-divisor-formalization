@@ -51,9 +51,6 @@
   the unrestricted re-export `CoordRingElt.divisorClass_isPrincipal`
   (case-split between the trivial constant-unit case and the
   narrowed axiom) and mathlib's `ClassGroup.mk_eq_one_iff`.
-
-  References: Silverman AEC II §1 (local orders) + III.3.5
-  (principal divisor characterisation / Abel's theorem).
 -/
 import Divisor.OrdP.Uniformizer
 import Divisor.OrdP.PrincipalClass
@@ -1304,9 +1301,8 @@ theorem CoordRingElt.divisorClass_isPrincipal_const_unit
     The unrestricted re-export `_eq_zero_of_not_const_unit` is also a
     theorem (case-splits on `D.b`); see below.
 
-    Citation boundary: Silverman AEC Corollary III.3.5 (Abel-Jacobi)
-    applied to the non-trivial case where `D` has both `X` and `Y`
-    components, together with the local-order compatibility between
+    The remaining content is the non-trivial case where `D` has both
+    `X` and `Y` components: the local-order compatibility between
     `ordAt` and the affine prime ideals of
     `E.toW.toAffine.CoordinateRing`.
 

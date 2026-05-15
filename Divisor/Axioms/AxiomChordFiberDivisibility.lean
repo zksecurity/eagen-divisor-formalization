@@ -17,14 +17,10 @@
   (`Divisor.rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le`) forces
   equality of multiplicities at every fibre.
 
-  Citation: Stacks Project,
-  [Lemma 42.18.1 (Principal divisors and pushforward)](https://stacks.math.columbia.edu/tag/02RS).
-  Stichtenoth, *Algebraic Function Fields and Codes* (GTM 254, 2nd ed.),
-  Proposition 3.1.9 (conorm of a principal divisor is principal).
-  This axiom states the lower bound of that identity coefficientwise,
-  which is the local-intersection / order-of-vanishing content that
-  mathlib v4.28.0 does not yet supply for the affine coordinate ring of
-  an elliptic curve.
+  This axiom states the lower-bound (coefficientwise) half of the
+  divisor-of-norm pushforward identity: the local-intersection /
+  order-of-vanishing content that mathlib does not yet supply for the
+  affine coordinate ring of an elliptic curve.
 -/
 import Divisor.GeomBase
 import Divisor.GeomLocalOrder
@@ -62,9 +58,9 @@ The k=1 case (single linear factor at each fibre) follows from
 This axiom encapsulates the higher-multiplicity cases (k ≥ 2): when
 the affine multiplicities at points in the fibre sum to ≥ 2, the
 chord-projection norm absorbs that multiplicity. Mathematically this
-follows from the local form of Stacks 02RS at each closed point of
-ℙ¹; in Lean it is the local-intersection content not yet supplied by
-mathlib v4.28.0. -/
+is the local order-of-vanishing content of the norm pushforward at
+each closed point of ℙ¹; in Lean it is local-intersection content not
+yet supplied by mathlib. -/
 axiom chord_fiber_product_concrete_bar_zfiber_pow_dvd
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
     [DecidableEq (Fqbar E)]

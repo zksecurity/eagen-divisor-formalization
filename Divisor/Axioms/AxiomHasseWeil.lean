@@ -1,14 +1,7 @@
 /-
   Divisor/Axioms/AxiomHasseWeil.lean
 
-  Hasse-Weil bound on #E(F_q).
-
-  Reference: Silverman, *The Arithmetic of Elliptic Curves* (GTM 106),
-  Theorem V.1.1 (Hasse), p. 138. See
-  `axioms/snippets/silverman-thm-V.1.1-hasse-155.png`.
-
-  Supplementary: Stichtenoth, *Algebraic Function Fields and Codes*
-  (GTM 254, 2nd ed.), Theorem 5.2.3 (Hasse-Weil Bound), p. 198.
+  Hasse-Weil bound on #E(F_q): |#E(F_q) - q - 1| ≤ 2√q.
 -/
 import Mathlib.Data.Real.Sqrt
 import Divisor.Defs
@@ -25,17 +18,15 @@ Human-readable version: the number of `F_q`-rational points on `E`
 differs from `q + 1` by at most `2 * sqrt(q)`. The Lean axiom records
 the equivalent integer-squared inequality.
 
-**Integer-squared form.** Stated as `((numPoints - q - 1) : ℤ)² ≤ 4q`
-because `2·Nat.sqrt q = 2·⌊√q⌋` is strictly smaller than `⌊2·√q⌋` in
+**Integer-squared form.** The derived theorem `hasse_weil` states
+`((numPoints - q - 1) : ℤ)² ≤ 4q`. The squared form is preferred over
+`2·Nat.sqrt q` because `2·⌊√q⌋` is strictly smaller than `⌊2·√q⌋` in
 general (e.g. at `q = 7`, `2·⌊√7⌋ = 4` while `⌊2·√7⌋ = 5`). The
 squared form is the sharp integer statement and implies both
 one-sided bounds when needed.
 
-**Textbook statement (verbatim), Silverman AEC Theorem V.1.1, p.138:**
-
-> "Theorem 1.1. (Hasse) Let E/F_q be an elliptic curve defined over a
-> finite field. Then
->     |#E(F_q) − q − 1| ≤ 2√q." -/
+The axiom below is the absolute-value/√ form
+`|#E(F_q) - q - 1| ≤ 2√q`. -/
 axiom hasse_weil_textbook :
   |(((E.numPoints : ℤ) - E.q - 1 : ℤ) : ℝ)| ≤ 2 * Real.sqrt (E.q : ℝ)
 

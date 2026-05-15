@@ -15,10 +15,6 @@
   chord-cubic plumbing — computing `f_X`, `f_T`, `g_X`, `g_T`, `g_val`
   for `f := chordCubicBiv` and `g := DLineBiv` and matching to
   `logDerivTerm` — is mechanised in this file.
-
-  Reference: Lang, *Algebra* (3rd ed., GTM 211), §VI.5 Theorem 5.1
-  (p. 285) + §VIII.5 Theorem 5.1 Case 1 (p. 370). The README links
-  the archived snippets for these source statements.
 -/
 import Divisor.Defs
 import Divisor.Axioms.AxiomChordFiberProductEqNormZUnderSplit
@@ -175,10 +171,7 @@ Proof: apply the generic resultant log-derivative formula
 `Polynomial.resultant_logDeriv_at_split_specialization` to
 `f := chordCubicBiv E lam` and `g := DLineBiv E lam D`, then identify
 each per-root contribution with `logDerivTerm` via direct
-chord-cubic-specific algebra (see helper lemmas above).
-
-Reference: Lang, *Algebra* GTM 211, §VI.5 Theorem 5.1 + §VIII.5
-Theorem 5.1 Case 1 — specialised through the resultant. -/
+chord-cubic-specific algebra (see helper lemmas above). -/
 theorem chord_fiber_product_logDeriv_eq_logDerivTerm_trace
     (E : ECSetup) (D : CoordRingElt E.q) (lam μ : ZMod E.q)
     (hSplit : (intersectionPoly E lam μ).Splits)

@@ -9,13 +9,11 @@
   geometric support of `D`. Local multiplicities are the geometric
   divisor multiplicities.
 
-  Reference: Stacks Project Lemma 42.18.1 (principal divisors and
-  pushforward), with Stichtenoth Prop. 3.1.9 and Thm. 3.1.11 as
-  supporting function-field divisor/place accounting. Mathematically:
-  the divisor of the norm equals the push-forward of the divisor of
-  `D`. Over an algebraically closed base, the push-forward zero divisor unfolds
-  into linear factors with multiplicities equal to `gd.mult Q`. The
-  remaining unit is a nonzero leading scalar.
+  Mathematically: the divisor of the norm equals the push-forward of
+  the divisor of `D`. Over an algebraically closed base, the
+  push-forward zero divisor unfolds into linear factors with
+  multiplicities equal to `gd.mult Q`. The remaining unit is a nonzero
+  leading scalar.
 
   The remaining citable axiom is the root-multiplicity version of this
   statement for the concrete resultant. The global factored form below is
@@ -127,9 +125,9 @@ theorem chord_fiber_product_concrete_bar_rootMultiplicity_eq_zero_of_not_image
 
     The closure now uses the divisibility axiom
     `chord_fiber_product_concrete_bar_zfiber_pow_dvd`, replacing the
-    previous multiplicity-equality axiom. The new axiom is closer to
-    a textbook statement (Stacks 02RS lower-bound part) since the
-    upper bound is now a coordinate-native theorem. -/
+    previous multiplicity-equality axiom. The new axiom is the
+    lower-bound (divisibility) half only, since the upper bound is now
+    a coordinate-native theorem. -/
 theorem chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
     [DecidableEq (Fqbar E)]

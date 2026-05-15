@@ -1,19 +1,14 @@
 /-
   Divisor/Axioms/AxiomTraceLogDeriv.lean
 
-  Lang's trace-of-logarithmic-derivative formula for finite Galois
-  differential field extensions.
+  Trace-of-logarithmic-derivative formula for finite Galois
+  differential field extensions:
+
+      logDeriv (Algebra.norm F α) = Algebra.trace F K (logDeriv α).
 
   The Galois case is fully proved here from mathlib's norm/trace and
   differential machinery; it is the form used by the intended
   splitting-field route for the resultant log-derivative bridge.
-
-  Reference: Lang, *Algebra* (3rd ed., GTM 211), §VI.5 Theorem 5.1
-  (p. 285) — norm and trace as products and sums over distinct
-  embeddings of `E` in `k^a`; §VIII.5 Theorem 5.1 Case 1 (p. 370) —
-  extension of a derivation to a separable algebraic extension via
-  the implicit-function formula `ξ' = -f^D(ξ) / f'(ξ)`. The README
-  links the archived snippets for these source statements.
 -/
 import Mathlib.FieldTheory.Differential.Basic
 import Mathlib.RingTheory.Norm.Transitivity
@@ -21,10 +16,10 @@ import Mathlib.RingTheory.Trace.Basic
 
 namespace Differential
 
-/-- Galois case of Lang's trace-of-logarithmic-derivative formula.
+/-- Galois case of the trace-of-logarithmic-derivative formula.
 
 This is the case needed by the intended splitting-field route from the
-generic resultant logarithmic derivative to the textbook norm/trace identity:
+generic resultant logarithmic derivative to the norm/trace identity:
 over a finite Galois differential field extension, mathlib's product and
 sum formulas for norm and trace reduce the identity to
 `Differential.logDeriv_prod` and `Differential.algEquiv_deriv'`. -/

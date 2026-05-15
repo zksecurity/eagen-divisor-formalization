@@ -22,10 +22,6 @@
     *stronger* hypothesis `splitsOnE E D` that adds the missing
     fiber-rationality condition.
 
-  Reference:
-  Silverman, *The Arithmetic of Elliptic Curves* (GTM 106),
-  Corollary III.3.5, p. 63 (Abel's theorem) + II §1 (local orders).
-
   Phase-1 plan (now realised): this existence statement is no longer
   asserted as an axiom but proved as a theorem with witness
   `ordAt E D`, derived from the narrower class-group bridge
@@ -71,8 +67,8 @@ theorem CoordRingElt.exists_divisor_multiplicity_ecpoint
           (fun P => ECPoint.nsmul E (β P) P) = 0) :=
   exists_ecpoint_divisor_multiplicity_proved E D hD
 
-/-- **Existence of true divisor multiplicity** (Silverman AEC III Cor
-    3.5 + II §1, specialised to `D = a(x) - b(x)·y ∈ F_q[E]^×`).
+/-- **Existence of true divisor multiplicity** for
+    `D = a(x) - b(x)·y ∈ F_q[E]^×`.
 
     For a nonzero `D`, there is a multiplicity function
     `β : ZMod E.q × ZMod E.q → ℕ` such that:

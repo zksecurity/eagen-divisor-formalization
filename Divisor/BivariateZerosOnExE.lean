@@ -282,20 +282,8 @@ variable (E : ECSetup)
     Discharged by `BivariateZerosOnExE.bivariate_poly_zeros_on_ExE_le_thm`
     above (reduce mod `Y² = X³+AX+B` → `α(X) + β(X)·Y` → univariate
     norm-polynomial root count + Hasse-Weil's `2·|E| ≤ 3q+3`). The only
-    project-level axiom in its dependency chain is `Divisor.hasse_weil`.
-
-    Provenance retained for documentation:
-    * Dvir, Kollar, Lovett, "Variety Evasive Sets",
-      Comput. Complex. 23 (2014) — Claim 7.2, p. 10.
-      PDF: `axioms/papers/DvirKollarLovett14.pdf`.
-    * Hartshorne, *Algebraic Geometry*, GTM 52,
-      Theorem I.7.7 (Bezout; cited textbook, not archived in this repo).
-    * Ellenberg, Oberlin, Tao, "The Kakeya set and maximal
-      conjectures for algebraic varieties over finite fields",
-      Mathematika 56 (2010) — Lemma A.3, p. 23 (alternative).
-      PDF: `axioms/papers/EllenbergOberlinTao10.pdf`.
-
-    Source PDFs are archived under `axioms/papers/`. -/
+    project-level axiom in its dependency chain is
+    `Divisor.hasse_weil_textbook`. -/
 theorem bivariate_poly_zeros_on_ExE_le
     (f : FourVarPoly E.q) (D : ℕ)
     (hDeg : total_degree_le E f D)

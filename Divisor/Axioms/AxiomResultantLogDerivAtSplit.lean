@@ -14,10 +14,6 @@
   The intended final proof should derive it from the proved Galois
   norm/trace/log-derivative theorem in `AxiomTraceLogDeriv.lean` plus
   resultant and specialisation algebra.
-
-  Reference: Lang, *Algebra* (3rd ed., GTM 211), §VI.5 Theorem 5.1
-  (p. 285) + §VIII.5 Theorem 5.1 Case 1 (p. 370). The README links
-  the archived snippets for these source statements.
 -/
 import Mathlib.RingTheory.Polynomial.Resultant.Basic
 import Mathlib.Algebra.Polynomial.Derivative
@@ -402,11 +398,7 @@ Human-readable version: for `F(T) = Res_X(f(X,T), g(X,T))`, if
 `f(X,t0)` splits into simple roots and `g` does not vanish at those
 roots, then the logarithmic derivative `F'(t0)/F(t0)` is the sum over
 the roots of the logarithmic derivative of `g` along the corresponding
-moving root of `f`.
-
-Reference: Lang, *Algebra* GTM 211, §VI.5 Theorem 5.1
-(product-of-embeddings / norm-trace) + §VIII.5 Theorem 5.1 Case 1
-(extension of derivations to separable algebraic extensions). -/
+moving root of `f`. -/
 axiom resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
     {K : Type*} [Field K]
     (f g : K[X][X]) (t₀ : K)
