@@ -67,33 +67,25 @@ theorem ma_extractable
 
 Hypotheses:
 
-- `stmt : DlogStatement E.q` — the discrete-log statement under attack.
-- `hd : stmt.degBound < E.q` — the degree bound is below the field size.
-- `hd2 : 2 ≤ stmt.degBound` — the degree bound is at least 2.
-- `msg : MAProverMsg E.q` — the (possibly cheating) prover's first-round
-  message.
-- `hkm : stmt.k = msg.k` — the message arity matches the statement
-  arity.
-- `hTargetOnE : stmt.target ∈ E.points` — the target is a curve point.
-- `hBasesOnE : ∀ j, stmt.bases j ∈ E.points` — every basis is a curve
-  point.
-- `hLargeQ : ...` — a large-field condition: the affine point count
+- `stmt : DlogStatement E.q` : the discrete-log relation we must extract a witness for
+- `hd : stmt.degBound < E.q` : the degree bound is below the field size.
+- `hd2 : 2 ≤ stmt.degBound` : the degree bound is at least 2.
+- `msg : MAProverMsg E.q` : the (cheating) prover's first-round message.
+- `hkm : stmt.k = msg.k` : the message arity matches the statement arity.
+- `hTargetOnE : stmt.target ∈ E.points` : the target is a curve point.
+- `hBasesOnE : ∀ j, stmt.bases j ∈ E.points` : every basis point is on the curve.
+- `hLargeQ : ...` : a large-field condition: the affine point count
   `E.points.card` exceeds
   `2·(5·(degE+k+2)+3) + 21·(degE+k+2) + 72`, where `degE = msg.toD.degE`
   and `k = stmt.k`, so the counting argument has room. (The full point
   count including infinity is `E.numPoints = E.points.card + 1`.)
 
-Conclusion: for *every* first-round message — honest or adversarial —
-one of two things holds:
+Conclusion: for *every* first-round message, honest or adversarial, one of two things holds:
 
-1. the extractor `maExtractor` run on `msg` returns `some wit`, and that
-   `wit` is a genuine discrete-log witness for `stmt` (`relDlog`); or
-2. the set of challenges the verifier accepts is small — bounded by
-   `eventNotEqBound + eventDegBound`, the defined-zero discrepancy bound
-   plus the undefined-denominator bound.
+1. The extractor `maExtractor` run on `msg` returns `some wit`, and that `wit` is a genuine discrete-log witness for `stmt` (`relDlog`); or
+2. The set of challenges the verifier accepts is small: bounded by `eventNotEqBound + eventDegBound`, the defined-zero discrepancy bound plus the undefined-denominator bound.
 
-In words: a prover who cannot be extracted from is accepted only
-negligibly often.
+In words: a prover who cannot be extracted from is accepted only negligibly often (for a small set of challenges).
 
 Human form: either `msg` yields an extracted witness $w$ with
 $$
@@ -130,11 +122,9 @@ theorem ma_extractable_clean
 
 Hypotheses: identical to `ma_extractable`, plus
 
-- `hQ : 5 ≤ E.q` — the field has at least 5 elements, needed to fold the
-  two-term bound through the Hasse point count into a single `q`-term.
+- `hQ : 5 ≤ E.q`: the field has at least 5 elements.
 
-Conclusion: the same extractability disjunction, with the accept-set
-bound consolidated to `36·(d+k+4)·q`.
+Conclusion: the same extractability disjunction, with the accept-set bound consolidated to `36·(d+k+4)·q`.
 
 Human form: either `msg` yields an extracted witness, or
 $$
