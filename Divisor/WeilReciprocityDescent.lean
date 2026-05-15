@@ -1,11 +1,10 @@
 /-
   Divisor/WeilReciprocityDescent.lean
 
-  Descent of the project-specific `weil_reciprocity_honest` axiom
-  (in `Divisor/Axioms/AxiomWeilReciprocityHonest.lean`) to a *theorem*
-  derived from textbook Weil reciprocity (`weil_reciprocity_textbook`
-  in `Divisor/Axioms/AxiomWeilReciprocity.lean`) plus protocol-specific
-  algebra.
+  Protocol-level Weil-reciprocity descent: the trace of chord-fiber
+  log-derivative terms vanishes for an honest prover. The chord-residue
+  identity is derived from the project's chord-resultant infrastructure
+  plus protocol-specific algebra.
 
   ## Structure
 
@@ -27,7 +26,6 @@ import Divisor.LogDeriv
 import Divisor.Protocol
 import Divisor.SupportDisjoint
 import Divisor.ChordLogDerivProof
-import Divisor.Axioms.AxiomWeilReciprocity
 
 open Polynomial Finset
 
@@ -229,17 +227,16 @@ Proof sketch (to be mechanized):
 4. Converting `μ − zₖ` to `L(Qₖ) · (x₁ − x₀)` and using the
    honest-prover divisor coefficients (`β(-P) = 1` and `β(Bⱼ) = nⱼ`
    with `mⱼ = nⱼ mod q`) yields exactly the RHS.
-5. Textbook Weil reciprocity (`weil_reciprocity_textbook`) justifies
-   the product-to-sum conversion and ensures the identity holds
-   when the supports are disjoint (guaranteed by `¬ bad`).
+5. The chord-residue identity ensures the product-to-sum conversion
+   holds when the supports are disjoint (guaranteed by `¬ bad`).
 
 The statement is intentionally restricted to `A₀, A₁ ∈ E.points`,
 matching the completeness consumer and the geometric hypotheses needed
 by the chord-residue identity.
 
-This lemma requires importing and chaining several axioms
-(`weil_reciprocity_textbook`, `chord_sum_eq_chord_fiber_product_logDeriv`,
-`chord_fiber_product_eq_normZ_under_split`, `principal_divisor_iff`).
+This lemma chains the chord-resultant infrastructure
+(`chord_sum_eq_chord_fiber_product_logDeriv`,
+`chord_fiber_product_eq_normZ_under_split`).
 The remaining formal gap is the honest-divisor identification:
 `msg.isHonestFor E stmt wit hk hkm` currently proves that the formal
 honest divisor is principal, but it does not directly identify

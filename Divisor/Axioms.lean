@@ -7,7 +7,6 @@
   to the full axiom surface can `import Divisor.Axioms` as a single
   entry point.
 -/
-import Divisor.Axioms.AxiomPrincipalDivisorIff
 import Divisor.Axioms.AxiomHasseWeil
 import Divisor.Axioms.AxiomExistsDivisorMultiplicity
 import Divisor.Axioms.AxiomChordFiberProductEqNormZUnderSplit
@@ -15,4 +14,3 @@ import Divisor.Axioms.AxiomChordFiberProductBarFactored
 import Divisor.Axioms.AxiomResultantLogDerivAtSplit
 import Divisor.Axioms.AxiomTraceLogDeriv
 import Divisor.Axioms.AxiomChordSumEqChordFiberProductLogDeriv
-import Divisor.Axioms.AxiomWeilReciprocity

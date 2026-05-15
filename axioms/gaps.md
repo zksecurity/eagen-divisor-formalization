@@ -41,11 +41,20 @@ As of 2026-05-14:
 
 ### Full Alignment Surface
 
+Every remaining project `axiom` is now a headline-closure dependency
+(see the table above). The previously listed off-closure axioms
+`Divisor.principal_divisor_iff`, `Divisor.weil_reciprocity_textbook`,
+and `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv` have
+been **deleted** — they were not used by any proof. The finite-separable
+log-derivative fact remains available in its theorem-backed Galois form
+`Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`.
+
+Note: `Divisor.weil_reciprocity_textbook` was found to be **false** as
+stated (it omits multiplicities and the point at infinity); it was
+removed rather than retained as a target.
+
 | Lean declaration | Status |
 |---|---|
-| `Divisor.principal_divisor_iff` | Textbook-shaped but still tied to opaque `IsPrincipal` and the project `ECPoint E` model. Needed for a complete principal-divisor story. |
-| `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv` | Broad finite-separable textbook target. The Galois case is already theorem-backed by `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`. |
-| `Divisor.weil_reciprocity_textbook` | Textbook target for full reciprocity alignment. Not currently in the MA headline closure, but relevant for the descent files and protocol residue identity. |
 | `Divisor.IsPrincipal` | Opaque predicate, not an axiom. Alignment requires either replacing it with a concrete divisor-of-function predicate or proving every use through a concrete bridge. |
 
 ## Execution Order
@@ -137,7 +146,6 @@ Primary files:
 
 - `Divisor/OrdP/LocalRing.lean`
 - `Divisor/CoordinateRingBridge.lean`
-- `Divisor/Axioms/AxiomPrincipalDivisorIff.lean`
 
 Verification:
 
@@ -211,31 +219,17 @@ lake env lean Tests/AxiomClosurePin.lean
 
 ### Phase 6: Weil Reciprocity Alignment
 
-Status: not started.
+Status: closed by deletion.
 
-Why last: it is not currently in the MA headline closure, but it matters
-for the full protocol-level story.
-
-Tasks:
-
-1. Formalize divisor evaluation with multiplicities.
-2. Prove the current finite product over `E.points` is the textbook
-   `f(div g) = g(div f)` statement under disjoint support.
-3. Connect the theorem to `WeilReciprocityDescent.lean` and the protocol
-   residue identity.
-
-Primary files:
-
-- `Divisor/Axioms/AxiomWeilReciprocity.lean`
-- `Divisor/WeilReciprocityDescent.lean`
-- `Divisor/ResidueIdentity.lean`
-
-Verification:
-
-```sh
-lake env lean Divisor/Axioms/AxiomWeilReciprocity.lean
-lake env lean Divisor/WeilReciprocityDescent.lean
-```
+The `Divisor.weil_reciprocity_textbook` axiom was found to be **false**
+as stated — the finite zero-product specialization omits multiplicities
+(`ord_P`) and the point at infinity. A concrete counterexample exists
+(`E : y^2 = x^3 + 1` over `F_5`, `f = x - 2`, `g = y`). Because the
+axiom was not used by any proof (only referenced in comments), it was
+deleted rather than realigned. A correct multiplicity-weighted
+restatement remains future work if full protocol-level reciprocity is
+needed; `Divisor/WeilReciprocityDescent.lean` still carries a `sorry`
+in `weil_residue_identity` that would consume such a statement.
 
 ## Completion Criteria
 

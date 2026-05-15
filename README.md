@@ -301,41 +301,6 @@ Textbook snippet:
 
 Lean source: `Divisor/Axioms/AxiomHasseWeil.lean`.
 
-#### `Divisor.principal_divisor_iff`
-
-Lean:
-```lean
-axiom principal_divisor_iff
-    (E : ECSetup) (coeffs : ECPoint E → ℤ)
-    (hFinSupp : Set.Finite (Function.support coeffs)) :
-    IsPrincipal E coeffs ↔
-      (∑ P ∈ hFinSupp.toFinset, coeffs P = 0) ∧
-      (ECPoint.weightedSum E hFinSupp.toFinset
-          (fun P => ECPoint.zsmul E (coeffs P) P) = 0)
-```
-
-Source statement: Silverman, *The Arithmetic of Elliptic Curves*, Corollary
-III.3.5 states that a divisor
-$$
-D = \sum_P n_P(P)
-$$
-on an elliptic curve is principal iff
-$$
-\sum_P n_P = 0
-\qquad\text{and}\qquad
-\sum_P [n_P]P = O_E.
-$$
-
-Lean specialization: the coefficient function `coeffs : ECPoint E → ℤ` is
-principal exactly when its finite support has integer sum zero and group-law
-weighted sum zero.
-
-Textbook snippet:
-
-![Silverman AEC Corollary III.3.5](axioms/snippets/silverman-cor-III.3.5-principal-divisor-081.png)
-
-Lean source: `Divisor/Axioms/AxiomPrincipalDivisorIff.lean`.
-
 #### `Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero`
 
 Lean:
@@ -494,83 +459,6 @@ Textbook snippets:
 ![Lang VIII.5 derivations](axioms/snippets/lang-VIII.5-thm-5.1-derivations-385.png)
 
 Lean source: `Divisor/Axioms/AxiomResultantLogDerivAtSplit.lean`.
-
-#### `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv`
-
-Lean:
-```lean
-axiom logDeriv_algebraNorm_eq_algebraTrace_logDeriv
-    {F K : Type*} [Field F] [Field K]
-    [Differential F] [Differential K]
-    [Algebra F K] [DifferentialAlgebra F K]
-    [FiniteDimensional F K] [Algebra.IsSeparable F K]
-    (α : K) (hα : α ≠ 0) :
-  Differential.logDeriv (Algebra.norm F α)
-    = Algebra.trace F K (Differential.logDeriv α)
-```
-
-Source statement: Lang VI.5 gives
-$$
-N^E_k(\alpha)=\prod_\sigma \sigma(\alpha)
-\qquad\text{and}\qquad
-\operatorname{Tr}^E_k(\alpha)=\sum_\sigma \sigma(\alpha)
-$$
-for a separable extension, while Lang VIII.5 gives the compatible extension
-of derivations to separable algebraic extensions.
-
-Lean specialization: for a finite separable differential field extension
-$K/F$ and $\alpha \in K^\times$,
-$$
-\frac{d(N_{K/F}\alpha)}{N_{K/F}\alpha}
-= \operatorname{Tr}_{K/F}\left(\frac{d\alpha}{\alpha}\right).
-$$
-
-Textbook snippets:
-
-![Lang VI.5 norm and trace](axioms/snippets/lang-VI.5-thm-5.1-norm-trace-300.png)
-
-![Lang VIII.5 derivations](axioms/snippets/lang-VIII.5-thm-5.1-derivations-385.png)
-
-Lean source: `Divisor/Axioms/AxiomTraceLogDeriv.lean`.
-
-#### `Divisor.weil_reciprocity_textbook`
-
-Lean:
-```lean
-axiom weil_reciprocity_textbook
-    (E : ECSetup) (f g : CoordRingElt E.q)
-    (hf : ¬ (f.a = 0 ∧ f.b = 0))
-    (hg : ¬ (g.a = 0 ∧ g.b = 0))
-    (hDisjointSupport :
-      ∀ P ∈ E.points,
-        (f.eval P.1 P.2 = 0 → g.eval P.1 P.2 ≠ 0) ∧
-        (g.eval P.1 P.2 = 0 → f.eval P.1 P.2 ≠ 0)) :
-    ∏ P ∈ E.points.filter (fun P => g.eval P.1 P.2 = 0),
-      f.eval P.1 P.2
-    =
-    ∏ P ∈ E.points.filter (fun P => f.eval P.1 P.2 = 0),
-      g.eval P.1 P.2
-```
-
-Source statement: Silverman Exercise II.2.11 states Weil reciprocity as
-$$
-f(\operatorname{div} g)=g(\operatorname{div} f)
-$$
-for rational functions with disjoint divisor support.
-Stichtenoth Corollary 4.3.3 gives the residue theorem behind the
-logarithmic-differential proof.
-
-Lean specialization: for nonzero coordinate-ring representatives `f,g` with
-disjoint zero supports on `E.points`, the two finite products over the
-corresponding zero sets are equal.
-
-Textbook snippets:
-
-![Silverman Exercise II.2.11 Weil reciprocity](axioms/snippets/silverman-ex-II.2.11-weil-reciprocity-057.png)
-
-![Stichtenoth Corollary 4.3.3 residue theorem](axioms/snippets/stichtenoth-cor-4.3.3-residue-theorem-182.png)
-
-Lean source: `Divisor/Axioms/AxiomWeilReciprocity.lean`.
 
 Related theorem-backed declarations: `CoordRingElt.exists_divisor_multiplicity`
 is proved from `ordAt`/`divisorClass_eq_zero_of_b_ne_zero`,
