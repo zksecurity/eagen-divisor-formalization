@@ -20,6 +20,28 @@ The headline theorems live in `Divisor/ExtractorBridgeTheorems.lean` and
 
 ### Soundness
 
+The soundness theorems analyze the MA protocol — and its interactive
+variant IP — for the discrete-log relation. The shared objects:
+
+- `DlogStatement E.q` — the public statement: an arity `k`, basis
+  coordinate pairs `bases : Fin k → ZMod q × ZMod q`, a `target`
+  coordinate pair, a degree bound `degBound`, and an admissible-set
+  predicate `admSet`. On-curve-ness of the bases and target is not part
+  of the structure — it is supplied separately as theorem hypotheses.
+- `DlogWitness E.q` — the witness data: an arity `k`, integer scalars
+  `n_i`, a witness degree bound, and proofs `|n_i| < degBound`. The
+  separate proposition `relDlog E stmt wit` asserts the witness is
+  valid: `target = Σ_i [n_i]·bases_i` in the group `E(F_q)`.
+- `MAProverMsg E.q` — the prover's first-round message: a residue vector
+  `m` and two polynomials `polyA`, `polyB` that form the divisor
+  `msg.toD = polyA(x) − polyB(x)·y`.
+- `maExtractor` — the extraction algorithm; on a message it either
+  returns a candidate witness or fails.
+- `maVerifierAccepts` — the verifier's accept predicate on a challenge.
+
+The soundness theorems all share the same hypotheses; they are
+enumerated in full for `ma_extractable` and referenced thereafter.
+
 #### `Divisor.ma_extractable`
 
 Lean:
@@ -43,10 +65,35 @@ theorem ma_extractable
         eventDegBound E stmt.degBound stmt.k
 ```
 
-Statement: for every MA first-round message, either the extractor returns a
-valid discrete-log witness, or the verifier's accepting challenge set is
-bounded by the sum of the defined-zero discrepancy bound and the undefined
-denominator bound.
+Hypotheses:
+
+- `stmt : DlogStatement E.q` — the discrete-log statement under attack.
+- `hd : stmt.degBound < E.q` — the degree bound is below the field size.
+- `hd2 : 2 ≤ stmt.degBound` — the degree bound is at least 2.
+- `msg : MAProverMsg E.q` — the (possibly cheating) prover's first-round
+  message.
+- `hkm : stmt.k = msg.k` — the message arity matches the statement
+  arity.
+- `hTargetOnE : stmt.target ∈ E.points` — the target is a curve point.
+- `hBasesOnE : ∀ j, stmt.bases j ∈ E.points` — every basis is a curve
+  point.
+- `hLargeQ : ...` — a large-field condition: the affine point count
+  `E.points.card` exceeds
+  `2·(5·(degE+k+2)+3) + 21·(degE+k+2) + 72`, where `degE = msg.toD.degE`
+  and `k = stmt.k`, so the counting argument has room. (The full point
+  count including infinity is `E.numPoints = E.points.card + 1`.)
+
+Conclusion: for *every* first-round message — honest or adversarial —
+one of two things holds:
+
+1. the extractor `maExtractor` run on `msg` returns `some wit`, and that
+   `wit` is a genuine discrete-log witness for `stmt` (`relDlog`); or
+2. the set of challenges the verifier accepts is small — bounded by
+   `eventNotEqBound + eventDegBound`, the defined-zero discrepancy bound
+   plus the undefined-denominator bound.
+
+In words: a prover who cannot be extracted from is accepted only
+negligibly often.
 
 Human form: either `msg` yields an extracted witness $w$ with
 $$
@@ -81,8 +128,13 @@ theorem ma_extractable_clean
       ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q
 ```
 
-Statement: the same MA extractability disjunction, with the accept-set bound
-consolidated through Hasse to a single `q`-term.
+Hypotheses: identical to `ma_extractable`, plus
+
+- `hQ : 5 ≤ E.q` — the field has at least 5 elements, needed to fold the
+  two-term bound through the Hasse point count into a single `q`-term.
+
+Conclusion: the same extractability disjunction, with the accept-set
+bound consolidated to `36·(d+k+4)·q`.
 
 Human form: either `msg` yields an extracted witness, or
 $$
@@ -123,9 +175,18 @@ theorem ip_knowledge_sound
         msg3 = msg3'
 ```
 
-Statement: the IP has the same witness-or-small-accept-set guarantee as the
-MA, and the third-round response is unique whenever the non-vanishing side
-conditions for the verifier hold.
+Hypotheses: identical to `ma_extractable` (with the first-round message
+named `msg1`).
+
+Conclusion: a conjunction of two parts.
+
+1. The same witness-or-small-accept-set guarantee as `ma_extractable`.
+2. *Uniqueness of the third-round response*: for any challenge `chal`,
+   any point `A₂`, and any third-message pair `msg3`, `msg3'` that the
+   IP verifier both accepts, `msg3 = msg3'` — provided the side
+   conditions hold: `msg1.toD` is non-vanishing at `chal.A₀`,
+   `chal.A₁`, and `A₂`, and the chord line through `A₀, A₁` does not
+   pass through `−target`.
 
 Human form:
 $$
@@ -167,8 +228,10 @@ theorem ip_knowledge_sound_clean
         msg3 = msg3'
 ```
 
-Statement: the Hasse-clean IP soundness theorem, using the same
-`36(d + k + 4)q` accept-set bound as `ma_extractable_clean`.
+Hypotheses: identical to `ip_knowledge_sound`, plus `hQ : 5 ≤ E.q`.
+
+Conclusion: the same conjunction, with the accept-set bound consolidated
+to `36·(d+k+4)·q` (as in `ma_extractable_clean`).
 
 Human form:
 $$
@@ -178,6 +241,11 @@ $$
 $$
 
 ### Completeness
+
+The completeness theorems analyze the *honest* prover: given a real
+witness, the verifier rejects only on a small set of challenges. The
+extra object here is the honest-message predicate `isHonestFor`, which
+pins the prover's polynomials to the witness.
 
 #### `Divisor.ma_completeness`
 
@@ -196,9 +264,34 @@ theorem ma_completeness
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine
 ```
 
-Statement: for an honest MA prover message, the verifier rejects only on a
-bounded bad-challenge set controlled by the number of affine zeros of the
-message divisor.
+Hypotheses:
+
+- `stmt : DlogStatement E.q`, `wit : DlogWitness E.q` — a statement and a
+  candidate witness.
+- `hk : stmt.k = wit.k` — statement and witness arities match.
+- `hValid : relDlog E stmt wit` — `wit` genuinely satisfies the
+  discrete-log relation for `stmt`.
+- `msg : MAProverMsg E.q`, `hkm : stmt.k = msg.k` — the prover's
+  first-round message and its arity match.
+- `hDeg : msg.toD.degE ≤ wit.degBound` — the message divisor's degree is
+  within the witness degree bound.
+- `hDegK : msg.toD.degE ≤ stmt.degBound` — and within the statement
+  degree bound.
+- `hAdm : stmt.admSet (msg.polyA, msg.polyB)` — the message polynomials
+  lie in the admissible set; in particular `msg.toD` is nonzero.
+- `hHonestDivisor : msg.isHonestFor E stmt wit hk hkm` — `msg` is the
+  honest message for `(stmt, wit)`. This is the conjunction of: the
+  residue vector `m` reduces to `wit.scalars` mod `q`; `splitsOnE E
+  msg.toD` (the norm polynomial of `msg.toD` splits over `F_q` and every
+  root has an `F_q`-rational fibre); the divisor of `msg.toD` matches
+  the honest target divisor `(−P) + Σ_i n_i·(B_i) − degE·(∞)` at every
+  point; `(−target)` is a curve point; and every basis `bases i` is a
+  curve point.
+
+Conclusion: the set of challenge pairs on which the verifier rejects is
+bounded by `(3·numZeros(msg.toD) + 4)·|E_aff(F_q)|`, where
+`numZeros(msg.toD)` is the number of affine zeros of the message
+divisor.
 
 Human form:
 $$
@@ -226,9 +319,15 @@ theorem ma_completeness_clean
       ≤ (6 * (stmt.degBound + 1) + 6) * E.q
 ```
 
-Statement: the Hasse-clean MA completeness theorem, replacing the affine point
-count and zero count by a single expression in `q` and the statement degree
-bound.
+Hypotheses: identical to `ma_completeness`, plus
+
+- `hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)` — the message divisor is
+  nonzero (stated directly, rather than via `admSet`).
+- `hQ : 5 ≤ E.q` — the field has at least 5 elements.
+
+Conclusion: the same reject-set bound, with the affine point count and
+zero count folded — through the Hasse point count — into a single
+expression in `q` and the statement degree bound.
 
 Human form:
 $$
@@ -238,16 +337,13 @@ $$
 
 ## Axiom Surface
 
-The pinned theorem closures are checked by `#print axioms` in
-`Tests/AxiomClosurePin.lean`.
+The headline theorems are *conditional*: their proofs are fully
+machine-checked — there is no `sorry` anywhere in the closure — but they
+rest on four named axioms, in addition to Lean/mathlib core
+(`propext`, `Classical.choice`, `Quot.sound`). The exact closures are
+pinned by `#print axioms` in `Tests/AxiomClosurePin.lean`.
 
-The bridge-gap execution plan is tracked in
-[`axioms/gaps.md`](axioms/gaps.md). In that file, a gap means a
-textbook-to-Lean specialization gap, not a Lean `sorry`.
-
-`Divisor.ma_extractable` and `Divisor.ip_knowledge_sound` depend on the
-following project axioms, in addition to Lean/mathlib infrastructure
-(`propext`, `Classical.choice`, `Quot.sound`):
+`Divisor.ma_extractable` and `Divisor.ip_knowledge_sound` depend on:
 
 ```text
 Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd
@@ -259,51 +355,50 @@ Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
 `Divisor.ma_completeness` depends on:
 
 ```text
-Divisor.chord_fiber_product_eq_normZ_under_split
+Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd
 Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
 ```
 
-`Divisor.ma_completeness_clean` additionally uses:
+`Divisor.ma_completeness_clean` additionally uses
+`Divisor.hasse_weil_textbook`.
 
-```text
-Divisor.hasse_weil_textbook
-```
+All four axioms are dependencies of the headline theorems. Each is a
+piece of mathematical infrastructure — a point count, a resultant
+identity, two divisor facts — and none of them mentions the protocol,
+the extractor, or the verifier. The protocol-specific reasoning is
+entirely in the machine-checked part; the axioms are upstream lemmas,
+not the conclusion in disguise.
 
 ### Lean Axiom Inventory
 
-These are the project-level `axiom` declarations. Some are headline
-dependencies; others are lower-level textbook targets or compatibility
-surfaces.
+Each axiom is documented below with its formal Lean statement, an
+enumeration of its hypotheses, and an intuition.
 
 #### `Divisor.hasse_weil_textbook`
 
-Lean:
+Formal statement:
 ```lean
 axiom hasse_weil_textbook (E : ECSetup) :
   |(((E.numPoints : ℤ) - E.q - 1 : ℤ) : ℝ)| ≤ 2 * Real.sqrt (E.q : ℝ)
 ```
 
-Source statement: Silverman, *The Arithmetic of Elliptic Curves*, Theorem
-V.1.1 states the Hasse bound verbatim
-$$
-\left|\#E(\mathbb{F}_q)-q-1\right| \le 2\sqrt{q}.
-$$
+Hypotheses:
 
-This is the closure axiom. The legacy integer-squared form
-`Divisor.hasse_weil` is now a *theorem* derived from it:
-$$
-\left(\#E(\mathbb{F}_q)-q-1\right)^2 \le 4q.
-$$
+- `E : ECSetup` — an elliptic curve over `F_q`. There are no proof-side
+  hypotheses.
 
-Textbook snippet:
-
-![Silverman AEC Theorem V.1.1](axioms/snippets/silverman-thm-V.1.1-hasse-155.png)
+Intuition: the number of `F_q`-rational points on the curve cannot
+stray far from `q + 1` — it lies within `2√q` of it. The project
+consumes this through the derived theorem `Divisor.hasse_weil`, the
+equivalent integer form `(#E − q − 1)² ≤ 4q`, which is what collapses a
+point-count-dependent bound into a bound purely in `q` (the `_clean`
+theorems).
 
 Lean source: `Divisor/Axioms/AxiomHasseWeil.lean`.
 
 #### `Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero`
 
-Lean:
+Formal statement:
 ```lean
 axiom CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
     (E : ECSetup) (D : CoordRingElt E.q)
@@ -313,28 +408,34 @@ axiom CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
       (divisorOfD_finiteSupport E D) = 0
 ```
 
-Source statement: Silverman II.3 defines the divisor of a rational function by
-local orders, Stichtenoth Def. 1.4.2 names such divisors principal, and
-Silverman Corollary III.3.5 characterizes principal divisors on elliptic
-curves by degree and group-law sum.
+Hypotheses:
 
-Lean specialization: for nonzero $D = a(x)-b(x)y$ with $b\ne 0$, if
-`splitsOnE E D` exposes the relevant divisor mass over `F_q`, then the class
-of `divisorOfD E D` is zero.
+- `E : ECSetup`, `D : CoordRingElt E.q` — a curve, and a coordinate-ring
+  element `D = a(x) − b(x)·y`, i.e. a rational function on the curve.
+- `_hD : ¬ (D.a = 0 ∧ D.b = 0)` — `D` is not the zero function.
+- `_hSplit : splitsOnE E D` — every zero of `D` is visible over `F_q`:
+  the norm polynomial of `D` splits into linear factors over `F_q`, and
+  each root has an `F_q`-rational fibre on the curve. Without this, `D`
+  could have zeros only over an extension field, and the project's
+  divisor would miss that mass.
+- `_hbNZ : D.b ≠ 0` — `D` genuinely involves `y` (it is not a polynomial
+  in `x` alone). The `D.b = 0` case is a separate, already-proved
+  theorem.
 
-Textbook snippets:
-
-![Silverman II.3 divisors](axioms/snippets/silverman-II.3-divisors-027.png)
-
-![Stichtenoth Def. 1.4.2 principal divisor](axioms/snippets/stichtenoth-def-1.4.2-principal-divisor-016.png)
-
-![Silverman AEC Corollary III.3.5](axioms/snippets/silverman-cor-III.3.5-principal-divisor-081.png)
+Intuition: the divisor of a rational function — its formal sum of zeros
+minus poles, counted with multiplicity — is principal, so its class in
+the curve's divisor class group is zero. The hypotheses ensure the
+project's combinatorial divisor `divisorOfD E D` (assembled from the
+local orders `ordAt` at each affine point, together with the pole at
+infinity) genuinely captures the full zero/pole data of `D`. The
+soundness path uses this as a general divisor-class triviality fact for
+any nonzero `D` meeting the hypotheses.
 
 Lean source: `Divisor/OrdP/LocalRing.lean`.
 
 #### `Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd`
 
-Lean:
+Formal statement:
 ```lean
 axiom chord_fiber_product_concrete_bar_zfiber_pow_dvd
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
@@ -348,73 +449,39 @@ axiom chord_fiber_product_concrete_bar_zfiber_pow_dvd
           (algebraMap (ZMod E.q) (Fqbar E))
 ```
 
-Source statement: Stacks Project tag 02RS gives the norm pushforward identity
-$$
-p_*\operatorname{div}(f)=\operatorname{div}(\operatorname{Nm}(f)).
-$$
-Stichtenoth Prop. 3.1.9 supplies the supporting principal-divisor conorm
-statement.
+Hypotheses:
 
-Lean specialization: for the chord projection `π_λ`, the base-changed
-chord-fiber resultant has at least the pushed-forward zero-divisor
-multiplicity at each `z`:
-$$
-(X-z)^{\sum_{Q:\pi_\lambda(Q)=z}\operatorname{mult}_Q(D)}
-\mid N_{\pi_\lambda}(D)(X).
-$$
+- `E : ECSetup`, `D : CoordRingElt E.q` — a curve and a rational
+  function on it.
+- `lam : ZMod E.q` — the slope of the chord projection
+  `π_λ : (x, y) ↦ y − λx`.
+- `[DecidableEq (Fqbar E)]` — decidable equality on the algebraic
+  closure; a technical instance with no mathematical content.
+- `hD : ¬ (D.a = 0 ∧ D.b = 0)` — `D` is nonzero.
+- `gd : GeometricDivisorData E D` — the geometric divisor of `D`: its
+  zeros over the algebraic closure, with local multiplicities. This is
+  *not* free data — the structure carries proof fields forcing
+  `gd.mult` to equal the true local order of `D` at each point, and
+  `gd.support` to be exactly the zero set.
+- `z : Fqbar E` — a candidate chord-intercept value in the algebraic
+  closure.
 
-Source material:
-
-[Stacks Project tag 02RS local archive](axioms/papers/stacks-02RS.html)
-
-![Stichtenoth Prop. 3.1.9 conorm of principal divisor](axioms/snippets/stichtenoth-prop-3.1.9-conorm-principal-084.png)
+Intuition: `chord_fiber_product_concrete E lam D` is the norm of `D`
+along the chord projection — a univariate polynomial whose roots are the
+chord intercepts of `D`'s zeros. The axiom says each zero `Q` of `D`
+contributes its full local multiplicity to that polynomial at the
+intercept `π_λ(Q)`, and zeros sharing an intercept add their
+multiplicities: `(X − z)` raised to the multiplicity summed over the
+fibre of `z` divides the base-changed norm polynomial. This is the
+lower-bound (`≥`) half of the norm-pushforward identity; the matching
+upper bound (a degree inequality) is already a theorem in the project,
+so together they pin the multiplicity exactly.
 
 Lean source: `Divisor/Axioms/AxiomChordFiberDivisibility.lean`.
 
-#### `Divisor.chord_fiber_product_eq_normZ_under_split`
-
-Lean:
-```lean
-axiom chord_fiber_product_eq_normZ_under_split
-    (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
-    (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplitOnE : splitsOnE E D)
-    (β_fun : ZMod E.q × ZMod E.q → ℕ)
-    (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
-    (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
-    (hAccount : (∑ P ∈ E.points, β_fun P) =
-                  (normPoly E D).natDegree)
-    (hβtrue : ∀ P, β_fun P = betaTrue E D hD P) :
-    ∃ c : ZMod E.q, c ≠ 0 ∧
-      chord_fiber_product E lam D = C c * normZ E lam D β_fun
-```
-
-Source statement: Stacks Project tag 02RS gives
-$$
-p_*\operatorname{div}(f)=\operatorname{div}(\operatorname{Nm}(f)).
-$$
-Stichtenoth Thm. 3.1.11 gives the finite extension place-accounting equality
-$$
-\sum_i e_i f_i = [F' : F].
-$$
-
-Lean specialization: under `splitsOnE` and pointwise true multiplicity
-accounting, the chord-fiber product is a nonzero scalar multiple of
-`normZ E lam D β_fun`.
-
-Source material:
-
-[Stacks Project tag 02RS local archive](axioms/papers/stacks-02RS.html)
-
-![Stichtenoth Prop. 3.1.9 conorm of principal divisor](axioms/snippets/stichtenoth-prop-3.1.9-conorm-principal-084.png)
-
-![Stichtenoth Thm. 3.1.11 fundamental equality](axioms/snippets/stichtenoth-thm-3.1.11-fundamental-equality-074.png)
-
-Lean source: `Divisor/Axioms/AxiomChordFiberProductEqNormZUnderSplit.lean`.
-
 #### `Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`
 
-Lean:
+Formal statement:
 ```lean
 axiom resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
     {K : Type*} [Field K]
@@ -431,37 +498,58 @@ axiom resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
   resultantLogDerivConclusion f g t₀
 ```
 
-Source statement: Lang IV.8 identifies resultants as products over roots,
-Lang VI.5 gives norm and trace as products and sums over embeddings, and
-Lang VIII.5 gives the separable algebraic derivative formula
-$$
-\xi' = -\frac{f^D(\xi)}{f'(\xi)}.
-$$
+Hypotheses:
 
-Lean specialization: for
-$$
-F(T)=\operatorname{Res}_X(f(X,T),g(X,T)),
-$$
-with `f` monic, $\deg_X f \ge 2$, $\deg_X g > 0$, and $f(X,t_0)$
-split with simple roots where `g` is nonzero,
+- `K : Type*` `[Field K]`, `f g : K[X][X]` — two bivariate polynomials.
+  The outer variable `X` is the resultant variable; the inner variable
+  is the specialization parameter `T`.
+- `t₀ : K` — the value at which the parameter `T` is specialized.
+- `hMonic : f.Monic` — `f` is monic in the outer variable. Without it,
+  the resultant carries a leading-coefficient factor and the formula
+  acquires an extra term.
+- `hf_two_le : 2 ≤ f.natDegree` — `f` has outer degree at least 2. The
+  degree-0 and degree-1 cases are separate, already-proved theorems.
+- `hg_pos : 0 < g.natDegree` — `g` has positive outer degree. The
+  degree-0 case is a separate, already-proved theorem.
+- `hF_ne : ...` — the resultant `F(T) := Res_X(f, g)` does not vanish at
+  `t₀`, so its logarithmic derivative is defined there.
+- `hSplit : ...` — the specialized polynomial `f(X, t₀)` splits into
+  linear factors over `K`.
+- `hg_def : ...` — `g` does not vanish at any root of `f(X, t₀)`; the
+  root sets of `f` and `g` are disjoint at `t₀`.
+- `hf_X_def : ...` — the outer derivative of `f(X, t₀)` is nonzero at
+  each of its roots, i.e. those roots are simple (no double roots).
+
+Intuition: write `F(T) = Res_X(f, g)`, a univariate polynomial in `T`.
+The axiom computes its logarithmic derivative `F'(t₀)/F(t₀)` as a sum
+over the roots `x` of `f(X, t₀)`:
 $$
 \frac{F'(t_0)}{F(t_0)}
-= \sum_{x:\,f(x,t_0)=0}
-  \frac{g_T f_X - g_X f_T}{f_X g}(x,t_0).
+= \sum_{x\,:\,f(x,t_0)=0}
+  \frac{g_T f_X - g_X f_T}{f_X\, g}\Big|_{(x,t_0)}.
 $$
-
-Textbook snippets:
-
-![Lang IV.8 resultants as products over roots](axioms/snippets/lang-IV.8-prop-8.1-8.3-resultant-202.png)
-
-![Lang VI.5 norm and trace](axioms/snippets/lang-VI.5-thm-5.1-norm-trace-300.png)
-
-![Lang VIII.5 derivations](axioms/snippets/lang-VIII.5-thm-5.1-derivations-385.png)
+Each summand is the implicit-function chain rule for
+`d/dT [g(x(T), T)]`, where `x(T)` tracks a root of `f` as `T` varies.
+The conclusion is packaged as the abbreviation
+`resultantLogDerivConclusion f g t₀`, defined in the source file.
 
 Lean source: `Divisor/Axioms/AxiomResultantLogDerivAtSplit.lean`.
 
-Related theorem-backed declarations: `CoordRingElt.exists_divisor_multiplicity`
-is proved from `ordAt`/`divisorClass_eq_zero_of_b_ne_zero`,
-`bivariate_poly_zeros_on_ExE_le` is a theorem whose project-axiom dependency is
-`Divisor.hasse_weil_textbook`, and `Divisor.hasse_weil` is itself a theorem
-derived from `Divisor.hasse_weil_textbook` for downstream compatibility.
+### Theorem-backed declarations near the axiom surface
+
+- `Divisor.hasse_weil` — the integer-squared form `(#E − q − 1)² ≤ 4q`;
+  a theorem derived from `Divisor.hasse_weil_textbook`, kept for
+  downstream compatibility.
+- `Divisor.chord_fiber_product_eq_normZ_under_split` — that the
+  chord-fibre product is a nonzero scalar multiple of `normZ` under
+  splitting; declared in
+  `Divisor/Axioms/AxiomChordFiberProductEqNormZUnderSplit.lean` and
+  proved (no longer an axiom) via the bridge file
+  `Divisor/Bridges/ChordFiberProductEqNormZUnderSplit.lean`.
+- `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`
+  — the Galois trace-of-logarithmic-derivative identity; a theorem
+  proved from mathlib.
+- `CoordRingElt.exists_divisor_multiplicity` — a theorem proved from
+  `ordAt` and `divisorClass_eq_zero_of_b_ne_zero`.
+- `bivariate_poly_zeros_on_ExE_le` — a theorem whose project-axiom
+  dependency is `Divisor.hasse_weil_textbook`.
