@@ -44,8 +44,8 @@ automatically defined over F_q. No Galois theory needed. -/
 
 theorem f_rational {N : ℕ}
     (Q P : Fin N → ZMod E.q × ZMod E.q)
-    (hQ : ∀ i, Q i ∈ E.points)
-    (hP : ∀ i, P i ∈ E.points) :
+    (_hQ : ∀ i, Q i ∈ E.points)
+    (_hP : ∀ i, P i ∈ E.points) :
     -- f is a function ZMod E.q × ZMod E.q → ZMod E.q → ZMod E.q,
     -- automatically over F_q since all inputs are in F_q.
     True := trivial
@@ -128,10 +128,10 @@ theorem linear_form_zeros_le_three
             set g : Polynomial (ZMod E.q) := Polynomial.X ^ 2 - Polynomial.C c₀
             have hg_ne : g ≠ 0 := by
               intro h; have h2 := congr_arg (Polynomial.coeff · 2) h
-              simp [g, Polynomial.coeff_sub, Polynomial.coeff_X_pow, Polynomial.coeff_C] at h2
+              simp [g, Polynomial.coeff_sub, Polynomial.coeff_X_pow] at h2
             have hg_deg : g.natDegree ≤ 2 :=
               (Polynomial.natDegree_sub_le _ _).trans
-                (max_le (by simp [Polynomial.natDegree_X_pow])
+                (max_le (by simp)
                         ((Polynomial.natDegree_C _).le.trans (Nat.zero_le _)))
             -- Inject via Prod.snd into roots of g
             calc (E.points.filter (fun P => P.1 = x₀)).card
@@ -178,8 +178,8 @@ theorem linear_form_zeros_le_three
     not identically zero on E x E. -/
 theorem f_nonvanishing_proved {N : ℕ}
     (Q P : Fin N → ZMod E.q × ZMod E.q)
-    (hQ : ∀ i, Q i ∈ E.points)
-    (hP : ∀ i, P i ∈ E.points)
+    (_hQ : ∀ i, Q i ∈ E.points)
+    (_hP : ∀ i, P i ∈ E.points)
     (j : Fin N)
     (hj : ∀ i, Q i ≠ P j)  -- P_j not among the Q_i
     (hSmall : 3 * N < E.numAffine) :
@@ -231,7 +231,7 @@ theorem f_nonvanishing_proved {N : ℕ}
       -- hval : comparisonFn E Q P (P j) A₁ = 0
       -- comparisonFn = first_prod - 0 = first_prod (by hcf)
       have hprod_zero : Finset.univ.prod (fun i => linearFormL E (P j) A₁ (Q i)) = 0 := by
-        have h := hval; simp only [comparisonFn, hprod_P_zero, sub_zero] at h; exact h
+        have h := hval; simp only [] at h; exact h
       -- In NoZeroDivisors: prod = 0 iff some factor = 0
       rw [Finset.prod_eq_zero_iff] at hprod_zero
       obtain ⟨i, _, hi⟩ := hprod_zero
@@ -271,7 +271,7 @@ theorem f_nonvanishing_proved {N : ℕ}
                   have := h.2; rw [neg_eq_zero] at this; exact sub_eq_zero.mp this
                 have hy : (Q i).2 = (P j).2 := sub_eq_zero.mp h.1
                 exact hne (Prod.ext hx hy)
-      _ = 3 * N := by simp [Finset.sum_const, Finset.card_fin]; ring
+      _ = 3 * N := by simp [Finset.sum_const]; ring
   -- Combine: |bad| ≤ 3N < numAffine = E.points.card
   have : E.numAffine = E.points.card := rfl
   omega
@@ -355,7 +355,7 @@ theorem card_validPairs_lb :
                              distinctPairs] at hp ⊢
                   obtain ⟨⟨hd, hnv⟩, hfst⟩ := hp
                   refine ⟨hd, hfst, ?_⟩
-                  simp only [Finset.mem_filter, not_and, ne_eq] at hnv
+                  simp only [not_and, ne_eq] at hnv
                   by_contra hall
                   push_neg at hall
                   exact hnv hd hall.1 hall.2
@@ -385,11 +385,10 @@ theorem card_validPairs_lb :
                     )).trans ?_
                   have hg_ne : g ≠ 0 := by
                     intro heq; have := congr_arg (Polynomial.coeff · 2) heq
-                    simp [g, Polynomial.coeff_sub, Polynomial.coeff_X_pow,
-                          Polynomial.coeff_C] at this
+                    simp [g, Polynomial.coeff_sub, Polynomial.coeff_X_pow] at this
                   have hg_deg : g.natDegree ≤ 2 :=
                     (Polynomial.natDegree_sub_le _ _).trans
-                      (max_le (by simp [Polynomial.natDegree_X_pow])
+                      (max_le (by simp)
                               ((Polynomial.natDegree_C _).le.trans (Nat.zero_le _)))
                   calc S.card
                       ≤ g.roots.toFinset.card := by

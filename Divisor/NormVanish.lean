@@ -40,8 +40,8 @@ def normVanishPairs (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q) :
     By card_biUnion_le and card_badSlopes_le. -/
 theorem norm_vanishing (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     (N : ℕ) (hN : (zeros D E.points).card ≤ N)
-    (hP : P ∈ E.points)
-    (hPnotZero : P ∉ zeros D E.points) :
+    (_hP : P ∈ E.points)
+    (_hPnotZero : P ∉ zeros D E.points) :
     (normVanishPairs E D P).card ≤ 2 * N * E.numAffine := by
   -- normVanishPairs ⊆ ⋃_{s ∈ badSlopes} pairsWithSlope s
   have hsub : normVanishPairs E D P ⊆

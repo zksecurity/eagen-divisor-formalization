@@ -204,7 +204,7 @@ theorem bi_x_degree_le.pow
     bi_x_degree_le E (f ^ n) (n * dX) (n * dY) := by
   induction n with
   | zero =>
-      refine ⟨?_, ?_⟩ <;> simp [degreeOf_C]
+      refine ⟨?_, ?_⟩ <;> simp
   | succ n ih =>
       have := bi_x_degree_le.mul (E := E) ih hf
       simpa [pow_succ, Nat.succ_mul] using this
@@ -216,7 +216,7 @@ theorem bi_x_degree_le.sum
   classical
   induction s using Finset.induction_on with
   | empty =>
-      refine ⟨?_, ?_⟩ <;> simp [degreeOf_C]
+      refine ⟨?_, ?_⟩ <;> simp
   | @insert _ _ h ih =>
       rw [Finset.sum_insert h]
       refine bi_x_degree_le.add (hf _ (Finset.mem_insert_self _ _))
@@ -229,7 +229,7 @@ theorem bi_x_degree_le.prod_fin
   classical
   induction k with
   | zero =>
-      refine ⟨?_, ?_⟩ <;> simp [degreeOf_C]
+      refine ⟨?_, ?_⟩ <;> simp
   | succ n ih =>
       rw [Fin.prod_univ_succ]
       have h0 := hf 0

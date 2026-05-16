@@ -90,7 +90,7 @@ lemma degE_bound (g : MvPolynomial (Fin 2) (ZMod E.q)) (d : ℕ) (hd : d ≥ 1)
     -- Apply the bound on the degree of each term in the sum to conclude the bound on the degree of the sum.
     have h_beta_deg_sum : (betaPoly E g).natDegree ≤ (3 * d - 3) / 2 := by
       refine' le_trans ( Polynomial.natDegree_sum_le _ _ ) ( Finset.sup_le _ );
-      intro m hm; specialize h_beta_bound m hm; by_cases h : MvPolynomial.coeff m g = 0 <;> simp_all +decide [ Polynomial.natDegree_mul' ] ;
+      intro m hm; specialize h_beta_bound m hm; by_cases h : MvPolynomial.coeff m g = 0 <;> simp_all +decide ;
       refine' le_trans ( Polynomial.natDegree_mul_le .. ) _ ; simp_all +decide [ Polynomial.natDegree_mul' ];
       erw [ Polynomial.natDegree_add_C, Polynomial.natDegree_add_eq_left_of_natDegree_lt ] <;> norm_num;
       · linarith;
@@ -168,13 +168,13 @@ lemma zeros_card_le_degE (D : CoordRingElt E.q) (hDnz : ¬(D.a = 0 ∧ D.b = 0))
   have h_sum_zeros : (Finset.filter (fun p => D.eval p.1 p.2 = 0) E.points).card ≤ Multiset.card (Polynomial.roots N) := by
     have h_sum_zeros : (Finset.filter (fun p => D.eval p.1 p.2 = 0) E.points).card ≤ Finset.sum (N.roots.toFinset) (fun x₀ => (Finset.filter (fun p => p.1 = x₀ ∧ D.eval p.1 p.2 = 0) E.points).card) := by
       have h_sum_multiplicity : (Finset.filter (fun p => D.eval p.1 p.2 = 0) E.points) ⊆ Finset.biUnion N.roots.toFinset (fun x₀ => Finset.filter (fun p => p.1 = x₀ ∧ D.eval p.1 p.2 = 0) E.points) := by
-        intro p hp; simp_all +decide [ Finset.subset_iff ] ;
+        intro p hp; simp_all +decide ;
         have := E.hOnCurve p hp.1; simp_all +decide [ CoordRingElt.eval ] ;
         rw [ ← this ] ; linear_combination' hp.2 * ( Polynomial.eval p.1 D.a + Polynomial.eval p.1 D.b * p.2 ) ;
       exact le_trans ( Finset.card_le_card h_sum_multiplicity ) ( Finset.card_biUnion_le );
     refine le_trans h_sum_zeros <| le_trans ( Finset.sum_le_sum fun x hx => h_root_multiplicity x <| by aesop ) ?_;
     rw [ ← Multiset.toFinset_sum_count_eq ];
-    simp +decide [ Polynomial.rootMultiplicity_eq_zero, hN_nonzero ];
+    simp +decide;
   exact h_sum_zeros.trans ( le_trans ( Polynomial.card_roots' _ ) hN_deg )
 
 /-! ## Main result -/

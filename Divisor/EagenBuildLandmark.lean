@@ -67,7 +67,7 @@ noncomputable def EagenAccum.unit : EagenAccum E :=
     odd-trailing element produces this; subsequent combines absorb
     it. -/
 noncomputable def EagenAccum.singleton (P : ZMod E.q × ZMod E.q)
-    (hP : P ∈ E.points) : EagenAccum E :=
+    (_hP : P ∈ E.points) : EagenAccum E :=
   { point := ECPoint.affine E P.1 P.2, poly := { a := 1, b := 0 } }
 
 /-! ## Combine helpers
@@ -169,7 +169,7 @@ Dispatches on `(a.point, b.point)`. Total via `match`; the
 dispatch through the helpers above. -/
 
 noncomputable def EagenAccum.combine (a b : EagenAccum E) : EagenAccum E :=
-  match h_a : a.point, h_b : b.point with
+  match _h_a : a.point, _h_b : b.point with
   | WeierstrassCurve.Affine.Point.zero, WeierstrassCurve.Affine.Point.zero =>
       EagenAccum.combine_oo E a b
   | WeierstrassCurve.Affine.Point.zero,
@@ -182,7 +182,7 @@ noncomputable def EagenAccum.combine (a b : EagenAccum E) : EagenAccum E :=
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ =>
       if h_xx : xa ≠ xb then
         EagenAccum.combine_distinct E a b xa ya xb yb h_xx
-      else if h_yy : ya = -yb then
+      else if _h_yy : ya = -yb then
         -- a.point + b.point = O.
         EagenAccum.combine_vertical E a b xa
       else
@@ -2471,7 +2471,7 @@ theorem landmarkInv_levelInitSingleton
     show (normPoly E { a := X - C P.1, b := 0 }).natDegree = 2
     rw [normPoly_eq]
     show ((X - C P.1) ^ 2 - 0 ^ 2 * curveX E).natDegree = 2
-    simp [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C]
+    simp [Polynomial.natDegree_pow]
 
 theorem levelInitSingleton_poly_not_both_zero
     (P : ZMod E.q × ZMod E.q) :
@@ -2589,7 +2589,7 @@ theorem landmarkInvStrong_levelInitSingleton
     rw [if_neg h_pt_ne]
     rw [normPoly_eq]
     show ((X - C P.1) ^ 2 - 0 ^ 2 * curveX E).natDegree = 2
-    simp [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C]
+    simp [Polynomial.natDegree_pow]
 
 /-- Singletonized level-0: each input becomes a vertical-line accumulator. -/
 noncomputable def level0_singletons (Ps : List (ZMod E.q × ZMod E.q)) :
@@ -7082,9 +7082,9 @@ theorem of_chordCase {a b : EagenAccum E}
     combineCanFire E a b := by
   match hpa : a.point, hpb : b.point with
   | WeierstrassCurve.Affine.Point.zero, _ =>
-      simpa [combineCanFire, hpa, hpb]
+      simp [combineCanFire, hpa, hpb]
   | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero =>
-      simpa [combineCanFire, hpa, hpb]
+      simp [combineCanFire, hpa, hpb]
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) hns_a,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) hns_b =>
       cases hxx : decEq xa xb with
@@ -7093,14 +7093,14 @@ theorem of_chordCase {a b : EagenAccum E}
       | isTrue h_x_eq =>
           cases hyy : decEq ya (-yb) with
           | isTrue h_y_neg =>
-              simpa [combineCanFire, hpa, hpb, hxx, hyy]
+              simp [combineCanFire, hpa, hpb, hxx, hyy]
           | isFalse h_y_not_neg =>
               cases hy0 : decEq ya 0 with
               | isTrue h_y_zero =>
-                  simpa [combineCanFire, hpa, hpb, hxx, hyy, hy0]
+                  simp [combineCanFire, hpa, hpb, hxx, hyy, hy0]
               | isFalse h_y_ne_zero =>
                   have hfalse : False := by
-                    simpa [chordCase, hpa, hpb, hxx, hyy, hy0] using h
+                    simp [chordCase, hpa, hpb, hxx, hyy, hy0] at h
                   exact False.elim hfalse
 
 end combineCanFire
@@ -8011,11 +8011,7 @@ theorem residue_indicator_sum_eq
         exact E.hComplete x (-y) (by
           rw [neg_pow_two]
           exact hEq)
-      have hsum :
-          (∑ P ∈ E.points, if P = (x, -y) then 1 else 0) = 1 := by
-        rw [Finset.sum_ite_eq']
-        simp [hmem]
-      simpa [negCoords, hmem, eq_comm] using hsum
+      simp [negCoords, hmem, eq_comm]
 
 theorem targetMass_eq_natDegree_of_landmarkInvStrong
     (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E)
@@ -8302,7 +8298,7 @@ theorem eagenBuild_landmark_length2
   · -- (normPoly (X - C P.1, 0)).natDegree = ((X - C P.1)² - 0² · curveX).natDegree = 2.
     rw [normPoly_eq]
     show ((X - C P.1) ^ 2 - 0 ^ 2 * curveX E).natDegree = 2
-    simp [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C]
+    simp [Polynomial.natDegree_pow]
 
 /-! ## level_step preservation (conditional on per-pair combine)
 

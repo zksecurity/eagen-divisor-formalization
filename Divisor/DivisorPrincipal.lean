@@ -366,7 +366,7 @@ theorem sum_multAt_eq_sum_βfun
   -- Step 2: extend to E.points via β_fun = 0 off zerosFinset.
   apply Finset.sum_subset (Finset.filter_subset _ _)
   intro P hPin hPnotZ
-  simp only [zerosFinset, zeros, Finset.mem_filter] at hPnotZ
+  simp only [Finset.mem_filter] at hPnotZ
   push_neg at hPnotZ
   have hEvalNZ : D.eval P.1 P.2 ≠ 0 := hPnotZ hPin
   by_contra hβnz

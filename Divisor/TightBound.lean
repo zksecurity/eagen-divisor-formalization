@@ -31,7 +31,7 @@ theorem chord_avoids_D_zeros_of_denom_defined
       ext; simp +decide [ slopeOf, Line.eval ] ; ring;
       grind +extAll;
     · exact Or.inr ( sub_ne_zero_of_ne <| Ne.symm hNV );
-  contrapose! h_card; simp_all +decide [ Finset.subset_iff ] ;
+  contrapose! h_card; simp_all +decide ;
   refine' lt_of_lt_of_le _ ( Finset.card_mono <| show { A₀, A₁, ( slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1, slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * ( slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1 ) + ( A₀.2 - slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.1 ) ), Q } ⊆ Finset.filter ( fun p => ( lineThrough A₀.1 A₀.2 A₁.1 A₁.2 ).eval p.1 p.2 = 0 ) E.points from _ );
   · rw [ Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_insert_of_notMem ] <;> simp +decide [ * ];
     · intro h; simp_all +decide [ zerosFinset ] ;
@@ -47,12 +47,12 @@ theorem chord_avoids_D_zeros_of_denom_defined
         unfold zeros at hQ₁; simp_all +decide [ Finset.mem_filter ] ;
   · simp_all +decide [ Finset.subset_iff ];
     refine' ⟨ _, _, _, _ ⟩;
-    · unfold lineThrough; simp +decide [ sub_eq_iff_eq_add ] ;
-      unfold Line.eval; simp +decide [ sub_eq_iff_eq_add ] ;
-    · unfold lineThrough; simp +decide [ sub_eq_iff_eq_add ] ;
+    · unfold lineThrough; simp +decide ;
+      unfold Line.eval; simp +decide ;
+    · unfold lineThrough; simp +decide ;
       unfold Line.eval slopeOf; simp +decide [ sub_eq_iff_eq_add ] ;
       field_simp;
-      rw [ sub_div', ← add_div, eq_div_iff ] <;> ring ; simp +decide [ sub_eq_iff_eq_add, hNV ];
+      rw [ sub_div', ← add_div, eq_div_iff ] <;> ring ; simp +decide [ sub_eq_iff_eq_add ];
       · exact Ne.symm hNV;
       · exact sub_ne_zero_of_ne <| Ne.symm hNV;
     · refine' ⟨ _, _ ⟩;

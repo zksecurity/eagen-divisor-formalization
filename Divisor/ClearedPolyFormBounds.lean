@@ -265,8 +265,7 @@ theorem card_dxdzDenA₀Scaled_zero_A₀_le :
     intro hZ
     have hcoeff3 : p.coeff 3 = -1 := by
       simp [hpdef, Polynomial.coeff_add, Polynomial.coeff_neg,
-             Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
-             Polynomial.coeff_X, Polynomial.coeff_C]
+             Polynomial.coeff_X_pow]
     rw [hZ, Polynomial.coeff_zero] at hcoeff3
     have h1 : (1 : ZMod E.q) = 0 := by linear_combination hcoeff3
     exact one_ne_zero h1
@@ -285,10 +284,10 @@ theorem card_dxdzDenA₀Scaled_zero_A₀_le :
                     + C (2 * A₀.2 ^ 2)).eval 0 = 0 := by
       rw [hcoeff0]; simp
     simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
-          Polynomial.eval_X, Polynomial.eval_C, Polynomial.eval_pow] at hEval
+          Polynomial.eval_X, Polynomial.eval_C] at hEval
     have hOC : A₀.2 ^ 2 = A₀.1 ^ 3 + E.curveA * A₀.1 + E.curveB := E.hOnCurve A₀ hE
     rw [hpdef]
-    simp only [Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_neg,
+    simp only [Polynomial.eval_add, Polynomial.eval_neg,
           Polynomial.eval_pow, Polynomial.eval_mul, Polynomial.eval_X,
           Polynomial.eval_C]
     linear_combination hEval - 2 * hOC
@@ -2533,7 +2532,7 @@ theorem InnerDegLe_modByMonic_curveEqPoly (f : (ZMod E.q)[X][X]) (M k : ℕ)
         have hne2 : ¬ (N = N - 2) := by omega
         have hne3 : ¬ (N = N - 3) := by omega
         have hN_self : (N = N) := rfl
-        simp only [hne1, hne2, hne3, hN_self, if_true, if_false,
+        simp only [hne1, hne2, hne3, if_true, if_false,
                    mul_one, mul_zero]
         show cN - (cN - 0) - (0 - 0) = 0
         ring
@@ -2544,7 +2543,7 @@ theorem InnerDegLe_modByMonic_curveEqPoly (f : (ZMod E.q)[X][X]) (M k : ℕ)
           have hne2 : ¬ (N - 1 = N - 2) := by omega
           have hne3 : ¬ (N - 1 = N - 3) := by omega
           have h_self : (N - 1 = N - 1) := rfl
-          simp only [hne0, hne2, hne3, h_self, if_true, if_false,
+          simp only [hne0, hne2, hne3, if_true, if_false,
                      mul_one, mul_zero]
           show cNm1 - (0 - 0) - (cNm1 - 0) = 0
           ring

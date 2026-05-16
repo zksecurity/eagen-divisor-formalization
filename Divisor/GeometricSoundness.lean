@@ -5038,8 +5038,8 @@ private theorem card_logDerivCheckFnDefined_complement_le
         2 * (5 * (D.degE + stmt.k + 2) + 3) +
         21 * (D.degE + stmt.k + 2) + 72)
     (A₀ : ZMod E.q × ZMod E.q) (hA₀ : A₀ ∈ E.points)
-    (hA₀nz : A₀ ∉ zerosFinset E D)
-    (hA₀nr : ∀ j : Fin (1 + baseImageCount E stmt msg hkm),
+    (_hA₀nz : A₀ ∉ zerosFinset E D)
+    (_hA₀nr : ∀ j : Fin (1 + baseImageCount E stmt msg hkm),
         distinctR E stmt msg hkm j ≠ A₀)
     (hA₀NotBad : A₀ ∉ badDenomA0 E D stmt.target
         (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm)) :

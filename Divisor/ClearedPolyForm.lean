@@ -1530,7 +1530,7 @@ theorem bivEval_lhsTerm1Scaled_eq
             * ∏ j : Fin k,
                 (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2) := by
   unfold lhsTerm1Scaled
-  simp only [bivEval_mul, bivEval_add]
+  simp only [bivEval_mul]
   rw [bivEval_DDerivAtA₁Poly, bivEval_embedScalar, bivEval_outerA₁y,
       bivEval_DAtA₀Poly,
       bivEval_DAtA₂Scaled_eq _ _ _ _ hNV,
@@ -1893,7 +1893,7 @@ private lemma clearedFiberPoly_lhs0_eq_LT_mul_denom
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
-    (hNV : A₀.1 ≠ A₁.1)
+    (_hNV : A₀.1 ≠ A₁.1)
     (hD0 : D.eval A₀.1 A₀.2 ≠ 0)
     (hDx0 : 3 * A₀.1 ^ 2 + E.curveA
       - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.2 ≠ 0) :
@@ -1965,7 +1965,7 @@ private lemma clearedFiberPoly_lhs1_eq_LT_mul_denom
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
-    (hNV : A₀.1 ≠ A₁.1)
+    (_hNV : A₀.1 ≠ A₁.1)
     (hD1 : D.eval A₁.1 A₁.2 ≠ 0)
     (hDx1 : 3 * A₁.1 ^ 2 + E.curveA
       - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₁.2 ≠ 0) :
@@ -2035,7 +2035,7 @@ private lemma clearedFiberPoly_lhs2_eq_LT_mul_denom
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
-    (hNV : A₀.1 ≠ A₁.1)
+    (_hNV : A₀.1 ≠ A₁.1)
     (hD2 : D.eval (chordX₂ A₀ A₁) (chordY₂ A₀ A₁) ≠ 0)
     (hDx2 : 3 * (chordX₂ A₀ A₁) ^ 2 + E.curveA
       - 2 * slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (chordY₂ A₀ A₁) ≠ 0) :

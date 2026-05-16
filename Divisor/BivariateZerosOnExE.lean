@@ -94,7 +94,7 @@ lemma specialize_first_totalDegree (f : FourVarPoly E.q) (A₀ : ZMod E.q × ZMo
   rw [ show specialize_first E f A₀ = ∑ m ∈ f.support, f.coeff m • ( MvPolynomial.C A₀.1 ^ m 0 * MvPolynomial.C A₀.2 ^ m 1 * MvPolynomial.X 0 ^ m 2 * MvPolynomial.X 1 ^ m 3 ) from ?_ ]
   · simp +decide [ MvPolynomial.totalDegree ]
     intro b hb; contrapose! hb; simp_all +decide [ MvPolynomial.coeff_sum, MvPolynomial.coeff_smul ]
-    refine Finset.sum_eq_zero fun m hm => ?_ ; simp_all +decide [ MvPolynomial.coeff_C, mul_assoc ]
+    refine Finset.sum_eq_zero fun m hm => ?_ ; simp_all +decide [ mul_assoc ]
     rw [ MvPolynomial.coeff_eq_zero_of_totalDegree_lt ]
     refine' lt_of_le_of_lt _ hb
     refine' le_trans _ ( h_total_degree_le m hm )
@@ -207,7 +207,7 @@ lemma filter_empty_of_D_zero
 
 /-- Case when |E.points| ≤ 3D: trivial product bound. -/
 lemma main_bound_small_points
-    (f : FourVarPoly E.q) (D : ℕ) (hD : D ≥ 1)
+    (f : FourVarPoly E.q) (D : ℕ) (_hD : D ≥ 1)
     (hSmall : E.points.card ≤ 3 * D) :
     ((E.points ×ˢ E.points).filter
       (fun p => bivEval₂ f p.1 p.2 = 0)).card

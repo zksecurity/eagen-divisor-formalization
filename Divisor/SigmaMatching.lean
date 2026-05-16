@@ -197,8 +197,7 @@ private theorem polyGFull_total_degree_le'
     have hMul := total_degree_le.mul (total_degree_le.mul hβ hQErase) hR
     refine hMul.mono ?_
     have hEC : ((Finset.univ (α := Fin d)).erase k).card ≤ d := by
-      have := Finset.card_erase_le (s := (Finset.univ (α := Fin d))) (a := k)
-      simpa using this
+      simp
     have hMC : (Finset.univ (α := Fin M)).card = M := by simp
     rw [hMC]
     set ce := ((Finset.univ (α := Fin d)).erase k).card with hce
@@ -223,8 +222,7 @@ private theorem polyGFull_total_degree_le'
     have hMul := total_degree_le.mul (total_degree_le.mul hm hQ) hRErase
     refine hMul.mono ?_
     have hEC : ((Finset.univ (α := Fin M)).erase j).card ≤ M := by
-      have := Finset.card_erase_le (s := (Finset.univ (α := Fin M))) (a := j)
-      simpa using this
+      simp
     have hDC : (Finset.univ (α := Fin d)).card = d := by simp
     rw [hDC]
     set ce := ((Finset.univ (α := Fin M)).erase j).card with hce
@@ -674,7 +672,7 @@ private lemma residual_vanishes_on_ExE
       A₀ ∈ E.points → A₁ ∈ E.points →
       polyG E Q beta R m A₀ A₁ = 0)
     (hELarge : E.points.card > 4 * (d + M) + 2)
-    (hQonE : ∀ k, Q k ∈ E.points)
+    (_hQonE : ∀ k, Q k ∈ E.points)
     (hELarge_dkl : E.points.card * E.points.card - 2 * E.points.card
                      > 18 * (d + M) * E.q) :
     ∀ A₀ A₁ : ZMod E.q × ZMod E.q,

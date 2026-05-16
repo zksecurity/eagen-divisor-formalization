@@ -113,7 +113,7 @@ theorem chordCubicBiv_coeff_natDegree_weighted_bound
       unfold chordCubicBiv
       simp only [Polynomial.coeff_add, Polynomial.coeff_sub,
                  Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
-                 Polynomial.coeff_C, Polynomial.coeff_X, Polynomial.coeff_mul_X]
+                 Polynomial.coeff_C, Polynomial.coeff_mul_X]
       norm_num
     rw [hcoeff]
     have hbound :
@@ -292,7 +292,7 @@ private lemma DLineBiv_coeff_natDegree_le_zero_of_b_coeff_zero
             = if j = 0 then 1 else 0 := by
         rw [Polynomial.coeff_add, Polynomial.coeff_add,
             Polynomial.coeff_C_mul, Polynomial.coeff_X, Polynomial.coeff_C]
-        split_ifs with hj1 hj0 hj1' hj0' <;>
+        split_ifs with hj1 hj0 hj1' <;>
           simp_all [Polynomial.coeff_X, Polynomial.coeff_C]
       rw [hqcoeff_succ]
       split_ifs with hj0
@@ -338,8 +338,7 @@ private lemma normPoly_natDegree_ge_b_curveX
     refine Polynomial.le_natDegree_of_ne_zero ?_
     show (curveX E).coeff 3 ≠ 0
     unfold curveX
-    simp [Polynomial.coeff_add, Polynomial.coeff_X_pow,
-          Polynomial.coeff_C_mul, Polynomial.coeff_X, Polynomial.coeff_C]
+    simp [Polynomial.coeff_add, Polynomial.coeff_X_pow]
   have hcurveX_ne : (curveX E) ≠ 0 := by
     intro h
     have := hcurveX_natDeg
@@ -410,8 +409,7 @@ private lemma normPoly_natDegree_ge_a_sq
     refine Polynomial.le_natDegree_of_ne_zero ?_
     show (curveX E).coeff 3 ≠ 0
     unfold curveX
-    simp [Polynomial.coeff_add, Polynomial.coeff_X_pow,
-          Polynomial.coeff_C_mul, Polynomial.coeff_X, Polynomial.coeff_C]
+    simp [Polynomial.coeff_add, Polynomial.coeff_X_pow]
   have hDa_sq_natDeg : (D.a ^ 2).natDegree = 2 * D.a.natDegree :=
     Polynomial.natDegree_pow _ _
   have hDa_sq_lead :

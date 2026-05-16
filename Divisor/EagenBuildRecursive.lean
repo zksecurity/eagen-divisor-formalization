@@ -389,8 +389,7 @@ theorem accInv_level0_chord_divisor_identity_at_off_support
       rw [ECPoint.affine_of_nonsingular E hns]
       show ((List.filter (fun p => p = (x, y)) [P, Q]).length : ℤ) = 0
       have : List.filter (fun p => p = (x, y)) [P, Q] = [] := by
-        simp only [List.filter, decide_eq_true_eq, decide_false,
-                   decide_eq_true_eq]
+        simp only [List.filter]
         have h1 : ¬ P = (x, y) := fun h => h_off_P h.symm
         have h2 : ¬ Q = (x, y) := fun h => h_off_Q h.symm
         simp [h1, h2]
@@ -546,7 +545,7 @@ theorem accInv_level0_chord_divisor_identity_at_P
       have : List.filter (fun p => p = P) [P, Q] = [P] := by
         have h1 : (P = P) := rfl
         have h2 : ¬ Q = P := fun h => hPQ_ne h.symm
-        simp [List.filter, h1, h2]
+        simp [List.filter, h2]
       rw [this]
       simp]
   -- residue at .some P = 0: P ≠ -running_sum (= A₂) and P ≠ 0.
@@ -615,7 +614,7 @@ theorem accInv_level0_chord_divisor_identity_at_Q
       have : List.filter (fun p => p = Q) [P, Q] = [Q] := by
         have h1 : ¬ P = Q := hPQ_ne
         have h2 : (Q = Q) := rfl
-        simp [List.filter, h1, h2]
+        simp [List.filter, h1]
       rw [this]
       simp]
   have h_neg_run : (-ECPoint.affineOfMem E h_acc : ECPoint E)
@@ -1025,11 +1024,11 @@ For input `[P, -P]` (the simplest sum-zero case), `eagenBuild` produces
 the vertical line `(X - x(P))`, whose divisor is `(P) + (-P) - 2·O`. -/
 
 theorem eagenBuild_length2_neg_eq_vertical
-    (P : ZMod E.q × ZMod E.q) (hY : P.2 ≠ 0) :
+    (P : ZMod E.q × ZMod E.q) (_hY : P.2 ≠ 0) :
     eagenBuild E [P, (P.1, -P.2)]
       = ({ a := Polynomial.X - Polynomial.C P.1, b := 0 } : CoordRingElt E.q) := by
   unfold eagenBuild eagenBuild_level0
-  simp only [List.map]
+  simp only []
   -- The pattern matches `P :: Q :: rest` with rest = [].
   -- The condition `P.1 ≠ (P.1, -P.2).1 = P.1` is false.
   have h_xx : ¬ (P.1 ≠ (P.1, -P.2).1) := fun h => h rfl
@@ -1083,7 +1082,7 @@ at -a.point makes the ordAt there positive. -/
 theorem accInv_poly_vanishes_at_neg_point
     {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
     (h_acc : AccInv E xs a) (h_negPt_mem : (a.point.1, -a.point.2) ∈ E.points)
-    (hY : a.point.2 ≠ 0)
+    (_hY : a.point.2 ≠ 0)
     (h_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0)) :
     a.poly.eval a.point.1 (-a.point.2) = 0 := by
   classical
@@ -1155,10 +1154,10 @@ Hence `(X - a.point.x)` divides both `.a` and `.b` of the product, so
 
 theorem combine_higher_distinct_divisible_at_a
     {xs : List (ZMod E.q × ZMod E.q)} {a b : EagenAccum E}
-    (h_acc_a : AccInv E xs a) (h_xx : a.point.1 ≠ b.point.1)
+    (h_acc_a : AccInv E xs a) (_h_xx : a.point.1 ≠ b.point.1)
     (hY_a : a.point.2 ≠ 0)
     (h_a_poly_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
-    (h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0)) :
+    (_h_b_poly_NZ : ¬ (b.poly.a = 0 ∧ b.poly.b = 0)) :
     let chord := chordCoordRingElt E a.point b.point
     let prod := mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly
     prod.a.eval a.point.1 = 0 ∧ prod.b.eval a.point.1 = 0 := by
@@ -1345,7 +1344,7 @@ divisor's `-(xs.length)` plus the residue's `-1` at infinity). -/
 theorem accInv_natDegree_normPoly
     {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
     (h_acc : AccInv E xs a)
-    (h_a_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0)) :
+    (_h_a_NZ : ¬ (a.poly.a = 0 ∧ a.poly.b = 0)) :
     (normPoly E a.poly).natDegree = xs.length + 1 := by
   classical
   obtain ⟨h_pt_mem, _, h_div⟩ := h_acc
@@ -1726,9 +1725,9 @@ theorem combine_higher_distinct_eval_neg_third_nonzero
                          - a.point.1 - b.point.1)
                       + (a.point.2 - slopeOf a.point.1 a.point.2 b.point.1 b.point.2
                          * a.point.1)) ≠ 0)
-    (h_Q₀x_ne_a : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+    (_h_Q₀x_ne_a : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
                     - a.point.1 - b.point.1) ≠ a.point.1)
-    (h_Q₀x_ne_b : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
+    (_h_Q₀x_ne_b : (slopeOf a.point.1 a.point.2 b.point.1 b.point.2 ^ 2
                     - a.point.1 - b.point.1) ≠ b.point.1)
     (h_a_neg_Q₀ :
         let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
@@ -3539,7 +3538,7 @@ theorem accInv_combine_higher_distinct_divisor_at_general_off_chord_AccInv_form
                     - a.point.1 - b.point.1) ≠ b.point.1)
     {x y : ZMod E.q} (hP : (x, y) ∈ E.points)
     (h_chord_pos : (chordCoordRingElt E a.point b.point).eval x y ≠ 0)
-    (h_chord_neg : (chordCoordRingElt E a.point b.point).eval x (-y) ≠ 0)
+    (_h_chord_neg : (chordCoordRingElt E a.point b.point).eval x (-y) ≠ 0)
     (h_b_at_pos : b.poly.eval x y ≠ 0)
     (h_b_at_neg : b.poly.eval x (-y) ≠ 0)
     (h_x_ne_a : x ≠ a.point.1)
@@ -4476,8 +4475,8 @@ theorem terminalInv_combine_higher_vertical_at_off_a_fiber
     (h_x_ne_a : x ≠ a.point.1)
     (h_a_at_pos : a.poly.eval x y ≠ 0)
     (h_a_at_neg : a.poly.eval x (-y) ≠ 0)
-    (h_b_at_pos : b.poly.eval x y ≠ 0)
-    (h_b_at_neg : b.poly.eval x (-y) ≠ 0) :
+    (_h_b_at_pos : b.poly.eval x y ≠ 0)
+    (_h_b_at_neg : b.poly.eval x (-y) ≠ 0) :
     divisorOfD E (EagenAccum.combine_higher_vertical E a b h_xx h_yy).poly
       (ECPoint.affine E x y)
       = formalDivisorOfList E (xs ++ ys) (ECPoint.affine E x y) := by
@@ -6682,7 +6681,7 @@ D on E that's also on the chord must be in this set, but `¬bad` excludes
 D vanishing at A_0, A_1, or A_2. -/
 
 theorem hQline_of_hGood_general
-    {D : CoordRingElt E.q} (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    {D : CoordRingElt E.q} (_hD : ¬ (D.a = 0 ∧ D.b = 0))
     {A₀ A₁ : ZMod E.q × ZMod E.q}
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
     (hNV : A₀.1 ≠ A₁.1)
@@ -6745,7 +6744,7 @@ theorem logDerivCheckFn_zero_via_isHonestForExplicit_with_sides
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k)
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
+    (_h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
     (hSplit : splitsOnE E msg.toD)
     (hAccount : (∑ Q ∈ E.points, ordAt E msg.toD Q) = (normPoly E msg.toD).natDegree)
@@ -6952,7 +6951,6 @@ theorem indicator_sum_eq_eval_at_negTarget
   · simp
   · intro b _ hb
     rw [if_neg hb]
-    push_cast
     ring
   · intro h
     exact absurd h_negT h
@@ -6980,7 +6978,6 @@ theorem bases_sum_eq_index_sum
     apply Finset.sum_congr rfl
     intro Q _
     rw [Finset.sum_filter]
-    push_cast
     rw [Finset.sum_mul]]
   -- Swap the sums (inner is now Q-dependent only via the if-branch, but the index set is fixed).
   rw [Finset.sum_comm]
@@ -6992,7 +6989,6 @@ theorem bases_sum_eq_index_sum
   · simp
   · intro b _ hb
     rw [if_neg (Ne.symm hb)]
-    push_cast
     ring
   · intro h
     exact absurd (h_bases i) h
@@ -7795,7 +7791,7 @@ theorem divisor_identity_at_affine_off_support_for_length4Simple
     {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
     (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
     {wit : DlogWitness E.q} (hk : stmt.k = wit.k)
-    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
+    (_h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
     {x y : ZMod E.q} (hns : E.toW.toAffine.Nonsingular x y)
     (hP : (x, y) ∈ E.points)
     (h_off : (x, y) ≠ h_simple.P₀ ∧ (x, y) ≠ h_simple.P₁ ∧

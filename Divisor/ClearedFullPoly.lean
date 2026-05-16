@@ -729,7 +729,7 @@ theorem bivEval₂_lhsTerm0Full_eq_bivEval
       bivEval₂_dxdzDenA₁Full_eq_bivEval,
       bivEval₂_dxdzDenA₂Full_eq_bivEval,
       bivEval₂_linesProductFull_eq_bivEval]
-  simp [bivEval₂_mul, bivEval, embedScalar]
+  simp [bivEval, embedScalar]
 
 theorem bivEval₂_lhsTerm1Full_eq_bivEval
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
@@ -745,7 +745,7 @@ theorem bivEval₂_lhsTerm1Full_eq_bivEval
       bivEval₂_dxdzDenA₀Full_eq_bivEval,
       bivEval₂_dxdzDenA₂Full_eq_bivEval,
       bivEval₂_linesProductFull_eq_bivEval]
-  simp [bivEval₂_mul, bivEval, embedScalar, outerA₁y]
+  simp [bivEval, embedScalar, outerA₁y]
 
 theorem bivEval₂_lhsTerm2Full_eq_bivEval
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
@@ -762,7 +762,7 @@ theorem bivEval₂_lhsTerm2Full_eq_bivEval
       bivEval₂_dxdzDenA₁Full_eq_bivEval,
       bivEval₂_linesProductFull_eq_bivEval,
       bivEval₂_y₂ScaledFull_eq_bivEval]
-  simp [bivEval₂_mul, bivEval, embedScalar]
+  simp [bivEval, embedScalar]
 
 theorem bivEval₂_correctionTerm0Full_eq_bivEval
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
@@ -1178,7 +1178,7 @@ private lemma bi_x_degree_le_prod_finset_fin {k : ℕ}
     bi_x_degree_le E (∏ i ∈ s, f i) (s.card * dX) (s.card * dY) := by
   classical
   induction s using Finset.induction_on with
-  | empty => refine ⟨?_, ?_⟩ <;> simp [MvPolynomial.degreeOf_C]
+  | empty => refine ⟨?_, ?_⟩ <;> simp
   | @insert a s has ih =>
     rw [Finset.prod_insert has, Finset.card_insert_of_notMem has]
     exact (bi_x_degree_le.mul (hf a (Finset.mem_insert_self a s))

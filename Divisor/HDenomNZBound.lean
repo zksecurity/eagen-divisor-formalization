@@ -303,7 +303,7 @@ theorem badDenomA0_card_le_linear
     have hge : 2 ≤ n := by omega
     have h := hMul
     have hsub : ((n - 2 : ℕ) : ℤ) = (n : ℤ) - 2 := by
-      push_cast; omega
+      omega
     have := h
     -- Cast both sides.
     have : (bad * (n - 2) : ℕ) ≤ ((3 * D.degE + 9 * k + 71) * n : ℕ) := h

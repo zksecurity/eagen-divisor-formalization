@@ -661,7 +661,7 @@ private theorem tangent_vieta_triple
 private theorem normPoly_chord_factor_tangent
     {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (h2t : P.2 ≠ 0) :
     let lam := (3 * P.1 ^ 2 + E.curveA) * (2 * P.2)⁻¹
-    let mu := P.2 - lam * P.1
+    let _mu := P.2 - lam * P.1
     let x₂ := lam ^ 2 - 2 * P.1
     normPoly E (chordCoordRingElt E P P)
       = -((X - C P.1) ^ 2 * (X - C x₂)) := by
@@ -3019,7 +3019,7 @@ step. -/
 
 theorem cross_case_mul_a_b_vanish
     {D₁ D₂ : CoordRingElt E.q}
-    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0)
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (_hY : P.2 ≠ 0)
     (hD₁P : D₁.eval P.1 P.2 = 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0) :
     (mulCoordRingElt E D₁ D₂).a.eval P.1 = 0
     ∧ (mulCoordRingElt E D₁ D₂).b.eval P.1 = 0 := by
@@ -3043,7 +3043,7 @@ theorem cross_case_mul_a_b_vanish
     -- (using curveX evaluated at P.1 equals y₀²).
     have hCurveX : (curveX E).eval P.1 = P.2 ^ 2 := by
       unfold curveX
-      simp [Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_mul,
+      simp [Polynomial.eval_add, Polynomial.eval_mul,
             Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X, hOC]
     rw [hCurveX]
     ring
@@ -3107,7 +3107,7 @@ this gives `T'(x₀) ≠ 0`, hence `rootMult x₀ T = 1`. -/
 /-- D₁.b non-zero at x_0 in cross case (D₁ lone at P, D₁ doesn't vanish on full fiber). -/
 theorem cross_case_D1_b_eval_ne_zero
     {D₁ : CoordRingElt E.q}
-    {P : ZMod E.q × ZMod E.q} (hY : P.2 ≠ 0)
+    {P : ZMod E.q × ZMod E.q} (_hY : P.2 ≠ 0)
     (hD₁P : D₁.eval P.1 P.2 = 0) (hD₁negP : D₁.eval P.1 (-P.2) ≠ 0) :
     D₁.b.eval P.1 ≠ 0 := by
   intro hb
@@ -3122,7 +3122,7 @@ theorem cross_case_D1_b_eval_ne_zero
 /-- D₂.b non-zero at x_0 in cross case (D₂ lone at -P, D₂ doesn't vanish on full fiber). -/
 theorem cross_case_D2_b_eval_ne_zero
     {D₂ : CoordRingElt E.q}
-    {P : ZMod E.q × ZMod E.q} (hY : P.2 ≠ 0)
+    {P : ZMod E.q × ZMod E.q} (_hY : P.2 ≠ 0)
     (hD₂P : D₂.eval P.1 P.2 ≠ 0) (hD₂negP : D₂.eval P.1 (-P.2) = 0) :
     D₂.b.eval P.1 ≠ 0 := by
   intro hb
@@ -3154,7 +3154,7 @@ theorem cross_case_T_deriv_eq_normPoly_deriv
   have hOC : P.2 ^ 2 = P.1 ^ 3 + E.curveA * P.1 + E.curveB := E.hOnCurve P hP
   have hCurveX : (curveX E).eval P.1 = P.2 ^ 2 := by
     unfold curveX
-    simp [Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_mul,
+    simp [Polynomial.eval_add, Polynomial.eval_mul,
           Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X, hOC]
   -- Expand both derivatives.
   -- LHS: T = (D₁·D₂).a - (D₁·D₂).b * C P.2
@@ -3170,12 +3170,10 @@ theorem cross_case_T_deriv_eq_normPoly_deriv
   -- Take derivatives. Use Polynomial.derivative_add, _sub, _mul, _pow.
   simp only [Polynomial.derivative_add, Polynomial.derivative_sub,
              Polynomial.derivative_mul, Polynomial.derivative_pow,
-             Polynomial.derivative_C, mul_zero, add_zero, zero_add,
-             mul_one, one_mul, zero_mul]
+             Polynomial.derivative_C, mul_zero, add_zero]
   -- Evaluate.
   simp only [Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_mul,
-             Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X,
-             Polynomial.eval_natCast, Polynomial.eval_ofNat]
+             Polynomial.eval_pow, Polynomial.eval_C]
   -- Substitute hax₁, hax₂, hCurveX.
   rw [hax₁, hax₂, hCurveX]
   ring
@@ -5791,7 +5789,7 @@ theorem divLin_of_vertical (x₀ : ZMod E.q) :
 
 /-- The unit element `(1, 0)` has `ord = 0` at any non-2-torsion P. -/
 theorem ord_const_one_at_nonTwoTorsion
-    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hY : P.2 ≠ 0) :
+    {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (_hY : P.2 ≠ 0) :
     ordAt E ({ a := 1, b := 0 } : CoordRingElt E.q) P = 0 := by
   have h1NZ : ¬ (({ a := 1, b := 0 } : CoordRingElt E.q).a = 0
                  ∧ ({ a := 1, b := 0 } : CoordRingElt E.q).b = 0) := by
@@ -7438,19 +7436,19 @@ theorem eagenBuild_length4_explicit_zero_iff_input
     (h_P₁_ne_A2_01 : P₁.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
     (h_P₂_ne_A2_23 : P₂.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
     (h_P₃_ne_A2_23 : P₃.1 ≠ slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
-    (h_P₀_off_L₂ : P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₀ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+    (_h_P₀_off_L₂ : P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₀ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
                     slopeOf P₂.1 P₂.2 P₃.1 P₃.2
                       * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
                       + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)))
-    (h_P₁_off_L₂ : P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₁ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
+    (_h_P₁_off_L₂ : P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₁ ≠ (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1,
                     slopeOf P₂.1 P₂.2 P₃.1 P₃.2
                       * (slopeOf P₂.1 P₂.2 P₃.1 P₃.2 ^ 2 - P₂.1 - P₃.1)
                       + (P₂.2 - slopeOf P₂.1 P₂.2 P₃.1 P₃.2 * P₂.1)))
-    (h_P₂_off_L₁ : P₂ ≠ P₀ ∧ P₂ ≠ P₁ ∧ P₂ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+    (_h_P₂_off_L₁ : P₂ ≠ P₀ ∧ P₂ ≠ P₁ ∧ P₂ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
                     slopeOf P₀.1 P₀.2 P₁.1 P₁.2
                       * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
                       + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))
-    (h_P₃_off_L₁ : P₃ ≠ P₀ ∧ P₃ ≠ P₁ ∧ P₃ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
+    (_h_P₃_off_L₁ : P₃ ≠ P₀ ∧ P₃ ≠ P₁ ∧ P₃ ≠ (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1,
                     slopeOf P₀.1 P₀.2 P₁.1 P₁.2
                       * (slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1)
                       + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)))

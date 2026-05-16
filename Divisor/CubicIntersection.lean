@@ -47,7 +47,7 @@ theorem curveEqPoly_natDegree_eq : (curveEqPoly E).natDegree = 2 := by
 theorem curveEqPoly_leadingCoeff : (curveEqPoly E).leadingCoeff = 1 := by
   rw [leadingCoeff, curveEqPoly_natDegree_eq]
   unfold curveEqPoly
-  simp [coeff_sub, coeff_X_pow, coeff_C]
+  simp [coeff_sub, coeff_X_pow]
 
 theorem curveEqPoly_monic : (curveEqPoly E).Monic :=
   curveEqPoly_leadingCoeff E
@@ -109,13 +109,13 @@ theorem eq_xPart_add_yPart_mul_X (f : (ZMod E.q)[X][X]) (hf : f.natDegree < 2) :
   unfold xPart yPart
   ext n
   match n with
-  | 0 => simp [coeff_add, coeff_C, coeff_mul_X]
+  | 0 => simp [coeff_add, coeff_C]
   | 1 => simp [coeff_add, coeff_C, coeff_mul_X]
   | k + 2 =>
       have h1 : f.coeff (k + 2) = 0 :=
         Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
       have h2 : (C (f.coeff 0) + C (f.coeff 1) * X).coeff (k + 2) = 0 := by
-        simp [coeff_add, coeff_C, coeff_mul_X]
+        simp [coeff_add, coeff_mul_X]
       rw [h1, h2]
 
 theorem bivEval_canonical_form
@@ -310,7 +310,7 @@ theorem yPart_mul_mod_curveEqPoly (f g : (ZMod E.q)[X][X]) :
       rw [ Polynomial.modByMonic_eq_sub_mul_div _ ( curveEqPoly_monic E ) ] ; ring;
     convert h_factor using 2;
     exact?;
-  replace h_factor := congr_arg ( fun p => Polynomial.coeff p 1 ) h_factor ; simp_all +decide [ Polynomial.coeff_eq_zero_of_natDegree_lt ];
+  replace h_factor := congr_arg ( fun p => Polynomial.coeff p 1 ) h_factor ; simp_all +decide;
   simp_all +decide [ Polynomial.coeff_mul ];
   simp_all +decide [ Finset.Nat.sum_antidiagonal_succ, curveEqPoly ];
   rw [ Polynomial.coeff_eq_zero_of_natDegree_lt ] <;> norm_num;
@@ -396,7 +396,7 @@ theorem card_points_with_fst_eq_le (x : ZMod E.q) :
     simp at h2
   have hg_deg : g.natDegree ≤ 2 :=
     (Polynomial.natDegree_sub_le _ _).trans
-      (max_le (by simp [Polynomial.natDegree_X_pow])
+      (max_le (by simp)
               ((Polynomial.natDegree_C _).le.trans (Nat.zero_le _)))
   calc (E.points.filter (fun p => p.1 = x)).card
       ≤ g.roots.toFinset.card := by

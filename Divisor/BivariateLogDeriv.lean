@@ -83,8 +83,7 @@ theorem normPoly_derivative_eval
         - (C 2 * D.b * derivative D.b * curveX E
             + D.b ^ 2 * derivative (curveX E)) := by
     rw [hN]
-    simp only [derivative_sub, derivative_mul, derivative_pow,
-               derivative_C, derivative_X, derivative_one]
+    simp only [derivative_sub, derivative_mul, derivative_pow]
     -- d/dx (a^2) = 2 * a^1 * a' = 2 * a * a'
     -- d/dx (b^2 * curveX) = d(b^2)/dx * curveX + b^2 * curveX'
     --                     = 2*b*b' * curveX + b^2 * curveX'

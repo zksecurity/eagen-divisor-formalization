@@ -39,7 +39,7 @@ theorem isRoot_of_mem_pointsOnLine {lam c : ZMod E.q}
 theorem natDegree_intersectionPoly_le (lam c : ZMod E.q) :
     (intersectionPoly E lam c).natDegree ≤ 3 := by
   unfold intersectionPoly
-  have h1 : natDegree ((X : (ZMod E.q)[X]) ^ 3) ≤ 3 := by simp [natDegree_X_pow]
+  have h1 : natDegree ((X : (ZMod E.q)[X]) ^ 3) ≤ 3 := by simp
   have h2 : natDegree (C (lam ^ 2) * (X : (ZMod E.q)[X]) ^ 2) ≤ 3 :=
     (natDegree_C_mul_X_pow_le _ 2).trans (by omega)
   have h3 : natDegree (C (E.curveA - 2 * lam * c) * (X : (ZMod E.q)[X])) ≤ 3 := by
@@ -56,7 +56,7 @@ theorem intersectionPoly_ne_zero (lam c : ZMod E.q) :
     intersectionPoly E lam c ≠ 0 := by
   intro h
   have h3 : (intersectionPoly E lam c).coeff 3 = 0 := by rw [h]; simp
-  simp only [intersectionPoly, map_sub, map_add, coeff_sub, coeff_add] at h3
+  simp only [intersectionPoly, map_sub, coeff_sub, coeff_add] at h3
   simp only [coeff_X_pow, coeff_C_mul, coeff_C] at h3
   simp at h3
 
@@ -71,7 +71,7 @@ theorem line_meets_cubic_le_three (lam c : ZMod E.q) :
       Set (ZMod E.q × ZMod E.q)) := by
     intro ⟨x₁, y₁⟩ h1 ⟨x₂, y₂⟩ h2 hx
     simp only [Finset.mem_coe, pointsOnLine, Finset.mem_filter] at h1 h2
-    simp only [Prod.fst] at hx
+    simp only [] at hx
     exact Prod.ext hx (by rw [h1.2, h2.2, hx])
   have hcard : Z.card = (pointsOnLine E lam c).card := Finset.card_image_of_injOn hinj
   -- Z ⊆ roots of g (as a multiset)
