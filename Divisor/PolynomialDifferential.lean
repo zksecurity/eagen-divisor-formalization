@@ -7,7 +7,7 @@
   This is the bridge piece between mathlib's `Polynomial.derivative`
   (a function-level operation on `K[T]`) and `Differential.deriv`
   (a typeclass-level derivation). Future axiom-discharge work for
-  `Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`
+  `Polynomial.resultant_derivative_at_split_specialization_product_formula`
   needs this bridge to apply the proved Galois theorem
   `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`
   to the resultant setting.
@@ -49,4 +49,3 @@ theorem deriv_mul (p q : Polynomial K) :
   rw [derivative_mul, add_comm]
 
 end Polynomial
-

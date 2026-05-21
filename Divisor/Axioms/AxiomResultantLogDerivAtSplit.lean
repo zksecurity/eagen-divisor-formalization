@@ -332,10 +332,54 @@ theorem resultant_logDeriv_at_split_specialization_of_f_natDegree_eq_one
   field_simp
   ring
 
-/-- **Logarithmic derivative of a bivariate resultant at a split
-specialization** — narrowed to `2 ≤ f.natDegree` and `0 < g.natDegree`.
+/-- **Residual derivative/product bridge for a bivariate resultant at a
+split specialization** — narrowed to `2 ≤ f.natDegree` and
+`0 < g.natDegree`.
 
-Three sub-cases are handled by separate theorems and excluded from this axiom:
+This is the remaining citable bridge after removing the logarithmic
+division from the axiom surface.  It states the numerator identity
+
+`F'(t₀) = F(t₀) · Σ_x d/dT log(g(x(T),T))|_{t₀}`,
+
+where `F = Res_X(f,g)` and each summand is written in the implicit-root
+coordinates of the specialized split polynomial `f(X,t₀)`.
+
+The public logarithmic-derivative theorem below divides by `F(t₀)` using
+`hF_ne`.  Keeping the residual axiom in product form isolates the
+missing resultant/norm-trace plumbing from the elementary field-division
+step and makes the dependency closure more precise. -/
+axiom resultant_derivative_at_split_specialization_product_formula
+    {K : Type*} [Field K]
+    (f g : K[X][X]) (t₀ : K)
+    (hMonic : f.Monic)
+    (hf_two_le : 2 ≤ f.natDegree)
+    (hg_pos : 0 < g.natDegree)
+    (hSplit : (f.map (Polynomial.evalRingHom t₀)).Splits)
+    (hg_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
+        (g.map (Polynomial.evalRingHom t₀)).eval x ≠ 0)
+    (hf_X_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
+        ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x ≠ 0) :
+  Polynomial.eval t₀
+      (Polynomial.derivative
+        (Polynomial.resultant f g f.natDegree g.natDegree))
+    =
+    (Polynomial.resultant f g f.natDegree g.natDegree).eval t₀ *
+      ((f.map (Polynomial.evalRingHom t₀)).roots.map (fun x =>
+        let f_X := ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x
+        let f_T := ((f.eval (Polynomial.C x)).derivative).eval t₀
+        let g_X := ((g.map (Polynomial.evalRingHom t₀)).derivative).eval x
+        let g_T := ((g.eval (Polynomial.C x)).derivative).eval t₀
+        let g_val := (g.map (Polynomial.evalRingHom t₀)).eval x
+        (g_T * f_X - g_X * f_T) / (f_X * g_val))).sum
+
+/-- **Logarithmic derivative of a bivariate resultant at a split
+specialization** — theorem derived from the residual product-form bridge.
+
+This declaration keeps the old downstream API stable while removing the
+logarithmic division itself from the axiom surface.
+
+Three sub-cases are handled by separate theorems and excluded from the
+residual bridge:
 * `f.natDegree = 0`:
   `resultant_logDeriv_at_split_specialization_of_natDegree_eq_zero`.
 * `g.natDegree = 0`:
@@ -346,7 +390,7 @@ Three sub-cases are handled by separate theorems and excluded from this axiom:
 The unrestricted form (`resultant_logDeriv_at_split_specialization`)
 is a theorem that case-splits on `f.natDegree` and `g.natDegree` and
 dispatches to the appropriate trivial-case theorem or to this
-narrower axiom.
+narrowed theorem.
 
 Setup: `f, g : K[X][X]` (i.e. polynomials in the outer `Polynomial.X`
 with coefficients in `K[X]` for the inner `Polynomial.X`); `t₀ : K` the
@@ -399,7 +443,7 @@ Human-readable version: for `F(T) = Res_X(f(X,T), g(X,T))`, if
 roots, then the logarithmic derivative `F'(t0)/F(t0)` is the sum over
 the roots of the logarithmic derivative of `g` along the corresponding
 moving root of `f`. -/
-axiom resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
+theorem resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
     {K : Type*} [Field K]
     (f g : K[X][X]) (t₀ : K)
     (hMonic : f.Monic)
@@ -411,11 +455,17 @@ axiom resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
         (g.map (Polynomial.evalRingHom t₀)).eval x ≠ 0)
     (hf_X_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
         ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x ≠ 0) :
-  resultantLogDerivConclusion f g t₀
+  resultantLogDerivConclusion f g t₀ := by
+  have hProd :=
+    resultant_derivative_at_split_specialization_product_formula
+      f g t₀ hMonic hf_two_le hg_pos hSplit hg_def hf_X_def
+  unfold resultantLogDerivConclusion
+  rw [hProd]
+  field_simp [hF_ne]
 
 /-- **Re-export — the unrestricted resultant log-derivative identity**,
 a theorem derived from the narrowed `_of_two_le_natDegree_pos_g`
-axiom plus the three trivial-case theorems above.
+theorem plus the three trivial-case theorems above.
 
 Cases:
 * `f.natDegree = 0`: `_of_natDegree_eq_zero`.
@@ -426,7 +476,8 @@ Cases:
   hypothesis `(g.coeff 0).eval t₀ ≠ 0` follows from `hg_def` applied to
   any chord root; such a root exists because `0 < f.natDegree` and
   `Splits` together force at least one root.
-* `2 ≤ f.natDegree, 0 < g.natDegree`: the narrowed axiom.
+* `2 ≤ f.natDegree, 0 < g.natDegree`: the narrowed theorem backed by
+  the residual product-form axiom.
 
 This is the form that downstream consumers
 (`chord_fiber_product_logDeriv_eq_logDerivTerm_trace` in

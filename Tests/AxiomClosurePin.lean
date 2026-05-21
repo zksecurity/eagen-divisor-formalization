@@ -10,7 +10,7 @@
   * `ma_extractable`, `ip_extractable`:
       propext, Classical.choice, Quot.sound,
       Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
-      Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g,
+      Polynomial.resultant_derivative_at_split_specialization_product_formula,
       Divisor.hasse_weil_textbook,
       Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
 
@@ -32,13 +32,14 @@
       weighted-Sylvester analysis). The squeeze argument promotes
       lower-bound-divisibility plus upper-bound-natDegree to
       multiplicity equality.
-    * the generic resultant logarithmic derivative formula at a split
+    * the generic resultant derivative/product formula at a split
       specialization (Lang's trace-of-log-derivative identity narrowed
-      to a polynomial/resultant statement; replaces the old
+      to a polynomial/resultant numerator statement; replaces the old
       project-shaped axiom
       `chord_fiber_product_logDeriv_eq_logDerivTerm_trace`, now a
-      theorem; carries an explicit `Monic f` hypothesis to match
-      mathlib's `Polynomial.resultant_eq_prod_eval`).
+      theorem; the logarithmic-division wrapper
+      `resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`
+      is now theorem-backed).
     * principal divisor class triviality for the concrete `D`.
 
     The previously listed axiom
@@ -59,12 +60,12 @@
   * `ma_completeness_base`:
       propext, Classical.choice, Quot.sound,
       Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
-      Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
+      Polynomial.resultant_derivative_at_split_specialization_product_formula
 
   * `ma_completeness`:
       propext, Classical.choice, Quot.sound,
       Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
-      Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g,
+      Polynomial.resultant_derivative_at_split_specialization_product_formula,
       Divisor.hasse_weil_textbook
 
   The unsound `Divisor.weil_reciprocity_honest` axiom (which falsely

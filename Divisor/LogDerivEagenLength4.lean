@@ -23,9 +23,9 @@
   `#print axioms logDerivCheckFn_zero_for_eagenBuild_length4` shows:
     propext, Classical.choice, Quot.sound,
     Divisor.chord_fiber_product_eq_normZ_under_split,
-    Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g
+    Polynomial.resultant_derivative_at_split_specialization_product_formula
 
-  Both Divisor-specific axioms are already in `ma_extractable`'s closure
+  These residual bridge axioms are already in `ma_extractable`'s closure
   (soundness side). NO `weil_reciprocity_honest` dependency.
 
   ## Discharged side conditions (May 2026 update)
