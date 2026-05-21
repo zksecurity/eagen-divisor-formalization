@@ -306,34 +306,48 @@ theorem maAcceptSet_subset_badChallenges
     (fun i => msg.m (hkm ▸ i))
     (Finset.mem_filter.mpr ⟨hVP, hCheck⟩)
 
-/-- **Paper-tight headline disjunction** (`\ref{thm:ma}` clean form).
+/-- **Paper-tight accept-set inclusion** (`\ref{thm:ma}` accounting form).
 
-For every prover first-round message:
-
-* Either the extractor outputs a valid `dlog` witness, or
-* The accepting challenges are contained in `badChallenges`.
-
-The right disjunct is in fact unconditional (see
-`maAcceptSet_subset_badChallenges`); this theorem packages it in the
-witness-or-bound shape mirroring the paper. The numeric bound on
-`|badChallenges|` follows from `badChallenges_card_le`. -/
-theorem ma_extractable_paper
-    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (_hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k)
-    (_hTargetOnE : stmt.target ∈ E.points)
-    (_hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (_hLargeQ : E.points.card >
-        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg.toD.degE + stmt.k + 2) + 72) :
-    (∃ wit : DlogWitness E.q,
-        maExtractor E stmt msg stmt.degBound hd hkm = some wit
-        ∧ relDlog E stmt wit) ∨
+For every prover first-round message, the accepting challenges are
+contained in `badChallenges`. This is only the accounting inclusion; the
+actual extraction implication is `ma_extractable_paper` below. -/
+theorem ma_acceptSet_subset_badChallenges_paper
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k) :
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm))
       ⊆ badChallenges E msg.toD stmt.target stmt.bases
           (fun i => msg.m (hkm ▸ i)) :=
-  Or.inr (maAcceptSet_subset_badChallenges E stmt msg hkm)
+  maAcceptSet_subset_badChallenges E stmt msg hkm
+
+/-- **Paper extraction implication** (`\ref{thm:ma}` clean form).
+
+If a first-round message accepts on more challenges than the proven bad-event
+bound, then the straight-line extractor returns a valid `dlog` witness.
+
+This is the implication form of `ma_extractable_base`: the small-acceptance
+branch is ruled out by `hAcceptLarge`. -/
+theorem ma_extractable_paper
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (_hd2 : 2 ≤ stmt.degBound)
+    (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (hAcceptLarge :
+      eventNotEqBound E stmt.degBound stmt.k +
+          eventDegBound E stmt.degBound stmt.k <
+        ((validPairs E).filter
+          (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card) :
+    ∃ wit : DlogWitness E.q,
+      maExtractor E stmt msg stmt.degBound hd hkm = some wit
+      ∧ relDlog E stmt wit := by
+  rcases ma_extractable_base E stmt hd _hd2 msg hkm
+      hTargetOnE hBasesOnE hLargeQ with hWit | hSmall
+  · exact hWit
+  · exact False.elim ((Nat.not_lt_of_ge hSmall) hAcceptLarge)
 
 /-! ## `\ref{thm:ip}`: Knowledge-Sound IP -/
 
@@ -375,10 +389,11 @@ theorem ip_extractable_base
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
 
-/-- **`\ref{thm:ip}` paper-tight form.** Same as `ip_extractable_base`
-    but with the bound branch as the unconditional paper-tight
-    inclusion `acceptSet ⊆ badChallenges`. The numeric form follows by
-    `badChallenges_card_le`. -/
+/-- **`\ref{thm:ip}` paper extraction implication.**
+
+    If the first-round message accepts on more challenges than the MA bad-event
+    bound, the MA extractor returns a valid witness. The IP-specific part is
+    the usual uniqueness of any accepted third-round response. -/
 theorem ip_extractable_paper
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg1 : MAProverMsg E.q)
@@ -387,14 +402,15 @@ theorem ip_extractable_paper
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
         2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg1.toD.degE + stmt.k + 2) + 72) :
-    ((∃ wit : DlogWitness E.q,
-         maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
-         ∧ relDlog E stmt wit) ∨
-     ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm))
-      ⊆ badChallenges E msg1.toD stmt.target stmt.bases
-          (fun i => msg1.m (hkm ▸ i)))
+        21 * (msg1.toD.degE + stmt.k + 2) + 72)
+    (hAcceptLarge :
+      eventNotEqBound E stmt.degBound stmt.k +
+          eventDegBound E stmt.degBound stmt.k <
+        ((validPairs E).filter
+          (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card) :
+    (∃ wit : DlogWitness E.q,
+       maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
+       ∧ relDlog E stmt wit)
     ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
         (msg3 msg3' : IPProverMsg3 E.q),
         msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
@@ -407,7 +423,7 @@ theorem ip_extractable_paper
         msg3 = msg3' := by
   refine ⟨?_, ?_⟩
   · exact ma_extractable_paper E stmt hd hd2 msg1 hkm
-           hTargetOnE hBasesOnE hLargeQ
+           hTargetOnE hBasesOnE hLargeQ hAcceptLarge
   · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
