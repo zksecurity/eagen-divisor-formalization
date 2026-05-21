@@ -17,6 +17,7 @@
 -/
 import Mathlib.RingTheory.Polynomial.Resultant.Basic
 import Mathlib.Algebra.Polynomial.Derivative
+import Mathlib.Algebra.DualNumber
 import Divisor.Axioms.AxiomTraceLogDeriv
 import Divisor.PolynomialDifferential
 
@@ -268,6 +269,214 @@ private lemma derivative_eval_at_chain
     rw [eval_eval_eq_map_eval, Polynomial.derivative_map]
   rw [hgT, hgX]
 
+/-! ### Dual-number first-order specialization bridge
+
+The remaining generic resultant bridge is most naturally expressed as a
+dual-number identity.  The ring hom `jet t₀` sends a univariate
+polynomial `p(T)` to `p(t₀) + p'(t₀) ε`; taking the `ε` coefficient then
+recovers the desired derivative at `t₀`. -/
+
+/-- First-order Taylor specialization `p(T) ↦ p(t₀) + p'(t₀) ε`. -/
+noncomputable def jet {K : Type*} [Field K] (t₀ : K) : K[X] →+* DualNumber K :=
+  Polynomial.eval₂RingHom (TrivSqZeroExt.inlHom K K)
+    (TrivSqZeroExt.inl t₀ + DualNumber.eps)
+
+@[simp] theorem fst_jet {K : Type*} [Field K] (t₀ : K) (p : K[X]) :
+    TrivSqZeroExt.fst (jet t₀ p) = p.eval t₀ := by
+  induction p using Polynomial.induction_on' with
+  | add p q hp hq => simp [map_add, hp, hq]
+  | monomial n a =>
+      simp [jet, Polynomial.eval₂RingHom, Polynomial.eval₂AddMonoidHom]
+
+@[simp] theorem snd_jet {K : Type*} [Field K] (t₀ : K) (p : K[X]) :
+    TrivSqZeroExt.snd (jet t₀ p) = p.derivative.eval t₀ := by
+  induction p using Polynomial.induction_on' with
+  | add p q hp hq => simp [map_add, hp, hq]
+  | monomial n a =>
+      simp [jet, Polynomial.eval₂RingHom, Polynomial.eval₂AddMonoidHom,
+        Polynomial.derivative_monomial]
+      ring
+
+/-- Resultant of an explicit product of monic linear factors, over any
+nontrivial commutative ring.  This is the commutative-ring replacement
+for the domain-only split-resultant product formula when working over
+dual numbers. -/
+theorem resultant_finset_prod_X_sub_C_left
+    {R ι : Type*} [CommRing R] [Nontrivial R] (s : Finset ι) (r : ι → R)
+    (g : R[X]) (n : ℕ) (hn : g.natDegree ≤ n) :
+    Polynomial.resultant (∏ i ∈ s, (Polynomial.X - Polynomial.C (r i))) g
+        (∏ i ∈ s, (Polynomial.X - Polynomial.C (r i))).natDegree n
+      = ∏ i ∈ s, Polynomial.eval (r i) g := by
+  rw [Polynomial.resultant_prod_left]
+  · apply Finset.prod_congr rfl
+    intro i _hi
+    simpa [Polynomial.natDegree_X_sub_C] using
+      (Polynomial.resultant_X_sub_C_left (g := g) (n := n) (r := r i) hn)
+  · simp
+  · exact hn
+
+@[simp] theorem fst_eval_map_jet_at_lift
+    {K : Type*} [Field K] (p : K[X][X]) (t₀ x v : K) :
+    TrivSqZeroExt.fst
+      ((p.map (jet t₀)).eval (TrivSqZeroExt.inl x + TrivSqZeroExt.inr v))
+      = (p.map (Polynomial.evalRingHom t₀)).eval x := by
+  induction p using Polynomial.induction_on' with
+  | add p q hp hq =>
+      calc
+        TrivSqZeroExt.fst
+            (((p + q).map (jet t₀)).eval
+              (TrivSqZeroExt.inl x + TrivSqZeroExt.inr v))
+            =
+            TrivSqZeroExt.fst
+              ((p.map (jet t₀)).eval (TrivSqZeroExt.inl x + TrivSqZeroExt.inr v))
+              +
+            TrivSqZeroExt.fst
+              ((q.map (jet t₀)).eval (TrivSqZeroExt.inl x + TrivSqZeroExt.inr v)) := by
+              simp [Polynomial.map_add, Polynomial.eval_add, TrivSqZeroExt.fst_add]
+        _ = (p.map (Polynomial.evalRingHom t₀)).eval x
+              + (q.map (Polynomial.evalRingHom t₀)).eval x := by
+              rw [hp, hq]
+        _ = ((p + q).map (Polynomial.evalRingHom t₀)).eval x := by
+              simp [Polynomial.map_add, Polynomial.eval_add]
+  | monomial n a =>
+      simp [Polynomial.map_monomial, Polynomial.eval_monomial]
+
+/-- Dual-number chain rule for bivariate polynomial evaluation:
+evaluating `p.map (jet t₀)` at `x + v ε` has `ε` coefficient
+`p_T(x,t₀) + p_X(x,t₀) v`. -/
+theorem snd_eval_map_jet_at_lift
+    {K : Type*} [Field K] (p : K[X][X]) (t₀ x v : K) :
+    TrivSqZeroExt.snd
+      ((p.map (jet t₀)).eval (TrivSqZeroExt.inl x + TrivSqZeroExt.inr v))
+      =
+        ((p.eval (Polynomial.C x)).derivative).eval t₀
+          + ((p.map (Polynomial.evalRingHom t₀)).derivative).eval x * v := by
+  induction p using Polynomial.induction_on' with
+  | add p q hp hq =>
+      rw [Polynomial.map_add, Polynomial.eval_add, Polynomial.eval_add,
+        TrivSqZeroExt.snd_add, hp, hq]
+      simp [Polynomial.derivative_add, Polynomial.eval_add, add_assoc, add_left_comm]
+      ring
+  | monomial n a =>
+      simp [Polynomial.map_monomial, Polynomial.eval_monomial,
+        Polynomial.derivative_mul, Polynomial.derivative_pow,
+        Polynomial.derivative_C, Polynomial.eval_mul, Polynomial.eval_pow,
+        Polynomial.eval_C, Polynomial.derivative_monomial]
+      ring
+
+/-- Logarithmic derivative of a finite product in dual-number form. -/
+theorem snd_multiset_prod_eq_fst_prod_mul_sum
+    {K ι : Type*} [Field K] (s : Multiset ι) (a : ι → DualNumber K)
+    (ha : ∀ i ∈ s, TrivSqZeroExt.fst (a i) ≠ 0) :
+    TrivSqZeroExt.snd ((s.map a).prod)
+      =
+        TrivSqZeroExt.fst ((s.map a).prod)
+          * (s.map (fun i => TrivSqZeroExt.snd (a i) / TrivSqZeroExt.fst (a i))).sum := by
+  classical
+  induction s using Multiset.induction with
+  | empty => simp
+  | cons i s ih =>
+      have ha_i : TrivSqZeroExt.fst (a i) ≠ 0 := ha i (by simp)
+      have ha_s : ∀ j ∈ s, TrivSqZeroExt.fst (a j) ≠ 0 := by
+        intro j hj
+        exact ha j (by simp [hj])
+      simp only [Multiset.map_cons, Multiset.prod_cons, Multiset.sum_cons]
+      rw [TrivSqZeroExt.snd_mul, TrivSqZeroExt.fst_mul, ih ha_s]
+      simp only [smul_eq_mul, MulOpposite.smul_eq_mul_unop, MulOpposite.unop_op]
+      field_simp [ha_i]
+      ring
+
+/-- The residual derivative/product formula follows from the
+dual-number product identity for the resultant. -/
+theorem resultant_derivative_at_split_specialization_product_formula_of_jet_product
+    {K : Type*} [Field K]
+    (f g : K[X][X]) (t₀ : K)
+    (hg_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
+        (g.map (Polynomial.evalRingHom t₀)).eval x ≠ 0)
+    (hf_X_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
+        ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x ≠ 0)
+    (hJetProd :
+      let liftEval : K → DualNumber K := fun x =>
+        (g.map (jet t₀)).eval
+          (TrivSqZeroExt.inl x
+            + TrivSqZeroExt.inr
+                (-(((f.eval (Polynomial.C x)).derivative).eval t₀)
+                  / (((f.map (Polynomial.evalRingHom t₀)).derivative).eval x)))
+      jet t₀ (Polynomial.resultant f g f.natDegree g.natDegree)
+        = (((f.map (Polynomial.evalRingHom t₀)).roots.map liftEval).prod)) :
+  Polynomial.eval t₀
+      (Polynomial.derivative
+        (Polynomial.resultant f g f.natDegree g.natDegree))
+    =
+    (Polynomial.resultant f g f.natDegree g.natDegree).eval t₀ *
+      ((f.map (Polynomial.evalRingHom t₀)).roots.map (fun x =>
+        let f_X := ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x
+        let f_T := ((f.eval (Polynomial.C x)).derivative).eval t₀
+        let g_X := ((g.map (Polynomial.evalRingHom t₀)).derivative).eval x
+        let g_T := ((g.eval (Polynomial.C x)).derivative).eval t₀
+        let g_val := (g.map (Polynomial.evalRingHom t₀)).eval x
+        (g_T * f_X - g_X * f_T) / (f_X * g_val))).sum := by
+  classical
+  let rts := (f.map (Polynomial.evalRingHom t₀)).roots
+  let liftEval : K → DualNumber K := fun x =>
+    (g.map (jet t₀)).eval
+      (TrivSqZeroExt.inl x
+        + TrivSqZeroExt.inr
+            (-(((f.eval (Polynomial.C x)).derivative).eval t₀)
+              / (((f.map (Polynomial.evalRingHom t₀)).derivative).eval x)))
+  have hfst_ne : ∀ x ∈ rts, TrivSqZeroExt.fst (liftEval x) ≠ 0 := by
+    intro x hx
+    dsimp [liftEval]
+    rw [fst_eval_map_jet_at_lift]
+    exact hg_def x hx
+  have hprod_snd := snd_multiset_prod_eq_fst_prod_mul_sum rts liftEval hfst_ne
+  have hprod_fst :
+      TrivSqZeroExt.fst ((rts.map liftEval).prod)
+        = (Polynomial.resultant f g f.natDegree g.natDegree).eval t₀ := by
+    rw [← hJetProd]
+    exact fst_jet t₀ (Polynomial.resultant f g f.natDegree g.natDegree)
+  have hsum :
+      (rts.map (fun i => TrivSqZeroExt.snd (liftEval i) / TrivSqZeroExt.fst (liftEval i))).sum
+        =
+      ((f.map (Polynomial.evalRingHom t₀)).roots.map (fun x =>
+        let f_X := ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x
+        let f_T := ((f.eval (Polynomial.C x)).derivative).eval t₀
+        let g_X := ((g.map (Polynomial.evalRingHom t₀)).derivative).eval x
+        let g_T := ((g.eval (Polynomial.C x)).derivative).eval t₀
+        let g_val := (g.map (Polynomial.evalRingHom t₀)).eval x
+        (g_T * f_X - g_X * f_T) / (f_X * g_val))).sum := by
+    dsimp [rts]
+    congr 1
+    apply Multiset.map_congr rfl
+    intro x hx
+    dsimp [liftEval]
+    rw [fst_eval_map_jet_at_lift, snd_eval_map_jet_at_lift]
+    have hfX := hf_X_def x hx
+    have hgx := hg_def x hx
+    field_simp [hfX, hgx]
+    ring
+  calc
+    Polynomial.eval t₀
+        (Polynomial.derivative
+          (Polynomial.resultant f g f.natDegree g.natDegree))
+        =
+        TrivSqZeroExt.snd ((rts.map liftEval).prod) := by
+          rw [← hJetProd]
+          exact (snd_jet t₀ (Polynomial.resultant f g f.natDegree g.natDegree)).symm
+    _ =
+        TrivSqZeroExt.fst ((rts.map liftEval).prod)
+          * (rts.map (fun i => TrivSqZeroExt.snd (liftEval i) / TrivSqZeroExt.fst (liftEval i))).sum := hprod_snd
+    _ =
+        (Polynomial.resultant f g f.natDegree g.natDegree).eval t₀ *
+          ((f.map (Polynomial.evalRingHom t₀)).roots.map (fun x =>
+            let f_X := ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x
+            let f_T := ((f.eval (Polynomial.C x)).derivative).eval t₀
+            let g_X := ((g.map (Polynomial.evalRingHom t₀)).derivative).eval x
+            let g_T := ((g.eval (Polynomial.C x)).derivative).eval t₀
+            let g_val := (g.map (Polynomial.evalRingHom t₀)).eval x
+            (g_T * f_X - g_X * f_T) / (f_X * g_val))).sum := by
+          rw [hprod_fst, hsum]
+
 /-- **Partial discharge** of the resultant log-derivative identity for
 the case `f.natDegree = 1` (with `f.Monic`).
 
@@ -332,23 +541,42 @@ theorem resultant_logDeriv_at_split_specialization_of_f_natDegree_eq_one
   field_simp
   ring
 
-/-- **Residual derivative/product bridge for a bivariate resultant at a
+/-- **Residual dual-number product bridge for a bivariate resultant at a
 split specialization** — narrowed to `2 ≤ f.natDegree` and
 `0 < g.natDegree`.
 
-This is the remaining citable bridge after removing the logarithmic
-division from the axiom surface.  It states the numerator identity
+This is the remaining citable bridge.  It is lower-level than the
+derivative/product formula: after first-order specialization
+`T ↦ t₀ + ε`, the resultant is the product of `g` evaluated at the
+first-order lifted roots of `f`.  The lifted root velocity is the
+implicit-function value `x' = -f_T/f_X`.
 
-`F'(t₀) = F(t₀) · Σ_x d/dT log(g(x(T),T))|_{t₀}`,
+The derivative/product theorem below is proved from this statement by
+taking the `ε` coefficient and applying the dual-number product rule. -/
+axiom resultant_jet_product_at_split_specialization
+    {K : Type*} [Field K]
+    (f g : K[X][X]) (t₀ : K)
+    (hMonic : f.Monic)
+    (hf_two_le : 2 ≤ f.natDegree)
+    (hg_pos : 0 < g.natDegree)
+    (hSplit : (f.map (Polynomial.evalRingHom t₀)).Splits)
+    (hg_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
+        (g.map (Polynomial.evalRingHom t₀)).eval x ≠ 0)
+    (hf_X_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
+        ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x ≠ 0) :
+  let liftEval : K → DualNumber K := fun x =>
+    (g.map (jet t₀)).eval
+      (TrivSqZeroExt.inl x
+        + TrivSqZeroExt.inr
+            (-(((f.eval (Polynomial.C x)).derivative).eval t₀)
+              / (((f.map (Polynomial.evalRingHom t₀)).derivative).eval x)))
+  jet t₀ (Polynomial.resultant f g f.natDegree g.natDegree)
+    = (((f.map (Polynomial.evalRingHom t₀)).roots.map liftEval).prod)
 
-where `F = Res_X(f,g)` and each summand is written in the implicit-root
-coordinates of the specialized split polynomial `f(X,t₀)`.
-
-The public logarithmic-derivative theorem below divides by `F(t₀)` using
-`hF_ne`.  Keeping the residual axiom in product form isolates the
-missing resultant/norm-trace plumbing from the elementary field-division
-step and makes the dependency closure more precise. -/
-axiom resultant_derivative_at_split_specialization_product_formula
+/-- **Residual derivative/product bridge for a bivariate resultant at a
+split specialization** — theorem derived from the dual-number product
+bridge above. -/
+theorem resultant_derivative_at_split_specialization_product_formula
     {K : Type*} [Field K]
     (f g : K[X][X]) (t₀ : K)
     (hMonic : f.Monic)
@@ -370,7 +598,11 @@ axiom resultant_derivative_at_split_specialization_product_formula
         let g_X := ((g.map (Polynomial.evalRingHom t₀)).derivative).eval x
         let g_T := ((g.eval (Polynomial.C x)).derivative).eval t₀
         let g_val := (g.map (Polynomial.evalRingHom t₀)).eval x
-        (g_T * f_X - g_X * f_T) / (f_X * g_val))).sum
+        (g_T * f_X - g_X * f_T) / (f_X * g_val))).sum :=
+  resultant_derivative_at_split_specialization_product_formula_of_jet_product
+    f g t₀ hg_def hf_X_def
+    (resultant_jet_product_at_split_specialization
+      f g t₀ hMonic hf_two_le hg_pos hSplit hg_def hf_X_def)
 
 /-- **Logarithmic derivative of a bivariate resultant at a split
 specialization** — theorem derived from the residual product-form bridge.

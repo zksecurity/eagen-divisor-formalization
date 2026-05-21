@@ -10,7 +10,7 @@
   * `ma_extractable`, `ip_extractable`:
       propext, Classical.choice, Quot.sound,
       Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
-      Polynomial.resultant_derivative_at_split_specialization_product_formula,
+      Polynomial.resultant_jet_product_at_split_specialization,
       Divisor.hasse_weil_textbook,
       Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
 
@@ -32,9 +32,9 @@
       weighted-Sylvester analysis). The squeeze argument promotes
       lower-bound-divisibility plus upper-bound-natDegree to
       multiplicity equality.
-    * the generic resultant derivative/product formula at a split
+    * the generic dual-number resultant product formula at a split
       specialization (Lang's trace-of-log-derivative identity narrowed
-      to a polynomial/resultant numerator statement; replaces the old
+      to first-order resultant/root-product plumbing; replaces the old
       project-shaped axiom
       `chord_fiber_product_logDeriv_eq_logDerivTerm_trace`, now a
       theorem; the logarithmic-division wrapper
@@ -60,12 +60,12 @@
   * `ma_completeness_base`:
       propext, Classical.choice, Quot.sound,
       Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
-      Polynomial.resultant_derivative_at_split_specialization_product_formula
+      Polynomial.resultant_jet_product_at_split_specialization
 
   * `ma_completeness`:
       propext, Classical.choice, Quot.sound,
       Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
-      Polynomial.resultant_derivative_at_split_specialization_product_formula,
+      Polynomial.resultant_jet_product_at_split_specialization,
       Divisor.hasse_weil_textbook
 
   The unsound `Divisor.weil_reciprocity_honest` axiom (which falsely

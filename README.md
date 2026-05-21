@@ -209,7 +209,7 @@ pinned by `#print axioms` in `Tests/AxiomClosurePin.lean`.
 
 ```text
 Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd
-Polynomial.resultant_derivative_at_split_specialization_product_formula
+Polynomial.resultant_jet_product_at_split_specialization
 Divisor.hasse_weil_textbook
 Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
 ```
@@ -218,7 +218,7 @@ Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
 
 ```text
 Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd
-Polynomial.resultant_derivative_at_split_specialization_product_formula
+Polynomial.resultant_jet_product_at_split_specialization
 Divisor.hasse_weil_textbook
 ```
 
@@ -338,11 +338,11 @@ so together they pin the multiplicity exactly.
 
 Lean source: `Divisor/Axioms/AxiomChordFiberDivisibility.lean`.
 
-#### `Polynomial.resultant_derivative_at_split_specialization_product_formula`
+#### `Polynomial.resultant_jet_product_at_split_specialization`
 
 Formal statement:
 ```lean
-axiom resultant_derivative_at_split_specialization_product_formula
+axiom resultant_jet_product_at_split_specialization
     {K : Type*} [Field K]
     (f g : K[X][X]) (t₀ : K)
     (hMonic : f.Monic)
@@ -353,18 +353,14 @@ axiom resultant_derivative_at_split_specialization_product_formula
         (g.map (Polynomial.evalRingHom t₀)).eval x ≠ 0)
     (hf_X_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
         ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x ≠ 0) :
-  Polynomial.eval t₀
-      (Polynomial.derivative
-        (Polynomial.resultant f g f.natDegree g.natDegree))
-    =
-    (Polynomial.resultant f g f.natDegree g.natDegree).eval t₀ *
-      ((f.map (Polynomial.evalRingHom t₀)).roots.map (fun x =>
-        let f_X := ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x
-        let f_T := ((f.eval (Polynomial.C x)).derivative).eval t₀
-        let g_X := ((g.map (Polynomial.evalRingHom t₀)).derivative).eval x
-        let g_T := ((g.eval (Polynomial.C x)).derivative).eval t₀
-        let g_val := (g.map (Polynomial.evalRingHom t₀)).eval x
-        (g_T * f_X - g_X * f_T) / (f_X * g_val))).sum
+  let liftEval : K → DualNumber K := fun x =>
+    (g.map (jet t₀)).eval
+      (TrivSqZeroExt.inl x
+        + TrivSqZeroExt.inr
+            (-(((f.eval (Polynomial.C x)).derivative).eval t₀)
+              / (((f.map (Polynomial.evalRingHom t₀)).derivative).eval x)))
+  jet t₀ (Polynomial.resultant f g f.natDegree g.natDegree)
+    = (((f.map (Polynomial.evalRingHom t₀)).roots.map liftEval).prod)
 ```
 
 Hypotheses:
@@ -387,19 +383,14 @@ Hypotheses:
 - `hf_X_def : ...`: the outer derivative of `f(X, t₀)` is nonzero at
   each of its roots, i.e. those roots are simple (no double roots).
 
-Intuition: write `F(T) = Res_X(f, g)`, a univariate polynomial in `T`.
-The axiom computes the derivative numerator `F'(t₀)` as `F(t₀)` times
-the usual logarithmic-derivative root sum:
-$$
-F'(t_0)
-= F(t_0)\sum_{x\,:\,f(x,t_0)=0}
-  \frac{g_T f_X - g_X f_T}{f_X\, g}\Big|_{(x,t_0)}.
-$$
-Each summand is the implicit-function chain rule for
-`d/dT [g(x(T), T)]`, where `x(T)` tracks a root of `f` as `T` varies.
-The public logarithmic-derivative theorem
+Intuition: write `F(T) = Res_X(f, g)`, and specialize to dual numbers
+by sending `T` to `t₀ + ε`. The axiom states that `F(t₀ + ε)` is the
+product of `g` evaluated at the first-order lifted roots
+`x - (f_T/f_X) ε` of `f`. The derivative/product theorem is now proved
+from this axiom by taking the `ε` coefficient and applying the
+dual-number product rule. The public logarithmic-derivative theorem
 `Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`
-is now theorem-backed: it divides this product-form identity by the
+is theorem-backed: it divides the derived product-form identity by the
 extra hypothesis `F(t₀) ≠ 0`.
 
 Lean source: `Divisor/Axioms/AxiomResultantLogDerivAtSplit.lean`.
@@ -420,7 +411,7 @@ Lean source: `Divisor/Axioms/AxiomResultantLogDerivAtSplit.lean`.
   proved from mathlib.
 - `Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`:
   the old logarithmic-division form; now a theorem derived from
-  `Polynomial.resultant_derivative_at_split_specialization_product_formula`.
+  `Polynomial.resultant_jet_product_at_split_specialization`.
 - `CoordRingElt.exists_divisor_multiplicity`: a theorem proved from
   `ordAt` and `divisorClass_eq_zero_of_b_ne_zero`.
 - `bivariate_poly_zeros_on_ExE_le`: a theorem whose project-axiom
