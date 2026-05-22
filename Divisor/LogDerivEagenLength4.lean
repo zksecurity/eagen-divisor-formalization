@@ -22,11 +22,10 @@
 
   `#print axioms logDerivCheckFn_zero_for_eagenBuild_length4` shows:
     propext, Classical.choice, Quot.sound,
-    Divisor.chord_fiber_product_eq_normZ_under_split,
-    Polynomial.resultant_jet_product_at_split_specialization
+    Divisor.chord_fiber_product_eq_normZ_under_split
 
-  These residual bridge axioms are already in `ma_extractable`'s closure
-  (soundness side). NO `weil_reciprocity_honest` dependency.
+  The generic resultant product bridge is now theorem-backed, and
+  there is no `weil_reciprocity_honest` dependency.
 
   ## Discharged side conditions (May 2026 update)
 

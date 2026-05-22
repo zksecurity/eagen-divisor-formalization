@@ -4,16 +4,17 @@
   Logarithmic derivative of a bivariate resultant at a split
   specialization point.
 
-  This is the temporary generic narrowing of the chord-fiber
+  This file contains the generic narrowing of the chord-fiber
   log-derivative identity. The chord-specific theorem
   `chord_fiber_product_logDeriv_eq_logDerivTerm_trace`
   in `Divisor/Axioms/AxiomChordSumEqChordFiberProductLogDeriv.lean` is
-  derived from this axiom plus chord-cubic-specific algebra.
+  derived from the theorems here plus chord-cubic-specific algebra.
 
-  This statement is still a composed resultant/specialisation bridge.
-  The intended final proof should derive it from the proved Galois
-  norm/trace/log-derivative theorem in `AxiomTraceLogDeriv.lean` plus
-  resultant and specialisation algebra.
+  The generic resultant/specialisation bridge is theorem-backed below:
+  first prove the dual-number product formula for resultants at a split
+  specialization, then take the `ε` coefficient to obtain the derivative
+  product formula, and finally divide by the nonzero resultant value for
+  the logarithmic-derivative form.
 -/
 import Mathlib.RingTheory.Polynomial.Resultant.Basic
 import Mathlib.Algebra.Polynomial.Derivative
@@ -33,36 +34,17 @@ splits over `K` with simple roots, each well-separated from `g`'s
 vanishing locus, the formal logarithmic derivative `F'(t₀) / F(t₀)` is
 the multiset sum of per-chord-root contributions.
 
-Mathematically this is the trace-of-log-derivative formula
+Mathematically this is a first-order form of the trace-of-log-derivative formula
 `Tr_{L/K}(dα/α) = d N_{L/K}(α)/N_{L/K}(α)` specialised to the
-polynomial/resultant setting. The Galois case of that formula is proved
-in `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`;
-what remains here is the resultant and specialisation plumbing.
+polynomial/resultant setting. The proof below avoids a splitting-field
+detour: after applying the first-order jet `T ↦ t₀ + ε`, the specialized
+polynomial has exactly the lifted simple roots, so the usual product
+formula for resultants gives the dual-number identity directly. -/
 
-Discharge plan in mathlib (the infrastructure exists modulo plumbing):
-1. Construct a splitting field of `f` over `K(T)` via
-   `Polynomial.SplittingField`; the roots `ξᵢ ∈ L` lift the chord
-   roots in `K`.
-2. Extend the formal `T`-derivation on `K[T]` to `L` via
-   `Differential.deriv_aeval_eq_implicitDeriv` (the implicit-function
-   formula `ξ′ = -f^D(ξ)/f'(ξ)`).
-3. Apply `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`
-   to `g(ξ)` and identify the norm with `Res_X(f, g)` and the trace with the
-   root sum.
-4. Specialise both sides at `T = t₀`. The roots of `f` over `K(T)`
-   that are separable specialise to the chord roots in `K`, giving
-   the stated multiset sum.
-
-The mathlib pieces (`Differential.mapCoeffs`, `implicitDeriv`,
-`logDeriv_multisetProd`) live in `Mathlib.RingTheory.Derivation.MapCoeffs`
-and `Mathlib.FieldTheory.Differential.Basic`. The bridge between the
-`Polynomial.derivative` map on `K[T]` and the `Differential` instance
-on the splitting field is the only missing ingredient. -/
-
-/-! ### Conclusion abbrev (used by both axiom and trivial-case theorem) -/
+/-! ### Conclusion abbrev (used by the residual and trivial-case theorems) -/
 
 /-- The conclusion of the resultant-log-derivative identity, factored
-out so the axiom and its trivial-case theorem do not duplicate the
+out so the residual and trivial-case theorems do not duplicate the
 long expression. Marked `abbrev` so it transparently reduces at the
 existing call site in
 `AxiomChordSumEqChordFiberProductLogDeriv.lean`. -/
@@ -541,6 +523,131 @@ theorem resultant_logDeriv_at_split_specialization_of_f_natDegree_eq_one
   field_simp
   ring
 
+/-- A root whose derivative is nonzero occurs with multiplicity one in
+the root multiset. -/
+private lemma rootMultiplicity_eq_one_of_mem_roots_of_derivative_ne_zero
+    {K : Type*} [Field K] {p : K[X]} {x : K}
+    (hx : x ∈ p.roots) (hp' : p.derivative.eval x ≠ 0) :
+    p.rootMultiplicity x = 1 := by
+  have hp0 : p ≠ 0 := Polynomial.ne_zero_of_mem_roots hx
+  have hpos : 0 < p.rootMultiplicity x := by
+    rw [Polynomial.rootMultiplicity_pos hp0]
+    exact Polynomial.isRoot_of_mem_roots hx
+  have hle : p.rootMultiplicity x ≤ 1 := by
+    by_contra hnot
+    have hlt : 1 < p.rootMultiplicity x := Nat.lt_of_not_ge hnot
+    have hiff := (Polynomial.one_lt_rootMultiplicity_iff_isRoot (p := p) (t := x) hp0).mp hlt
+    exact hp' hiff.2
+  omega
+
+/-- If every root has nonzero derivative, then the root multiset has no
+duplicates. -/
+private lemma roots_nodup_of_derivative_ne_zero
+    {K : Type*} [Field K] {p : K[X]}
+    (hp' : ∀ x ∈ p.roots, p.derivative.eval x ≠ 0) :
+    p.roots.Nodup := by
+  classical
+  rw [Multiset.nodup_iff_count_le_one]
+  intro x
+  by_cases hx : x ∈ p.roots
+  · rw [Polynomial.count_roots]
+    exact (rootMultiplicity_eq_one_of_mem_roots_of_derivative_ne_zero hx (hp' x hx)).le
+  · rw [Multiset.count_eq_zero.mpr hx]
+    exact zero_le 1
+
+/-- The implicit-function first-order lift of a simple root of
+`f(X,t₀)` is a root of `f(X,t₀ + ε)`. -/
+private lemma lifted_root_isRoot_map_jet
+    {K : Type*} [Field K]
+    (f : K[X][X]) (t₀ x : K)
+    (hx : x ∈ (f.map (Polynomial.evalRingHom t₀)).roots)
+    (hf_X : ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x ≠ 0) :
+    (f.map (jet t₀)).IsRoot
+      (TrivSqZeroExt.inl x
+        + TrivSqZeroExt.inr
+            (-(((f.eval (Polynomial.C x)).derivative).eval t₀)
+              / (((f.map (Polynomial.evalRingHom t₀)).derivative).eval x))) := by
+  rw [Polynomial.IsRoot.def]
+  apply TrivSqZeroExt.ext
+  · rw [fst_eval_map_jet_at_lift]
+    exact Polynomial.IsRoot.def.mp (Polynomial.isRoot_of_mem_roots hx)
+  · rw [snd_eval_map_jet_at_lift]
+    rw [TrivSqZeroExt.snd_zero]
+    field_simp [hf_X]
+    ring
+
+set_option maxHeartbeats 800000 in
+/-- First-order factorisation of `f` after applying the dual-number jet. -/
+theorem map_jet_eq_multiset_prod_lifted_roots
+    {K : Type*} [Field K]
+    (f : K[X][X]) (t₀ : K)
+    (hMonic : f.Monic)
+    (hSplit : (f.map (Polynomial.evalRingHom t₀)).Splits)
+    (hf_X_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
+        ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x ≠ 0) :
+    f.map (jet t₀)
+      =
+      ((f.map (Polynomial.evalRingHom t₀)).roots.map (fun x =>
+        Polynomial.X - Polynomial.C
+          (TrivSqZeroExt.inl x
+            + TrivSqZeroExt.inr
+                (-(((f.eval (Polynomial.C x)).derivative).eval t₀)
+                  / (((f.map (Polynomial.evalRingHom t₀)).derivative).eval x))))).prod := by
+  classical
+  let p0 : K[X] := f.map (Polynomial.evalRingHom t₀)
+  let lift : K → DualNumber K := fun x =>
+    TrivSqZeroExt.inl x
+      + TrivSqZeroExt.inr
+          (-(((f.eval (Polynomial.C x)).derivative).eval t₀)
+            / (((f.map (Polynomial.evalRingHom t₀)).derivative).eval x))
+  let prodP : (DualNumber K)[X] := (p0.roots.map fun x => Polynomial.X - Polynomial.C (lift x)).prod
+  have hnodup : p0.roots.Nodup := by
+    dsimp [p0]
+    exact roots_nodup_of_derivative_ne_zero hf_X_def
+  have hprod_eq_finset :
+      prodP = ∏ x ∈ p0.roots.toFinset, (Polynomial.X - Polynomial.C (lift x)) := by
+    dsimp [prodP]
+    rw [Finset.prod_multiset_map_count]
+    apply Finset.prod_congr rfl
+    intro x hx
+    rw [Multiset.count_eq_one_of_mem hnodup (by simpa using hx), pow_one]
+  have hdvd_each :
+      ∀ x ∈ p0.roots.toFinset,
+        Polynomial.X - Polynomial.C (lift x) ∣ f.map (jet t₀) := by
+    intro x hx
+    rw [Polynomial.dvd_iff_isRoot]
+    exact lifted_root_isRoot_map_jet f t₀ x (by simpa [p0] using hx) (hf_X_def x (by simpa [p0] using hx))
+  have hpair :
+      (p0.roots.toFinset : Set K).Pairwise
+        (fun x y => IsCoprime (Polynomial.X - Polynomial.C (lift x))
+          (Polynomial.X - Polynomial.C (lift y))) := by
+    intro x _hx y _hy hxy
+    apply Polynomial.isCoprime_X_sub_C_of_isUnit_sub
+    rw [TrivSqZeroExt.isUnit_iff_isUnit_fst]
+    have hxy0 : x - y ≠ 0 := sub_ne_zero.mpr hxy
+    simpa [lift] using hxy0.isUnit
+  have hdvd_finset :
+      (∏ x ∈ p0.roots.toFinset, (Polynomial.X - Polynomial.C (lift x))) ∣ f.map (jet t₀) :=
+    Finset.prod_dvd_of_coprime hpair hdvd_each
+  have hdvd : prodP ∣ f.map (jet t₀) := by
+    rwa [hprod_eq_finset]
+  refine Polynomial.eq_of_monic_of_dvd_of_natDegree_le ?hprodMonic ?hfMonic hdvd ?hdeg
+  · change prodP.Monic
+    dsimp [prodP]
+    simpa [Multiset.map_map, Function.comp_def] using
+      (Polynomial.monic_multisetProd_X_sub_C (p0.roots.map lift))
+  · exact hMonic.map (jet t₀)
+  · change (f.map (jet t₀)).natDegree ≤ prodP.natDegree
+    rw [hMonic.natDegree_map (jet t₀)]
+    dsimp [prodP]
+    have hdegprod :
+        (Multiset.map (fun x => Polynomial.X - Polynomial.C (lift x)) p0.roots).prod.natDegree
+          = p0.roots.card := by
+      simpa [Multiset.map_map, Function.comp_def] using
+        (Polynomial.natDegree_multiset_prod_X_sub_C_eq_card (p0.roots.map lift))
+    rw [hdegprod, ← hSplit.natDegree_eq_card_roots]
+    exact le_of_eq (hMonic.natDegree_map (Polynomial.evalRingHom t₀)).symm
+
 /-- **Residual dual-number product bridge for a bivariate resultant at a
 split specialization** — narrowed to `2 ≤ f.natDegree` and
 `0 < g.natDegree`.
@@ -553,14 +660,14 @@ implicit-function value `x' = -f_T/f_X`.
 
 The derivative/product theorem below is proved from this statement by
 taking the `ε` coefficient and applying the dual-number product rule. -/
-axiom resultant_jet_product_at_split_specialization
+theorem resultant_jet_product_at_split_specialization
     {K : Type*} [Field K]
     (f g : K[X][X]) (t₀ : K)
     (hMonic : f.Monic)
-    (hf_two_le : 2 ≤ f.natDegree)
-    (hg_pos : 0 < g.natDegree)
+    (_hf_two_le : 2 ≤ f.natDegree)
+    (_hg_pos : 0 < g.natDegree)
     (hSplit : (f.map (Polynomial.evalRingHom t₀)).Splits)
-    (hg_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
+    (_hg_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
         (g.map (Polynomial.evalRingHom t₀)).eval x ≠ 0)
     (hf_X_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
         ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x ≠ 0) :
@@ -571,7 +678,70 @@ axiom resultant_jet_product_at_split_specialization
             (-(((f.eval (Polynomial.C x)).derivative).eval t₀)
               / (((f.map (Polynomial.evalRingHom t₀)).derivative).eval x)))
   jet t₀ (Polynomial.resultant f g f.natDegree g.natDegree)
-    = (((f.map (Polynomial.evalRingHom t₀)).roots.map liftEval).prod)
+    = (((f.map (Polynomial.evalRingHom t₀)).roots.map liftEval).prod) := by
+  classical
+  let p0 : K[X] := f.map (Polynomial.evalRingHom t₀)
+  let lift : K → DualNumber K := fun x =>
+    TrivSqZeroExt.inl x
+      + TrivSqZeroExt.inr
+          (-(((f.eval (Polynomial.C x)).derivative).eval t₀)
+            / (((f.map (Polynomial.evalRingHom t₀)).derivative).eval x))
+  let liftEval : K → DualNumber K := fun x =>
+    (g.map (jet t₀)).eval (lift x)
+  let prodP : (DualNumber K)[X] :=
+    (p0.roots.map fun x => Polynomial.X - Polynomial.C (lift x)).prod
+  have hnodup : p0.roots.Nodup := by
+    dsimp [p0]
+    exact roots_nodup_of_derivative_ne_zero hf_X_def
+  have hprod_eq_finset :
+      prodP = ∏ x ∈ p0.roots.toFinset, (Polynomial.X - Polynomial.C (lift x)) := by
+    dsimp [prodP]
+    rw [Finset.prod_multiset_map_count]
+    apply Finset.prod_congr rfl
+    intro x hx
+    rw [Multiset.count_eq_one_of_mem hnodup (by simpa using hx), pow_one]
+  have hrhs_eq_finset :
+      (p0.roots.map liftEval).prod = ∏ x ∈ p0.roots.toFinset, liftEval x := by
+    rw [Finset.prod_multiset_map_count]
+    apply Finset.prod_congr rfl
+    intro x hx
+    rw [Multiset.count_eq_one_of_mem hnodup (by simpa using hx), pow_one]
+  have hdegProd : prodP.natDegree = f.natDegree := by
+    dsimp [prodP]
+    have hdegprod :
+        (Multiset.map (fun x => Polynomial.X - Polynomial.C (lift x)) p0.roots).prod.natDegree
+          = p0.roots.card := by
+      simpa [Multiset.map_map, Function.comp_def] using
+        (Polynomial.natDegree_multiset_prod_X_sub_C_eq_card (p0.roots.map lift))
+    rw [hdegprod, ← hSplit.natDegree_eq_card_roots]
+    exact hMonic.natDegree_map (Polynomial.evalRingHom t₀)
+  have hfac : f.map (jet t₀) = prodP := by
+    dsimp [prodP, p0, lift]
+    exact map_jet_eq_multiset_prod_lifted_roots f t₀ hMonic hSplit hf_X_def
+  calc
+    jet t₀ (Polynomial.resultant f g f.natDegree g.natDegree)
+        =
+        Polynomial.resultant (f.map (jet t₀)) (g.map (jet t₀))
+          f.natDegree g.natDegree := by
+          rw [Polynomial.resultant_map_map]
+    _ =
+        Polynomial.resultant prodP (g.map (jet t₀)) prodP.natDegree g.natDegree := by
+          rw [hfac, hdegProd]
+    _ =
+        ∏ x ∈ p0.roots.toFinset, Polynomial.eval (lift x) (g.map (jet t₀)) := by
+          rw [hprod_eq_finset]
+          exact resultant_finset_prod_X_sub_C_left
+            p0.roots.toFinset lift (g.map (jet t₀)) g.natDegree
+            (Polynomial.natDegree_map_le)
+    _ =
+        (((f.map (Polynomial.evalRingHom t₀)).roots.map
+          (fun x =>
+            (g.map (jet t₀)).eval
+              (TrivSqZeroExt.inl x
+                + TrivSqZeroExt.inr
+                    (-(((f.eval (Polynomial.C x)).derivative).eval t₀)
+                      / (((f.map (Polynomial.evalRingHom t₀)).derivative).eval x))))).prod) := by
+          rw [← hrhs_eq_finset]
 
 /-- **Residual derivative/product bridge for a bivariate resultant at a
 split specialization** — theorem derived from the dual-number product

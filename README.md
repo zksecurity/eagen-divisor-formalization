@@ -201,7 +201,7 @@ $$
 
 The headline theorems are *conditional*: their proofs are fully
 machine-checked (there is no `sorry` anywhere in the closure), but they
-rest on four named axioms, in addition to Lean/mathlib core
+rest on three named axioms, in addition to Lean/mathlib core
 (`propext`, `Classical.choice`, `Quot.sound`). The exact closures are
 pinned by `#print axioms` in `Tests/AxiomClosurePin.lean`.
 
@@ -209,7 +209,6 @@ pinned by `#print axioms` in `Tests/AxiomClosurePin.lean`.
 
 ```text
 Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd
-Polynomial.resultant_jet_product_at_split_specialization
 Divisor.hasse_weil_textbook
 Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
 ```
@@ -218,13 +217,12 @@ Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
 
 ```text
 Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd
-Polynomial.resultant_jet_product_at_split_specialization
 Divisor.hasse_weil_textbook
 ```
 
-All four axioms are dependencies of the headline theorems. Each is a
-piece of mathematical infrastructure: a point count, a resultant
-identity, two divisor facts. None of them mentions the protocol,
+All three axioms are dependencies of the headline theorems. Each is a
+piece of mathematical infrastructure: a point count and two divisor
+facts. None of them mentions the protocol,
 the extractor, or the verifier. The protocol-specific reasoning is
 entirely in the machine-checked part; the axioms are upstream lemmas,
 not the conclusion in disguise.
@@ -338,63 +336,6 @@ so together they pin the multiplicity exactly.
 
 Lean source: `Divisor/Axioms/AxiomChordFiberDivisibility.lean`.
 
-#### `Polynomial.resultant_jet_product_at_split_specialization`
-
-Formal statement:
-```lean
-axiom resultant_jet_product_at_split_specialization
-    {K : Type*} [Field K]
-    (f g : K[X][X]) (t₀ : K)
-    (hMonic : f.Monic)
-    (hf_two_le : 2 ≤ f.natDegree)
-    (hg_pos : 0 < g.natDegree)
-    (hSplit : (f.map (Polynomial.evalRingHom t₀)).Splits)
-    (hg_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
-        (g.map (Polynomial.evalRingHom t₀)).eval x ≠ 0)
-    (hf_X_def : ∀ x ∈ (f.map (Polynomial.evalRingHom t₀)).roots,
-        ((f.map (Polynomial.evalRingHom t₀)).derivative).eval x ≠ 0) :
-  let liftEval : K → DualNumber K := fun x =>
-    (g.map (jet t₀)).eval
-      (TrivSqZeroExt.inl x
-        + TrivSqZeroExt.inr
-            (-(((f.eval (Polynomial.C x)).derivative).eval t₀)
-              / (((f.map (Polynomial.evalRingHom t₀)).derivative).eval x)))
-  jet t₀ (Polynomial.resultant f g f.natDegree g.natDegree)
-    = (((f.map (Polynomial.evalRingHom t₀)).roots.map liftEval).prod)
-```
-
-Hypotheses:
-
-- `K : Type*` `[Field K]`, `f g : K[X][X]`: two bivariate polynomials.
-  The outer variable `X` is the resultant variable; the inner variable
-  is the specialization parameter `T`.
-- `t₀ : K`: the value at which the parameter `T` is specialized.
-- `hMonic : f.Monic`: `f` is monic in the outer variable. Without it,
-  the resultant carries a leading-coefficient factor and the formula
-  acquires an extra term.
-- `hf_two_le : 2 ≤ f.natDegree`: `f` has outer degree at least 2. The
-  degree-0 and degree-1 cases are separate, already-proved theorems.
-- `hg_pos : 0 < g.natDegree`: `g` has positive outer degree. The
-  degree-0 case is a separate, already-proved theorem.
-- `hSplit : ...`: the specialized polynomial `f(X, t₀)` splits into
-  linear factors over `K`.
-- `hg_def : ...`: `g` does not vanish at any root of `f(X, t₀)`; the
-  root sets of `f` and `g` are disjoint at `t₀`.
-- `hf_X_def : ...`: the outer derivative of `f(X, t₀)` is nonzero at
-  each of its roots, i.e. those roots are simple (no double roots).
-
-Intuition: write `F(T) = Res_X(f, g)`, and specialize to dual numbers
-by sending `T` to `t₀ + ε`. The axiom states that `F(t₀ + ε)` is the
-product of `g` evaluated at the first-order lifted roots
-`x - (f_T/f_X) ε` of `f`. The derivative/product theorem is now proved
-from this axiom by taking the `ε` coefficient and applying the
-dual-number product rule. The public logarithmic-derivative theorem
-`Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`
-is theorem-backed: it divides the derived product-form identity by the
-extra hypothesis `F(t₀) ≠ 0`.
-
-Lean source: `Divisor/Axioms/AxiomResultantLogDerivAtSplit.lean`.
-
 ### Theorem-backed declarations near the axiom surface
 
 - `Divisor.hasse_weil`: the integer-squared form `(#E − q − 1)² ≤ 4q`;
@@ -412,6 +353,10 @@ Lean source: `Divisor/Axioms/AxiomResultantLogDerivAtSplit.lean`.
 - `Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`:
   the old logarithmic-division form; now a theorem derived from
   `Polynomial.resultant_jet_product_at_split_specialization`.
+- `Polynomial.resultant_jet_product_at_split_specialization`: the
+  dual-number resultant product formula at a split specialization; now
+  a theorem proved by factoring `f.map (jet t₀)` into first-order lifted
+  simple roots and applying the product formula for resultants.
 - `CoordRingElt.exists_divisor_multiplicity`: a theorem proved from
   `ordAt` and `divisorClass_eq_zero_of_b_ne_zero`.
 - `bivariate_poly_zeros_on_ExE_le`: a theorem whose project-axiom

@@ -10,7 +10,6 @@
   * `ma_extractable`, `ip_extractable`:
       propext, Classical.choice, Quot.sound,
       Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
-      Polynomial.resultant_jet_product_at_split_specialization,
       Divisor.hasse_weil_textbook,
       Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
 
@@ -32,14 +31,6 @@
       weighted-Sylvester analysis). The squeeze argument promotes
       lower-bound-divisibility plus upper-bound-natDegree to
       multiplicity equality.
-    * the generic dual-number resultant product formula at a split
-      specialization (Lang's trace-of-log-derivative identity narrowed
-      to first-order resultant/root-product plumbing; replaces the old
-      project-shaped axiom
-      `chord_fiber_product_logDeriv_eq_logDerivTerm_trace`, now a
-      theorem; the logarithmic-division wrapper
-      `resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`
-      is now theorem-backed).
     * principal divisor class triviality for the concrete `D`.
 
     The previously listed axiom
@@ -51,21 +42,20 @@
     pointwise with `geomLocalOrder`, so `rationalMultAt` reduces to
     `geomLocalOrder` at the lifted rational point.
 
-    The source theorem intended to discharge the generic resultant
-    bridge,
-    `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`,
-    is proved from mathlib's Galois norm/trace and differential
-    machinery; it is printed below to guard against drift.
+    The generic dual-number resultant product formula at a split
+    specialization is now proved locally in
+    `AxiomResultantLogDerivAtSplit.lean`; it is no longer in the
+    closure. The related Galois norm/trace theorem
+    `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`
+    is also printed below to guard against drift.
 
   * `ma_completeness_base`:
       propext, Classical.choice, Quot.sound,
-      Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
-      Polynomial.resultant_jet_product_at_split_specialization
+      Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd
 
   * `ma_completeness`:
       propext, Classical.choice, Quot.sound,
       Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
-      Polynomial.resultant_jet_product_at_split_specialization,
       Divisor.hasse_weil_textbook
 
   The unsound `Divisor.weil_reciprocity_honest` axiom (which falsely
