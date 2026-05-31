@@ -45,6 +45,24 @@ enumerated in full for `ma_extractable` and referenced thereafter.
 
 #### `Divisor.ma_extractable`
 
+> **Theorem (MA knowledge soundness).** Let $E$ be an elliptic curve over
+> $\mathbb{F}_q$ with $q \ge 5$. Let `stmt` be a discrete-log statement of
+> arity $k$ and degree bound $d$ with $2 \le d < q$, whose target point and
+> all $k$ basis points lie on $E$. Let `msg` be any first-round prover
+> message of matching arity, and suppose the field is large enough for the
+> counting argument, namely
+> $\#E(\mathbb{F}_q) > 2\bigl(5(d+k+2)+3\bigr) + 21(d+k+2) + 72$.
+> Then at least one of the following holds:
+>
+> 1. the extractor `maExtractor`, run on `msg`, returns a witness `wit` that
+>    genuinely satisfies the discrete-log relation `relDlog(stmt, wit)`; or
+> 2. the set of challenges on which the verifier accepts `msg` has size at
+>    most $36(d+k+4)q$.
+>
+> Contrapositively — the knowledge-soundness reading — any `msg` that is
+> accepted on **more** than $36(d+k+4)q$ challenges yields, via `maExtractor`,
+> a valid witness for `stmt`.
+
 Lean:
 ```lean
 theorem ma_extractable
@@ -85,24 +103,23 @@ Conclusion: for every first-round message, either the extractor returns
 `some wit` and `wit` is a valid discrete-log witness for `stmt`, or the
 accepting challenge set has cardinality at most `36·(d+k+4)·q`.
 
-Human form (knowledge soundness). Write $\mathrm{Acc}(\mathrm{msg})$ for
-the set of challenges on which the verifier accepts `msg`. For every
-first-round message the theorem asserts the disjunction
-
-$$
-\bigl(\exists\,\mathsf{wit}:\ \mathsf{maExtractor}(\mathrm{msg}) = \mathsf{wit} \ \wedge\ \mathrm{relDlog}(\mathrm{stmt},\mathsf{wit})\bigr)
-\ \lor\
-\bigl|\mathrm{Acc}(\mathrm{msg})\bigr| \le 36\,(d+k+4)\,q .
-$$
-
-The meaningful (contrapositive) reading is the extraction guarantee: if
-`msg` is accepted on **more** than $36(d+k+4)q$ challenges, then the
-extractor `maExtractor` necessarily outputs a witness `wit` satisfying
-the discrete-log relation `relDlog`. So a prover that is accepted with
-non-negligible probability is one from which a valid witness can be
-extracted.
-
 #### `Divisor.ip_extractable`
+
+> **Theorem (IP knowledge soundness and response uniqueness).** Under the
+> same hypotheses as `ma_extractable` (elliptic curve $E/\mathbb{F}_q$ with
+> $q \ge 5$; statement of arity $k$ and degree bound $d$ with $2 \le d < q$;
+> target and bases on $E$; the same large-field bound), with first-round
+> message `msg1`, both of the following hold:
+>
+> 1. **Extraction.** Either `maExtractor` run on `msg1` returns a witness
+>    satisfying `relDlog(stmt, ·)`, or `msg1` is accepted on at most
+>    $36(d+k+4)q$ challenges (the `ma_extractable` dichotomy).
+> 2. **Third-round uniqueness.** For any challenge with points $A_0, A_1$,
+>    any second-round point $A_2$, and any two third-round responses `msg3`,
+>    `msg3'`: if the prover divisor `msg1.toD` is non-zero at $A_0$, $A_1$,
+>    and $A_2$, the line through $A_0, A_1$ does not vanish at the negated
+>    target, and both `msg3` and `msg3'` are accepted by the IP verifier,
+>    then `msg3 = msg3'`.
 
 Lean:
 ```lean
@@ -145,12 +162,6 @@ Conclusion: a conjunction of two parts.
    pair `msg3`, `msg3'`, the two messages are equal when the non-vanishing
    side conditions hold.
 
-Human form:
-
-$$
-\text{IP soundness} \;=\; \text{MA extractability} \;\land\; \text{uniqueness of any accepted third-round response}.
-$$
-
 ### Completeness
 
 The completeness theorems analyze the *honest* prover: given a real
@@ -159,6 +170,18 @@ extra object here is the honest-message predicate `isHonestFor`, which
 pins the prover's polynomials to the witness.
 
 #### `Divisor.ma_completeness`
+
+> **Theorem (MA completeness).** Let $E$ be an elliptic curve over
+> $\mathbb{F}_q$ with $q \ge 5$. Let `wit` be a witness that genuinely
+> satisfies the discrete-log relation for a statement `stmt` of matching
+> arity, and let `msg` be the **honest** first-round message for
+> $(\textsf{stmt}, \textsf{wit})$ — i.e. `msg.isHonestFor stmt wit`. Suppose
+> the message divisor `msg.toD` is non-zero, its degree is within both the
+> witness and statement degree bounds $d$, and its polynomials
+> `(msg.polyA, msg.polyB)` lie in the admissible set. Then the verifier
+> rejects this honest prover on only a small set of challenges: the number
+> of pairs $(P_1, P_2) \in E \times E$ on which the verifier does **not**
+> accept is at most $\bigl(6(d+1)+6\bigr)q$.
 
 Lean:
 ```lean
@@ -201,14 +224,6 @@ Hypotheses:
 Conclusion: the verifier rejects the honest prover on at most
 `(6·(d+1)+6)q` challenge pairs.
 
-Human form. Write $\mathrm{Rej}(\mathrm{msg})$ for the set of challenge
-pairs on which the verifier rejects the honest `msg`. The theorem bounds
-it linearly in the degree bound:
-
-$$
-\bigl|\mathrm{Rej}(\mathrm{msg})\bigr| \le \bigl(6(d+1)+6\bigr)\,q .
-$$
-
 ## Axiom Surface
 
 The headline theorems are *conditional*: their proofs are fully
@@ -246,6 +261,16 @@ enumeration of its hypotheses, and an intuition.
 
 #### `Divisor.hasse_weil_textbook`
 
+> **Axiom (Hasse–Weil bound).** For every elliptic curve $E$ over
+> $\mathbb{F}_q$, the number of $\mathbb{F}_q$-rational points lies within
+> $2\sqrt{q}$ of $q + 1$:
+> $\bigl| \#E(\mathbb{F}_q) - q - 1 \bigr| \le 2\sqrt{q}$. There are no
+> proof-side hypotheses — this is the classical
+> Hasse bound (Hasse 1936, Weil), taken as given. The project consumes it
+> through the derived integer form $(\#E(\mathbb{F}_q) - q - 1)^2 \le 4q$,
+> which is what collapses a point-count-dependent bound into one purely in
+> $q$.
+
 Formal statement:
 ```lean
 axiom hasse_weil_textbook (E : ECSetup) :
@@ -266,6 +291,20 @@ point-count-dependent bound into a bound purely in `q`.
 Lean source: `Divisor/Axioms/AxiomHasseWeil.lean`.
 
 #### `Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero`
+
+> **Axiom (principal-divisor triviality).** Let $E$ be an elliptic curve
+> over $\mathbb{F}_q$ and let $D = a(x) - b(x) y$ be a coordinate-ring
+> element, i.e. a rational function on $E$. Suppose $D$ is non-zero (not
+> both $a$ and $b$ vanish), that it genuinely involves $y$ (i.e. $b \ne 0$),
+> and that all of its zeros are visible over $\mathbb{F}_q$ in the sense of
+> `splitsOnE E D`: the norm polynomial of $D$ splits into linear factors
+> over $\mathbb{F}_q$, and each root has an $\mathbb{F}_q$-rational fibre on
+> the curve. Then the divisor of $D$ — its formal sum of zeros minus poles,
+> assembled from the local orders `ordAt` at the affine points together with
+> the pole at infinity — is principal, so its class in the curve's divisor
+> class group is zero: $[\operatorname{div}(D)] = 0$. (The companion case
+> $b = 0$, where $D$ is a polynomial in $x$ alone, is a separately proved
+> theorem.)
 
 Formal statement:
 ```lean
@@ -303,6 +342,23 @@ any nonzero `D` meeting the hypotheses.
 Lean source: `Divisor/OrdP/LocalRing.lean`.
 
 #### `Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd`
+
+> **Axiom (divisor-of-norm lower bound).** Let $E$ be an elliptic curve over
+> $\mathbb{F}_q$, let $D$ be a non-zero coordinate-ring element, and let
+> $\lambda \in \mathbb{F}_q$ define the chord projection $\pi_\lambda(x,y) =
+> y - \lambda x$. Let `gd` be the geometric divisor data of $D$ over the
+> algebraic closure $\overline{\mathbb{F}_q}$: its zero set, with each zero
+> $Q$ carrying its certified local multiplicity $\operatorname{mult}_Q(D)$.
+> Then for every intercept value $z \in \overline{\mathbb{F}_q}$, the
+> base-changed chord-fibre product — the resultant (in the chord variable)
+> of the chord cubic with the "$D$ on the line $y = \lambda x + z$"
+> polynomial, viewed as a univariate polynomial whose roots are the chord
+> intercepts of $D$'s zeros — is divisible by $(X - z)$ raised to the total
+> multiplicity of the zeros of $D$ lying over $z$:
+> $$ (X - z)^{\sum_{Q : \pi_\lambda(Q) = z} \operatorname{mult}_Q(D)} \mid \overline{\operatorname{Res}_X(\mathrm{chord}_\lambda, D_\lambda)} . $$
+> This is the lower-bound ($\ge$) half of the divisor-of-norm pushforward
+> identity; the matching upper bound (a degree inequality) is already a
+> theorem in the project, so together they pin the multiplicity exactly.
 
 Formal statement:
 ```lean
