@@ -335,29 +335,3 @@ upper bound (a degree inequality) is already a theorem in the project,
 so together they pin the multiplicity exactly.
 
 Lean source: `Divisor/Axioms/AxiomChordFiberDivisibility.lean`.
-
-### Theorem-backed declarations near the axiom surface
-
-- `Divisor.hasse_weil`: the integer-squared form `(#E − q − 1)² ≤ 4q`;
-  a theorem derived from `Divisor.hasse_weil_textbook`, kept for
-  downstream compatibility.
-- `Divisor.chord_fiber_product_eq_normZ_under_split`: that the
-  chord-fibre product is a nonzero scalar multiple of `normZ` under
-  splitting; declared in
-  `Divisor/Axioms/AxiomChordFiberProductEqNormZUnderSplit.lean` and
-  proved (no longer an axiom) via the bridge file
-  `Divisor/Bridges/ChordFiberProductEqNormZUnderSplit.lean`.
-- `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`:
-  the Galois trace-of-logarithmic-derivative identity; a theorem
-  proved from mathlib.
-- `Polynomial.resultant_logDeriv_at_split_specialization_of_two_le_natDegree_pos_g`:
-  the old logarithmic-division form; now a theorem derived from
-  `Polynomial.resultant_jet_product_at_split_specialization`.
-- `Polynomial.resultant_jet_product_at_split_specialization`: the
-  dual-number resultant product formula at a split specialization; now
-  a theorem proved by factoring `f.map (jet t₀)` into first-order lifted
-  simple roots and applying the product formula for resultants.
-- `CoordRingElt.exists_divisor_multiplicity`: a theorem proved from
-  `ordAt` and `divisorClass_eq_zero_of_b_ne_zero`.
-- `bivariate_poly_zeros_on_ExE_le`: a theorem whose project-axiom
-  dependency is `Divisor.hasse_weil_textbook`.
