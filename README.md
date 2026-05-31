@@ -45,17 +45,17 @@ enumerated in full for `ma_extractable` and referenced thereafter.
 
 #### `Divisor.ma_extractable`
 
-> **Theorem (MA knowledge soundness).** Let $E$ be an elliptic curve over
-> $\mathbb{F}_q$ with $q \ge 5$, and let `stmt` be a discrete-log statement
-> of arity $k$ and degree bound $d$ with $2 \le d \le q - 1$, whose target
-> and $k$ basis points all lie on $E$. Fix a first-round prover message
-> `msg` of matching arity, and assume the field is large enough for the
-> counting argument: $|E(\mathbb{F}_q)|$ exceeds
-> $2(5(d+k+2)+3) + 21(d+k+2) + 72$. Then one of two things holds; either
+> **Theorem (MA knowledge soundness).** Let $`E`$ be an elliptic curve over
+> $`\mathbb{F}_q`$ with $`q \ge 5`$, and let `stmt` be a discrete-log
+> statement of arity $`k`$ and degree bound $`d`$ with $`2 \le d \le q - 1`$,
+> whose target and $`k`$ basis points all lie on $`E`$. Fix a first-round
+> prover message `msg` of matching arity, and assume the field is large
+> enough for the counting argument: $`|E(\mathbb{F}_q)|`$ exceeds
+> $`2(5(d+k+2)+3) + 21(d+k+2) + 72`$. Then one of two things holds; either
 > the extractor `maExtractor` returns a witness `wit` satisfying the
 > relation `relDlog(stmt, wit)`, or `msg` is accepted on at most
-> $36(d+k+4)q$ challenges. The content is the contrapositive: a `msg`
-> accepted on more than $36(d+k+4)q$ challenges is one from which
+> $`36(d+k+4)q`$ challenges. The content is the contrapositive: a `msg`
+> accepted on more than $`36(d+k+4)q`$ challenges is one from which
 > `maExtractor` recovers a valid witness.
 
 Lean:
@@ -101,18 +101,18 @@ accepting challenge set has cardinality at most `36·(d+k+4)·q`.
 #### `Divisor.ip_extractable`
 
 > **Theorem (IP knowledge soundness; uniqueness of the third response).**
-> Assume the hypotheses of `ma_extractable`: an elliptic curve $E$ over
-> $\mathbb{F}_q$ with $q \ge 5$, a statement `stmt` of arity $k$ and degree
-> bound $d$ with $2 \le d \le q - 1$, target and bases on $E$, and the same
-> large-field bound; write the first message as `msg1`. Then two statements
-> hold at once. The first is the extraction dichotomy of `ma_extractable`:
-> either `maExtractor` recovers a witness, or `msg1` is accepted on at most
-> $36(d+k+4)q$ challenges. The second is uniqueness of the third-round
-> response: fix a challenge with points $A_0, A_1$, a second-round point
-> $A_2$, and two third responses `msg3`, `msg3'`. If `msg1.toD` is nonzero
-> at $A_0$, $A_1$ and $A_2$, the line through $A_0, A_1$ does not vanish at
-> the negated target, and the IP verifier accepts both `msg3` and `msg3'`,
-> then `msg3 = msg3'`.
+> Assume the hypotheses of `ma_extractable`: an elliptic curve $`E`$ over
+> $`\mathbb{F}_q`$ with $`q \ge 5`$, a statement `stmt` of arity $`k`$ and
+> degree bound $`d`$ with $`2 \le d \le q - 1`$, target and bases on $`E`$,
+> and the same large-field bound; write the first message as `msg1`. Then
+> two statements hold at once. The first is the extraction dichotomy of
+> `ma_extractable`: either `maExtractor` recovers a witness, or `msg1` is
+> accepted on at most $`36(d+k+4)q`$ challenges. The second is uniqueness of
+> the third-round response: fix a challenge with points $`A_0, A_1`$, a
+> second-round point $`A_2`$, and two third responses `msg3`, `msg3'`. If
+> `msg1.toD` is nonzero at $`A_0`$, $`A_1`$ and $`A_2`$, the line through
+> $`A_0, A_1`$ does not vanish at the negated target, and the IP verifier
+> accepts both `msg3` and `msg3'`, then `msg3 = msg3'`.
 
 Lean:
 ```lean
@@ -164,16 +164,16 @@ pins the prover's polynomials to the witness.
 
 #### `Divisor.ma_completeness`
 
-> **Theorem (MA completeness).** Let $E$ be an elliptic curve over
-> $\mathbb{F}_q$ with $q \ge 5$, let `wit` be a witness satisfying the
+> **Theorem (MA completeness).** Let $`E`$ be an elliptic curve over
+> $`\mathbb{F}_q`$ with $`q \ge 5`$, let `wit` be a witness satisfying the
 > discrete-log relation for a statement `stmt` of matching arity, and let
 > `msg` be the *honest* first-round message for `(stmt, wit)`, i.e.
 > `msg.isHonestFor E stmt wit`. Assume the message divisor `msg.toD` is
-> nonzero, its degree is within both the witness and statement bounds $d$,
+> nonzero, its degree is within both the witness and statement bounds $`d`$,
 > and its polynomials `(msg.polyA, msg.polyB)` lie in the admissible set.
 > Then the honest prover is rejected on few challenges: the number of pairs
-> $(P_1, P_2) \in E \times E$ on which the verifier does not accept is at
-> most $(6(d+1)+6)q$.
+> $`(P_1, P_2) \in E \times E`$ on which the verifier does not accept is at
+> most $`(6(d+1)+6)q`$.
 
 Lean:
 ```lean
@@ -253,14 +253,14 @@ enumeration of its hypotheses, and an intuition.
 
 #### `Divisor.hasse_weil_textbook`
 
-> **Axiom (Hasse-Weil bound).** Let $E$ be an elliptic curve over
-> $\mathbb{F}_q$, and write $N = |E(\mathbb{F}_q)|$ for its number of
-> rational points. Then $N$ stays within $2\sqrt{q}$ of $q + 1$:
-> $-2\sqrt{q} \le N - q - 1 \le 2\sqrt{q}$. This is the classical Hasse
+> **Axiom (Hasse-Weil bound).** Let $`E`$ be an elliptic curve over
+> $`\mathbb{F}_q`$, and write $`N = |E(\mathbb{F}_q)|`$ for its number of
+> rational points. Then $`N`$ stays within $`2\sqrt{q}`$ of $`q + 1`$:
+> $`-2\sqrt{q} \le N - q - 1 \le 2\sqrt{q}`$. This is the classical Hasse
 > bound (Hasse, 1936); there are no proof-side hypotheses, it is taken as
 > given. The project consumes it through the equivalent integer form
-> $(N - q - 1)^2 \le 4q$, which collapses a point-count-dependent bound into
-> a bound purely in $q$.
+> $`(N - q - 1)^2 \le 4q`$, which collapses a point-count-dependent bound
+> into a bound purely in $`q`$.
 
 Formal statement:
 ```lean
@@ -283,17 +283,17 @@ Lean source: `Divisor/Axioms/AxiomHasseWeil.lean`.
 
 #### `Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero`
 
-> **Axiom (principal-divisor triviality).** Let $E$ be an elliptic curve
-> over $\mathbb{F}_q$, and let $D = a(x) - b(x) y$ be a nonzero
-> coordinate-ring element that genuinely involves $y$, i.e. $b \ne 0$.
-> Assume `splitsOnE E D`: every zero of $D$ is visible over $\mathbb{F}_q$,
-> meaning the norm polynomial of $D$ splits into linear factors over
-> $\mathbb{F}_q$ and each root has an $\mathbb{F}_q$-rational fibre on the
-> curve. Then the divisor of $D$, assembled from the local orders `ordAt`
-> at the affine points together with the pole at infinity, is principal;
-> hence its class in the coordinate-ring class group vanishes,
-> $[\mathrm{div}(D)] = 0$. The companion case $b = 0$, where $D$ is a
-> polynomial in $x$, is a separate theorem.
+> **Axiom (principal-divisor triviality).** Let $`E`$ be an elliptic curve
+> over $`\mathbb{F}_q`$, and let $`D = a(x) - b(x) y`$ be a nonzero
+> coordinate-ring element that genuinely involves $`y`$, i.e. $`b \ne 0`$.
+> Assume `splitsOnE E D`: every zero of $`D`$ is visible over
+> $`\mathbb{F}_q`$, meaning the norm polynomial of $`D`$ splits into linear
+> factors over $`\mathbb{F}_q`$ and each root has an $`\mathbb{F}_q`$-rational
+> fibre on the curve. Then the divisor of $`D`$, assembled from the local
+> orders `ordAt` at the affine points together with the pole at infinity,
+> is principal; hence its class in the coordinate-ring class group vanishes,
+> $`[\mathrm{div}(D)] = 0`$. The companion case $`b = 0`$, where $`D`$ is a
+> polynomial in $`x`$, is a separate theorem.
 
 Formal statement:
 ```lean
@@ -332,21 +332,22 @@ Lean source: `Divisor/OrdP/LocalRing.lean`.
 
 #### `Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd`
 
-> **Axiom (divisor-of-norm, lower bound).** Let $E$ be an elliptic curve
-> over $\mathbb{F}_q$, let $D$ be a nonzero coordinate-ring element, and let
-> $\lambda \in \mathbb{F}_q$ fix the chord projection
-> $\pi_\lambda(x, y) = y - \lambda x$. Let `gd` be the geometric divisor
-> data of $D$ over the algebraic closure $\overline{\mathbb{F}_q}$: its zero
-> set, each zero $Q$ carrying its certified local multiplicity
-> $\mathrm{mult}_Q(D)$. The chord-fibre product is the resultant, in the
-> chord variable, of the chord cubic with the polynomial cutting out $D$ on
-> the line $y = \lambda x + z$; its roots are the chord intercepts of the
-> zeros of $D$. Recall that the order of vanishing in the fibre over an
-> intercept $z$ should be the summed multiplicity $m = \sum_{Q} \mathrm{mult}_Q(D)$
-> taken over the zeros $Q$ with $\pi_\lambda(Q) = z$. The axiom asserts the
-> lower-bound half of this: for every $z \in \overline{\mathbb{F}_q}$, the
-> base-changed resultant is divisible by $(X - z)^m$, i.e.
-> $(X - z)^m \mid \overline{\mathrm{Res}_X(\mathrm{chord}_\lambda, D_\lambda)}$.
+> **Axiom (divisor-of-norm, lower bound).** Let $`E`$ be an elliptic curve
+> over $`\mathbb{F}_q`$, let $`D`$ be a nonzero coordinate-ring element, and
+> let $`\lambda \in \mathbb{F}_q`$ fix the chord projection
+> $`\pi_\lambda(x, y) = y - \lambda x`$. Let `gd` be the geometric divisor
+> data of $`D`$ over the algebraic closure $`\overline{\mathbb{F}_q}`$: its
+> zero set, each zero $`Q`$ carrying its certified local multiplicity
+> $`\mathrm{mult}_Q(D)`$. The chord-fibre product is the resultant, in the
+> chord variable, of the chord cubic with the polynomial cutting out $`D`$
+> on the line $`y = \lambda x + z`$; its roots are the chord intercepts of
+> the zeros of $`D`$. Recall that the order of vanishing in the fibre over
+> an intercept $`z`$ should be the summed multiplicity
+> $`m = \sum_{Q} \mathrm{mult}_Q(D)`$ over the zeros $`Q`$ with
+> $`\pi_\lambda(Q) = z`$. The axiom asserts the lower-bound half: for every
+> $`z \in \overline{\mathbb{F}_q}`$, the base-changed resultant is divisible
+> by $`(X - z)^m`$, that is
+> $`(X - z)^m \mid \overline{\mathrm{Res}_X(\mathrm{chord}_\lambda, D_\lambda)}`$.
 > The matching upper bound is a degree inequality, already a theorem; hence
 > together they pin the multiplicity exactly.
 
