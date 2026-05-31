@@ -85,11 +85,22 @@ Conclusion: for every first-round message, either the extractor returns
 `some wit` and `wit` is a valid discrete-log witness for `stmt`, or the
 accepting challenge set has cardinality at most `36·(d+k+4)·q`.
 
-Human form: either `msg` yields an extracted witness, or
+Human form (knowledge soundness). Write $\mathrm{Acc}(\mathrm{msg})$ for
+the set of challenges on which the verifier accepts `msg`. For every
+first-round message the theorem asserts the disjunction
+
 $$
-\left|\operatorname{AcceptingChallenges}(\mathrm{msg})\right|
-\le 36(d+k+4)q.
+\bigl(\exists\,\mathsf{wit}:\ \mathsf{maExtractor}(\mathrm{msg}) = \mathsf{wit} \ \wedge\ \mathrm{relDlog}(\mathrm{stmt},\mathsf{wit})\bigr)
+\ \lor\
+\bigl|\mathrm{Acc}(\mathrm{msg})\bigr| \le 36\,(d+k+4)\,q .
 $$
+
+The meaningful (contrapositive) reading is the extraction guarantee: if
+`msg` is accepted on **more** than $36(d+k+4)q$ challenges, then the
+extractor `maExtractor` necessarily outputs a witness `wit` satisfying
+the discrete-log relation `relDlog`. So a prover that is accepted with
+non-negligible probability is one from which a valid witness can be
+extracted.
 
 #### `Divisor.ip_extractable`
 
@@ -135,10 +146,9 @@ Conclusion: a conjunction of two parts.
    side conditions hold.
 
 Human form:
+
 $$
-\text{IP soundness}
-= \text{MA extractability}
-\land \text{uniqueness of any accepted third-round response}.
+\text{IP soundness} \;=\; \text{MA extractability} \;\land\; \text{uniqueness of any accepted third-round response}.
 $$
 
 ### Completeness
@@ -191,10 +201,12 @@ Hypotheses:
 Conclusion: the verifier rejects the honest prover on at most
 `(6·(d+1)+6)q` challenge pairs.
 
-Human form:
+Human form. Write $\mathrm{Rej}(\mathrm{msg})$ for the set of challenge
+pairs on which the verifier rejects the honest `msg`. The theorem bounds
+it linearly in the degree bound:
+
 $$
-\left|\operatorname{RejectingChallenges}(\mathrm{msg})\right|
-\le (6(d+1)+6)q.
+\bigl|\mathrm{Rej}(\mathrm{msg})\bigr| \le \bigl(6(d+1)+6\bigr)\,q .
 $$
 
 ## Axiom Surface
