@@ -2616,9 +2616,11 @@ theorem extracted_scalars_valid
 The original `axiom polyG_zero_trace_formula` universally quantified over
    `β_fun`. That was unsound: see `BetaUnique.lean` for a counterexample where
    distinct Silverman III Cor 3.5-compliant decompositions produce different
-   `multAt` values. The original axiom is commented out below and replaced by
-   a narrowed `theorem ... := by sorry` that fixes `β_fun` to
-   `betaConstructive E msg.toD`.
+   `multAt` values. The original axiom is recorded below for reference and was
+   replaced by a narrowed statement fixing `β_fun` to
+   `betaConstructive E msg.toD` — initially sorry'd, and since fully proved
+   (the `theorem polyG_zero_trace_formula` below carries a complete proof;
+   no `sorryAx` appears in any headline closure).
 
    Original (unsound under weakened sum-bound):
    axiom polyG_zero_trace_formula
@@ -2629,7 +2631,7 @@ The original `axiom polyG_zero_trace_formula` universally quantified over
        (hβsup : ...) (hβcov : ...) (hβsum : ...) (hβgroup : ...) :
        ∀ A₀ A₁, ... polyG ... (multAt E β_fun msg.toD k) ... = 0
 
-**Narrowed trace-of-log-derivative identity (sorry'd theorem).**
+**Narrowed trace-of-log-derivative identity (now a fully proved theorem).**
     Under the hypotheses `hSplit` (normPoly splits over F_q),
     `hAccount` (betaConstructive accounting identity), and
     `hAllZero` (logDerivCheckFn vanishes on every defined non-vertical

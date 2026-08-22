@@ -44,13 +44,15 @@
                  the existential axiom with witness `ordAt E D`.
 
   Axiomatic surface introduced by this file: exactly one axiom,
-  `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit` (the
-  concrete principal fractional-ideal bridge for the specific divisor
-  `divisorOfD E D`, narrowed to non-constant-unit `D`). The old
-  `ordAt_divisorClass_zero` statement is now a theorem derived from
-  the unrestricted re-export `CoordRingElt.divisorClass_isPrincipal`
-  (case-split between the trivial constant-unit case and the
-  narrowed axiom) and mathlib's `ClassGroup.mk_eq_one_iff`.
+  `CoordRingElt.divisorClass_eq_zero_of_b_ne_zero` (the divisor-class
+  triviality of `divisorOfD E D` in mathlib's class group of the
+  affine coordinate ring, narrowed to `D.b ≠ 0`; the `D.b = 0` case
+  is a theorem). The older shapes
+  `CoordRingElt.divisorClass_eq_zero_of_not_const_unit` and
+  `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit` are now
+  theorems derived from that axiom by case-split on `D.b` (plus
+  mathlib's `ClassGroup.mk_eq_one_iff` for the principal-ideal
+  re-export).
 -/
 import Divisor.OrdP.Uniformizer
 import Divisor.OrdP.PrincipalClass
