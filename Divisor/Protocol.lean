@@ -267,11 +267,19 @@ noncomputable def computeA₂ (chal : MAChallenge q) : ZMod q × ZMod q :=
   let y₂ := lam * x₂ + (chal.A₀.2 - lam * chal.A₀.1)
   (x₂, y₂)
 
-/-- The IP verifier checks:
+/-- The IP verifier's *formalized* checks:
     1. degE(D) ≤ d
     2. h_i * D(A_i) = D'(A_i) for i = 0,1,2 where D' is the formal derivative
     3. g * L(-P) = -1
-    4. Σ h_i * dx(A_i)/dz = g + Σ (-m_j)/L(B_j)
+
+    The paper protocol's additional residue-sum check
+    `Σ h_i * dx(A_i)/dz = g + Σ (-m_j)/L(B_j)` is **not** part of this
+    predicate: the theorems proved about IP here (the extraction
+    dichotomy inherited from MA, and third-round uniqueness) do not
+    need it, and omitting it only *weakens* the accept predicate — so
+    `ip_extractable`'s uniqueness clause (any two accepted `msg3` are
+    equal) is, if anything, a stronger statement than over the full
+    paper verifier.
 
     For uniqueness: h_i is determined by D and A_i (check 2),
     and g is determined by L and P (check 3).

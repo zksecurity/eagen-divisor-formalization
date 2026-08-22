@@ -322,13 +322,4 @@ noncomputable def thirdPoint (E : ECSetup) (A₀ A₁ : ZMod E.q × ZMod E.q) :
     let y₂ := lam * x₂ + mu
     some (x₂, y₂)
 
-/-- `IsPrincipal E coeffs` means the divisor `Σ coeffs(P) · (P)` on `E`
-    arises as `div(f)` for some nonzero `f ∈ F_q(E)×`.
-
-    Left opaque: the concrete definition would quantify over function-field
-    elements (not formalized here). The characterization
-    `principal_divisor_iff` (see `Divisor/Axioms/AxiomPrincipalDivisorIff.lean`)
-    pins it down to two concrete conditions on `coeffs`. -/
-opaque IsPrincipal (E : ECSetup) (coeffs : ECPoint E → ℤ) : Prop
-
 end Divisor

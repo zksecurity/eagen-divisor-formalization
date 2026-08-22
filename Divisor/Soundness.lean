@@ -154,11 +154,13 @@ noncomputable def eventBadRange (stmt : DlogStatement E.q)
 
     The general-case bridge `logDerivCheckFn ≡ 0 on defined non-vertical
     E × E pairs ⇒ extractor succeeds ∧ target = Σ [extractedScalars] · B_i`
-    is derived in `ExtractorBridge.lean` from the narrow
-    `polyG_zero_of_logDerivCheck_identically_zero` axiom (scalar residue
-    content) together with `CoordRingElt.has_principal_divisor` (Silverman
-    III.3.5) and the D3 + D4 + D5 infrastructure. The special case
-    `-P ∈ {B_j}` is handled here unconditionally below. -/
+    is derived in `ExtractorBridge.lean` from the (now theorem-backed)
+    `polyG_zero_trace_formula` (scalar residue content) together with
+    the `CoordRingElt.has_principal_divisor` theorem (Silverman III.3.5)
+    and the D3 + D4 + D5 infrastructure; the only remaining axioms in
+    that chain are the three named in `Tests/AxiomClosurePin.lean`.
+    The special case `-P ∈ {B_j}` is handled here unconditionally
+    below. -/
 
 /-- **Paper Step 5 (special case)** (`thm:ma`, ip.tex `\ref{step:extract}`):
     extractor-success guarantee in the special branch (`-P ∈ {B_j}`,

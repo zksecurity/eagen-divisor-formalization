@@ -3,23 +3,27 @@
 
   Principal-divisor wrapper for a nonzero `D : CoordRingElt E.q`.
 
-  The `CoordRingElt.has_principal_divisor` axiom (Silverman III.3.5
-  specialized) delivers an integer multiplicity function `β : ZMod² → ℕ`
-  satisfying:
+  The `CoordRingElt.has_principal_divisor` theorem (Silverman III.3.5
+  specialized; historically an axiom, now proved in
+  `Divisor/HasPrincipalDivisor.lean`) delivers an integer multiplicity
+  function `β : ZMod² → ℕ` satisfying:
   * Support on `D`'s affine zeros on `E`.
   * Total weight equals `D.degE`.
   * Group-weighted sum on `E.points` is zero.
 
   This file packages that output into the `ECPoint`-indexed coefficient
   form `dCoeffs D β` (with `-D.degE` at `∞`) and proves
-  `IsPrincipal E (dCoeffs D β)` via `principal_divisor_iff.mpr`. The
-  two concrete conditions of that iff (degree-zero and group-sum-zero)
-  follow directly from the axiom's outputs.
+  `CoordRingElt.exists_principal_dCoeffs`: the two concrete
+  principality conditions (degree-zero and group-sum-zero) hold for
+  `dCoeffs D β`. (An earlier design routed this through an opaque
+  `IsPrincipal` predicate and a `principal_divisor_iff` axiom; both
+  have been removed — the concrete conditions are stated directly.)
 
   Used in `ExtractorBridge.lean` to upgrade the `logDerivCheckFn ≡ 0`
-  hypothesis chain into the `IsPrincipal (extractorDivisorCoeffs)`
-  conclusion, after matching the extractor's coefficients to `D`'s
-  divisor via the σ-matching output of `log_deriv_nonvanishing_criterion`.
+  hypothesis chain into the principality conclusion for
+  `extractorDivisorCoeffs`, after matching the extractor's coefficients
+  to `D`'s divisor via the σ-matching output of
+  `log_deriv_nonvanishing_criterion`.
 -/
 import Divisor.Defs
 import Divisor.HasPrincipalDivisor

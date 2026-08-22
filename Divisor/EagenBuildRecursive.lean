@@ -6662,7 +6662,7 @@ include the extensional divisor identity and the on-curve invariants,
 `IsHonestForExplicit` is now a definitional alias of `isHonestFor`.
 Existing call sites that destructure `IsHonestForExplicit` as
 `(isHonestFor) ∧ (divisor identity)` continue to work via the
-projections: `.1` is scalar reduction, `.2.1` is `IsPrincipal`,
+projections: `.1` is scalar reduction, `.2.1` is `splitsOnE`,
 `.2.2.1` is the divisor identity, `.2.2.2.1` and `.2.2.2.2` are the
 on-curve invariants. -/
 
@@ -7215,8 +7215,9 @@ theorem honestDivisorCoeffs_support_subset_affineAndInfinity
 The goal is: `∑_{R ∈ affinePoints E} honestDivisorCoeffs(R) = degE(D)`.
 
 The proof plan:
-1. From `IsPrincipal honestDivisorCoeffs` (via `principal_divisor_iff`),
-   `∑_{P ∈ hFinSupp.toFinset} coeffs P = 0`.
+1. From the degree-zero half of the principality of
+   `honestDivisorCoeffs` (via `sum_ordAt_eq_natDegree_under_split`
+   and the divisor identity), `∑_{P ∈ hFinSupp.toFinset} coeffs P = 0`.
 2. Extend sum to `insert 0 (affinePoints E)`: both cover support; outside
    support coeff = 0.
 3. `0 ∉ affinePoints E` (affinePoints contains only `.some`).
@@ -7613,7 +7614,7 @@ strengthened `MAProverMsg.isHonestFor`. Below we discharge:
 * the on-curve invariant for `(target.1, -target.2)` (`= P_0`);
 
 Affine divisor identity, on-curve invariant for bases, and the
-IsPrincipal conjunct require multi-firing case-analysis; deferred. -/
+`splitsOnE` conjunct require multi-firing case-analysis; deferred. -/
 
 /-- Divisor identity at infinity: both `divisorOfD` and
     `honestDivisorCoeffs` evaluate to `-4` at the point at infinity. -/

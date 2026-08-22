@@ -458,21 +458,26 @@ theorem betaConstructive_sum_le_degE
         sum_rootMultiplicity_le_natDegree E (normPoly E D)
     _ ≤ D.degE := normPoly_natDegree_le E D
 
-/-! ## Split predicate (used as precondition for the Abel-theorem axiom below) -/
+/-! ## Split predicate (used as precondition for the split-time
+    Abel-theorem content documented below and delivered downstream by
+    `ordAt_group_sum_zero_under_split`) -/
 
 /-- Split predicate: `N(D)` has as many roots as its degree (counted with
 multiplicity) over `F_q`. Equivalent to saying every root is `F_q`-rational. -/
 def normPoly_splits_over_Fq (D : CoordRingElt E.q) : Prop :=
   Multiset.card (normPoly E D).roots = (normPoly E D).natDegree
 
-/-! ## Narrow Abel-theorem axiom (under splitting)
+/-! ## Abel-theorem content under splitting (historical documentation)
 
-    The remaining property of `betaConstructive` needed downstream —
-    the weighted group-sum-zero identity (the "Abel's theorem on E"
-    content) — depends on function-field / Weierstrass-preparation
-    machinery beyond what we mechanize here. We record it as a narrow
-    axiom covering exactly the classical fact it invokes, with no
-    bundling of support / coverage content (those are derived above).
+    The group-sum-zero property needed downstream — the weighted
+    group-sum-zero identity (the "Abel's theorem on E" content) — was
+    originally recorded here as a narrow axiom on `betaConstructive`.
+    That axiom was found unsound and deleted (see the note below);
+    today the identity is `ordAt_group_sum_zero_under_split` in
+    `Divisor/OrdP/LocalRing.lean`, a theorem resting on the
+    divisor-class axiom `CoordRingElt.divisorClass_eq_zero_of_b_ne_zero`.
+    The classical background below is retained because it documents
+    the precondition story shared by both formulations.
 
     Classical citation: **Silverman, "The Arithmetic of Elliptic
     Curves" (AEC), Chapter III, Corollary 3.5** (p. 63) — a divisor

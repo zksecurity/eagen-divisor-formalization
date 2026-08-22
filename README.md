@@ -222,7 +222,9 @@ The headline theorems are *conditional*: their proofs are fully
 machine-checked (there is no `sorry` anywhere in the closure), but they
 rest on three named axioms, in addition to Lean/mathlib core
 (`propext`, `Classical.choice`, `Quot.sound`). The exact closures are
-pinned by `#print axioms` in `Tests/AxiomClosurePin.lean`.
+pinned by `#guard_msgs`-wrapped `#print axioms` commands in
+`Tests/AxiomClosurePin.lean` (and `Tests/F5RegressionAxiomClosure.lean`),
+so any closure drift fails the build.
 
 `Divisor.ma_extractable` and `Divisor.ip_extractable` depend on:
 

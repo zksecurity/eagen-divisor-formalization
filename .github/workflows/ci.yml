@@ -20,4 +20,7 @@ jobs:
         uses: leanprover/lean-action@v1
         with:
           use-mathlib-cache: true
-          build-args: "Divisor"
+          # Build the Tests lib too: Tests/AxiomClosurePin.lean and
+          # Tests/F5RegressionAxiomClosure.lean carry #guard_msgs-pinned
+          # axiom closures, so CI fails on any axiom-surface drift.
+          build-args: "Divisor Tests"

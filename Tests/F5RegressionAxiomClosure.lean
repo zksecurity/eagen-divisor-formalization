@@ -21,15 +21,66 @@ open Divisor
 -- `Divisor.CoordRingElt.divisor_group_sum_zero` is no longer in the
 -- closure of the headline theorem.
 
+/--
+info: 'Divisor.ma_extractable' depends on axioms: [propext,
+ Classical.choice,
+ Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
+ Divisor.hasse_weil_textbook,
+ Quot.sound,
+ Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero]
+-/
+#guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_extractable
 
+/--
+info: 'Divisor.ip_extractable' depends on axioms: [propext,
+ Classical.choice,
+ Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
+ Divisor.hasse_weil_textbook,
+ Quot.sound,
+ Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero]
+-/
+#guard_msgs (whitespace := lax) in
 #print axioms Divisor.ip_extractable
 
+/--
+info: 'Divisor.ma_completeness' depends on axioms: [propext,
+ Classical.choice,
+ Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
+ Divisor.hasse_weil_textbook,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_completeness
 
 -- Raw point-count-dependent base forms remain available under `_base`.
+/--
+info: 'Divisor.ma_extractable_base' depends on axioms: [propext,
+ Classical.choice,
+ Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
+ Divisor.hasse_weil_textbook,
+ Quot.sound,
+ Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero]
+-/
+#guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_extractable_base
 
+/--
+info: 'Divisor.ip_extractable_base' depends on axioms: [propext,
+ Classical.choice,
+ Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
+ Divisor.hasse_weil_textbook,
+ Quot.sound,
+ Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero]
+-/
+#guard_msgs (whitespace := lax) in
 #print axioms Divisor.ip_extractable_base
 
+/--
+info: 'Divisor.ma_completeness_base' depends on axioms: [propext,
+ Classical.choice,
+ Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_completeness_base

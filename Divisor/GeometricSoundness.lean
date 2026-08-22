@@ -956,14 +956,15 @@ private theorem intersectionPoly_factorisation
 /--
 Rational non-vanishing of the chord-fiber product.
 
-`chord_fiber_product` is opaque, defined only via the divisor-of-norm
-axiom. Its non-vanishing for nonzero `D` is the function-field
-statement that the norm `N_{F_q(E)/F_q(z)}(D)` of a nonzero rational
-function in the upper field is a nonzero rational function in the
-base field. This is the basic field-norm nonvanishing fact for finite
-extensions. The divisor-accounting citations for the surrounding
-fiber-product bridge are Stacks 02RS plus Stichtenoth Prop. 3.1.9 /
-Thm. 3.1.11.
+`chord_fiber_product` is a concrete definition (the X-resultant of
+the chord cubic against the D-on-line lift; see
+`Divisor/Axioms/AxiomChordFiberProductEqNormZUnderSplit.lean`). Its
+non-vanishing for nonzero `D` is the function-field statement that
+the norm `N_{F_q(E)/F_q(z)}(D)` of a nonzero rational function in the
+upper field is a nonzero rational function in the base field. This is
+the basic field-norm nonvanishing fact for finite extensions. The
+divisor-accounting citations for the surrounding fiber-product bridge
+are Stacks 02RS plus Stichtenoth Prop. 3.1.9 / Thm. 3.1.11.
 
 This is the smallest sharp obligation isolating the rational
 nonvanishing half of the bar fiber-accounting bundle.
@@ -975,7 +976,7 @@ theorem chord_fiber_product_ne_zero
   classical
   -- Extract a geometric divisor data witness from `hD`.
   obtain ⟨gd, _⟩ := exists_geometricDivisorData E D hD
-  -- Apply the narrow factored-form bridge axiom over `Fqbar E`.
+  -- Apply the (theorem-backed) factored-form bridge over `Fqbar E`.
   obtain ⟨c, hc, hEq⟩ :=
     chord_fiber_product_bar_eq_geom_prod E D lam hD gd
   -- The RHS of the bridge is nonzero (nonzero scalar times a product of

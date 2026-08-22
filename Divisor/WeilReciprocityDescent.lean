@@ -1,25 +1,31 @@
 /-
   Divisor/WeilReciprocityDescent.lean
 
-  Protocol-level Weil-reciprocity descent: the trace of chord-fiber
-  log-derivative terms vanishes for an honest prover. The chord-residue
-  identity is derived from the project's chord-resultant infrastructure
-  plus protocol-specific algebra.
+  Protocol-level Weil-reciprocity descent under explicit divisor data:
+  the trace of chord-fiber log-derivative terms vanishes when an
+  explicit multiplicity function matching `D`'s zero divisor is
+  supplied. The chord-residue identity is derived from the project's
+  chord-resultant infrastructure plus protocol-specific algebra.
 
   ## Structure
 
-  **`weil_residue_identity`** (sorry'd bridge lemma): under the
-  honest-prover hypothesis, the trace of log-derivative terms at the
-  three chord-fiber points `(A₀, A₁, A₂)` equals the evaluation sum
-  `−1/L(−P) + Σⱼ −mⱼ/L(Bⱼ)`. This is the core content of Weil
-  reciprocity applied to `D` and the chord line `L`.
+  **`logDerivCheckFn_eq_residue_sum_form`** /
+  **`logDerivCheckFn_zero_of_chord_residue_match`**: protocol algebra
+  rewrites of `logDerivCheckFn`.
 
-  **`weil_pairing_zero_under_honest`**: proved from
-  `weil_residue_identity` by observing that `logDerivCheckFn` is
-  exactly `lhs − rhs` where `lhs = rhs` by the residue identity.
+  **`logDerivCheckFn_zero_of_explicit_divisor_data`** (the external
+  entry point, consumed by `EagenBuildRecursive` and
+  `LogDerivEagenLength4`): `logDerivCheckFn = 0` given an explicit
+  divisor multiplicity function `β_fun` matching `D`'s zero divisor,
+  plus the per-challenge geometric side conditions.
 
-  **`weil_reciprocity_honest_descent`**: re-exports
-  `weil_pairing_zero_under_honest`.
+  Historical note: this file used to also contain a sorry'd
+  `weil_residue_identity` chain (deriving the identity directly from
+  `msg.isHonestFor` instead of explicit divisor data). That chain was
+  dead code — the completeness path goes through
+  `MACompletenessCore` — and has been removed; the honest-divisor
+  identification is supplied by the strengthened
+  `MAProverMsg.isHonestFor` contract instead.
 -/
 import Divisor.Defs
 import Divisor.LogDeriv
@@ -202,106 +208,5 @@ theorem logDerivCheckFn_zero_of_explicit_divisor_data
   exact logDerivCheckFn_zero_of_chord_residue_match E D P B m β_fun
     hD hSplit hβsup hβcov hAccount hβtrue A₀ A₁ hA₀ hA₁ hNV
     hA₀def hA₁def hA₂def hQline hDen hResidueMatch
-
-/-! ## Bridge lemma: the Weil residue identity
-
-This is the mathematical heart of the descent. Under the honest-prover
-hypothesis, the trace of `logDerivTerm`s at the three chord-fiber
-points equals the evaluation-sum RHS:
-
-    logDerivTerm(D, λ, A₀) + logDerivTerm(D, λ, A₁) + logDerivTerm(D, λ, A₂)
-    = −(L(−P))⁻¹ + Σⱼ −mⱼ · (L(Bⱼ))⁻¹
-
-i.e. `logDerivCheckFn E D P k B m A₀ A₁ = 0`.
-
-Proof sketch (to be mechanized):
-1. By `chord_sum_eq_chord_fiber_product_logDeriv`, the LHS equals
-   `(N(D))'(μ) / N(D)(μ)` where `N = chord_fiber_product` and
-   `μ = zLambda λ A₀`.
-2. By `chord_fiber_product_eq_normZ_under_split`, `N(D) = c · normZ`
-   for some nonzero `c`, so the log-derivative simplifies to
-   `(normZ)'(μ) / normZ(μ)`.
-3. `normZ = ∏ (z − zₖ)^{βₖ}`, so by the partial-fraction expansion
-   of its log-derivative:
-     `(normZ)'(μ)/normZ(μ) = Σₖ βₖ / (μ − zₖ)`.
-4. Converting `μ − zₖ` to `L(Qₖ) · (x₁ − x₀)` and using the
-   honest-prover divisor coefficients (`β(-P) = 1` and `β(Bⱼ) = nⱼ`
-   with `mⱼ = nⱼ mod q`) yields exactly the RHS.
-5. The chord-residue identity ensures the product-to-sum conversion
-   holds when the supports are disjoint (guaranteed by `¬ bad`).
-
-The statement is intentionally restricted to `A₀, A₁ ∈ E.points`,
-matching the completeness consumer and the geometric hypotheses needed
-by the chord-residue identity.
-
-This lemma chains the chord-resultant infrastructure
-(`chord_sum_eq_chord_fiber_product_logDeriv`,
-`chord_fiber_product_eq_normZ_under_split`).
-The remaining formal gap is the honest-divisor identification:
-`msg.isHonestFor E stmt wit hk hkm` currently proves that the formal
-honest divisor is principal, but it does not directly identify
-`msg.toD`'s actual zero divisor and multiplicities with
-`(-P) + Σᵢ wit.scalars(i) · (Bᵢ)`. That bridge is needed to rewrite the
-partial-fraction sum over `msg.toD`'s zeros into the protocol RHS. -/
-theorem weil_residue_identity
-    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
-    (A₀ A₁ : ZMod E.q × ZMod E.q)
-    (_hA₀ : A₀ ∈ E.points) (_hA₁ : A₁ ∈ E.points)
-    (hGood : (A₀, A₁) ∉ badChallengesCompleteness E msg.toD) :
-    let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
-    let x₂ := lam ^ 2 - A₀.1 - A₁.1
-    let y₂ := lam * x₂ + (A₀.2 - lam * A₀.1)
-    let L := lineThrough A₀.1 A₀.2 A₁.1 A₁.2
-    let negP := (stmt.target.1, -stmt.target.2)
-    logDerivTerm E msg.toD E.curveA lam A₀ +
-    logDerivTerm E msg.toD E.curveA lam A₁ +
-    logDerivTerm E msg.toD E.curveA lam (x₂, y₂) =
-    -(L.eval negP.1 negP.2)⁻¹ +
-    (Finset.univ (α := Fin stmt.k)).sum
-      (fun j => -(msg.m (hkm ▸ j)) * (L.eval (stmt.bases j).1 (stmt.bases j).2)⁻¹) := by
-  sorry
-
-/-! ## Main theorem: `weil_pairing_zero_under_honest`
-
-Proved by observing that `logDerivCheckFn` is defined as exactly
-`lhs − rhs` where `lhs = rhs` is established by `weil_residue_identity`. -/
-
-theorem weil_pairing_zero_under_honest
-    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
-    (A₀ A₁ : ZMod E.q × ZMod E.q)
-    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
-    (hGood : (A₀, A₁) ∉ badChallengesCompleteness E msg.toD) :
-    logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-      (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0 := by
-  -- logDerivCheckFn is defined as lhs - rhs; show lhs = rhs.
-  have hId := weil_residue_identity E stmt wit hk msg hkm hHonestDivisor
-    A₀ A₁ hA₀ hA₁ hGood
-  simp only [] at hId
-  -- logDerivCheckFn = lhs - rhs, so logDerivCheckFn = 0 ↔ lhs = rhs
-  show logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-    (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0
-  unfold logDerivCheckFn
-  simp only []
-  exact sub_eq_zero.mpr hId
-
-/-! ## Top-level: the honest-prover Weil-reciprocity theorem -/
-theorem weil_reciprocity_honest_descent
-    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
-    (A₀ A₁ : ZMod E.q × ZMod E.q)
-    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
-    (hGood : (A₀, A₁) ∉ badChallengesCompleteness E msg.toD) :
-    logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-      (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0 :=
-  weil_pairing_zero_under_honest E stmt wit hk msg hkm hHonestDivisor
-    A₀ A₁ hA₀ hA₁ hGood
 
 end Divisor

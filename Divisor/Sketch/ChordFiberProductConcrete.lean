@@ -1,29 +1,28 @@
 /-
   Divisor/Sketch/ChordFiberProductConcrete.lean
 
-  PROTOTYPE — concrete candidate for `chord_fiber_product`.
+  PROTOTYPE / HISTORICAL SANDBOX — concrete candidate for
+  `chord_fiber_product`.
 
-  The `chord_fiber_product E lam D : (ZMod E.q)[X]` API is opaque
-  (declared as `noncomputable opaque` in
-  `Divisor/Axioms/AxiomChordFiberProductEqNormZUnderSplit.lean`) and
-  pinned only via two axioms:
+  This file predates the production discharge of the chord-fiber
+  bridge. Today, `chord_fiber_product` is a plain `noncomputable def`
+  (equal to the resultant candidate `chord_fiber_product_concrete`;
+  see `Divisor/Axioms/AxiomChordFiberProductEqNormZUnderSplit.lean`),
+  and the statements this sandbox sketches are theorem-backed on the
+  production side (`Divisor/Bridges/ChordFiberProductEqNormZUnderSplit.lean`
+  and `Divisor/Axioms/AxiomChordSumEqChordFiberProductLogDeriv.lean`),
+  resting only on the named axioms pinned in
+  `Tests/AxiomClosurePin.lean`.
 
-    chord_fiber_product_eq_normZ_under_split  -- proportionality to normZ
-    chord_fiber_product_bar_eq_geom_prod      -- bar-level factored form
-
-  plus a third axiom for the log-derivative identity
-  (`chord_sum_eq_chord_fiber_product_logDeriv`).
-
-  The axiom-free *concrete plumbing* (bivariate setup, base-change to
-  `F_qbar`, the resultant candidate `chord_fiber_product_concrete`,
-  the evaluation/factorisation helpers, and the non-vanishing theorem)
-  lives in the production module `Divisor/ChordFiberProductConcrete.lean`
-  under `namespace Divisor`. This file contains the three
-  `sorry`-bearing obligations against that candidate:
-  `chord_fiber_product_concrete_bar_eq_geom_prod`,
-  `chord_fiber_product_concrete_eq_normZ_under_split`, and
-  `chord_fiber_product_concrete_logDeriv`. Each is restated against
-  the production-namespace decl. -/
+  The two remaining `sorry`-bearing declarations here
+  (`chord_fiber_product_concrete_eq_normZ_under_split_bar` and
+  `chord_fiber_product_concrete_logDeriv`, both in the
+  `Divisor.Sketch` namespace) are historical duplicates of that
+  discharged content, retained as documentation of the original proof
+  plan. They are consumed by nothing in the production namespace and
+  appear in no headline theorem's axiom closure (which would otherwise
+  show `sorryAx`). The sorry-free geometric lemmas consumed by
+  production live downstream in `Divisor/Sketch/ChordFiberGeometry.lean`. -/
 import Divisor.Axioms.AxiomChordFiberDivisibility
 import Divisor.Axioms.AxiomChordFiberProductBarFactored
 import Divisor.ChordFiberMultiplicativity
@@ -40,11 +39,12 @@ namespace Divisor.Sketch
 
 variable (E : ECSetup)
 
-/-! ## Outstanding obligations against the concrete candidate
+/-! ## Historical obligations against the concrete candidate
 
-Each `theorem` below mirrors a downstream consumer of the opaque
-`chord_fiber_product`. The proofs are stubbed with `sorry`; the
-surrounding comments record the remaining mathematical content. -/
+Each `theorem` below mirrors a downstream consumer of
+`chord_fiber_product`. The sorry-stubbed ones are historical
+duplicates of content now discharged on the production side; the
+surrounding comments record the original mathematical plan. -/
 
 /-- **Narrow hard lemma: chord-projection multiplicity accounting.**
 
