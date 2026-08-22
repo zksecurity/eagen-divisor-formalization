@@ -119,7 +119,18 @@ base field where cheap (we only need our short-Weierstrass shape,
       needed). Derived: univariate `pointPrime_intValuation_mk_C`
       (`v_P(g) = exp(−e_P·rootMult x₀ g)`, both torsion cases) and the
       lone-case `pointPrime_intValuation_of_lone`.
-- [ ] **1d Bridge theorems.**
+- [x] **1d Bridge theorems.** (Both sub-items landed — see below.
+      Cross-check clause closed out at plan completion: neither
+      `sum_ordAt_eq_natDegree_under_split` nor
+      `geomLocalOrder_fiber_accounting` is referenced by the bridge
+      modules `ValuationBridge`/`ValuationBridgeOrd`/
+      `GeomValuationBridge` (verified by grep — they are sanity
+      targets, not inputs, so no circularity), and the bridge got a
+      far stronger validation than re-deriving those two identities:
+      Phase 2 consumed the `ZMod` bridge to discharge the
+      divisor-class axiom and Phase 3 consumed the geometric bridge to
+      discharge the chord-fiber axiom, both machine-checked end-to-end
+      under the `#guard_msgs` closure pins.)
       * [x] `ordAt_eq_count` (over `ZMod E.q`): landed in
         `Divisor/OrdP/ValuationBridgeOrd.lean` as
         `pointPrime_intValuation_toCoordinateRing`
