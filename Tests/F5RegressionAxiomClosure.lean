@@ -22,7 +22,6 @@ import Divisor.Soundness
 /--
 info: 'Divisor.ma_extractable' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -32,7 +31,6 @@ info: 'Divisor.ma_extractable' depends on axioms: [propext,
 /--
 info: 'Divisor.ip_extractable' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -42,7 +40,6 @@ info: 'Divisor.ip_extractable' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -53,7 +50,6 @@ info: 'Divisor.ma_completeness' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_extractable_base' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -63,7 +59,6 @@ info: 'Divisor.ma_extractable_base' depends on axioms: [propext,
 /--
 info: 'Divisor.ip_extractable_base' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -73,7 +68,6 @@ info: 'Divisor.ip_extractable_base' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_base' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in

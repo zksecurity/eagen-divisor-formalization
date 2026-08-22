@@ -1,13 +1,25 @@
 /-
   Divisor/Axioms/AxiomChordFiberDivisibility.lean
 
-  Narrow divisibility axiom for the base-changed chord-fiber product.
+  Narrow divisibility statement for the base-changed chord-fiber
+  product — **formerly an axiom, now a theorem** (plan.md Phase 3).
 
   This is the *lower-bound* half of the divisor-of-norm pushforward
   identity for the chord projection π = y - λx : E → ℙ¹. It says
   that the chord-fibre product (the resultant), as a polynomial over
   `F_qbar`, has rootMultiplicity ≥ fibre_sum at each chord-intercept
   z that's the image of some affine zero of D.
+
+  Proof chain (`Divisor/OrdP/`):
+  * `ChordNorm.X_sub_C_pow_fiberSum_dvd_intNorm` — at every geometric
+    zero `Q` of `D` above `z`, `D̄` lies in the `mult Q`-th power of
+    the point ideal of the chord model `F̄[Z] → R̄`; taking
+    `Ideal.relNorm` gives
+    `(Z − z)^{Σ mult Q} ∣ intNorm F̄[Z] (ChordModel) D̄`.
+  * `ChordResultant.intNorm_chordD_eq` — that integral norm *is* the
+    base-changed chord-fibre resultant, by comparing the product over
+    the embeddings `Frac(R̄) →ₐ Frac(F̄[Z])‾` (the norm) with the
+    product over the roots of the chord cubic (the resultant).
 
   Combined with the global natDegree bound
 
@@ -16,15 +28,11 @@
   from `Divisor/ChordFiberWeightedDegree.lean`, the squeeze argument
   (`Divisor.rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le`) forces
   equality of multiplicities at every fibre.
-
-  This axiom states the lower-bound (coefficientwise) half of the
-  divisor-of-norm pushforward identity: the local-intersection /
-  order-of-vanishing content that mathlib does not yet supply for the
-  affine coordinate ring of an elliptic curve.
 -/
 import Divisor.GeomBase
 import Divisor.GeomLocalOrder
 import Divisor.ChordFiberProductConcrete
+import Divisor.OrdP.ChordResultant
 
 open Polynomial
 
@@ -32,7 +40,8 @@ namespace Divisor
 
 variable (E : ECSetup)
 
-/-- **Narrow divisor-of-norm divisibility axiom for the concrete resultant.**
+/-- **Narrow divisor-of-norm divisibility for the concrete resultant**
+(formerly an axiom, discharged via the chord-algebra norm calculus).
 
 For each chord-intercept `z : F_qbar`, the chord-fibre product (the
 concrete resultant), as a polynomial over `F_qbar`, is divisible by
@@ -53,15 +62,10 @@ upper bound is the global natDegree inequality
 `Divisor/ChordFiberWeightedDegree.lean` via weighted Sylvester
 analysis).
 
-The k=1 case (single linear factor at each fibre) follows from
-`chord_fiber_product_concrete_bar_X_sub_C_zLambda_pow_one_dvd_of_mem_support`.
-This axiom encapsulates the higher-multiplicity cases (k ≥ 2): when
-the affine multiplicities at points in the fibre sum to ≥ 2, the
-chord-projection norm absorbs that multiplicity. Mathematically this
-is the local order-of-vanishing content of the norm pushforward at
-each closed point of ℙ¹; in Lean it is local-intersection content not
-yet supplied by mathlib. -/
-axiom chord_fiber_product_concrete_bar_zfiber_pow_dvd
+Proof: `X_sub_C_pow_fiberSum_dvd_intNorm` (the relNorm calculus lower
+bound along the chord algebra `F̄[Z] → R̄`) rewritten through
+`intNorm_chordD_eq` (the norm *is* the base-changed resultant). -/
+theorem chord_fiber_product_concrete_bar_zfiber_pow_dvd
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
     [DecidableEq (Fqbar E)]
     (hD : ¬ (D.a = 0 ∧ D.b = 0))
@@ -69,6 +73,8 @@ axiom chord_fiber_product_concrete_bar_zfiber_pow_dvd
     (Polynomial.X - Polynomial.C z) ^
       (∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q)
       ∣ (chord_fiber_product_concrete E lam D).map
-          (algebraMap (ZMod E.q) (Fqbar E))
+          (algebraMap (ZMod E.q) (Fqbar E)) := by
+  have h := X_sub_C_pow_fiberSum_dvd_intNorm E lam D hD gd z
+  rwa [intNorm_chordD_eq] at h
 
 end Divisor
