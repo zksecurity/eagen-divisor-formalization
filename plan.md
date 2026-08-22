@@ -232,16 +232,18 @@ simplifications found:
       inherited definitionally, plus `chordPowerBasis` (`{1, x̄, x̄²}`
       through the iso), `Module.Finite`, `Module.Free`, and
       `chordModel_finrank = 3`.
-- [ ] **3b Lower bound by relNorm calculus** (the clean core):
-      P3.pre gives `D̄ ∈ ∏_{Q : π(Q)=z₀} m_Q^{gd.mult Q}`
-      (`intValuation_le_pow_iff_mem`; distinct maximal ideals make
-      the product an intersection); then
-      `span {intNorm D̄} = relNorm (span D̄)` (`relNorm_singleton`)
-      `≤ ∏ relNorm(m_Q)^{mult}` (`relNorm` multiplicativity)
-      `≤ ∏ (Z − z₀)^{mult}` (`relNorm_le_comap` +
-      `m_Q ∩ F̄[Z] = (Z − z₀)`, immediate from
-      `z̄ − z₀ = (ȳ − y₀) − λ̄(x̄ − x₀) ∈ m_Q` + maximality), i.e.
-      **`(Z − z₀)^{Σ mult} ∣ Algebra.intNorm F̄[Z] R̄ D̄`**.
+- [x] **3b Lower bound by relNorm calculus.** Landed in
+      `Divisor/OrdP/ChordNorm.lean` as
+      `X_sub_C_pow_fiberSum_dvd_intNorm`, exactly along the planned
+      chain: `chordD_mem_pow` (P3.pre through
+      `intValuation_le_pow_iff_mem`), `prod_chordPointIdeal_pow_dvd`
+      (`Finset.prod_dvd_of_coprime` + `IsMaximal.coprime_of_ne`),
+      `relNorm_singleton`/`relNorm_mono`/`map_prod`, and
+      `relNorm_chordPointIdeal_le` (contraction is `(Z − z₀)` since
+      the membership witness is `barD (−C z₀ − C λ̄·X) (−1)`, whose
+      `barEval` at `Q` is `zLambdaBar Q − z₀ = 0`). Torsion-freeness
+      of the chord model comes from injectivity of `zHom` through the
+      isomorphism.
 - [ ] **3c Norm = resultant, via embeddings** (long pole #2):
       `intNorm D̄ = (chord_fiber_product_concrete E lam D).map (…)`
       exactly (no sign: the chord cubic is monic). Chain, with
