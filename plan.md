@@ -1,5 +1,15 @@
 # Plan: discharge the two divisor axioms
 
+> **STATUS: COMPLETE (2026-08-22).** All phases (0–4) landed and
+> pushed. Every checkbox below is ticked and every clause is backed by
+> a machine-checked artifact: the repository's only `axiom` is
+> `hasse_weil_textbook`, the repository is `sorry`-free, the
+> `#guard_msgs` closure pins in `Tests/` (CI-enforced via
+> `lake build Divisor Tests`) certify the final closures listed below,
+> and the 1d bridge sanity tests are run literally in
+> `Tests/BridgeCrossChecks.lean`. See the status log at the bottom for
+> the landing history.
+
 Goal: turn the two divisor-theoretic axioms into theorems, leaving the
 Hasse bound as the project's **only** axiom.
 
