@@ -1,4 +1,5 @@
 import Tests.AxiomClosurePin
+import Tests.BridgeCrossChecks
 import Tests.CoeffPolyEvalSmokeTest
 import Tests.CrossCaseSmokeTest
 import Tests.EagenBuildEvalSmokeTest

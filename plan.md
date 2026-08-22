@@ -120,17 +120,22 @@ base field where cheap (we only need our short-Weierstrass shape,
       (`v_P(g) = exp(−e_P·rootMult x₀ g)`, both torsion cases) and the
       lone-case `pointPrime_intValuation_of_lone`.
 - [x] **1d Bridge theorems.** (Both sub-items landed — see below.
-      Cross-check clause closed out at plan completion: neither
-      `sum_ordAt_eq_natDegree_under_split` nor
-      `geomLocalOrder_fiber_accounting` is referenced by the bridge
-      modules `ValuationBridge`/`ValuationBridgeOrd`/
-      `GeomValuationBridge` (verified by grep — they are sanity
-      targets, not inputs, so no circularity), and the bridge got a
-      far stronger validation than re-deriving those two identities:
-      Phase 2 consumed the `ZMod` bridge to discharge the
-      divisor-class axiom and Phase 3 consumed the geometric bridge to
-      discharge the chord-fiber axiom, both machine-checked end-to-end
-      under the `#guard_msgs` closure pins.)
+      Cross-check clause closed out — the sanity tests are RUN, not
+      just argued: `Tests/BridgeCrossChecks.lean` re-derives both
+      identities from the bridge alone, as
+      `sum_ordAt_eq_natDegree_under_split_via_bridge` and
+      `geomLocalOrder_fiber_accounting_via_bridge` (statements
+      verbatim, originals uncited, own `#guard_msgs` pins at the Lean
+      core three). The derivation is the textbook one: a
+      valuation-transport lemma along the coordinate-ring conjugation
+      involution (vendored `conj`) maps the point prime of `(x, y)`
+      to that of `(x, −y)`, so the conjugate-pair product
+      `v_P(D)·v_P(σD) = v_P(N(D))` splits fibrewise into
+      `ordAt P + ordAt σP = e_P·rootMult` — no fuel induction, no
+      closed-formula case analysis. "Not inputs" holds too: neither
+      identity is referenced by the bridge modules (verified by
+      grep), and the bridge was independently validated by the
+      Phase 2/Phase 3 axiom discharges.)
       * [x] `ordAt_eq_count` (over `ZMod E.q`): landed in
         `Divisor/OrdP/ValuationBridgeOrd.lean` as
         `pointPrime_intValuation_toCoordinateRing`
@@ -415,3 +420,18 @@ axiom deletion updates the `#guard_msgs` pins **in the same commit**
   Sketch duplicates. End state achieved: one `axiom` keyword in the
   codebase (`hasse_weil_textbook`), closures pinned, full
   `lake build Divisor Tests` green.
+* 2026-08-22 — **1d cross-checks run literally.** New
+  `Tests/BridgeCrossChecks.lean` re-derives both sanity-target
+  identities from the valuation bridge alone (originals uncited):
+  a generic `intValuation` transport lemma along a ring automorphism
+  of a Dedekind domain, instantiated at the vendored coordinate-ring
+  conjugation `conj` (which maps the point prime of `(x, y)` to that
+  of `(x, −y)` — computed on `XClass`/`YClass` generators), turns the
+  conjugate-product norm identity into the fibrewise sums
+  `ordAt P + ordAt σP = rootMult` / `geomLocalOrder Q + geomLocalOrder σQ
+  = rootMult` on both curves; summing fibres gives
+  `sum_ordAt_eq_natDegree_under_split_via_bridge` and
+  `geomLocalOrder_fiber_accounting_via_bridge` (statements verbatim,
+  own `#guard_msgs` pins: Lean core three only). Wired into
+  `Tests.lean`; full build green (8818 jobs). Every clause of
+  plan.md is now discharged by machine-checked artifacts.
