@@ -218,40 +218,38 @@ Conclusion: the verifier rejects the honest prover on at most
 
 ## Axiom Surface
 
-The headline theorems are *conditional*: their proofs are fully
-machine-checked (there is no `sorry` anywhere in the closure), but they
-rest on three named axioms, in addition to Lean/mathlib core
-(`propext`, `Classical.choice`, `Quot.sound`). The exact closures are
-pinned by `#guard_msgs`-wrapped `#print axioms` commands in
-`Tests/AxiomClosurePin.lean` (and `Tests/F5RegressionAxiomClosure.lean`),
-so any closure drift fails the build.
+The project has exactly **one** named axiom: the Hasse–Weil point-count
+bound. Everything else in every headline theorem's closure is fully
+machine-checked down to Lean/mathlib core (`propext`,
+`Classical.choice`, `Quot.sound`); there is no `sorry` anywhere in the
+closure. The exact closures are pinned by `#guard_msgs`-wrapped
+`#print axioms` commands in `Tests/AxiomClosurePin.lean` (and
+`Tests/F5RegressionAxiomClosure.lean`), so any closure drift fails the
+build.
 
-`Divisor.ma_extractable` and `Divisor.ip_extractable` depend on:
-
-```text
-Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd
-Divisor.hasse_weil_textbook
-Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
-```
-
-`Divisor.ma_completeness` depends on:
+`Divisor.ma_extractable`, `Divisor.ip_extractable`, and
+`Divisor.ma_completeness` depend on:
 
 ```text
-Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd
 Divisor.hasse_weil_textbook
 ```
 
-All three axioms are dependencies of the headline theorems. Each is a
-piece of mathematical infrastructure: a point count and two divisor
-facts. None of them mentions the protocol,
-the extractor, or the verifier. The protocol-specific reasoning is
-entirely in the machine-checked part; the axioms are upstream lemmas,
-not the conclusion in disguise.
+`Divisor.ma_completeness_base` and the entire binary completeness chain
+(`ma_completeness_binary*`) are **axiom-free**: their closures are the
+Lean core three only.
+
+The one axiom is a piece of mathematical infrastructure — a point
+count. It does not mention the protocol, the extractor, or the
+verifier. The protocol-specific reasoning is entirely in the
+machine-checked part; the axiom is an upstream fact, not the conclusion
+in disguise.
 
 ### Lean Axiom Inventory
 
-Each axiom is documented below with its formal Lean statement, an
-enumeration of its hypotheses, and an intuition.
+The axiom is documented below with its formal Lean statement, an
+enumeration of its hypotheses, and an intuition; the two divisor
+axioms the project previously assumed have been proved and are
+documented under "Discharged former axioms".
 
 #### `Divisor.hasse_weil_textbook`
 
@@ -283,9 +281,17 @@ point-count-dependent bound into a bound purely in `q`.
 
 Lean source: `Divisor/Axioms/AxiomHasseWeil.lean`.
 
+### Discharged former axioms
+
+Both divisor-theoretic facts the project once assumed are now theorems,
+proved on top of the Dedekind-domain structure of the curve's
+coordinate ring (see "Vendored code" below) and machine-checked in the
+build. Their statements are unchanged — same names, same signatures, in
+the same files — so downstream consumers were untouched.
+
 #### `Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero`
 
-> **Axiom (principal-divisor triviality).** Let $`E`$ be an elliptic curve
+> **Theorem (principal-divisor triviality), formerly an axiom.** Let $`E`$ be an elliptic curve
 > over $`\mathbb{F}_q`$, and let $`D = a(x) - b(x) y`$ be a nonzero
 > coordinate-ring element that genuinely involves $`y`$, i.e. $`b \ne 0`$.
 > Assume `splitsOnE E D`: every zero of $`D`$ is visible over
@@ -299,7 +305,7 @@ Lean source: `Divisor/Axioms/AxiomHasseWeil.lean`.
 
 Formal statement:
 ```lean
-axiom CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
+theorem CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
     (E : ECSetup) (D : CoordRingElt E.q)
     (_hD : ¬ (D.a = 0 ∧ D.b = 0))
     (_hSplit : splitsOnE E D) (_hbNZ : D.b ≠ 0) :
@@ -330,11 +336,20 @@ infinity) genuinely captures the full zero/pole data of `D`. The
 soundness path uses this as a general divisor-class triviality fact for
 any nonzero `D` meeting the hypotheses.
 
+How it is proved: the valuation bridge `Divisor/OrdP/ValuationBridge*`
+identifies the project's combinatorial local order `ordAt` with the
+`HeightOneSpectrum` valuation at the point's maximal ideal
+(`v_P(D) = exp(−ordAt E D P)`); `Divisor/OrdP/SupportClassification.lean`
+classifies the primes containing `D` and factors
+`span {D} = ∏_P XYIdeal(P)^(ordAt P)`; the class-group computation in
+`Divisor/OrdP/LocalRing.lean` then collapses the divisor class to the
+class of a principal fractional ideal.
+
 Lean source: `Divisor/OrdP/LocalRing.lean`.
 
 #### `Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd`
 
-> **Axiom (divisor-of-norm, lower bound).** Let $`E`$ be an elliptic curve
+> **Theorem (divisor-of-norm, lower bound), formerly an axiom.** Let $`E`$ be an elliptic curve
 > over $`\mathbb{F}_q`$, let $`D`$ be a nonzero coordinate-ring element, and
 > let $`\lambda \in \mathbb{F}_q`$ fix the chord projection
 > $`\pi_\lambda(x, y) = y - \lambda x`$. Let `gd` be the geometric divisor
@@ -346,7 +361,7 @@ Lean source: `Divisor/OrdP/LocalRing.lean`.
 > the zeros of $`D`$. Recall that the order of vanishing in the fibre over
 > an intercept $`z`$ should be the summed multiplicity
 > $`m = \sum_{Q} \mathrm{mult}_Q(D)`$ over the zeros $`Q`$ with
-> $`\pi_\lambda(Q) = z`$. The axiom asserts the lower-bound half: for every
+> $`\pi_\lambda(Q) = z`$. The theorem asserts the lower-bound half: for every
 > $`z \in \overline{\mathbb{F}_q}`$, the base-changed resultant is divisible
 > by $`(X - z)^m`$, that is
 > $`(X - z)^m \mid \overline{\mathrm{Res}_X(\mathrm{chord}_\lambda, D_\lambda)}`$.
@@ -355,7 +370,7 @@ Lean source: `Divisor/OrdP/LocalRing.lean`.
 
 Formal statement:
 ```lean
-axiom chord_fiber_product_concrete_bar_zfiber_pow_dvd
+theorem chord_fiber_product_concrete_bar_zfiber_pow_dvd
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
     [DecidableEq (Fqbar E)]
     (hD : ¬ (D.a = 0 ∧ D.b = 0))
@@ -386,7 +401,7 @@ Hypotheses:
 
 Intuition: `chord_fiber_product_concrete E lam D` is the norm of `D`
 along the chord projection: a univariate polynomial whose roots are the
-chord intercepts of `D`'s zeros. The axiom says each zero `Q` of `D`
+chord intercepts of `D`'s zeros. The theorem says each zero `Q` of `D`
 contributes its full local multiplicity to that polynomial at the
 intercept `π_λ(Q)`, and zeros sharing an intercept add their
 multiplicities: `(X − z)` raised to the multiplicity summed over the
@@ -395,4 +410,35 @@ lower-bound (`≥`) half of the norm-pushforward identity; the matching
 upper bound (a degree inequality) is already a theorem in the project,
 so together they pin the multiplicity exactly.
 
-Lean source: `Divisor/Axioms/AxiomChordFiberDivisibility.lean`.
+How it is proved: the chord algebra `F̄[Z] → R̄` (adjoining the curve
+along `Z = y − λx`) is realised in `Divisor/OrdP/ChordAlgebra.lean` as
+`AdjoinRoot` of the chord cubic, a rank-3 free extension.
+`Divisor/OrdP/ChordNorm.lean` shows `D̄` lies in the `mult Q`-th power
+of the maximal ideal at each geometric zero `Q` (via the geometric
+valuation bridge `Divisor/OrdP/GeomValuationBridge.lean`), and pushes
+that through `Ideal.relNorm` to get
+`(Z − z)^m ∣ intNorm F̄[Z] R̄ D̄`. Finally
+`Divisor/OrdP/ChordFraction.lean` + `Divisor/OrdP/ChordResultant.lean`
+identify that integral norm with the base-changed chord-fibre
+resultant, by comparing the product over field embeddings (the norm)
+with the product over the roots of the chord cubic (the resultant).
+
+Lean source: `Divisor/Axioms/AxiomChordFiberDivisibility.lean` (the
+statement, with the two-line assembly), proved on
+`Divisor/OrdP/ChordAlgebra.lean`, `Divisor/OrdP/ChordNorm.lean`,
+`Divisor/OrdP/ChordFraction.lean`, `Divisor/OrdP/ChordResultant.lean`.
+
+## Vendored code
+
+`Divisor/Vendor/TauCeti/` contains seven files (~1,300 lines) vendored
+from the [Tau Ceti library](https://github.com/TauCetiProject/TauCeti)
+(commit `076ae234`, 2026-08-21, Apache-2.0; original copyright headers
+retained). They provide the Dedekind-domain structure of an elliptic
+curve's affine coordinate ring (`isDedekindDomain_coordinateRing`,
+`XYIdeal` maximality and the `XYIdeal_eq_iff` point/ideal dictionary),
+which underpins the proofs of both discharged former axioms above.
+They were vendored rather than taken as a lake dependency because
+upstream has no release tags and tracks a pre-release toolchain with a
+mathlib master pin. See `Divisor/Vendor/TauCeti/README.md` for
+provenance, the file-by-file inventory, and the (mechanical, marked)
+local adaptations.

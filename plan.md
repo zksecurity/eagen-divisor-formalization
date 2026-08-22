@@ -281,13 +281,24 @@ simplifications found:
 
 ## Phase 4 — Surface cleanup
 
-- [ ] README "Axiom Surface" rewritten: one axiom, Hasse.
-- [ ] Final pin update; confirm the binary completeness chain closes
-      over core three only.
-- [ ] Delete `Divisor/Sketch/ChordFiberProductConcrete.lean`'s sorry'd
-      duplicates (now fully superseded) and the axiom files that became
-      empty shells.
-- [ ] Vendored-code note in the top-level README (provenance, license).
+- [x] README "Axiom Surface" rewritten: one axiom, Hasse. The two
+      discharged axioms are documented under a "Discharged former
+      axioms" subsection (statement kept, `axiom` → `theorem`, plus a
+      how-it-is-proved paragraph each).
+- [x] Final pin update; confirm the binary completeness chain closes
+      over core three only. (Landed with the Phase 3 commit — the pins
+      certify `ma_completeness_base` and all `ma_completeness_binary*`
+      at exactly `{propext, Classical.choice, Quot.sound}`.)
+- [x] Delete `Divisor/Sketch/ChordFiberProductConcrete.lean`'s sorry'd
+      duplicates: `chord_fiber_product_concrete_eq_normZ_under_split_bar`
+      (sorry), its consumer
+      `chord_fiber_product_concrete_eq_normZ_under_split`, and
+      `chord_fiber_product_concrete_logDeriv` (sorry) — no consumers
+      existed. The repository is now `sorry`-free. No axiom files
+      became empty shells (each `Divisor/Axioms/*.lean` holds live
+      theorems; only `AxiomHasseWeil.lean` still holds an `axiom`), so
+      there was nothing further to delete.
+- [x] Vendored-code note in the top-level README (provenance, license).
 
 ## Ordering and discipline
 
@@ -381,3 +392,15 @@ axiom deletion updates the `#guard_msgs` pins **in the same commit**
   design).** `ma_completeness_base` and
   `ma_completeness_for_length4Simple` are now axiom-free. Next:
   Phase 4 surface cleanup.
+* 2026-08-22 — **Phase 4 complete — plan finished.** README "Axiom
+  Surface" rewritten around the single remaining axiom (Hasse), with
+  the two discharged axioms documented as theorems plus proof-sketch
+  paragraphs; vendored-code provenance note added to the top-level
+  README. The last two `sorry`-bearing declarations (historical
+  duplicates in `Divisor/Sketch/ChordFiberProductConcrete.lean`, never
+  consumed) deleted — **the repository is now `sorry`-free**, verified
+  by grep and by the pinned closures. No axiom files became empty
+  shells (all hold live theorems), so no file deletions beyond the
+  Sketch duplicates. End state achieved: one `axiom` keyword in the
+  codebase (`hasse_weil_textbook`), closures pinned, full
+  `lake build Divisor Tests` green.
