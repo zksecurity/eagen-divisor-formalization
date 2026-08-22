@@ -173,9 +173,9 @@ noncomputable def EagenAccum.combine (a b : EagenAccum E) : EagenAccum E :=
   | WeierstrassCurve.Affine.Point.zero, WeierstrassCurve.Affine.Point.zero =>
       EagenAccum.combine_oo E a b
   | WeierstrassCurve.Affine.Point.zero,
-    WeierstrassCurve.Affine.Point.some _ =>
+    WeierstrassCurve.Affine.Point.some _ _ _ =>
       EagenAccum.combine_ol E a b
-  | WeierstrassCurve.Affine.Point.some _,
+  | WeierstrassCurve.Affine.Point.some _ _ _,
     WeierstrassCurve.Affine.Point.zero =>
       EagenAccum.combine_or E a b
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
@@ -253,7 +253,7 @@ noncomputable def level_step :
 def pointCombine (p q : ECPoint E) : ECPoint E :=
   match p, q with
   | WeierstrassCurve.Affine.Point.zero, _ => q
-  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero => p
+  | WeierstrassCurve.Affine.Point.some _ _ _, WeierstrassCurve.Affine.Point.zero => p
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ =>
       if _h_xx : xa ≠ xb then
@@ -784,8 +784,6 @@ noncomputable def LandmarkInvStrong
   a.point = sumOnE E xs ∧
   (∀ P : ZMod E.q × ZMod E.q,
     P ∈ E.points → target E xs a.point P ≤ localMult E a.poly P) ∧
-  letI : Decidable (a.point = (0 : ECPoint E)) :=
-    Classical.dec _
   (normPoly E a.poly).natDegree =
     xs.length + (if a.point = (0 : ECPoint E) then 0 else 1)
 
@@ -803,8 +801,6 @@ theorem LandmarkInvStrong.target_le
 theorem LandmarkInvStrong.natDegree
     {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
     (h : LandmarkInvStrong E xs a) :
-    letI : Decidable (a.point = (0 : ECPoint E)) :=
-      Classical.dec _
     (normPoly E a.poly).natDegree =
       xs.length + (if a.point = (0 : ECPoint E) then 0 else 1) := h.2.2
 
@@ -913,8 +909,6 @@ noncomputable def LandmarkInv
   -- of the latest chord, geometrically).
   (∀ Q : ZMod E.q × ZMod E.q,
     negCoords E a.point = some Q → a.poly.eval Q.1 Q.2 = 0) ∧
-  letI : Decidable (a.point = (0 : ECPoint E)) :=
-    Classical.dec _
   (normPoly E a.poly).natDegree =
     xs.length + (if a.point = (0 : ECPoint E) then 0 else 1)
 
@@ -1140,7 +1134,9 @@ theorem landmarkInvStrong_combine_ol_when_rootMult_le_one
     calc
       target E (xs ++ ys) (EagenAccum.combine_ol E a b).point P
           = xs.count P + target E ys b.point P := by
-            simp [target, EagenAccum.combine_ol, List.count_append]
+            have hpt : (EagenAccum.combine_ol E a b).point = b.point := rfl
+            rw [hpt]
+            simp [target, List.count_append]
             omega
       _ ≤ localMult E a.poly P + localMult E b.poly P :=
             Nat.add_le_add ha_count_le hb_target_le
@@ -1210,7 +1206,9 @@ theorem landmarkInvStrong_combine_or_when_rootMult_le_one
     calc
       target E (xs ++ ys) (EagenAccum.combine_or E a b).point P
           = target E xs a.point P + ys.count P := by
-            simp [target, EagenAccum.combine_or, List.count_append]
+            have hpt : (EagenAccum.combine_or E a b).point = a.point := rfl
+            rw [hpt]
+            simp [target, List.count_append]
             omega
       _ ≤ localMult E a.poly P + localMult E b.poly P :=
             Nat.add_le_add ha_target_le hb_count_le
@@ -1605,15 +1603,15 @@ theorem landmarkInv_combine_vertical_no_collision
       E.equation_iff_nonsingular.mp ((E.equation_iff xa (-ya)).mpr (E.hOnCurve _ hxy_neg_on))
     rw [ECPoint.affine_of_nonsingular E hns_a, ECPoint.affine_of_nonsingular E hns_b]
     -- Use mathlib's Affine.Point negation: .some (x, y) + .some (x, -y) = 0.
-    show (0 : ECPoint E) = (.some hns_a + .some hns_b : ECPoint E)
+    show (0 : ECPoint E) = (.some _ _ hns_a + .some _ _ hns_b : ECPoint E)
     -- The sum of a point with its negative is the identity.
     -- mathlib: WeierstrassCurve.Affine.Point.add_neg or similar.
-    have h_neg : (.some hns_b : ECPoint E) = -(.some hns_a) := by
-      show WeierstrassCurve.Affine.Point.some hns_b
-            = -WeierstrassCurve.Affine.Point.some hns_a
+    have h_neg : (.some _ _ hns_b : ECPoint E) = -(.some _ _ hns_a) := by
+      show WeierstrassCurve.Affine.Point.some _ _ hns_b
+            = -WeierstrassCurve.Affine.Point.some _ _ hns_a
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg]
-    show (0 : ECPoint E) = .some hns_a + (-.some hns_a)
+    show (0 : ECPoint E) = .some _ _ hns_a + (-.some _ _ hns_a)
     rw [add_neg_cancel]
   · -- Vanishing at every P ∈ xs ++ ys (using no-collision hypothesis).
     intro P hP_mem
@@ -1771,13 +1769,13 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_one
     have hns_b : E.toW.toAffine.Nonsingular xa (-ya) :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa (-ya)).mpr (E.hOnCurve _ hxy_neg_on))
     rw [ECPoint.affine_of_nonsingular E hns_a, ECPoint.affine_of_nonsingular E hns_b]
-    show (0 : ECPoint E) = (.some hns_a + .some hns_b : ECPoint E)
-    have h_neg : (.some hns_b : ECPoint E) = -(.some hns_a) := by
-      show WeierstrassCurve.Affine.Point.some hns_b
-            = -WeierstrassCurve.Affine.Point.some hns_a
+    show (0 : ECPoint E) = (.some _ _ hns_a + .some _ _ hns_b : ECPoint E)
+    have h_neg : (.some _ _ hns_b : ECPoint E) = -(.some _ _ hns_a) := by
+      show WeierstrassCurve.Affine.Point.some _ _ hns_b
+            = -WeierstrassCurve.Affine.Point.some _ _ hns_a
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg]
-    show (0 : ECPoint E) = .some hns_a + (-.some hns_a)
+    show (0 : ECPoint E) = .some _ _ hns_a + (-.some _ _ hns_a)
     rw [add_neg_cancel]
   · intro P hPon
     have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
@@ -2001,15 +1999,15 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_one
     have hns : E.toW.toAffine.Nonsingular xa 0 :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa 0).mpr (E.hOnCurve _ hxy_on))
     rw [ECPoint.affine_of_nonsingular E hns]
-    show (0 : ECPoint E) = (.some hns + .some hns : ECPoint E)
-    have hself_neg : (-(.some hns : ECPoint E)) = .some hns := by
-      show -(WeierstrassCurve.Affine.Point.some hns : ECPoint E)
-          = WeierstrassCurve.Affine.Point.some hns
+    show (0 : ECPoint E) = (.some _ _ hns + .some _ _ hns : ECPoint E)
+    have hself_neg : (-(.some _ _ hns : ECPoint E)) = .some _ _ hns := by
+      show -(WeierstrassCurve.Affine.Point.some _ _ hns : ECPoint E)
+          = WeierstrassCurve.Affine.Point.some _ _ hns
       simp [WeierstrassCurve.Affine.Point.neg_some]
     calc
-      (0 : ECPoint E) = (.some hns : ECPoint E) + (-.some hns) := by
+      (0 : ECPoint E) = (.some _ _ hns : ECPoint E) + (-.some _ _ hns) := by
         rw [add_neg_cancel]
-      _ = (.some hns : ECPoint E) + .some hns := by
+      _ = (.some _ _ hns : ECPoint E) + .some _ _ hns := by
         rw [hself_neg]
   · intro P hPon
     have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
@@ -2295,19 +2293,19 @@ theorem landmarkInv_levelInitPair_chord
     rw [show sumOnE E [P, Q] = ECPoint.affineOfMem E hP + sumOnE E [Q] from sumOnE_cons E hP]
     rw [show sumOnE E [Q] = ECPoint.affineOfMem E hQ + sumOnE E [] from sumOnE_cons E hQ]
     rw [sumOnE_nil, add_zero]
-    have heq_P : ECPoint.affineOfMem E hP = (.some hns_P : ECPoint E) := rfl
-    have heq_Q : ECPoint.affineOfMem E hQ = (.some hns_Q : ECPoint E) := rfl
+    have heq_P : ECPoint.affineOfMem E hP = (.some _ _ hns_P : ECPoint E) := rfl
+    have heq_Q : ECPoint.affineOfMem E hQ = (.some _ _ hns_Q : ECPoint E) := rfl
     rw [heq_P, heq_Q]
     rw [ECPoint.affine_of_nonsingular E hns_Qneg]
-    -- (.some hns_P) + (.some hns_Q) = -(.some hns_Qpos) = .some hns_Qneg.
+    -- (.some _ _ hns_P) + (.some _ _ hns_Q) = -(.some _ _ hns_Qpos) = .some _ _ hns_Qneg.
     have hSum := thirdPoint_some_eq_neg_add (E := E) hP hQ hT
     have heq_QxQy : ECPoint.affineOfMem E h_QxQy_on
-        = (.some (E.equation_iff_nonsingular.mp
+        = (.some Qx Qy (E.equation_iff_nonsingular.mp
                   ((E.equation_iff Qx Qy).mpr (E.hOnCurve _ h_QxQy_on))) : ECPoint E) := rfl
     rw [heq_P, heq_Q, heq_QxQy] at hSum
-    -- (.some hns_Qneg) = -(.some hns_third).
+    -- (.some _ _ hns_Qneg) = -(.some _ _ hns_third).
     set hns_third := E.equation_iff_nonsingular.mp ((E.equation_iff Qx Qy).mpr (E.hOnCurve _ h_QxQy_on))
-    have h_neg : (.some hns_Qneg : ECPoint E) = -(.some hns_third : ECPoint E) := by
+    have h_neg : (.some _ _ hns_Qneg : ECPoint E) = -(.some _ _ hns_third : ECPoint E) := by
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg]
     exact hSum.symm
@@ -2324,7 +2322,7 @@ theorem landmarkInv_levelInitPair_chord
     rw [h_levelInit_pt] at hpt_neg
     rw [ECPoint.affine_of_nonsingular E hns_Qneg] at hpt_neg
     have hpt_eq : pt = (Qx, Qy) := by
-      have : negCoords E (.some hns_Qneg : ECPoint E) = some (Qx, Qy) := by
+      have : negCoords E (.some _ _ hns_Qneg : ECPoint E) = some (Qx, Qy) := by
         show some (Qx, -(-Qy)) = some (Qx, Qy)
         rw [neg_neg]
       rw [this] at hpt_neg
@@ -2454,7 +2452,7 @@ theorem landmarkInv_levelInitSingleton
     rw [h_levelInit_pt] at hQ
     rw [ECPoint.affine_of_nonsingular E hns] at hQ
     have hQ_eq : Q = (P.1, -P.2) := by
-      have : negCoords E (.some hns : ECPoint E) = some (P.1, -P.2) := rfl
+      have : negCoords E (.some _ _ hns : ECPoint E) = some (P.1, -P.2) := rfl
       rw [this] at hQ
       exact (Option.some.inj hQ).symm
     rw [hQ_eq]
@@ -2731,7 +2729,7 @@ theorem landmarkInv_combine_distinct_no_collision
     show (ECPoint.affine E (slopeOf xa ya xb yb ^ 2 - xa - xb)
             (-(slopeOf xa ya xb yb * (slopeOf xa ya xb yb ^ 2 - xa - xb)
                 + (ya - slopeOf xa ya xb yb * xa))))
-        = (.some hns_a + .some hns_b : ECPoint E)
+        = (.some _ _ hns_a + .some _ _ hns_b : ECPoint E)
     set Qx := slopeOf xa ya xb yb ^ 2 - xa - xb with hQx_def
     set Qy := slopeOf xa ya xb yb * Qx + (ya - slopeOf xa ya xb yb * xa) with hQy_def
     have hT : thirdPoint E (xa, ya) (xb, yb) = some (Qx, Qy) := by
@@ -2739,20 +2737,20 @@ theorem landmarkInv_combine_distinct_no_collision
       rw [if_neg h_xx]
       simp [Qx, Qy, slopeOf]
     have hSum := thirdPoint_some_eq_neg_add (E := E) hxa_on hxb_on hT
-    have heq_a : ECPoint.affineOfMem E hxa_on = (.some hns_a : ECPoint E) := rfl
-    have heq_b : ECPoint.affineOfMem E hxb_on = (.some hns_b : ECPoint E) := rfl
+    have heq_a : ECPoint.affineOfMem E hxa_on = (.some _ _ hns_a : ECPoint E) := rfl
+    have heq_b : ECPoint.affineOfMem E hxb_on = (.some _ _ hns_b : ECPoint E) := rfl
     rw [heq_a, heq_b] at hSum
     have h_Qxy_on : (Qx, Qy) ∈ E.points :=
       third_point_on_curve E (xa, ya) (xb, yb) hxa_on hxb_on hT
     have hns_third : E.toW.toAffine.Nonsingular Qx Qy :=
       E.equation_iff_nonsingular.mp ((E.equation_iff Qx Qy).mpr (E.hOnCurve _ h_Qxy_on))
-    have heq_third : ECPoint.affineOfMem E h_Qxy_on = (.some hns_third : ECPoint E) := rfl
+    have heq_third : ECPoint.affineOfMem E h_Qxy_on = (.some _ _ hns_third : ECPoint E) := rfl
     rw [heq_third] at hSum
     have h_Qxy_neg_on : (Qx, -Qy) ∈ E.points := points_neg_y E h_Qxy_on
     have hns_third_neg : E.toW.toAffine.Nonsingular Qx (-Qy) :=
       E.equation_iff_nonsingular.mp ((E.equation_iff Qx (-Qy)).mpr (E.hOnCurve _ h_Qxy_neg_on))
     rw [ECPoint.affine_of_nonsingular E hns_third_neg]
-    have h_neg_third : (.some hns_third_neg : ECPoint E) = -(.some hns_third : ECPoint E) := by
+    have h_neg_third : (.some _ _ hns_third_neg : ECPoint E) = -(.some _ _ hns_third : ECPoint E) := by
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg_third]
     exact hSum.symm
@@ -2796,7 +2794,7 @@ theorem landmarkInv_combine_distinct_no_collision
       E.equation_iff_nonsingular.mp ((E.equation_iff Qx (-Qy)).mpr (E.hOnCurve _ h_neg_on))
     rw [ECPoint.affine_of_nonsingular E hns] at hQ
     have hQ_eq : Q = (Qx, Qy) := by
-      have : negCoords E (.some hns : ECPoint E) = some (Qx, Qy) := by
+      have : negCoords E (.some _ _ hns : ECPoint E) = some (Qx, Qy) := by
         show some (Qx, -(-Qy)) = some (Qx, Qy)
         rw [neg_neg]
       rw [this] at hQ
@@ -3597,7 +3595,9 @@ theorem landmarkInvStrong_combine_ol_when_rootMult_le_two
     calc
       target E (xs ++ ys) (EagenAccum.combine_ol E a b).point P
           = xs.count P + target E ys b.point P := by
-            simp [target, EagenAccum.combine_ol, List.count_append]
+            have hpt : (EagenAccum.combine_ol E a b).point = b.point := rfl
+            rw [hpt]
+            simp [target, List.count_append]
             omega
       _ ≤ localMult E a.poly P + localMult E b.poly P :=
             Nat.add_le_add ha_count_le hb_target_le
@@ -3665,7 +3665,9 @@ theorem landmarkInvStrong_combine_or_when_rootMult_le_two
     calc
       target E (xs ++ ys) (EagenAccum.combine_or E a b).point P
           = target E xs a.point P + ys.count P := by
-            simp [target, EagenAccum.combine_or, List.count_append]
+            have hpt : (EagenAccum.combine_or E a b).point = a.point := rfl
+            rw [hpt]
+            simp [target, List.count_append]
             omega
       _ ≤ localMult E a.poly P + localMult E b.poly P :=
             Nat.add_le_add ha_target_le hb_count_le
@@ -3763,13 +3765,13 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_two
     have hns_b : E.toW.toAffine.Nonsingular xa (-ya) :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa (-ya)).mpr (E.hOnCurve _ hxy_neg_on))
     rw [ECPoint.affine_of_nonsingular E hns_a, ECPoint.affine_of_nonsingular E hns_b]
-    show (0 : ECPoint E) = (.some hns_a + .some hns_b : ECPoint E)
-    have h_neg : (.some hns_b : ECPoint E) = -(.some hns_a) := by
-      show WeierstrassCurve.Affine.Point.some hns_b
-            = -WeierstrassCurve.Affine.Point.some hns_a
+    show (0 : ECPoint E) = (.some _ _ hns_a + .some _ _ hns_b : ECPoint E)
+    have h_neg : (.some _ _ hns_b : ECPoint E) = -(.some _ _ hns_a) := by
+      show WeierstrassCurve.Affine.Point.some _ _ hns_b
+            = -WeierstrassCurve.Affine.Point.some _ _ hns_a
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg]
-    show (0 : ECPoint E) = .some hns_a + (-.some hns_a)
+    show (0 : ECPoint E) = .some _ _ hns_a + (-.some _ _ hns_a)
     rw [add_neg_cancel]
   · intro P hPon
     have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
@@ -3991,15 +3993,15 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_two
     have hns : E.toW.toAffine.Nonsingular xa 0 :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa 0).mpr (E.hOnCurve _ hxy_on))
     rw [ECPoint.affine_of_nonsingular E hns]
-    show (0 : ECPoint E) = (.some hns + .some hns : ECPoint E)
-    have hself_neg : (-(.some hns : ECPoint E)) = .some hns := by
-      show -(WeierstrassCurve.Affine.Point.some hns : ECPoint E)
-          = WeierstrassCurve.Affine.Point.some hns
+    show (0 : ECPoint E) = (.some _ _ hns + .some _ _ hns : ECPoint E)
+    have hself_neg : (-(.some _ _ hns : ECPoint E)) = .some _ _ hns := by
+      show -(WeierstrassCurve.Affine.Point.some _ _ hns : ECPoint E)
+          = WeierstrassCurve.Affine.Point.some _ _ hns
       simp [WeierstrassCurve.Affine.Point.neg_some]
     calc
-      (0 : ECPoint E) = (.some hns : ECPoint E) + (-.some hns) := by
+      (0 : ECPoint E) = (.some _ _ hns : ECPoint E) + (-.some _ _ hns) := by
         rw [add_neg_cancel]
-      _ = (.some hns : ECPoint E) + .some hns := by
+      _ = (.some _ _ hns : ECPoint E) + .some _ _ hns := by
         rw [hself_neg]
   · intro P hPon
     have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
@@ -4252,7 +4254,9 @@ theorem landmarkInvStrong_combine_ol_when_rootMult_le_three
     calc
       target E (xs ++ ys) (EagenAccum.combine_ol E a b).point P
           = xs.count P + target E ys b.point P := by
-            simp [target, EagenAccum.combine_ol, List.count_append]
+            have hpt : (EagenAccum.combine_ol E a b).point = b.point := rfl
+            rw [hpt]
+            simp [target, List.count_append]
             omega
       _ ≤ localMult E a.poly P + localMult E b.poly P :=
             Nat.add_le_add ha_count_le hb_target_le
@@ -4320,7 +4324,9 @@ theorem landmarkInvStrong_combine_or_when_rootMult_le_three
     calc
       target E (xs ++ ys) (EagenAccum.combine_or E a b).point P
           = target E xs a.point P + ys.count P := by
-            simp [target, EagenAccum.combine_or, List.count_append]
+            have hpt : (EagenAccum.combine_or E a b).point = a.point := rfl
+            rw [hpt]
+            simp [target, List.count_append]
             omega
       _ ≤ localMult E a.poly P + localMult E b.poly P :=
             Nat.add_le_add ha_target_le hb_count_le
@@ -4418,13 +4424,13 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_three
     have hns_b : E.toW.toAffine.Nonsingular xa (-ya) :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa (-ya)).mpr (E.hOnCurve _ hxy_neg_on))
     rw [ECPoint.affine_of_nonsingular E hns_a, ECPoint.affine_of_nonsingular E hns_b]
-    show (0 : ECPoint E) = (.some hns_a + .some hns_b : ECPoint E)
-    have h_neg : (.some hns_b : ECPoint E) = -(.some hns_a) := by
-      show WeierstrassCurve.Affine.Point.some hns_b
-            = -WeierstrassCurve.Affine.Point.some hns_a
+    show (0 : ECPoint E) = (.some _ _ hns_a + .some _ _ hns_b : ECPoint E)
+    have h_neg : (.some _ _ hns_b : ECPoint E) = -(.some _ _ hns_a) := by
+      show WeierstrassCurve.Affine.Point.some _ _ hns_b
+            = -WeierstrassCurve.Affine.Point.some _ _ hns_a
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg]
-    show (0 : ECPoint E) = .some hns_a + (-.some hns_a)
+    show (0 : ECPoint E) = .some _ _ hns_a + (-.some _ _ hns_a)
     rw [add_neg_cancel]
   · intro P hPon
     have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
@@ -4646,15 +4652,15 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_three
     have hns : E.toW.toAffine.Nonsingular xa 0 :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa 0).mpr (E.hOnCurve _ hxy_on))
     rw [ECPoint.affine_of_nonsingular E hns]
-    show (0 : ECPoint E) = (.some hns + .some hns : ECPoint E)
-    have hself_neg : (-(.some hns : ECPoint E)) = .some hns := by
-      show -(WeierstrassCurve.Affine.Point.some hns : ECPoint E)
-          = WeierstrassCurve.Affine.Point.some hns
+    show (0 : ECPoint E) = (.some _ _ hns + .some _ _ hns : ECPoint E)
+    have hself_neg : (-(.some _ _ hns : ECPoint E)) = .some _ _ hns := by
+      show -(WeierstrassCurve.Affine.Point.some _ _ hns : ECPoint E)
+          = WeierstrassCurve.Affine.Point.some _ _ hns
       simp [WeierstrassCurve.Affine.Point.neg_some]
     calc
-      (0 : ECPoint E) = (.some hns : ECPoint E) + (-.some hns) := by
+      (0 : ECPoint E) = (.some _ _ hns : ECPoint E) + (-.some _ _ hns) := by
         rw [add_neg_cancel]
-      _ = (.some hns : ECPoint E) + .some hns := by
+      _ = (.some _ _ hns : ECPoint E) + .some _ _ hns := by
         rw [hself_neg]
   · intro P hPon
     have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
@@ -5006,16 +5012,16 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_one
     have hns_b : E.toW.toAffine.Nonsingular xb yb :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xb yb).mpr (E.hOnCurve _ hxb_on))
     rw [ECPoint.affine_of_nonsingular E hns_a, ECPoint.affine_of_nonsingular E hns_b]
-    show ECPoint.affine E Qx (-Qy) = (.some hns_a + .some hns_b : ECPoint E)
+    show ECPoint.affine E Qx (-Qy) = (.some _ _ hns_a + .some _ _ hns_b : ECPoint E)
     have hSum := thirdPoint_some_eq_neg_add (E := E) hxa_on hxb_on hT
     have hns_Q : E.toW.toAffine.Nonsingular Qx Qy :=
       E.equation_iff_nonsingular.mp ((E.equation_iff Qx Qy).mpr (E.hOnCurve _ hQ_on))
-    have heq_a : ECPoint.affineOfMem E hxa_on = (.some hns_a : ECPoint E) := rfl
-    have heq_b : ECPoint.affineOfMem E hxb_on = (.some hns_b : ECPoint E) := rfl
-    have heq_Q : ECPoint.affineOfMem E hQ_on = (.some hns_Q : ECPoint E) := rfl
+    have heq_a : ECPoint.affineOfMem E hxa_on = (.some _ _ hns_a : ECPoint E) := rfl
+    have heq_b : ECPoint.affineOfMem E hxb_on = (.some _ _ hns_b : ECPoint E) := rfl
+    have heq_Q : ECPoint.affineOfMem E hQ_on = (.some _ _ hns_Q : ECPoint E) := rfl
     rw [heq_a, heq_b, heq_Q] at hSum
     rw [ECPoint.affine_of_nonsingular E hns_Qneg]
-    have h_neg_third : (.some hns_Qneg : ECPoint E) = -(.some hns_Q : ECPoint E) := by
+    have h_neg_third : (.some _ _ hns_Qneg : ECPoint E) = -(.some _ _ hns_Q : ECPoint E) := by
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg_third]
     exact hSum.symm
@@ -5569,16 +5575,16 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_two
     have hns_b : E.toW.toAffine.Nonsingular xb yb :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xb yb).mpr (E.hOnCurve _ hxb_on))
     rw [ECPoint.affine_of_nonsingular E hns_a, ECPoint.affine_of_nonsingular E hns_b]
-    show ECPoint.affine E Qx (-Qy) = (.some hns_a + .some hns_b : ECPoint E)
+    show ECPoint.affine E Qx (-Qy) = (.some _ _ hns_a + .some _ _ hns_b : ECPoint E)
     have hSum := thirdPoint_some_eq_neg_add (E := E) hxa_on hxb_on hT
     have hns_Q : E.toW.toAffine.Nonsingular Qx Qy :=
       E.equation_iff_nonsingular.mp ((E.equation_iff Qx Qy).mpr (E.hOnCurve _ hQ_on))
-    have heq_a : ECPoint.affineOfMem E hxa_on = (.some hns_a : ECPoint E) := rfl
-    have heq_b : ECPoint.affineOfMem E hxb_on = (.some hns_b : ECPoint E) := rfl
-    have heq_Q : ECPoint.affineOfMem E hQ_on = (.some hns_Q : ECPoint E) := rfl
+    have heq_a : ECPoint.affineOfMem E hxa_on = (.some _ _ hns_a : ECPoint E) := rfl
+    have heq_b : ECPoint.affineOfMem E hxb_on = (.some _ _ hns_b : ECPoint E) := rfl
+    have heq_Q : ECPoint.affineOfMem E hQ_on = (.some _ _ hns_Q : ECPoint E) := rfl
     rw [heq_a, heq_b, heq_Q] at hSum
     rw [ECPoint.affine_of_nonsingular E hns_Qneg]
-    have h_neg_third : (.some hns_Qneg : ECPoint E) = -(.some hns_Q : ECPoint E) := by
+    have h_neg_third : (.some _ _ hns_Qneg : ECPoint E) = -(.some _ _ hns_Q : ECPoint E) := by
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg_third]
     exact hSum.symm
@@ -6119,16 +6125,16 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_three
     have hns_b : E.toW.toAffine.Nonsingular xb yb :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xb yb).mpr (E.hOnCurve _ hxb_on))
     rw [ECPoint.affine_of_nonsingular E hns_a, ECPoint.affine_of_nonsingular E hns_b]
-    show ECPoint.affine E Qx (-Qy) = (.some hns_a + .some hns_b : ECPoint E)
+    show ECPoint.affine E Qx (-Qy) = (.some _ _ hns_a + .some _ _ hns_b : ECPoint E)
     have hSum := thirdPoint_some_eq_neg_add (E := E) hxa_on hxb_on hT
     have hns_Q : E.toW.toAffine.Nonsingular Qx Qy :=
       E.equation_iff_nonsingular.mp ((E.equation_iff Qx Qy).mpr (E.hOnCurve _ hQ_on))
-    have heq_a : ECPoint.affineOfMem E hxa_on = (.some hns_a : ECPoint E) := rfl
-    have heq_b : ECPoint.affineOfMem E hxb_on = (.some hns_b : ECPoint E) := rfl
-    have heq_Q : ECPoint.affineOfMem E hQ_on = (.some hns_Q : ECPoint E) := rfl
+    have heq_a : ECPoint.affineOfMem E hxa_on = (.some _ _ hns_a : ECPoint E) := rfl
+    have heq_b : ECPoint.affineOfMem E hxb_on = (.some _ _ hns_b : ECPoint E) := rfl
+    have heq_Q : ECPoint.affineOfMem E hQ_on = (.some _ _ hns_Q : ECPoint E) := rfl
     rw [heq_a, heq_b, heq_Q] at hSum
     rw [ECPoint.affine_of_nonsingular E hns_Qneg]
-    have h_neg_third : (.some hns_Qneg : ECPoint E) = -(.some hns_Q : ECPoint E) := by
+    have h_neg_third : (.some _ _ hns_Qneg : ECPoint E) = -(.some _ _ hns_Q : ECPoint E) := by
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg_third]
     exact hSum.symm
@@ -6614,15 +6620,15 @@ theorem landmarkInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
     have hns_a : E.toW.toAffine.Nonsingular xa ya :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxy_on))
     rw [ECPoint.affine_of_nonsingular E hns_a]
-    show ECPoint.affine E Qx (-Qy) = (.some hns_a + .some hns_a : ECPoint E)
+    show ECPoint.affine E Qx (-Qy) = (.some _ _ hns_a + .some _ _ hns_a : ECPoint E)
     have hSum := thirdPoint_some_eq_neg_add (E := E) hxy_on hxy_on hT
     have hns_Q : E.toW.toAffine.Nonsingular Qx Qy :=
       E.equation_iff_nonsingular.mp ((E.equation_iff Qx Qy).mpr (E.hOnCurve _ hQ_on))
-    have heq_a : ECPoint.affineOfMem E hxy_on = (.some hns_a : ECPoint E) := rfl
+    have heq_a : ECPoint.affineOfMem E hxy_on = (.some _ _ hns_a : ECPoint E) := rfl
     rw [heq_a] at hSum
-    change (.some hns_a + .some hns_a : ECPoint E) = -(.some hns_Q : ECPoint E) at hSum
+    change (.some _ _ hns_a + .some _ _ hns_a : ECPoint E) = -(.some _ _ hns_Q : ECPoint E) at hSum
     rw [ECPoint.affine_of_nonsingular E hns_Qneg]
-    have h_neg_third : (.some hns_Qneg : ECPoint E) = -(.some hns_Q : ECPoint E) := by
+    have h_neg_third : (.some _ _ hns_Qneg : ECPoint E) = -(.some _ _ hns_Q : ECPoint E) := by
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg_third]
     exact hSum.symm
@@ -6997,7 +7003,7 @@ can reduce before `native_decide` looks for a `Decidable` instance. -/
 abbrev combineCanFire (a b : EagenAccum E) : Prop :=
   match a.point, b.point with
   | WeierstrassCurve.Affine.Point.zero, _ => True
-  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero => True
+  | WeierstrassCurve.Affine.Point.some _ _ _, WeierstrassCurve.Affine.Point.zero => True
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ =>
       match decEq xa xb with
@@ -7030,7 +7036,7 @@ expected to fire. The smooth branch is `False`; all other branches mirror
 abbrev chordCase (a b : EagenAccum E) : Prop :=
   match a.point, b.point with
   | WeierstrassCurve.Affine.Point.zero, _ => True
-  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero => True
+  | WeierstrassCurve.Affine.Point.some _ _ _, WeierstrassCurve.Affine.Point.zero => True
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ =>
       match decEq xa xb with
@@ -7051,7 +7057,7 @@ instance chordCase_decidable (a b : EagenAccum E) :
   match hpa : a.point, hpb : b.point with
   | WeierstrassCurve.Affine.Point.zero, _ =>
       simpa [chordCase, hpa, hpb] using (isTrue True.intro : Decidable True)
-  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero =>
+  | WeierstrassCurve.Affine.Point.some _ _ _, WeierstrassCurve.Affine.Point.zero =>
       simpa [chordCase, hpa, hpb] using (isTrue True.intro : Decidable True)
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ =>
@@ -7083,7 +7089,7 @@ theorem of_chordCase {a b : EagenAccum E}
   match hpa : a.point, hpb : b.point with
   | WeierstrassCurve.Affine.Point.zero, _ =>
       simp [combineCanFire, hpa, hpb]
-  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero =>
+  | WeierstrassCurve.Affine.Point.some _ _ _, WeierstrassCurve.Affine.Point.zero =>
       simp [combineCanFire, hpa, hpb]
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) hns_a,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) hns_b =>
@@ -7109,7 +7115,7 @@ private theorem affine_eq_some_coords
     {x y xa ya : ZMod E.q}
     (hns : E.toW.toAffine.Nonsingular x y)
     (h : ECPoint.affine E xa ya =
-      (WeierstrassCurve.Affine.Point.some hns : ECPoint E)) :
+      (WeierstrassCurve.Affine.Point.some _ _ hns : ECPoint E)) :
     xa = x ∧ ya = y := by
   unfold ECPoint.affine at h
   by_cases hns' : E.toW.toAffine.Nonsingular xa ya
@@ -7127,7 +7133,7 @@ theorem landmarkInvStrongCombineAffineExtras_of_combineCanFire
   match hpa : a.point, hpb : b.point with
   | WeierstrassCurve.Affine.Point.zero, _ =>
       exact False.elim (ha_ne hpa)
-  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero =>
+  | WeierstrassCurve.Affine.Point.some _ _ _, WeierstrassCurve.Affine.Point.zero =>
       exact False.elim (hb_ne hpb)
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) hns_a,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) hns_b =>
@@ -7140,11 +7146,11 @@ theorem landmarkInvStrongCombineAffineExtras_of_combineCanFire
       intro xa' ya' xb' yb' h_a_pt h_b_pt
       have h_a_eq_some :
           ECPoint.affine E xa' ya' =
-            (WeierstrassCurve.Affine.Point.some hns_a : ECPoint E) := by
+            (WeierstrassCurve.Affine.Point.some _ _ hns_a : ECPoint E) := by
         rw [← h_a_pt, hpa]
       have h_b_eq_some :
           ECPoint.affine E xb' yb' =
-            (WeierstrassCurve.Affine.Point.some hns_b : ECPoint E) := by
+            (WeierstrassCurve.Affine.Point.some _ _ hns_b : ECPoint E) := by
         rw [← h_b_pt, hpb]
       have hxa' : xa' = xa ∧ ya' = ya :=
         affine_eq_some_coords E hns_a h_a_eq_some
@@ -7997,7 +8003,6 @@ theorem negCoords_mem_points_of_some
 
 theorem residue_indicator_sum_eq
     (R : ECPoint E) :
-    letI : Decidable (R = (0 : ECPoint E)) := Classical.dec _
     (∑ P ∈ E.points, if negCoords E R = some P then 1 else 0)
       = if R = (0 : ECPoint E) then 0 else 1 := by
   classical
@@ -8353,7 +8358,7 @@ def LevelStepCombineChordCase : List (EagenAccum E) → Prop
 def PointChordCase (p q : ECPoint E) : Prop :=
   match p, q with
   | WeierstrassCurve.Affine.Point.zero, _ => True
-  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero => True
+  | WeierstrassCurve.Affine.Point.some _ _ _, WeierstrassCurve.Affine.Point.zero => True
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ =>
       match decEq xa xb with
@@ -8372,7 +8377,7 @@ def PointChordCase (p q : ECPoint E) : Prop :=
 def pointChordCaseDecidable :
     (p q : ECPoint E) → Decidable (PointChordCase E p q)
   | WeierstrassCurve.Affine.Point.zero, _ => isTrue trivial
-  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero =>
+  | WeierstrassCurve.Affine.Point.some _ _ _, WeierstrassCurve.Affine.Point.zero =>
       isTrue trivial
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ => by
@@ -9824,9 +9829,9 @@ theorem h_extras_holds_for_length2_sum_zero
         E.equation_iff_nonsingular.mp ((E.equation_iff Q.1 Q.2).mpr (E.hOnCurve _ hQ_on))
       rw [ECPoint.affine_of_nonsingular E hP_ns] at h_a_eq
       rw [ECPoint.affine_of_nonsingular E hQ_ns] at h_b_eq
-      have h_a_eq2 : ECPoint.affine E xa ya = (.some hP_ns : ECPoint E) := by
+      have h_a_eq2 : ECPoint.affine E xa ya = (.some _ _ hP_ns : ECPoint E) := by
         rw [← h_a_pt, h_a_eq]
-      have h_b_eq2 : ECPoint.affine E xb yb = (.some hQ_ns : ECPoint E) := by
+      have h_b_eq2 : ECPoint.affine E xb yb = (.some _ _ hQ_ns : ECPoint E) := by
         rw [← h_b_pt, h_b_eq]
       -- Extract xa = P.1, ya = P.2 from h_a_eq2 ; xb = Q.1, yb = Q.2 from h_b_eq2.
       have hxa_eq : xa = P.1 ∧ ya = P.2 := by

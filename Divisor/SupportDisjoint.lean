@@ -231,11 +231,11 @@ theorem thirdPoint_some_eq_neg_add
   have hC0 : A₀.2 ^ 2 = A₀.1 ^ 3 + E.curveA * A₀.1 + E.curveB := E.hOnCurve A₀ hA₀
   -- Show affineOfMem unfolds to .some (with these nonsingular witnesses).
   have heq0 : ECPoint.affineOfMem E hA₀ =
-      (.some hns0 : ECPoint E) := rfl
+      (.some _ _ hns0 : ECPoint E) := rfl
   have heq1 : ECPoint.affineOfMem E hA₁ =
-      (.some hns1 : ECPoint E) := rfl
+      (.some _ _ hns1 : ECPoint E) := rfl
   have heqxy : ECPoint.affineOfMem E hxy_mem =
-      (.some hnsxy : ECPoint E) := rfl
+      (.some _ _ hnsxy : ECPoint E) := rfl
   rw [heq0, heq1, heqxy]
   -- Case-split on the structure of `thirdPoint`.
   unfold thirdPoint at hT
@@ -275,7 +275,7 @@ theorem thirdPoint_some_eq_neg_add
             omega
           exact (mul_eq_zero.mp htwo).resolve_left h2
         -- Replace A₁'s nonsingular witness with A₀'s by congruence.
-        have hpts_eq : (.some hns1 : ECPoint E) = .some hns0 := by
+        have hpts_eq : (.some _ _ hns1 : ECPoint E) = .some _ _ hns0 := by
           congr 1 <;> [exact hxx.symm; exact hyy.symm]
         rw [hpts_eq]
         rw [WeierstrassCurve.Affine.Point.add_self_of_Y_ne' hyneg]
@@ -383,11 +383,11 @@ theorem thirdPoint_inj_on_A₁ (A₀ : ZMod E.q × ZMod E.q) (hA₀ : A₀ ∈ E
   -- Cancel A₀, then extract a = b from .some equality.
   have hpt_eq : ECPoint.affineOfMem E ha_mem = ECPoint.affineOfMem E hb_mem :=
     add_left_cancel hadd_eq
-  -- affineOfMem ha_mem = .some hns_a, affineOfMem hb_mem = .some hns_b;
+  -- affineOfMem ha_mem = .some _ _ hns_a, affineOfMem hb_mem = .some _ _ hns_b;
   -- equality forces a.1 = b.1 ∧ a.2 = b.2.
-  have h_some : (.some (E.equation_iff_nonsingular.mp ((E.equation_iff a.1 a.2).mpr
+  have h_some : (.some a.1 a.2 (E.equation_iff_nonsingular.mp ((E.equation_iff a.1 a.2).mpr
                   (E.hOnCurve a ha_mem))) : ECPoint E)
-              = .some (E.equation_iff_nonsingular.mp ((E.equation_iff b.1 b.2).mpr
+              = .some b.1 b.2 (E.equation_iff_nonsingular.mp ((E.equation_iff b.1 b.2).mpr
                   (E.hOnCurve b hb_mem))) := hpt_eq
   rw [WeierstrassCurve.Affine.Point.some.injEq] at h_some
   exact Prod.ext h_some.1 h_some.2

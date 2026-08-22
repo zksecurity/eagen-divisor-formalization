@@ -277,7 +277,7 @@ private lemma DLineBiv_coeff_natDegree_le_zero_of_b_coeff_zero
     -- coeff 1 of (C(D.b.coeff(k-1)) · Cλ) = C(D.b.coeff(k-1) · λ).coeff 1 = 0.
     apply Finset.sum_eq_zero
     rintro ⟨i, j⟩ hij
-    have hsum : i + j = k := Finset.mem_antidiagonal.mp hij
+    have hsum : i + j = k := Finset.HasAntidiagonal.mem_antidiagonal.mp hij
     rw [Polynomial.coeff_mul]
     -- C(D.b.coeff i).coeff l = D.b.coeff i if l = 0 else 0.
     rw [Polynomial.coeff_map]
@@ -305,7 +305,7 @@ private lemma DLineBiv_coeff_natDegree_le_zero_of_b_coeff_zero
         rw [mul_zero]
     · intro b hbmem hbne
       -- For b ≠ (0, 1): C(D.b.coeff i) only has nonzero coeff at index 0.
-      rcases Finset.mem_antidiagonal.mp hbmem with hb_sum
+      rcases Finset.HasAntidiagonal.mem_antidiagonal.mp hbmem with hb_sum
       have hb1 : b.1 ≠ 0 := by
         rintro h0
         apply hbne
@@ -315,7 +315,7 @@ private lemma DLineBiv_coeff_natDegree_le_zero_of_b_coeff_zero
       rw [Polynomial.coeff_C, if_neg hb1, zero_mul]
     · intro hne
       -- (0, 1) ∈ antidiagonal 1 always.
-      exact absurd (Finset.mem_antidiagonal.mpr (by simp)) hne
+      exact absurd (Finset.HasAntidiagonal.mem_antidiagonal.mpr (by simp)) hne
 
 /-! ### Auxiliary normPoly natDegree bounds
 
@@ -624,7 +624,8 @@ private lemma sum_sylvesterOff_eq
   · have h1 : ∀ j₁ : Fin m,
         sylvesterOff m n (finSumFinEquiv (Sum.inl j₁)) = j₁.val := by
       intro j₁
-      simp [sylvesterOff, finSumFinEquiv, Fin.addCases]
+      unfold sylvesterOff
+      rw [finSumFinEquiv_apply_left, Fin.addCases_left]
     rw [show (∑ j₁ : Fin m, sylvesterOff m n (finSumFinEquiv (Sum.inl j₁)))
           = ∑ j₁ : Fin m, j₁.val from
           Finset.sum_congr rfl (fun j₁ _ => h1 j₁)]
@@ -632,7 +633,8 @@ private lemma sum_sylvesterOff_eq
   · have h2 : ∀ j₁ : Fin n,
         sylvesterOff m n (finSumFinEquiv (Sum.inr j₁)) = j₁.val := by
       intro j₁
-      simp [sylvesterOff, finSumFinEquiv, Fin.addCases]
+      unfold sylvesterOff
+      rw [finSumFinEquiv_apply_right, Fin.addCases_right]
     rw [show (∑ j₁ : Fin n, sylvesterOff m n (finSumFinEquiv (Sum.inr j₁)))
           = ∑ j₁ : Fin n, j₁.val from
           Finset.sum_congr rfl (fun j₁ _ => h2 j₁)]
@@ -910,7 +912,7 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
               (fun _ : Fin (DLineBiv E lam D).natDegree => 6)
               = (normPoly E D).natDegree := by
           intro j₁
-          simp [finSumFinEquiv, Fin.addCases]
+          rw [finSumFinEquiv_apply_left, Fin.addCases_left]
         rw [Finset.sum_congr rfl (fun j₁ _ => hl j₁)]
         simp [mul_comm]
       · have hr : ∀ j₁ : Fin (DLineBiv E lam D).natDegree,
@@ -919,7 +921,7 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
               (fun _ : Fin (DLineBiv E lam D).natDegree => 6)
               = 6 := by
           intro j₁
-          simp [finSumFinEquiv, Fin.addCases]
+          rw [finSumFinEquiv_apply_right, Fin.addCases_right]
         rw [Finset.sum_congr rfl (fun j₁ _ => hr j₁)]
         simp [mul_comm]
     -- Sum the per-column inequalities (using hper_col).

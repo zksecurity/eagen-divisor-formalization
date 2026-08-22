@@ -1066,9 +1066,9 @@ theorem levelInitSingleton_chord_combine_extras
     E.equation_iff_nonsingular.mp ((E.equation_iff Q.1 Q.2).mpr (E.hOnCurve _ hQ_on))
   rw [ECPoint.affine_of_nonsingular E hP_ns] at h_a_eq
   rw [ECPoint.affine_of_nonsingular E hQ_ns] at h_b_eq
-  have h_a_eq2 : ECPoint.affine E xa ya = (.some hP_ns : ECPoint E) := by
+  have h_a_eq2 : ECPoint.affine E xa ya = (.some _ _ hP_ns : ECPoint E) := by
     rw [← h_a_pt, h_a_eq]
-  have h_b_eq2 : ECPoint.affine E xb yb = (.some hQ_ns : ECPoint E) := by
+  have h_b_eq2 : ECPoint.affine E xb yb = (.some _ _ hQ_ns : ECPoint E) := by
     rw [← h_b_pt, h_b_eq]
   have hxa_eq : xa = P.1 ∧ ya = P.2 := by
     unfold ECPoint.affine at h_a_eq2
@@ -1135,12 +1135,12 @@ theorem levelInitSingleton_chord_combine_point
     E.equation_iff_nonsingular.mp ((E.equation_iff Q.1 Q.2).mpr (E.hOnCurve _ hQ_on))
   have hP_acc :
       levelInitSingleton E P =
-        { point := (.some hP_ns : ECPoint E),
+        { point := (.some _ _ hP_ns : ECPoint E),
           poly := { a := Polynomial.X - Polynomial.C P.1, b := 0 } } := by
     simp [levelInitSingleton, ECPoint.affine_of_nonsingular E hP_ns]
   have hQ_acc :
       levelInitSingleton E Q =
-        { point := (.some hQ_ns : ECPoint E),
+        { point := (.some _ _ hQ_ns : ECPoint E),
           poly := { a := Polynomial.X - Polynomial.C Q.1, b := 0 } } := by
     simp [levelInitSingleton, ECPoint.affine_of_nonsingular E hQ_ns]
   rw [hP_acc, hQ_acc]
@@ -1164,9 +1164,9 @@ theorem combine_extras_of_affine_chord_conditions
     E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ ha_on))
   have hb_ns : E.toW.toAffine.Nonsingular xb yb :=
     E.equation_iff_nonsingular.mp ((E.equation_iff xb yb).mpr (E.hOnCurve _ hb_on))
-  have h_a_eq2 : ECPoint.affine E xa' ya' = (.some ha_ns : ECPoint E) := by
+  have h_a_eq2 : ECPoint.affine E xa' ya' = (.some _ _ ha_ns : ECPoint E) := by
     rw [← h_a_pt, ha_pt, ECPoint.affine_of_nonsingular E ha_ns]
-  have h_b_eq2 : ECPoint.affine E xb' yb' = (.some hb_ns : ECPoint E) := by
+  have h_b_eq2 : ECPoint.affine E xb' yb' = (.some _ _ hb_ns : ECPoint E) := by
     rw [← h_b_pt, hb_pt, ECPoint.affine_of_nonsingular E hb_ns]
   have hxa_eq : xa' = xa ∧ ya' = ya := by
     unfold ECPoint.affine at h_a_eq2
@@ -3351,13 +3351,13 @@ theorem ma_completeness_binary
       h_binary h_valid h_toD_eq h_degE_eq h_scalars_match
       h_target_on_curve h_bases_on_curve h_nodup
   have h_len : 2 ≤ h_honest.Ps.length := by
-    simpa [h_honest] using
+    simpa [h_honest, MAProverMsg.IsHonestForBinary.fromWitness, MAProverMsg.IsHonestForBinaryScaled.fromWitness] using
       binarySupport_length_ge_two stmt wit hk h_binary h_valid
         h_target_on_curve
   have h_chain :
       Landmark.IteratedLevelStepCombineExtras E h_honest.Ps.length
         (Landmark.level0_singletons E h_honest.Ps) := by
-    simpa [h_honest] using h_chain
+    simpa [h_honest, MAProverMsg.IsHonestForBinary.fromWitness, MAProverMsg.IsHonestForBinaryScaled.fromWitness] using h_chain
   exact ma_completeness_binary_chain_admSetMax
     E stmt msg wit hk hkm h_admSetMax h_honest h_len h_chain
     h_valid h_deg h_deg_k
@@ -3404,20 +3404,20 @@ theorem ma_completeness_binary_admSetParker
       c hc_ne h_binary h_valid h_toD_eq h_degE_eq h_scalars_match
       h_target_on_curve h_bases_on_curve h_nodup
   have h_len : 2 ≤ h_honest.Ps.length := by
-    simpa [h_honest] using
+    simpa [h_honest, MAProverMsg.IsHonestForBinary.fromWitness, MAProverMsg.IsHonestForBinaryScaled.fromWitness] using
       binarySupport_length_ge_two stmt wit hk h_binary h_valid
         h_target_on_curve
   have h_chain :
       Landmark.IteratedLevelStepCombineExtras E h_honest.Ps.length
         (Landmark.level0_singletons E h_honest.Ps) := by
-    simpa [h_honest] using h_chain
+    simpa [h_honest, MAProverMsg.IsHonestForBinary.fromWitness, MAProverMsg.IsHonestForBinaryScaled.fromWitness] using h_chain
   have hc_eq :
       h_honest.c =
         ((Landmark.eagenBuild_singletons E h_honest.Ps).a.coeff 1)⁻¹ := by
     simp [h_honest, MAProverMsg.IsHonestForBinaryScaled.fromWitness, c]
   have h_pre :
       (Landmark.eagenBuild_singletons E h_honest.Ps).a.coeff 1 ≠ 0 := by
-    simpa [h_honest] using h_parker_pre
+    simpa [h_honest, MAProverMsg.IsHonestForBinary.fromWitness, MAProverMsg.IsHonestForBinaryScaled.fromWitness] using h_parker_pre
   exact ma_completeness_binary_chain_admSetParker
     E stmt msg wit hk hkm h_admSetParker h_honest hc_eq h_pre
     h_len h_chain h_valid h_deg h_deg_k
@@ -3464,20 +3464,20 @@ theorem ma_completeness_binary_admSetEagen
       c hc_ne h_binary h_valid h_toD_eq h_degE_eq h_scalars_match
       h_target_on_curve h_bases_on_curve h_nodup
   have h_len : 2 ≤ h_honest.Ps.length := by
-    simpa [h_honest] using
+    simpa [h_honest, MAProverMsg.IsHonestForBinary.fromWitness, MAProverMsg.IsHonestForBinaryScaled.fromWitness] using
       binarySupport_length_ge_two stmt wit hk h_binary h_valid
         h_target_on_curve
   have h_chain :
       Landmark.IteratedLevelStepCombineExtras E h_honest.Ps.length
         (Landmark.level0_singletons E h_honest.Ps) := by
-    simpa [h_honest] using h_chain
+    simpa [h_honest, MAProverMsg.IsHonestForBinary.fromWitness, MAProverMsg.IsHonestForBinaryScaled.fromWitness] using h_chain
   have hc_eq :
       h_honest.c =
         ((Landmark.eagenBuild_singletons E h_honest.Ps).a.coeff 0)⁻¹ := by
     simp [h_honest, MAProverMsg.IsHonestForBinaryScaled.fromWitness, c]
   have h_pre :
       (Landmark.eagenBuild_singletons E h_honest.Ps).a.coeff 0 ≠ 0 := by
-    simpa [h_honest] using h_eagen_pre
+    simpa [h_honest, MAProverMsg.IsHonestForBinary.fromWitness, MAProverMsg.IsHonestForBinaryScaled.fromWitness] using h_eagen_pre
   exact ma_completeness_binary_chain_admSetEagen
     E stmt msg wit hk hkm h_admSetEagen h_honest hc_eq h_pre
     h_len h_chain h_valid h_deg h_deg_k
@@ -3534,13 +3534,13 @@ theorem ma_completeness_binary_admSetHash
       c hc_ne h_binary h_valid h_toD_eq h_degE_eq h_scalars_match
       h_target_on_curve h_bases_on_curve h_nodup
   have h_len : 2 ≤ h_honest.Ps.length := by
-    simpa [h_honest] using
+    simpa [h_honest, MAProverMsg.IsHonestForBinary.fromWitness, MAProverMsg.IsHonestForBinaryScaled.fromWitness] using
       binarySupport_length_ge_two stmt wit hk h_binary h_valid
         h_target_on_curve
   have h_chain :
       Landmark.IteratedLevelStepCombineExtras E h_honest.Ps.length
         (Landmark.level0_singletons E h_honest.Ps) := by
-    simpa [h_honest] using h_chain
+    simpa [h_honest, MAProverMsg.IsHonestForBinary.fromWitness, MAProverMsg.IsHonestForBinaryScaled.fromWitness] using h_chain
   have hc_eq :
       h_honest.c =
         (admSetHashInner r
@@ -3551,7 +3551,7 @@ theorem ma_completeness_binary_admSetHash
       admSetHashInner r
         ((Landmark.eagenBuild_singletons E h_honest.Ps).a,
           (Landmark.eagenBuild_singletons E h_honest.Ps).b) ≠ 0 := by
-    simpa [h_honest] using h_hash_pre
+    simpa [h_honest, MAProverMsg.IsHonestForBinary.fromWitness, MAProverMsg.IsHonestForBinaryScaled.fromWitness] using h_hash_pre
   exact ma_completeness_binary_chain_admSetHash
     E stmt msg wit hk hkm r h_admSetHash h_honest hc_eq h_pre
     h_len h_chain h_valid h_deg h_deg_k

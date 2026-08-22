@@ -553,7 +553,7 @@ private lemma roots_nodup_of_derivative_ne_zero
   · rw [Polynomial.count_roots]
     exact (rootMultiplicity_eq_one_of_mem_roots_of_derivative_ne_zero hx (hp' x hx)).le
   · rw [Multiset.count_eq_zero.mpr hx]
-    exact zero_le 1
+    exact Nat.zero_le 1
 
 /-- The implicit-function first-order lift of a simple root of
 `f(X,t₀)` is a root of `f(X,t₀ + ε)`. -/

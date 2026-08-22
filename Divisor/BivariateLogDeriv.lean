@@ -347,12 +347,12 @@ theorem logDerivTermSum_denom_cleared_sumform
       show _ = _
       have := logDerivTerm_denom_cleared_pointwise E D
         (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) hA₀ hDA₀ hXDen₀
-      convert this using 0
+      exact this
   | ⟨1, _⟩ =>
       show _ = _
       have := logDerivTerm_denom_cleared_pointwise E D
         (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) hA₁ hDA₁ hXDen₁
-      convert this using 0
+      exact this
   | ⟨2, _⟩ =>
       show _ = _
       have := logDerivTerm_denom_cleared_pointwise E D

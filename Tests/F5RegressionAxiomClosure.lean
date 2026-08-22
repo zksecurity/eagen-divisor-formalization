@@ -14,8 +14,6 @@
 import Divisor.ExtractorBridgeTheorems
 import Divisor.Soundness
 
-open Divisor
-
 -- Axiom closure of the headline soundness/completeness theorems.
 -- Confirms the soundness restoration: the previous unsound axiom
 -- `Divisor.CoordRingElt.divisor_group_sum_zero` is no longer in the

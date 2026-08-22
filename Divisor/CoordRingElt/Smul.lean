@@ -31,7 +31,7 @@ theorem smul_divByMonic (c : ZMod E.q) (p q : (ZMod E.q)[X]) :
   by_cases hq : q.Monic
   · exact (Polynomial.div_modByMonic_unique
       (c • (p /ₘ q)) (c • (p %ₘ q)) hq
-      ⟨by rw [mul_smul_comm, ← smul_add, Polynomial.modByMonic_add_div p hq],
+      ⟨by rw [mul_smul_comm, ← smul_add, Polynomial.modByMonic_add_div p q],
         (Polynomial.degree_smul_le _ _).trans_lt
           (Polynomial.degree_modByMonic_lt _ hq)⟩).1
   · simp_rw [Polynomial.divByMonic_eq_of_not_monic _ hq, smul_zero]

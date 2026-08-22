@@ -351,7 +351,6 @@ theorem natDegree_normPoly_chordCoordRingElt_nonvertical (lam mu : ZMod E.q) :
   have hNonzero : (((C lam * X + C mu) ^ 2 - curveX E : (ZMod E.q)[X])) ≠ 0 := by
     intro hZero
     have := congrArg (fun p => Polynomial.coeff p 3) hZero
-    simp only at this
     rw [hCoeff3] at this
     simp at this
   apply le_antisymm hSubLE
@@ -5505,7 +5504,7 @@ theorem divisorOfD_mul_add_when_chord_line_D2
     -- Apply affine additivity.
     have := divisorOfD_mul_add_affine_when_normPoly_D2_le_one E h₁ h₂ hP (hChord x)
     -- The Q here is (some hOnCurve), but ECPoint.affine E x y reduces to it.
-    rw [show (WeierstrassCurve.Affine.Point.some hOnCurve : ECPoint E)
+    rw [show (WeierstrassCurve.Affine.Point.some _ _ hOnCurve : ECPoint E)
         = ECPoint.affine E x y from ?_]
     · exact this
     · rw [ECPoint.affine_of_nonsingular E hOnCurve]
@@ -6020,7 +6019,7 @@ theorem divisorOfD_mul_vertical_add
       (E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hOnCurve)
     have hP : (x, y) ∈ E.points := E.hComplete x y hEq
     have := divisorOfD_mul_vertical_add_affine E D hD x₀ hP
-    rw [show (WeierstrassCurve.Affine.Point.some hOnCurve : ECPoint E)
+    rw [show (WeierstrassCurve.Affine.Point.some _ _ hOnCurve : ECPoint E)
         = ECPoint.affine E x y from ?_]
     · exact this
     · rw [ECPoint.affine_of_nonsingular E hOnCurve]

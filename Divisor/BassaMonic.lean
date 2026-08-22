@@ -230,8 +230,7 @@ theorem f_nonvanishing_proved {N : ℕ}
       obtain ⟨hmem, hval⟩ := hA₁
       -- hval : comparisonFn E Q P (P j) A₁ = 0
       -- comparisonFn = first_prod - 0 = first_prod (by hcf)
-      have hprod_zero : Finset.univ.prod (fun i => linearFormL E (P j) A₁ (Q i)) = 0 := by
-        have h := hval; simp only [] at h; exact h
+      have hprod_zero : Finset.univ.prod (fun i => linearFormL E (P j) A₁ (Q i)) = 0 := hval
       -- In NoZeroDivisors: prod = 0 iff some factor = 0
       rw [Finset.prod_eq_zero_iff] at hprod_zero
       obtain ⟨i, _, hi⟩ := hprod_zero

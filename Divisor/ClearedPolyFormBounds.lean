@@ -2423,7 +2423,7 @@ private lemma add_mul_monic_modByMonic_aux {R : Type*} [CommRing R] [Nontrivial 
     (p + q * m) %ₘ m = p %ₘ m := by
   apply (Polynomial.div_modByMonic_unique (q + p /ₘ m) (p %ₘ m) hm ?_).2
   refine ⟨?_, Polynomial.degree_modByMonic_lt p hm⟩
-  have h1 := Polynomial.modByMonic_add_div p hm
+  have h1 := Polynomial.modByMonic_add_div p m
   calc (p %ₘ m) + m * (q + p /ₘ m)
       = m * q + ((p %ₘ m) + m * (p /ₘ m)) := by ring
     _ = m * q + p := by rw [h1]
@@ -2505,17 +2505,15 @@ theorem InnerDegLe_modByMonic_curveEqPoly (f : (ZMod E.q)[X][X]) (M k : ℕ)
     -- (2) g.natDegree ≤ 2k+1 = N-2.
     -- Compute A and B's coefficients explicitly.
     have hA_eq : A = C cN * X ^ N - C (cN * curveX E) * X ^ (N - 2) := by
-      simp only [hAdef, curveEqPoly, mul_sub]
-      congr 1
-      · rw [mul_assoc, ← pow_add, hN2_sub]
-      · rw [show C cN * X ^ (N - 2) * C (curveX E) = C (cN * curveX E) * X ^ (N - 2) by
-              rw [C_mul]; ring]
+      rw [hAdef]
+      simp only [curveEqPoly]
+      rw [C_mul, mul_sub, mul_assoc, ← pow_add, hN2_sub]
+      ring
     have hB_eq : B = C cNm1 * X ^ (N - 1) - C (cNm1 * curveX E) * X ^ (N - 3) := by
-      simp only [hBdef, curveEqPoly, mul_sub]
-      congr 1
-      · rw [mul_assoc, ← pow_add, hN3_sub]
-      · rw [show C cNm1 * X ^ (N - 3) * C (curveX E) = C (cNm1 * curveX E) * X ^ (N - 3) by
-              rw [C_mul]; ring]
+      rw [hBdef]
+      simp only [curveEqPoly]
+      rw [C_mul, mul_sub, mul_assoc, ← pow_add, hN3_sub]
+      ring
     -- Coefficient of g at indices ≥ N-1 are zero; g.natDegree ≤ N - 2.
     have hg_nd : g.natDegree ≤ 2 * k + 1 := by
       have hNrel : 2 * k + 1 = N - 2 := by omega

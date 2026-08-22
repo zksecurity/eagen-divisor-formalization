@@ -52,9 +52,7 @@ theorem chord_avoids_D_zeros_of_denom_defined
     · unfold lineThrough; simp +decide ;
       unfold Line.eval slopeOf; simp +decide [ sub_eq_iff_eq_add ] ;
       field_simp;
-      rw [ sub_div', ← add_div, eq_div_iff ] <;> ring ; simp +decide [ sub_eq_iff_eq_add ];
-      · exact Ne.symm hNV;
-      · exact sub_ne_zero_of_ne <| Ne.symm hNV;
+      ring;
     · refine' ⟨ _, _ ⟩;
       · exact E.hComplete _ _ ( chord_third_point_on_E E A₀ A₁ hA₀ hA₁ hNV );
       · unfold lineThrough; simp +decide [ slopeOf ] ; ring;
@@ -132,6 +130,9 @@ theorem logDerivCheckFn_zero_of_polyG_zero
             ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
               (zerosAt E D k').1 (zerosAt E D k').2)⁻¹ := by
     convert hLemma6 using 2
+    exact Finset.sum_congr rfl fun k' _ => by
+      rw [show multAt E (betaTrue E D hDnz) D k'
+            = betaTrue E D hDnz (zerosAt E D k') from rfl]
   -- Bridge polyG = 0 → paperResidueDivided = 0.
   have hQlineFin : ∀ k' : Fin (zerosCard E D),
       (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval

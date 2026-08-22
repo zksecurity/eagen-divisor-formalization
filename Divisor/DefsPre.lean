@@ -226,7 +226,7 @@ abbrev infinity : ECPoint E := WeierstrassCurve.Affine.Point.zero
 /-- Smart constructor for an affine point given on-curve evidence. -/
 def affineOfEqn (E : ECSetup) {x y : ZMod E.q}
     (h : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB) : ECPoint E :=
-  .some (E.equation_iff_nonsingular.mp ((E.equation_iff x y).mpr h))
+  .some x y (E.equation_iff_nonsingular.mp ((E.equation_iff x y).mpr h))
 
 /-- Smart constructor for an affine point given membership in `E.points`. -/
 def affineOfMem (E : ECSetup) {p : ZMod E.q × ZMod E.q}
@@ -239,12 +239,12 @@ def affineOfMem (E : ECSetup) {p : ZMod E.q × ZMod E.q}
     in `weightedSum` where off-curve coefficients are zero anyway, so
     the junk fallback is never observed. -/
 def affine (E : ECSetup) (x y : ZMod E.q) : ECPoint E :=
-  if h : E.toW.toAffine.Nonsingular x y then .some h else 0
+  if h : E.toW.toAffine.Nonsingular x y then .some x y h else 0
 
-/-- `ECPoint.affine E x y = .some h` whenever `(x, y)` is nonsingular. -/
+/-- `ECPoint.affine E x y = .some x y h` whenever `(x, y)` is nonsingular. -/
 theorem affine_of_nonsingular (E : ECSetup) {x y : ZMod E.q}
     (h : E.toW.toAffine.Nonsingular x y) :
-    affine E x y = .some h := by
+    affine E x y = .some x y h := by
   unfold affine
   rw [dif_pos h]
 
@@ -280,7 +280,7 @@ def evalPoint (D : CoordRingElt E.q) : ECPoint E → ZMod E.q
 
 @[simp] theorem evalPoint_some (D : CoordRingElt E.q)
     {x y : ZMod E.q} (h : E.toW.toAffine.Nonsingular x y) :
-    evalPoint E D (.some h) = D.eval x y := rfl
+    evalPoint E D (.some x y h) = D.eval x y := rfl
 
 /-- Pair-based evaluation and `ECPoint` evaluation agree on `E.points`. -/
 theorem evalPoint_affine (D : CoordRingElt E.q)
