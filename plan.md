@@ -147,32 +147,37 @@ base field where cheap (we only need our short-Weierstrass shape,
 
 Ships on its own (does not wait for Phase 3).
 
-- [ ] **2a Support classification.** Under `splitsOnE E D`, every
-      height-one prime `v` with `D.toCoordinateRing ∈ v.asIdeal` is
-      `pointPrime E P` for some `P ∈ E.points` with `D.eval P = 0`:
-      * `v ∩ F_q[X] = (X − α)` and `normPoly E D (α) = 0` (via
-        `mul_conj`: `N(D) ∈ v ∩ F_q[X]`), so `α` is rational by the
-        splitting half of `splitsOnE`;
-      * the fiber quadratic `Y² − f(α)` has a rational root by the
-        fiber-rationality half, so `CoordinateRing ⧸ v` has rank 1 over
-        `F_q`; conclude with vendored `finrank_quotient_eq_one_iff`.
-- [ ] **2b Factorization.**
-      `span {D.toCoordinateRing} = ∏_{P ∈ E.points} (XYIdeal P)^{ordAt E D P}`
-      via `finprod_heightOneSpectrum_factorization` + 1d (counts at
-      point primes) + 2a (count 0 elsewhere).
-- [ ] **2c Class collapse.** `divisorClass E (divisorOfD E D) _`
-      `= mk (∏ (xyIdealOfPoint P)^{ordAt P})` (mathlib `toClass_some`,
-      `XYIdeal'_eq`, `coeIdeal_mul/pow`; infinity killed by
-      `toClass 0 = 0`) `= mk (principalFracIdeal D)` (2b)
-      `= 1` (existing `classGroup_mk_principalFracIdeal_eq_one`).
-- [ ] Replace the `axiom` in `Divisor/OrdP/LocalRing.lean` by the
-      theorem (same name/signature; the `b ≠ 0` hypothesis likely
-      becomes unnecessary — keep the signature, note the fact).
-- [ ] Update both pin files in the same commit:
-      `ma/ip_extractable*` closures shrink to
-      `{chord_fiber…, hasse_weil_textbook}`;
-      `exists_divisor_multiplicity*` / `ordAt_group_sum_zero_under_split`
-      shrink to core three.
+- [x] **2a Support classification.** Landed as
+      `eq_pointPrime_of_mem` in
+      `Divisor/OrdP/SupportClassification.lean`. *As-built deviation:
+      the residue-degree/`finrank_quotient_eq_one_iff` step turned out
+      to be unnecessary — after `X − α ∈ v` (contraction is `(π)` in
+      the PID `F_q[X]`, `π ∣ N(D)` via the norm identity, `π` linear
+      since `N(D)` splits) and `(y − y₀)(y + y₀) ≡ y² − f(α) ≡ 0 mod v`
+      with `v` prime, one of `⟨X − α, Y ∓ y₀⟩ ≤ v` holds with the left
+      side maximal (vendored `XYIdeal_isMaximal_of_equation`), so they
+      are EQUAL. No finrank computation at all.*
+- [x] **2b Factorization.** Landed as
+      `span_toCoordinateRing_eq_prod`: exactly as planned via
+      `finprod_heightOneSpectrum_factorization` + `maxPowDividing`
+      unfold + `count_pointPrime_eq_ordAt` (Phase 1) + 2a for support.
+- [x] **2c Class collapse.** Landed in `Divisor/OrdP/LocalRing.lean`:
+      `divisorClass_divisorOfD_eq_sum` (infinity killed by
+      `toClass_zero`, reindex along `affine`),
+      `prod_xyIdealOfPoint_pow_eq_principalFracIdeal` (Units.ext +
+      `coeIdealHom`/`coeIdeal_span_singleton`/`coe_toPrincipalIdeal`),
+      then `toMul_sum`/`toMul_zsmul`/`map_prod` and the existing
+      `classGroup_mk_principalFracIdeal_eq_one`.
+- [x] Replace the `axiom` in `Divisor/OrdP/LocalRing.lean` by the
+      theorem — done, same name and signature; as predicted the
+      `b ≠ 0` hypothesis is unused (kept as `_hbNZ` for signature
+      stability; the fact is noted in the docstring).
+- [x] Update both pin files in the same commit — done;
+      `ma/ip_extractable*` closures are now
+      `{propext, Classical.choice, chord_fiber…, hasse_weil_textbook,
+      Quot.sound}`, and `exists_divisor_multiplicity*` /
+      `ordAt_group_sum_zero_under_split` are down to the core three.
+      Verified by `#guard_msgs` in a full green build.
 
 ## Phase 3 — Discharge `chord_fiber_product_concrete_bar_zfiber_pow_dvd`
 
@@ -270,3 +275,18 @@ axiom deletion updates the `#guard_msgs` pins **in the same commit**
   untouched (no axiom changed yet). Remaining in Phase 1: the `Fqbar`
   half (`geomLocalOrder_eq_count`), needed by Phase 3 but not by
   Phase 2 — so Phase 2 is unblocked now.
+* 2026-08-22 — **Phase 2 complete: `divisorClass_eq_zero_of_b_ne_zero`
+  is DISCHARGED.** The axiom in `Divisor/OrdP/LocalRing.lean` is now a
+  theorem (same name/signature). New module
+  `Divisor/OrdP/SupportClassification.lean` (2a `eq_pointPrime_of_mem`
+  — simpler than planned: no residue-degree computation, just
+  maximal-ideal containment; 2b `span_toCoordinateRing_eq_prod`).
+  Class collapse 2c assembled in `LocalRing.lean`. Both pin files
+  updated in the same commit; full `lake build Divisor Tests` green
+  with `#guard_msgs` certifying the new closures:
+  `ma/ip_extractable*` now depend on exactly
+  `{chord_fiber_product_concrete_bar_zfiber_pow_dvd,
+  hasse_weil_textbook}` beyond the Lean builtins, and
+  `exists_divisor_multiplicity*` / `ordAt_group_sum_zero_under_split`
+  are axiom-free. **Two project axioms remain: Hasse (stays) and the
+  chord-fiber bound (Phase 3).**

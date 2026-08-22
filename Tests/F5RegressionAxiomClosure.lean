@@ -24,8 +24,7 @@ info: 'Divisor.ma_extractable' depends on axioms: [propext,
  Classical.choice,
  Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
- Quot.sound,
- Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero]
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_extractable
@@ -35,8 +34,7 @@ info: 'Divisor.ip_extractable' depends on axioms: [propext,
  Classical.choice,
  Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
- Quot.sound,
- Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero]
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ip_extractable
@@ -57,8 +55,7 @@ info: 'Divisor.ma_extractable_base' depends on axioms: [propext,
  Classical.choice,
  Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
- Quot.sound,
- Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero]
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_extractable_base
@@ -68,8 +65,7 @@ info: 'Divisor.ip_extractable_base' depends on axioms: [propext,
  Classical.choice,
  Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
- Quot.sound,
- Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero]
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ip_extractable_base

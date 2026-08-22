@@ -12,8 +12,15 @@
   * `ma_extractable`, `ip_extractable`:
       propext, Classical.choice, Quot.sound,
       Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
-      Divisor.hasse_weil_textbook,
-      Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
+      Divisor.hasse_weil_textbook
+
+    The former axiom
+    `Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero` is now a
+    THEOREM (plan.md Phase 2): the divisor-class collapse is proved via
+    the vendored Tau Ceti Dedekind-domain structure, the Phase 1
+    valuation bridge `ordAt = v_P`, the support classification of
+    primes containing `D`, and the factorization
+    `span {D} = ∏_P XYIdeal(P)^(ordAt P)`.
 
     The Frobenius descent proof gap is closed: there is no `sorryAx` in
     the MA/IP closure. The headline theorem signatures no longer carry
@@ -90,8 +97,7 @@
   * `CoordRingElt.exists_divisor_multiplicity`,
     `CoordRingElt.exists_divisor_multiplicity_ecpoint`,
     `ordAt_group_sum_zero_under_split`:
-      propext, Classical.choice, Quot.sound,
-      Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
+      propext, Classical.choice, Quot.sound (axiom-free)
 
   In particular: `Divisor.CoordRingElt.divisor_group_sum_zero` (the
   previously unsound axiom) is no longer reachable from any headline
@@ -108,8 +114,7 @@ info: 'Divisor.ma_extractable' depends on axioms: [propext,
  Classical.choice,
  Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
- Quot.sound,
- Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero]
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_extractable
@@ -118,8 +123,7 @@ info: 'Divisor.ip_extractable' depends on axioms: [propext,
  Classical.choice,
  Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
- Quot.sound,
- Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero]
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ip_extractable
@@ -128,8 +132,7 @@ info: 'Divisor.ma_extractable_base' depends on axioms: [propext,
  Classical.choice,
  Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
- Quot.sound,
- Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero]
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_extractable_base
@@ -138,8 +141,7 @@ info: 'Divisor.ip_extractable_base' depends on axioms: [propext,
  Classical.choice,
  Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
- Quot.sound,
- Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero]
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ip_extractable_base
@@ -189,24 +191,21 @@ info: 'Divisor.ma_completeness_clean_for_length4Simple' depends on axioms: [prop
 /--
 info: 'Divisor.CoordRingElt.exists_divisor_multiplicity' depends on axioms: [propext,
  Classical.choice,
- Quot.sound,
- Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero]
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.CoordRingElt.exists_divisor_multiplicity
 /--
 info: 'Divisor.CoordRingElt.exists_divisor_multiplicity_ecpoint' depends on axioms: [propext,
  Classical.choice,
- Quot.sound,
- Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero]
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.CoordRingElt.exists_divisor_multiplicity_ecpoint
 /--
 info: 'Divisor.ordAt_group_sum_zero_under_split' depends on axioms: [propext,
  Classical.choice,
- Quot.sound,
- Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero]
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ordAt_group_sum_zero_under_split
@@ -224,10 +223,10 @@ info: 'Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois' d
     `False`. We deliberately do NOT have such a construction; the test
     below would compile only if an inconsistency were introduced. -/
 
--- Sanity: the new sound axiom exists and has the expected shape.
--- Accounting and group-sum-zero are gated on the *stronger* `splitsOnE`
--- predicate (polynomial splitting + fiber-rationality of every root),
--- not just univariate `normPoly_splits_over_Fq`.
+-- Sanity: the divisor-multiplicity existence theorem has the expected
+-- shape. Accounting and group-sum-zero are gated on the *stronger*
+-- `splitsOnE` predicate (polynomial splitting + fiber-rationality of
+-- every root), not just univariate `normPoly_splits_over_Fq`.
 example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     ∃ β : ZMod E.q × ZMod E.q → ℕ,
@@ -250,8 +249,7 @@ info: 'Divisor.ma_extractable_paper' depends on axioms: [propext,
  Classical.choice,
  Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
- Quot.sound,
- Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero]
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_extractable_paper
