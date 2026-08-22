@@ -64,19 +64,26 @@ mathlib's `HeightOneSpectrum` plus the 7 files above suffice.
 
 ## Phase 0 — Vendor spike (gate)
 
-- [ ] Copy the 7 files to `Divisor/Vendor/TauCeti/…`, strip module
+- [x] Copy the 7 files to `Divisor/Vendor/TauCeti/…`, strip module
       syntax, keep license headers, add a provenance note per file and a
       `Divisor/Vendor/TauCeti/README.md`.
-- [ ] Compile at v4.33.1; fix v4.34/master API drift (expected: the same
+- [x] Compile at v4.33.1; fix v4.34/master API drift (expected: the same
       class of renames we just crossed in the v4.28→v4.33 bump, in
-      reverse and smaller).
-- [ ] Bridge file `Divisor/OrdP/DedekindSetup.lean`:
+      reverse and smaller). *Outcome: zero drift — all 7 files compiled
+      unmodified beyond the mechanical module-syntax strip; upstream's
+      v4.34.0-rc1/master API for everything these files touch is
+      identical at v4.33.1.*
+- [x] Bridge file `Divisor/OrdP/DedekindSetup.lean`:
       instance `E.toW.IsElliptic` from `hDisc` (we already prove
       `E.toW_Δ_ne_zero`; over a field `Δ ≠ 0 ↔ IsUnit Δ`), then
       `IsDedekindDomain E.toW.toAffine.CoordinateRing`,
       `(XYIdeal … ).IsMaximal` / `≠ ⊥` at every `P ∈ E.points`, and the
       height-one prime `pointPrime E P hP :
-      HeightOneSpectrum E.toW.toAffine.CoordinateRing`.
+      HeightOneSpectrum E.toW.toAffine.CoordinateRing`. *Also landed:
+      `pointPrime_asIdeal` (`rfl` simp lemma), `pointPrime_isMaximal`,
+      and `pointPrime_injective` (distinct points → distinct primes, via
+      vendored `XYIdeal_eq_iff`). Note `HeightOneSpectrum` at v4.33 is
+      `Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas`.*
 - **Exit criterion**: `lake build` green with those instances usable
   from a `Divisor.*` file.
 - Fallback if adaptation fights us: re-derive `isDedekindDomain` with
@@ -226,3 +233,13 @@ axiom deletion updates the `#guard_msgs` pins **in the same commit**
   `#guard_msgs` pin enforcement (CI now builds `Tests`), trusted-surface
   cleanup, toolchain/mathlib bump to v4.33.1 with closures verified
   unchanged.
+* 2026-08-22 — **Phase 0 complete.** All 7 Tau Ceti files vendored under
+  `Divisor/Vendor/TauCeti/` (commit `076ae234`, provenance headers +
+  README) and compile at v4.33.1 with **zero** API drift — the expected
+  reverse-migration never materialized. Bridge
+  `Divisor/OrdP/DedekindSetup.lean` landed: `ECSetup.instIsElliptic`,
+  `IsDedekindDomain E.toW.toAffine.CoordinateRing`,
+  `ECSetup.pointPrime` (+ `_asIdeal`, `_isMaximal`, `_injective`);
+  wired into `Divisor.lean`, full `lake build Divisor Tests` green,
+  axiom pins untouched. The Phase 0 fallback path (re-derive
+  `isDedekindDomain` by hand) is dead — not needed.

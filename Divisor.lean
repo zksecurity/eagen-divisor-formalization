@@ -1,5 +1,6 @@
 import Divisor.Defs
 import Divisor.OrdP.PrincipalClass
+import Divisor.OrdP.DedekindSetup
 import Divisor.Axioms
 import Divisor.ChordCubicSymmetric
 import Divisor.PartialFractionHelper
