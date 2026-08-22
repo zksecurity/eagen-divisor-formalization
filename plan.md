@@ -131,10 +131,11 @@ base field where cheap (we only need our short-Weierstrass shape,
         `toCoordinateRing_divLin_of_twin` + degree-drop fuel bound,
         lone case via 1c, 2-torsion closed form
         `pointPrime_intValuation_twoTorsion` via parity/min.
-      * [ ] `geomLocalOrder_eq_count` (over `Fqbar E`, base-changed
-        curve): same recipe against the closed formula in
-        `Divisor/GeomLocalOrder.lean` (`commonRootMultiplicity` split,
-        residual sheet gets `m − k`, conjugate sheet gets `k`).
+      * [x] `geomLocalOrder_eq_count` (over `Fqbar E`, base-changed
+        curve): landed in valuation form as
+        `geomPointPrime_intValuation_toBar` in
+        `Divisor/OrdP/GeomValuationBridge.lean` (see Phase 3, P3.pre)
+        — same recipe against the closed formula, no fuel induction.
       Cross-checks: the proved identities
       `sum_ordAt_eq_natDegree_under_split` and
       `geomLocalOrder_fiber_accounting` must be derivable from the
@@ -203,15 +204,23 @@ simplifications found:
   `ValuationBridge` over `W̄` keyed on curve equations instead of
   `E.points` membership.
 
-- [ ] **P3.pre (Phase 1's `Fqbar` half, reduced to what 3b uses).**
-      Over `W̄`: `IsElliptic` (mathlib's `(W.map f).IsElliptic`
-      instance), `IsDedekindDomain R̄` (vendored), point primes
-      `m_Q` at geometric points, uniformizer valuations, univariate
-      valuations, conj/norm identity, and the closed-form
-      `v_Q(D̄) = exp(−geomLocalOrder E D Q)` (no fuel induction: the
-      closed formula of `Divisor/GeomLocalOrder.lean` is matched
-      case-by-case — ramified = parity min; unramified = peel the
-      common factor `(x̄−x₀)^k` then lone-case on the residual).
+- [x] **P3.pre (Phase 1's `Fqbar` half, reduced to what 3b uses).**
+      Landed in `Divisor/OrdP/GeomValuationBridge.lean`: `E.toWBar`,
+      `IsElliptic`/`IsDedekindDomain` instances, `geomPointPrime`,
+      the pair language `barD`/`barEval`/`barNormPoly` (arbitrary
+      `F̄[X]` pairs, since the residual pair after common-factor
+      peeling is not a base-change), membership ↔ vanishing,
+      uniformizer valuations (`XClass` `exp(−1)`/`exp(−2)`, `y`
+      `exp(−1)` at ramified points), univariate valuations, the norm
+      identity, lone case, 2-torsion parity min, and the headline
+      `geomPointPrime_intValuation_toBar :
+      v_Q(D̄) = exp(−geomLocalOrder E D Q)` — exactly as designed,
+      case-by-case on the closed formula, no fuel induction. *Nice
+      byproduct: at ramified points the parity min IS the norm's
+      root multiplicity via the conjugation product — no bespoke
+      "rootMultiplicity of a sum" lemma needed.* This also completes
+      the `geomLocalOrder_eq_count` half of Phase 1's 1d (in
+      valuation form).
 - [ ] **3a `F̄[Z]`-structure.** Algebra map `F̄[Z] → R̄`, `Z ↦ z`;
       `Module.Finite` with generators `{1, x, x²}` (`y = λx + z`; `x`
       integral via the monic chord cubic
@@ -326,3 +335,12 @@ axiom deletion updates the `#guard_msgs` pins **in the same commit**
   `exists_divisor_multiplicity*` / `ordAt_group_sum_zero_under_split`
   are axiom-free. **Two project axioms remain: Hasse (stays) and the
   chord-fiber bound (Phase 3).**
+* 2026-08-22 — **P3.pre complete** (and with it all of Phase 1): the
+  geometric valuation bridge
+  `geomPointPrime_intValuation_toBar : v_Q(D̄) = exp(−geomLocalOrder)`
+  landed in `Divisor/OrdP/GeomValuationBridge.lean` — the closed-form
+  replay of the `ZMod` bridge over the base-changed curve, in the
+  arbitrary-pair language (`barD`) that the common-factor peeling
+  requires. Full build green. Next: 3a (the `F̄[Z]`-algebra structure
+  on `R̄` via `z = y − λx`), then the relNorm calculus 3b and the
+  embeddings-based norm=resultant 3c.
