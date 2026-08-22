@@ -37,7 +37,7 @@ variable (E : ECSetup)
 
 /-- If the `v`-multiplicity of `span {r}` is the natural number `n`,
 the `v`-adic valuation of `r` is `exp (−n)`. -/
-private theorem intValuation_eq_exp_neg_of_emultiplicity
+theorem intValuation_eq_exp_neg_of_emultiplicity
     {R : Type*} [CommRing R] [IsDedekindDomain R]
     (v : HeightOneSpectrum R) {r : R} {n : ℕ}
     (h : emultiplicity v.asIdeal (Ideal.span {r}) = n) :
