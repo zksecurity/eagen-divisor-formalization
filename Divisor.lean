@@ -1,6 +1,8 @@
 import Divisor.Defs
 import Divisor.OrdP.PrincipalClass
 import Divisor.OrdP.DedekindSetup
+import Divisor.OrdP.ValuationBridge
+import Divisor.OrdP.ValuationBridgeOrd
 import Divisor.Axioms
 import Divisor.ChordCubicSymmetric
 import Divisor.PartialFractionHelper
