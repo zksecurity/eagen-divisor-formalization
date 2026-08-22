@@ -221,15 +221,17 @@ simplifications found:
       "rootMultiplicity of a sum" lemma needed.* This also completes
       the `geomLocalOrder_eq_count` half of Phase 1's 1d (in
       valuation form).
-- [ ] **3a `F̄[Z]`-structure.** Algebra map `F̄[Z] → R̄`, `Z ↦ z`;
-      `Module.Finite` with generators `{1, x, x²}` (`y = λx + z`; `x`
-      integral via the monic chord cubic
-      `f(X, Z) = X³ − λ²X² + (A − 2λZ)X + (B − Z²)`, and
-      `f(x, z) = 0` in `R̄` is exactly the curve equation).
-      If freeness/minpoly bookkeeping is needed, the cleanest route is
-      the explicit iso `R̄ ≅ AdjoinRoot (f̄ : F̄[Z][X])` (both
-      directions are `AdjoinRoot.lift`s with `ring`-checkable
-      relation images).
+- [x] **3a `F̄[Z]`-structure.** Landed in
+      `Divisor/OrdP/ChordAlgebra.lean` via the AdjoinRoot-iso route:
+      `chordCubic_eval₂_zero` (the chord relation is the curve
+      equation), the two `AdjoinRoot.lift`s `chordToBar`/`barToChord`
+      with both compositions checked by `ext` on generators, giving
+      `chordEquiv : AdjoinRoot f̄ ≃+* R̄`. The synonym
+      `ChordModel E lam` of `R̄` carries the per-λ algebra
+      `algebraMap = zHom` (`Z ↦ y − λ̄x`) with `IsDedekindDomain`
+      inherited definitionally, plus `chordPowerBasis` (`{1, x̄, x̄²}`
+      through the iso), `Module.Finite`, `Module.Free`, and
+      `chordModel_finrank = 3`.
 - [ ] **3b Lower bound by relNorm calculus** (the clean core):
       P3.pre gives `D̄ ∈ ∏_{Q : π(Q)=z₀} m_Q^{gd.mult Q}`
       (`intValuation_le_pow_iff_mem`; distinct maximal ideals make
