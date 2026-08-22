@@ -78,9 +78,8 @@ theorem eventNotEqDefinedSet_card_le
     simp only [eventNotEqDefinedSet, validPairs, distinctPairs,
                Finset.mem_filter] at hp
     obtain ⟨⟨⟨hPair, _hNeq⟩, hVNeq, _⟩, hDef, hCheck⟩ := hp
-    simp only [Finset.mem_filter, A₀ne_A₁x_cleared_pair]
     -- A₀ne_A₁x_cleared_pair: p.1.1 ≠ p.2.1 ∧ denom ≠ 0 ∧ check = 0.
-    exact ⟨hPair, hVNeq, hDef, hCheck⟩
+    exact Finset.mem_filter.mpr ⟨hPair, hVNeq, hDef, hCheck⟩
   exact (Finset.card_le_card hSub).trans
     (log_deriv_sz_paper_core_tight_geometric E D P B m hDeg hNV)
 

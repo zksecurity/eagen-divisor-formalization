@@ -102,7 +102,8 @@ def pairsWithSlope (lam : ZMod E.q) :
 theorem mem_pointsOnLine_self {lam : ZMod E.q}
     {A₀ : ZMod E.q × ZMod E.q} (h : A₀ ∈ E.points) :
     A₀ ∈ pointsOnLine E lam (interceptOf E lam A₀) := by
-  simp [pointsOnLine, interceptOf, Finset.mem_filter, h]
+  unfold pointsOnLine interceptOf
+  exact Finset.mem_filter.mpr ⟨h, by ring⟩
 
 /-- **`\ref{lem:slope-dist}` (Slope Distribution).**
     |pairsWithSlope lam| ≤ 2 * numAffine.

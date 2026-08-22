@@ -640,9 +640,8 @@ theorem ip_completeness
       (E.points ×ˢ E.points).filter
         (fun p => ¬ logDerivCheckFnDefined E msg.toD stmt.target stmt.bases
                     p.1 p.2) := by
-    apply Finset.ext
-    intro p
-    simp only [hUdef, Finset.mem_filter, eventDeg]
+    rw [hUdef]
+    exact Finset.filter_congr fun p _ => by simp only [eventDeg]
   calc rejectIP.card
       ≤ eventDegSet.card := Finset.card_le_card hSub
     _ ≤ (3 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := by

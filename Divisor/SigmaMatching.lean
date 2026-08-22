@@ -748,7 +748,8 @@ private lemma residual_vanishes_on_ExE
         (fun p => ellP E (Q k) p.1 p.2 = 0) =
       (E.points ×ˢ E.points).filter
         (fun p => bivEval₂ (lineEvalNumAtFull E (Q k)) p.1 p.2 = 0) := by
-      ext p; simp [bivEval₂_lineEvalNumAtFull, ellP]
+      exact Finset.filter_congr fun p _ => by
+        rw [bivEval₂_lineEvalNumAtFull]; exact Iff.rfl
     rw [hSetEq]
     calc _ ≤ 9 * 2 * E.q := hLW_ell
       _ = 18 * E.q := by ring

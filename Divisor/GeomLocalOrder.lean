@@ -289,6 +289,7 @@ theorem normPolyBar_dvd_pow_twice_commonRootMultiplicity
   unfold curveX
   norm_num [geomAPoly, geomBPoly]
   ring_nf
+  exact Or.inl trivial
 
 /-- The norm root multiplicity is at least twice the common coefficient order. -/
 theorem rootMultiplicity_normPolyBar_ge_twice_common
@@ -314,7 +315,7 @@ theorem normPolyBar_eval_eq_zero_iff_geomEval_zero_of_y_eq_zero
           D.a^2 - D.b^2 *
             (Polynomial.X^3 + Polynomial.C E.curveA * Polynomial.X +
               Polynomial.C E.curveB) := by
-      convert normPoly_eq E D
+      rw [normPoly_eq, show curveX E = Polynomial.X^3 + Polynomial.C E.curveA * Polynomial.X + Polynomial.C E.curveB from rfl]
     unfold normPolyBar geomAPoly geomBPoly
     simp +decide [h_normPoly_def]
     exact Or.inl rfl
@@ -415,7 +416,7 @@ private theorem normPolyBar_decomp (D : CoordRingElt E.q) :
         D.a^2 - D.b^2 *
           (Polynomial.X^3 + Polynomial.C E.curveA * Polynomial.X +
             Polynomial.C E.curveB) := by
-    convert normPoly_eq E D
+    rw [normPoly_eq, show curveX E = Polynomial.X^3 + Polynomial.C E.curveA * Polynomial.X + Polynomial.C E.curveB from rfl]
   unfold normPolyBar geomAPoly geomBPoly
   simp +decide [h_normPoly_def]
   exact Or.inl rfl
@@ -439,7 +440,7 @@ private theorem geomAPoly_factored (D : CoordRingElt E.q) (α : Fqbar E) :
     commonRootFactor_dvd_left E (geomAPoly E D) (geomBPoly E D) α
   have hmod : geomAPoly E D %ₘ ((X - C α)^k) = 0 :=
     (Polynomial.modByMonic_eq_zero_iff_dvd hm).mpr hdvd
-  have h := Polynomial.modByMonic_add_div (geomAPoly E D) hm
+  have h := Polynomial.modByMonic_add_div (geomAPoly E D) ((X - C α) ^ k)
   rw [hmod, zero_add] at h
   show geomAPoly E D = _ * (geomAPoly E D /ₘ ((X - C α)^k))
   exact h.symm
@@ -455,7 +456,7 @@ private theorem geomBPoly_factored (D : CoordRingElt E.q) (α : Fqbar E) :
     commonRootFactor_dvd_right E (geomAPoly E D) (geomBPoly E D) α
   have hmod : geomBPoly E D %ₘ ((X - C α)^k) = 0 :=
     (Polynomial.modByMonic_eq_zero_iff_dvd hm).mpr hdvd
-  have h := Polynomial.modByMonic_add_div (geomBPoly E D) hm
+  have h := Polynomial.modByMonic_add_div (geomBPoly E D) ((X - C α) ^ k)
   rw [hmod, zero_add] at h
   show geomBPoly E D = _ * (geomBPoly E D /ₘ ((X - C α)^k))
   exact h.symm
@@ -1235,9 +1236,13 @@ theorem geomLocalOrderCore_accounting_le_degE
   have hcard :
       (normPolyBar E D).roots.card ≤ (normPoly E D).natDegree := by
     exact le_trans (Polynomial.card_roots' _) (by erw [Polynomial.natDegree_map])
-  convert hcard.trans (normPoly_natDegree_le E D) using 1
-  rw [← Multiset.toFinset_sum_count_eq]
-  exact Finset.sum_congr rfl fun α _hα => by rw [Polynomial.count_roots]
+  calc (∑ α ∈ (normPolyBar E D).roots.toFinset,
+          rootMultiplicity α (normPolyBar E D))
+      = ∑ α ∈ (normPolyBar E D).roots.toFinset, (normPolyBar E D).roots.count α :=
+        Finset.sum_congr rfl fun α _hα => (Polynomial.count_roots _).symm
+    _ = Multiset.card (normPolyBar E D).roots := Multiset.toFinset_sum_count_eq _
+    _ ≤ (normPoly E D).natDegree := hcard
+    _ ≤ D.degE := normPoly_natDegree_le E D
 
 /--
 **Equality form of degree accounting**: the total geometric divisor

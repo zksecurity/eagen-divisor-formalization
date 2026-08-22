@@ -50,7 +50,7 @@ noncomputable def pointEquivOption :
     | @Affine.Point.some _ _ _ x y h => some ⟨(x, y), h⟩
   invFun o := match o with
     | none => .zero
-    | some ⟨⟨_, _⟩, h⟩ => .some h
+    | some ⟨⟨x, y⟩, h⟩ => .some x y h
   left_inv P := by cases P <;> rfl
   right_inv o := by rcases o with _ | ⟨⟨x, y⟩, h⟩ <;> rfl
 

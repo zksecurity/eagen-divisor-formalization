@@ -85,7 +85,7 @@ theorem extractorDivisorCoeffs_negP
   have hNegTargetOnE : (stmt.target.1, -stmt.target.2) ∈ E.points := by
     apply E.hComplete
     have hc := E.hOnCurve _ hTargetOnE
-    simp only at hc ⊢
+    try simp only at hc ⊢
     rw [neg_sq]; exact hc
   have hns : E.toW.toAffine.Nonsingular stmt.target.1 (-stmt.target.2) :=
     E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hNegTargetOnE))
@@ -443,7 +443,7 @@ theorem extractorDivisorCoeffs_support_subset_candidate
   | @some x y hns =>
       refine Finset.mem_insert_of_mem ?_
       -- The `some` value equals `ECPoint.affine E x y` since it's nonsingular.
-      have hAffEq : (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+      have hAffEq : (WeierstrassCurve.Affine.Point.some _ _ hns : ECPoint E)
           = ECPoint.affine E x y := (ECPoint.affine_of_nonsingular E hns).symm
       by_cases hxy : (x, y) = (stmt.target.1, -stmt.target.2)
       · rw [Prod.mk.injEq] at hxy
@@ -453,7 +453,7 @@ theorem extractorDivisorCoeffs_support_subset_candidate
       · refine Finset.mem_insert_of_mem ?_
         -- Indicator = 0, so filter-sum ≠ 0, so filter is nonempty.
         have hEval : extractorDivisorCoeffs E stmt msg hkm
-                        (WeierstrassCurve.Affine.Point.some hns) =
+                        (WeierstrassCurve.Affine.Point.some _ _ hns) =
                       0 + ∑ j ∈ (Finset.univ : Finset (Fin msg.k)).filter
                         (fun j => extractorBases E stmt msg hkm j = (x, y)),
                         extractedScalars E stmt msg hkm j := by
@@ -518,7 +518,7 @@ theorem negP_notin_image_basesAffineEC
   have hNegTargetOnE : (stmt.target.1, -stmt.target.2) ∈ E.points := by
     apply E.hComplete
     have hc := E.hOnCurve _ hTargetOnE
-    simp only at hc ⊢
+    try simp only at hc ⊢
     rw [neg_sq]; exact hc
   have hBaseOnE : extractorBases E stmt msg hkm j ∈ E.points := by
     unfold extractorBases; exact hBasesOnE _
@@ -543,7 +543,7 @@ theorem infinity_ne_negP_aff
   have hNegTargetOnE : (stmt.target.1, -stmt.target.2) ∈ E.points := by
     apply E.hComplete
     have hc := E.hOnCurve _ hTargetOnE
-    simp only at hc ⊢
+    try simp only at hc ⊢
     rw [neg_sq]; exact hc
   have hns : E.toW.toAffine.Nonsingular stmt.target.1 (-stmt.target.2) :=
     E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hNegTargetOnE))
@@ -3287,26 +3287,33 @@ theorem polyG_zero_trace_formula
                 · refine' le_trans _ hZC;
                   rw [ ← Finset.card_image_of_injective _ ( show Function.Injective ( fun x : ZMod E.q × ZMod E.q => x ) from fun x y hxy => by simpa using hxy ) ] ; exact Finset.card_le_card fun x hx => by aesop;
                 · exact le_trans ( Finset.card_image_le ) ( by simpa using by linarith );
-              · convert card_points_with_fst_eq_le E A₀.1 using 1;
-                congr 1; ext x; simp only [Finset.mem_filter, eq_comm];
-          convert h_bad_card.trans _ using 1;
-          · congr 1; ext A₁; simp only [Finset.mem_filter, not_and, not_not, ne_eq]
+              · refine le_trans (le_of_eq ?_) (card_points_with_fst_eq_le E A₀.1)
+                exact congrArg Finset.card
+                  (Finset.filter_congr fun x _ => by rw [eq_comm])
+          have hSetEq : ({A₁ ∈ E.points |
+                ¬(A₁ ∉ zerosFinset E D ∧
+                    (∀ j, R_fn j ≠ A₁) ∧ A₀.1 ≠ A₁.1)} :
+                Finset (ZMod E.q × ZMod E.q))
+              = {A₁ ∈ E.points |
+                  A₁ ∈ zerosFinset E D ∨ ∃ j, R_fn j = A₁ ∨ A₀.1 = A₁.1} := by
+            refine Finset.filter_congr fun A₁ _ => ?_
+            simp only [not_and, not_not, ne_eq]
             constructor
-            · intro ⟨hm, hp⟩; refine ⟨hm, ?_⟩
+            · intro hp
               by_cases hZ : A₁ ∈ zerosFinset E D
               · exact Or.inl hZ
               · by_cases hR : ∃ j, R_fn j = A₁
                 · obtain ⟨j, rfl⟩ := hR; exact Or.inr ⟨j, Or.inl rfl⟩
                 · push_neg at hR
                   exact Or.inr ⟨⟨0, by omega⟩, Or.inr (hp hZ hR)⟩
-            · intro ⟨hm, hp⟩; refine ⟨hm, ?_⟩
-              intro hnz hR
+            · intro hp hnz hR
               rcases hp with h1 | ⟨j, hj⟩
               · exact absurd h1 hnz
               · rcases hj with hj | hj
                 · exact absurd hj (hR j)
                 · exact hj
-          · linarith
+          refine le_trans (le_of_eq (congrArg Finset.card hSetEq))
+            (h_bad_card.trans (by linarith))
         have hGoodCount := Finset.card_le_card hGoodSub
         have hSplitCard := Finset.card_filter_add_card_filter_not
           (fun A₁ => A₁ ∉ zerosFinset E D ∧ (∀ j, R_fn j ≠ A₁) ∧ A₀.1 ≠ A₁.1)
@@ -3447,7 +3454,7 @@ theorem neg_y_mem_points (x y : ZMod E.q)
     (h : (x, y) ∈ E.points) : (x, -y) ∈ E.points := by
   apply E.hComplete
   have hc := E.hOnCurve _ h
-  simp only at hc ⊢
+  try simp only at hc ⊢
   rw [neg_sq]; exact hc
 
 /-- Every value of `distinctR` lies in `E.points`, given that the

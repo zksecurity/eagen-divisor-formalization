@@ -150,8 +150,8 @@ lemma fiber_count_le (f : FourVarPoly E.q) (D : ℕ)
   have h := curve_eval_zeros_le E (specialize_first E f A₀) D
     (specialize_first_totalDegree E f A₀ D hDeg)
     (hFiberNZ.imp fun x hx => ⟨hx.1, by simpa only [specialize_first_eval] using hx.2⟩)
-  convert h using 3
-  ext; rw [specialize_first_eval]
+  convert h using 2
+  exact Finset.filter_congr fun x _ => by rw [specialize_first_eval]
 
 /-- Fibre count bound for fixed second coordinate. -/
 lemma fiber_count_le_second (f : FourVarPoly E.q) (D : ℕ)
@@ -162,8 +162,8 @@ lemma fiber_count_le_second (f : FourVarPoly E.q) (D : ℕ)
   have h := curve_eval_zeros_le E (specialize_second E f A₁) D
     (specialize_second_totalDegree E f A₁ D hDeg)
     (hFiberNZ.imp fun x hx => ⟨hx.1, by simpa only [specialize_second_eval] using hx.2⟩)
-  convert h using 3
-  ext; rw [specialize_second_eval]
+  convert h using 2
+  exact Finset.filter_congr fun x _ => by rw [specialize_second_eval]
 
 /-- From Hasse-Weil: 2 * |E.points| ≤ 3 * E.q + 3. -/
 lemma hasse_points_bound : 2 * E.points.card ≤ 3 * E.q + 3 := by

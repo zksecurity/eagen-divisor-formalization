@@ -77,7 +77,7 @@ theorem curveEqPoly_eval_zero_on_E {p : ZMod E.q × ZMod E.q} (hp : p ∈ E.poin
 theorem bivEval_eq_modByMonic_on_E (f : (ZMod E.q)[X][X])
     {p : ZMod E.q × ZMod E.q} (hp : p ∈ E.points) :
     bivEval f p = bivEval (f %ₘ curveEqPoly E) p := by
-  have hrem := modByMonic_add_div f (curveEqPoly_monic E)
+  have hrem := modByMonic_add_div f (curveEqPoly E)
   -- f = (f %ₘ curveEqPoly E) + (curveEqPoly E) * (f /ₘ curveEqPoly E)
   have hdecomp : f = f %ₘ curveEqPoly E + curveEqPoly E * (f /ₘ curveEqPoly E) :=
     hrem.symm
@@ -292,7 +292,6 @@ theorem xPart_mul_mod_curveEqPoly (f g : (ZMod E.q)[X][X]) :
             · exact le_trans ( Polynomial.degree_mul_le _ _ ) ( by by_cases hb : b = 0 <;> by_cases hc : c = 0 <;> simp +decide [ hb, hc ] );
             · erw [ Polynomial.degree_X, Polynomial.degree_sub_eq_left_of_degree_lt ] <;> norm_num [ curveEqPoly_natDegree_eq ];
               exact lt_of_le_of_lt ( Polynomial.degree_C_le ) ( by norm_num );
-      · exact?;
     · unfold curveEqPoly; norm_num; ring;
   simp_all +decide [ xPart, yPart ]
 
@@ -305,9 +304,9 @@ theorem yPart_mul_mod_curveEqPoly (f g : (ZMod E.q)[X][X]) :
     exact ⟨ modByMonic_curveEqPoly_natDegree_lt E f, modByMonic_curveEqPoly_natDegree_lt E g, modByMonic_curveEqPoly_natDegree_lt E ( f * g ) ⟩;
   have h_factor : (f %ₘ curveEqPoly E) * (g %ₘ curveEqPoly E) = ((f * g) %ₘ curveEqPoly E) + ((f %ₘ curveEqPoly E) * (g %ₘ curveEqPoly E) /ₘ curveEqPoly E) * curveEqPoly E := by
     have h_factor : (f %ₘ curveEqPoly E) * (g %ₘ curveEqPoly E) = ((f %ₘ curveEqPoly E) * (g %ₘ curveEqPoly E)) %ₘ curveEqPoly E + ((f %ₘ curveEqPoly E) * (g %ₘ curveEqPoly E) /ₘ curveEqPoly E) * curveEqPoly E := by
-      rw [ Polynomial.modByMonic_eq_sub_mul_div _ ( curveEqPoly_monic E ) ] ; ring;
-      rw [ Polynomial.modByMonic_eq_sub_mul_div _ ( curveEqPoly_monic E ) ] ; ring;
-      rw [ Polynomial.modByMonic_eq_sub_mul_div _ ( curveEqPoly_monic E ) ] ; ring;
+      conv_lhs => rw [← Polynomial.modByMonic_add_div
+        ((f %ₘ curveEqPoly E) * (g %ₘ curveEqPoly E)) (curveEqPoly E)]
+      ring;
     convert h_factor using 2;
     exact?;
   replace h_factor := congr_arg ( fun p => Polynomial.coeff p 1 ) h_factor ; simp_all +decide;

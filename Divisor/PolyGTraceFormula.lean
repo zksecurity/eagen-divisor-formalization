@@ -159,6 +159,7 @@ theorem polyG_zero_at_defined
             ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
               (zerosAt E D k').1 (zerosAt E D k').2)⁻¹ := by
     convert hLemma6 using 2
+    exact Finset.sum_congr rfl fun k' _ => by rw [show multAt E β_fun D k' = β_fun (zerosAt E D k') from rfl]
   exact polyG_zero_of_Lemma6_and_logDerivCheck_zero E D P B m
     (zerosAt E D)
     (fun k' => ((multAt E β_fun D k' : ℕ) : ZMod E.q))

@@ -77,36 +77,40 @@ private noncomputable def msg : MAProverMsg E17.q where
 private theorem hkm : stmt.k = msg.k := rfl
 
 private theorem aff_1_6 :
-    ECPoint.affine E17 (1 : ZMod 17) (6 : ZMod 17) =
-      .some (by native_decide :
-        E17.toW.toAffine.Nonsingular (1 : ZMod 17) (6 : ZMod 17)) := by
-  rw [ECPoint.affine, dif_pos (by native_decide)]
+    ECPoint.affine E17 (1 : ZMod E17.q) (6 : ZMod E17.q) =
+      .some _ _ (E17.equation_iff_nonsingular.mp
+        ((E17.equation_iff (1 : ZMod E17.q) (6 : ZMod E17.q)).mpr
+          (by native_decide))) :=
+  ECPoint.affine_of_nonsingular E17 _
 
 private theorem aff_1_11 :
-    ECPoint.affine E17 (1 : ZMod 17) (11 : ZMod 17) =
-      .some (by native_decide :
-        E17.toW.toAffine.Nonsingular (1 : ZMod 17) (11 : ZMod 17)) := by
-  rw [ECPoint.affine, dif_pos (by native_decide)]
+    ECPoint.affine E17 (1 : ZMod E17.q) (11 : ZMod E17.q) =
+      .some _ _ (E17.equation_iff_nonsingular.mp
+        ((E17.equation_iff (1 : ZMod E17.q) (11 : ZMod E17.q)).mpr
+          (by native_decide))) :=
+  ECPoint.affine_of_nonsingular E17 _
 
 private theorem aff_0_1 :
-    ECPoint.affine E17 (0 : ZMod 17) (1 : ZMod 17) =
-      .some (by native_decide :
-        E17.toW.toAffine.Nonsingular (0 : ZMod 17) (1 : ZMod 17)) := by
-  rw [ECPoint.affine, dif_pos (by native_decide)]
+    ECPoint.affine E17 (0 : ZMod E17.q) (1 : ZMod E17.q) =
+      .some _ _ (E17.equation_iff_nonsingular.mp
+        ((E17.equation_iff (0 : ZMod E17.q) (1 : ZMod E17.q)).mpr
+          (by native_decide))) :=
+  ECPoint.affine_of_nonsingular E17 _
 
 private theorem aff_0_16 :
-    ECPoint.affine E17 (0 : ZMod 17) (16 : ZMod 17) =
-      .some (by native_decide :
-        E17.toW.toAffine.Nonsingular (0 : ZMod 17) (16 : ZMod 17)) := by
-  rw [ECPoint.affine, dif_pos (by native_decide)]
+    ECPoint.affine E17 (0 : ZMod E17.q) (16 : ZMod E17.q) =
+      .some _ _ (E17.equation_iff_nonsingular.mp
+        ((E17.equation_iff (0 : ZMod E17.q) (16 : ZMod E17.q)).mpr
+          (by native_decide))) :=
+  ECPoint.affine_of_nonsingular E17 _
 
 private theorem support_degE :
     (Landmark.eagenBuild_singletons E17 support).degE = support.length := by
   simp only [support, Landmark.eagenBuild_singletons, Landmark.level0_singletons,
     List.map_cons, List.map_nil, Landmark.levelInitSingleton]
-  rw [aff_1_6, aff_1_11, aff_0_1, aff_0_16]
-  have hpair1 : (6 : ZMod 17) = -(11 : ZMod 17) := by native_decide
-  have hpair2 : (1 : ZMod 17) = -(16 : ZMod 17) := by native_decide
+  simp only [aff_1_6, aff_1_11, aff_0_1, aff_0_16]
+  have hpair1 : (6 : ZMod E17.q) = -(11 : ZMod E17.q) := by native_decide
+  have hpair2 : (1 : ZMod E17.q) = -(16 : ZMod E17.q) := by native_decide
   simp [Landmark.iterate, Landmark.level_step, Landmark.EagenAccum.combine,
     Landmark.EagenAccum.combine_oo, Landmark.EagenAccum.combine_vertical,
     mulCoordRingElt, CoordRingElt.divLin, CoordRingElt.degE, hpair1, hpair2]
@@ -124,10 +128,15 @@ private theorem support_degE :
 
 private theorem h_valid : relDlog E17 stmt wit := by
   refine ⟨hk, ?_⟩
-  simp [stmt, wit, ECPoint.weightedSum]
-  rw [Fin.sum_univ_three]
-  rw [show (16 : ZMod 17) = -(1 : ZMod 17) by native_decide]
-  rw [← ECPoint.affine_neg E17 (0 : ZMod 17) (1 : ZMod 17)]
+  simp only [ECPoint.weightedSum]
+  rw [show (Finset.univ : Finset (Fin wit.k))
+      = {(⟨0, by decide⟩ : Fin wit.k), ⟨1, by decide⟩, ⟨2, by decide⟩} from
+        by decide]
+  rw [Finset.sum_insert (by decide), Finset.sum_insert (by decide),
+    Finset.sum_singleton]
+  simp [stmt, wit, ECPoint.zsmul, Fin.cast]
+  try rw [show (16 : ZMod E17.q) = -(1 : ZMod E17.q) by native_decide]
+  rw [← ECPoint.affine_neg E17 (0 : ZMod E17.q) (1 : ZMod E17.q)]
   abel
 
 example :

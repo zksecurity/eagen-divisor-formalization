@@ -58,7 +58,7 @@ noncomputable def dCoeffs (E : ECSetup) (D : CoordRingElt E.q)
 @[simp] theorem dCoeffs_some (D : CoordRingElt E.q)
     (β : ZMod E.q × ZMod E.q → ℕ) {x y : ZMod E.q}
     (h : E.toW.toAffine.Nonsingular x y) :
-    dCoeffs E D β (.some h) = (β (x, y) : ℤ) := rfl
+    dCoeffs E D β (.some _ _ h) = (β (x, y) : ℤ) := rfl
 
 @[simp] theorem dCoeffs_affine (D : CoordRingElt E.q)
     (β : ZMod E.q × ZMod E.q → ℕ) (P : ZMod E.q × ZMod E.q)
@@ -102,7 +102,7 @@ theorem dCoeffs_support_subset_candidate (D : CoordRingElt E.q)
         intro hz; rw [hz, Nat.cast_zero] at hβ; exact hβ rfl
       have hmem : (x, y) ∈ E.points := hβsup (x, y) hβn
       refine Finset.mem_image.mpr ⟨(x, y), hmem, ?_⟩
-      -- ECPoint.affine E x y = .some h since (x, y) is nonsingular
+      -- ECPoint.affine E x y = .some _ _ h since (x, y) is nonsingular
       exact ECPoint.affine_of_nonsingular E h
 
 theorem dCoeffs_finiteSupport (D : CoordRingElt E.q)

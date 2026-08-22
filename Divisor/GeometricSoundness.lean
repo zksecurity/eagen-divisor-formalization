@@ -482,7 +482,7 @@ theorem frobMvPoly_geomPolyGFullBar
     frobMvPoly_lineEvalNumAtFullBar,
     frobMvPoly_lineEvalNumAtFullBarOfFq,
     frobMvPoly_C_natCast, frobMvPoly_C_fqToBar]
-  congr 1
+  refine congrArg₂ (· + ·) ?_ ?_
   · let fs := gd.frobenius_stable
     apply Finset.sum_bij (fun Q hQ => (fs Q hQ).choose)
     · intro Q hQ
@@ -495,16 +495,14 @@ theorem frobMvPoly_geomPolyGFullBar
         (fun Q1 hQ1 Q2 hQ2 heq =>
           frob_support_injective E D gd Q1 hQ1 Q2 hQ2 heq)
     · intro Q hQ
-      congr 1
-      congr 1
-      · congr 1
-        congr 1
-        exact (fs Q hQ).choose_spec.2.2.2.symm
+      refine congrArg₂ (· * ·) (congrArg₂ (· * ·) ?_ ?_) rfl
+      · exact congrArg
+          (fun n : ℕ => (MvPolynomial.C ((n : ℕ) : Fqbar E) : FourVarPolyBar E))
+          (fs Q hQ).choose_spec.2.2.2.symm
       · exact frobMvPoly_prod_erase_support E D gd Q hQ
   · apply Finset.sum_congr rfl
     intro _j _
-    congr 1
-    congr 1
+    refine congrArg₂ (· * ·) (congrArg₂ (· * ·) rfl ?_) rfl
     · let fs := gd.frobenius_stable
       apply Finset.prod_bij (fun Q hQ => (fs Q hQ).choose)
       · intro Q hQ
@@ -3438,7 +3436,7 @@ private theorem rootMultiplicity_div_X_sub_C
     Polynomial.dvd_iff_isRoot.mpr hroot
   have h_eq : p = (Polynomial.X - Polynomial.C β) *
       (p /ₘ (Polynomial.X - Polynomial.C β)) := by
-    have := Polynomial.modByMonic_add_div p hMonic
+    have := Polynomial.modByMonic_add_div p (Polynomial.X - Polynomial.C β)
     have hmod : p %ₘ (Polynomial.X - Polynomial.C β) = 0 :=
       (Polynomial.modByMonic_eq_zero_iff_dvd hMonic).mpr h_dvd
     rw [hmod, zero_add] at this
@@ -3471,8 +3469,8 @@ private theorem divByMonic_pow_succ
   set d := (p /ₘ q ^ k) /ₘ q with hd_def
   set r := q ^ k * ((p /ₘ q ^ k) %ₘ q) + (p %ₘ q ^ k) with hr_def
   have hp_eq : r + q ^ (k + 1) * d = p := by
-    have h1 := Polynomial.modByMonic_add_div p hqp
-    have h2 := Polynomial.modByMonic_add_div (p /ₘ q ^ k) hq
+    have h1 := Polynomial.modByMonic_add_div p (q ^ k)
+    have h2 := Polynomial.modByMonic_add_div (p /ₘ q ^ k) q
     rw [show q ^ (k + 1) = q ^ k * q from pow_succ q k]
     linear_combination h1 + q^k * h2
   -- Show natDegree r < natDegree (q^(k+1)) when r ≠ 0; if r = 0 use degree ⊥.
@@ -3569,7 +3567,7 @@ private theorem commonRootMultRatGS_divLin
           Polynomial.dvd_iff_isRoot.mpr ha
         have hmod : D.a %ₘ (Polynomial.X - Polynomial.C β) = 0 :=
           (Polynomial.modByMonic_eq_zero_iff_dvd hMonic).mpr h_dvd
-        have h_eq2 := Polynomial.modByMonic_add_div D.a hMonic
+        have h_eq2 := Polynomial.modByMonic_add_div D.a (Polynomial.X - Polynomial.C β)
         rw [hmod, zero_add] at h_eq2
         rw [show (D.divLin β).a = D.a /ₘ (Polynomial.X - Polynomial.C β) from rfl] at hq
         rw [← h_eq2, hq, mul_zero] at h_a
@@ -3582,7 +3580,7 @@ private theorem commonRootMultRatGS_divLin
           Polynomial.dvd_iff_isRoot.mpr hb
         have hmod : D.b %ₘ (Polynomial.X - Polynomial.C β) = 0 :=
           (Polynomial.modByMonic_eq_zero_iff_dvd hMonic).mpr h_dvd
-        have h_eq2 := Polynomial.modByMonic_add_div D.b hMonic
+        have h_eq2 := Polynomial.modByMonic_add_div D.b (Polynomial.X - Polynomial.C β)
         rw [hmod, zero_add] at h_eq2
         rw [show (D.divLin β).b = D.b /ₘ (Polynomial.X - Polynomial.C β) from rfl] at hq
         rw [← h_eq2, hq, mul_zero] at h_b

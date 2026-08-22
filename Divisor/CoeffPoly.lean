@@ -412,7 +412,7 @@ theorem toPolynomial_mul (p₁ p₂ : CoeffPoly q) :
     symm
     apply Finset.sum_eq_zero
     rintro ⟨i, j⟩ hij
-    rw [Finset.mem_antidiagonal] at hij
+    rw [Finset.HasAntidiagonal.mem_antidiagonal] at hij
     rw [toPolynomial_coeff, toPolynomial_coeff]
     by_cases hi : i < p₁.coeffs.length
     · have hj : ¬ j < p₂.coeffs.length := by omega
