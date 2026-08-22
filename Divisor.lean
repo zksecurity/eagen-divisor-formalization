@@ -4,6 +4,7 @@ import Divisor.OrdP.DedekindSetup
 import Divisor.OrdP.ValuationBridge
 import Divisor.OrdP.ValuationBridgeOrd
 import Divisor.OrdP.GeomValuationBridge
+import Divisor.OrdP.ChordAlgebra
 import Divisor.Axioms
 import Divisor.ChordCubicSymmetric
 import Divisor.PartialFractionHelper
