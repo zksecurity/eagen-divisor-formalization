@@ -336,6 +336,14 @@ axiom deletion updates the `#guard_msgs` pins **in the same commit**
 
 ## Risk register
 
+*(Retired at plan completion: none of the listed risks materialized.
+The vendored files had zero API drift, the uniformizer lemmas were the
+standard local computations, the lone-case norm identity went through
+elementwise, `relNorm` of a point prime needed only the `≤` direction
+as planned, the norm-vs-resultant identity held exactly with no
+fallback, and separability came from `deg ≤ 3 < q` with no
+discriminant analysis.)*
+
 | Risk | Where | Mitigation |
 |---|---|---|
 | v4.34/master API drift in vendored files | P0 | Small, known class of renames; worst case re-derive Dedekind-ness following their documented proof |
