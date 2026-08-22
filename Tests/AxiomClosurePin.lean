@@ -11,8 +11,12 @@
 
   * `ma_extractable`, `ip_extractable`:
       propext, Classical.choice, Quot.sound,
-      Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
       Divisor.hasse_weil_textbook
+
+    The ONLY remaining project axiom in the MA/IP closure is the Hasse
+    bound `hasse_weil_textbook` (Silverman V.1.1 verbatim); the legacy
+    integer-squared `Divisor.hasse_weil` is a derived theorem retained
+    for downstream compatibility.
 
     The former axiom
     `Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero` is now a
@@ -22,25 +26,24 @@
     primes containing `D`, and the factorization
     `span {D} = ∏_P XYIdeal(P)^(ordAt P)`.
 
+    The former axiom
+    `Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd`
+    (divisor-of-norm divisibility, lower bound, for the concrete
+    resultant) is also now a THEOREM (plan.md Phase 3): the chord
+    algebra `F̄[Z] → R̄` is realised as `AdjoinRoot` of the chord
+    cubic, `D̄` accumulates each fibre's summed multiplicity in the
+    `Ideal.relNorm` along that extension, and the integral norm is
+    identified with the base-changed chord-fibre resultant via the
+    embeddings product over `Frac(F̄[Z])` (`Divisor/OrdP/ChordNorm`,
+    `Divisor/OrdP/ChordResultant`). The matching upper bound (the
+    global natDegree inequality) was already a theorem
+    (`chord_fiber_product_concrete_natDegree_le_normPoly_natDegree`
+    in `Divisor/ChordFiberWeightedDegree.lean`).
+
     The Frobenius descent proof gap is closed: there is no `sorryAx` in
     the MA/IP closure. The headline theorem signatures no longer carry
     `hSplit : splitsOnE E D`; the `splitsOnE` predicate now only gates
-    the multiplicity-accounting test below. The Hasse bound now enters
-    the closure as `hasse_weil_textbook` (Silverman V.1.1 verbatim);
-    the legacy integer-squared `Divisor.hasse_weil` is a derived theorem
-    retained for downstream compatibility. The remaining algebraic
-    assumptions are narrow:
-    * divisor-of-norm divisibility (lower bound) for the concrete
-      resultant: `chord_fiber_product_concrete_bar_zfiber_pow_dvd`
-      (Stacks 02RS lower-bound coefficient form). This *replaces* the
-      previous multiplicity-equality axiom: the matching upper bound
-      (the global natDegree inequality) is now a theorem
-      (`chord_fiber_product_concrete_natDegree_le_normPoly_natDegree`
-      in `Divisor/ChordFiberWeightedDegree.lean`, via the
-      weighted-Sylvester analysis). The squeeze argument promotes
-      lower-bound-divisibility plus upper-bound-natDegree to
-      multiplicity equality.
-    * principal divisor class triviality for the concrete `D`.
+    the multiplicity-accounting test below.
 
     The previously listed axiom
     `Divisor.ordAt_eq_rationalMultAt_of_gd_support_rational` has been
@@ -59,12 +62,10 @@
     is also printed below to guard against drift.
 
   * `ma_completeness_base`:
-      propext, Classical.choice, Quot.sound,
-      Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd
+      propext, Classical.choice, Quot.sound (axiom-free)
 
   * `ma_completeness`:
       propext, Classical.choice, Quot.sound,
-      Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
       Divisor.hasse_weil_textbook
 
   The unsound `Divisor.weil_reciprocity_honest` axiom (which falsely
@@ -112,7 +113,6 @@ import Divisor.IsHonestForBinary
 /--
 info: 'Divisor.ma_extractable' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -121,7 +121,6 @@ info: 'Divisor.ma_extractable' depends on axioms: [propext,
 /--
 info: 'Divisor.ip_extractable' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -130,7 +129,6 @@ info: 'Divisor.ip_extractable' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_extractable_base' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -139,7 +137,6 @@ info: 'Divisor.ma_extractable_base' depends on axioms: [propext,
 /--
 info: 'Divisor.ip_extractable_base' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -148,7 +145,6 @@ info: 'Divisor.ip_extractable_base' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -157,7 +153,6 @@ info: 'Divisor.ma_completeness' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_base' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -165,7 +160,6 @@ info: 'Divisor.ma_completeness_base' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_clean' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -174,7 +168,6 @@ info: 'Divisor.ma_completeness_clean' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_for_length4Simple' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -182,7 +175,6 @@ info: 'Divisor.ma_completeness_for_length4Simple' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_clean_for_length4Simple' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -247,7 +239,6 @@ example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
 /--
 info: 'Divisor.ma_extractable_paper' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -268,7 +259,6 @@ info: 'Divisor.ma_extractable_paper' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_binary_extras' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -276,7 +266,6 @@ info: 'Divisor.ma_completeness_binary_extras' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_binary_extras_clean' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -289,7 +278,6 @@ info: 'Divisor.ma_completeness_binary_extras_clean' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_binary_length2' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -297,7 +285,6 @@ info: 'Divisor.ma_completeness_binary_length2' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_binary_length2_clean' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -306,7 +293,6 @@ info: 'Divisor.ma_completeness_binary_length2_clean' depends on axioms: [propext
 /--
 info: 'Divisor.ma_completeness_binary_length4' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -314,7 +300,6 @@ info: 'Divisor.ma_completeness_binary_length4' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_binary_length4_clean' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -323,7 +308,6 @@ info: 'Divisor.ma_completeness_binary_length4_clean' depends on axioms: [propext
 /--
 info: 'Divisor.ma_completeness_binary_length4_chord' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -331,7 +315,6 @@ info: 'Divisor.ma_completeness_binary_length4_chord' depends on axioms: [propext
 /--
 info: 'Divisor.ma_completeness_binary_length4_chord_clean' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -340,7 +323,6 @@ info: 'Divisor.ma_completeness_binary_length4_chord_clean' depends on axioms: [p
 /--
 info: 'Divisor.ma_completeness_binary_length6_chord' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -348,7 +330,6 @@ info: 'Divisor.ma_completeness_binary_length6_chord' depends on axioms: [propext
 /--
 info: 'Divisor.ma_completeness_binary_length8_chord' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -356,7 +337,6 @@ info: 'Divisor.ma_completeness_binary_length8_chord' depends on axioms: [propext
 /--
 info: 'Divisor.ma_completeness_binary_chain' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -364,7 +344,6 @@ info: 'Divisor.ma_completeness_binary_chain' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_binary_chain_clean' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
@@ -373,7 +352,6 @@ info: 'Divisor.ma_completeness_binary_chain_clean' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_binary_admSetMax_extras' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -381,7 +359,6 @@ info: 'Divisor.ma_completeness_binary_admSetMax_extras' depends on axioms: [prop
 /--
 info: 'Divisor.ma_completeness_binary_chain_admSetMax' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -389,7 +366,6 @@ info: 'Divisor.ma_completeness_binary_chain_admSetMax' depends on axioms: [prope
 /--
 info: 'Divisor.ma_completeness_binary_admSetParker_extras' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -397,7 +373,6 @@ info: 'Divisor.ma_completeness_binary_admSetParker_extras' depends on axioms: [p
 /--
 info: 'Divisor.ma_completeness_binary_chain_admSetParker' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -405,7 +380,6 @@ info: 'Divisor.ma_completeness_binary_chain_admSetParker' depends on axioms: [pr
 /--
 info: 'Divisor.ma_completeness_binary_admSetEagen_extras' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -413,7 +387,6 @@ info: 'Divisor.ma_completeness_binary_admSetEagen_extras' depends on axioms: [pr
 /--
 info: 'Divisor.ma_completeness_binary_chain_admSetEagen' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -421,7 +394,6 @@ info: 'Divisor.ma_completeness_binary_chain_admSetEagen' depends on axioms: [pro
 /--
 info: 'Divisor.ma_completeness_binary_admSetHash_extras' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -429,7 +401,6 @@ info: 'Divisor.ma_completeness_binary_admSetHash_extras' depends on axioms: [pro
 /--
 info: 'Divisor.ma_completeness_binary_chain_admSetHash' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -439,7 +410,6 @@ info: 'Divisor.ma_completeness_binary_chain_admSetHash' depends on axioms: [prop
 /--
 info: 'Divisor.ma_completeness_binary' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -447,7 +417,6 @@ info: 'Divisor.ma_completeness_binary' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_binary_admSetParker' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -455,7 +424,6 @@ info: 'Divisor.ma_completeness_binary_admSetParker' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_binary_admSetEagen' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -463,7 +431,6 @@ info: 'Divisor.ma_completeness_binary_admSetEagen' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_binary_admSetHash' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -489,7 +456,6 @@ info: 'Divisor.Landmark.landmarkInvStrongCombineExtras_of_combineCanFire_full' d
 /--
 info: 'Divisor.ma_completeness_binary_point_certificate' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -497,7 +463,6 @@ info: 'Divisor.ma_completeness_binary_point_certificate' depends on axioms: [pro
 /--
 info: 'Divisor.ma_completeness_binary_admSetParker_point_certificate' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -505,7 +470,6 @@ info: 'Divisor.ma_completeness_binary_admSetParker_point_certificate' depends on
 /--
 info: 'Divisor.ma_completeness_binary_admSetEagen_point_certificate' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -513,7 +477,6 @@ info: 'Divisor.ma_completeness_binary_admSetEagen_point_certificate' depends on 
 /--
 info: 'Divisor.ma_completeness_binary_admSetHash_point_certificate' depends on axioms: [propext,
  Classical.choice,
- Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in

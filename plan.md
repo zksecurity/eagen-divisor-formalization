@@ -6,8 +6,8 @@ Hasse bound as the project's **only** axiom.
 | Axiom | Today | End state |
 |---|---|---|
 | `Divisor.hasse_weil_textbook` | axiom | axiom (unchanged; no Hasse bound exists in mathlib or Tau Ceti) |
-| `Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero` | axiom | theorem (Phase 2) |
-| `Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd` | axiom | theorem (Phase 3) |
+| `Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero` | **theorem** (Phase 2, done) | theorem (Phase 2) |
+| `Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd` | **theorem** (Phase 3, done) | theorem (Phase 3) |
 
 Final closures (enforced by the `#guard_msgs` pins in
 `Tests/AxiomClosurePin.lean` / `Tests/F5RegressionAxiomClosure.lean`):
@@ -244,24 +244,40 @@ simplifications found:
       `barEval` at `Q` is `zLambdaBar Q − z₀ = 0`). Torsion-freeness
       of the chord model comes from injectivity of `zHom` through the
       isomorphism.
-- [ ] **3c Norm = resultant, via embeddings** (long pole #2):
-      `intNorm D̄ = (chord_fiber_product_concrete E lam D).map (…)`
-      exactly (no sign: the chord cubic is monic). Chain, with
-      `K = F̄(Z)`, `L = Frac R̄ = K(x̄)`:
-      `P̄ ↦ K` (`resultant_map_map`), over `K̄`:
-      `= ∏_{roots ξ of f̄} ḡ(ξ)` (`resultant_eq_prod_eval`)
-      `= ∏_{σ : L →ₐ[K] K̄} σ(D̄)` (roots ↔ embeddings for the
-      primitive element; distinct roots by separability, deg 3 < q)
-      `= Norm_{L/K}(D̄)` (`Algebra.norm_eq_prod_embeddings`)
-      `= algebraMap K (intNorm F̄[Z] R̄ D̄)` (`algebraMap_intNorm`).
-      Fallback if the equality fights us: one-way divisibility
-      `intNorm ∣ P̄` suffices for 3d.
-- [ ] **3d Assembly** to the axiom's exact statement in
-      `Divisor/Axioms/AxiomChordFiberDivisibility.lean` (`gd.mult` is
-      pinned to `geomLocalOrder` by `mult_eq_geomLocalOrder`, so fiber
-      sums line up definitionally; the `[DecidableEq (Fqbar E)]`
-      argument is inert). Replace axiom by theorem; update pins:
-      `ma_completeness*` closures drop the chord axiom.
+- [x] **3c Norm = resultant, via embeddings.** Landed in two files,
+      exactly along the planned chain (the exact equality held — no
+      fallback needed). `Divisor/OrdP/ChordFraction.lean`: `K`, `L`
+      as `FractionRing`s (`FractionRing.liftAlgebra` local instance),
+      `[L : K] = 3` (`IsFractionRing.finrank_eq`), the power basis
+      localized by `Module.Basis.localizationLocalization` (instances
+      via `IsIntegralClosure.of_isIntegrallyClosed` +
+      `IsIntegralClosure.isLocalization`), `minpoly_chordFracGen`
+      (divides + monic + degree 3 forces equality), and separability
+      from `deg minpoly ≤ 3 < q = char K` via
+      `separable_iff_derivative_ne_zero` (as predicted, no
+      discriminant computation). `Divisor/OrdP/ChordResultant.lean`:
+      `chordD_eq_aeval` (`D̄` is the D-line bivariate at the
+      generator, by `eval₂` computation through the AdjoinRoot iso),
+      `prod_embeddings` (embeddings ↔ roots by
+      `PowerBasis.liftEquiv'`, mathlib's
+      `norm_eq_prod_embeddings_gen` pattern, `nodup_roots` from
+      separability), and the headline `intNorm_chordD_eq`:
+      `algebraMap_intNorm_fractionRing` +
+      `Algebra.norm_eq_prod_embeddings` on the norm side; two
+      `resultant_map_map`s + `resultant_eq_prod_eval` (monic cubic,
+      `leadingCoeff = 1`) on the resultant side.
+- [x] **3d Assembly.** `chord_fiber_product_concrete_bar_zfiber_pow_dvd`
+      in `Divisor/Axioms/AxiomChordFiberDivisibility.lean` is now a
+      **theorem** with the identical name and signature: 3b's
+      `X_sub_C_pow_fiberSum_dvd_intNorm` rewritten through 3c's
+      `intNorm_chordD_eq` (two lines). Pins updated in the same
+      commit: the chord axiom is dropped from every closure in
+      `Tests/AxiomClosurePin.lean` (38 blocks) and
+      `Tests/F5RegressionAxiomClosure.lean` (6 blocks);
+      `ma_completeness_base` and the length-4-simple base variant are
+      now axiom-free (`propext, Classical.choice, Quot.sound`), and
+      the MA/IP extractability closures carry `hasse_weil_textbook`
+      only.
 
 ## Phase 4 — Surface cleanup
 
@@ -348,3 +364,20 @@ axiom deletion updates the `#guard_msgs` pins **in the same commit**
   requires. Full build green. Next: 3a (the `F̄[Z]`-algebra structure
   on `R̄` via `z = y − λx`), then the relNorm calculus 3b and the
   embeddings-based norm=resultant 3c.
+* 2026-08-22 — **Phase 3 complete:
+  `chord_fiber_product_concrete_bar_zfiber_pow_dvd` is DISCHARGED.**
+  3a (`Divisor/OrdP/ChordAlgebra.lean`, the AdjoinRoot iso and the
+  per-λ `ChordModel`) and 3b (`Divisor/OrdP/ChordNorm.lean`, the
+  relNorm lower bound) landed in earlier commits; this commit lands
+  3c (`Divisor/OrdP/ChordFraction.lean` +
+  `Divisor/OrdP/ChordResultant.lean`, `intNorm_chordD_eq`: the
+  integral norm IS the base-changed chord-fibre resultant, proved by
+  the embeddings product over `K = F̄(Z)` — the exact equality, no
+  fallback) and 3d (the axiom file now holds a theorem of identical
+  name/signature, proved in two lines from 3b + 3c). Both pin files
+  updated in the same commit; full `lake build Divisor Tests` green
+  with `#guard_msgs` certifying the new closures.
+  **One project axiom remains: `hasse_weil_textbook` (stays by
+  design).** `ma_completeness_base` and
+  `ma_completeness_for_length4Simple` are now axiom-free. Next:
+  Phase 4 surface cleanup.
