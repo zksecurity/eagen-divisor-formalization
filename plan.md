@@ -182,31 +182,67 @@ Ships on its own (does not wait for Phase 3).
 ## Phase 3 — Discharge `chord_fiber_product_concrete_bar_zfiber_pow_dvd`
 
 Entirely over `F̄ := Fqbar E` with the base-changed curve; write
-`R̄ := CoordinateRing(W̄)` and `z := class of (Y − λX)`.
+`W̄ := (E.toW.map (algebraMap F_q F̄))`, `R̄ := CoordinateRing(W̄)` and
+`z := class of (Y − λX)`.
 
+*Design refinement (2026-08-22, after Phase 2 landed).* The route
+below is confirmed viable against mathlib v4.33's actual API
+(`Resultant/Basic.lean` has `resultant_eq_prod_eval`,
+`resultant_map_map`, `resultant_mul_right`,
+`exists_mul_add_mul_eq_C_resultant` — but **no** norm↔resultant
+lemma, so 3c is proved via embeddings over `K := F̄(Z)`). Two key
+simplifications found:
+* In chord coordinates `ȳ = λ̄x̄ + z̄` with `z̄ ∈ K`, so the function
+  field is **monogenic** over the z-line: `L = K(x̄)`, minpoly = the
+  chord cubic. Norm-as-product-over-embeddings applies directly
+  (degree 3 < char q, so separable with no discriminant computation
+  — the `−27Z⁴` analysis is NOT needed).
+* The 3b membership `D̄ ∈ ∏ m_Q^{k_Q}` needs the F̄-side valuation
+  machinery only at ramified points; but since the same uniformizer
+  toolkit gives all cases uniformly, P3.pre replays
+  `ValuationBridge` over `W̄` keyed on curve equations instead of
+  `E.points` membership.
+
+- [ ] **P3.pre (Phase 1's `Fqbar` half, reduced to what 3b uses).**
+      Over `W̄`: `IsElliptic` (mathlib's `(W.map f).IsElliptic`
+      instance), `IsDedekindDomain R̄` (vendored), point primes
+      `m_Q` at geometric points, uniformizer valuations, univariate
+      valuations, conj/norm identity, and the closed-form
+      `v_Q(D̄) = exp(−geomLocalOrder E D Q)` (no fuel induction: the
+      closed formula of `Divisor/GeomLocalOrder.lean` is matched
+      case-by-case — ramified = parity min; unramified = peel the
+      common factor `(x̄−x₀)^k` then lone-case on the residual).
 - [ ] **3a `F̄[Z]`-structure.** Algebra map `F̄[Z] → R̄`, `Z ↦ z`;
       `Module.Finite` with generators `{1, x, x²}` (`y = λx + z`; `x`
       integral via the monic chord cubic
       `f(X, Z) = X³ − λ²X² + (A − 2λZ)X + (B − Z²)`, and
       `f(x, z) = 0` in `R̄` is exactly the curve equation).
+      If freeness/minpoly bookkeeping is needed, the cleanest route is
+      the explicit iso `R̄ ≅ AdjoinRoot (f̄ : F̄[Z][X])` (both
+      directions are `AdjoinRoot.lift`s with `ring`-checkable
+      relation images).
 - [ ] **3b Lower bound by relNorm calculus** (the clean core):
-      1d gives `D̄ ∈ ∏_{Q : π(Q)=z₀} m_Q^{gd.mult Q}`
-      (`intValuation_le_pow_iff_dvd`); then
-      `span {N(D̄)} = relNorm (span D̄)`(`relNorm_singleton`)
-      `≤ ∏ relNorm(m_Q)^{mult}` (`spanNorm_mul`)
+      P3.pre gives `D̄ ∈ ∏_{Q : π(Q)=z₀} m_Q^{gd.mult Q}`
+      (`intValuation_le_pow_iff_mem`; distinct maximal ideals make
+      the product an intersection); then
+      `span {intNorm D̄} = relNorm (span D̄)` (`relNorm_singleton`)
+      `≤ ∏ relNorm(m_Q)^{mult}` (`relNorm` multiplicativity)
       `≤ ∏ (Z − z₀)^{mult}` (`relNorm_le_comap` +
-      `m_Q ∩ F̄[Z] = (Z − z₀)`), i.e.
+      `m_Q ∩ F̄[Z] = (Z − z₀)`, immediate from
+      `z̄ − z₀ = (ȳ − y₀) − λ̄(x̄ − x₀) ∈ m_Q` + maximality), i.e.
       **`(Z − z₀)^{Σ mult} ∣ Algebra.intNorm F̄[Z] R̄ D̄`**.
-- [ ] **3c Norm = resultant** (long pole #2):
-      `intNorm D̄ = ± (chord_fiber_product_concrete E lam D).map (algebraMap …)`.
-      The chord cubic is monic and **separable** over `F̄(Z)`: its
-      X-discriminant, as a polynomial in `Z`, has leading term `−27·Z⁴`
-      (nonzero since `q ≥ 5`). Over a splitting field both sides are
-      `∏ᵢ D(xᵢ)`: resultant side via `resultant_eq_prod_eval` +
-      `resultant_map_map`; norm side via `Algebra.norm` base-change /
-      product-over-roots. Fallback if the equality fights us: two
-      one-way divisibilities, combined with the already-proved degree
-      bound (`chord_fiber_product_concrete_natDegree_le_normPoly_natDegree`).
+- [ ] **3c Norm = resultant, via embeddings** (long pole #2):
+      `intNorm D̄ = (chord_fiber_product_concrete E lam D).map (…)`
+      exactly (no sign: the chord cubic is monic). Chain, with
+      `K = F̄(Z)`, `L = Frac R̄ = K(x̄)`:
+      `P̄ ↦ K` (`resultant_map_map`), over `K̄`:
+      `= ∏_{roots ξ of f̄} ḡ(ξ)` (`resultant_eq_prod_eval`)
+      `= ∏_{σ : L →ₐ[K] K̄} σ(D̄)` (roots ↔ embeddings for the
+      primitive element; distinct roots by separability, deg 3 < q)
+      `= Norm_{L/K}(D̄)` (`Algebra.norm_eq_prod_embeddings`)
+      `= algebraMap K (intNorm F̄[Z] R̄ D̄)` (`algebraMap_intNorm`).
+      Fallback if the equality fights us: one-way divisibility
+      `intNorm ∣ P̄` suffices for 3d.
 - [ ] **3d Assembly** to the axiom's exact statement in
       `Divisor/Axioms/AxiomChordFiberDivisibility.lean` (`gd.mult` is
       pinned to `geomLocalOrder` by `mult_eq_geomLocalOrder`, so fiber
