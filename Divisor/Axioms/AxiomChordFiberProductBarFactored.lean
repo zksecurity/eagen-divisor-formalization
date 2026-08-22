@@ -110,24 +110,20 @@ theorem chord_fiber_product_concrete_bar_rootMultiplicity_eq_zero_of_not_image
     This is exactly the push-forward of the zero divisor under the chord
     projection, i.e. `div(N(D)) = π_*(div D)` written coefficientwise.
 
-    **Now a theorem (mod the narrower divisibility axiom).** Discharged
-    via the squeeze argument
+    **Now an unconditional theorem.** Discharged via the squeeze
+    argument
     `Divisor.rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le`:
     - root set: `chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image`.
     - per-fibre divisibility (lower bound):
-      `chord_fiber_product_concrete_bar_zfiber_pow_dvd` — narrowed
-      divisibility-only axiom (the local divisor-of-norm inequality
-      content).
+      `chord_fiber_product_concrete_bar_zfiber_pow_dvd` — formerly the
+      narrowed divisibility-only axiom, now a theorem (plan.md
+      Phase 3) via the chord-algebra relNorm calculus and the
+      norm-is-resultant identity (`Divisor/OrdP/ChordNorm.lean`,
+      `Divisor/OrdP/ChordResultant.lean`).
     - global natDegree bound (upper bound):
       `chord_fiber_product_concrete_natDegree_le_normPoly_natDegree`
       via the weighted-Sylvester analysis (now a complete theorem).
-    - `mult_sum_eq_normPoly_natDegree`: Σ_Q gd.mult Q = (normPoly).natDegree.
-
-    The closure now uses the divisibility axiom
-    `chord_fiber_product_concrete_bar_zfiber_pow_dvd`, replacing the
-    previous multiplicity-equality axiom. The new axiom is the
-    lower-bound (divisibility) half only, since the upper bound is now
-    a coordinate-native theorem. -/
+    - `mult_sum_eq_normPoly_natDegree`: Σ_Q gd.mult Q = (normPoly).natDegree. -/
 theorem chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
     [DecidableEq (Fqbar E)]
