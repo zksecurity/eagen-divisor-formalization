@@ -292,7 +292,7 @@ theorem polyGFull_total_degree_le_tight
     machinery, i.e. `thm:variety-bound` + Bezout) contrapositively to
     the cleared polynomial `G`": if `polyG` vanishes on every defined
     non-vertical pair of `E.points × E.points` and the threshold
-    `|E|² − 2|E| > 18·(d + M)·E.q` holds (derived from `hLargeQ` via
+    `|E|² − 2|E| > 12·(d + M)·|E|` holds (derived from `hLargeQ` via
     Hasse), then `polyGFull` has no nonzero witness on `E × E`.
 
     Proof uses the `bivariate_poly_zeros_on_ExE_le` theorem
@@ -300,7 +300,7 @@ theorem polyGFull_total_degree_le_tight
     somewhere on `E × E`, its zero set would have cardinality
     `≤ 9·2·(d+M)·q = 18·(d+M)·q`, contradicting the non-vertical-pair
     count `|E|² − 2|E|` it must contain. -/
-theorem polyGFull_vanishes_on_ExE_of_polyG_zero (hHW : E.HasseBound)
+theorem polyGFull_vanishes_on_ExE_of_polyG_zero
     {d M : ℕ}
     (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
     (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
@@ -308,7 +308,7 @@ theorem polyGFull_vanishes_on_ExE_of_polyG_zero (hHW : E.HasseBound)
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       polyG E Q beta R m A₀ A₁ = 0)
     (hELarge : E.points.card * E.points.card - 2 * E.points.card
-                  > 18 * (d + M) * E.q) :
+                  > 12 * (d + M) * E.points.card) :
     ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
       bivEval₂ (polyGFull E Q beta R m) A₀ A₁ = 0 := by
@@ -317,7 +317,7 @@ theorem polyGFull_vanishes_on_ExE_of_polyG_zero (hHW : E.HasseBound)
   push_neg at h
   obtain ⟨A₀, A₁, hA₀, hA₁, hNZ⟩ := h
   have hDeg := polyGFull_total_degree_le' E Q beta R m
-  have hLW := bivariate_poly_zeros_on_ExE_le E hHW (polyGFull E Q beta R m)
+  have hLW := bivariate_poly_zeros_on_ExE_le E (polyGFull E Q beta R m)
     (2 * (d + M)) hDeg ⟨A₀, A₁, hA₀, hA₁, hNZ⟩
   have hNVsub : (E.points ×ˢ E.points).filter
       (fun p : _ × _ => p.1.1 ≠ p.2.1) ⊆
@@ -347,8 +347,10 @@ theorem polyGFull_vanishes_on_ExE_of_polyG_zero (hHW : E.HasseBound)
       (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) => p.1.1 ≠ p.2.1)).card := by
     rw [hCardProd] at hNVcard; omega
   have hChain : E.points.card * E.points.card - 2 * E.points.card
-    ≤ 9 * (2 * (d + M)) * E.q := le_trans hNVge (le_trans hZeroCard hLW)
-  have hRw : 9 * (2 * (d + M)) * E.q = 18 * (d + M) * E.q := by ring
+    ≤ 6 * (2 * (d + M)) * E.points.card :=
+    le_trans hNVge (le_trans hZeroCard hLW)
+  have hRw : 6 * (2 * (d + M)) * E.points.card
+      = 12 * (d + M) * E.points.card := by ring
   rw [hRw] at hChain
   exact absurd hChain (Nat.not_le.mpr hELarge)
 
@@ -661,7 +663,7 @@ private lemma polyG_factorization
     `(∏_k ellP(Q_k)) · G` where `G = residual c σ R` and `c k = β k + m(σ k)`.
     This lemma shows that `G = 0` on all of `E × E` by applying the
     bivariate polynomial zeros axiom contrapositively. -/
-private lemma residual_vanishes_on_ExE (hHW : E.HasseBound)
+private lemma residual_vanishes_on_ExE
     {d M : ℕ}
     (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
     (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
@@ -674,7 +676,7 @@ private lemma residual_vanishes_on_ExE (hHW : E.HasseBound)
     (hELarge : E.points.card > 4 * (d + M) + 2)
     (_hQonE : ∀ k, Q k ∈ E.points)
     (hELarge_dkl : E.points.card * E.points.card - 2 * E.points.card
-                     > 18 * (d + M) * E.q) :
+                     > 12 * (d + M) * E.points.card) :
     ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
       bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) A₀ A₁ = 0 := by
@@ -684,7 +686,7 @@ private lemma residual_vanishes_on_ExE (hHW : E.HasseBound)
   obtain ⟨A₀, A₁, hA₀, hA₁, hNZ⟩ := hNontriv
   -- Step 1: Apply the new axiom to residualFull.
   have hTD := residualFull_total_degree_le E R (fun k => beta k + m (σ k)) σ
-  have hLW := bivariate_poly_zeros_on_ExE_le E hHW
+  have hLW := bivariate_poly_zeros_on_ExE_le E
     (residualFull E R (fun k => beta k + m (σ k)) σ)
     (2 * (M - 1)) hTD ⟨A₀, A₁, hA₀, hA₁, hNZ⟩
   -- Step 2: polyG = prod_Q * residualFull. So wherever prod_Q ≠ 0 on E×E,
@@ -717,7 +719,7 @@ private lemma residual_vanishes_on_ExE (hHW : E.HasseBound)
   --   We need nonzero witnesses; these exist since |E| ≥ 7 and Q_k ∈ E.
   have hEllPZeros : ∀ k : Fin d,
       ((E.points ×ˢ E.points).filter
-        (fun p => ellP E (Q k) p.1 p.2 = 0)).card ≤ 18 * E.q := by
+        (fun p => ellP E (Q k) p.1 p.2 = 0)).card ≤ 12 * E.points.card := by
     intro k
     -- Find a nonzero witness for ellP(Q_k): take A₀' ≠ Q_k on E,
     -- then A₁' avoiding collinearity.
@@ -740,7 +742,7 @@ private lemma residual_vanishes_on_ExE (hHW : E.HasseBound)
     have hWitness : ellP E (Q k) A₀' A₁' ≠ 0 := hA₁'good (Q k) (Finset.mem_singleton.mpr rfl)
     -- Apply LW with total degree 2 and nonzero witness
     have hTD_ell := lineEvalNumAtFull_total_degree_le' E (Q k)
-    have hLW_ell := bivariate_poly_zeros_on_ExE_le E hHW
+    have hLW_ell := bivariate_poly_zeros_on_ExE_le E
       (lineEvalNumAtFull E (Q k)) 2 hTD_ell
       ⟨A₀', A₁', hA₀', hA₁'mem, by rwa [bivEval₂_lineEvalNumAtFull]⟩
     -- zeros ≤ 9 * 2 * q = 18 * q
@@ -751,8 +753,8 @@ private lemma residual_vanishes_on_ExE (hHW : E.HasseBound)
       exact Finset.filter_congr fun p _ => by
         rw [bivEval₂_lineEvalNumAtFull]; exact Iff.rfl
     rw [hSetEq]
-    calc _ ≤ 9 * 2 * E.q := hLW_ell
-      _ = 18 * E.q := by ring
+    calc _ ≤ 6 * 2 * E.points.card := hLW_ell
+      _ = 12 * E.points.card := by ring
   -- Step 5: Counting contradiction.
   -- nonzeros of residualFull ≥ |E|² - 18*(M-1)*q
   -- nonzeros ⊆ ⋃_k {ellP(Q_k) = 0}, card ≤ ∑_k 18*q = 18*d*q
@@ -761,7 +763,7 @@ private lemma residual_vanishes_on_ExE (hHW : E.HasseBound)
   -- Count of nonzeros
   have hNonzeroCard : ((E.points ×ˢ E.points).filter
       (fun p => bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) p.1 p.2 ≠ 0)).card
-    ≥ E.points.card * E.points.card - 18 * (M - 1) * E.q := by
+    ≥ E.points.card * E.points.card - 12 * (M - 1) * E.points.card := by
     have h1 := @Finset.card_filter_add_card_filter_not
       _ (E.points ×ˢ E.points)
       (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
@@ -771,9 +773,9 @@ private lemma residual_vanishes_on_ExE (hHW : E.HasseBound)
     -- zeros ≤ 18*(M-1)*q
     have hZerosLe : ((E.points ×ˢ E.points).filter
         (fun p => bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) p.1 p.2 = 0)).card
-      ≤ 18 * (M - 1) * E.q := by
-      calc _ ≤ 9 * (2 * (M - 1)) * E.q := hLW
-        _ = 18 * (M - 1) * E.q := by ring
+      ≤ 12 * (M - 1) * E.points.card := by
+      calc _ ≤ 6 * (2 * (M - 1)) * E.points.card := hLW
+        _ = 12 * (M - 1) * E.points.card := by ring
     -- filter ≠ 0 = filter (not (= 0))
     have hFilterConvert : (E.points ×ˢ E.points).filter
         (fun p => bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) p.1 p.2 ≠ 0)
@@ -784,7 +786,7 @@ private lemma residual_vanishes_on_ExE (hHW : E.HasseBound)
   -- Union bound on ⋃_k ellP zeros
   have hUnionBound : ((E.points ×ˢ E.points).filter
       (fun p => ∃ k : Fin d, ellP E (Q k) p.1 p.2 = 0)).card
-    ≤ 18 * d * E.q := by
+    ≤ 12 * d * E.points.card := by
     have hSub : (E.points ×ˢ E.points).filter
         (fun p => ∃ k : Fin d, ellP E (Q k) p.1 p.2 = 0) ⊆
       Finset.univ.biUnion (fun k : Fin d =>
@@ -798,11 +800,11 @@ private lemma residual_vanishes_on_ExE (hHW : E.HasseBound)
       ≤ (Finset.univ.biUnion _).card := Finset.card_le_card hSub
       _ ≤ ∑ k ∈ Finset.univ, ((E.points ×ˢ E.points).filter
           (fun p => ellP E (Q k) p.1 p.2 = 0)).card := Finset.card_biUnion_le
-      _ ≤ ∑ _k ∈ Finset.univ, (18 * E.q) := Finset.sum_le_sum (fun k _ => hEllPZeros k)
-      _ = 18 * d * E.q := by
+      _ ≤ ∑ _k ∈ Finset.univ, (12 * E.points.card) := Finset.sum_le_sum (fun k _ => hEllPZeros k)
+      _ = 12 * d * E.points.card := by
           rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin]; ring
   -- Chain: nonzeros ≤ union bound
-  have hChain : E.points.card * E.points.card - 18 * (M - 1) * E.q ≤ 18 * d * E.q :=
+  have hChain : E.points.card * E.points.card - 12 * (M - 1) * E.points.card ≤ 12 * d * E.points.card :=
     le_trans hNonzeroCard (le_trans (Finset.card_le_card hZerosInclusion) hUnionBound)
   -- From hELarge_dkl: N*N - 2*N > 18*(d+M)*q, so N*N > 18*(d+M)*q + 2*N ≥ 18*(d+M)*q.
   -- Since 18*(d+M)*q = 18*d*q + 18*M*q ≥ 18*d*q + 18*(M-1)*q (as M ≥ M-1):
@@ -810,15 +812,15 @@ private lemma residual_vanishes_on_ExE (hHW : E.HasseBound)
   -- So N*N - 18*(M-1)*q > 18*d*q (exact Nat subtraction is fine).
   -- This contradicts hChain.
   -- Step: N*N > 18*(d+M)*q from hELarge_dkl
-  have hNN : E.points.card * E.points.card > 18 * (d + M) * E.q := by omega
+  have hNN : E.points.card * E.points.card > 12 * (d + M) * E.points.card := by omega
   -- Step: 18*(d+M)*q = 18*d*q + 18*M*q
   -- And 18*M*q ≥ 18*(M-1)*q (trivially, since M ≥ M-1 in ℕ)
   -- So N*N > 18*d*q + 18*(M-1)*q
-  have h1 : 18 * (d + M) * E.q = 18 * d * E.q + 18 * M * E.q := by ring
-  have h2 : 18 * M * E.q ≥ 18 * (M - 1) * E.q := by
+  have h1 : 12 * (d + M) * E.points.card = 12 * d * E.points.card + 12 * M * E.points.card := by ring
+  have h2 : 12 * M * E.points.card ≥ 12 * (M - 1) * E.points.card := by
     apply Nat.mul_le_mul_right; apply Nat.mul_le_mul_left; omega
   -- So N*N > 18*d*q + 18*(M-1)*q
-  have h3 : E.points.card * E.points.card > 18 * d * E.q + 18 * (M - 1) * E.q := by omega
+  have h3 : E.points.card * E.points.card > 12 * d * E.points.card + 12 * (M - 1) * E.points.card := by omega
   -- hChain says N*N - 18*(M-1)*q ≤ 18*d*q. Since N*N > 18*(M-1)*q + 18*d*q, this is a contradiction.
   omega
 
@@ -850,7 +852,7 @@ the old `bivariate_poly_zeros_on_ExE_le` axiom signature with `bi_x_degree_le`):
     · exact hRes0
   -- Lang-Weil on residualFull: zeros ≤ 4*(M-1)*|E|
   have hBideg := residualFull_bi_x_degree_le E R (fun k => beta k + m (σ k)) σ
-  have hLW := bivariate_poly_zeros_on_ExE_le E hHW
+  have hLW := bivariate_poly_zeros_on_ExE_le E
     (residualFull E R (fun k => beta k + m (σ k)) σ) (M - 1) (M - 1)
     hBideg ⟨A₀, A₁, hA₀, hA₁, hNZ⟩
   -- {residualFull ≠ 0 on E×E} ⊆ {∏ ellP(Q_k) = 0 on E×E}
@@ -912,7 +914,7 @@ the old `bivariate_poly_zeros_on_ExE_le` axiom signature with `bi_x_degree_le`):
           bivEval₂ (lineEvalNumAtFull E (Q k)) A₀ A₁ ≠ 0 := by
         obtain ⟨a0, a1, ha0, ha1, hne⟩ := hWitness
         exact ⟨a0, a1, ha0, ha1, by rwa [bivEval₂_lineEvalNumAtFull]⟩
-      have hLW_k := bivariate_poly_zeros_on_ExE_le E hHW (lineEvalNumAtFull E (Q k)) 1 1 hBi hNZW
+      have hLW_k := bivariate_poly_zeros_on_ExE_le E (lineEvalNumAtFull E (Q k)) 1 1 hBi hNZW
       have hFilterEq : (E.points ×ˢ E.points).filter (fun p => ellP E (Q k) p.1 p.2 = 0) =
           (E.points ×ˢ E.points).filter
             (fun p => bivEval₂ (lineEvalNumAtFull E (Q k)) p.1 p.2 = 0) := by
@@ -1038,7 +1040,7 @@ the old `bivariate_poly_zeros_on_ExE_le` axiom signature with `bi_x_degree_le`):
     4. After simplification, `polyG = (∏_k ellP Q_k) · G`;
        show `G = 0` on `E × E` via the bivariate zeros axiom.
     5. Evaluate `G` at collinear triples: `c_k = β_k + m(σ k) = 0`. -/
-private lemma sigma_matching_core (hHW : E.HasseBound)
+private lemma sigma_matching_core
     {d M : ℕ}
     (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
     (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
@@ -1052,7 +1054,7 @@ private lemma sigma_matching_core (hHW : E.HasseBound)
       polyG E Q beta R m A₀ A₁ = 0)
     (hELarge : E.points.card > 4 * (d + M) + 2)
     (hELarge_dkl : E.points.card * E.points.card - 2 * E.points.card
-                     > 18 * (d + M) * E.q) :
+                     > 12 * (d + M) * E.points.card) :
     ∃ (σ : Fin d ↪ Fin M),
       (∀ k, Q k = R (σ k)) ∧
       (∀ k, beta k + m (σ k) = 0) ∧
@@ -1166,7 +1168,7 @@ private lemma sigma_matching_core (hHW : E.HasseBound)
     intro k
     -- Use residual_vanishes_on_ExE to get G = 0 on E×E,
     -- then evaluate at A₀ = R(σ k) = Q k with a good A₁.
-    have hResVan := residual_vanishes_on_ExE E hHW Q beta R m σ
+    have hResVan := residual_vanishes_on_ExE E Q beta R m σ
       (fun k' => (hσ_def k').symm) hM_offrange hPolyGAll hELarge hQonE hELarge_dkl
     -- G(Q k, A₁) = (beta k + m(σ k)) * ∏_{j≠σ(k)} ellP(R j, Q k, A₁)
     -- for all A₁ ∈ E. The product structure means:
@@ -1232,7 +1234,7 @@ private lemma sigma_matching_core (hHW : E.HasseBound)
     vanishing pointwise on `E × E` (= Step 2's conclusion) plus
     `hELarge : |E| > 4·(d+M) + 2`, produce the σ-matching output.
     Internally consolidated via `sigma_matching_core`. -/
-theorem sigma_matching_from_polyGFull_vanishing (hHW : E.HasseBound)
+theorem sigma_matching_from_polyGFull_vanishing
     {d M : ℕ}
     (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
     (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
@@ -1246,7 +1248,7 @@ theorem sigma_matching_from_polyGFull_vanishing (hHW : E.HasseBound)
       bivEval₂ (polyGFull E Q beta R m) A₀ A₁ = 0)
     (hELarge : E.points.card > 4 * (d + M) + 2)
     (hELarge_dkl : E.points.card * E.points.card - 2 * E.points.card
-                     > 18 * (d + M) * E.q) :
+                     > 12 * (d + M) * E.points.card) :
     ∃ (σ : Fin d ↪ Fin M),
       (∀ k, Q k = R (σ k)) ∧
       (∀ k, beta k + m (σ k) = 0) ∧
@@ -1258,7 +1260,7 @@ theorem sigma_matching_from_polyGFull_vanishing (hHW : E.HasseBound)
     intro A₀ A₁ h₀ h₁
     rw [← bivEval₂_polyGFull_eq_polyG E Q beta R m A₀ A₁]
     exact hVanishing A₀ A₁ h₀ h₁
-  exact sigma_matching_core E hHW Q beta R m hDistinctQ hDistinctR hBetaNz hQonE hRonE hPolyGAll
+  exact sigma_matching_core E Q beta R m hDistinctQ hDistinctR hBetaNz hQonE hRonE hPolyGAll
     hELarge hELarge_dkl
 
 end Divisor

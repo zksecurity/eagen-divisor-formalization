@@ -306,17 +306,16 @@ theorem ma_completeness_binary_via_combineHyp_clean
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
-    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
-    (h_q : 5 ≤ E.q) :
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
+      ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg h_adm
   exact ma_completeness_clean E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinary_via_combineHyp (E := E) h_binary h_combine)
-    h_d h_q
+    h_d
 
 theorem ma_completeness_binary_with_scalar_via_combineHyp_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -327,17 +326,16 @@ theorem ma_completeness_binary_with_scalar_via_combineHyp_clean
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
-    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
-    (h_q : 5 ≤ E.q) :
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
+      ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg h_adm
   exact ma_completeness_clean E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinaryScaled_via_combineHyp (E := E) h_binary h_combine)
-    h_d h_q
+    h_d
 
 /-- M=3 binary completeness via the constructive length-4 simple bridge.
 
@@ -550,17 +548,16 @@ theorem ma_completeness_binary_extras_clean
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
-    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
-    (h_q : 5 ≤ E.q) :
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
+      ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg h_adm
   exact ma_completeness_clean E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinary (E := E) h_binary h_len h_extras)
-    h_d h_q
+    h_d
 
 theorem ma_completeness_binary_with_scalar_extras_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -574,18 +571,17 @@ theorem ma_completeness_binary_with_scalar_extras_clean
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
-    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
-    (h_q : 5 ≤ E.q) :
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
+      ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg h_adm
   exact ma_completeness_clean E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinaryScaled (E := E)
       h_binary h_len h_extras)
-    h_d h_q
+    h_d
 
 private theorem admSetMax_of_isHonestForBinary
     {E : ECSetup} {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
@@ -930,19 +926,18 @@ theorem ma_completeness_binary_chain_clean
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
-    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
-    (h_q : 5 ≤ E.q) :
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
+      ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_extras :
       ∀ k < h_binary.Ps.length,
         Landmark.LevelStepCombineExtras E
           (Landmark.iterate E k (Landmark.level0_singletons E h_binary.Ps)) :=
     Landmark.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
   exact ma_completeness_binary_extras_clean E stmt msg wit hk hkm
-    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm h_q
+    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 theorem ma_completeness_binary_chain_admSetMax
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -1020,12 +1015,11 @@ theorem ma_completeness_binary_length2_clean
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
-    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
-    (h_q : 5 ≤ E.q) :
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
+      ≤ (3 * stmt.degBound + 4) * E.points.card := by
   obtain ⟨P, R, h_ps_eq, hxx, hyy⟩ := h_length2
   have h_len : 2 ≤ h_binary.Ps.length := by rw [h_ps_eq]; simp
   have hP_on : P ∈ E.points := by
@@ -1041,7 +1035,7 @@ theorem ma_completeness_binary_length2_clean
     rw [h_ps_eq]
     exact Landmark.h_extras_holds_for_length2_sum_zero E P R hP_on hR_on hxx hyy
   exact ma_completeness_binary_extras_clean E stmt msg wit hk hkm
-    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm h_q
+    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 namespace Landmark
 
@@ -2130,12 +2124,11 @@ theorem ma_completeness_binary_length4_clean
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
-    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
-    (h_q : 5 ≤ E.q) :
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
+      ≤ (3 * stmt.degBound + 4) * E.points.card := by
   obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, hP₁, hP₃⟩ := h_length4
   subst P₁
   subst P₃
@@ -2158,7 +2151,7 @@ theorem ma_completeness_binary_length4_clean
     exact Landmark.h_extras_holds_for_length4_two_inverse_pairs
       E P₀ P₂ hP₀_on hP₂_on
   exact ma_completeness_binary_extras_clean E stmt msg wit hk hkm
-    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm h_q
+    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 theorem ma_completeness_binary_length4_chord
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
@@ -2795,12 +2788,11 @@ theorem ma_completeness_binary_length4_chord_clean
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
-    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
-    (h_q : 5 ≤ E.q) :
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
+      ≤ (3 * stmt.degBound + 4) * E.points.card := by
   obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, h01_x_ne, h23_x_ne,
     hP₀_y_ne, hP₁_y_ne, hP₂_y_ne, hP₃_y_ne,
     hThird01_ne_P₀, hThird01_ne_P₁,
@@ -2838,9 +2830,9 @@ theorem ma_completeness_binary_length4_chord_clean
       h01_x_ne h23_x_ne hP₀_y_ne hP₁_y_ne hP₂_y_ne hP₃_y_ne
       hThird01_ne_P₀ hThird01_ne_P₁ hThird23_ne_P₂ hThird23_ne_P₃
   exact ma_completeness_binary_extras_clean E stmt msg wit hk hkm
-    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm h_q
+    h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
-/-- Hasse-clean form of `ma_completeness_binary_M_eq_3`. -/
+/-- Point-count consolidated form of `ma_completeness_binary_M_eq_3`. -/
 theorem ma_completeness_binary_M_eq_3_clean
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
@@ -2850,18 +2842,17 @@ theorem ma_completeness_binary_M_eq_3_clean
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
-    (h_adm : stmt.admSet (msg.polyA, msg.polyB))
-    (h_q : 5 ≤ E.q) :
+    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p =>
           ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
+      ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have hkm_eq :
       hkm = h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm :=
     Subsingleton.elim _ _
   rw [hkm_eq]
   exact ma_completeness_clean_for_length4Simple E stmt msg h_simple wit hk
-    h_scalars h_valid h_deg h_deg_k h_adm h_q
+    h_scalars h_valid h_deg h_deg_k h_adm
 
 /-! ## Automatic binary support constructors -/
 

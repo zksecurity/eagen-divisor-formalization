@@ -243,7 +243,7 @@ private lemma hDnz_from_hNV
   unfold logDerivCheckFnDenom CoordRingElt.eval
   simp only [ha, hb, Polynomial.eval_zero, zero_mul, mul_zero, sub_zero]
 
-theorem log_deriv_sz_paper_core_tight (hHW : E.HasseBound)
+theorem log_deriv_sz_paper_core_tight
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (_hDeg : D.degE < E.q)
@@ -254,7 +254,7 @@ theorem log_deriv_sz_paper_core_tight (hHW : E.HasseBound)
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           A₀ne_A₁x_cleared_pair E D P B m p)).card
-      ≤ 18 * (D.degE + k) * E.q := by
+      ≤ 12 * (D.degE + k) * E.points.card := by
   classical
   have hDnz := hDnz_from_hNV D P B m hNV
   set polyGF := polyGFull E (zerosAt E D)
@@ -287,7 +287,7 @@ theorem log_deriv_sz_paper_core_tight (hHW : E.HasseBound)
     (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j))
   have hdM1 : d + M - 1 = d + k := by omega
   rw [hdM1] at hTD
-  have hDKL := bivariate_poly_zeros_on_ExE_le E hHW polyGF
+  have hDKL := bivariate_poly_zeros_on_ExE_le E polyGF
     (2 * (d + k)) hTD hWitness
   have hZC : d ≤ D.degE := zerosCard_le_degE' D hDnz
   calc ((E.points ×ˢ E.points).filter
@@ -295,9 +295,9 @@ theorem log_deriv_sz_paper_core_tight (hHW : E.HasseBound)
       ≤ ((E.points ×ˢ E.points).filter
           (fun p => bivEval₂ polyGF p.1 p.2 = 0)).card :=
         Finset.card_le_card hBadSub
-    _ ≤ 9 * (2 * (d + k)) * E.q := hDKL
-    _ = 18 * (d + k) * E.q := by ring
-    _ ≤ 18 * (D.degE + k) * E.q := by
+    _ ≤ 6 * (2 * (d + k)) * E.points.card := hDKL
+    _ = 12 * (d + k) * E.points.card := by ring
+    _ ≤ 12 * (D.degE + k) * E.points.card := by
         apply Nat.mul_le_mul_right; apply Nat.mul_le_mul_left; omega
 
 /-! ### Paper-tight outer bound -/
@@ -307,11 +307,12 @@ theorem log_deriv_sz_paper_core_tight (hHW : E.HasseBound)
     and nonzero (i.e. `f ≢ 0` in the paper's notation), bound the
     cardinality of the accepting challenge set by
 
-      `18·(d + k)·|F_q| + (3·d + 9·k + 71)·|E.points|`.
+      `12·(d + k)·|E.points| + (3·d + 9·k + 71)·|E.points|`.
 
     Realised via `lem:log-derivative` (SZ-on-(E×E) applied to the
-    cleared log-deriv polynomial) plus the Hasse bound. -/
-theorem log_deriv_sz_paper_tight (hHW : E.HasseBound)
+    cleared log-deriv polynomial) in point-count currency — no Hasse
+    content (Plan 2). -/
+theorem log_deriv_sz_paper_tight
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (hDeg : D.degE < E.q)
@@ -320,7 +321,7 @@ theorem log_deriv_sz_paper_tight (hHW : E.HasseBound)
         logDerivCheckFnDefined E D P B A₀ A₁ ∧
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     (eventNotEq E D P B (fun i => m i)).card
-      ≤ 18 * (D.degE + k) * E.q +
+      ≤ 12 * (D.degE + k) * E.points.card +
         (3 * D.degE + 9 * k + 71) * E.points.card := by
   classical
   have hDnz := hDnz_from_hNV D P B m hNV
@@ -341,7 +342,7 @@ theorem log_deriv_sz_paper_tight (hHW : E.HasseBound)
         ⟨hEE, hNeq, hDef, hCheck⟩))
     · exact Finset.mem_union.mpr (Or.inr (Finset.mem_filter.mpr
         ⟨hEE, hDef⟩))
-  have hCoreBound := log_deriv_sz_paper_core_tight hHW D P B m hDeg
+  have hCoreBound := log_deriv_sz_paper_core_tight D P B m hDeg
     hSplit hNV
   have hUndefBound := logDerivCheckFn_undefined_set_bound_tight E D P k B hDnz
   calc (eventNotEq E D P B (fun i => m i)).card
@@ -350,7 +351,7 @@ theorem log_deriv_sz_paper_tight (hHW : E.HasseBound)
         ((E.points ×ˢ E.points).filter
           (fun p => ¬ logDerivCheckFnDefined E D P B p.1 p.2)).card :=
         le_trans (Finset.card_le_card hSub) (Finset.card_union_le _ _)
-    _ ≤ 18 * (D.degE + k) * E.q +
+    _ ≤ 12 * (D.degE + k) * E.points.card +
           (3 * D.degE + 9 * k + 71) * E.points.card :=
         Nat.add_le_add hCoreBound hUndefBound
 

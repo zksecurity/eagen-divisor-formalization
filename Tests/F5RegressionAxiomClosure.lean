@@ -13,6 +13,7 @@
 -/
 import Divisor.ExtractorBridgeTheorems
 import Divisor.Soundness
+import Divisor.Hasse
 
 -- Axiom closure of the headline soundness/completeness theorems.
 -- Confirms the soundness restoration: the previous unsound axiom

@@ -561,7 +561,7 @@ published `9·D·q` form is a Hasse conversion of it. Staying in `n`:
 
 ## Phases
 
-- [ ] **P2.1 Bottom: Lang–Weil in `n`.**
+- [x] **P2.1 Bottom: Lang–Weil in `n`.**
       `Divisor/BivariateZerosOnExE.lean`: restate
       `main_bound_small_points`, `main_bound_large_points`,
       `bivariate_poly_zeros_on_ExE_le(_thm)` at `≤ 6·D·n`; drop the
@@ -571,7 +571,7 @@ published `9·D·q` form is a Hasse conversion of it. Staying in `n`:
       move to the terminal layer in P2.5.
       `Divisor/Soundness.lean`: redefine
       `eventNotEqBound := 12·(d+k)·n`.
-- [ ] **P2.2 Mid-chain in `n`.** `Divisor/SigmaMatching.lean`
+- [x] **P2.2 Mid-chain in `n`.** `Divisor/SigmaMatching.lean`
       (`hELarge_dkl`-style hypotheses become `n² − 2n > 12·(d+M)·n`,
       or the equivalent linear `n > 12·(d+M) + 2`),
       `Divisor/ClearedFullPoly.lean` (`log_deriv_sz_paper_core` via
@@ -581,7 +581,7 @@ published `9·D·q` form is a Hasse conversion of it. Staying in `n`:
       exercise), `Divisor/TightBound.lean`
       (`18·(d+k)·q → 12·(d+k)·n`). Drop every `hHW`; delete
       `hasse_q_le_two_mul_card_of`.
-- [ ] **P2.3 `GeometricSoundness` in `n`.** All intermediate
+- [x] **P2.3 `GeometricSoundness` in `n`.** All intermediate
       inequalities (`hELarge_of_hLargeQ_main`'s conclusion,
       `geomPolyGFull_identically_zero_on_ExE`'s `hELarge` hypothesis,
       `sigma_data_…`, `frob_sampling_…`) restated with `12·(s+k)·n` in
@@ -590,7 +590,7 @@ published `9·D·q` form is a Hasse conversion of it. Staying in `n`:
       `n`-forms (final constants fixed during implementation; each must
       be implied by `n > 15d + 21k + 73`-level needs and stated as a
       single product like `c·(d + k + const)`).
-- [ ] **P2.4 Headlines in `n` (both sides).**
+- [x] **P2.4 Headlines in `n` (both sides).**
       Completeness: promote the `_base` statement to the short name
       `ma_completeness` (dropping the dead `hQ`), move today's q-form
       to `ma_completeness_q` (core), repoint the binary chain's
@@ -604,7 +604,7 @@ published `9·D·q` form is a Hasse conversion of it. Staying in `n`:
       `_hasse` wrappers of `1fc133c` (replaced in P2.5);
       `validPairs_card_ge_q` and `ma_soundness_probability_q_form`
       move out (P2.5).
-- [ ] **P2.5 Terminal conversion layer.** New leaf
+- [x] **P2.5 Terminal conversion layer.** New leaf
       `Divisor/Hasse.lean` (the only file importing
       `Divisor/Axioms/AxiomHasseWeil.lean`): the axiom, `hasse_weil`,
       the two linear conversions `q ≤ 2n + 3` and `2n ≤ 3q + 3`, and
@@ -620,7 +620,7 @@ published `9·D·q` form is a Hasse conversion of it. Staying in `n`:
       core imports (`SupportDisjoint`, `BivariateZerosOnExE`, …);
       wire `Divisor.Hasse` into `Divisor.lean`;
       `Tests/HasseCardBridge.lean` re-pointed at the leaf.
-- [ ] **P2.6 Pins, README, cleanup.** Pins: every core theorem at the
+- [x] **P2.6 Pins, README, cleanup.** Pins: every core theorem at the
       Lean core three; the leaf's `_hasse` theorems pinned as the only
       carriers of `hasse_weil_textbook`; `_of_count` forms pinned
       axiom-free. README "Axiom Surface" rewritten: *the core library
@@ -655,12 +655,79 @@ gives (never silently sharpened without proof).
 | Constant re-derivations fight `nlinarith`/`omega` | P2.2–P2.4 | All targets are looser than what current proofs establish; worst case keep the padded historical constant |
 | Hidden consumers of the moved `q`-form theorems | P2.5 | The repo-wide sweep found none outside the six files; the build enforces it |
 
+## Efficiency audit (2026-08-23, user requirement)
+
+**Neither completeness nor extraction requires computing discrete
+logarithms, and both the honest message and the extracted witness are
+efficiently computable.** Verified by definition-chain audit:
+
+* `maExtractor` outputs scalars computed by grouping repeated base
+  points (`extractorGroup`, a decidable filter), summing the prover's
+  own committed scalars `msg.m` over each group
+  (`extractorGroupSum`), handling the `−P ∈ {Bⱼ}` special case by
+  index search, and range-checking (`extractorSucceeds`). This is
+  `O(k²)` field operations on the transcript; no discrete log, and no
+  `Classical.choice` anywhere in its definition chain (the one
+  data-level `choose` in the area, `baseAtIndex`, is an analysis-side
+  representative device with a proved representative-independence
+  lemma — it is not used by `maExtractor`).
+* The honest message is `eagenBuild_singletons` — an explicit chord
+  accumulation (`level0_singletons` → `level_step`/`combine` with
+  `slopeOf`/`chordCoordRingElt` formulas, `iterate` bounded by the
+  support length): choice-free (zero `Classical.choose` in
+  `EagenBuildLandmark.lean`), polynomially many polynomial operations.
+  The completeness witness is the prover's own scalar vector; nothing
+  is computed from group structure.
+* The `noncomputable` markers throughout are mathlib instance plumbing
+  (`ZMod` field structure, `Polynomial`/`Finsupp`), not algorithmic
+  gaps. Producing `#eval`-able refinements would be a separate,
+  optional task (the `point_certificate` layer already demonstrates
+  the pattern with its `decide`-able predicates).
+
+## Deviations from the plan (as implemented)
+
+* **`hSample` — one irreducibly mixed-currency node.** The risk
+  register's "an internal proof secretly needs the `q`-form" fired
+  once, at `frob_sampling_validPairs_threshold`
+  (`GeometricSoundness.lean`): the Frobenius slope-sampling pigeonhole
+  (`exists_good_lambda_avoiding_bad`) counts over `q`-sized
+  slope/intercept sample spaces, so its threshold
+  `6·q·(N + bad) + 1 ≤ |validPairs|` cannot be restated in pure `n`.
+  Applied the planned mitigation: that single node takes an explicit
+  hypothesis `hSample : 18·(degE + k + 1)·q + 1 ≤ |validPairs|`,
+  threaded through the frob-descent chain and up to the extractability
+  headlines (completeness is unaffected). The leaf discharges it (and
+  `hLargeQ`) from the single field-size threshold `72·(degE+k+4) ≤ q`
+  via the Hasse lower bound.
+* **Leaf hypotheses are fully `q`-only.** Instead of keeping the
+  point-count `hLargeQ` in the `_hasse` finals (the 1fc133c shape),
+  both largeness hypotheses are discharged from `72·(degE+k+4) ≤ q`;
+  the conclusion constant `36·(d+k+4)·q` is recovered exactly, using
+  `2n ≤ 3q + 3` plus the new explicit hypothesis `d + k + 3 ≤ q`
+  (strengthening `hd : d < q`; the old `hQ : 5 ≤ q` shape cannot
+  recover the constant for large `k`).
+* **Naming.** `ma_soundness_probability_q_form` became
+  `ma_soundness_probability_hasse` (it is axiom-priced, so it carries
+  the `_hasse` suffix); the `_of_count` flavors cover
+  `ma_extractable`, `ip_extractable`, `ma_soundness_probability`,
+  `validPairs_card_ge_q` as planned. `Tests/HasseCardBridge.lean`
+  needed no re-pointing (it imports only mathlib, not the axiom
+  file).
+
 ## Status log (Plan 2)
 
 * 2026-08-23 — Plan written after exploration (no implementation yet,
   per instruction). Decisions recorded: internals in `n` only; `n`
   bounded as a function of `q` once, at the end; terminal layer as a
   leaf module with `_of_count` and `_hasse` flavors.
+* 2026-08-23 — P2.1–P2.6 implemented: Lang–Weil at `6·D·n`;
+  `eventNotEqBound = 12·(d+k)·n`; mid-chain and GeometricSoundness in
+  `n` (three `Nat.sqrt` blocks deleted; `hSample` deviation above);
+  headlines consolidated at `24·(d+k+3)·n` (extractability) and
+  `(3d+4)·n` (completeness, with `_q` forms via the trivial fiber
+  bound); terminal leaf `Divisor/Hasse.lean` is the sole importer of
+  the axiom file; `ECSetup.HasseBound`/`hasse_bound` deleted; pins and
+  README rewritten.
 
 ---
 

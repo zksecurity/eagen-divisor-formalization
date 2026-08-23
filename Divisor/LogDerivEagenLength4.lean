@@ -1260,22 +1260,22 @@ theorem ma_completeness_via_isHonestForLength4Simple
   exact logDerivCheckFn_zero_via_isHonestForLength4Simple E stmt msg
     h_honest A₀ A₁ hA₀ hA₁ hNV hGood
 
-/-! ## Hasse-clean form: ma_completeness_clean for length-4 simple
+/-! ## Point-count consolidated form: ma_completeness_clean for length-4 simple
 
-Applying Hasse (`|E| ≤ 2q` for `q ≥ 5`) and the paper-tight bound, the
-rejection-set cardinality for length-4 simple honest case is bounded
-by `6·(d+1)·q + 6q`. Mirrors the existing `ma_completeness_clean` but
-uses the constructive length-4 path. -/
+Applying the paper-tight `numZeros ≤ degE ≤ degBound` chain, the
+rejection-set cardinality for the length-4 simple honest case is
+bounded by `(3·d + 4)·|E.points|`. Mirrors the existing
+`ma_completeness_clean` but uses the constructive length-4 path.
+Axiom-free; convert to field-size units via `points_card_le_two_q`. -/
 
 theorem ma_completeness_clean_via_isHonestForLength4Simple
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (h_honest : MAProverMsg.IsHonestForLength4Simple E msg stmt)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hQ : 5 ≤ E.q) :
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
+      ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have hMA := ma_completeness_via_isHonestForLength4Simple E stmt msg hkm
     h_honest hDegK hAdm
   -- D is nonzero by length-4 construction.
@@ -1289,10 +1289,9 @@ theorem ma_completeness_clean_via_isHonestForLength4Simple
   have hNZ : numZeros E msg.toD ≤ stmt.degBound := by
     have h1 := numZeros_le_degE E msg.toD hD
     omega
-  have hHasse : E.numAffine ≤ 2 * E.q := points_card_le_two_q E hQ
   calc _ ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := hMA
-    _ ≤ (3 * stmt.degBound + 4) * (2 * E.q) := by
-        apply Nat.mul_le_mul (by omega) hHasse
-    _ ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by ring_nf; omega
+    _ ≤ (3 * stmt.degBound + 4) * E.points.card := by
+        unfold ECSetup.numAffine
+        exact Nat.mul_le_mul_right _ (by omega)
 
 end Divisor
