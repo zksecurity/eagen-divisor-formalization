@@ -20,12 +20,19 @@ Hasse bound as the project's **only** axiom.
 | `Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd` | **theorem** (Phase 3, done) | theorem (Phase 3) |
 
 Final closures (enforced by the `#guard_msgs` pins in
-`Tests/AxiomClosurePin.lean` / `Tests/F5RegressionAxiomClosure.lean`):
+`Tests/AxiomClosurePin.lean` / `Tests/F5RegressionAxiomClosure.lean`),
+as updated by the post-plan Hasse restructure (see the last status-log
+entry):
 
-* `ma_extractable`, `ip_extractable`, `ma_completeness`:
-  `propext, Classical.choice, Quot.sound, Divisor.hasse_weil_textbook`
-* `ma_completeness_base` and the whole binary completeness chain:
-  core three only (fully axiom-free).
+* Every primary theorem — `ma_extractable`, `ip_extractable`,
+  `ma_completeness`, `ma_completeness_base`, the whole binary
+  completeness chain — closes over the Lean core three only
+  (fully axiom-free; the extractability side takes the Hasse
+  point-count bound as an explicit `(hHW : E.HasseBound)` hypothesis,
+  the completeness side needs only the trivial `|E| ≤ 2q`).
+* The `_hasse` variants (`ma_extractable_hasse`, …) discharge
+  `HasseBound` via the single project axiom and are the only theorems
+  whose closure contains `Divisor.hasse_weil_textbook`.
 
 ## Decision: vendor Tau Ceti (not depend)
 
@@ -453,3 +460,21 @@ discriminant analysis.)*
   own `#guard_msgs` pins: Lean core three only). Wired into
   `Tests.lean`; full build green (8818 jobs). Every clause of
   plan.md is now discharged by machine-checked artifacts.
+* 2026-08-23 — **Post-plan Hasse restructure (user request): every
+  primary theorem is now axiom-free.** Two findings from the
+  consumption trace: (i) the completeness side never needed Hasse —
+  `points_card_le_two_q` (`|E| ≤ 2q`) is the trivial two-points-per-
+  fiber count, reproved axiom-free, which alone frees
+  `ma_completeness*` and the binary chain with unchanged statements;
+  (ii) the extractability side needs it genuinely (the `q ≤ f(|E|)`
+  direction), so the point-count bound is now a plain proposition
+  `ECSetup.HasseBound` taken as an explicit hypothesis
+  `(hHW : E.HasseBound)` threaded through the six affected files
+  (`BivariateZerosOnExE`, `ClearedFullPoly`, `SigmaMatching`,
+  `GeometricSoundness`, `TightBound`, `ExtractorBridgeTheorems`;
+  ~45 declarations, all constants unchanged). Fourteen `_hasse`
+  variants recover the original field-size statements by discharging
+  the hypothesis via the axiom (`hasse_bound`) — they are the ONLY
+  theorems whose closure contains `hasse_weil_textbook`, as pinned.
+  Dead `hELarge_of_hLargeQ` deleted along the way. Full
+  `lake build Divisor Tests` green with the updated pins.

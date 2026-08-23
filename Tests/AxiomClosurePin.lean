@@ -9,14 +9,18 @@
 
   Expected closures on the geometric-zero skeleton branch:
 
-  * `ma_extractable`, `ip_extractable`:
-      propext, Classical.choice, Quot.sound,
-      Divisor.hasse_weil_textbook
+  * `ma_extractable`, `ip_extractable` (and every other primary
+    theorem pinned below):
+      propext, Classical.choice, Quot.sound — AXIOM-FREE.
 
-    The ONLY remaining project axiom in the MA/IP closure is the Hasse
-    bound `hasse_weil_textbook` (Silverman V.1.1 verbatim); the legacy
-    integer-squared `Divisor.hasse_weil` is a derived theorem retained
-    for downstream compatibility.
+    The Hasse restructure: primary theorems take the point-count bound
+    as an explicit hypothesis `(hHW : E.HasseBound)` (extractability
+    side) or avoid it entirely via the trivial fiber bound
+    `|E| ≤ 2q` (completeness side, `points_card_le_two_q`), so no
+    primary statement depends on any project axiom. The `_hasse`
+    variants (pinned at the bottom) discharge `HasseBound` via the
+    single project axiom `hasse_weil_textbook` (Silverman V.1.1
+    verbatim) and recover the original field-size statements.
 
     The former axiom
     `Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero` is now a
@@ -61,12 +65,9 @@
     `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`
     is also printed below to guard against drift.
 
-  * `ma_completeness_base`:
-      propext, Classical.choice, Quot.sound (axiom-free)
-
-  * `ma_completeness`:
-      propext, Classical.choice, Quot.sound,
-      Divisor.hasse_weil_textbook
+  * `ma_completeness_base`, `ma_completeness`:
+      propext, Classical.choice, Quot.sound (axiom-free; the field-size
+      form now uses the trivial `|E| ≤ 2q` bound, not Hasse)
 
   The unsound `Divisor.weil_reciprocity_honest` axiom (which falsely
   claimed Eagen's eq. (1) on the diagonal `A_0 = A_1` where `slopeOf`
@@ -113,7 +114,6 @@ import Divisor.IsHonestForBinary
 /--
 info: 'Divisor.ma_extractable' depends on axioms: [propext,
  Classical.choice,
- Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -121,7 +121,6 @@ info: 'Divisor.ma_extractable' depends on axioms: [propext,
 /--
 info: 'Divisor.ip_extractable' depends on axioms: [propext,
  Classical.choice,
- Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -129,7 +128,6 @@ info: 'Divisor.ip_extractable' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_extractable_base' depends on axioms: [propext,
  Classical.choice,
- Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -137,7 +135,6 @@ info: 'Divisor.ma_extractable_base' depends on axioms: [propext,
 /--
 info: 'Divisor.ip_extractable_base' depends on axioms: [propext,
  Classical.choice,
- Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -145,7 +142,6 @@ info: 'Divisor.ip_extractable_base' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness' depends on axioms: [propext,
  Classical.choice,
- Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -160,7 +156,6 @@ info: 'Divisor.ma_completeness_base' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_clean' depends on axioms: [propext,
  Classical.choice,
- Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -175,7 +170,6 @@ info: 'Divisor.ma_completeness_for_length4Simple' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_clean_for_length4Simple' depends on axioms: [propext,
  Classical.choice,
- Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -239,7 +233,6 @@ example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
 /--
 info: 'Divisor.ma_extractable_paper' depends on axioms: [propext,
  Classical.choice,
- Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -266,7 +259,6 @@ info: 'Divisor.ma_completeness_binary_extras' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_binary_extras_clean' depends on axioms: [propext,
  Classical.choice,
- Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -285,7 +277,6 @@ info: 'Divisor.ma_completeness_binary_length2' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_binary_length2_clean' depends on axioms: [propext,
  Classical.choice,
- Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -300,7 +291,6 @@ info: 'Divisor.ma_completeness_binary_length4' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_binary_length4_clean' depends on axioms: [propext,
  Classical.choice,
- Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -315,7 +305,6 @@ info: 'Divisor.ma_completeness_binary_length4_chord' depends on axioms: [propext
 /--
 info: 'Divisor.ma_completeness_binary_length4_chord_clean' depends on axioms: [propext,
  Classical.choice,
- Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -344,7 +333,6 @@ info: 'Divisor.ma_completeness_binary_chain' depends on axioms: [propext,
 /--
 info: 'Divisor.ma_completeness_binary_chain_clean' depends on axioms: [propext,
  Classical.choice,
- Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
@@ -481,3 +469,50 @@ info: 'Divisor.ma_completeness_binary_admSetHash_point_certificate' depends on a
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_completeness_binary_admSetHash_point_certificate
+
+/-! ## Axiom-applied `_hasse` variants
+
+The only theorems that consume the Hasse axiom. Their closures pin the
+entire axiom surface of the project: `hasse_weil_textbook` and nothing
+else beyond the Lean built-ins. -/
+
+/--
+info: 'Divisor.ma_extractable_hasse' depends on axioms: [propext,
+ Classical.choice,
+ Divisor.hasse_weil_textbook,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ma_extractable_hasse
+/--
+info: 'Divisor.ip_extractable_hasse' depends on axioms: [propext,
+ Classical.choice,
+ Divisor.hasse_weil_textbook,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ip_extractable_hasse
+/--
+info: 'Divisor.ma_extractable_base_hasse' depends on axioms: [propext,
+ Classical.choice,
+ Divisor.hasse_weil_textbook,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ma_extractable_base_hasse
+/--
+info: 'Divisor.ip_extractable_base_hasse' depends on axioms: [propext,
+ Classical.choice,
+ Divisor.hasse_weil_textbook,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ip_extractable_base_hasse
+/--
+info: 'Divisor.ma_extractable_paper_hasse' depends on axioms: [propext,
+ Classical.choice,
+ Divisor.hasse_weil_textbook,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ma_extractable_paper_hasse

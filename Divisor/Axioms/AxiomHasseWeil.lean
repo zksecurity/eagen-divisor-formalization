@@ -49,4 +49,19 @@ theorem hasse_weil :
     nlinarith
   exact_mod_cast hR
 
+/-- The Hasse point-count bound as a plain proposition.
+
+Axiom-free versions of the protocol theorems take `(hHW : E.HasseBound)`
+as an explicit hypothesis and are proved without any project axiom; the
+corresponding `_hasse` variants discharge it via `hasse_bound` below (the
+only appeal to the axiom). For any concrete curve this proposition is a
+checkable arithmetic fact about the point count, so fully axiom-free
+end-to-end instances remain possible. -/
+def ECSetup.HasseBound : Prop :=
+  ((E.numPoints : ℤ) - E.q - 1) ^ 2 ≤ 4 * E.q
+
+/-- The Hasse bound holds for every setup — the axiom-backed entry
+point used by the `_hasse` variants. -/
+theorem hasse_bound : E.HasseBound := hasse_weil E
+
 end Divisor
