@@ -181,8 +181,7 @@ theorem ma_extractable_of_count
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg stmt.degBound hd hkm = some wit
         ∧ relDlog E stmt wit) ∨
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maAcceptSet E stmt msg hkm).card
       ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q := by
   rcases ma_extractable E stmt hd hd2 msg hkm hTargetOnE hBasesOnE
       (points_card_threshold_of_count E hLB (msg.toD.degE + stmt.k) hQbig)
@@ -193,8 +192,7 @@ theorem ma_extractable_of_count
     have h1 : 12 * (stmt.degBound + stmt.k + 3) * (2 * E.points.card)
         ≤ 12 * (stmt.degBound + stmt.k + 3) * (3 * E.q + 3) :=
       Nat.mul_le_mul_left _ hUB
-    calc ((validPairs E).filter
-          (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    calc (maAcceptSet E stmt msg hkm).card
         ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card := hBound
       _ ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q := by nlinarith [h1, hdk]
 
@@ -212,8 +210,7 @@ theorem ma_extractable_hasse
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg stmt.degBound hd hkm = some wit
         ∧ relDlog E stmt wit) ∨
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maAcceptSet E stmt msg hkm).card
       ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q :=
   ma_extractable_of_count E (hasse_points_bound E) (hasse_points_bound_lb E)
     stmt hd hd2 msg hkm hTargetOnE hBasesOnE hdk hQbig
@@ -231,8 +228,7 @@ theorem ma_extractable_base_hasse
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg stmt.degBound hd hkm = some wit
         ∧ relDlog E stmt wit) ∨
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maAcceptSet E stmt msg hkm).card
       ≤ eventNotEqBound E stmt.degBound stmt.k +
         eventDegBound E stmt.degBound stmt.k :=
   ma_extractable_base E stmt hd hd2 msg hkm hTargetOnE hBasesOnE
@@ -253,20 +249,10 @@ theorem ip_extractable_base_hasse
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
          ∧ relDlog E stmt wit) ∨
-     ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
+     (maAcceptSet E stmt msg1 hkm).card
       ≤ eventNotEqBound E stmt.degBound stmt.k +
         eventDegBound E stmt.degBound stmt.k)
-    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
-        (msg3 msg3' : IPProverMsg3 E.q),
-        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
-        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
-        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
-        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
-            stmt.target.1 (-stmt.target.2) ≠ 0 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
-        msg3 = msg3' :=
+    ∧ IPUniqueThirdRound E stmt msg1 :=
   ip_extractable_base E stmt hd hd2 msg1 hkm hTargetOnE hBasesOnE
     (points_card_threshold_of_count E (hasse_points_bound_lb E)
       (msg1.toD.degE + stmt.k) hQbig)
@@ -289,19 +275,9 @@ theorem ip_extractable_of_count
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
          ∧ relDlog E stmt wit) ∨
-     ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
+     (maAcceptSet E stmt msg1 hkm).card
       ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q)
-    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
-        (msg3 msg3' : IPProverMsg3 E.q),
-        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
-        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
-        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
-        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
-            stmt.target.1 (-stmt.target.2) ≠ 0 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
-        msg3 = msg3' := by
+    ∧ IPUniqueThirdRound E stmt msg1 := by
   refine ⟨?_, ?_⟩
   · exact ma_extractable_of_count E hUB hLB stmt hd hd2 msg1 hkm
       hTargetOnE hBasesOnE hdk hQbig
@@ -323,19 +299,9 @@ theorem ip_extractable_hasse
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
          ∧ relDlog E stmt wit) ∨
-     ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
+     (maAcceptSet E stmt msg1 hkm).card
       ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q)
-    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
-        (msg3 msg3' : IPProverMsg3 E.q),
-        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
-        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
-        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
-        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
-            stmt.target.1 (-stmt.target.2) ≠ 0 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
-        msg3 = msg3' :=
+    ∧ IPUniqueThirdRound E stmt msg1 :=
   ip_extractable_of_count E (hasse_points_bound E) (hasse_points_bound_lb E)
     stmt hd hd2 msg1 hkm hTargetOnE hBasesOnE hdk hQbig
 
@@ -362,8 +328,7 @@ theorem ma_soundness_probability_of_count
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg stmt.degBound hd hkm = some wit
         ∧ relDlog E stmt wit) ∨
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maAcceptSet E stmt msg hkm).card
       * ((E.q - 3) * (E.q - 9))
       ≤ 144 * (stmt.degBound + stmt.k + 4) * E.q * (validPairs E).card := by
   have hQ9 : 9 ≤ E.q := by omega
@@ -373,8 +338,7 @@ theorem ma_soundness_probability_of_count
   · right
     have hVP := validPairs_card_ge_q_of_count E hLB hQ9
     -- |accept| * (q-3)(q-9) ≤ 36(d+k+4)q * (q-3)(q-9) ≤ 36(d+k+4)q * 4|validPairs|.
-    calc ((validPairs E).filter
-            (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    calc (maAcceptSet E stmt msg hkm).card
               * ((E.q - 3) * (E.q - 9))
         ≤ (36 * (stmt.degBound + stmt.k + 4) * E.q) * ((E.q - 3) * (E.q - 9)) :=
           Nat.mul_le_mul_right _ hBound
@@ -394,8 +358,7 @@ theorem ma_soundness_probability_hasse
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg stmt.degBound hd hkm = some wit
         ∧ relDlog E stmt wit) ∨
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maAcceptSet E stmt msg hkm).card
       * ((E.q - 3) * (E.q - 9))
       ≤ 144 * (stmt.degBound + stmt.k + 4) * E.q * (validPairs E).card :=
   ma_soundness_probability_of_count E (hasse_points_bound E)
@@ -413,8 +376,7 @@ theorem ma_extractable_witness_of_excess_hasse
     (hdk : stmt.degBound + stmt.k + 3 ≤ E.q)
     (hQbig : 72 * (msg.toD.degE + stmt.k + 4) ≤ E.q)
     (hExcess :
-      ((validPairs E).filter
-          (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      (maAcceptSet E stmt msg hkm).card
         > 36 * (stmt.degBound + stmt.k + 4) * E.q) :
     ∃ wit : DlogWitness E.q,
       maExtractor E stmt msg stmt.degBound hd hkm = some wit
@@ -434,22 +396,12 @@ theorem ip_extractable_witness_of_excess_hasse
     (hdk : stmt.degBound + stmt.k + 3 ≤ E.q)
     (hQbig : 72 * (msg1.toD.degE + stmt.k + 4) ≤ E.q)
     (hExcess :
-      ((validPairs E).filter
-          (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
+      (maAcceptSet E stmt msg1 hkm).card
         > 36 * (stmt.degBound + stmt.k + 4) * E.q) :
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
         ∧ relDlog E stmt wit)
-    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
-        (msg3 msg3' : IPProverMsg3 E.q),
-        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
-        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
-        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
-        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
-            stmt.target.1 (-stmt.target.2) ≠ 0 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
-        msg3 = msg3' := by
+    ∧ IPUniqueThirdRound E stmt msg1 := by
   refine ⟨?_, ?_⟩
   · exact ma_extractable_witness_of_excess_hasse E stmt hd hd2 msg1 hkm
       hTargetOnE hBasesOnE hdk hQbig hExcess

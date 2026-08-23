@@ -163,8 +163,7 @@ theorem ma_extractable_conditional
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg stmt.degBound hd hkm = some wit
         ∧ relDlog E stmt wit) ∨
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maAcceptSet E stmt msg hkm).card
       ≤ eventNotEqBound E stmt.degBound stmt.k +
         eventDegBound E stmt.degBound stmt.k := by
   classical
@@ -176,14 +175,13 @@ theorem ma_extractable_conditional
   · -- Nonzero discrepancy: geometric tight SZ branch.
     right
     set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
-      (validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hAS
+      maAcceptSet E stmt msg hkm with hAS
     set badSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
       eventNotEq E msg.toD stmt.target stmt.bases
         (fun i => msg.m (hkm ▸ i)) with hBS
     have hSub : acceptSet ⊆ badSet := by
       intro p hp
-      simp only [hAS, Finset.mem_filter] at hp
+      simp only [hAS, mem_maAcceptSet] at hp
       simp only [hBS, eventNotEq, Finset.mem_filter]
       exact ⟨hp.1, hp.2.2.2⟩
     have hCardLe : acceptSet.card ≤ badSet.card := Finset.card_le_card hSub
@@ -212,12 +210,11 @@ theorem ma_extractable_conditional
     · -- If `(a,b) ∉ admSet`, the verifier rejects unconditionally.
       right
       set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
-        (validPairs E).filter
-          (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hAS
+        maAcceptSet E stmt msg hkm with hAS
       have hEmpty : acceptSet = ∅ := by
         apply Finset.eq_empty_of_forall_notMem
         intro p hp
-        simp only [hAS, Finset.mem_filter] at hp
+        simp only [hAS, mem_maAcceptSet] at hp
         exact hAdm hp.2.2.1
       rw [hEmpty]
       simp
@@ -270,8 +267,7 @@ theorem ma_extractable_base
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg stmt.degBound hd hkm = some wit
         ∧ relDlog E stmt wit) ∨
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maAcceptSet E stmt msg hkm).card
       ≤ eventNotEqBound E stmt.degBound stmt.k +
         eventDegBound E stmt.degBound stmt.k := by
   classical
@@ -281,12 +277,11 @@ theorem ma_extractable_base
   · -- If the degree check fails, the verifier rejects every challenge.
     right
     set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
-      (validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hAS
+      maAcceptSet E stmt msg hkm with hAS
     have hEmpty : acceptSet = ∅ := by
       apply Finset.eq_empty_of_forall_notMem
       intro p hp
-      simp only [hAS, Finset.mem_filter] at hp
+      simp only [hAS, mem_maAcceptSet] at hp
       exact hDeg hp.2.1
     rw [hEmpty]
     simp
@@ -303,13 +298,12 @@ point-count-dependent headline of `ma_extractable_base` as a corollary. -/
 theorem maAcceptSet_subset_badChallenges
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k) :
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm))
+    (maAcceptSet E stmt msg hkm)
       ⊆ badChallenges E msg.toD stmt.target stmt.bases
           (fun i => msg.m (hkm ▸ i)) := by
   classical
   intro p hp
-  simp only [Finset.mem_filter] at hp
+  simp only [mem_maAcceptSet] at hp
   obtain ⟨hVP, hAcc⟩ := hp
   -- maVerifierAccepts ⇒ logDerivCheckFn = 0.
   obtain ⟨_hDeg, _hAdm, hCheck⟩ := hAcc
@@ -338,8 +332,7 @@ theorem ma_extractable_paper
     (hAcceptLarge :
       eventNotEqBound E stmt.degBound stmt.k +
           eventDegBound E stmt.degBound stmt.k <
-        ((validPairs E).filter
-          (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card) :
+        (maAcceptSet E stmt msg hkm).card) :
     ∃ wit : DlogWitness E.q,
       maExtractor E stmt msg stmt.degBound hd hkm = some wit
       ∧ relDlog E stmt wit := by
@@ -370,8 +363,7 @@ theorem ma_extractable
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg stmt.degBound hd hkm = some wit
         ∧ relDlog E stmt wit) ∨
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maAcceptSet E stmt msg hkm).card
       ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card := by
   rcases ma_extractable_base E stmt hd hd2 msg hkm
           hTargetOnE hBasesOnE hLargeQ hSample with hWit | hBound
@@ -379,8 +371,7 @@ theorem ma_extractable
   · right
     unfold eventNotEqBound eventDegBound at hBound
     calc
-      ((validPairs E).filter
-          (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      (maAcceptSet E stmt msg hkm).card
           ≤ 12 * (stmt.degBound + stmt.k) * E.points.card +
             (3 * stmt.degBound + 9 * stmt.k + 71) * E.points.card := hBound
       _ = (12 * (stmt.degBound + stmt.k)
@@ -410,20 +401,10 @@ theorem ip_extractable_base
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
          ∧ relDlog E stmt wit) ∨
-     ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
+     (maAcceptSet E stmt msg1 hkm).card
       ≤ eventNotEqBound E stmt.degBound stmt.k +
         eventDegBound E stmt.degBound stmt.k)
-    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
-        (msg3 msg3' : IPProverMsg3 E.q),
-        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
-        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
-        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
-        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
-            stmt.target.1 (-stmt.target.2) ≠ 0 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
-        msg3 = msg3' := by
+    ∧ IPUniqueThirdRound E stmt msg1 := by
   refine ⟨?_, ?_⟩
   · exact ma_extractable_base E stmt hd hd2 msg1 hkm
            hTargetOnE hBasesOnE hLargeQ hSample
@@ -450,21 +431,11 @@ theorem ip_extractable_paper
     (hAcceptLarge :
       eventNotEqBound E stmt.degBound stmt.k +
           eventDegBound E stmt.degBound stmt.k <
-        ((validPairs E).filter
-          (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card) :
+        (maAcceptSet E stmt msg1 hkm).card) :
     (∃ wit : DlogWitness E.q,
        maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
        ∧ relDlog E stmt wit)
-    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
-        (msg3 msg3' : IPProverMsg3 E.q),
-        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
-        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
-        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
-        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
-            stmt.target.1 (-stmt.target.2) ≠ 0 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
-        msg3 = msg3' := by
+    ∧ IPUniqueThirdRound E stmt msg1 := by
   refine ⟨?_, ?_⟩
   · exact ma_extractable_paper E stmt hd hd2 msg1 hkm
            hTargetOnE hBasesOnE hLargeQ hSample hAcceptLarge
@@ -492,19 +463,9 @@ theorem ip_extractable
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
          ∧ relDlog E stmt wit) ∨
-     ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
+     (maAcceptSet E stmt msg1 hkm).card
       ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card)
-    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
-        (msg3 msg3' : IPProverMsg3 E.q),
-        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
-        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
-        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
-        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
-            stmt.target.1 (-stmt.target.2) ≠ 0 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
-        msg3 = msg3' := by
+    ∧ IPUniqueThirdRound E stmt msg1 := by
   refine ⟨?_, ?_⟩
   · exact ma_extractable E stmt hd hd2 msg1 hkm
            hTargetOnE hBasesOnE hLargeQ hSample
@@ -538,8 +499,7 @@ theorem ma_soundness_probability
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg stmt.degBound hd hkm = some wit
         ∧ relDlog E stmt wit) ∨
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maAcceptSet E stmt msg hkm).card
       * (E.points.card * E.points.card - 3 * E.points.card)
       ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card
           * (validPairs E).card := by
@@ -550,8 +510,7 @@ theorem ma_soundness_probability
     have hVPlb := card_validPairs_lb E
     -- |accept| ≤ 24(d+k+3)n. Multiply both sides by n²-3n; chain via |validPairs|.
     have hStep1 :
-        ((validPairs E).filter
-          (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+        (maAcceptSet E stmt msg hkm).card
           * (E.points.card * E.points.card - 3 * E.points.card)
         ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card
           * (E.points.card * E.points.card - 3 * E.points.card) :=
@@ -594,8 +553,7 @@ theorem ma_extractable_witness_of_excess_ratio
     (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
         (validPairs E).card)
     (hExcess :
-      ((validPairs E).filter
-          (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      (maAcceptSet E stmt msg hkm).card
         * (E.points.card * E.points.card - 3 * E.points.card)
         > 24 * (stmt.degBound + stmt.k + 3) * E.points.card
             * (validPairs E).card) :
@@ -624,8 +582,7 @@ theorem ma_extractable_witness_of_excess_clean
     (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
         (validPairs E).card)
     (hExcess :
-      ((validPairs E).filter
-          (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      (maAcceptSet E stmt msg hkm).card
         > 24 * (stmt.degBound + stmt.k + 3) * E.points.card) :
     ∃ wit : DlogWitness E.q,
       maExtractor E stmt msg stmt.degBound hd hkm = some wit
@@ -651,24 +608,14 @@ theorem ip_extractable_witness_of_excess_ratio
     (hSample : 18 * (msg1.toD.degE + stmt.k + 1) * E.q + 1 ≤
         (validPairs E).card)
     (hExcess :
-      ((validPairs E).filter
-          (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
+      (maAcceptSet E stmt msg1 hkm).card
         * (E.points.card * E.points.card - 3 * E.points.card)
         > 24 * (stmt.degBound + stmt.k + 3) * E.points.card
             * (validPairs E).card) :
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
         ∧ relDlog E stmt wit)
-    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
-        (msg3 msg3' : IPProverMsg3 E.q),
-        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
-        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
-        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
-        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
-            stmt.target.1 (-stmt.target.2) ≠ 0 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
-        msg3 = msg3' := by
+    ∧ IPUniqueThirdRound E stmt msg1 := by
   refine ⟨?_, ?_⟩
   · exact ma_extractable_witness_of_excess_ratio E stmt hd hd2 msg1 hkm
            hTargetOnE hBasesOnE hLargeQ hSample hExcess
@@ -690,22 +637,12 @@ theorem ip_extractable_witness_of_excess_clean
     (hSample : 18 * (msg1.toD.degE + stmt.k + 1) * E.q + 1 ≤
         (validPairs E).card)
     (hExcess :
-      ((validPairs E).filter
-          (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
+      (maAcceptSet E stmt msg1 hkm).card
         > 24 * (stmt.degBound + stmt.k + 3) * E.points.card) :
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
         ∧ relDlog E stmt wit)
-    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
-        (msg3 msg3' : IPProverMsg3 E.q),
-        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
-        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
-        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
-        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
-            stmt.target.1 (-stmt.target.2) ≠ 0 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
-        msg3 = msg3' := by
+    ∧ IPUniqueThirdRound E stmt msg1 := by
   refine ⟨?_, ?_⟩
   · exact ma_extractable_witness_of_excess_clean E stmt hd hd2 msg1 hkm
            hTargetOnE hBasesOnE hLargeQ hSample hExcess

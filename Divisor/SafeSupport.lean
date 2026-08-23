@@ -426,9 +426,7 @@ theorem ma_completeness_binary_any_length
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_ps_on := binarySupport_on_curve stmt wit hk h_binary
     h_target_on_curve h_bases_on_curve
@@ -461,9 +459,7 @@ theorem ma_completeness_binary_any_length_cert
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness_binary_any_length E stmt wit hk msg hkm h_binary h_valid
     h_toD_eq h_degE_eq h_scalars_match h_target_on_curve h_bases_on_curve
