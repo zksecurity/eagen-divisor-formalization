@@ -89,7 +89,7 @@ Audit of the baseline, all verified by tooling on 2026-08-23:
       re-elaboration; drop the raise where it is no longer needed.
       Accept remaining raises where the proof is genuinely large;
       never raise a limit further.
-- [ ] **P4.6 Consumer analysis of `IncrementalConstruction.lean`**
+- [x] **P4.6 Consumer analysis of `IncrementalConstruction.lean`**
       (7.9k lines, imported by EagenBuildLandmark,
       LogDerivEagenLength4, CoordRingEltC/Bridge, and the P4.1 file).
       Same method as P4.1: external-use inventory, split live core
@@ -158,3 +158,10 @@ axiom closures stay pinned as at the baseline.
   bump) — every guarded declaration compiles at the default budget.
   Zero raises remain in the repository; no profiling or proof
   factoring was needed.
+* 2026-08-23 — P4.6 landed. IncrementalConstruction turned out to be
+  mostly live core: 48 of 187 declarations are externally referenced
+  and their closure keeps 161 blocks. The 26 dead blocks (~1k lines
+  of exploratory per-branch variants and length-2/3 experiments)
+  deleted: 7928 → 6910 lines. Stale header ("driver not yet
+  defined", already-landed "remaining work") rewritten; orphaned
+  Length-3 section and a stale TODO removed.
