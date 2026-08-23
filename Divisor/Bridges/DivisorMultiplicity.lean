@@ -161,7 +161,7 @@ theorem betaCanonical_support (E : ECSetup) (D : CoordRingElt E.q) :
   by_cases hD : ¬ (D.a = 0 ∧ D.b = 0)
   · rw [betaCanonical_eq_betaTrue E D hD] at hP
     exact betaTrue_support E D hD P hP
-  · push_neg at hD
+  · push Not at hD
     rw [betaCanonical_eq_zero E D hD] at hP
     exact absurd rfl hP
 
@@ -176,7 +176,7 @@ theorem betaCanonical_sum_le_degE (E : ECSetup) (D : CoordRingElt E.q) :
   by_cases hD : ¬ (D.a = 0 ∧ D.b = 0)
   · rw [betaCanonical_eq_betaTrue E D hD]
     exact betaTrue_sum_le_degE E D hD
-  · push_neg at hD
+  · push Not at hD
     rw [betaCanonical_eq_zero E D hD]
     simp
 
@@ -187,7 +187,7 @@ theorem betaCanonical_account (E : ECSetup)
   by_cases hD : ¬ (D.a = 0 ∧ D.b = 0)
   · rw [betaCanonical_eq_betaTrue E D hD]
     exact betaTrue_account E D hD hSplitOnE
-  · push_neg at hD
+  · push Not at hD
     -- D = 0: normPoly = 0, both sides are 0.
     rw [betaCanonical_eq_zero E D hD]
     have hZero : normPoly E D = 0 := by
@@ -204,7 +204,7 @@ theorem betaCanonical_group_sum_zero (E : ECSetup)
   by_cases hD : ¬ (D.a = 0 ∧ D.b = 0)
   · rw [betaCanonical_eq_betaTrue E D hD]
     exact betaTrue_group_sum_zero E D hD hSplitOnE
-  · push_neg at hD
+  · push Not at hD
     rw [betaCanonical_eq_zero E D hD]
     apply Finset.sum_eq_zero
     intro P _

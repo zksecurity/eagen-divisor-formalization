@@ -177,7 +177,7 @@ giving a cleaner index in the upcoming factorization theorem
 `spanSingleton (D.toCoordinateRing) = ∏_P (xyIdealOfPoint P)^(ordAt D P)`. -/
 
 /-- Extract `Nonsingular` from `(x, y) ∈ E.points`. -/
-noncomputable def nonsing_of_mem {P : ZMod E.q × ZMod E.q}
+theorem nonsing_of_mem {P : ZMod E.q × ZMod E.q}
     (hP : P ∈ E.points) :
     E.toW.toAffine.Nonsingular P.1 P.2 :=
   E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP))

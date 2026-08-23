@@ -101,7 +101,7 @@ theorem linear_form_zeros_le_three
         _ ≤ 3 := line_meets_cubic_le_three E _ _
     · -- a ≠ 0, b = 0: equation is a*x + d = 0, so x = -d*a⁻¹.
       -- For fixed x, at most 2 points (y, -y) on E.
-      push_neg at hb; subst hb
+      push Not at hb; subst hb
       -- After subst, b = 0 everywhere. Filter becomes: a*P.1 + 0*P.2 + d = 0
       -- which simplifies to a*P.1 + d = 0.
       have : (E.points.filter (fun P => a * P.1 + 0 * P.2 + d = 0)) =
@@ -264,7 +264,7 @@ theorem f_nonvanishing_proved {N : ℕ}
                 apply linear_form_zeros_le_three
                 -- Need: (Q_i.2-P_j.2) ≠ 0 or -(Q_i.1-P_j.1) ≠ 0
                 by_contra h
-                push_neg at h
+                push Not at h
                 have hx : (Q i).1 = (P j).1 := by
                   have := h.2; rw [neg_eq_zero] at this; exact sub_eq_zero.mp this
                 have hy : (Q i).2 = (P j).2 := sub_eq_zero.mp h.1
@@ -319,7 +319,7 @@ theorem card_validPairs_lb :
         _ ≤ 3 * E.points.card := Nat.mul_le_mul_right _ (by omega)
     omega
   · -- numAffine ≥ 3: need complement bound ≤ 2*numAffine
-    push_neg at h
+    push Not at h
     -- The complement = distinctPairs \ validPairs has two parts:
     -- Part 1: same x-coordinate (at most numAffine pairs: each point has ≤ 1 partner)
     -- Part 2: negation pairs (at most numAffine pairs: each point has ≤ 1 negation)
@@ -355,7 +355,7 @@ theorem card_validPairs_lb :
                   refine ⟨hd, hfst, ?_⟩
                   simp only [not_and, ne_eq] at hnv
                   by_contra hall
-                  push_neg at hall
+                  push Not at hall
                   exact hnv hd hall.1 hall.2
               _ ≤ 2 := by
                   -- {P ∈ E.points | P.1 = A₀.1} has ≤ 2 elements: Y²=c has ≤ 2 roots

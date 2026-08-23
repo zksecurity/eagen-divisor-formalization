@@ -45,7 +45,7 @@ lemma eval_eq_alpha_beta (g : MvPolynomial (Fin 2) (ZMod E.q))
     MvPolynomial.eval (fun i : Fin 2 => if i = 0 then x else y) g =
     (alphaPoly E g).eval x + (betaPoly E g).eval x * y := by
   simp +decide [ MvPolynomial.eval_eq', alphaPoly, betaPoly ];
-  simp +decide [ Polynomial.eval_finset_sum, Finset.sum_filter ];
+  simp +decide [ Polynomial.eval_finsetSum, Finset.sum_filter ];
   rw [ Finset.sum_mul _ _ _ ];
   rw [ ← Finset.sum_add_distrib ] ; refine' Finset.sum_congr rfl fun i hi => _ ; rcases Nat.even_or_odd' ( i 1 ) with ⟨ k, hk | hk ⟩ <;> simp +decide [ hk, pow_add, pow_mul, hy ] ; ring;
   · norm_num [ Nat.even_iff, Nat.odd_iff, Nat.mul_mod ];
@@ -157,7 +157,7 @@ lemma zeros_card_le_degE (D : CoordRingElt E.q) (hDnz : ¬(D.a = 0 ∧ D.b = 0))
       · simp +contextual [ Finset.subset_iff ];
         exact fun a b hab ha hb => by simpa [ ha ] using E.hOnCurve ( a, b ) hab;
       · refine' le_trans ( Finset.card_image_le ) _;
-        haveI := Fact.mk E.hq_prime; exact le_trans ( Finset.card_le_card ( show Finset.filter ( fun y => y ^ 2 = x₀ ^ 3 + E.curveA * x₀ + E.curveB ) Finset.univ ⊆ ( Polynomial.roots ( Polynomial.X ^ 2 - Polynomial.C ( x₀ ^ 3 + E.curveA * x₀ + E.curveB ) ) |> Multiset.toFinset ) from fun y hy => Multiset.mem_toFinset.mpr <| Polynomial.mem_roots ( show Polynomial.X ^ 2 - Polynomial.C ( x₀ ^ 3 + E.curveA * x₀ + E.curveB ) ≠ 0 from Polynomial.X_pow_sub_C_ne_zero ( by norm_num ) _ ) |>.2 <| by aesop ) ) <| le_trans ( Multiset.toFinset_card_le _ ) <| le_trans ( Polynomial.card_roots' _ ) <| by erw [ Polynomial.natDegree_X_pow_sub_C ] ;
+        have := Fact.mk E.hq_prime; exact le_trans ( Finset.card_le_card ( show Finset.filter ( fun y => y ^ 2 = x₀ ^ 3 + E.curveA * x₀ + E.curveB ) Finset.univ ⊆ ( Polynomial.roots ( Polynomial.X ^ 2 - Polynomial.C ( x₀ ^ 3 + E.curveA * x₀ + E.curveB ) ) |> Multiset.toFinset ) from fun y hy => Multiset.mem_toFinset.mpr <| Polynomial.mem_roots ( show Polynomial.X ^ 2 - Polynomial.C ( x₀ ^ 3 + E.curveA * x₀ + E.curveB ) ≠ 0 from Polynomial.X_pow_sub_C_ne_zero ( by norm_num ) _ ) |>.2 <| by aesop ) ) <| le_trans ( Multiset.toFinset_card_le _ ) <| le_trans ( Polynomial.card_roots' _ ) <| by erw [ Polynomial.natDegree_X_pow_sub_C ] ;
     · -- If D.b(x₀) ≠ 0, then y = D.a(x₀)/D.b(x₀) is unique, at most 1 zero on E above x₀.
       have h_unique_y : ∀ p ∈ E.points, p.1 = x₀ → D.eval p.1 p.2 = 0 → p.2 = D.a.eval x₀ / D.b.eval x₀ := by
         simp_all +decide [ sub_eq_iff_eq_add, CoordRingElt.eval ];

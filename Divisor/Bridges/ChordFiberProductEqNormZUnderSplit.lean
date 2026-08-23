@@ -40,7 +40,7 @@ private theorem exists_root_of_map_root_of_roots_card_eq_natDegree
     ∃ α ∈ p.roots, φ α = β := by
   classical
   by_contra hnone
-  push_neg at hnone
+  push Not at hnone
   have hfac : C p.leadingCoeff * (p.roots.map fun a => X - C a).prod = p :=
     Polynomial.C_leadingCoeff_mul_prod_multiset_X_sub_C hroots
   have hmap := congrArg (Polynomial.map φ) hfac
@@ -643,7 +643,6 @@ private theorem rootMultiplicity_normPoly_ge_twice_commonRootMultRatGS
   have hN_ne : normPoly E D ≠ 0 := normPoly_ne_zero E D hDnz
   set k := commonRootMultRatGS E D β
   have h_dvd_a : (Polynomial.X - Polynomial.C β) ^ k ∣ D.a := by
-    unfold commonRootMultRatGS at *
     by_cases h_a : D.a = 0
     · rw [h_a]; exact dvd_zero _
     · exact dvd_trans (pow_dvd_pow _
@@ -658,7 +657,6 @@ private theorem rootMultiplicity_normPoly_ge_twice_commonRootMultRatGS
           · rw [if_neg h_b]; exact min_le_left _ _))
         (Polynomial.pow_rootMultiplicity_dvd D.a β)
   have h_dvd_b : (Polynomial.X - Polynomial.C β) ^ k ∣ D.b := by
-    unfold commonRootMultRatGS at *
     by_cases h_a : D.a = 0
     · show (Polynomial.X - Polynomial.C β) ^ k ∣ D.b
       have : k = D.b.rootMultiplicity β := by
@@ -758,7 +756,7 @@ private theorem ordAt_nonTwoTorsion_aux_eq_geomLocalOrder
         rw [hIH]
         have h_eq := geomLocalOrder_rationalLift_divLin E D hDnz P hP hY ha hb
         omega
-      · push_neg at hEvalNegP
+      · push Not at hEvalNegP
         rw [if_pos hEvalNegP]
         rw [geomLocalOrder_rationalLift_non_two_torsion E D P hP hY]
         have hk : commonRootMultRatGS E D P.1 = 0 :=
@@ -766,7 +764,7 @@ private theorem ordAt_nonTwoTorsion_aux_eq_geomLocalOrder
         have hbr : branchRat E D P = 0 :=
           branchRat_eq_zero_of_lone E D hY hEvalP hEvalNegP
         simp only [hbr, if_true, hk, Nat.sub_zero]
-    · push_neg at hEvalP
+    · push Not at hEvalP
       rw [if_pos hEvalP]
       have hGeomZero_iff_evalZero :
           D.geomEval E (rationalLift E P hP) = fqToBar E (D.eval P.1 P.2) := by

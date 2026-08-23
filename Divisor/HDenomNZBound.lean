@@ -427,7 +427,7 @@ theorem exists_A0_outside_bad
   have hn_ge : 3 ≤ E.points.card := by
     -- hSize forces (n - 2) > 0, hence n ≥ 3.
     by_contra hLt
-    push_neg at hLt
+    push Not at hLt
     interval_cases E.points.card <;> simp_all
   -- Bound for the bad union.
   set bad : Finset (ZMod E.q × ZMod E.q) :=

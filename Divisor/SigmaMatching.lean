@@ -314,7 +314,7 @@ theorem polyGFull_vanishes_on_ExE_of_polyG_zero
       bivEval₂ (polyGFull E Q beta R m) A₀ A₁ = 0 := by
   classical
   by_contra h
-  push_neg at h
+  push Not at h
   obtain ⟨A₀, A₁, hA₀, hA₁, hNZ⟩ := h
   have hDeg := polyGFull_total_degree_le' E Q beta R m
   have hLW := bivariate_poly_zeros_on_ExE_le E (polyGFull E Q beta R m)
@@ -478,7 +478,7 @@ private lemma exists_avoiding_A1
     -- At least one is nonzero since P' ≠ P.
     have hab : (P'.2 - P.2) ≠ 0 ∨ (-(P'.1 - P.1)) ≠ 0 := by
       by_contra h
-      push_neg at h
+      push Not at h
       have h1 : P'.2 = P.2 := by linear_combination h.1
       have h2 : P'.1 = P.1 := by linear_combination -h.2
       exact hP'neP (Prod.ext h2 h1)
@@ -682,7 +682,7 @@ private lemma residual_vanishes_on_ExE
       bivEval₂ (residualFull E R (fun k => beta k + m (σ k)) σ) A₀ A₁ = 0 := by
   classical
   by_contra hNontriv
-  push_neg at hNontriv
+  push Not at hNontriv
   obtain ⟨A₀, A₁, hA₀, hA₁, hNZ⟩ := hNontriv
   -- Step 1: Apply the new axiom to residualFull.
   have hTD := residualFull_total_degree_le E R (fun k => beta k + m (σ k)) σ
@@ -711,7 +711,7 @@ private lemma residual_vanishes_on_ExE
     simp only [Finset.mem_filter, Finset.mem_product] at hp ⊢
     refine ⟨hp.1, ?_⟩
     by_contra hAllNZ
-    push_neg at hAllNZ
+    push Not at hAllNZ
     have hProdNZ : (∏ k : Fin d, ellP E (Q k) p.1 p.2) ≠ 0 :=
       Finset.prod_ne_zero_iff.mpr (fun k _ => hAllNZ k)
     exact hp.2 (hResZeroWhenProdNZ p.1 p.2 hp.1.1 hp.1.2 hProdNZ)
@@ -727,7 +727,7 @@ private lemma residual_vanishes_on_ExE
     have hcard : E.points.card ≥ 7 := by omega
     -- There exists A₀' ∈ E.points with A₀' ≠ Q_k
     have hExA₀ : ∃ A₀' ∈ E.points, A₀' ≠ Q k := by
-      by_contra h; push_neg at h
+      by_contra h; push Not at h
       have : E.points ⊆ {Q k} := by
         intro x hx; exact Finset.mem_singleton.mpr (h x hx)
       have : E.points.card ≤ 1 := (Finset.card_le_card this).trans (by simp)
@@ -831,7 +831,7 @@ Old body of `residual_vanishes_on_ExE` (kept commented for reference; uses
 the old `bivariate_poly_zeros_on_ExE_le` axiom signature with `bi_x_degree_le`):
 
   by_contra hNontriv
-  push_neg at hNontriv
+  push Not at hNontriv
   obtain ⟨A₀, A₁, hA₀, hA₁, hNZ⟩ := hNontriv
   -- From the algebraic identity and polyG = 0:
   -- (∏_k ellP(Q_k)) * residualFull = polyG = 0 on E×E
@@ -874,7 +874,7 @@ the old `bivariate_poly_zeros_on_ExE_le` axiom signature with `bi_x_degree_le`):
     simp only [Finset.mem_filter, Finset.mem_product] at hp ⊢
     refine ⟨hp.1, ?_⟩
     by_contra hAllNZ
-    push_neg at hAllNZ
+    push Not at hAllNZ
     have hProdNZ : (∏ k : Fin d, ellP E (Q k) p.1 p.2) ≠ 0 :=
       Finset.prod_ne_zero_iff.mpr (fun k _ => hAllNZ k)
     exact hp.2 (hResZeroWhenProdNZ p.1 p.2 hp.1.1 hp.1.2 hProdNZ)
@@ -923,7 +923,7 @@ the old `bivariate_poly_zeros_on_ExE_le` axiom signature with `bi_x_degree_le`):
     · -- No nonzero witness: ellP = 0 everywhere on E×E.
       -- This is impossible when |E| ≥ 5:
       -- There exist A₀, A₁ ∈ E with ellP(Q_k, A₀, A₁) ≠ 0.
-      push_neg at hWitness
+      push Not at hWitness
       exfalso
       -- |E| ≥ 2, so ∃ A₀ ∈ E.
       have hE2 : 2 ≤ E.points.card := by linarith
@@ -955,7 +955,7 @@ the old `bivariate_poly_zeros_on_ExE_le` axiom signature with `bi_x_degree_le`):
         -- It's: (Q k).2 - A₀'.2) * A₁.1 + (-(Q k).1 + A₀'.1) * A₁.2 + ...
         -- Nonzero since Q_k ≠ A₀'
         have hab : ((Q k).2 - A₀'.2) ≠ 0 ∨ (-((Q k).1 - A₀'.1)) ≠ 0 := by
-          by_contra h; push_neg at h
+          by_contra h; push Not at h
           apply hne
           have h1 : A₀'.1 = (Q k).1 := by
             have := h.2; simp only [neg_eq_zero, sub_eq_zero] at this; exact this.symm
@@ -1064,7 +1064,7 @@ private lemma sigma_matching_core
   have hSigmaExists : ∀ k : Fin d, ∃ j : Fin M, R j = Q k := by
     intro k
     by_contra h
-    push_neg at h
+    push Not at h
     -- polyG(Q k, A₁) = beta k * (∏_{k'≠k} ellP(Q_{k'})) * (∏_j ellP(R_j))
     -- by polyG_at_self_Q. Since Q k ≠ R j for all j, we pick A₁ avoiding
     -- collinearity with all other S-points.
@@ -1081,7 +1081,7 @@ private lemma sigma_matching_core
       linarith
     have hQk_notT : Q k ∉ T1 := by
       simp only [T1, Finset.mem_union, Finset.mem_erase, Finset.mem_image]
-      push_neg
+      push Not
       exact ⟨fun habs => absurd rfl habs, fun j _ => h j⟩
     obtain ⟨A₁, hA₁mem, hA₁ne, hA₁good⟩ := exists_avoiding_A1 E (Q k) (hQonE k)
       ((Finset.univ.image (fun k' => Q k') |>.erase (Q k)) ∪ Finset.univ.image R)

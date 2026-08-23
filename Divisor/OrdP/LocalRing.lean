@@ -58,7 +58,7 @@
 -/
 import Divisor.OrdP.PrincipalClass
 import Divisor.OrdP.SupportClassification
-import Mathlib.RingTheory.ClassGroup
+import Mathlib.RingTheory.ClassGroup.Basic
 
 open Polynomial Finset
 
@@ -102,7 +102,7 @@ theorem ordAt_nonTwoTorsion_aux_pos_iff
   by_cases h2 : D.eval P.1 P.2 ≠ 0
   · rw [if_pos h2]
     refine ⟨fun hp => absurd hp (lt_irrefl 0), fun he => absurd he h2⟩
-  · push_neg at h2
+  · push Not at h2
     rw [if_neg (not_not.mpr h2)]
     by_cases h3 : D.eval P.1 (-P.2) ≠ 0
     · rw [if_pos h3]
@@ -254,7 +254,7 @@ theorem rootMultiplicity_sub_of_lt
   -- ≤ direction: if rootMultiplicity x₀ (p - q) > j, contradiction.
   have hUB : rootMultiplicity x₀ (p - q) ≤ j := by
     by_contra hContra
-    push_neg at hContra
+    push Not at hContra
     have : (Polynomial.X - Polynomial.C x₀) ^ (j + 1) ∣ (p - q) :=
       (Polynomial.le_rootMultiplicity_iff hpqNZ).mp hContra
     have hpDiv : (Polynomial.X - Polynomial.C x₀) ^ (j + 1) ∣ p := by
@@ -607,7 +607,7 @@ theorem ordAt_nonTwoTorsion_aux_pair_eq_rootMult
         rw [if_neg (not_not.mpr h2), if_pos h1]
         ring
       · -- Neither vanishes.
-        push_neg at h2
+        push Not at h2
         rw [if_pos h2]
         symm
         apply rootMultiplicity_eq_zero
@@ -741,7 +741,7 @@ theorem sum_ordAt_le_degE
       _ ≤ (normPoly E D).natDegree :=
           sum_rootMultiplicity_le_natDegree E (normPoly E D)
       _ ≤ D.degE := normPoly_natDegree_le E D
-  · push_neg at hD
+  · push Not at hD
     have hAllZero : ∀ P ∈ E.points, ordAt E D P = 0 := by
       intro P _; exact ordAt_eq_zero_of_zero E hD P
     calc (∑ P ∈ E.points, ordAt E D P)

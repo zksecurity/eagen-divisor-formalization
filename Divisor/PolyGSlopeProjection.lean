@@ -162,7 +162,7 @@ theorem polyG_eq_polyFibK_eval
       (polyFibK E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) Q β R m).eval
         (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀) := by
   unfold polyG polyFibK
-  rw [eval_add, eval_finset_sum, eval_finset_sum, mul_add]
+  rw [eval_add, eval_finsetSum, eval_finsetSum, mul_add]
   congr 1
   · -- First sum: pull (-(c))^(d+M-1) out via per-term identity.
     rw [Finset.mul_sum]
@@ -417,7 +417,7 @@ theorem exists_good_lambda_avoiding_bad
   classical
   have hsum_ineq := validPairs_le_six_sum_goodIntercepts E
   by_contra habsurd
-  push_neg at habsurd
+  push Not at habsurd
   have hcard_univ : (Finset.univ : Finset (ZMod E.q)).card = E.q := by
     rw [Finset.card_univ, ZMod.card E.q]
   set c := (Finset.univ \ bad : Finset (ZMod E.q)).card with hc_def
@@ -497,7 +497,7 @@ theorem exists_good_lambda
   have hbad_le : bad.card ≤ S.card * (S.card - 1) := badLambdaSet_card_le E S
   have hsum_ineq := validPairs_le_six_sum_goodIntercepts E
   by_contra habsurd
-  push_neg at habsurd
+  push Not at habsurd
   -- bad = {lam : ¬ InjOn}
   have hbad_iff : ∀ lam : ZMod E.q, lam ∉ bad ↔ Set.InjOn (zLambda E lam) S := by
     intro lam
@@ -733,7 +733,7 @@ private lemma polyFibK_eval_tauQ_eq {d M : ℕ} (lam : ZMod E.q)
         (∏ j : Fin M,
           (zLambda E lam (Q k) - zLambda E lam (R j))) := by
   unfold polyFibK
-  simp only [eval_add, eval_finset_sum, eval_mul, eval_C,
+  simp only [eval_add, eval_finsetSum, eval_mul, eval_C,
              Polynomial.eval_prod, eval_sub, eval_X]
   -- First sum: only k-th term survives.
   have hFirstSum :
@@ -782,7 +782,7 @@ private lemma polyFibK_eval_tauR_eq {d M : ℕ} (lam : ZMod E.q)
         (∏ j' ∈ Finset.univ.erase j,
           (zLambda E lam (R j) - zLambda E lam (R j'))) := by
   unfold polyFibK
-  simp only [eval_add, eval_finset_sum, eval_mul, eval_C,
+  simp only [eval_add, eval_finsetSum, eval_mul, eval_C,
              Polynomial.eval_prod, eval_sub, eval_X]
   -- First sum: all terms vanish (Π_j has factor (τ R j - τ R j) = 0).
   have hFirstSum :

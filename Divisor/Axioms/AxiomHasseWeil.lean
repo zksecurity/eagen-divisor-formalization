@@ -8,7 +8,7 @@
   `Divisor.Axioms` hub), so every theorem outside that leaf is
   axiom-free by construction.
 -/
-import Mathlib.Data.Real.Sqrt
+import Mathlib.Analysis.Real.Sqrt
 import Divisor.Defs
 
 namespace Divisor

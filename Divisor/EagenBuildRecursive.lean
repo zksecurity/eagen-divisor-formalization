@@ -898,7 +898,7 @@ theorem natDegree_normPoly_eq_degE_of_isHonestForExplicit
             Finset.sum_le_sum (fun x₀ _ => sum_ordAt_fst_eq_le E msg.toD hD x₀)
         _ ≤ (normPoly E msg.toD).natDegree :=
             sum_rootMultiplicity_le_natDegree E (normPoly E msg.toD)
-    · push_neg at hD
+    · push Not at hD
       have : ∀ P ∈ E.points, ordAt E msg.toD P = 0 :=
         fun P _ => ordAt_eq_zero_of_zero E hD P
       have h_inner : ∀ x₀ : ZMod E.q,
@@ -1144,7 +1144,7 @@ theorem divisor_identity_at_affine_off_support_for_length4Simple
   have h_notin : (x, y) ∉ zerosFinset E msg.toD := by
     rw [h_simple.h_toD_eq, h_zeros]
     simp only [Finset.mem_insert, Finset.mem_singleton]
-    push_neg
+    push Not
     exact ⟨h_off.1, h_off.2.1, h_off.2.2.1, h_off.2.2.2⟩
   have h_eval_ne : msg.toD.eval x y ≠ 0 := by
     intro h
@@ -1502,7 +1502,7 @@ theorem divisor_identity_for_length4Simple
       rw [div_eq_one_at_P_for_length4Simple E h_simple hns h_in]
       rw [honestCoeffs_eq_one_at_P_for_length4Simple E h_simple hk h_scalars hns h_in]
     · -- Off support.
-      push_neg at h_in
+      push Not at h_in
       obtain ⟨h0, h1, h2, h3⟩ := h_in
       exact divisor_identity_at_affine_off_support_for_length4Simple E h_simple hk h_scalars
         hns hP ⟨h0, h1, h2, h3⟩
@@ -1620,7 +1620,6 @@ theorem ma_completeness_via_isHonestForExplicit
       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ℤ) : ZMod E.q) := by
     intro i
     have := h_honest.1 i
-    push_cast at this
     convert this
   apply ma_completeness_via_isHonestForExplicit_no_residue_match E stmt wit hk msg hkm
     h_honest hD

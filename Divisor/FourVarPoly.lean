@@ -303,7 +303,7 @@ theorem total_degree_le.X
     {E : ECSetup} [Fact (Nat.Prime E.q)] (i : Fin 4) :
     total_degree_le E (X i : FourVarPoly E.q) 1 := by
   unfold total_degree_le
-  haveI : Nontrivial (ZMod E.q) := ZMod.nontrivial _
+  have : Nontrivial (ZMod E.q) := ZMod.nontrivial _
   rw [MvPolynomial.totalDegree_X]
 
 theorem total_degree_le.mono
@@ -328,14 +328,14 @@ theorem total_degree_le.prod
     {E : ECSetup} {α : Type*} (s : Finset α) (f : α → FourVarPoly E.q)
     {D : α → ℕ} (hf : ∀ i ∈ s, total_degree_le E (f i) (D i)) :
     total_degree_le E (∏ i ∈ s, f i) (∑ i ∈ s, D i) := by
-  refine (MvPolynomial.totalDegree_finset_prod s f).trans ?_
+  refine (MvPolynomial.totalDegree_finsetProd s f).trans ?_
   exact Finset.sum_le_sum hf
 
 theorem total_degree_le.prod_const
     {E : ECSetup} {α : Type*} (s : Finset α) (f : α → FourVarPoly E.q)
     {D : ℕ} (hf : ∀ i ∈ s, total_degree_le E (f i) D) :
     total_degree_le E (∏ i ∈ s, f i) (s.card * D) := by
-  refine (MvPolynomial.totalDegree_finset_prod s f).trans ?_
+  refine (MvPolynomial.totalDegree_finsetProd s f).trans ?_
   classical
   calc (∑ i ∈ s, (f i).totalDegree)
       ≤ ∑ _i ∈ s, D := Finset.sum_le_sum hf

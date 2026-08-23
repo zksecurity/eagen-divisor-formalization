@@ -188,16 +188,14 @@ lemma main_bound_small_points
 
 /-- Case when |E.points| > 3D: fiber decomposition + bad fiber bound. -/
 lemma main_bound_large_points
-    (f : FourVarPoly E.q) (D : ℕ) (hD : D ≥ 1)
+    (f : FourVarPoly E.q) (D : ℕ) (_hD : D ≥ 1)
     (hDeg : total_degree_le E f D)
     (hNonzero : ∃ A₀ A₁ : ZMod E.q × ZMod E.q,
         A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ bivEval₂ f A₀ A₁ ≠ 0)
-    (hLarge : E.points.card > 3 * D) :
+    (_hLarge : E.points.card > 3 * D) :
     ((E.points ×ˢ E.points).filter
       (fun p => bivEval₂ f p.1 p.2 = 0)).card
       ≤ 6 * D * E.points.card := by
-  revert f D hD hDeg hNonzero hLarge;
-  intro f D hD hDeg hNonzero hLarge
   set bad := E.points.filter (fun A₀ => ∀ A₁ ∈ E.points, bivEval₂ f A₀ A₁ = 0) with hbad_def
   have hbad_card : bad.card ≤ 3 * D := by
     have := @fiber_count_le_second E f D hDeg;
@@ -216,7 +214,7 @@ lemma main_bound_large_points
       exact add_le_add ( Finset.sum_le_sum fun x hx => Finset.card_filter_le _ _ ) ( Finset.sum_le_sum hgood_card );
     simp_all +decide [ mul_assoc, Finset.card_sdiff ];
     exact le_trans ‹_› ( htotal_card.trans ( by rw [ Finset.inter_eq_left.mpr ( Finset.filter_subset _ _ ) ] ) );
-  nlinarith only [ htotal_card, hbad_card, hLarge, Nat.sub_add_cancel ( show #bad ≤ #E.points from Finset.card_le_card <| Finset.filter_subset _ _ ) ]
+  nlinarith only [ htotal_card, hbad_card, _hLarge, Nat.sub_add_cancel ( show #bad ≤ #E.points from Finset.card_le_card <| Finset.filter_subset _ _ ) ]
 
 /-! ## Main theorem -/
 
