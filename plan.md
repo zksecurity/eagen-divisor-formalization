@@ -1,7 +1,7 @@
 # Plan 4 — proof cleanliness
 
-> **STATUS: PLANNED (2026-08-23).** Exploration done, measurements
-> below; no implementation yet.
+> **STATUS: IN PROGRESS (2026-08-23).** P4.1 landed; P4.2–P4.7
+> pending.
 
 ## Baseline
 
@@ -29,7 +29,7 @@ Audit of the baseline, all verified by tooling on 2026-08-23:
 
 ## Phases
 
-- [ ] **P4.1 Prune the dead AccInv route in `EagenBuildRecursive.lean`**
+- [x] **P4.1 Prune the dead AccInv route in `EagenBuildRecursive.lean`**
       (~8.3k lines; expected reduction ~6k).
       Measurements: only 13 of 222 top-level declarations are used
       outside the file; the AccInv/TerminalInv machinery occupies
@@ -126,3 +126,11 @@ axiom closures stay pinned as at the baseline.
   cycle/redundancy analysis, escape-hatch audit); plan written.
   Baseline `a6b8e5e` audited: 0 cycles, 1 axiom, 0 sorries, pins
   green. Not started.
+* 2026-08-23 — P4.1 landed. Kept the filename (zero importer diff)
+  and deleted the AccInv/TerminalInv head: 8298 → ~1630 lines,
+  223 → 53 declaration blocks (reference-closure over the 12
+  externally used roots, comments stripped before scanning so prose
+  mentions don't count as dependencies). Also removed the stale
+  session-history/deferred-work doc blocks and gave the file an
+  accurate header (eagenBuild driver + IsHonestForExplicit
+  completeness bridge).
