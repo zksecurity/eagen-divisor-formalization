@@ -57,8 +57,7 @@ theorem ma_completeness_base
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm) :
-    ((E.points ×ˢ E.points).filter
-        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   let _ := hValid
   let _ := hDeg
@@ -88,8 +87,7 @@ theorem ma_completeness
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have hMA := ma_completeness_base E stmt wit hk hValid msg hkm hDeg hDegK hAdm hHonestDivisor
   have hNZ : numZeros E msg.toD ≤ stmt.degBound := by
@@ -114,8 +112,7 @@ theorem ma_completeness_q
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
   have hMA := ma_completeness E stmt wit hk hValid msg hkm hDeg hDegK hAdm hHonestDivisor hD
   have hHasse : E.points.card ≤ 2 * E.q := points_card_le_two_q E
@@ -141,11 +138,7 @@ theorem ma_completeness_for_length4Simple
     (hDeg : msg.toD.degE ≤ wit.degBound)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p =>
-          ¬ maVerifierAccepts E stmt msg
-            ⟨p.1, p.2⟩
-            (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm))).card
+    (maRejectSet E stmt msg (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness_base E stmt wit hk hValid msg
     (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm)
@@ -162,11 +155,7 @@ theorem ma_completeness_clean_for_length4Simple
     (hDeg : msg.toD.degE ≤ wit.degBound)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p =>
-          ¬ maVerifierAccepts E stmt msg
-            ⟨p.1, p.2⟩
-            (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm))).card
+    (maRejectSet E stmt msg (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm)).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   -- D ≠ 0 from the eagenBuild_length4_explicit nonzero property + h_toD_eq.
   have hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) := by
@@ -193,11 +182,7 @@ theorem ma_completeness_q_for_length4Simple
     (hDeg : msg.toD.degE ≤ wit.degBound)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p =>
-          ¬ maVerifierAccepts E stmt msg
-            ⟨p.1, p.2⟩
-            (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm))).card
+    (maRejectSet E stmt msg (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm)).card
       ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
   have hMA := ma_completeness_clean_for_length4Simple E stmt msg h_simple wit hk
     h_scalars hValid hDeg hDegK hAdm

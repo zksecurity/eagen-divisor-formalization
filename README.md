@@ -47,6 +47,17 @@ variant IP for the discrete-log relation. The shared objects:
 - `maExtractor`: the extraction algorithm; on a message it either
   returns a candidate witness or fails.
 - `maVerifierAccepts`: the verifier's accept predicate on a challenge.
+- `maAcceptSet E stmt msg hkm`: the challenge pairs in `validPairs E`
+  on which the verifier accepts `msg` (the set the soundness theorems
+  bound). Unfolding lemmas: `maAcceptSet_eq`, `mem_maAcceptSet`.
+- `maRejectSet E stmt msg hkm`: the challenge pairs in
+  `E.points ×ˢ E.points` on which the verifier rejects `msg` (the set
+  the completeness theorems bound). Unfolding lemmas:
+  `maRejectSet_eq`, `mem_maRejectSet`.
+- `IPUniqueThirdRound E stmt msg1`: the third-round-uniqueness clause
+  of the IP theorems (at most one accepted `msg3` per challenge, under
+  the nonvanishing side conditions); holds unconditionally
+  (`ipUniqueThirdRound_holds`).
 
 The soundness theorems share the same first-round hypotheses; they are
 enumerated in full for `ma_extractable` and referenced thereafter.
@@ -87,8 +98,7 @@ theorem ma_extractable
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg stmt.degBound hd hkm = some wit
         ∧ relDlog E stmt wit) ∨
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maAcceptSet E stmt msg hkm).card
       ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card
 ```
 
@@ -148,19 +158,9 @@ theorem ip_extractable
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
          ∧ relDlog E stmt wit) ∨
-     ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
+     (maAcceptSet E stmt msg1 hkm).card
       ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card)
-    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
-        (msg3 msg3' : IPProverMsg3 E.q),
-        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
-        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
-        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
-        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
-            stmt.target.1 (-stmt.target.2) ≠ 0 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
-        msg3 = msg3'
+    ∧ IPUniqueThirdRound E stmt msg1
 ```
 
 Hypotheses: identical to `ma_extractable`, with the first-round message
@@ -206,8 +206,7 @@ theorem ma_completeness
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * stmt.degBound + 4) * E.points.card
 ```
 

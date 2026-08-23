@@ -365,6 +365,61 @@ theorem eventNotEq_subset_badChallenges
     simp only [eventDegSet, Finset.mem_filter]
     exact ⟨hVP, hDef⟩
 
+/-! ### Accept and reject sets
+
+The two challenge-pair sets the headline theorems count. Soundness
+statements bound the accept set over the distinct-x sample space
+`validPairs`; completeness statements bound the reject set over the
+full challenge space `E.points ×ˢ E.points`. -/
+
+/-- Challenge pairs in `validPairs E` on which the MA verifier accepts
+    `msg`. The soundness headlines (`ma_extractable`, `ip_extractable`
+    and variants) bound `(maAcceptSet …).card`. -/
+noncomputable def maAcceptSet (stmt : DlogStatement E.q)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
+    Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+  (validPairs E).filter (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)
+
+theorem maAcceptSet_eq (stmt : DlogStatement E.q)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
+    maAcceptSet E stmt msg hkm =
+      (validPairs E).filter
+        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) :=
+  rfl
+
+@[simp] theorem mem_maAcceptSet {stmt : DlogStatement E.q}
+    {msg : MAProverMsg E.q} {hkm : stmt.k = msg.k}
+    {p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)} :
+    p ∈ maAcceptSet E stmt msg hkm ↔
+      p ∈ validPairs E ∧ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm := by
+  classical
+  simp [maAcceptSet]
+
+/-- Challenge pairs in `E.points ×ˢ E.points` on which the MA verifier
+    rejects `msg`. The completeness headlines (`ma_completeness` and
+    variants) bound `(maRejectSet …).card`. -/
+noncomputable def maRejectSet (stmt : DlogStatement E.q)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
+    Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+  (E.points ×ˢ E.points).filter
+    (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)
+
+theorem maRejectSet_eq (stmt : DlogStatement E.q)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
+    maRejectSet E stmt msg hkm =
+      (E.points ×ˢ E.points).filter
+        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) :=
+  rfl
+
+@[simp] theorem mem_maRejectSet {stmt : DlogStatement E.q}
+    {msg : MAProverMsg E.q} {hkm : stmt.k = msg.k}
+    {p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)} :
+    p ∈ maRejectSet E stmt msg hkm ↔
+      p ∈ E.points ×ˢ E.points ∧
+        ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm := by
+  classical
+  simp [maRejectSet]
+
 /-- The `\relation^{dlog-honest}` completeness relation from paper
     (`ip.tex \ref{thm:ma}`): `(stmt, wit) ∈ relDlog` together with an
     honest first-round message `msg` (whose divisor is principal and

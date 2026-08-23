@@ -273,9 +273,7 @@ theorem ma_completeness_binary_via_combineHyp
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness_base E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinary_via_combineHyp (E := E) h_binary h_combine)
@@ -290,9 +288,7 @@ theorem ma_completeness_binary_with_scalar_via_combineHyp
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness_base E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinaryScaled_via_combineHyp (E := E) h_binary h_combine)
@@ -307,9 +303,7 @@ theorem ma_completeness_binary_via_combineHyp_clean
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg h_adm
@@ -327,9 +321,7 @@ theorem ma_completeness_binary_with_scalar_via_combineHyp_clean
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg h_adm
@@ -355,9 +347,7 @@ theorem ma_completeness_binary_M_eq_3
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have hkm_eq :
       hkm = h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm :=
@@ -508,9 +498,7 @@ theorem ma_completeness_binary_extras
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness_base E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinary (E := E) h_binary h_len h_extras)
@@ -528,9 +516,7 @@ theorem ma_completeness_binary_with_scalar_extras
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness_base E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinaryScaled (E := E)
@@ -549,9 +535,7 @@ theorem ma_completeness_binary_extras_clean
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg h_adm
@@ -572,9 +556,7 @@ theorem ma_completeness_binary_with_scalar_extras_clean
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg h_adm
@@ -707,9 +689,7 @@ theorem ma_completeness_binary_admSetMax_extras
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness_binary_extras E stmt msg wit hk hkm
     h_binary h_len h_extras h_valid h_deg h_deg_k
@@ -733,9 +713,7 @@ theorem ma_completeness_binary_admSetParker_extras
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness_binary_with_scalar_extras E stmt msg wit hk hkm
     h_binary h_len h_extras h_valid h_deg h_deg_k
@@ -759,9 +737,7 @@ theorem ma_completeness_binary_admSetEagen_extras
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness_binary_with_scalar_extras E stmt msg wit hk hkm
     h_binary h_len h_extras h_valid h_deg h_deg_k
@@ -790,9 +766,7 @@ theorem ma_completeness_binary_admSetHash_extras
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness_binary_with_scalar_extras E stmt msg wit hk hkm
     h_binary h_len h_extras h_valid h_deg h_deg_k
@@ -811,9 +785,7 @@ theorem ma_completeness_binary_chain
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_extras :
       ∀ k < h_binary.Ps.length,
@@ -839,9 +811,7 @@ theorem ma_completeness_binary_chain_admSetParker
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_extras :
       ∀ k < h_binary.Ps.length,
@@ -868,9 +838,7 @@ theorem ma_completeness_binary_chain_admSetEagen
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_extras :
       ∀ k < h_binary.Ps.length,
@@ -902,9 +870,7 @@ theorem ma_completeness_binary_chain_admSetHash
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_extras :
       ∀ k < h_binary.Ps.length,
@@ -927,9 +893,7 @@ theorem ma_completeness_binary_chain_clean
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_extras :
       ∀ k < h_binary.Ps.length,
@@ -951,9 +915,7 @@ theorem ma_completeness_binary_chain_admSetMax
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_extras :
       ∀ k < h_binary.Ps.length,
@@ -984,9 +946,7 @@ theorem ma_completeness_binary_length2
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P, Q, h_ps_eq, hxx, hyy⟩ := h_length2
   have h_len : 2 ≤ h_binary.Ps.length := by rw [h_ps_eq]; simp
@@ -1016,9 +976,7 @@ theorem ma_completeness_binary_length2_clean
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   obtain ⟨P, R, h_ps_eq, hxx, hyy⟩ := h_length2
   have h_len : 2 ≤ h_binary.Ps.length := by rw [h_ps_eq]; simp
@@ -2084,9 +2042,7 @@ theorem ma_completeness_binary_length4
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, hP₁, hP₃⟩ := h_length4
   subst P₁
@@ -2125,9 +2081,7 @@ theorem ma_completeness_binary_length4_clean
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, hP₁, hP₃⟩ := h_length4
   subst P₁
@@ -2170,9 +2124,7 @@ theorem ma_completeness_binary_length4_chord
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, h01_x_ne, h23_x_ne,
     hP₀_y_ne, hP₁_y_ne, hP₂_y_ne, hP₃_y_ne,
@@ -2224,9 +2176,7 @@ theorem ma_completeness_binary_length2_admSetMax
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P, Q, h_ps_eq, hxx, hyy⟩ := h_length2
   have h_len : 2 ≤ h_binary.Ps.length := by
@@ -2273,9 +2223,7 @@ theorem ma_completeness_binary_length6_chord
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P₀, P₁, P₂, P₃, P₄, P₅, h_ps_eq,
     h01_x_ne, h23_x_ne, h45_x_ne,
@@ -2348,9 +2296,7 @@ theorem ma_completeness_binary_length4_admSetMax
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, hP₁, hP₃⟩ := h_length4
   subst P₁
@@ -2393,9 +2339,7 @@ theorem ma_completeness_binary_length4_chord_admSetMax
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, h01_x_ne, h23_x_ne,
     hP₀_y_ne, hP₁_y_ne, hP₂_y_ne, hP₃_y_ne,
@@ -2480,9 +2424,7 @@ theorem ma_completeness_binary_length8_chord
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇, h_ps_eq,
     h01_x_ne, h23_x_ne, h45_x_ne, h67_x_ne,
@@ -2585,9 +2527,7 @@ theorem ma_completeness_binary_length6_chord_admSetMax
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P₀, P₁, P₂, P₃, P₄, P₅, h_ps_eq,
     h01_x_ne, h23_x_ne, h45_x_ne,
@@ -2691,9 +2631,7 @@ theorem ma_completeness_binary_length8_chord_admSetMax
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇, h_ps_eq,
     h01_x_ne, h23_x_ne, h45_x_ne, h67_x_ne,
@@ -2789,9 +2727,7 @@ theorem ma_completeness_binary_length4_chord_clean
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, h01_x_ne, h23_x_ne,
     hP₀_y_ne, hP₁_y_ne, hP₂_y_ne, hP₃_y_ne,
@@ -2843,9 +2779,7 @@ theorem ma_completeness_binary_M_eq_3_clean
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    ((E.points ×ˢ E.points).filter
-        (fun p =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have hkm_eq :
       hkm = h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm :=
@@ -3333,9 +3267,7 @@ theorem ma_completeness_binary
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   let h_honest : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm :=
     MAProverMsg.IsHonestForBinary.fromWitness E stmt wit hk msg hkm
@@ -3381,9 +3313,7 @@ theorem ma_completeness_binary_admSetParker
     (h_admSetParker : stmt.admSet = admSetParker (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   let c : ZMod E.q :=
     ((Landmark.eagenBuild_singletons E
@@ -3441,9 +3371,7 @@ theorem ma_completeness_binary_admSetEagen
     (h_admSetEagen : stmt.admSet = admSetEagen (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   let c : ZMod E.q :=
     ((Landmark.eagenBuild_singletons E
@@ -3508,9 +3436,7 @@ theorem ma_completeness_binary_admSetHash
     (h_admSetHash : stmt.admSet = admSetHash r)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   let c : ZMod E.q :=
     (admSetHashInner r
@@ -3571,9 +3497,7 @@ theorem ma_completeness_binary_point_certificate
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_chain :
       Landmark.IteratedLevelStepCombineExtras E
@@ -3615,9 +3539,7 @@ theorem ma_completeness_binary_admSetParker_point_certificate
     (h_admSetParker : stmt.admSet = admSetParker (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_chain :
       Landmark.IteratedLevelStepCombineExtras E
@@ -3660,9 +3582,7 @@ theorem ma_completeness_binary_admSetEagen_point_certificate
     (h_admSetEagen : stmt.admSet = admSetEagen (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_chain :
       Landmark.IteratedLevelStepCombineExtras E
@@ -3712,9 +3632,7 @@ theorem ma_completeness_binary_admSetHash_point_certificate
     (h_admSetHash : stmt.admSet = admSetHash r)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    ((E.points ×ˢ E.points).filter
-        (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+    (maRejectSet E stmt msg hkm).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_chain :
       Landmark.IteratedLevelStepCombineExtras E

@@ -329,4 +329,30 @@ theorem ip_unique_third_round (E : ECSetup)
   simp only [IPProverMsg3.mk.injEq] at *
   exact ⟨by ext i; fin_cases i <;> assumption, g_eq⟩
 
+/-- Third-round-uniqueness clause of the IP extraction theorems: for
+    every challenge and second-round point at which `D` is
+    nonvanishing and whose chord misses `-target`, the verifier
+    accepts at most one third-round message. Holds unconditionally
+    (`ipUniqueThirdRound_holds`); the headline IP theorems conjoin it
+    with the MA dichotomy. -/
+def IPUniqueThirdRound (E : ECSetup) (stmt : DlogStatement E.q)
+    (msg1 : MAProverMsg E.q) : Prop :=
+  ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
+      (msg3 msg3' : IPProverMsg3 E.q),
+      msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
+      msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
+      msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
+      (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
+          stmt.target.1 (-stmt.target.2) ≠ 0 →
+      ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
+      ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
+      msg3 = msg3'
+
+theorem ipUniqueThirdRound_holds (E : ECSetup)
+    (stmt : DlogStatement E.q) (msg1 : MAProverMsg E.q) :
+    IPUniqueThirdRound E stmt msg1 :=
+  fun chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc' =>
+    ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
+      hD₀ hD₁ hD₂ hLP hAcc hAcc'
+
 end Divisor

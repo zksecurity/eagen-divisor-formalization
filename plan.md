@@ -49,7 +49,7 @@ Audit of the baseline, all verified by tooling on 2026-08-23:
       `Divisor/Soundness.lean` and `Divisor/EagenBuildComputable/Bridge.lean`
       import it); (c) delete the unreferenced remainder; (d) build,
       pins, commit.
-- [ ] **P4.2 Name the recurring statement fragments.**
+- [x] **P4.2 Name the recurring statement fragments.**
       Measurements: the accept-set expression
       `((validPairs E).filter (fun p => maVerifierAccepts …)).card`
       is spelled out ~30× (ExtractorBridgeTheorems 18, Hasse 12); the
@@ -134,3 +134,10 @@ axiom closures stay pinned as at the baseline.
   session-history/deferred-work doc blocks and gave the file an
   accurate header (eagenBuild driver + IsHonestForExplicit
   completeness bridge).
+* 2026-08-23 — P4.2 landed. `maAcceptSet`/`maRejectSet` (with `_eq` +
+  `mem_` lemmas) in `Divisor/Soundness.lean`, `IPUniqueThirdRound` (+
+  `ipUniqueThirdRound_holds`) in `Divisor/Protocol.lean`; 88 filter
+  expressions and all 9 uniqueness clauses restated across
+  Completeness, IsHonestForBinary, SafeSupport,
+  ExtractorBridgeTheorems, Hasse; README listings synced. Axiom
+  closures unchanged.
