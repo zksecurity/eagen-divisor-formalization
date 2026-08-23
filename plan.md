@@ -1,8 +1,9 @@
 # Plan: discharge the two divisor axioms
 
-> **NOTE:** this first plan is complete. The active plan is
-> **Plan 2 — point-count currency and a Hasse-free core**, appended
-> at the bottom of this file.
+> **NOTE:** this first plan is complete. The active plans are
+> **Plan 2 — point-count currency and a Hasse-free core** and
+> **Plan 3 — unconditional completeness at any divisor length**,
+> appended at the bottom of this file.
 
 > **STATUS: COMPLETE (2026-08-22).** All phases (0–4) landed and
 > pushed. Every checkbox below is ticked and every clause is backed by
@@ -660,3 +661,97 @@ gives (never silently sharpened without proof).
   per instruction). Decisions recorded: internals in `n` only; `n`
   bounded as a function of `q` once, at the end; terminal layer as a
   leaf module with `_of_count` and `_hasse` flavors.
+
+---
+
+# Plan 3 — unconditional completeness at any divisor length
+
+> **STATUS: PLANNED (2026-08-23).** Exploratory. Independent of
+> Plan 2 (different layer: `EagenBuildLandmark`/`IsHonestForBinary`,
+> no interaction with the Hasse/currency work); default ordering is
+> after Plan 2 lands.
+
+## Where completeness stands
+
+* `ma_completeness(_base)` is fully general in `k` and divisor degree,
+  conditional on `msg.isHonestFor`.
+* The constructive supply (`ma_completeness_binary` family) works for
+  **any support length ≥ 2**, conditional on the chain certificate
+  `IteratedLevelStepCombineExtras` (each chord-combine in the Eagen
+  accumulation is non-degenerate: `combineCanFire` — distinct-`x`
+  combines need both `y ≠ 0` and the chord's third intersection to
+  avoid both input `x`'s; equal-`x` combines must be inverse pairs or
+  safe tangent cases). The certificate is **decidable**
+  (`ma_completeness_binary_point_certificate` is
+  `decide`/`native_decide`-checkable per concrete instance).
+* The certificate is discharged once-and-for-all only for the
+  structured shapes: length 2 (`[P, −P]`), length 4 (two inverse
+  pairs; the `length4Simple` bridge), and the chord families at
+  lengths 4, 6, 8.
+
+**The gap**: no theorem discharges the certificate for arbitrary
+supports — and none can as stated, since degenerate configurations
+genuinely exist (2-torsion in the support; intermediate landmarks
+colliding with input `x`-coordinates). The missing content is a
+*genericity* statement.
+
+## Candidate routes
+
+* **R1 — safe scheduling.** For any nodup sum-zero support, prove
+  SOME combine schedule fires: greedy induction "while length ≥ 2, a
+  safe pair exists". Needs a characterization of global obstructions
+  (all points on one vertical line; all-2-torsion supports) which are
+  handled separately or excluded by a mild hypothesis. Freedom
+  available: `Landmark.iterate` pairs adjacent list elements, so a
+  schedule = a permutation of the support (plus tree shape).
+* **R2 — generic enrichment (recommended fallback, likely easiest).**
+  Enrich the support with a canceling pair `[R, −R]` (sum unchanged,
+  `degE` grows by 2, `isHonestFor` unaffected in substance): every
+  degeneracy imposes polynomially many conditions on `R.1`, so a good
+  `R` exists once `n > poly(len)` — a root-counting argument the repo
+  already has the tools for, at the price of a Plan-2-style largeness
+  hypothesis and a slightly larger honest divisor.
+* **R3 — probabilistic form** (count bad schedules): weakest
+  deliverable, awkward in Lean; only if R1/R2 both fight.
+
+Recommendation: explore R1 first (best statement: no new hypotheses
+beyond nodup + obstruction exclusions); fall back to R2.
+
+## Phases
+
+- [ ] **P3.0 Failure-set inventory.** Lemma-level characterization of
+      `combineCanFire`'s complement per step (finitely many algebraic
+      conditions), and of the global obstructions for R1. Decide the
+      2-torsion policy (exclude by hypothesis vs handle by
+      pre-pairing; note a curve need not have rational 2-torsion).
+- [ ] **P3.1 One-level existence.** R1: "safe pair exists" at a single
+      level (or R2: "good `R` exists" by root counting, with the
+      explicit `n > poly(len)` threshold).
+- [ ] **P3.2 Schedule induction.** Iterate P3.1 through the
+      accumulation to produce `IteratedLevelStepCombineExtras` for the
+      chosen permutation/enriched support; requires permutation- (or
+      enrichment-) invariance lemmas for `eagenBuild_singletons`'s
+      divisor identity.
+- [ ] **P3.3 Headline.** `ma_completeness_binary_any_length`:
+      for any binary witness with nodup support (plus the mild
+      hypotheses P3.0 fixes), there EXISTS an honest message —
+      constructed, not assumed — achieving the completeness bound;
+      existential form alongside the explicit-message form.
+- [ ] **P3.4 Pins, README, docs** — the completeness section of the
+      README gains the any-length statement; pins stay core-three
+      (this plan involves no axioms).
+
+## Risks
+
+| Risk | Where | Mitigation |
+|---|---|---|
+| 2-torsion in the support is a hard degeneracy, not a proof artifact | P3.0 | Explicit hypothesis (`∀ P ∈ support, P.2 ≠ 0`) in v1; lifting it is a separate refinement |
+| `eagenBuild` divisor identity not permutation-stable | P3.2 | The identity is about the divisor of the accumulated function, which is schedule-independent mathematically; if the Lean formulation resists, R2 avoids reordering entirely |
+| Greedy safe-pair claim false for adversarial supports | P3.1 | Fall back to R2 (enrichment), which only needs ONE generic point |
+
+## Status log (Plan 3)
+
+* 2026-08-23 — Plan written from the completeness-reach analysis
+  (any length works per-instance via the decidable certificate;
+  unconditional only ≤ 8). Routes R1/R2/R3 recorded with R1-then-R2
+  as the exploration order. Not started.
