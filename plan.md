@@ -618,6 +618,7 @@ published `9·D·q` form is a Hasse conversion of it. Staying in `n`:
 | Relax headline `hLargeQ` thresholds to the weaker `n`-form needs vs keep verbatim | Relax to a clean single-product form |
 | Keep the completeness-side `q`-forms in core (they only use the trivial `n ≤ 2q`) | Yes — no axiom involved, no reason to move them |
 | Literal deletion of the axiom (fully zero-axiom repo) vs leaf quarantine | Leaf quarantine — deleting the leaf later is trivial |
+| Headline naming: `ma_extractable`/`ip_extractable` own the axiom-free `n`-form (with `_hasse` the paper `q`-form), vs the reverse | Headline = `n`-form: the short name should carry the strongest, axiom-free statement (`hHW` and `hQ` both disappear; error `O((d+k)/n)` with `n` the group order); the `_hasse` leaf recovers today's `36·(d+k+4)·q` statements verbatim, docstrings carry the `\ref{thm:ma}`/`\ref{thm:ip}` paper pointers on both |
 
 ## Ordering and discipline
 
