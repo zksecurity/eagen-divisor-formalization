@@ -26,8 +26,8 @@ import Divisor.NormZDecomp
 import Divisor.BivariateLogDeriv
 import Divisor.ChordCubicSymmetric
 import Divisor.PartialFractionHelper
-import Divisor.Axioms.AxiomChordFiberProductEqNormZUnderSplit
-import Divisor.Axioms.AxiomChordSumEqChordFiberProductLogDeriv
+import Divisor.Bridges.ChordFiberProductNormZ
+import Divisor.Bridges.ChordSumEqChordFiberProductLogDeriv
 import Mathlib
 
 open Polynomial Finset

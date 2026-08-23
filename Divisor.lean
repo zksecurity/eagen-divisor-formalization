@@ -8,7 +8,7 @@ import Divisor.OrdP.ChordAlgebra
 import Divisor.OrdP.ChordNorm
 import Divisor.OrdP.ChordFraction
 import Divisor.OrdP.ChordResultant
-import Divisor.Axioms
+import Divisor.Bridges
 import Divisor.ChordCubicSymmetric
 import Divisor.PartialFractionHelper
 import Divisor.ChordLogDerivHelper
@@ -42,6 +42,7 @@ import Divisor.PolyGDensity
 import Divisor.Protocol
 import Divisor.DivisorPrincipal
 import Divisor.Soundness
+import Divisor.Completeness
 import Divisor.ExtractorBridge
 import Divisor.ExtractorBridgeTheorems
 import Divisor.PolyGTraceFormula

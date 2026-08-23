@@ -1,27 +1,33 @@
 /-
   Divisor/ExtractorBridgeTheorems.lean
 
-  Headline theorems realising paper `\ref{thm:ma}` and `\ref{thm:ip}`:
+  Knowledge soundness of the MA and IP protocols — paper
+  `\ref{thm:ma}` and `\ref{thm:ip}`. Every theorem is axiom-free and
+  stated in the point-count currency `n = E.points.card`; field-size
+  (`q`-only) corollaries live in `Divisor/Hasse.lean`, the only file
+  consuming the Hasse–Weil axiom.
 
-    * `ma_extractable` — knowledge soundness of the MA protocol
-      (Theorem `\ref{thm:ma}`), consolidated point-count form.
-    * `ip_extractable` — knowledge soundness of the 3-round IP
-      protocol (Theorem `\ref{thm:ip}`), consolidated point-count
-      form.
+  Layout, in dependency order:
 
-  Every theorem in this file is axiom-free, stated in the point-count
-  currency `n = E.points.card`. The two-event accounting variants are
-  named `ma_extractable_base` and `ip_extractable_base`. Field-size
-  (`q`-only) corollaries live in the terminal module
-  `Divisor/Hasse.lean`, the only file consuming the Hasse–Weil axiom.
+  * **Bad-challenge cardinality bounds** — `eventDegSet_card_le`,
+    `eventNotEqDefinedSet_card_le`, `badChallenges_card_le`, and the
+    consolidated `badChallenges_card_le_clean` (≤ `24·(d+k+3)·n`).
+  * **MA extractability** — `ma_extractable_base` (two-event
+    accounting), the accept-set inclusion
+    `maAcceptSet_subset_badChallenges`, the implication form
+    `ma_extractable_paper`, and the headline `ma_extractable`
+    (witness, or accept set ≤ `24·(d+k+3)·n`).
+  * **IP extractability** — `ip_extractable_base`,
+    `ip_extractable_paper`, and the headline `ip_extractable`
+    (the MA dichotomy plus third-round uniqueness).
+  * **Soundness probability** — `ma_soundness_probability`, the
+    division-free `|accept|/|validPairs|` bound.
+  * **Contrapositives** — the `witness_of_excess` family: observed
+    acceptance above the bound forces extraction.
 
-  Both theorems consume the infrastructure built up in
-  `Divisor/ExtractorBridge.lean` (D3-D5, S1-S6, polyG bridges,
-  trace formula, sigma matching) and combine with `Soundness.lean`'s
-  `ma_completeness` / extractor definitions.
-
-  Split from `ExtractorBridge.lean`  to keep
-  the user-facing theorem file under the project's size guideline.
+  Proof infrastructure comes from `Divisor/ExtractorBridge.lean`
+  (D3–D5, polyG bridges, trace formula, sigma matching) and
+  `Divisor/GeometricSoundness.lean` (the geometric all-zero route).
 -/
 import Divisor.ExtractorBridge
 import Divisor.GeometricSoundness
@@ -136,12 +142,11 @@ theorem badChallenges_card_le_clean
 
 /-! ## `\ref{thm:ma}`: Extractable MA protocol -/
 
-/-- Internal conditional form of MA extractability.
-
-    This is the geometric all-zero proof with its current technical
-    preconditions exposed. The base theorem `ma_extractable_base` below
-    removes the redundant smoothness hypothesis and handles messages
-    failing the verifier's degree check by the small-accept-set branch. -/
+/-- Internal conditional form of MA extractability: the geometric
+    all-zero proof with its technical preconditions exposed. The base
+    theorem `ma_extractable_base` below discharges the smoothness
+    hypothesis from `E.hDisc` and handles messages failing the
+    verifier's degree check by the small-accept-set branch. -/
 theorem ma_extractable_conditional
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
@@ -247,10 +252,10 @@ theorem ma_extractable_conditional
       spaces vs. `|validPairs|`); discharged from the Hasse–Weil
       axiom in `Divisor/Hasse.lean`.
 
-    The previous `hDenomNZ` precondition has been internalised: its
-    failure is absorbed into `eventDegBound` via the `badDenomA0`
-    count argument inside `sigma_data_of_gd_support_rational`. The
-    headline now matches the paper's two-event accounting cleanly. -/
+    Denominator failures need no separate precondition: they are
+    absorbed into `eventDegBound` via the `badDenomA0` count argument
+    inside `sigma_data_of_gd_support_rational`, so the statement is
+    exactly the paper's two-event accounting. -/
 theorem ma_extractable_base
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q)
@@ -312,20 +317,6 @@ theorem maAcceptSet_subset_badChallenges
     (fun i => msg.m (hkm ▸ i))
     (Finset.mem_filter.mpr ⟨hVP, hCheck⟩)
 
-/-- **Paper-tight accept-set inclusion** (`\ref{thm:ma}` accounting form).
-
-For every prover first-round message, the accepting challenges are
-contained in `badChallenges`. This is only the accounting inclusion; the
-actual extraction implication is `ma_extractable_paper` below. -/
-theorem ma_acceptSet_subset_badChallenges_paper
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k) :
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm))
-      ⊆ badChallenges E msg.toD stmt.target stmt.bases
-          (fun i => msg.m (hkm ▸ i)) :=
-  maAcceptSet_subset_badChallenges E stmt msg hkm
-
 /-- **Paper extraction implication** (`\ref{thm:ma}` clean form).
 
 If a first-round message accepts on more challenges than the proven bad-event
@@ -356,6 +347,47 @@ theorem ma_extractable_paper
       hTargetOnE hBasesOnE hLargeQ hSample with hWit | hSmall
   · exact hWit
   · exact False.elim ((Nat.not_lt_of_ge hSmall) hAcceptLarge)
+
+/-- **MA extractability** (headline, axiom-free). Same disjunction as
+    `ma_extractable_base`, with the two-event bound consolidated into
+    a single point-count term:
+
+      `≤ 24 · (d + k + 3) · |E.points|`.
+
+    The field-size corollary (`≤ 36·(d+k+4)·q` under the Hasse–Weil
+    axiom) is `ma_extractable_hasse` in `Divisor/Hasse.lean`. -/
+theorem ma_extractable
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
+    (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
+        (validPairs E).card) :
+    (∃ wit : DlogWitness E.q,
+        maExtractor E stmt msg stmt.degBound hd hkm = some wit
+        ∧ relDlog E stmt wit) ∨
+    ((validPairs E).filter
+        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+      ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card := by
+  rcases ma_extractable_base E stmt hd hd2 msg hkm
+          hTargetOnE hBasesOnE hLargeQ hSample with hWit | hBound
+  · left; exact hWit
+  · right
+    unfold eventNotEqBound eventDegBound at hBound
+    calc
+      ((validPairs E).filter
+          (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+          ≤ 12 * (stmt.degBound + stmt.k) * E.points.card +
+            (3 * stmt.degBound + 9 * stmt.k + 71) * E.points.card := hBound
+      _ = (12 * (stmt.degBound + stmt.k)
+            + (3 * stmt.degBound + 9 * stmt.k + 71)) * E.points.card := by ring
+      _ ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card := by
+          apply Nat.mul_le_mul_right
+          omega
 
 /-! ## `\ref{thm:ip}`: Knowledge-Sound IP -/
 
@@ -440,67 +472,6 @@ theorem ip_extractable_paper
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
 
-/-- **MA extractability** (headline, axiom-free). Same disjunction as
-    `ma_extractable_base`, with the two-event bound consolidated into
-    a single point-count term:
-
-      `≤ 24 · (d + k + 3) · |E.points|`.
-
-    The field-size corollary (`≤ 36·(d+k+4)·q` under the Hasse–Weil
-    axiom) is `ma_extractable_hasse` in `Divisor/Hasse.lean`. -/
-theorem ma_extractable
-    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k)
-    (hTargetOnE : stmt.target ∈ E.points)
-    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hLargeQ : E.points.card >
-        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg.toD.degE + stmt.k + 2) + 72)
-    (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
-        (validPairs E).card) :
-    (∃ wit : DlogWitness E.q,
-        maExtractor E stmt msg stmt.degBound hd hkm = some wit
-        ∧ relDlog E stmt wit) ∨
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card := by
-  rcases ma_extractable_base E stmt hd hd2 msg hkm
-          hTargetOnE hBasesOnE hLargeQ hSample with hWit | hBound
-  · left; exact hWit
-  · right
-    unfold eventNotEqBound eventDegBound at hBound
-    calc
-      ((validPairs E).filter
-          (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-          ≤ 12 * (stmt.degBound + stmt.k) * E.points.card +
-            (3 * stmt.degBound + 9 * stmt.k + 71) * E.points.card := hBound
-      _ = (12 * (stmt.degBound + stmt.k)
-            + (3 * stmt.degBound + 9 * stmt.k + 71)) * E.points.card := by ring
-      _ ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card := by
-          apply Nat.mul_le_mul_right
-          omega
-
-/-- Backward-compatible name for the consolidated MA extractability theorem. -/
-theorem ma_extractable_clean
-    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k)
-    (hTargetOnE : stmt.target ∈ E.points)
-    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hLargeQ : E.points.card >
-        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg.toD.degE + stmt.k + 2) + 72)
-    (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
-        (validPairs E).card) :
-    (∃ wit : DlogWitness E.q,
-        maExtractor E stmt msg stmt.degBound hd hkm = some wit
-        ∧ relDlog E stmt wit) ∨
-    ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card :=
-  ma_extractable E stmt hd hd2 msg hkm hTargetOnE hBasesOnE hLargeQ hSample
-
 /-- **IP extractability** (headline, axiom-free). Same as
     `ip_extractable_base` but with the cardinality bound consolidated
     into the single point-count term `≤ 24 · (d + k + 3) · |E.points|`.
@@ -541,35 +512,7 @@ theorem ip_extractable
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
 
-/-- Backward-compatible name for the consolidated IP knowledge-soundness theorem. -/
-theorem ip_extractable_clean
-    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg1 : MAProverMsg E.q)
-    (hkm : stmt.k = msg1.k)
-    (hTargetOnE : stmt.target ∈ E.points)
-    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hLargeQ : E.points.card >
-        2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg1.toD.degE + stmt.k + 2) + 72)
-    (hSample : 18 * (msg1.toD.degE + stmt.k + 1) * E.q + 1 ≤
-        (validPairs E).card) :
-    ((∃ wit : DlogWitness E.q,
-         maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
-         ∧ relDlog E stmt wit) ∨
-     ((validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
-      ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card)
-    ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
-        (msg3 msg3' : IPProverMsg3 E.q),
-        msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
-        msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
-        msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
-        (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
-            stmt.target.1 (-stmt.target.2) ≠ 0 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
-        ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
-        msg3 = msg3' :=
-  ip_extractable E stmt hd hd2 msg1 hkm hTargetOnE hBasesOnE hLargeQ hSample
+/-! ## Soundness probability -/
 
 /-- **Soundness probability bound** in natural-number form (axiom-free).
 

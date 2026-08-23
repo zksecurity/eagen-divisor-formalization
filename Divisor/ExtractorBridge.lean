@@ -1,7 +1,7 @@
 /-
   Divisor/ExtractorBridge.lean
 
-  T4 extractor bridge theorems (D3, D4, D5 of the axiom elimination plan).
+  T4 extractor bridge theorems (steps D3, D4, D5 of the extractor chain).
 
   These theorems take σ-matching-style hypotheses (distilled from the
   output of `log_deriv_nonvanishing_criterion`) and produce the
@@ -2613,53 +2613,32 @@ theorem extracted_scalars_valid
         formula). -/
 
 /-
-The original `axiom polyG_zero_trace_formula` universally quantified over
-   `β_fun`. That was unsound: see `BetaUnique.lean` for a counterexample where
-   distinct Silverman III Cor 3.5-compliant decompositions produce different
-   `multAt` values. The original axiom is recorded below for reference and was
-   replaced by a narrowed statement fixing `β_fun` to
-   `betaConstructive E msg.toD` — initially sorry'd, and since fully proved
-   (the `theorem polyG_zero_trace_formula` below carries a complete proof;
-   no `sorryAx` appears in any headline closure).
+**Trace-of-log-derivative identity** (`polyG_zero_trace_formula`
+below). Under `hSplit` (normPoly splits over F_q), `hAccount`
+(betaConstructive accounting identity), and `hAllZero`
+(logDerivCheckFn vanishes on every defined non-vertical pair), the
+denominator-cleared polynomial `polyG` formed from
+`betaConstructive E msg.toD` vanishes on every non-vertical pair in
+`E × E`.
 
-   Original (unsound under weakened sum-bound):
-   axiom polyG_zero_trace_formula
-       {E : ECSetup} (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
-       (hkm : stmt.k = msg.k)
-       (hAllZero : ...)
-       (β_fun : ZMod E.q × ZMod E.q → ℕ)
-       (hβsup : ...) (hβcov : ...) (hβsum : ...) (hβgroup : ...) :
-       ∀ A₀ A₁, ... polyG ... (multAt E β_fun msg.toD k) ... = 0
+**All three hypotheses are essential**:
+* Without `hSplit` + `hAccount`, `\ref{lem:log-derivative}`
+  (`chord_sum_eq_residue_sum`) fails; concrete finite-field
+  counterexamples exist.
+* Without `hAllZero`, a cheating prover's `msg.m` can make
+  `polyG ≠ 0` at some non-vertical pair (by the `polyG ⇔
+  paperResidue` Step-5 equivalence).
 
-**Narrowed trace-of-log-derivative identity (now a fully proved theorem).**
-    Under the hypotheses `hSplit` (normPoly splits over F_q),
-    `hAccount` (betaConstructive accounting identity), and
-    `hAllZero` (logDerivCheckFn vanishes on every defined non-vertical
-    pair), the denominator-cleared polynomial `polyG` formed from
-    `betaConstructive E msg.toD` vanishes on every non-vertical pair
-    in `E × E`.
+The multiplicity function is fixed to `betaConstructive` — universal
+quantification over all decompositions is unsound; see
+`BetaUnique.lean` for the counterexample.
 
-    **All three hypotheses are essential**:
-    * Without `hSplit` + `hAccount`, `\ref{lem:log-derivative}`
-      (`chord_sum_eq_residue_sum`) fails; concrete finite-field
-      counterexamples exist.
-    * Without `hAllZero`, a cheating prover's `msg.m` can make
-      `polyG ≠ 0` at some non-vertical pair (by the `polyG ⇔
-      paperResidue` Step-5 equivalence).
-
-    The multiplicity function is fixed to `betaConstructive` rather
-    than universally quantified over all decompositions. See
-    `BetaUnique.lean` for why universal quantification is unsound
-    (counterexample on `F_17`).
-
-    Classical content: Lang *Algebra* 3rd ed. §VI.5 (norm/trace of a
-    finite separable field extension) + Silverman ATAEC III §1
-    (function-field extension `F_q(E)/F_q(z)`) + Stichtenoth
-    *Algebraic Function Fields and Codes* 2nd ed. §III.1-5
-    (function-field norm, divisor-of-norm, differentials) +
-    Silverman AEC III Cor 3.5 (principal-divisor characterisation
-    on E). Combined with the Hasse-Weil bound (already an axiom) for
-    the density extension.
+Classical content: Lang *Algebra* 3rd ed. §VI.5 (norm/trace of a
+finite separable field extension) + Silverman ATAEC III §1
+(function-field extension `F_q(E)/F_q(z)`) + Stichtenoth
+*Algebraic Function Fields and Codes* 2nd ed. §III.1-5
+(function-field norm, divisor-of-norm, differentials) +
+Silverman AEC III Cor 3.5 (principal-divisor characterisation on E).
 -/
 
 set_option maxHeartbeats 1600000 in

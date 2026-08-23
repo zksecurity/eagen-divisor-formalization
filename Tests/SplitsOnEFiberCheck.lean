@@ -24,7 +24,7 @@
   the axiom (which is now sound) — it documents the predicate
   shape so the regression is grep-able.
 -/
-import Divisor.Axioms.AxiomExistsDivisorMultiplicity
+import Divisor.Bridges.DivisorMultiplicity
 
 namespace DivisorTest
 

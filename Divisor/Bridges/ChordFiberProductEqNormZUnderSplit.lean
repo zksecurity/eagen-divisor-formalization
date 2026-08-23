@@ -3,12 +3,12 @@
 
   Concrete proof of the split-rational chord-fiber-product/normZ
   proportionality.  This file is deliberately phrased against
-  `chord_fiber_product_concrete`, so it can be imported by the legacy
-  axiom module without creating a cycle with the bar-factorisation module
+  `chord_fiber_product_concrete`, so `ChordFiberProductNormZ.lean` can
+  import it without creating a cycle with the bar-factorisation module
   that mentions `chord_fiber_product`.
 -/
-import Divisor.Axioms.AxiomChordFiberDivisibility
-import Divisor.Axioms.AxiomExistsDivisorMultiplicity
+import Divisor.Bridges.ChordFiberDivisibility
+import Divisor.Bridges.DivisorMultiplicity
 import Divisor.ChordFiberWeightedDegree
 import Divisor.FunctionFieldZ
 import Divisor.PartialFractionExpansion

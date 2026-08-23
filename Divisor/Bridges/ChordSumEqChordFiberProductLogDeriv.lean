@@ -1,24 +1,20 @@
 /-
-  Divisor/Axioms/AxiomChordSumEqChordFiberProductLogDeriv.lean
+  Divisor/Bridges/ChordSumEqChordFiberProductLogDeriv.lean
 
   Trace-of-log-derivative identity. The exported API
-  `chord_sum_eq_chord_fiber_product_logDeriv` is now a *theorem* derived
-  from the chord-specific theorem
+  `chord_sum_eq_chord_fiber_product_logDeriv` derives from the
+  chord-specific theorem
   `chord_fiber_product_logDeriv_eq_logDerivTerm_trace`, which in turn
-  derives from the **strictly narrower generic axiom**
+  derives from the generic formula
   `Polynomial.resultant_logDeriv_at_split_specialization`
-  (in `AxiomResultantLogDerivAtSplit.lean`) plus chord-cubic-specific
-  algebra.
-
-  The chord-specific identity is now a *theorem*: the only axiom in its
-  closure is the generic resultant log-derivative formula. The
-  chord-cubic plumbing — computing `f_X`, `f_T`, `g_X`, `g_T`, `g_val`
-  for `f := chordCubicBiv` and `g := DLineBiv` and matching to
-  `logDerivTerm` — is mechanised in this file.
+  (in `Divisor/Bridges/ResultantLogDerivAtSplit.lean`) plus
+  chord-cubic-specific algebra: computing `f_X`, `f_T`, `g_X`, `g_T`,
+  `g_val` for `f := chordCubicBiv` and `g := DLineBiv` and matching to
+  `logDerivTerm`.
 -/
 import Divisor.Defs
-import Divisor.Axioms.AxiomChordFiberProductEqNormZUnderSplit
-import Divisor.Axioms.AxiomResultantLogDerivAtSplit
+import Divisor.Bridges.ChordFiberProductNormZ
+import Divisor.Bridges.ResultantLogDerivAtSplit
 import Divisor.BivariateLogDeriv
 import Divisor.FunctionFieldZ
 import Divisor.Sketch.ChordFiberGeometry
@@ -37,7 +33,7 @@ chord cubic `f := chordCubicBiv` and the bivariate D-on-line lift
 `g := DLineBiv` at a chord-curve point `(x, lam·x + μ)` in terms of
 the project's existing scalar functions.
 
-Combined with the generic resultant log-derivative axiom
+Combined with the generic resultant log-derivative formula
 `Polynomial.resultant_logDeriv_at_split_specialization`, they let us
 identify each per-root term in the resultant log-derivative formula
 with the project's `logDerivTerm`. -/
@@ -151,15 +147,14 @@ private lemma DLineBiv_eval_C_derivative_eval
       Polynomial.derivative_add, Polynomial.derivative_C, Polynomial.derivative_X]
   simp only [Polynomial.eval_neg, Polynomial.eval_C, zero_mul, zero_sub, zero_add, mul_one]
 
-/-! ## Chord-specific log-derivative identity (theorem)
+/-! ## Chord-specific log-derivative identity
 
-The narrow project-shaped axiom that used to live here is now a
-theorem, derived from the strictly narrower generic axiom
+Derived from the generic
 `Polynomial.resultant_logDeriv_at_split_specialization` plus the five
 explicit-evaluation lemmas above. -/
 
-/-- **Theorem (was axiom): chord-specific log-derivative identity at the
-chord intercept.**
+/-- **Chord-specific log-derivative identity at the chord
+intercept.**
 
 For `D : CoordRingElt E.q`, slope `lam`, and intercept `μ : ZMod E.q`
 where the chord cubic `intersectionPoly E lam μ` splits over
@@ -193,7 +188,7 @@ theorem chord_fiber_product_logDeriv_eq_logDerivTerm_trace
       (chordCubicBiv E lam).map (Polynomial.evalRingHom μ)
         = intersectionPoly E lam μ :=
     chordCubicBiv_map_evalRingHom E lam μ
-  -- 3. Translate the four hypotheses to the generic axiom's form.
+  -- 3. Translate the four hypotheses to the generic formula's form.
   have hSplit' :
       ((chordCubicBiv E lam).map (Polynomial.evalRingHom μ)).Splits := by
     rw [hMap_eq]; exact hSplit
@@ -214,12 +209,12 @@ theorem chord_fiber_product_logDeriv_eq_logDerivTerm_trace
     rw [chordCubicBiv_map_derivative_eval]
     rw [hMap_eq] at hx
     exact hChordCone x hx
-  -- 4. Apply the generic resultant log-derivative axiom.
-  have hAxiom :=
+  -- 4. Apply the generic resultant log-derivative formula.
+  have hGeneric :=
     Polynomial.resultant_logDeriv_at_split_specialization
       (chordCubicBiv E lam) (DLineBiv E lam D) μ
       (chordCubicBiv_monic E lam) hF_ne hSplit' hg_def' hf_X_def'
-  rw [hAxiom, hMap_eq]
+  rw [hGeneric, hMap_eq]
   -- 5. Match per-root expressions to `logDerivTerm` (`.sum` propagates).
   apply congrArg Multiset.sum
   apply Multiset.map_congr rfl

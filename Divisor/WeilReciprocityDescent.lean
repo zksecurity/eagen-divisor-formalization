@@ -19,13 +19,9 @@
   divisor multiplicity function `β_fun` matching `D`'s zero divisor,
   plus the per-challenge geometric side conditions.
 
-  Historical note: this file used to also contain a sorry'd
-  `weil_residue_identity` chain (deriving the identity directly from
-  `msg.isHonestFor` instead of explicit divisor data). That chain was
-  dead code — the completeness path goes through
-  `MACompletenessCore` — and has been removed; the honest-divisor
-  identification is supplied by the strengthened
-  `MAProverMsg.isHonestFor` contract instead.
+  The completeness path goes through `MACompletenessCore`; the
+  honest-divisor identification is supplied by the
+  `MAProverMsg.isHonestFor` contract.
 -/
 import Divisor.Defs
 import Divisor.LogDeriv

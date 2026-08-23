@@ -19,7 +19,7 @@ import Divisor.GeomLocalOrder
 import Divisor.CoeffDescent
 import Divisor.PartialFractionExpansion
 import Divisor.SlopeChoice
-import Divisor.Axioms.AxiomChordFiberProductBarFactored
+import Divisor.Bridges.ChordFiberProductBarFactored
 
 open Polynomial Finset Classical
 
@@ -956,7 +956,7 @@ Rational non-vanishing of the chord-fiber product.
 
 `chord_fiber_product` is a concrete definition (the X-resultant of
 the chord cubic against the D-on-line lift; see
-`Divisor/Axioms/AxiomChordFiberProductEqNormZUnderSplit.lean`). Its
+`Divisor/Bridges/ChordFiberProductNormZ.lean`). Its
 non-vanishing for nonzero `D` is the function-field statement that
 the norm `N_{F_q(E)/F_q(z)}(D)` of a nonzero rational function in the
 upper field is a nonzero rational function in the base field. This is
@@ -1067,13 +1067,9 @@ theorem chord_fiber_product_bar_z_fiber_accounting
 /--
 Geometric divisor-of-norm factorisation over `F_qbar`.
 
-Now a thin wrapper over `chord_fiber_product_bar_eq_geom_prod`: the
-narrow factored-form bridge axiom states this exact factorisation,
-so the previous derivation through `chord_fiber_product_bar_z_fiber_accounting`
-+ `splits_factorization_of_roots_card_eq` + `prod_fiberwise_of_maps_to`
-is no longer needed.
-
-The bundled theorem is retained as a stable downstream entry point.
+A thin wrapper over `chord_fiber_product_bar_eq_geom_prod`, which
+states this exact factorisation; bundled here as a stable downstream
+entry point.
 -/
 theorem chord_fiber_product_bar_factorisation
     (D : CoordRingElt E.q) (lam : ZMod E.q)
@@ -2697,10 +2693,9 @@ private theorem geomPolyGFull_identically_zero_on_ExE
 
 /-- **Bridge from the linear `hLargeQ` threshold to the quadratic
 `hELarge` inequality** required by `geomPolyGFull_identically_zero_on_ExE`.
-Point-count currency (Plan 2): with the DKL bound at `12·(s+k)·n` the
-comparison is `n`-vs-`n²` and needs only `n > 15·d + 21·k + 73`,
-which the stated threshold implies outright — no Hasse content, no
-`√` analysis. -/
+With the DKL bound at `12·(s+k)·n` the comparison is `n`-vs-`n²` and
+needs only `n > 15·d + 21·k + 73`, which the stated threshold implies
+outright — no Hasse content, no `√` analysis. -/
 private theorem hELarge_of_hLargeQ_main
     (D : CoordRingElt E.q) (gd : GeometricDivisorData E D) (k : ℕ)
     (hLargeQ : E.points.card >
@@ -5035,8 +5030,8 @@ private theorem sigma_data_of_gd_support_rational
   have hELargeDkl : E.points.card * E.points.card - 2 * E.points.card >
         12 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) *
           E.points.card := by
-    -- Point-count currency (Plan 2): compare `12·T·n` against `n² − 2n`
-    -- directly; the linear threshold from `_hLargeQ` suffices.
+    -- Compare `12·T·n` against `n² − 2n` directly; the linear
+    -- threshold from `_hLargeQ` suffices.
     have hZC : zerosCard E msg.toD ≤ msg.toD.degE := by
       have hβcov := betaCanonical_covers E msg.toD _hDnz
       have hβpos : ∀ k : Fin (zerosCard E msg.toD),

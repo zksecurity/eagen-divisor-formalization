@@ -15,8 +15,10 @@ Requires elan + Lean 4 toolchain (see `lean-toolchain`).
 
 ## Theorem Surface
 
-The headline theorems live in `Divisor/ExtractorBridgeTheorems.lean` and
-`Divisor/Soundness.lean`. The public surface below is the axiom-free
+The headline theorems live in `Divisor/ExtractorBridgeTheorems.lean`
+(knowledge soundness), `Divisor/Completeness.lean` (completeness), and
+`Divisor/Hasse.lean` (field-size forms). The public surface below is
+the axiom-free
 point-count surface: every bound is stated in the currency
 `n = |E(F_q)|` (`E.points.card`). Naming convention: a short name is
 the point-count form (axiom-free); a `_q` suffix is the field-size form
@@ -190,8 +192,8 @@ pins the prover's polynomials to the witness.
 > Then the honest prover is rejected on few challenges: the number of pairs
 > $`(P_1, P_2) \in E \times E`$ on which the verifier does not accept is at
 > most $`(3d+4)\,|E(\mathbb{F}_q)|`$. The field-size form
-> ($`\le (6(d+1)+6)q`$ for $`q \ge 5`$, via the trivial fiber bound —
-> no axiom) is `ma_completeness_q`.
+> ($`\le (6(d+1)+6)q`$, via the trivial fiber bound — no axiom) is
+> `ma_completeness_q`.
 
 Lean:
 ```lean
@@ -353,32 +355,31 @@ Lean source: `Divisor/Axioms/AxiomHasseWeil.lean`.
 
 ### Discharged former axioms
 
-Both divisor-theoretic facts the project once assumed are now theorems,
-proved on top of the Dedekind-domain structure of the curve's
-coordinate ring (see "Vendored code" below) and machine-checked in the
-build. Their statements are unchanged — same names, same signatures, in
-the same files — so downstream consumers were untouched.
+Both divisor-theoretic facts the project once assumed are now
+theorems, proved on top of the Dedekind-domain structure of the
+curve's coordinate ring (see "Vendored code" below) and
+machine-checked in the build. They live in the bridge layer
+`Divisor/Bridges/`.
 
-#### `Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero`
+#### `Divisor.CoordRingElt.divisorClass_eq_zero_of_splitsOnE`
 
 > **Theorem (principal-divisor triviality), formerly an axiom.** Let $`E`$ be an elliptic curve
 > over $`\mathbb{F}_q`$, and let $`D = a(x) - b(x) y`$ be a nonzero
-> coordinate-ring element that genuinely involves $`y`$, i.e. $`b \ne 0`$.
+> coordinate-ring element.
 > Assume `splitsOnE E D`: every zero of $`D`$ is visible over
 > $`\mathbb{F}_q`$, meaning the norm polynomial of $`D`$ splits into linear
 > factors over $`\mathbb{F}_q`$ and each root has an $`\mathbb{F}_q`$-rational
 > fibre on the curve. Then the divisor of $`D`$, assembled from the local
 > orders `ordAt` at the affine points together with the pole at infinity,
 > is principal; hence its class in the coordinate-ring class group vanishes,
-> $`[\mathrm{div}(D)] = 0`$. The companion case $`b = 0`$, where $`D`$ is a
-> polynomial in $`x`$, is a separate theorem.
+> $`[\mathrm{div}(D)] = 0`$.
 
 Formal statement:
 ```lean
-theorem CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
+theorem CoordRingElt.divisorClass_eq_zero_of_splitsOnE
     (E : ECSetup) (D : CoordRingElt E.q)
     (_hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (_hSplit : splitsOnE E D) (_hbNZ : D.b ≠ 0) :
+    (_hSplit : splitsOnE E D) :
     divisorClass E (divisorOfD E D)
       (divisorOfD_finiteSupport E D) = 0
 ```
@@ -393,9 +394,6 @@ Hypotheses:
   each root has an `F_q`-rational fibre on the curve. Without this, `D`
   could have zeros only over an extension field, and the project's
   divisor would miss that mass.
-- `_hbNZ : D.b ≠ 0`: `D` genuinely involves `y` (it is not a polynomial
-  in `x` alone). The `D.b = 0` case is a separate, already-proved
-  theorem.
 
 Intuition: the divisor of a rational function (its formal sum of zeros
 minus poles, counted with multiplicity) is principal, so its class in
@@ -493,7 +491,7 @@ identify that integral norm with the base-changed chord-fibre
 resultant, by comparing the product over field embeddings (the norm)
 with the product over the roots of the chord cubic (the resultant).
 
-Lean source: `Divisor/Axioms/AxiomChordFiberDivisibility.lean` (the
+Lean source: `Divisor/Bridges/ChordFiberDivisibility.lean` (the
 statement, with the two-line assembly), proved on
 `Divisor/OrdP/ChordAlgebra.lean`, `Divisor/OrdP/ChordNorm.lean`,
 `Divisor/OrdP/ChordFraction.lean`, `Divisor/OrdP/ChordResultant.lean`.

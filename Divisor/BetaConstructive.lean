@@ -467,17 +467,15 @@ multiplicity) over `F_q`. Equivalent to saying every root is `F_q`-rational. -/
 def normPoly_splits_over_Fq (D : CoordRingElt E.q) : Prop :=
   Multiset.card (normPoly E D).roots = (normPoly E D).natDegree
 
-/-! ## Abel-theorem content under splitting (historical documentation)
+/-! ## Abel-theorem content under splitting
 
     The group-sum-zero property needed downstream — the weighted
-    group-sum-zero identity (the "Abel's theorem on E" content) — was
-    originally recorded here as a narrow axiom on `betaConstructive`.
-    That axiom was found unsound and deleted (see the note below);
-    today the identity is `ordAt_group_sum_zero_under_split` in
+    group-sum-zero identity ("Abel's theorem on E") — is
+    `ordAt_group_sum_zero_under_split` in
     `Divisor/OrdP/LocalRing.lean`, a theorem resting on the
-    divisor-class axiom `CoordRingElt.divisorClass_eq_zero_of_b_ne_zero`.
-    The classical background below is retained because it documents
-    the precondition story shared by both formulations.
+    divisor-class theorem `CoordRingElt.divisorClass_eq_zero_of_splitsOnE`.
+    It cannot be stated for `betaConstructive` (see the note below).
+    The classical background here documents the precondition story.
 
     Classical citation: **Silverman, "The Arithmetic of Elliptic
     Curves" (AEC), Chapter III, Corollary 3.5** (p. 63) — a divisor
@@ -515,14 +513,13 @@ def normPoly_splits_over_Fq (D : CoordRingElt E.q) : Prop :=
     used downstream.
 -/
 
--- The previous `CoordRingElt.divisor_group_sum_zero` axiom (and its
--- derived `betaConstructive_group_sum_zero` theorem) have been
--- deleted. Both were unsound: `betaConstructive`'s twin Nat-division
--- surrogate is provably non-faithful to the true ord_P, so the
--- β-weighted group sum is not always zero (counterexample over
--- `F_5`, see `Divisor/Axioms/AxiomExistsDivisorMultiplicity.lean`).
--- Group-sum-zero now comes from `betaCanonical_group_sum_zero` in
--- the new axiom file, with witness from the existential β.
+-- No group-sum-zero statement is possible for `betaConstructive`:
+-- its twin Nat-division surrogate is provably non-faithful to the
+-- true ord_P, so the β-weighted group sum is not always zero
+-- (counterexample over `F_5`, see
+-- `Divisor/Bridges/DivisorMultiplicity.lean`). Group-sum-zero comes
+-- from `betaCanonical_group_sum_zero` in that module, with witness
+-- from the existential β.
 -- `betaConstructive` here is retained only for the unconditional
 -- bound `Σ β ≤ D.degE` and the support/coverage shape; it is NOT
 -- in the trust closure.

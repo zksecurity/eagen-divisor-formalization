@@ -1,6 +1,6 @@
 /-
-  Divisor/OrdP/ChordNorm.lean — plan.md Phase 3b: the relNorm calculus
-  lower bound.
+  Divisor/OrdP/ChordNorm.lean — the relNorm-calculus lower bound for
+  the chord-fiber product.
 
   For each chord intercept `z₀`, the fiber of geometric zeros of `D`
   above `z₀` contributes its summed multiplicity to the `(Z − z₀)`-adic
@@ -9,7 +9,8 @@
 
     `(Z − z₀)^{Σ_{Q ↦ z₀} gd.mult Q} ∣ intNorm F̄[Z] (ChordModel) D̄`.
 
-  Chain: P3.pre gives `D̄ ∈ m_Q^{mult Q}` at every geometric zero
+  Chain: the geometric valuation bridge gives `D̄ ∈ m_Q^{mult Q}` at
+  every geometric zero
   (`intValuation_le_pow_iff_mem`); distinct points give distinct
   maximal ideals, so the fiber product `∏ m_Q^{mult Q}` divides
   `span {D̄}`; `relNorm` is monotone and multiplicative with
@@ -156,7 +157,7 @@ theorem relNorm_chordPointIdeal_le (Q : GeomPoint E) {z₀ : Fqbar E}
     (Ideal.span_singleton_le_iff_mem _).mpr (X_sub_C_mem_comap E lam Q hz)
   exact (hmax.eq_of_le hprime.ne_top hle).symm
 
-/-! ## The lower bound (plan.md 3b) -/
+/-! ## The lower bound -/
 
 /-- **The relNorm lower bound**: for every chord intercept `z₀`,
 `(Z − z₀)^{Σ_{Q ↦ z₀} mult Q}` divides the relative norm of `D̄`. -/

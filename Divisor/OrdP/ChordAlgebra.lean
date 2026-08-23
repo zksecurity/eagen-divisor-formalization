@@ -1,5 +1,5 @@
 /-
-  Divisor/OrdP/ChordAlgebra.lean — plan.md Phase 3a: the `F̄[Z]`-algebra
+  Divisor/OrdP/ChordAlgebra.lean — the `F̄[Z]`-algebra
   structure on the base-changed coordinate ring, through the chord
   coordinate `z = y − λ̄·x`.
 
@@ -12,8 +12,8 @@
 
   (`chordEquiv`), and uses it to install, per `lam`, the `F̄[Z]`-algebra
   structure on the type synonym `ChordModel E lam` of `R̄`, together
-  with the `Module.Finite` / `Module.Free` instances that plan.md 3b's
-  `relNorm` calculus and 3c's norm computation consume. The power
+  with the `Module.Finite` / `Module.Free` instances that the
+  `relNorm` calculus and the norm-is-resultant computation consume. The power
   basis `{1, x̄, x̄²}` comes from `AdjoinRoot.powerBasis'` across the
   isomorphism.
 -/

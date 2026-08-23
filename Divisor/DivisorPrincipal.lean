@@ -4,8 +4,8 @@
   Principal-divisor wrapper for a nonzero `D : CoordRingElt E.q`.
 
   The `CoordRingElt.has_principal_divisor` theorem (Silverman III.3.5
-  specialized; historically an axiom, now proved in
-  `Divisor/HasPrincipalDivisor.lean`) delivers an integer multiplicity
+  specialized; proved in `Divisor/HasPrincipalDivisor.lean`) delivers
+  an integer multiplicity
   function `β : ZMod² → ℕ` satisfying:
   * Support on `D`'s affine zeros on `E`.
   * Total weight equals `D.degE`.

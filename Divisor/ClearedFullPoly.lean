@@ -1912,9 +1912,8 @@ theorem clearedFullPoly_total_degree_le
     AND the line is non-vertical — is at most
     `12·(2·D.degE + k + 6)·|E|`.
 
-    Point-count currency (Plan 2): the `bivariate_poly_zeros_on_ExE_le`
-    bound `6·D·|E|` with total degree ≤ 4·D.degE + 2·k + 12, no case
-    split and no Hasse content. -/
+    Via the `bivariate_poly_zeros_on_ExE_le` bound `6·D·|E|` at total
+    degree ≤ 4·D.degE + 2·k + 12 — no case split, no Hasse content. -/
 theorem log_deriv_sz_paper_core
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)

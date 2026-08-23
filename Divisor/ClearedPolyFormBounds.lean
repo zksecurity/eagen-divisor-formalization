@@ -14,7 +14,6 @@
     * Total bound `logDerivCheckFn_undefined_set_bound` (and tight
       version `logDerivCheckFn_undefined_set_bound_tight`).
 
-  Split from `ClearedPolyForm.lean` .
 -/
 import Divisor.ClearedPolyForm
 

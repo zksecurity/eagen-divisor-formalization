@@ -1,25 +1,22 @@
 /-
-  Divisor/Axioms/AxiomResultantLogDerivAtSplit.lean
+  Divisor/Bridges/ResultantLogDerivAtSplit.lean
 
   Logarithmic derivative of a bivariate resultant at a split
-  specialization point.
-
-  This file contains the generic narrowing of the chord-fiber
+  specialization point — the generic core of the chord-fiber
   log-derivative identity. The chord-specific theorem
-  `chord_fiber_product_logDeriv_eq_logDerivTerm_trace`
-  in `Divisor/Axioms/AxiomChordSumEqChordFiberProductLogDeriv.lean` is
+  `chord_fiber_product_logDeriv_eq_logDerivTerm_trace` in
+  `Divisor/Bridges/ChordSumEqChordFiberProductLogDeriv.lean` is
   derived from the theorems here plus chord-cubic-specific algebra.
 
-  The generic resultant/specialisation bridge is theorem-backed below:
-  first prove the dual-number product formula for resultants at a split
-  specialization, then take the `ε` coefficient to obtain the derivative
-  product formula, and finally divide by the nonzero resultant value for
-  the logarithmic-derivative form.
+  Route: prove the dual-number product formula for resultants at a
+  split specialization, take the `ε` coefficient for the derivative
+  product formula, and divide by the nonzero resultant value for the
+  logarithmic-derivative form.
 -/
 import Mathlib.RingTheory.Polynomial.Resultant.Basic
 import Mathlib.Algebra.Polynomial.Derivative
 import Mathlib.Algebra.DualNumber
-import Divisor.Axioms.AxiomTraceLogDeriv
+import Divisor.Bridges.TraceLogDeriv
 import Divisor.PolynomialDifferential
 
 namespace Polynomial

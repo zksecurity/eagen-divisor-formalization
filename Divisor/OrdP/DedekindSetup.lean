@@ -1,6 +1,6 @@
 /-
   Divisor/OrdP/DedekindSetup.lean — Dedekind-domain structure on the
-  coordinate ring of an `ECSetup` curve (plan.md, Phase 0).
+  coordinate ring of an `ECSetup` curve.
 
   This is the bridge between the vendored Tau Ceti development
   (`Divisor/Vendor/TauCeti/*`) and the project's `ECSetup`:
@@ -18,7 +18,7 @@
     Tau Ceti's `XYIdeal_isMaximal_of_equation` and nontriviality is
     `XYIdeal_ne_bot`.
 
-  Downstream (plan.md Phases 1–3) this is what `ordAt_eq_count`,
+  Downstream, this is what `ordAt_eq_count`,
   the factorization of `spanSingleton D.toCoordinateRing`, and the
   norm-pushforward argument are stated over.
 -/

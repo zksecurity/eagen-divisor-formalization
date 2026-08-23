@@ -1,6 +1,6 @@
 /-
-  Divisor/OrdP/ValuationBridgeOrd.lean — Phase 1d of plan.md: the
-  `ordAt` bridge theorem over `ZMod E.q`.
+  Divisor/OrdP/ValuationBridgeOrd.lean — the `ordAt` valuation
+  bridge over `ZMod E.q`.
 
   Main results:
 
@@ -174,7 +174,7 @@ theorem pointPrime_intValuation_nonTwoTorsion (D : CoordRingElt E.q)
 
 /-! ## The headline bridge and its count forms -/
 
-/-- **The valuation bridge** (plan.md 1d, `ZMod` side): for
+/-- **The valuation bridge** (`ZMod` side): for
 `P ∈ E.points` and `D ≠ 0`, the project's recursive `ordAt` computes
 the `v_P`-adic valuation: `v_P(D) = exp(−ordAt E D P)`. -/
 theorem pointPrime_intValuation_toCoordinateRing (D : CoordRingElt E.q)

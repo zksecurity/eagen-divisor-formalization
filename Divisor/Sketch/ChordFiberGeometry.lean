@@ -141,11 +141,10 @@ theorem DLineBar_eval_eq_geomEval_at_zLambda
 
 /-! ## Formal X-derivative of `chordCubicBar`
 
-Useful local helper for the log-derivative identity (proved on the
+Local helper for the log-derivative identity (proved on the
 production side as `chord_sum_eq_chord_fiber_product_logDeriv` in
-`Divisor/Axioms/AxiomChordSumEqChordFiberProductLogDeriv.lean`; the
-sorry'd Sketch duplicate was deleted in plan.md Phase 4). Identifies
-the formal X-derivative
+`Divisor/Bridges/ChordSumEqChordFiberProductLogDeriv.lean`).
+Identifies the formal X-derivative
 of the chord cubic with the chord-cone denominator factor
 `3*x^2 + A - 2*lambda*y` that appears in `logDerivTerm`. -/
 
