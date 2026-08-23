@@ -24,9 +24,6 @@
   `Divisor.OrdP.LocalRing` here is cycle-free because `splitsOnE`
   lives in its own module `Divisor.SplitsOnE`.
 -/
-import Divisor.Defs
-import Divisor.BetaConstructive
-import Divisor.SplitsOnE
 import Divisor.OrdP.LocalRing
 
 namespace Divisor

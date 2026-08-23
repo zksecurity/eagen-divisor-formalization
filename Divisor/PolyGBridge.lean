@@ -16,7 +16,6 @@
   bridge from `clearedFiberPoly` to `polyGPoly` (the paper-level
   residue identity) is future work.
 -/
-import Divisor.ClearedPolyForm
 import Divisor.ClearedPolyFormBounds
 import Divisor.PolyGSlopeProjection
 

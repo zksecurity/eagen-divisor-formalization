@@ -8,7 +8,6 @@
   that mentions `chord_fiber_product`.
 -/
 import Divisor.Bridges.ChordFiberDivisibility
-import Divisor.Bridges.DivisorMultiplicity
 import Divisor.ChordFiberWeightedDegree
 import Divisor.FunctionFieldZ
 import Divisor.PartialFractionExpansion

@@ -10,7 +10,6 @@
   `GeometricDivisorData` is routine and proved below.
 -/
 import Divisor.GeomBase
-import Divisor.BetaConstructive
 import Mathlib.Algebra.CharP.Lemmas
 import Mathlib.FieldTheory.Perfect
 import Mathlib.RingTheory.Polynomial.Basic

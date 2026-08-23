@@ -39,8 +39,6 @@
   classical (pole at `∞` is exactly `D.degE`) but over `F_q` it
   requires `N(D)` to split; we only establish the upper bound here.
 -/
-import Divisor.Defs
-import Divisor.ClearedPolyForm
 import Divisor.ClearedPolyFormBounds
 import Mathlib.Algebra.Polynomial.Roots
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic

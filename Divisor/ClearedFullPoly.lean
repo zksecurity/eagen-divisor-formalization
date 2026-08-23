@@ -27,11 +27,8 @@
   expressions like `(ZMod q)[X]`. `Polynomial` is globally opened; the
   `MvPolynomial` namespace is not.
 -/
-import Divisor.ClearedPolyForm
 import Divisor.ClearedPolyFormBounds
-import Divisor.FourVarPoly
 import Divisor.BivariateZerosOnExE
-import Divisor.SlopeDist
 
 open Polynomial Finset
 

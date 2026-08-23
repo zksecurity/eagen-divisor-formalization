@@ -17,13 +17,7 @@
   `Divisor/ExtractorBridgeTheorems.lean`; the completeness theorems in
   `Divisor/Completeness.lean`.
 -/
-import Divisor.Defs
 import Divisor.Bridges
-import Divisor.SupportDisjoint
-import Divisor.LogDeriv
-import Divisor.ClearedPolyForm
-import Divisor.Protocol
-import Divisor.MACompletenessCore
 import Divisor.EagenBuildRecursive
 
 namespace Divisor

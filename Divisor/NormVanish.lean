@@ -1,7 +1,6 @@
 /-
   Divisor/NormVanish.lean — `\ref{thm:norm-vanish}` (Norm Vanishing)
 -/
-import Divisor.Defs
 import Divisor.SlopeDist
 
 open Finset

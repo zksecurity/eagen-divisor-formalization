@@ -30,7 +30,6 @@
   No new axioms, no `sorry` / `admit`.
 -/
 import Divisor.FunctionFieldZ
-import Divisor.PartialFractionExpansion
 import Divisor.ResidueIdentity
 
 open Polynomial Finset

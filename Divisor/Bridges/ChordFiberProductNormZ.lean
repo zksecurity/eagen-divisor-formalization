@@ -7,12 +7,7 @@
   `Divisor/Bridges/ChordFiberProductEqNormZUnderSplit.lean` against
   the `chord_fiber_product` API.
 -/
-import Divisor.Defs
-import Divisor.BetaConstructive
-import Divisor.FunctionFieldZ
-import Divisor.ChordFiberProductConcrete
 import Divisor.Bridges.ChordFiberProductEqNormZUnderSplit
-import Divisor.Bridges.DivisorMultiplicity
 
 open Polynomial
 

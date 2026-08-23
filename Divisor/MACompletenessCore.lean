@@ -12,9 +12,6 @@
   * `ma_completeness_parameterized` — the parameterized rejection-set
     bound, taking the per-pair `logDerivCheckFn = 0` claim as a hook.
 -/
-import Divisor.Defs
-import Divisor.SupportDisjoint
-import Divisor.LogDeriv
 import Divisor.Protocol
 
 namespace Divisor

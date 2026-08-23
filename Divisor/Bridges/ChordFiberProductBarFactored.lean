@@ -25,11 +25,6 @@
   already pins them down.
 -/
 import Divisor.Bridges.ChordFiberProductNormZ
-import Divisor.Bridges.ChordFiberDivisibility
-import Divisor.ChordFiberWeightedDegree
-import Divisor.GeomBase
-import Divisor.GeomLocalOrder
-import Divisor.PartialFractionExpansion
 
 open Polynomial
 

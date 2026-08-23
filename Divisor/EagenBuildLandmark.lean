@@ -29,9 +29,7 @@
   (data model), M2 (tangent combine), M3 (ungate chord/vertical), M4
   (preservation), M5 (landmark + divisor-identity bridge).
 -/
-import Divisor.Defs
 import Divisor.IncrementalConstruction
-import Divisor.OrdP.Uniformizer
 
 open Polynomial
 

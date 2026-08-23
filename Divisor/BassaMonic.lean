@@ -7,7 +7,6 @@
   (from Bezout + Hasse-Weil, not from Bassa), and the main
   soundness bound via variety SZ.
 -/
-import Divisor.Defs
 import Divisor.SlopeDist
 
 open Finset

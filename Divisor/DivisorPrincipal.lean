@@ -25,7 +25,6 @@
   to `D`'s divisor via the σ-matching output of
   `log_deriv_nonvanishing_criterion`.
 -/
-import Divisor.Defs
 import Divisor.HasPrincipalDivisor
 import Divisor.Protocol
 

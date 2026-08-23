@@ -56,11 +56,8 @@
   theorems derived from it by case-split on `D.b` (plus mathlib's
   `ClassGroup.mk_eq_one_iff` for the principal-ideal re-export).
 -/
-import Divisor.OrdP.Uniformizer
 import Divisor.OrdP.PrincipalClass
 import Divisor.OrdP.SupportClassification
-import Divisor.SplitsOnE
-import Divisor.CoordinateRingBridge
 import Mathlib.RingTheory.ClassGroup
 
 open Polynomial Finset

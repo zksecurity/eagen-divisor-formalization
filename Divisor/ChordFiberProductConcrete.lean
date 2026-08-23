@@ -28,9 +28,6 @@
   In particular this file does **not** import `Divisor.Axioms` or
   any module that transitively imports
   `AxiomChordFiberProductEqNormZUnderSplit`. -/
-import Divisor.Defs
-import Divisor.SlopeDist
-import Divisor.GeomBase
 import Divisor.GeomLocalOrder
 import Mathlib.RingTheory.Polynomial.Resultant.Basic
 

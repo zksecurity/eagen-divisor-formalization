@@ -12,8 +12,6 @@
   `badA₂Mod × (nonvertical A₁)` into the set bounded by
   `DAtA₂_zero_pairs_card_le`.
 -/
-import Divisor.ClearedPolyForm
-import Divisor.ClearedPolyFormBounds
 import Divisor.DivisorPrincipal
 
 open Polynomial Finset

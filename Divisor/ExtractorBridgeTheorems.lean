@@ -29,7 +29,6 @@
   (D3–D5, polyG bridges, trace formula, sigma matching) and
   `Divisor/GeometricSoundness.lean` (the geometric all-zero route).
 -/
-import Divisor.ExtractorBridge
 import Divisor.GeometricSoundness
 
 open Polynomial Finset Classical

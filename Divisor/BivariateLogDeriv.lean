@@ -40,10 +40,7 @@
 
   No new axioms, no `sorry` / `admit`.
 -/
-import Divisor.LogDeriv
 import Divisor.NormLogDeriv
-import Divisor.BetaConstructive
-import Divisor.CubicIntersection
 import Mathlib.Algebra.Polynomial.Derivative
 
 open Polynomial Finset

@@ -18,7 +18,6 @@
   rationality condition: every root of `normPoly E D` lifts to at
   least one F_q-rational point of `E`.
 -/
-import Divisor.Defs
 import Divisor.BetaConstructive
 
 namespace Divisor

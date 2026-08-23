@@ -43,7 +43,6 @@
       `ord_P(X − x₀) = 1`, we recurse: `ord_P(D) = 1 + ord_P(D')`.
       Termination: `(D'.a.natDegree, D'.b.natDegree)` strictly drops.
 -/
-import Divisor.Defs
 import Divisor.BetaConstructive
 import Mathlib.Algebra.Polynomial.RingDivision
 import Mathlib.Algebra.Polynomial.Roots

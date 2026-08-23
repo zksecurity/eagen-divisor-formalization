@@ -47,7 +47,6 @@
   any-support statement is false; `SafePairs` is the mild
   general-position exclusion, decidable per instance.
 -/
-import Divisor.EagenBuildLandmark
 import Divisor.IsHonestForBinary
 
 open Polynomial Classical
