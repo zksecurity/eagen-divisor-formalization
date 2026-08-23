@@ -488,7 +488,10 @@ discriminant analysis.)*
 
 # Plan 2 — point-count currency and a Hasse-free core
 
-> **STATUS: PLANNED (2026-08-23).** Design agreed, not yet
+> **STATUS: COMPLETE (2026-08-23).** All phases (P2.1–P2.6) landed;
+> `lake build Divisor Tests` green with the rewritten pins; pushed as
+> commit `6544a8f`. Deviations recorded below. Originally planned as:
+> design agreed, not yet
 > implemented. Supersedes the `HasseBound`-hypothesis design of commit
 > `1fc133c` (which stays in history as the intermediate step).
 
@@ -733,10 +736,13 @@ efficiently computable.** Verified by definition-chain audit:
 
 # Plan 3 — unconditional completeness at any divisor length
 
-> **STATUS: PLANNED (2026-08-23).** Exploratory. Independent of
-> Plan 2 (different layer: `EagenBuildLandmark`/`IsHonestForBinary`,
-> no interaction with the Hasse/currency work); default ordering is
-> after Plan 2 lands.
+> **STATUS: COMPLETE (2026-08-23).** Landed as
+> `Divisor/SafeSupport.lean` after the P3.0 inventory forced a route
+> revision (see "P3.0 findings" below): headline
+> `ma_completeness_binary_any_length` (+ `_cert`), axiom-free, with
+> the general-position hypothesis `SafePairs` decidable per instance.
+> Originally: exploratory, independent of Plan 2 (different layer:
+> `EagenBuildLandmark`/`IsHonestForBinary`), ordered after Plan 2.
 
 ## Where completeness stands
 
@@ -786,25 +792,30 @@ beyond nodup + obstruction exclusions); fall back to R2.
 
 ## Phases
 
-- [ ] **P3.0 Failure-set inventory.** Lemma-level characterization of
+- [x] **P3.0 Failure-set inventory.** Lemma-level characterization of
       `combineCanFire`'s complement per step (finitely many algebraic
       conditions), and of the global obstructions for R1. Decide the
       2-torsion policy (exclude by hypothesis vs handle by
       pre-pairing; note a curve need not have rational 2-torsion).
-- [ ] **P3.1 One-level existence.** R1: "safe pair exists" at a single
-      level (or R2: "good `R` exists" by root counting, with the
-      explicit `n > poly(len)` threshold).
-- [ ] **P3.2 Schedule induction.** Iterate P3.1 through the
-      accumulation to produce `IteratedLevelStepCombineExtras` for the
-      chosen permutation/enriched support; requires permutation- (or
-      enrichment-) invariance lemmas for `eagenBuild_singletons`'s
-      divisor identity.
-- [ ] **P3.3 Headline.** `ma_completeness_binary_any_length`:
+- [x] **P3.1 One-level existence.** *(Superseded — see P3.0
+      findings: both R1-as-planned and R2 fail.)* Replaced by the
+      per-level certificate from `SafePairs`
+      (`levelStepPointChordCase_of_safePairs`): each adjacent chunk
+      pair at every level is a nonempty split of a sublist of the
+      support, so the hypothesis discharges it directly — no
+      existence search.
+- [x] **P3.2 Schedule induction.** Landed as
+      `iteratedPointChordCase_of_safePairs` (induction over levels
+      with `pairUp` chunk bookkeeping; `pointCombine_eq_add` +
+      `sumOnE_append` identify block points with subset sums). No
+      permutation/enrichment invariance needed — the hypothesis works
+      for the committed order.
+- [x] **P3.3 Headline.** `ma_completeness_binary_any_length`:
       for any binary witness with nodup support (plus the mild
       hypotheses P3.0 fixes), there EXISTS an honest message —
       constructed, not assumed — achieving the completeness bound;
       existential form alongside the explicit-message form.
-- [ ] **P3.4 Pins, README, docs** — the completeness section of the
+- [x] **P3.4 Pins, README, docs** — the completeness section of the
       README gains the any-length statement; pins stay core-three
       (this plan involves no axioms).
 
@@ -816,9 +827,62 @@ beyond nodup + obstruction exclusions); fall back to R2.
 | `eagenBuild` divisor identity not permutation-stable | P3.2 | The identity is about the divisor of the accumulated function, which is schedule-independent mathematically; if the Lean formulation resists, R2 avoids reordering entirely |
 | Greedy safe-pair claim false for adversarial supports | P3.1 | Fall back to R2 (enrichment), which only needs ONE generic point |
 
+## P3.0 findings (inventory; route revision)
+
+The failure-set inventory invalidated both planned routes as stated
+and produced a sharper replacement:
+
+* **Per-pair failure set** (`combineCanFire.chordCase` complement, for
+  affine block sums `A`, `B`): the pair is safe iff `A = −B`
+  (vertical) or [`x_A ≠ x_B` ∧ `y_A ≠ 0` ∧ `y_B ≠ 0` ∧ the chord's
+  third intersection avoids both inputs — algebraically `B ≠ −2A` and
+  `A ≠ −2B`]. Equal non-torsion blocks (`A = B`, smooth doubling) are
+  rejected by the decidable skeleton. `O` blocks are unconditionally
+  safe partners.
+* **R2 (enrichment) is dead in-protocol.** `isHonestFor` pins the
+  committed divisor *exactly*: `divisorOfD msg.toD =
+  honestDivisorCoeffs` at every point. Appending a canceling pair
+  `[R, −R]` adds `[R] + [−R]` to the divisor and breaks both the
+  identity and the verifier's log-derivative accounting. Any
+  enrichment route would need protocol-level surgery, out of scope.
+* **Greedy sequential scheduling is unrealizable.** `iterate` forces
+  the balanced adjacent-pairing tree (`level_step` combines ALL
+  adjacent pairs each level; only an odd trailing element is
+  forwarded), so "combine one safe pair at a time" is not a schedule
+  the committed builder can express; the only freedom is the leaf
+  permutation, equivalently a free choice of perfect pairing at every
+  level. Existence of a safe pairing per level is a perfect-matching
+  problem (bad-partner degree ≤ ~8 plus collision constraints) with
+  genuinely unsatisfiable small/adversarial configurations — e.g. an
+  all-2-torsion support admits NO safe schedule at all — so a fully
+  unconditional any-support statement is false.
+* **Adopted route (implemented in `Divisor/SafeSupport.lean`):**
+  semantic general position. `SafePairs E Ps` — for every nonempty
+  split `xs ++ ys` of every *sublist* of `Ps`, the pair of subset
+  sums `(Σ xs, Σ ys)` is chord-safe (`PointChordCase`). Every combine
+  at every level of the balanced tree is such a pair (its chunks are
+  adjacent, so their concatenation is a sublist), hence the whole
+  chain certificate follows with the *given* support order — no
+  permutation search, no matching theory. Key enabler:
+  `pointCombine_eq_add` (the computable point skeleton IS the mathlib
+  group law, unconditionally), which upgrades skeleton blocks to
+  genuine subset sums. The hypothesis is permutation-independent,
+  generic (each violation is a codimension-1 algebraic condition on
+  the support), implies `y ≠ 0` for all support points whenever two
+  distinct `x`-coordinates occur, and is decidable per instance
+  (`SafePairsCert`, computable via `pointSum`).
+* 2-torsion policy: no separate hypothesis — 2-torsion in the support
+  (and torsion block sums) are excluded by `SafePairs` itself.
+
 ## Status log (Plan 3)
 
 * 2026-08-23 — Plan written from the completeness-reach analysis
   (any length works per-instance via the decidable certificate;
   unconditional only ≤ 8). Routes R1/R2/R3 recorded with R1-then-R2
   as the exploration order. Not started.
+* 2026-08-23 — P3.0 inventory done (findings above; R1/R2 as planned
+  both fail — divisor pinned exactly, tree shape forced). Revised
+  route implemented: `Divisor/SafeSupport.lean` with
+  `pointCombine_eq_add`, `SafePairs`/`SafePairsCert`,
+  `iteratedPointChordCase_of_safePairs`, and the headline
+  `ma_completeness_binary_any_length` (+ `_cert` variant).

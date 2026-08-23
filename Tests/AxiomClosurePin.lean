@@ -115,6 +115,7 @@
 import Divisor.ExtractorBridgeTheorems
 import Divisor.Soundness
 import Divisor.IsHonestForBinary
+import Divisor.SafeSupport
 import Divisor.Hasse
 
 /--
@@ -496,6 +497,41 @@ info: 'Divisor.ma_completeness_binary_admSetHash_point_certificate' depends on a
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_completeness_binary_admSetHash_point_certificate
+
+/-! Any-length binary completeness (Plan 3, `Divisor/SafeSupport.lean`):
+  the chain certificate discharged for ANY support length from the
+  semantic general-position hypothesis `SafePairs` (decidable per
+  instance via `SafePairsCert`). Axiom-free, like the rest of the
+  completeness side. `pointCombine_eq_add` is the enabling bridge:
+  the computable point skeleton is mathlib's group law. -/
+/--
+info: 'Divisor.ma_completeness_binary_any_length' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ma_completeness_binary_any_length
+/--
+info: 'Divisor.ma_completeness_binary_any_length_cert' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ma_completeness_binary_any_length_cert
+/--
+info: 'Divisor.Landmark.pointCombine_eq_add' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.Landmark.pointCombine_eq_add
+/--
+info: 'Divisor.Landmark.iteratedPointChordCase_of_safePairs' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.Landmark.iteratedPointChordCase_of_safePairs
 
 /-! ## Terminal Hasse layer (`Divisor/Hasse.lean`)
 

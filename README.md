@@ -233,6 +233,32 @@ Conclusion: the verifier rejects the honest prover on at most
 `(3d+4)·|E(F_q)|` challenge pairs (equivalently at most `(6(d+1)+6)·q`
 via `ma_completeness_q`, still axiom-free).
 
+#### Any-length constructive completeness
+
+`ma_completeness` is conditional on the honesty predicate
+`isHonestFor`; the constructive supply (an explicit honest message,
+built by the Eagen chord accumulation `eagenBuild_singletons`) is the
+`ma_completeness_binary*` family. Its chain certificate — every
+chord-combine in the accumulation is non-degenerate — was previously
+discharged once-and-for-all only for structured support shapes
+(lengths 2 and 4, and the chord families at 4/6/8), with a decidable
+per-instance certificate beyond.
+
+`Divisor/SafeSupport.lean` closes the gap at **any support length**:
+`Divisor.ma_completeness_binary_any_length` derives the full chain
+certificate from a single semantic general-position hypothesis,
+`SafePairs` — for every nonempty split `xs ++ ys` of every sublist of
+the support, the pair of elliptic-curve subset sums `(Σ xs, Σ ys)` is
+chord-safe. Degenerate supports genuinely exist (2-torsion points in
+the support; block sums related by `B = −2A`), so some such exclusion
+is necessary; `SafePairs` is decidable per instance
+(`SafePairsCert`, `decide`/`native_decide`-friendly via the
+computable point skeleton). The enabling bridge is
+`Landmark.pointCombine_eq_add`: the computable point-skeleton combine
+agrees with mathlib's elliptic-curve group law on every pair of
+points, so skeleton blocks are genuine subset sums. Axiom-free, like
+the whole completeness side.
+
 ## Axiom Surface
 
 The project has exactly **one** named axiom: the Hasse–Weil point-count
