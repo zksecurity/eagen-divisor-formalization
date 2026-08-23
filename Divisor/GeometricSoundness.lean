@@ -2392,7 +2392,7 @@ nonzero evaluation of the same polynomial. Apply
 `bivariate_poly_zeros_on_ExE_le` with the descended degree bound and use
 `gd.accounting_le_degE` to replace `gd.support.card` by `D.degE`.
 -/
-theorem log_deriv_sz_paper_core_tight_geometric (hHW : E.HasseBound)
+theorem log_deriv_sz_paper_core_tight_geometric
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (_hDeg : D.degE < E.q)
@@ -2402,7 +2402,7 @@ theorem log_deriv_sz_paper_core_tight_geometric (hHW : E.HasseBound)
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           A₀ne_A₁x_cleared_pair E D P B m p)).card
-      ≤ 18 * (D.degE + k) * E.q := by
+      ≤ 12 * (D.degE + k) * E.points.card := by
   classical
   have hDnz : ¬ (D.a = 0 ∧ D.b = 0) := by
     obtain ⟨A₀, A₁, _, _, _, hDef, _⟩ := hNV
@@ -2445,16 +2445,16 @@ theorem log_deriv_sz_paper_core_tight_geometric (hHW : E.HasseBound)
   have hdM1 : gd.support.card + (k + 1) - 1 = gd.support.card + k := by omega
   have hTD' : total_degree_le E G (2 * (gd.support.card + k)) := by
     rwa [hdM1] at hTD
-  have hDKL := bivariate_poly_zeros_on_ExE_le E hHW G
+  have hDKL := bivariate_poly_zeros_on_ExE_le E G
     (2 * (gd.support.card + k)) hTD' hWitness
   calc ((E.points ×ˢ E.points).filter
         (fun p => A₀ne_A₁x_cleared_pair E D P B m p)).card
       ≤ ((E.points ×ˢ E.points).filter
           (fun p => bivEval₂ G p.1 p.2 = 0)).card :=
         Finset.card_le_card hBadSub
-    _ ≤ 9 * (2 * (gd.support.card + k)) * E.q := hDKL
-    _ = 18 * (gd.support.card + k) * E.q := by ring
-    _ ≤ 18 * (D.degE + k) * E.q := by
+    _ ≤ 6 * (2 * (gd.support.card + k)) * E.points.card := hDKL
+    _ = 12 * (gd.support.card + k) * E.points.card := by ring
+    _ ≤ 12 * (D.degE + k) * E.points.card := by
         apply Nat.mul_le_mul_right; apply Nat.mul_le_mul_left; omega
 
 /--
@@ -2464,7 +2464,7 @@ This replaces `log_deriv_sz_paper_tight` at the headline call site. The
 old theorem remains available for comparison, but this is the intended
 soundness lemma.
 -/
-theorem log_deriv_sz_paper_tight_geometric (hHW : E.HasseBound)
+theorem log_deriv_sz_paper_tight_geometric
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (hDeg : D.degE < E.q)
@@ -2472,7 +2472,7 @@ theorem log_deriv_sz_paper_tight_geometric (hHW : E.HasseBound)
         logDerivCheckFnDefined E D P B A₀ A₁ ∧
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     (eventNotEq E D P B (fun i => m i)).card
-      ≤ 18 * (D.degE + k) * E.q +
+      ≤ 12 * (D.degE + k) * E.points.card +
         (3 * D.degE + 9 * k + 71) * E.points.card := by
   classical
   have hDnz : ¬ (D.a = 0 ∧ D.b = 0) := by
@@ -2498,7 +2498,7 @@ theorem log_deriv_sz_paper_tight_geometric (hHW : E.HasseBound)
         ⟨hEE, hNeq, hDef, hCheck⟩))
     · exact Finset.mem_union.mpr (Or.inr (Finset.mem_filter.mpr
         ⟨hEE, hDef⟩))
-  have hCoreBound := log_deriv_sz_paper_core_tight_geometric E hHW D P B m hDeg hNV
+  have hCoreBound := log_deriv_sz_paper_core_tight_geometric E D P B m hDeg hNV
   have hUndefBound := logDerivCheckFn_undefined_set_bound_tight E D P k B hDnz
   calc (eventNotEq E D P B (fun i => m i)).card
       ≤ ((E.points ×ˢ E.points).filter
@@ -2506,7 +2506,7 @@ theorem log_deriv_sz_paper_tight_geometric (hHW : E.HasseBound)
         ((E.points ×ˢ E.points).filter
           (fun p => ¬ logDerivCheckFnDefined E D P B p.1 p.2)).card :=
         le_trans (Finset.card_le_card hSub) (Finset.card_union_le _ _)
-    _ ≤ 18 * (D.degE + k) * E.q +
+    _ ≤ 12 * (D.degE + k) * E.points.card +
           (3 * D.degE + 9 * k + 71) * E.points.card :=
         Nat.add_le_add hCoreBound hUndefBound
 
@@ -2584,7 +2584,7 @@ bound `≤ 18·(gd.support.card + k)·E.q` on the zero set. But under
 complement (vertical or undefined) is bounded linearly in `|E|` by
 `card_vertical_pairs_le` and `logDerivCheckFn_undefined_set_bound_tight`.
 The threshold `hELarge` rules this out. -/
-private theorem geomPolyGFull_identically_zero_on_ExE (hHW : E.HasseBound)
+private theorem geomPolyGFull_identically_zero_on_ExE
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
@@ -2594,7 +2594,7 @@ private theorem geomPolyGFull_identically_zero_on_ExE (hHW : E.HasseBound)
       logDerivCheckFnDefined E D P B A₀ A₁ →
       logDerivCheckFn E D P k B m A₀ A₁ = 0)
     (hELarge :
-      18 * (gd.support.card + k) * E.q +
+      12 * (gd.support.card + k) * E.points.card +
           2 * E.points.card +
           (3 * D.degE + 9 * k + 71) * E.points.card
         < E.points.card * E.points.card) :
@@ -2617,7 +2617,7 @@ private theorem geomPolyGFull_identically_zero_on_ExE (hHW : E.HasseBound)
       (2 * (gd.support.card + k)) := by
     rwa [hdM1] at hTD
   -- DKL bound on the zero set, witnessed by `(A₀, A₁)`.
-  have hLW := bivariate_poly_zeros_on_ExE_le E hHW
+  have hLW := bivariate_poly_zeros_on_ExE_le E
     (geomPolyGFull E D gd
       (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)))
     (2 * (gd.support.card + k)) hTD' ⟨A₀, A₁, hA₀, hA₁, hNZ⟩
@@ -2644,10 +2644,10 @@ private theorem geomPolyGFull_identically_zero_on_ExE (hHW : E.HasseBound)
       ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           p.1.1 ≠ p.2.1 ∧ logDerivCheckFnDefined E D P B p.1 p.2)).card
-        ≤ 18 * (gd.support.card + k) * E.q := by
+        ≤ 12 * (gd.support.card + k) * E.points.card := by
     calc _ ≤ _ := Finset.card_le_card hSdefSubZero
-      _ ≤ 9 * (2 * (gd.support.card + k)) * E.q := hLW
-      _ = 18 * (gd.support.card + k) * E.q := by ring
+      _ ≤ 6 * (2 * (gd.support.card + k)) * E.points.card := hLW
+      _ = 12 * (gd.support.card + k) * E.points.card := by ring
   -- Cover E×E by (defined non-vert) ∪ vertical ∪ undefined.
   have hCover : (E.points ×ˢ E.points) ⊆
       (E.points ×ˢ E.points).filter
@@ -2681,7 +2681,7 @@ private theorem geomPolyGFull_identically_zero_on_ExE (hHW : E.HasseBound)
     Finset.card_product _ _
   -- Combine into a single linear inequality and contradict hELarge.
   have hFinal : E.points.card * E.points.card ≤
-      18 * (gd.support.card + k) * E.q +
+      12 * (gd.support.card + k) * E.points.card +
         2 * E.points.card +
         (3 * D.degE + 9 * k + 71) * E.points.card := by
     calc E.points.card * E.points.card
@@ -2689,206 +2689,52 @@ private theorem geomPolyGFull_identically_zero_on_ExE (hHW : E.HasseBound)
       _ ≤ _ := Finset.card_le_card hCover
       _ ≤ _ := Finset.card_union_le _ _
       _ ≤ _ := Nat.add_le_add_right (Finset.card_union_le _ _) _
-      _ ≤ 18 * (gd.support.card + k) * E.q +
+      _ ≤ 12 * (gd.support.card + k) * E.points.card +
             2 * E.points.card +
             (3 * D.degE + 9 * k + 71) * E.points.card :=
           Nat.add_le_add (Nat.add_le_add hSdefCard hVertCard) hUndefCard
   exact absurd hFinal (Nat.not_le.mpr hELarge)
 
-/-- **Sharp Hasse-Weil bound** in `ℕ`: `q ≤ n + 2 + Nat.sqrt(4(n+1))`.
-
-Moved up from its original location so that the sharper density bridge
-`hELarge_of_hLargeQ_main` below can use it.  -/
-private theorem hasse_q_le_sharp_nat_of (hHW : E.HasseBound) :
-    E.q ≤ E.points.card + 2 + Nat.sqrt (4 * (E.points.card + 1)) := by
-  classical
-  have hHW : ((E.numPoints : ℤ) - E.q - 1) ^ 2 ≤ 4 * E.q := hHW
-  rw [E.hNumPoints] at hHW
-  -- hHW: (((card + 1) : ℤ) - q - 1)^2 ≤ 4q.
-  have hMcard : ((E.points.card : ℤ) - E.q)^2 ≤ 4 * (E.q : ℤ) := by
-    have heq : ((E.points.card + 1 : ℕ) : ℤ) - E.q - 1
-        = ((E.points.card : ℤ) - E.q) := by push_cast; ring
-    rw [heq] at hHW; exact hHW
-  by_cases hQ : E.q ≤ E.points.card + 2
-  · -- q ≤ n + 2, so q ≤ n + 2 + sqrt(...) trivially.
-    have hSqrtNonNeg : 0 ≤ Nat.sqrt (4 * (E.points.card + 1)) := Nat.zero_le _
-    omega
-  · push_neg at hQ
-    -- q > n + 2, so q - n - 2 > 0 in ℕ.
-    -- Derive (q - n - 2)^2 ≤ 4(n + 1) in ℕ.
-    have hSqInt : ((E.q : ℤ) - E.points.card - 2)^2 ≤ 4 * ((E.points.card : ℤ) + 1) := by
-      -- Identity: (q-n-2)² = (n-q)² + 4(n+1) - 4q.
-      have h1 : ((E.q : ℤ) - E.points.card - 2)^2
-          = ((E.points.card : ℤ) - E.q)^2 + 4 * ((E.points.card : ℤ) + 1) - 4 * E.q := by
-        ring
-      rw [h1]
-      linarith
-    -- Convert to ℕ.
-    have hQ_le : E.points.card + 2 ≤ E.q := le_of_lt hQ
-    have hSubInt : ((E.q - E.points.card - 2 : ℕ) : ℤ) = (E.q : ℤ) - E.points.card - 2 := by
-      have : E.q - E.points.card ≥ 2 := by omega
-      omega
-    have hSqNat : (E.q - E.points.card - 2)^2 ≤ 4 * (E.points.card + 1) := by
-      have hCastLhs : (((E.q - E.points.card - 2 : ℕ) : ℤ))^2
-          = ((E.q : ℤ) - E.points.card - 2)^2 := by rw [hSubInt]
-      have hCastRhs : ((4 * (E.points.card + 1) : ℕ) : ℤ)
-          = 4 * ((E.points.card : ℤ) + 1) := by push_cast; ring
-      have hZ : ((E.q - E.points.card - 2 : ℕ) : ℤ)^2
-          ≤ ((4 * (E.points.card + 1) : ℕ) : ℤ) := by
-        rw [hCastLhs, hCastRhs]; exact hSqInt
-      exact_mod_cast hZ
-    -- Apply Nat.le_sqrt.
-    have hLeSqrt : E.q - E.points.card - 2 ≤ Nat.sqrt (4 * (E.points.card + 1)) := by
-      rw [Nat.le_sqrt]; rw [show (E.q - E.points.card - 2) * (E.q - E.points.card - 2)
-          = (E.q - E.points.card - 2)^2 from by ring]
-      exact hSqNat
-    omega
-
-/-- **Sharper bridge**: same conclusion as `hELarge_of_hLargeQ` but driven
-by the *main* `hLargeQ` threshold used by `geometric_residue_match`,
-i.e. `n > 31·d + 31·k + 140` (stated in the form
-`2·(5·(d+k+2)+3) + 21·(d+k+2) + 72 < n`).
-
-The improvement comes from replacing the loose bound `q ≤ 2·n` with
-the sharp form `q ≤ n + 2 + ⌊√(4(n+1))⌋` (`hasse_q_le_sharp_nat_of`,
-from the `hHW` hypothesis), then a
-squared-comparison `(4n - 36)² > (18s)²` (valid for `n ≥ 100`, hence
-`n ≥ 141` here) to absorb the surd term into a linear bound. The
-remaining accounting follows the same DKL + vertical-pairs +
-undefined-set decomposition. -/
-private theorem hELarge_of_hLargeQ_main (hHW : E.HasseBound)
+/-- **Bridge from the linear `hLargeQ` threshold to the quadratic
+`hELarge` inequality** required by `geomPolyGFull_identically_zero_on_ExE`.
+Point-count currency (Plan 2): with the DKL bound at `12·(s+k)·n` the
+comparison is `n`-vs-`n²` and needs only `n > 15·d + 21·k + 73`,
+which the stated threshold implies outright — no Hasse content, no
+`√` analysis. -/
+private theorem hELarge_of_hLargeQ_main
     (D : CoordRingElt E.q) (gd : GeometricDivisorData E D) (k : ℕ)
     (hLargeQ : E.points.card >
         2 * (5 * (D.degE + k + 2) + 3) +
         21 * (D.degE + k + 2) + 72) :
-    18 * (gd.support.card + k) * E.q +
+    12 * (gd.support.card + k) * E.points.card +
         2 * E.points.card +
         (3 * D.degE + 9 * k + 71) * E.points.card
       < E.points.card * E.points.card := by
   classical
-  set n := E.points.card with hn_def
-  set d := D.degE with hd_def
-  -- Reformulate hLargeQ in flat polynomial form.
-  have hN_flat : n > 31 * d + 31 * k + 140 := by
-    have h := hLargeQ
-    have hEq : 2 * (5 * (d + k + 2) + 3) + 21 * (d + k + 2) + 72
-             = 31 * d + 31 * k + 140 := by ring
-    rw [hEq] at h; exact h
-  have hSC : gd.support.card ≤ d := by
+  have hSC : gd.support.card ≤ D.degE := by
     calc gd.support.card
         = ∑ _ ∈ gd.support, 1 := by simp
       _ ≤ ∑ Q ∈ gd.support, gd.mult Q :=
           Finset.sum_le_sum (fun Q hQ => gd.mult_pos_on_support Q hQ)
-      _ ≤ d := gd.accounting_le_degE
-  have hN141 : n ≥ 141 := by omega
-  have hN_pos : 0 < n := by omega
-  -- Sharp Hasse bound: q ≤ n + 2 + s where s² ≤ 4(n+1).
-  have hQbound : E.q ≤ n + 2 + Nat.sqrt (4 * (n + 1)) := hasse_q_le_sharp_nat_of E hHW
-  set s := Nat.sqrt (4 * (n + 1)) with hs_def
-  have hSqrtSq : s * s ≤ 4 * (n + 1) := Nat.sqrt_le _
-  -- Key squared comparison: 4·n > 36 + 18·s.
-  -- Proof: (4n - 36)² > (18s)² since (4n-36)² + 288n = 16n² + 1296,
-  -- and 16n² > 1584n for n ≥ 100 ≤ 141, while (18s)² ≤ 1296(n+1).
-  have h_4n_gt : 4 * n > 36 + 18 * s := by
-    by_contra h_le
-    push_neg at h_le
-    have h_4n_ge : 36 ≤ 4 * n := by omega
-    have h_18s_ge : 18 * s ≥ 4 * n - 36 := by omega
-    have h_sq_ineq : (4 * n - 36) * (4 * n - 36) ≤ (18 * s) * (18 * s) :=
-      Nat.mul_le_mul h_18s_ge h_18s_ge
-    have h_18s_sq_upper : (18 * s) * (18 * s) ≤ 1296 * (n + 1) := by
-      have h1 : (18 * s) * (18 * s) = 324 * (s * s) := by ring
-      have h2 : 324 * (s * s) ≤ 324 * (4 * (n + 1)) :=
-        Nat.mul_le_mul_left 324 hSqrtSq
-      linarith
-    -- (4n - 36)² + 288n = 16n² + 1296
-    have h_expand : (4 * n - 36) * (4 * n - 36) + 288 * n
-        = 16 * (n * n) + 1296 := by
-      have h_eq : (4 * n - 36) + 36 = 4 * n := by omega
-      have h_sq_eq : ((4 * n - 36) + 36) * ((4 * n - 36) + 36) = 16 * (n * n) := by
-        rw [h_eq]; ring
-      nlinarith [h_sq_eq]
-    have h_4n_36_sq_le : (4 * n - 36) * (4 * n - 36) ≤ 1296 * (n + 1) :=
-      le_trans h_sq_ineq h_18s_sq_upper
-    -- So 16n² + 1296 ≤ 1296(n+1) + 288n = 1584n + 1296.
-    have h_16n2_le : 16 * (n * n) ≤ 1584 * n := by linarith
-    -- But for n ≥ 141, 16n² ≥ 2256n > 1584n.
-    have h_16n2_ge : 16 * (n * n) ≥ 2256 * n := by
-      have := Nat.mul_le_mul_right n hN141
-      nlinarith
-    omega
-  -- T = gd.support.card + k ≤ d + k.
-  have hT_le : 18 * (gd.support.card + k) ≤ 18 * (d + k) := by
-    apply Nat.mul_le_mul_left; omega
-  -- Bound LHS: 18·T·q + 2n + (3d+9k+71)·n
-  --   ≤ 18·(d+k)·(n+2+s) + 2n + (3d+9k+71)·n
-  --   = (21d+27k+73)·n + 36·(d+k) + 18·(d+k)·s.
-  have hLHS_le :
-      18 * (gd.support.card + k) * E.q + 2 * n
-          + (3 * d + 9 * k + 71) * n
-        ≤ (21 * d + 27 * k + 73) * n
-            + 36 * (d + k) + 18 * (d + k) * s := by
-    have h1 : 18 * (gd.support.card + k) * E.q
-        ≤ 18 * (d + k) * (n + 2 + s) := by
-      calc 18 * (gd.support.card + k) * E.q
-          ≤ 18 * (d + k) * E.q := Nat.mul_le_mul_right _ hT_le
-        _ ≤ 18 * (d + k) * (n + 2 + s) := Nat.mul_le_mul_left _ hQbound
-    have h2 : 18 * (d + k) * (n + 2 + s) + 2 * n + (3 * d + 9 * k + 71) * n
-            = (21 * d + 27 * k + 73) * n + 36 * (d + k) + 18 * (d + k) * s := by
-      ring
-    linarith
-  -- Now show: (21d+27k+73)·n + 36·(d+k) + 18·(d+k)·s < n·n.
-  -- Rewrite n·n - (21d+27k+73)·n = n·(n - 21d - 27k - 73).
-  -- From hN_flat: n - 21d - 27k - 73 ≥ 10d + 4k + 68 (strict).
-  have h_n_diff : n - (21 * d + 27 * k + 73) ≥ 10 * d + 4 * k + 68 := by omega
-  have h_n_ge : n ≥ 21 * d + 27 * k + 73 := by omega
-  -- n·(n - 21d - 27k - 73) ≥ n·(10d + 4k + 68) = 10dn + 4kn + 68n.
-  have h_n_step : n * (n - (21 * d + 27 * k + 73)) ≥ n * (10 * d + 4 * k + 68) :=
-    Nat.mul_le_mul_left n h_n_diff
-  -- 10dn + 4kn + 68n > 36d + 36k + 18ds + 18ks.
-  --   (10n - 18s - 36)·d + (4n - 18s - 36)·k + 68n > 0
-  -- The first two coefficients are ≥ 0 (from h_4n_gt: 4n > 36 + 18s, hence 10n > 36 + 18s);
-  -- the 68n term is > 0 (n ≥ 141), giving the strict inequality.
-  have h_4n_18s_36 : 4 * n ≥ 18 * s + 36 := by omega
-  have h_10n_18s_36 : 10 * n ≥ 18 * s + 36 := by
-    have : 10 * n ≥ 4 * n := by omega
-    omega
-  have h_d_part : 10 * d * n ≥ 18 * d * s + 36 * d := by
-    have hM : d * (10 * n) ≥ d * (18 * s + 36) := Nat.mul_le_mul_left d h_10n_18s_36
-    nlinarith [hM]
-  have h_k_part : 4 * k * n ≥ 18 * k * s + 36 * k := by
-    have hM : k * (4 * n) ≥ k * (18 * s + 36) := Nat.mul_le_mul_left k h_4n_18s_36
-    nlinarith [hM]
-  have h_strict :
-      n * (10 * d + 4 * k + 68) > 36 * (d + k) + 18 * (d + k) * s := by
-    have h_expand_lhs : n * (10 * d + 4 * k + 68) = 10 * d * n + 4 * k * n + 68 * n := by
-      ring
-    have h_expand_rhs : 36 * (d + k) + 18 * (d + k) * s
-                      = 36 * d + 36 * k + 18 * d * s + 18 * k * s := by ring
-    rw [h_expand_lhs, h_expand_rhs]
-    have h68 : 68 * n ≥ 1 := by omega
-    omega
-  -- Combine to conclude n*(n - (21d+27k+73)) > 36(d+k) + 18(d+k)·s.
-  have h_combined :
-      n * (n - (21 * d + 27 * k + 73)) > 36 * (d + k) + 18 * (d + k) * s :=
-    lt_of_lt_of_le h_strict h_n_step
-  -- Algebraic split: n·n = (21d+27k+73)·n + n·(n - 21d-27k-73).
-  have h_n_split :
-      n * n = (21 * d + 27 * k + 73) * n + n * (n - (21 * d + 27 * k + 73)) := by
-    have h_eq : (21 * d + 27 * k + 73) + (n - (21 * d + 27 * k + 73)) = n := by omega
-    calc n * n
-        = n * ((21 * d + 27 * k + 73) + (n - (21 * d + 27 * k + 73))) := by rw [h_eq]
-      _ = (21 * d + 27 * k + 73) * n + n * (n - (21 * d + 27 * k + 73)) := by ring
-  -- Final assembly.
-  have h_RHS_lt :
-      (21 * d + 27 * k + 73) * n + 36 * (d + k) + 18 * (d + k) * s < n * n := by
-    rw [h_n_split]; omega
-  exact lt_of_le_of_lt hLHS_le h_RHS_lt
+      _ ≤ D.degE := gd.accounting_le_degE
+  have hstep : 12 * (gd.support.card + k) * E.points.card +
+      2 * E.points.card + (3 * D.degE + 9 * k + 71) * E.points.card
+      ≤ (15 * D.degE + 21 * k + 73) * E.points.card := by
+    have h12 : 12 * (gd.support.card + k) ≤ 12 * (D.degE + k) :=
+      Nat.mul_le_mul_left _ (by omega)
+    have h12n := Nat.mul_le_mul_right E.points.card h12
+    nlinarith [h12n]
+  have hN : 15 * D.degE + 21 * k + 73 < E.points.card := by omega
+  calc 12 * (gd.support.card + k) * E.points.card +
+        2 * E.points.card + (3 * D.degE + 9 * k + 71) * E.points.card
+      ≤ (15 * D.degE + 21 * k + 73) * E.points.card := hstep
+    _ < E.points.card * E.points.card :=
+        (Nat.mul_lt_mul_right (by omega)).mpr hN
 
 /-- **Convenience corollary**: combine `hELarge_of_hLargeQ` with the density
 theorem to conclude vanishing on every pair `(A₀, A₁) ∈ E.points × E.points`
 directly from the linear `hLargeQ` threshold. -/
-private theorem geomPolyGFull_identically_zero_on_ExE_of_hLargeQ (hHW : E.HasseBound)
+private theorem geomPolyGFull_identically_zero_on_ExE_of_hLargeQ
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
@@ -2905,8 +2751,8 @@ private theorem geomPolyGFull_identically_zero_on_ExE_of_hLargeQ (hHW : E.HasseB
       bivEval₂ (geomPolyGFull E D gd
           (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)))
           A₀ A₁ = 0 :=
-  geomPolyGFull_identically_zero_on_ExE E hHW D hDnz gd P B m hAllZero
-    (hELarge_of_hLargeQ_main E hHW D gd k hLargeQ)
+  geomPolyGFull_identically_zero_on_ExE E D hDnz gd P B m hAllZero
+    (hELarge_of_hLargeQ_main E D gd k hLargeQ)
 
 /-- Base-change the descended identity for `geomPolyGFull` back to the
 geometric numerator identity required by the residue-uniqueness helper. -/
@@ -2932,7 +2778,7 @@ vanishing statement to the descended polynomial identity. This theorem wires
 the density output through that bridge and returns the required bar-level
 identity.
 -/
-private theorem geomPolyGFullBar_eq_zero_of_hAllZero_density_with_identity_bridge (hHW : E.HasseBound)
+private theorem geomPolyGFullBar_eq_zero_of_hAllZero_density_with_identity_bridge
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
@@ -2955,7 +2801,7 @@ private theorem geomPolyGFullBar_eq_zero_of_hAllZero_density_with_identity_bridg
     geomPolyGFullBar E D gd
       (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)) = 0 := by
   have hOnExE := geomPolyGFull_identically_zero_on_ExE_of_hLargeQ
-    E hHW D hDnz gd P B m hAllZero hLargeDensity
+    E D hDnz gd P B m hAllZero hLargeDensity
   exact geomPolyGFullBar_eq_zero_of_geomPolyGFull_eq_zero E D gd
     (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j))
     (hExEToPoly hOnExE)
@@ -2964,7 +2810,7 @@ private theorem geomPolyGFullBar_eq_zero_of_hAllZero_density_with_identity_bridg
 Residue-rationality consequence of the all-zero density path, assuming only
 the narrow finite-grid-to-polynomial-identity bridge exposed above.
 -/
-private theorem support_rational_of_hAllZero_density_with_identity_bridge (hHW : E.HasseBound)
+private theorem support_rational_of_hAllZero_density_with_identity_bridge
     (D : CoordRingElt E.q) (hDeg : D.degE < E.q)
     (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D)
@@ -2991,7 +2837,7 @@ private theorem support_rational_of_hAllZero_density_with_identity_bridge (hHW :
       geomPolyGFullBar E D gd
         (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)) = 0 :=
     geomPolyGFullBar_eq_zero_of_hAllZero_density_with_identity_bridge
-      E hHW D hDnz gd P B m hAllZero hLargeDensity hExEToPoly
+      E D hDnz gd P B m hAllZero hLargeDensity hExEToPoly
   have hRpts :
       ∀ j : Fin (k + 1),
         ((Fin.cons (P.1, -P.2) B :
@@ -3010,7 +2856,7 @@ Statement-level wrapper for the experimental density-to-residue integration.
 The remaining open input is the finite-grid-to-polynomial-identity bridge for
 the specific `geomPolyGFull` instance produced by the verifier message.
 -/
-private theorem gd_support_rational_of_hAllZero_via_density_bridge (hHW : E.HasseBound)
+private theorem gd_support_rational_of_hAllZero_via_density_bridge
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
@@ -3039,7 +2885,7 @@ private theorem gd_support_rational_of_hAllZero_via_density_bridge (hHW : E.Hass
         (Fin.cons (-1) (fun j => -(msg.m (hkm ▸ j)))) = 0) :
     gd_support_rational E msg.toD gd := by
   have hDegLt : msg.toD.degE < E.q := lt_of_le_of_lt hDeg hd
-  exact support_rational_of_hAllZero_density_with_identity_bridge E hHW
+  exact support_rational_of_hAllZero_density_with_identity_bridge E
     msg.toD hDegLt hDnz gd stmt.target hTargetOnE stmt.bases
     (fun i => msg.m (hkm ▸ i)) hBasesOnE hAllZero hLargeDensity hExEToPoly
 
@@ -4406,7 +4252,7 @@ private theorem geom_residue_sum_zero_as_zLambda_pf_of_eval_zero
 /-- Sampled partial-fraction identity at a good rational intercept, using
 density to obtain polynomial vanishing and explicit pole avoidance to divide
 the cleared numerator. -/
-private theorem geom_pf_identity_at_good_intercept (hHW : E.HasseBound)
+private theorem geom_pf_identity_at_good_intercept
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
@@ -4461,7 +4307,7 @@ private theorem geom_pf_identity_at_good_intercept (hHW : E.HasseBound)
   let m' : Fin (k + 1) → ZMod E.q := Fin.cons (-1) (fun j => -m j)
   have hRatZero :
       bivEval₂ (geomPolyGFull E D gd R m') A₀ A₁ = 0 :=
-    geomPolyGFull_identically_zero_on_ExE_of_hLargeQ E hHW D hDnz gd P B m
+    geomPolyGFull_identically_zero_on_ExE_of_hLargeQ E D hDnz gd P B m
       hAllZero hLargeQ A₀ A₁ hA₀.1 hA₁.1
   have hBarZero :
       MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
@@ -5124,7 +4970,7 @@ evaluating the residue identity at carefully chosen rational `(A₀, A₁)`
 isolates the `P`-summand and matches it to a unique `distinctR` index;
 unmatched `distinctR` indices have `distinctM' = 0` by the reverse
 specialisation. -/
-private theorem sigma_data_of_gd_support_rational (hHW : E.HasseBound)
+private theorem sigma_data_of_gd_support_rational
     (stmt : DlogStatement E.q) (_hd : stmt.degBound < E.q)
     (msg : MAProverMsg E.q) (_hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
@@ -5187,8 +5033,10 @@ private theorem sigma_data_of_gd_support_rational (hHW : E.HasseBound)
         (lt_of_le_of_lt _hDeg _hd)
     exact absurd (Nat.le_of_dvd hPos hDvd) (Nat.not_le.mpr hLt)
   have hELargeDkl : E.points.card * E.points.card - 2 * E.points.card >
-        18 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) * E.q := by
-    -- Setup bounds.
+        12 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) *
+          E.points.card := by
+    -- Point-count currency (Plan 2): compare `12·T·n` against `n² − 2n`
+    -- directly; the linear threshold from `_hLargeQ` suffices.
     have hZC : zerosCard E msg.toD ≤ msg.toD.degE := by
       have hβcov := betaCanonical_covers E msg.toD _hDnz
       have hβpos : ∀ k : Fin (zerosCard E msg.toD),
@@ -5217,8 +5065,6 @@ private theorem sigma_data_of_gd_support_rational (hHW : E.HasseBound)
     have hT_le_M : T ≤ M := by
       rw [hT_def, hM_def]
       exact Nat.add_le_add hZC (Nat.add_le_add_left hBI _)
-    have hM_pos : 1 ≤ M := by rw [hM_def]; omega
-    -- hLargeQ flat: n > 31*(degE+k+2)+78 = 31*M + 109 (since M = degE+k+1).
     have hN_flat : n > 31 * M + 109 := by
       have h := _hLargeQ
       have hEq : 2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
@@ -5226,90 +5072,12 @@ private theorem sigma_data_of_gd_support_rational (hHW : E.HasseBound)
             = 31 * M + 109 := by rw [hM_def]; ring
       rw [hEq] at h
       exact h
-    -- Sharp Hasse: q ≤ n + 2 + s with s² ≤ 4(n+1).
-    have hQbound : E.q ≤ n + 2 + Nat.sqrt (4 * (n + 1)) := hasse_q_le_sharp_nat_of E hHW
-    set s := Nat.sqrt (4 * (n + 1)) with hs_def
-    have hSqrtSq : s * s ≤ 4 * (n + 1) := Nat.sqrt_le _
-    -- Step 1: 13n > 18s (from squared bound 169n² > 324s² ≤ 1296(n+1)).
-    have hN_141 : n ≥ 141 := by
-      have h1 := hN_flat; have h2 := hM_pos; omega
-    have h_169n2 : 169 * n * n > 1296 * (n + 1) := by
-      nlinarith [hN_141, sq_nonneg n]
-    have h_13n_18s : 13 * n > 18 * s := by
-      have h_169n2' : 169 * n * n > 324 * (s * s) := by
-        calc 169 * n * n > 1296 * (n + 1) := h_169n2
-          _ = 324 * (4 * (n + 1)) := by ring
-          _ ≥ 324 * (s * s) := Nat.mul_le_mul_left _ hSqrtSq
-      have hSq : (13 * n) * (13 * n) > (18 * s) * (18 * s) := by
-        have : (13 * n) * (13 * n) = 169 * n * n := by ring
-        rw [this]
-        have : (18 * s) * (18 * s) = 324 * (s * s) := by ring
-        rw [this]
-        exact h_169n2'
-      -- From a*a > b*b in ℕ, derive a > b (contrapositive: a ≤ b → a*a ≤ b*b).
-      by_contra h_le
-      push_neg at h_le
-      have : (13 * n) * (13 * n) ≤ (18 * s) * (18 * s) :=
-        Nat.mul_le_mul h_le h_le
-      omega
-    -- Step 2: 107n > 36M.
-    have h_107n_36M : 107 * n > 36 * M := by
-      have h1 : 107 * n ≥ 107 * (31 * M + 110) := by
-        have : n ≥ 31 * M + 110 := by omega
-        exact Nat.mul_le_mul_left _ this
-      have h2 : 107 * (31 * M + 110) = 3317 * M + 11770 := by ring
-      have h3 : 3317 * M + 11770 > 36 * M := by omega
-      linarith
-    -- Combine: 13Mn + 107n > 18Ms + 36M.
-    have h_combined : 13 * M * n + 107 * n > 18 * M * s + 36 * M := by
-      have h1 : 13 * M * n ≥ 18 * M * s := by
-        have h13_18 : M * (13 * n) ≥ M * (18 * s) :=
-          Nat.mul_le_mul_left M (le_of_lt h_13n_18s)
-        have heq1 : 13 * M * n = M * (13 * n) := by ring
-        have heq2 : 18 * M * s = M * (18 * s) := by ring
-        rw [heq1, heq2]; exact h13_18
-      omega
-    -- Goal: n*n - 2*n > 18*T*q.
-    -- We have n*n - 2*n ≥ n*(n - 2 - 18*M) + 18*M*n = ... let me reformulate.
-    -- n² - 2n = n(n-2). Want n(n-2) > 18*T*q.
-    -- 18*T*q ≤ 18*M*q ≤ 18*M*(n + 2 + s) = 18Mn + 36M + 18Ms.
-    -- Want n(n-2) > 18Mn + 36M + 18Ms.
-    -- ⟺ n² - 2n - 18Mn - 36M > 18Ms.
-    -- ⟺ n*(n - 18M - 2) - 36M > 18Ms.
-    -- With n ≥ 31M + 110, n - 18M - 2 ≥ 13M + 108 ≥ 13M + 107.
-    -- n*(13M+107) - 36M > 18Ms ⟺ 13Mn + 107n - 36M > 18Ms ⟺ 13Mn + 107n > 18Ms + 36M ✓.
-    have h_n_minus : n - 18 * M - 2 ≥ 13 * M + 107 := by omega
-    have h_lhs : n * (n - 18 * M - 2) ≥ n * (13 * M + 107) :=
-      Nat.mul_le_mul_left _ h_n_minus
-    have h_lhs2 : n * (13 * M + 107) = 13 * M * n + 107 * n := by ring
-    have h_step : n * (n - 18 * M - 2) ≥ 13 * M * n + 107 * n := by
-      rw [← h_lhs2]; exact h_lhs
-    -- n*n = n*(n - 18M - 2) + n*(18M + 2) (since n ≥ 18M+2).
-    have h_n_ge_18M2 : 18 * M + 2 ≤ n := by omega
-    have h_n_split :
-        n * (n - 18 * M - 2) + n * (18 * M + 2) = n * n := by
-      rw [← Nat.mul_add]
-      congr 1
-      omega
-    have h_n_split' : n * (n - 18 * M - 2) = n * n - n * (18 * M + 2) := by omega
-    -- 18*T*q ≤ 18*M*(n + 2 + s).
-    have h_18Tq_le : 18 * T * E.q ≤ 18 * M * (n + 2 + s) := by
-      calc 18 * T * E.q ≤ 18 * M * E.q :=
-            Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ hT_le_M)
-        _ ≤ 18 * M * (n + 2 + s) := Nat.mul_le_mul_left _ hQbound
-    -- Want: n*n - 2*n > 18*T*q. Apply chain with sub: n*n - 2*n = n*(n-18M-2) + 18Mn.
-    have h_n_expand : n * n - 2 * n = n * (n - 18 * M - 2) + 18 * M * n := by
-      have h1 : n * (18 * M + 2) = 18 * M * n + 2 * n := by ring
-      omega
-    rw [h_n_expand]
-    have h_18M_expand : 18 * M * (n + 2 + s) = 18 * M * n + 36 * M + 18 * M * s := by ring
-    have h_chain : 18 * T * E.q ≤ 18 * M * n + 36 * M + 18 * M * s := by
-      rw [← h_18M_expand]; exact h_18Tq_le
-    -- Combine: 13Mn + 107n + 18Mn > 36M + 18Ms + 18Mn (since 13Mn + 107n > 36M + 18Ms).
-    have h_combined' : 13 * M * n + 107 * n + 18 * M * n
-        > 36 * M + 18 * M * s + 18 * M * n := by omega
-    have h_step3 : n * (n - 18 * M - 2) + 18 * M * n
-        ≥ 13 * M * n + 107 * n + 18 * M * n := by omega
+    have hTn : 12 * T * n ≤ 12 * M * n :=
+      Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ hT_le_M)
+    have hMn : 12 * M * n + 2 * n < n * n := by
+      have h1 : (12 * M + 2) * n < n * n :=
+        (Nat.mul_lt_mul_right (by omega)).mpr (by omega)
+      nlinarith [h1]
     omega
   have hVanishing : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points →
@@ -5690,7 +5458,7 @@ private theorem sigma_data_of_gd_support_rational (hHW : E.HasseBound)
         · push_neg at hA₀nr
           exact h_spec A₀ hA₀ (Or.inr (Or.inl hA₀nr)) A₁ hA₁
     -- Step D: extend to all E × E via polyGFull_vanishes_on_ExE_of_polyG_zero.
-    exact polyGFull_vanishes_on_ExE_of_polyG_zero E hHW _ _ _ _
+    exact polyGFull_vanishes_on_ExE_of_polyG_zero E _ _ _ _
       hAt_nonvert hELargeDkl
   have hELargeThr : E.points.card > 4 * (zerosCard E msg.toD +
         (1 + baseImageCount E stmt msg hkm)) + 2 := by
@@ -5728,7 +5496,7 @@ private theorem sigma_data_of_gd_support_rational (hHW : E.HasseBound)
       apply Nat.mul_le_mul_left
       exact Nat.add_le_add_right _hDeg _
     linarith [_hLargeQ]
-  exact sigma_matching_from_polyGFull_vanishing E hHW
+  exact sigma_matching_from_polyGFull_vanishing E
     (zerosAt E msg.toD)
     (fun k => ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q))
     (distinctR E stmt msg hkm)
@@ -5910,111 +5678,30 @@ private theorem exists_goodIntercepts_avoiding_geom_and_rational_poles
       (Finset.mem_filter.mpr ⟨hμG, ⟨j, hEq⟩⟩))
 
 /-- Numeric threshold supplying enough rational samples for the Frobenius
-partial-fraction descent. This is the remaining Hasse/valid-pairs arithmetic
-obligation after the geometric and sampling plumbing is in place. -/
-private theorem frob_sampling_validPairs_threshold (hHW : E.HasseBound)
+partial-fraction descent. Point-count vs field-size: the slope and
+intercept sample spaces are `F_q`-sized while `validPairs` is
+point-sized, so this comparison is inherently mixed-currency; the
+required relation enters as the explicit `hSample` hypothesis
+(discharged from Hasse only in the terminal layer). -/
+private theorem frob_sampling_validPairs_threshold
     (D : CoordRingElt E.q) (gd : GeometricDivisorData E D) (k : ℕ)
-    (hLargeQ : E.points.card >
-        2 * (5 * (D.degE + k + 2) + 3) +
-        21 * (D.degE + k + 2) + 72) :
+    (hSample : 18 * (D.degE + k + 1) * E.q + 1 ≤ (validPairs E).card) :
     6 * E.q * (2 * (gd.support.card + (k + 1)) + gd.support.card) + 1
       ≤ (validPairs E).card := by
   classical
-  set n := E.points.card with hn_def
-  set d := D.degE with hd_def
-  set M := d + k + 1 with hM_def
-  set s := gd.support.card with hs_def
-  have hSC : s ≤ d := by
-    rw [hs_def, hd_def]
+  have hSC : gd.support.card ≤ D.degE := by
     calc gd.support.card
         = ∑ _ ∈ gd.support, 1 := by simp
       _ ≤ ∑ Q ∈ gd.support, gd.mult Q :=
           Finset.sum_le_sum (fun Q hQ => gd.mult_pos_on_support Q hQ)
       _ ≤ D.degE := gd.accounting_le_degE
-  have hM_pos : 0 < M := by
-    rw [hM_def]
-    omega
-  have hN_flat : n ≥ 31 * M + 110 := by
-    have h := hLargeQ
-    have hEq : 2 * (5 * (D.degE + k + 2) + 3) +
-            21 * (D.degE + k + 2) + 72
-          = 31 * M + 109 := by
-      rw [hM_def, hd_def]
-      ring
-    rw [hEq] at h
-    omega
-  have hN141 : n ≥ 141 := by
-    have hM1 : 1 ≤ M := Nat.succ_le_of_lt hM_pos
-    omega
-  have hQbound : E.q ≤ n + 2 + Nat.sqrt (4 * (n + 1)) := by
-    simpa [n] using hasse_q_le_sharp_nat_of E hHW
-  set r := Nat.sqrt (4 * (n + 1)) with hr_def
-  have hSqrtSq : r * r ≤ 4 * (n + 1) := Nat.sqrt_le _
-  have h_169n2 : 169 * n * n > 1296 * (n + 1) := by
-    nlinarith [hN141, sq_nonneg n]
-  have h_13n_18r : 13 * n > 18 * r := by
-    have h_169n2' : 169 * n * n > 324 * (r * r) := by
-      calc 169 * n * n > 1296 * (n + 1) := h_169n2
-        _ = 324 * (4 * (n + 1)) := by ring
-        _ ≥ 324 * (r * r) := Nat.mul_le_mul_left _ hSqrtSq
-    have hSq : (13 * n) * (13 * n) > (18 * r) * (18 * r) := by
-      have h1 : (13 * n) * (13 * n) = 169 * n * n := by ring
-      have h2 : (18 * r) * (18 * r) = 324 * (r * r) := by ring
-      rw [h1, h2]
-      exact h_169n2'
-    by_contra hle
-    push_neg at hle
-    have : (13 * n) * (13 * n) ≤ (18 * r) * (18 * r) :=
-      Nat.mul_le_mul hle hle
-    omega
-  have h_18Mr_lt_13Mn : 18 * M * r < 13 * M * n := by
-    have h := (Nat.mul_lt_mul_left hM_pos).2 h_13n_18r
-    have h1 : M * (18 * r) = 18 * M * r := by ring
-    have h2 : M * (13 * n) = 13 * M * n := by ring
-    rwa [h1, h2] at h
-  have h_107n_36M : 107 * n > 36 * M := by
-    have h1 : 107 * n ≥ 107 * (31 * M + 110) :=
-      Nat.mul_le_mul_left _ hN_flat
-    have h2 : 107 * (31 * M + 110) = 3317 * M + 11770 := by ring
-    have h3 : 3317 * M + 11770 > 36 * M := by omega
-    linarith
-  have h_tail : 36 * M + 18 * M * r < (13 * M + 107) * n := by
-    have hsum : 36 * M + 18 * M * r < 107 * n + 13 * M * n := by
-      omega
-    have hEq : 107 * n + 13 * M * n = (13 * M + 107) * n := by ring
-    rwa [hEq] at hsum
-  have hMain : 18 * M * (n + 2 + r) + 3 * n < n * n := by
-    have hPre : 18 * M * (n + 2 + r) + 3 * n < (31 * M + 110) * n := by
-      have hL : 18 * M * (n + 2 + r) + 3 * n =
-          18 * M * n + 3 * n + (36 * M + 18 * M * r) := by ring
-      have hR : (31 * M + 110) * n =
-          18 * M * n + 3 * n + (13 * M + 107) * n := by ring
-      rw [hL, hR]
-      omega
-    have hTop : (31 * M + 110) * n ≤ n * n := by
-      exact Nat.mul_le_mul_right n hN_flat
-    exact lt_of_lt_of_le hPre hTop
-  have hQMain : 18 * M * E.q + 1 ≤ n * n - 3 * n := by
-    have hq : 18 * M * E.q ≤ 18 * M * (n + 2 + r) :=
-      Nat.mul_le_mul_left (18 * M) hQbound
-    omega
-  have hSampleCount :
-      6 * E.q * (2 * (s + (k + 1)) + s) + 1 ≤ 18 * M * E.q + 1 := by
-    have hT : 2 * (s + (k + 1)) + s ≤ 3 * M := by
-      rw [hM_def]
-      omega
-    calc 6 * E.q * (2 * (s + (k + 1)) + s) + 1
-        ≤ 6 * E.q * (3 * M) + 1 := by
-          exact Nat.add_le_add_right (Nat.mul_le_mul_left (6 * E.q) hT) 1
-      _ = 18 * M * E.q + 1 := by ring
-  have hValid := card_validPairs_lb E
-  calc
-    6 * E.q * (2 * (gd.support.card + (k + 1)) + gd.support.card) + 1
-        = 6 * E.q * (2 * (s + (k + 1)) + s) + 1 := by rw [hs_def]
-    _ ≤ 18 * M * E.q + 1 := hSampleCount
-    _ ≤ n * n - 3 * n := hQMain
-    _ ≤ (validPairs E).card := by
-      simpa [n, ECSetup.numAffine] using hValid
+  have hT : 2 * (gd.support.card + (k + 1)) + gd.support.card
+      ≤ 3 * (D.degE + k + 1) := by omega
+  calc 6 * E.q * (2 * (gd.support.card + (k + 1)) + gd.support.card) + 1
+      ≤ 6 * E.q * (3 * (D.degE + k + 1)) + 1 :=
+        Nat.add_le_add_right (Nat.mul_le_mul_left _ hT) 1
+    _ = 18 * (D.degE + k + 1) * E.q + 1 := by ring
+    _ ≤ (validPairs E).card := hSample
 
 /--
 Frobenius descent core for the rational-support branch.
@@ -6029,7 +5716,7 @@ enough rational evaluation points. Apply
 `FrobDescentHelpers.partial_fraction_coeff_zero` and read off the coefficient
 at the isolated pole, which is `((gd.mult Q : ℕ) : Fqbar E)`.
 -/
-private theorem frob_descent_mult_zero_of_not_fixed (hHW : E.HasseBound)
+private theorem frob_descent_mult_zero_of_not_fixed
     (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
     (_hDeg : D.degE < E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
@@ -6040,6 +5727,7 @@ private theorem frob_descent_mult_zero_of_not_fixed (hHW : E.HasseBound)
       logDerivCheckFn E D P k B m A₀ A₁ = 0)
     (hLargeQ : E.points.card >
         2 * (5 * (D.degE + k + 2) + 3) + 21 * (D.degE + k + 2) + 72)
+    (hSample : 18 * (D.degE + k + 1) * E.q + 1 ≤ (validPairs E).card)
     (Q : GeomPoint E) (hQ : Q ∈ gd.support)
     (hNotFixed : frobGeomPoint E Q ≠ Q) :
     ((gd.mult Q : ℕ) : Fqbar E) = 0 := by
@@ -6050,7 +5738,7 @@ private theorem frob_descent_mult_zero_of_not_fixed (hHW : E.HasseBound)
   let N : ℕ := 2 * (gd.support.card + M)
   have hQuant :
       6 * E.q * (N + gd.support.card) + 1 ≤ (validPairs E).card := by
-    have h := frob_sampling_validPairs_threshold E hHW D gd k hLargeQ
+    have h := frob_sampling_validPairs_threshold E D gd k hSample
     simpa [N, M, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
   obtain ⟨lam, hSep, hNonRat, hGood⟩ :=
     exists_slope_zLambdaBar_isolated_non_rational_with_good_intercepts
@@ -6092,7 +5780,7 @@ private theorem frob_descent_mult_zero_of_not_fixed (hHW : E.HasseBound)
     intro μ hμ
     change μ ∈ S0.image (fqToBar E) at hμ
     rcases Finset.mem_image.mp hμ with ⟨μ0, hμ0, rfl⟩
-    have hPF := geom_pf_identity_at_good_intercept E hHW D hDnz gd P B m
+    have hPF := geom_pf_identity_at_good_intercept E D hDnz gd P B m
       hAllZero hLargeQ lam μ0 (hS0Good hμ0)
       (by
         intro Q' hQ'
@@ -6112,7 +5800,7 @@ private theorem frob_descent_mult_zero_of_not_fixed (hHW : E.HasseBound)
 /-- **Rationality of the geometric support under `hAllZero`.** The all-zero
 hypothesis on `logDerivCheckFn` over rational defined non-vertical pairs
 forces every `Q ∈ gd.support` to have `F_q`-rational coordinates. -/
-private theorem gd_support_rational_of_hAllZero (hHW : E.HasseBound)
+private theorem gd_support_rational_of_hAllZero
     (stmt : DlogStatement E.q) (_hd : stmt.degBound < E.q)
     (msg : MAProverMsg E.q) (_hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
@@ -6122,6 +5810,8 @@ private theorem gd_support_rational_of_hAllZero (hHW : E.HasseBound)
     (_hLargeQ : E.points.card >
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
         21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
+        (validPairs E).card)
     (_hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
     (_hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
     (gd : GeometricDivisorData E msg.toD)
@@ -6140,12 +5830,12 @@ private theorem gd_support_rational_of_hAllZero (hHW : E.HasseBound)
   have hMultNZ : ((gd.mult Q : ℕ) : Fqbar E) ≠ 0 :=
     gd_mult_fqbar_ne_zero E msg.toD gd hDegLt Q hQ
   exact absurd
-    (frob_descent_mult_zero_of_not_fixed E hHW msg.toD gd hDegLt
+    (frob_descent_mult_zero_of_not_fixed E msg.toD gd hDegLt
       _hDnz stmt.target stmt.bases (fun i => msg.m (hkm ▸ i))
-      _hAllZero _hLargeQ Q hQ hNotFixed)
+      _hAllZero _hLargeQ hSample Q hQ hNotFixed)
     hMultNZ
 
-private theorem geometric_residue_match (hHW : E.HasseBound)
+private theorem geometric_residue_match
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)
     (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
@@ -6156,6 +5846,8 @@ private theorem geometric_residue_match (hHW : E.HasseBound)
     (hLargeQ : E.points.card >
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
         21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
+        (validPairs E).card)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
     (hAllZero :
@@ -6178,15 +5870,15 @@ private theorem geometric_residue_match (hHW : E.HasseBound)
   obtain ⟨gd, _⟩ := exists_geometricDivisorData E msg.toD hDnz
   -- Step 1: gd.support is rational under hAllZero (deep residue-specialisation).
   have hRat : gd_support_rational E msg.toD gd :=
-    gd_support_rational_of_hAllZero E hHW stmt hd msg hDeg hkm hSmooth hTargetOnE
-      hBasesOnE hLargeQ hNoNegP hDnz gd hAllZero
+    gd_support_rational_of_hAllZero E stmt hd msg hDeg hkm hSmooth hTargetOnE
+      hBasesOnE hLargeQ hSample hNoNegP hDnz gd hAllZero
   -- Step 2: splitsOnE follows from rational support.
   have hSplit : splitsOnE E msg.toD :=
     splitsOnE_of_gd_support_rational E msg.toD hDnz gd hRat
   -- Step 3: σ-matching from rational support + chord-sum identity.
   -- (No longer threads _hDenomNZ; the per-A₀ obstruction is absorbed via badDenomA0
   -- inside `sigma_data_of_gd_support_rational`.)
-  have hσ := sigma_data_of_gd_support_rational E hHW stmt hd msg hDeg hkm hTargetOnE
+  have hσ := sigma_data_of_gd_support_rational E stmt hd msg hDeg hkm hTargetOnE
     hBasesOnE hLargeQ hNoNegP hDnz gd hRat hAllZero
   exact ⟨hSplit, hσ⟩
 
@@ -6198,7 +5890,7 @@ The proof is a thin wrapper around the residue-matching helper
 `geometric_residue_match`; see that helper for the mathematical
 content and `PROVIDED SOLUTION` outline.
 -/
-private theorem geometric_sigma_matching (hHW : E.HasseBound)
+private theorem geometric_sigma_matching
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
@@ -6208,6 +5900,8 @@ private theorem geometric_sigma_matching (hHW : E.HasseBound)
     (hLargeQ : E.points.card >
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
         21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
+        (validPairs E).card)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
     (hAllZero :
@@ -6223,11 +5917,11 @@ private theorem geometric_sigma_matching (hHW : E.HasseBound)
       (∀ k, ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q)
             + distinctM' E stmt msg hkm (σ k) = 0) ∧
       (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) :=
-  geometric_residue_match E hHW stmt hd hd2 msg hDeg hkm hSmooth
-    hTargetOnE hBasesOnE hLargeQ hAdm hNoNegP hAllZero
+  geometric_residue_match E stmt hd hd2 msg hDeg hkm hSmooth
+    hTargetOnE hBasesOnE hLargeQ hSample hAdm hNoNegP hAllZero
 
 set_option maxHeartbeats 800000 in
-theorem extractor_of_logDerivCheck_all_zero_geometric_general (hHW : E.HasseBound)
+theorem extractor_of_logDerivCheck_all_zero_geometric_general
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
@@ -6237,6 +5931,8 @@ theorem extractor_of_logDerivCheck_all_zero_geometric_general (hHW : E.HasseBoun
     (hLargeQ : E.points.card >
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
         21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
+        (validPairs E).card)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
     (hAllZero :
@@ -6252,8 +5948,8 @@ theorem extractor_of_logDerivCheck_all_zero_geometric_general (hHW : E.HasseBoun
   have hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg hAdm
   obtain ⟨hSplit, σ, hσ_eq, hσ_betam, hσ_off⟩ :=
-    geometric_sigma_matching E hHW stmt hd hd2 msg hDeg hkm hSmooth
-      hTargetOnE hBasesOnE hLargeQ hAdm hNoNegP hAllZero
+    geometric_sigma_matching E stmt hd hd2 msg hDeg hkm hSmooth
+      hTargetOnE hBasesOnE hLargeQ hSample hAdm hNoNegP hAllZero
   have hβsup := betaCanonical_support E msg.toD
   have hβcov := betaCanonical_covers E msg.toD hDnz
   have hβsum := betaCanonical_sum_le_degE E msg.toD
@@ -6313,7 +6009,7 @@ theorem extractor_of_logDerivCheck_all_zero_geometric_general (hHW : E.HasseBoun
 Geometric all-zero branch, including the degenerate case where `-P` is
 already one of the advertised bases.
 -/
-theorem extractor_of_logDerivCheck_all_zero_geometric (hHW : E.HasseBound)
+theorem extractor_of_logDerivCheck_all_zero_geometric
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
@@ -6323,6 +6019,8 @@ theorem extractor_of_logDerivCheck_all_zero_geometric (hHW : E.HasseBound)
     (hLargeQ : E.points.card >
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
         21 * (msg.toD.degE + stmt.k + 2) + 72)
+    (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
+        (validPairs E).card)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hAllZero :
       ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
@@ -6342,7 +6040,7 @@ theorem extractor_of_logDerivCheck_all_zero_geometric (hHW : E.HasseBound)
     · unfold maExtractor
       rw [dif_pos hSucc]
     · exact extracted_scalars_valid_special E stmt msg hkm hNegP
-  · exact extractor_of_logDerivCheck_all_zero_geometric_general E hHW stmt hd hd2
-      msg hDeg hkm hSmooth hTargetOnE hBasesOnE hLargeQ hAdm hNegP hAllZero
+  · exact extractor_of_logDerivCheck_all_zero_geometric_general E stmt hd hd2
+      msg hDeg hkm hSmooth hTargetOnE hBasesOnE hLargeQ hSample hAdm hNegP hAllZero
 
 end Divisor

@@ -54,5 +54,6 @@ import Divisor.FrobDescentHelpers
 import Divisor.SlopeChoice
 import Divisor.GeometricSoundness
 import Divisor.IsHonestForBinary
+import Divisor.Hasse
 import Divisor.Sketch.ChordFiberProductConcrete
 import Divisor.Sketch.ChordFiberGeometry

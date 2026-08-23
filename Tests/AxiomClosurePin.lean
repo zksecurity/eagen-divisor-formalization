@@ -13,14 +13,17 @@
     theorem pinned below):
       propext, Classical.choice, Quot.sound — AXIOM-FREE.
 
-    The Hasse restructure: primary theorems take the point-count bound
-    as an explicit hypothesis `(hHW : E.HasseBound)` (extractability
-    side) or avoid it entirely via the trivial fiber bound
-    `|E| ≤ 2q` (completeness side, `points_card_le_two_q`), so no
-    primary statement depends on any project axiom. The `_hasse`
-    variants (pinned at the bottom) discharge `HasseBound` via the
-    single project axiom `hasse_weil_textbook` (Silverman V.1.1
-    verbatim) and recover the original field-size statements.
+    The Plan 2 currency restructure: every theorem outside the
+    terminal leaf `Divisor/Hasse.lean` is stated in the point-count
+    currency `n = E.points.card` and is axiom-free by construction —
+    the leaf is the only module importing the axiom file. Suffixes:
+    short name = point-count form (axiom-free); `_q` = field-size
+    form via the trivial fiber bound `|E| ≤ 2q`
+    (`points_card_le_two_q`; axiom-free, completeness only); `_hasse`
+    = field-size form priced by the single project axiom
+    `hasse_weil_textbook` (Silverman V.1.1 verbatim), which supplies
+    the lower bound `q ≤ 2n + 3` needed on the extractability side
+    (density/sampling hypotheses and the `36·(d+k+4)·q` constant).
 
     The former axiom
     `Divisor.CoordRingElt.divisorClass_eq_zero_of_b_ne_zero` is now a
@@ -65,9 +68,11 @@
     `Differential.logDeriv_algebraNorm_eq_algebraTrace_logDeriv_of_isGalois`
     is also printed below to guard against drift.
 
-  * `ma_completeness_base`, `ma_completeness`:
-      propext, Classical.choice, Quot.sound (axiom-free; the field-size
-      form now uses the trivial `|E| ≤ 2q` bound, not Hasse)
+  * `ma_completeness_base`, `ma_completeness`, `ma_completeness_q`:
+      propext, Classical.choice, Quot.sound (axiom-free;
+      `ma_completeness` is the consolidated point-count form
+      `(3d+4)·n`, and the field-size form `ma_completeness_q` uses
+      the trivial `|E| ≤ 2q` bound, not Hasse)
 
   The unsound `Divisor.weil_reciprocity_honest` axiom (which falsely
   claimed Eagen's eq. (1) on the diagonal `A_0 = A_1` where `slopeOf`
@@ -110,6 +115,7 @@
 import Divisor.ExtractorBridgeTheorems
 import Divisor.Soundness
 import Divisor.IsHonestForBinary
+import Divisor.Hasse
 
 /--
 info: 'Divisor.ma_extractable' depends on axioms: [propext,
@@ -160,6 +166,27 @@ info: 'Divisor.ma_completeness_clean' depends on axioms: [propext,
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_completeness_clean
+/--
+info: 'Divisor.ma_completeness_q' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ma_completeness_q
+/--
+info: 'Divisor.ip_completeness' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ip_completeness
+/--
+info: 'Divisor.ip_completeness_q' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ip_completeness_q
 /--
 info: 'Divisor.ma_completeness_for_length4Simple' depends on axioms: [propext,
  Classical.choice,
@@ -470,12 +497,30 @@ info: 'Divisor.ma_completeness_binary_admSetHash_point_certificate' depends on a
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_completeness_binary_admSetHash_point_certificate
 
-/-! ## Axiom-applied `_hasse` variants
+/-! ## Terminal Hasse layer (`Divisor/Hasse.lean`)
 
-The only theorems that consume the Hasse axiom. Their closures pin the
-entire axiom surface of the project: `hasse_weil_textbook` and nothing
-else beyond the Lean built-ins. -/
+The only theorems that consume the Hasse axiom — everything else in
+the library is axiom-free by import structure (`Divisor/Hasse.lean`
+is the sole importer of `Divisor.Axioms.AxiomHasseWeil`). These
+closures pin the entire axiom surface of the project:
+`hasse_weil_textbook` and nothing else beyond the Lean built-ins. -/
 
+/--
+info: 'Divisor.hasse_points_bound' depends on axioms: [propext,
+ Classical.choice,
+ Divisor.hasse_weil_textbook,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.hasse_points_bound
+/--
+info: 'Divisor.hasse_points_bound_lb' depends on axioms: [propext,
+ Classical.choice,
+ Divisor.hasse_weil_textbook,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.hasse_points_bound_lb
 /--
 info: 'Divisor.ma_extractable_hasse' depends on axioms: [propext,
  Classical.choice,
@@ -509,10 +554,86 @@ info: 'Divisor.ip_extractable_base_hasse' depends on axioms: [propext,
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ip_extractable_base_hasse
 /--
-info: 'Divisor.ma_extractable_paper_hasse' depends on axioms: [propext,
+info: 'Divisor.ma_soundness_probability_hasse' depends on axioms: [propext,
  Classical.choice,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_extractable_paper_hasse
+#print axioms Divisor.ma_soundness_probability_hasse
+/--
+info: 'Divisor.ma_extractable_witness_of_excess_hasse' depends on axioms: [propext,
+ Classical.choice,
+ Divisor.hasse_weil_textbook,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ma_extractable_witness_of_excess_hasse
+/--
+info: 'Divisor.ip_extractable_witness_of_excess_hasse' depends on axioms: [propext,
+ Classical.choice,
+ Divisor.hasse_weil_textbook,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ip_extractable_witness_of_excess_hasse
+
+/-! ## Axiom-free soundness-probability chain (point-count currency) -/
+
+/--
+info: 'Divisor.ma_soundness_probability' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ma_soundness_probability
+/--
+info: 'Divisor.ma_extractable_witness_of_excess_ratio' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ma_extractable_witness_of_excess_ratio
+/--
+info: 'Divisor.ma_extractable_witness_of_excess_clean' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ma_extractable_witness_of_excess_clean
+
+/-! ## `_of_count` flavors in the leaf: axiom-free field-size forms
+
+These live in `Divisor/Hasse.lean` but take the two linear
+point-count bounds (`2n ≤ 3q + 3`, `q ≤ 2n + 3`) as explicit
+hypotheses instead of invoking the axiom — checkable arithmetic for
+any concrete curve, so their closures stay at the Lean core three. -/
+
+/--
+info: 'Divisor.ma_extractable_of_count' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ma_extractable_of_count
+/--
+info: 'Divisor.ip_extractable_of_count' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ip_extractable_of_count
+/--
+info: 'Divisor.ma_soundness_probability_of_count' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ma_soundness_probability_of_count
+/--
+info: 'Divisor.validPairs_card_ge_q_of_count' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.validPairs_card_ge_q_of_count

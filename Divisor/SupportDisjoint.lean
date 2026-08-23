@@ -11,7 +11,6 @@
   Proof: union bound over three events.
 -/
 import Divisor.Defs
-import Divisor.Axioms.AxiomHasseWeil
 import Divisor.CubicIntersection
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Algebra.Polynomial.RingDivision

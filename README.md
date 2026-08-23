@@ -16,8 +16,14 @@ Requires elan + Lean 4 toolchain (see `lean-toolchain`).
 ## Theorem Surface
 
 The headline theorems live in `Divisor/ExtractorBridgeTheorems.lean` and
-`Divisor/Soundness.lean`. The public surface below is the Hasse-clean
-single-`q` surface.
+`Divisor/Soundness.lean`. The public surface below is the axiom-free
+point-count surface: every bound is stated in the currency
+`n = |E(F_q)|` (`E.points.card`). Naming convention: a short name is
+the point-count form (axiom-free); a `_q` suffix is the field-size form
+obtained by the trivial fiber bound `n ≤ 2q` (still axiom-free;
+completeness only); a `_hasse` suffix is the field-size form priced by
+the Hasse–Weil axiom, and lives in the terminal module
+`Divisor/Hasse.lean`.
 
 ### Soundness
 
@@ -46,17 +52,21 @@ enumerated in full for `ma_extractable` and referenced thereafter.
 #### `Divisor.ma_extractable`
 
 > **Theorem (MA knowledge soundness).** Let $`E`$ be an elliptic curve over
-> $`\mathbb{F}_q`$ with $`q \ge 5`$, and let `stmt` be a discrete-log
+> $`\mathbb{F}_q`$, and let `stmt` be a discrete-log
 > statement of arity $`k`$ and degree bound $`d`$ with $`2 \le d \le q - 1`$,
 > whose target and $`k`$ basis points all lie on $`E`$. Fix a first-round
-> prover message `msg` of matching arity, and assume the field is large
+> prover message `msg` of matching arity, and assume the curve is large
 > enough for the counting argument: $`|E(\mathbb{F}_q)|`$ exceeds
-> $`2(5(d+k+2)+3) + 21(d+k+2) + 72`$. Then one of two things holds; either
+> $`2(5(d'+k+2)+3) + 21(d'+k+2) + 72`$ and the challenge space satisfies
+> $`18(d'+k+1)q < |\mathrm{validPairs}|`$, where $`d'`$ is the degree of the
+> message divisor. Then one of two things holds; either
 > the extractor `maExtractor` returns a witness `wit` satisfying the
 > relation `relDlog(stmt, wit)`, or `msg` is accepted on at most
-> $`36(d+k+4)q`$ challenges. The content is the contrapositive: a `msg`
-> accepted on more than $`36(d+k+4)q`$ challenges is one from which
-> `maExtractor` recovers a valid witness.
+> $`24(d+k+3)\,|E(\mathbb{F}_q)|`$ challenges. The content is the
+> contrapositive: a `msg` accepted on more challenges is one from which
+> `maExtractor` recovers a valid witness. The field-size form
+> ($`\le 36(d+k+4)q`$, with both largeness hypotheses replaced by one
+> threshold on $`q`$) is `ma_extractable_hasse` in `Divisor/Hasse.lean`.
 
 Lean:
 ```lean
@@ -70,13 +80,14 @@ theorem ma_extractable
     (hLargeQ : E.points.card >
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
         21 * (msg.toD.degE + stmt.k + 2) + 72)
-    (hQ : 5 ≤ E.q) :
+    (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
+        (validPairs E).card) :
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg stmt.degBound hd hkm = some wit
         ∧ relDlog E stmt wit) ∨
     ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q
+      ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card
 ```
 
 Hypotheses:
@@ -89,25 +100,29 @@ Hypotheses:
 - `hkm : stmt.k = msg.k`: the message arity matches the statement arity.
 - `hTargetOnE : stmt.target ∈ E.points`: the target is a curve point.
 - `hBasesOnE : ∀ j, stmt.bases j ∈ E.points`: every basis point is on the curve.
-- `hLargeQ : ...`: the large-field condition needed by the counting
-  argument.
-- `hQ : 5 ≤ E.q`: the field has at least 5 elements, used to fold point
-  counts into a single expression in `q`.
+- `hLargeQ : ...`: the large-curve condition needed by the counting
+  argument (a lower bound on the point count).
+- `hSample : ...`: the challenge sample space is large enough for the
+  Frobenius slope-sampling pigeonhole. Both largeness hypotheses follow
+  from the single field-size threshold `72·(d'+k+4) ≤ q` under the
+  Hasse–Weil axiom (`Divisor/Hasse.lean`).
 
 Conclusion: for every first-round message, either the extractor returns
 `some wit` and `wit` is a valid discrete-log witness for `stmt`, or the
-accepting challenge set has cardinality at most `36·(d+k+4)·q`.
+accepting challenge set has cardinality at most
+`24·(d+k+3)·|E(F_q)|`.
 
 #### `Divisor.ip_extractable`
 
 > **Theorem (IP knowledge soundness; uniqueness of the third response).**
 > Assume the hypotheses of `ma_extractable`: an elliptic curve $`E`$ over
-> $`\mathbb{F}_q`$ with $`q \ge 5`$, a statement `stmt` of arity $`k`$ and
+> $`\mathbb{F}_q`$, a statement `stmt` of arity $`k`$ and
 > degree bound $`d`$ with $`2 \le d \le q - 1`$, target and bases on $`E`$,
-> and the same large-field bound; write the first message as `msg1`. Then
+> and the same largeness bounds; write the first message as `msg1`. Then
 > two statements hold at once. The first is the extraction dichotomy of
 > `ma_extractable`: either `maExtractor` recovers a witness, or `msg1` is
-> accepted on at most $`36(d+k+4)q`$ challenges. The second is uniqueness of
+> accepted on at most $`24(d+k+3)\,|E(\mathbb{F}_q)|`$ challenges. The
+> second is uniqueness of
 > the third-round response: fix a challenge with points $`A_0, A_1`$, a
 > second-round point $`A_2`$, and two third responses `msg3`, `msg3'`. If
 > `msg1.toD` is nonzero at $`A_0`$, $`A_1`$ and $`A_2`$, the line through
@@ -126,13 +141,14 @@ theorem ip_extractable
     (hLargeQ : E.points.card >
         2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
         21 * (msg1.toD.degE + stmt.k + 2) + 72)
-    (hQ : 5 ≤ E.q) :
+    (hSample : 18 * (msg1.toD.degE + stmt.k + 1) * E.q + 1 ≤
+        (validPairs E).card) :
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
          ∧ relDlog E stmt wit) ∨
      ((validPairs E).filter
         (fun p => maVerifierAccepts E stmt msg1 ⟨p.1, p.2⟩ hkm)).card
-      ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q)
+      ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card)
     ∧ ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
         (msg3 msg3' : IPProverMsg3 E.q),
         msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
@@ -165,7 +181,7 @@ pins the prover's polynomials to the witness.
 #### `Divisor.ma_completeness`
 
 > **Theorem (MA completeness).** Let $`E`$ be an elliptic curve over
-> $`\mathbb{F}_q`$ with $`q \ge 5`$, let `wit` be a witness satisfying the
+> $`\mathbb{F}_q`$, let `wit` be a witness satisfying the
 > discrete-log relation for a statement `stmt` of matching arity, and let
 > `msg` be the *honest* first-round message for `(stmt, wit)`, i.e.
 > `msg.isHonestFor E stmt wit`. Assume the message divisor `msg.toD` is
@@ -173,7 +189,9 @@ pins the prover's polynomials to the witness.
 > and its polynomials `(msg.polyA, msg.polyB)` lie in the admissible set.
 > Then the honest prover is rejected on few challenges: the number of pairs
 > $`(P_1, P_2) \in E \times E`$ on which the verifier does not accept is at
-> most $`(6(d+1)+6)q`$.
+> most $`(3d+4)\,|E(\mathbb{F}_q)|`$. The field-size form
+> ($`\le (6(d+1)+6)q`$ for $`q \ge 5`$, via the trivial fiber bound —
+> no axiom) is `ma_completeness_q`.
 
 Lean:
 ```lean
@@ -185,11 +203,10 @@ theorem ma_completeness
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
-    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
-    (hQ : 5 ≤ E.q) :
+    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
     ((E.points ×ˢ E.points).filter
         (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (6 * (stmt.degBound + 1) + 6) * E.q
+      ≤ (3 * stmt.degBound + 4) * E.points.card
 ```
 
 Hypotheses:
@@ -211,10 +228,10 @@ Hypotheses:
   honest message for `(stmt, wit)`.
 - `hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)`: the message divisor is
   nonzero (stated directly, rather than via `admSet`).
-- `hQ : 5 ≤ E.q`: the field has at least 5 elements.
 
 Conclusion: the verifier rejects the honest prover on at most
-`(6·(d+1)+6)q` challenge pairs.
+`(3d+4)·|E(F_q)|` challenge pairs (equivalently at most `(6(d+1)+6)·q`
+via `ma_completeness_q`, still axiom-free).
 
 ## Axiom Surface
 
@@ -231,20 +248,35 @@ build.
 `Divisor.ma_extractable`, `Divisor.ip_extractable`,
 `Divisor.ma_completeness`, `Divisor.ma_completeness_base`, and the
 entire binary completeness chain (`ma_completeness_binary*`) are the
-Lean core three only. The Hasse bound enters the development in exactly
-one of two ways:
+Lean core three only. This is enforced *by import structure*: the axiom
+file `Divisor/Axioms/AxiomHasseWeil.lean` is imported by exactly one
+module, the terminal leaf `Divisor/Hasse.lean`, which sits above the
+whole library and below nothing. All internal bounds are carried in the
+point-count currency `n = |E(F_q)|`; `n` is bounded as a function of
+`q` exactly once, in the leaf. The Hasse bound enters the development
+in exactly one of two ways:
 
 * On the completeness side it is not needed at all: the field-size
-  bound uses the trivial `|E| ≤ 2q` fiber count
-  (`points_card_le_two_q`).
-* On the extractability side, the primary theorems take the point-count
-  bound as an explicit hypothesis `(hHW : E.HasseBound)` (the
-  integer-squared Hasse inequality, a checkable arithmetic fact for any
-  concrete curve). The `_hasse` variants (`ma_extractable_hasse`,
-  `ip_extractable_hasse`, `ma_extractable_base_hasse`,
-  `ip_extractable_base_hasse`, `ma_extractable_paper_hasse`, …)
-  discharge that hypothesis via the axiom and recover the original
-  statements; they are the **only** theorems whose closure contains
+  forms (`ma_completeness_q`, `ip_completeness_q`) use the trivial
+  `|E| ≤ 2q` fiber count (`points_card_le_two_q`), an axiom-free
+  upper bound.
+* On the extractability side the conversion needs the Hasse *lower*
+  bound `q ≤ 2·|E| + 3` — the direction no fiber count can give — to
+  discharge the two point-count largeness hypotheses (`hLargeQ`,
+  `hSample`) from a single field-size threshold `72·(d'+k+4) ≤ q` and
+  to recover the paper constant. The `_hasse` variants in
+  `Divisor/Hasse.lean` (`ma_extractable_hasse`, `ip_extractable_hasse`,
+  `ma_extractable_base_hasse`, `ip_extractable_base_hasse`,
+  `ma_soundness_probability_hasse`, the witness-of-excess
+  contrapositives, and the point-count conversion lemmas
+  `hasse_points_bound` / `hasse_points_bound_lb`) are the **only**
+  theorems whose closure contains the axiom. Each field-size final
+  also has an axiom-free `_of_count` flavor (e.g.
+  `ma_extractable_of_count`) taking the two linear count bounds
+  `2n ≤ 3q + 3` and `q ≤ 2n + 3` as explicit hypotheses — checkable
+  arithmetic for any concrete curve, so fully machine-checked
+  field-size instances need no axiom at all. The `_hasse` forms are
+  the only theorems whose closure contains
 
 ```text
 Divisor.hasse_weil_textbook
