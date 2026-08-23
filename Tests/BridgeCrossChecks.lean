@@ -1,9 +1,7 @@
 /-
-  Tests/BridgeCrossChecks.lean — the plan.md Phase 1 (1d) sanity tests,
-  run literally.
+  Tests/BridgeCrossChecks.lean — valuation-bridge sanity tests.
 
-  The 1d cross-check clause of plan.md says the two accounting
-  identities
+  The two accounting identities
 
   * `sum_ordAt_eq_natDegree_under_split`
       (`Σ_{P ∈ E.points} ordAt E D P = (normPoly E D).natDegree`
@@ -12,8 +10,8 @@
       (`Σ_{Q.x = α} geomLocalOrder E D Q = rootMult α (normPolyBar E D)`
        for the exact geometric zero set)
 
-  "must be derivable from the bridge — use them as sanity tests, not
-  inputs". The production proofs of those identities are combinatorial
+  must be derivable from the valuation bridge itself — they serve as
+  sanity tests here, not inputs. The production proofs are combinatorial
   (fuel induction on `divLin` / closed-formula case analysis) and
   predate the valuation bridge. This file DERIVES both statements
   again, from the bridge alone:

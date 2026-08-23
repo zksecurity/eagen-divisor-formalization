@@ -403,7 +403,7 @@ private theorem barToChord_comp_chordToBar :
       AdjoinRoot.of E.toWBar.toAffine.polynomial Polynomial.X from rfl]
     rw [barToChord_of, xHom_X]
 
-/-- **The chord isomorphism** `F̄[Z][X]/(f̄) ≃+* R̄` (plan.md 3a). -/
+/-- **The chord isomorphism** `F̄[Z][X]/(f̄) ≃+* R̄`. -/
 noncomputable def chordEquiv :
     ChordRing E lam ≃+* E.toWBar.toAffine.CoordinateRing :=
   RingEquiv.ofRingHom (chordToBar E lam) (barToChord E lam)

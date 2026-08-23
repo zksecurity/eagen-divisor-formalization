@@ -1,5 +1,5 @@
 /-
-  Divisor/OrdP/ChordResultant.lean — plan.md Phase 3c: the norm is the
+  Divisor/OrdP/ChordResultant.lean — the norm is the
   chord-fiber resultant.
 
   Main result (`intNorm_chordD_eq`):
@@ -162,7 +162,7 @@ private theorem prod_embeddings (D : CoordRingElt E.q) :
     Multiset.dedup_eq_self.mpr
       (Polynomial.nodup_roots (Polynomial.Separable.map hsep))]
 
-/-! ## The resultant chain (plan.md 3c) -/
+/-! ## The resultant chain -/
 
 /-- The bar-level D-line polynomial mapped into `K̄` factors through
 `dLineK`. -/
@@ -192,7 +192,7 @@ private theorem cubicKbar_leadingCoeff :
       (algebraMap (ChordK E) (ChordKbar E))).leadingCoeff = 1 :=
   ((chordCubicK_monic E lam).map _)
 
-/-- **The norm is the chord-fiber resultant** (plan.md 3c). -/
+/-- **The norm is the chord-fiber resultant.** -/
 theorem intNorm_chordD_eq (D : CoordRingElt E.q) :
     Algebra.intNorm (Polynomial (Fqbar E)) (ChordModel E lam)
         (chordD E lam D) =
