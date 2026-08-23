@@ -1,0 +1,62 @@
+/-
+  Tests/AnyLengthCompletenessSmoke.lean
+
+  Smoke test for the Plan 3 any-length completeness chain
+  (`Divisor/SafeSupport.lean`): on the F₄₃ curve `y² = x³ + 1`, the
+  computable general-position certificate `SafePairsCert` holds for a
+  concrete LENGTH-5 support — an odd length covered by none of the
+  structured once-and-for-all families (2/4 and chord 4/6/8) — and
+  discharges the full point-skeleton chain certificate through
+  `iteratedPointChordCase_of_safePairs`, i.e. through the any-length
+  theorem rather than a per-instance check of the accumulator run.
+-/
+import Divisor.SafeSupport
+
+namespace Tests.AnyLengthCompletenessSmoke
+
+open Divisor Divisor.Landmark
+
+private def pointsF43 : Finset (ZMod 43 × ZMod 43) :=
+  (Finset.univ : Finset (ZMod 43 × ZMod 43)).filter
+    (fun p => p.2 ^ 2 = p.1 ^ 3 + (0 : ZMod 43) * p.1 + (1 : ZMod 43))
+
+private def E43 : Divisor.ECSetup where
+  q := 43
+  hq_prime := by decide
+  curveA := 0
+  curveB := 1
+  points := pointsF43
+  hOnCurve := by
+    intro p hp
+    exact (Finset.mem_filter.mp hp).2
+  hComplete := by
+    intro x y h
+    exact Finset.mem_filter.mpr ⟨Finset.mem_univ (x, y), h⟩
+  hDisc := by native_decide
+  numPoints := pointsF43.card + 1
+  hNumPoints := rfl
+  hq_ge := by decide
+
+/-- A sum-zero, nodup, length-5 support in general position (found by
+search; not closed under negation, so not an inverse-pair shape). -/
+private def support5 : List (ZMod E43.q × ZMod E43.q) :=
+  [(31, 6), (40, 24), (12, 40), (19, 25), (12, 3)]
+
+-- The support is on-curve, nodup, and sums to zero.
+example : ∀ P ∈ support5, P ∈ E43.points := by native_decide
+example : support5.Nodup := by native_decide
+
+-- The computable general-position certificate holds for the support.
+example : SafePairsCert E43 support5 := by native_decide
+
+-- It discharges the full chain certificate at the support's length,
+-- through the semantic bridge (no per-instance check of the run).
+example :
+    IteratedPointChordCase E43 support5.length
+      (level0SingletonPoints E43 support5) := by
+  have h_on : ∀ P ∈ support5, P ∈ E43.points := by native_decide
+  have hcert : SafePairsCert E43 support5 := by native_decide
+  exact iteratedPointChordCase_of_safePairs E43 support5 h_on
+    (SafePairs.of_cert E43 h_on hcert)
+
+end Tests.AnyLengthCompletenessSmoke
