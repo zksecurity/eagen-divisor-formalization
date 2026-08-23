@@ -68,7 +68,7 @@ the chord through `A₀` and `A₁` is tangent to `E` at `A₀`. Lean's
 `logDerivCheckFn` uses the chord (not the geometric tangent) slope
 in this case, leading to incorrect values.
 
-Codex-confirmed bound: `|S₅| ≤ |E.points|` via `thirdPoint_inj_on_A₁`
+Bound: `|S₅| ≤ |E.points|` via `thirdPoint_inj_on_A₁`
 (group-law: `A₀ + A₁ = -A₀` ⟹ `A₁ = -2A₀`, unique). -/
 
 noncomputable def tangentCollisionAtA₀ :
