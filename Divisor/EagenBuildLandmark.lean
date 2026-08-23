@@ -72,7 +72,7 @@ noncomputable def EagenAccum.singleton (P : ZMod E.q × ZMod E.q)
 
 /-! ## Combine helpers
 
-Per Codex's design recommendation, the per-pair combine logic is
+The per-pair combine logic is
 split into six helpers, one for each branch of the
 `(a.point, b.point)` ECPoint pair. The public `combine` matches and
 dispatches; preservation lemmas are proved on the helpers.
@@ -1542,9 +1542,9 @@ The divisibility argument: `q := a.poly · b.poly` vanishes at both
 Both sheets ⇒ `q.a.eval xa = 0 ∧ q.b.eval xa = 0` ⇒
 `(X - C xa) ∣ q.a` and `(X - C xa) ∣ q.b` ⇒ divLin succeeds cleanly.
 
-Conditional on no `P ∈ xs ++ ys` having `P.1 = xa`. Future work:
-unconditional via richer multiplicity invariant (Codex-flagged sheet
-dichotomy). -/
+Conditional on no `P ∈ xs ++ ys` having `P.1 = xa`; an unconditional
+form would need a richer multiplicity invariant tracking the sheet
+dichotomy. -/
 
 theorem landmarkInv_combine_vertical_no_collision
     {xs ys : List (ZMod E.q × ZMod E.q)}
@@ -2402,10 +2402,10 @@ theorem chordCoordRingElt_eq_vertical_of_sum_zero
   · subst hPQ
     rw [dif_pos rfl, if_pos hP_zero]
 
-/-! ## Codex insight: levelInitSingleton bypasses levelInitPair
+/-! ## levelInitSingleton bypasses levelInitPair
 
-Per Codex consultation, the cleanest level-0 construction is to
-make every input point an "absorbed singleton": each P becomes the
+The cleanest level-0 construction makes
+every input point an "absorbed singleton": each P becomes the
 accumulator `{ point := ECPoint.affine E P.1 P.2, poly := (X - C P.1, 0) }`,
 which satisfies `LandmarkInv [P]` directly. Then level_step
 handles all the pairing logic uniformly.
@@ -9379,11 +9379,11 @@ theorem eagenBuild_singletons_landmark
     simp at h_iter_le
 
 
-/-! ## Path forward (Codex consultation)
+/-! ## Path to an unconditional landmark theorem
 
 Making eagenBuild_singletons_landmark unconditional (no h_combine
 hypothesis) requires strengthening LandmarkInv with point/sheet-level
-multiplicity tracking. Per Codex:
+multiplicity tracking:
 
   - Define a constructive local multiplicity mult E D P : Nat for
     D : CoordRingElt, P : ZMod q x q, returning 0 if D does not

@@ -6393,10 +6393,10 @@ theorem eagenBuild_iterate_succ_eq_iterate_level_step
       = eagenBuild_iterate E n (eagenBuild_level_step E xs) :=
   eagenBuild_iterate_succ_of_length_gt_one E n xs h
 
-/-! ### TODO list for full eagenBuild_correctness
+/-! ### Remaining pieces for a full eagenBuild_correctness
 
-Per Codex's wind-down advice (the headline goal is already achieved
-and these pieces are debt reduction, not critical path):
+Not on the critical path — the production completeness chain goes
+through the Landmark route:
 
 (1) `accsListChordStep_propagates_under_level_step`:
     AccsListChordStep xss accs ⟹ AccsListChordStep

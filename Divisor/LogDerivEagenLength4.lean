@@ -939,7 +939,7 @@ theorem rejectSet_bound_length4_simple
 
 /-! ## Stronger constructive honesty predicate: `isHonestForLength4Simple`
 
-Per Codex D-option-1: add a predicate stronger than `isHonestFor` that
+A predicate stronger than `isHonestFor` that
 captures the explicit length-4 simple construction. Proves the
 implication into the existing API (provides `isHonestFor`) and into
 the rejection-set bound (axiom-free).
