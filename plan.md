@@ -542,9 +542,21 @@ published `9·D·q` form is a Hasse conversion of it. Staying in `n`:
   `card_validPairs_lb : n² − 3n ≤ |validPairs|`. This is the natural
   statement for a dlog protocol: `n` is the group order — the actual
   security parameter; `q` was a proxy.
-* The completeness side keeps its `q`-forms with the trivial
-  `n ≤ 2q` (already axiom-free after the `points_card_le_two_q`
-  reproof) — untouched by this plan.
+* The completeness side is already axiom-free end to end: it only
+  converts an *upper* bound, and `n ≤ 2q` is the trivial fiber count.
+  (Extractability needs the challenge space *large* — a lower bound on
+  `n` — which is the direction that costs Hasse. This asymmetry is the
+  whole story of the axiom.) Plan 2 gives it the symmetric naming:
+  the short name `ma_completeness` becomes the `n`-form (today's
+  `_base` statement, dead `hQ` hypothesis dropped), and today's
+  `(6(d+1)+6)·q` form becomes `ma_completeness_q` — staying in core,
+  since its conversion needs no axiom. Net suffix system:
+  **short name** = point-count form (axiom-free); **`_q`** =
+  field-size form via the trivial bound (axiom-free; completeness);
+  **`_hasse`** = field-size form via the axiom (extractability). The
+  suffix states the price of the conversion. Binary-chain statements
+  are unchanged; renaming its `_clean` variants to `_q` is an optional
+  mechanical knob (default: keep, document the synonymy).
 
 ## Phases
 
@@ -577,7 +589,12 @@ published `9·D·q` form is a Hasse conversion of it. Staying in `n`:
       `n`-forms (final constants fixed during implementation; each must
       be implied by `n > 15d + 21k + 73`-level needs and stated as a
       single product like `c·(d + k + const)`).
-- [ ] **P2.4 Headlines in `n`.**
+- [ ] **P2.4 Headlines in `n` (both sides).**
+      Completeness: promote the `_base` statement to the short name
+      `ma_completeness` (dropping the dead `hQ`), move today's q-form
+      to `ma_completeness_q` (core), repoint the binary chain's
+      `_clean` wrappers; same for the length-4-simple variants.
+      Extractability:
       `Divisor/ExtractorBridgeTheorems.lean`: drop all `hHW`; the
       consolidated finals (`ma_extractable`, `ip_extractable`, `_clean`,
       `ma_soundness_probability`, `witness_of_excess` family) restate
