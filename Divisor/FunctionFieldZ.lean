@@ -30,7 +30,6 @@
 
   No new axioms, no `sorry` / `admit`.
 -/
-import Divisor.BetaConstructive
 import Divisor.DivisorPrincipal
 import Divisor.PolyGSlopeProjection
 import Mathlib.Algebra.Polynomial.Roots

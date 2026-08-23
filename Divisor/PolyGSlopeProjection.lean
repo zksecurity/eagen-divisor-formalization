@@ -20,10 +20,7 @@
   such bad slope; vertical pairs give none. Total: ≤ `binom(n, 2)`
   bad slopes, where `n` is the size of the combined point set.
 -/
-import Divisor.Defs
 import Divisor.LogDeriv
-import Divisor.SlopeDist
-import Divisor.BassaMonic
 import Divisor.PartialFraction
 import Mathlib.Tactic.IntervalCases
 import Mathlib.Tactic.LinearCombination

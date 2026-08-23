@@ -75,13 +75,8 @@
   * **`eagenBuild_div_eq`** — by induction on the construction level,
     using cross-case additivity above plus `divLin` divisor reduction.
 -/
-import Divisor.Defs
-import Divisor.CubicIntersection
-import Divisor.BetaConstructive
 import Divisor.ChordCubicSymmetric
 import Divisor.DivisorPrincipal
-import Divisor.OrdP.Uniformizer
-import Divisor.OrdP.LocalRing
 import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.Algebra.Polynomial.Degree.Defs
 import Mathlib.Algebra.Polynomial.Eval.Defs

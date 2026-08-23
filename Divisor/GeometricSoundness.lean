@@ -14,12 +14,7 @@
 -/
 import Divisor.ExtractorBridge
 import Divisor.HDenomNZBound
-import Divisor.TightBound
-import Divisor.GeomLocalOrder
-import Divisor.CoeffDescent
-import Divisor.PartialFractionExpansion
 import Divisor.SlopeChoice
-import Divisor.Bridges.ChordFiberProductBarFactored
 
 open Polynomial Finset Classical
 

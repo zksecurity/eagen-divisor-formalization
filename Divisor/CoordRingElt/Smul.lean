@@ -6,7 +6,6 @@
   Eagen, hash, and later normalizers can all reuse them.
 -/
 import Divisor.OrdP.LocalRing
-import Divisor.SupportDisjoint
 
 open Polynomial Finset
 

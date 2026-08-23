@@ -21,14 +21,7 @@
     derived equation `(-P) + Σ [extractedScalars i] · B_i = 0`,
     conclude `target = Σ [extractedScalars i] · B_i`.
 -/
-import Divisor.Soundness
-import Divisor.DivisorPrincipal
-import Divisor.PolyGSlopeProjection
-import Divisor.PolyGTraceFormula
-import Divisor.PolyGDensity
-import Divisor.TraceProof
 import Divisor.DensityBound
-import Divisor.ClearedFullPoly
 import Divisor.TightBound
 
 namespace Divisor

@@ -8,8 +8,6 @@
 -/
 import Divisor.CoordRingEltC
 import Divisor.IncrementalConstruction
-import Divisor.OrdP.Uniformizer
-import Divisor.CubicIntersection
 
 open Polynomial
 

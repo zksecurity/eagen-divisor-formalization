@@ -23,10 +23,6 @@
   honest-divisor identification is supplied by the
   `MAProverMsg.isHonestFor` contract.
 -/
-import Divisor.Defs
-import Divisor.LogDeriv
-import Divisor.Protocol
-import Divisor.SupportDisjoint
 import Divisor.ChordLogDerivProof
 
 open Polynomial Finset

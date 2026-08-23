@@ -80,9 +80,7 @@
   depends on the *individual* multiplicity values (mod q), not just
   their support or group sum.
 -/
-import Divisor.BetaConstructive
 import Divisor.DivisorPrincipal
-import Divisor.HasPrincipalDivisor
 
 open Polynomial Finset
 

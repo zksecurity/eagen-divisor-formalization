@@ -6,7 +6,6 @@
 
   Run via `lake env lean Tests/F5RegressionAxiomClosure.lean`.
 -/
-import Divisor.ExtractorBridgeTheorems
 import Divisor.Completeness
 import Divisor.Hasse
 

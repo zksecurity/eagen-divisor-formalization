@@ -15,9 +15,7 @@
      polyG = 0 on "defined" pairs extends to all non-vertical pairs.
 -/
 import Divisor.ChordLogDerivProof
-import Divisor.ResidueIdentity
 import Divisor.PolyGDensity
-import Divisor.DivisorPrincipal
 
 open Polynomial Finset Classical
 

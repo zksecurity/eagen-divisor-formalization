@@ -23,9 +23,7 @@
   Subsequent files will add the XYIdeal-membership characterisation
   and the local-order ↔ recursive-`ordAt` compatibility theorem.
 -/
-import Divisor.Defs
 import Divisor.BetaConstructive
-import Divisor.CubicIntersection
 import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 
 open Polynomial Polynomial.Bivariate

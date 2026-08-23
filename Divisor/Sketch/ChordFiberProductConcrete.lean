@@ -18,13 +18,8 @@
   documentation of the proof plan. The geometric lemmas consumed by
   production live downstream in
   `Divisor/Sketch/ChordFiberGeometry.lean`. -/
-import Divisor.Bridges.ChordFiberDivisibility
 import Divisor.Bridges.ChordFiberProductBarFactored
 import Divisor.ChordFiberMultiplicativity
-import Divisor.ChordFiberProductConcrete
-import Divisor.ChordFiberWeightedDegree
-import Divisor.GeomLocalOrder
-import Divisor.PartialFractionExpansion
 
 open Polynomial
 

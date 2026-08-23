@@ -22,11 +22,7 @@
        `chord_fiber_product_logDeriv_eq_logDerivTerm_trace`.
 -/
 import Divisor.ChordSumResidue
-import Divisor.NormZDecomp
-import Divisor.BivariateLogDeriv
-import Divisor.ChordCubicSymmetric
 import Divisor.PartialFractionHelper
-import Divisor.Bridges.ChordFiberProductNormZ
 import Divisor.Bridges.ChordSumEqChordFiberProductLogDeriv
 import Mathlib
 

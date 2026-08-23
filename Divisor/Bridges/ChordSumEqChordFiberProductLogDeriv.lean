@@ -12,11 +12,8 @@
   `g_val` for `f := chordCubicBiv` and `g := DLineBiv` and matching to
   `logDerivTerm`.
 -/
-import Divisor.Defs
-import Divisor.Bridges.ChordFiberProductNormZ
 import Divisor.Bridges.ResultantLogDerivAtSplit
 import Divisor.BivariateLogDeriv
-import Divisor.FunctionFieldZ
 import Divisor.Sketch.ChordFiberGeometry
 
 open Polynomial

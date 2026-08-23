@@ -28,9 +28,6 @@
   (`Divisor.rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le`) forces
   equality of multiplicities at every fibre.
 -/
-import Divisor.GeomBase
-import Divisor.GeomLocalOrder
-import Divisor.ChordFiberProductConcrete
 import Divisor.OrdP.ChordResultant
 
 open Polynomial

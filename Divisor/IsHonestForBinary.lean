@@ -6,7 +6,6 @@
 -/
 import Divisor.EagenBuildLandmark
 import Divisor.CoordRingElt.Smul
-import Divisor.Protocol
 import Divisor.Completeness
 
 namespace Divisor

@@ -44,9 +44,7 @@
   `Divisor/IncrementalConstruction.lean`.
 -/
 
-import Divisor.IncrementalConstruction
 import Divisor.LogDerivEagenLength4
-import Divisor.WeilReciprocityDescent
 
 open Polynomial Finset Classical
 

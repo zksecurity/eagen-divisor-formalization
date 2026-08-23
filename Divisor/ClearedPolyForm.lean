@@ -17,10 +17,8 @@
   Paper reference: `\ref{lem:log-derivative}` — the `G` polynomial in
   the proof of the log-derivative bound.
 -/
-import Divisor.Defs
 import Divisor.CurveEvalZerosHelper
 import Divisor.LogDeriv
-import Divisor.CubicIntersection
 import Divisor.SupportDisjoint
 import Mathlib.Tactic.ComputeDegree
 import Mathlib.Algebra.Polynomial.Eval.Defs

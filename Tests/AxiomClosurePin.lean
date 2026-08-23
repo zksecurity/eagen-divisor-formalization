@@ -39,9 +39,6 @@
   divisor-multiplicity theorem's exact shape, guarding the
   `splitsOnE` gating of its accounting and group-sum-zero clauses.
 -/
-import Divisor.ExtractorBridgeTheorems
-import Divisor.Completeness
-import Divisor.IsHonestForBinary
 import Divisor.SafeSupport
 import Divisor.Hasse
 

@@ -19,7 +19,6 @@
   `v_Q(D̄) = exp(−geomLocalOrder E D Q)` for every geometric point `Q`
   and nonzero `D` — by the closed formula, with no fuel induction.
 -/
-import Divisor.OrdP.DedekindSetup
 import Divisor.OrdP.ValuationBridge
 import Divisor.GeomLocalOrder
 import Mathlib.RingTheory.DedekindDomain.AdicValuation

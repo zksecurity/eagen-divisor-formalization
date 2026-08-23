@@ -22,8 +22,6 @@
   taken here as a hypothesis (`chordLogDerivMatchesNormZ`).
 -/
 import Divisor.NormZDecomp
-import Divisor.BivariateLogDeriv
-import Divisor.LogDeriv
 
 open Polynomial Finset
 
