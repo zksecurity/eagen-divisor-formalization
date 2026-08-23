@@ -713,7 +713,6 @@ The proof case-splits on whether some entry vanishes (in which case the
 product is zero) or all entries are nonzero (the weighted-Sylvester
 sum-bound applies). -/
 
-set_option maxHeartbeats 400000 in
 private lemma sylvester_chord_DLine_perm_prod_natDegree_le
     (lam : ZMod E.q) (D : CoordRingElt E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0))

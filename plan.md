@@ -78,7 +78,7 @@ Audit of the baseline, all verified by tooling on 2026-08-23:
       boilerplate as a shared `Tests/CurveFixtures.lean` (`E17`,
       `E43`). Removes the only `native_decide` from the library and
       dedups the fixture.
-- [ ] **P4.5 Reduce the 17 `maxHeartbeats` raises.** Distribution:
+- [x] **P4.5 Reduce the 17 `maxHeartbeats` raises.** Distribution:
       GeometricSoundness 4, ClearedPolyForm 4, FrobDescentHelpers 2,
       and 1 each in SlopeChoice, IncrementalConstruction,
       GeomLocalOrder, ExtractorBridge, ChordFiberWeightedDegree,
@@ -153,3 +153,8 @@ axiom closures stay pinned as at the baseline.
   `Tests/PointSkeletonSmoke.lean`); `AnyLengthCompletenessSmoke`
   rewired to the shared `E43`. The library no longer contains any
   `native_decide` proof step (comment mentions only).
+* 2026-08-23 — P4.5 landed, better than planned: all 17
+  `maxHeartbeats` raises were stale (predating the v4.33.1 toolchain
+  bump) — every guarded declaration compiles at the default budget.
+  Zero raises remain in the repository; no profiling or proof
+  factoring was needed.

@@ -594,7 +594,6 @@ private theorem fiber_subset_pair (_D : CoordRingElt E.q) (α : Fqbar E)
     have hconj_y : (Q.conjugate E).y = -Q.y := by rw [GeomPoint.conjugate_y]
     exact geomPoint_eq_of_xy_eq E hQ''_x_eq_conj (hy_eq.trans hconj_y.symm)
 
-set_option maxHeartbeats 800000 in
 /--
 Fiber accounting for the explicit local-order candidate.
 

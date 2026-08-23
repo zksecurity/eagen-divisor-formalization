@@ -4793,7 +4793,6 @@ theorem cross_iterDivLin_invariant_at_min_eq_two
     · intro _
       exact hResidual_zero
 
-set_option maxHeartbeats 800000 in
 theorem ordAt_mul_add_in_cross_when_min_eq_two_of_iterDivLin
     {D₁ D₂ : CoordRingElt E.q}
     (h₁ : ¬ (D₁.a = 0 ∧ D₁.b = 0)) (h₂ : ¬ (D₂.a = 0 ∧ D₂.b = 0))
