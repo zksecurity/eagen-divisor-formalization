@@ -1,5 +1,9 @@
 # Plan: discharge the two divisor axioms
 
+> **NOTE:** this first plan is complete. The active plan is
+> **Plan 2 — point-count currency and a Hasse-free core**, appended
+> at the bottom of this file.
+
 > **STATUS: COMPLETE (2026-08-22).** All phases (0–4) landed and
 > pushed. Every checkbox below is ticked and every clause is backed by
 > a machine-checked artifact: the repository's only `axiom` is
@@ -478,3 +482,163 @@ discriminant analysis.)*
   theorems whose closure contains `hasse_weil_textbook`, as pinned.
   Dead `hELarge_of_hLargeQ` deleted along the way. Full
   `lake build Divisor Tests` green with the updated pins.
+
+---
+
+# Plan 2 — point-count currency and a Hasse-free core
+
+> **STATUS: PLANNED (2026-08-23).** Design agreed, not yet
+> implemented. Supersedes the `HasseBound`-hypothesis design of commit
+> `1fc133c` (which stays in history as the intermediate step).
+
+Goal: make the **core library entirely axiom-free** — not by threading
+a Hasse hypothesis, but by never needing one. Every internal theorem
+works in **point-count currency** `n := E.points.card` (equivalently
+the user-supplied parameter `E.numPoints = n + 1`); the relation
+between `n` and the field size `q` is applied **exactly once, at the
+end**, in a terminal conversion layer that produces the field-size
+statements. `hasse_weil_textbook` and everything derived from it move
+into that leaf; the core never imports it.
+
+## Design principles (decided)
+
+1. **Internals carry `n` only.** No internal statement, hypothesis, or
+   proof mentions the `n`↔`q` relation. `q` may still appear where it
+   is *combinatorially native* (e.g. "roots of a univariate polynomial
+   over `F_q`" inside proofs), but every stated bound about challenge
+   sets over `E × E` is in `n`.
+2. **`n` is bounded as a function of `q` at the end.** The terminal
+   layer knows `(q − 3)/2 ≤ n ≤ (3q + 3)/2` (both directions of the
+   linear Hasse consequences) and converts the final `n`-form
+   theorems into the historical `q`-forms. Nothing else converts.
+3. **The core is axiom-free by construction**, certified by the pins:
+   every core theorem closes over `propext, Classical.choice,
+   Quot.sound`. Only the terminal layer's `_hasse` variants carry
+   `hasse_weil_textbook`; each also gets a hypothesis-parameterized
+   `_of_count` form (explicit `q ≤ 2n + 3` / `2n ≤ 3q + 3` inputs,
+   checkable arithmetic for a concrete curve), so even the field-size
+   statements have axiom-free versions.
+
+## The enabling fact
+
+The Lang–Weil-style bound `bivariate_poly_zeros_on_ExE_le` is proved
+by fiber decomposition as `≤ 6·D·n` **before** any axiom enters; the
+published `9·D·q` form is a Hasse conversion of it. Staying in `n`:
+
+* `bivariate_poly_zeros_on_ExE_le : … ≤ 6·D·n` — axiom-free and
+  hypothesis-free (large fibers: `bad·n + (n−bad)·3D ≤ 6·D·n`; small
+  case `n ≤ 3D`: `n² ≤ 3·D·n`).
+* `eventNotEqBound` — the one mixed-currency definition — becomes
+  `12·(d+k)·n` (was `18·(d+k)·q`); `eventDegBound` is already
+  `n`-based. `ma_extractable_base` references both by name, so its
+  statement survives textually and loses its last axiom dependence.
+* Density comparisons become `n`-vs-`n²` with no crossover: the
+  required threshold drops to `n > 15·d + 21·k + 73`, strictly weaker
+  than the current `hLargeQ` (`n > 31·d + 31·k + 140`) — so the
+  sharp-`√` machinery (`hasse_q_le_sharp_nat_of` plus ~150 lines of
+  `Nat.sqrt` arithmetic in `GeometricSoundness`) is deleted, not
+  replaced.
+* Soundness error becomes `O((d+k)/n)` via the already-axiom-free
+  `card_validPairs_lb : n² − 3n ≤ |validPairs|`. This is the natural
+  statement for a dlog protocol: `n` is the group order — the actual
+  security parameter; `q` was a proxy.
+* The completeness side keeps its `q`-forms with the trivial
+  `n ≤ 2q` (already axiom-free after the `points_card_le_two_q`
+  reproof) — untouched by this plan.
+
+## Phases
+
+- [ ] **P2.1 Bottom: Lang–Weil in `n`.**
+      `Divisor/BivariateZerosOnExE.lean`: restate
+      `main_bound_small_points`, `main_bound_large_points`,
+      `bivariate_poly_zeros_on_ExE_le(_thm)` at `≤ 6·D·n`; drop the
+      `hHW` binder and the `_hasse` wrapper; retire `arith_bound` and
+      the `_of` helpers. Keep `hasse_points_bound`,
+      `hasse_points_bound_lb` (axiom-backed linear conversions) — they
+      move to the terminal layer in P2.5.
+      `Divisor/Soundness.lean`: redefine
+      `eventNotEqBound := 12·(d+k)·n`.
+- [ ] **P2.2 Mid-chain in `n`.** `Divisor/SigmaMatching.lean`
+      (`hELarge_dkl`-style hypotheses become `n² − 2n > 12·(d+M)·n`,
+      or the equivalent linear `n > 12·(d+M) + 2`),
+      `Divisor/ClearedFullPoly.lean` (`log_deriv_sz_paper_core` via
+      `6·D·n` directly: natural constant `12·(2d+k+6)·n`; decide
+      per-theorem whether to tighten the stated `36·(2d+k+6)·n` or pad
+      for textual stability — default: tighten, it is the point of the
+      exercise), `Divisor/TightBound.lean`
+      (`18·(d+k)·q → 12·(d+k)·n`). Drop every `hHW`; delete
+      `hasse_q_le_two_mul_card_of`.
+- [ ] **P2.3 `GeometricSoundness` in `n`.** All intermediate
+      inequalities (`hELarge_of_hLargeQ_main`'s conclusion,
+      `geomPolyGFull_identically_zero_on_ExE`'s `hELarge` hypothesis,
+      `sigma_data_…`, `frob_sampling_…`) restated with `12·(s+k)·n` in
+      place of `18·(s+k)·q`; the three `Nat.sqrt` blocks deleted;
+      every `hHW` dropped. Threshold hypotheses relax to clean rounded
+      `n`-forms (final constants fixed during implementation; each must
+      be implied by `n > 15d + 21k + 73`-level needs and stated as a
+      single product like `c·(d + k + const)`).
+- [ ] **P2.4 Headlines in `n`.**
+      `Divisor/ExtractorBridgeTheorems.lean`: drop all `hHW`; the
+      consolidated finals (`ma_extractable`, `ip_extractable`, `_clean`,
+      `ma_soundness_probability`, `witness_of_excess` family) restate
+      their conclusions in `n`-form (`≤ 24·(d+k+3)·n`-shaped; exact
+      constants fixed during implementation); delete the fourteen
+      `_hasse` wrappers of `1fc133c` (replaced in P2.5);
+      `validPairs_card_ge_q` and `ma_soundness_probability_q_form`
+      move out (P2.5).
+- [ ] **P2.5 Terminal conversion layer.** New leaf
+      `Divisor/Hasse.lean` (the only file importing
+      `Divisor/Axioms/AxiomHasseWeil.lean`): the axiom, `hasse_weil`,
+      the two linear conversions `q ≤ 2n + 3` and `2n ≤ 3q + 3`, and
+      the field-size finals — `ma_extractable_hasse`,
+      `ip_extractable_hasse` (`≤ 36·(d+k+4)·q`, recovered exactly with
+      slack to spare), `validPairs_card_ge_q`,
+      `ma_soundness_probability_q_form_hasse` (`144`-constant form) —
+      each in two flavors: `_of_count` (explicit linear-bound
+      hypotheses, axiom-free) and `_hasse` (axiom-applied).
+      `ECSetup.HasseBound`/`hasse_bound` are deleted (no hypothesis
+      threading anywhere). Import-graph surgery: remove
+      `AxiomHasseWeil` from the `Divisor/Axioms.lean` hub and from all
+      core imports (`SupportDisjoint`, `BivariateZerosOnExE`, …);
+      wire `Divisor.Hasse` into `Divisor.lean`;
+      `Tests/HasseCardBridge.lean` re-pointed at the leaf.
+- [ ] **P2.6 Pins, README, cleanup.** Pins: every core theorem at the
+      Lean core three; the leaf's `_hasse` theorems pinned as the only
+      carriers of `hasse_weil_textbook`; `_of_count` forms pinned
+      axiom-free. README "Axiom Surface" rewritten: *the core library
+      has no axioms; one optional leaf module assumes Hasse–Weil to
+      restate the headline bounds in field-size form.* Stale docs
+      swept; full `lake build Divisor Tests` green.
+
+## Open knobs (defaults chosen, cheap to change)
+
+| Knob | Default |
+|---|---|
+| Tighten stated constants where `n`-currency is sharper (e.g. `36·(2d+k+6)·n → 12·(2d+k+6)·n`) vs pad for textual stability | Tighten — cleaner statements are the goal; the historical `q`-forms live unchanged in the leaf |
+| Relax headline `hLargeQ` thresholds to the weaker `n`-form needs vs keep verbatim | Relax to a clean single-product form |
+| Keep the completeness-side `q`-forms in core (they only use the trivial `n ≤ 2q`) | Yes — no axiom involved, no reason to move them |
+| Literal deletion of the axiom (fully zero-axiom repo) vs leaf quarantine | Leaf quarantine — deleting the leaf later is trivial |
+
+## Ordering and discipline
+
+`P2.1 → P2.2 → P2.3 → P2.4 → P2.5 → P2.6`, bottom-up so each phase
+compiles against the previous. Every landing keeps
+`lake build Divisor Tests` green; the pin updates land **in the same
+commit** as the statements they certify. No `maxHeartbeats` raises;
+constants may only be *loosened* relative to what a proof naturally
+gives (never silently sharpened without proof).
+
+## Risks
+
+| Risk | Where | Mitigation |
+|---|---|---|
+| An internal proof secretly needs the `q`-form (not just a conversion of the `n`-form) | P2.2–P2.3 | The consumption trace says no — every `q` entered via `6Dn`-conversion or threshold conversion; if one resists, restate that single lemma in mixed form locally |
+| Constant re-derivations fight `nlinarith`/`omega` | P2.2–P2.4 | All targets are looser than what current proofs establish; worst case keep the padded historical constant |
+| Hidden consumers of the moved `q`-form theorems | P2.5 | The repo-wide sweep found none outside the six files; the build enforces it |
+
+## Status log (Plan 2)
+
+* 2026-08-23 — Plan written after exploration (no implementation yet,
+  per instruction). Decisions recorded: internals in `n` only; `n`
+  bounded as a function of `q` once, at the end; terminal layer as a
+  leaf module with `_of_count` and `_hasse` flavors.
