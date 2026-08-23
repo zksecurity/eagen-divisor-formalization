@@ -11,9 +11,9 @@
   candidate `chord_fiber_product_concrete`, the four already-proved
   evaluation/factorisation helpers (`*_eval`,
   `*_eval_eq_prod_split`, `*_bar_eval`, `*_bar_eval_eq_prod`), and
-  the now-proved non-vanishing theorem
-  `chord_fiber_product_concrete_ne_zero`.  Historical (now sorry-free)
-  obligation sketches against this candidate live in
+  the non-vanishing theorem
+  `chord_fiber_product_concrete_ne_zero`.  Sorry-free obligation
+  sketches against this candidate live in
   `Divisor/Sketch/ChordFiberProductConcrete.lean`.
 
   Imports are intentionally narrow:

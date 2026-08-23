@@ -1,8 +1,8 @@
 /-
   Divisor/SafeSupport.lean
 
-  Plan 3: any-length binary completeness from a semantic
-  general-position hypothesis on the support.
+  Any-length binary completeness from a semantic general-position
+  hypothesis on the support.
 
   The binary completeness chain is gated on the per-level combine
   certificate `IteratedLevelStepCombineExtras` (equivalently, via the
@@ -400,7 +400,7 @@ theorem binarySupport_on_curve
     · rw [if_neg hs] at hi
       simp at hi
 
-/-- **Any-length binary completeness** (Plan 3 headline). For a binary
+/-- **Any-length binary completeness.** For a binary
 witness whose support satisfies the semantic general-position
 hypothesis `SafePairs` — every nonempty split of every sublist has a
 chord-safe pair of subset sums — the honest Eagen-singletons message

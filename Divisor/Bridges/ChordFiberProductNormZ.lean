@@ -1,19 +1,18 @@
 /-
-  Divisor/Axioms/AxiomChordFiberProductEqNormZUnderSplit.lean
+  Divisor/Bridges/ChordFiberProductNormZ.lean
 
   Divisor-of-norm identity: under splitting + accounting, the chord-
   fiber product equals a nonzero constant multiple of `normZ`.
-
-  This statement is now a theorem (proved via the bridge file
-  `Divisor/Bridges/ChordFiberProductEqNormZUnderSplit.lean`), not an
-  axiom.
+  Restates the concrete-resultant proof from
+  `Divisor/Bridges/ChordFiberProductEqNormZUnderSplit.lean` against
+  the `chord_fiber_product` API.
 -/
 import Divisor.Defs
 import Divisor.BetaConstructive
 import Divisor.FunctionFieldZ
 import Divisor.ChordFiberProductConcrete
 import Divisor.Bridges.ChordFiberProductEqNormZUnderSplit
-import Divisor.Axioms.AxiomExistsDivisorMultiplicity
+import Divisor.Bridges.DivisorMultiplicity
 
 open Polynomial
 

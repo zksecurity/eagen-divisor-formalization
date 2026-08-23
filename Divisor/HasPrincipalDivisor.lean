@@ -16,7 +16,7 @@
   fails the group-sum-zero condition over F_5.
 -/
 import Divisor.Defs
-import Divisor.Axioms.AxiomExistsDivisorMultiplicity
+import Divisor.Bridges.DivisorMultiplicity
 
 namespace Divisor
 

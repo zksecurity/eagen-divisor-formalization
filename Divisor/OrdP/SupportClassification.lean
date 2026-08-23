@@ -1,7 +1,8 @@
 /-
-  Divisor/OrdP/SupportClassification.lean — Phase 2a/2b of plan.md.
+  Divisor/OrdP/SupportClassification.lean — support classification
+  and factorization for the point primes.
 
-  * **2a Support classification** (`eq_pointPrime_of_mem`): under
+  * **Support classification** (`eq_pointPrime_of_mem`): under
     `splitsOnE E D`, every height-one prime of the coordinate ring
     containing `D.toCoordinateRing` is `pointPrime E P` for an
     `F_q`-rational point `P ∈ E.points` with `D.eval P = 0`.

@@ -905,12 +905,10 @@ theorem support_disjointness (D : CoordRingElt E.q)
         + E.numAffine + E.numAffine + E.numAffine := by gcongr
     _ = (3 * N + 4) * E.numAffine := by ring
 
-/-- **Trivial `|E| ≤ 2q`**: the fiber over each `x`-coordinate holds at
-    most the two points `(x, ±y)` (`card_points_with_fst_eq_le`), and
-    there are `q` fibers. Axiom-free — this bound previously took an
-    unnecessary detour through the Hasse axiom. The `5 ≤ E.q`
-    hypothesis is retained for signature stability but unused. -/
-theorem points_card_le_two_q (_h : 5 ≤ E.q) :
+/-- **Trivial `|E| ≤ 2q`**: the fiber over each `x`-coordinate holds
+    at most the two points `(x, ±y)` (`card_points_with_fst_eq_le`),
+    and there are `q` fibers. Axiom-free. -/
+theorem points_card_le_two_q :
     E.points.card ≤ 2 * E.q := by
   classical
   calc E.points.card

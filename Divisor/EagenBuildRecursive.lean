@@ -6144,11 +6144,10 @@ theorem accInvList_preservation_under_level_step
               omega
             exact IH rest_xss' rest_accs' h_rest_len h_rest_list h_chord_rest
 
-/-! ### NEW CAPSTONE: AccInvList preservation chain
+/-! ### AccInvList preservation chain
 
-The level_step preservation (commit 904e735) closes the inductive
-tissue gap identified by Codex. The full eagenBuild correctness
-chain now has:
+The level_step preservation closes the inductive tissue gap in the
+eagenBuild correctness chain, which has:
 
 * INITIAL: accInvList_eagenBuild_level0_of_even_length —
   level0 produces AccInvList paired with pairList (chord case).
@@ -6471,18 +6470,14 @@ Per-R cases: at infinity, off-a-fiber, at a.lift, at -a.lift.
   group-theoretic genericity on the input (no zero subsums beyond
   the global zero sum).
 
-### Status
-* Headline project goal achieved: weil_reciprocity_honest discharged
-  from ma_completeness's closure (early in session).
-* Length-4 simple fully constructive (constructive bridge in
-  IsHonestForLength4Simple).
-* General-k inductive steps both landed (chord AccInv + vertical
-  TerminalInv).
-* Final eagenBuild_correctness assembly requires:
-  - tangent-free preservation propagation.
-  - eagenBuild_level0 producing AccInv-list initial state.
-  - Connecting eagenBuild's output polynomial back to the
-    formal-divisor identity via the converged single-element list.
+### Assembly gap
+A final `eagenBuild_correctness` on this AccInv route would still
+need tangent-free preservation propagation, an AccInv-list initial
+state from `eagenBuild_level0`, and the connection from the
+converged single-element list back to the formal-divisor identity.
+The production completeness chain does not depend on it: the
+Landmark route (`EagenBuildLandmark.lean`, `IsHonestForBinary.lean`,
+`SafeSupport.lean`) carries the binary completeness theorems.
 
 ## General-k correctness: status
 
@@ -6555,9 +6550,9 @@ chord-line factor (rootMult ≤ 1) on the right, enabling additivity
 for the full triple product without needing pointwise mul-add in the
 cross case.
 
-## CAPSTONE: AccInv inductive step landed
+## AccInv inductive step
 
-`accInv_combine_higher_distinct_step` (final commit d43ccf2) gives:
+`accInv_combine_higher_distinct_step` gives:
   AccInv (xs ++ ys) (combine_higher_distinct E a b h_xx)
 
 from AccInv on (xs, a) and (ys, b) plus genericity hypotheses
@@ -6603,7 +6598,7 @@ Each step's helpers landed in this multi-firing session:
 * Final theorem: `eagenBuild_correctness` connecting eagenBuild's
   output polynomial to the formal divisor of the input list.
 
-**Strategy options (Codex consultation 2026-05-05):**
+**Strategy options:**
 1. Build a local valuation v_P on F_q(E) and prove agreement with the
    recursive `ordAt`. Long local-ring project (~500+ LOC).
 2. Strengthen `AccInv` to track that the accumulator's polynomial has
@@ -6616,11 +6611,11 @@ Each step's helpers landed in this multi-firing session:
    maintains this naturally if input list has all distinct points.
    Tracking it requires substantial bookkeeping.
 
-For now, level-0 (length-4 simple) is fully constructive (see
-`Divisor/Soundness.lean:ma_completeness_for_length4Simple`). General-k
-correctness is deferred multi-firing work.
+Level-0 (length-4 simple) is fully constructive
+(`Divisor/Completeness.lean:ma_completeness_for_length4Simple`);
+general-k completeness is carried by the Landmark route instead.
 
-Remaining (multi-firing):
+What a general-k AccInv assembly would still need:
 
 * `accInv_singleton_carry`: odd-length carry needs special handling (the
   carried point isn't yet absorbed; subtle).

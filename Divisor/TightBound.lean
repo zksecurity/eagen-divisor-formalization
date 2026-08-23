@@ -311,7 +311,7 @@ theorem log_deriv_sz_paper_core_tight
 
     Realised via `lem:log-derivative` (SZ-on-(E×E) applied to the
     cleared log-deriv polynomial) in point-count currency — no Hasse
-    content (Plan 2). -/
+    content. -/
 theorem log_deriv_sz_paper_tight
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)

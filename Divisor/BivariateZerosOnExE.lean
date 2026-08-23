@@ -3,9 +3,9 @@
 
   Bound on `|{(A₀, A₁) ∈ E × E : f(A₀, A₁) = 0}|` for a 4-variate `f`
   of total degree ≤ D, by elementary fiber counting — in point-count
-  currency: `≤ 6·D·|E.points|`, fully axiom-free (Plan 2). The
-  classical field-size form `≤ 9·D·q` of DKL'14 + Hartshorne (Bezout)
-  is recovered in the terminal Hasse layer.
+  currency `≤ 6·D·|E.points|`, axiom-free. The classical field-size
+  form `≤ 9·D·q` of DKL'14 + Hartshorne (Bezout) is recovered in the
+  terminal Hasse layer.
 -/
 import Divisor.FourVarPoly
 import Divisor.CurveEvalZerosHelper

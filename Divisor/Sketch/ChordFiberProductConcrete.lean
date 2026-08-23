@@ -7,24 +7,19 @@
   This file predates the production discharge of the chord-fiber
   bridge. Today, `chord_fiber_product` is a plain `noncomputable def`
   (equal to the resultant candidate `chord_fiber_product_concrete`;
-  see `Divisor/Axioms/AxiomChordFiberProductEqNormZUnderSplit.lean`),
+  see `Divisor/Bridges/ChordFiberProductNormZ.lean`),
   and the statements this sandbox sketches are theorem-backed on the
   production side (`Divisor/Bridges/ChordFiberProductEqNormZUnderSplit.lean`
-  and `Divisor/Axioms/AxiomChordSumEqChordFiberProductLogDeriv.lean`),
+  and `Divisor/Bridges/ChordSumEqChordFiberProductLogDeriv.lean`),
   resting only on the named axioms pinned in
   `Tests/AxiomClosurePin.lean`.
 
-  This file is now entirely `sorry`-free: the historical sorry'd
-  duplicates of discharged production content
-  (`chord_fiber_product_concrete_eq_normZ_under_split_bar` and
-  `chord_fiber_product_concrete_logDeriv`) were deleted in plan.md
-  Phase 4 once the chord-fiber divisibility axiom itself was
-  discharged (Phase 3). What remains are sorry-free delegations to
-  production theorems, kept as documentation of the original proof
-  plan. The sorry-free geometric lemmas consumed by production live
-  downstream in `Divisor/Sketch/ChordFiberGeometry.lean`. -/
-import Divisor.Axioms.AxiomChordFiberDivisibility
-import Divisor.Axioms.AxiomChordFiberProductBarFactored
+  Sorry-free delegations to production theorems, kept as
+  documentation of the proof plan. The geometric lemmas consumed by
+  production live downstream in
+  `Divisor/Sketch/ChordFiberGeometry.lean`. -/
+import Divisor.Bridges.ChordFiberDivisibility
+import Divisor.Bridges.ChordFiberProductBarFactored
 import Divisor.ChordFiberMultiplicativity
 import Divisor.ChordFiberProductConcrete
 import Divisor.ChordFiberWeightedDegree
@@ -37,12 +32,11 @@ namespace Divisor.Sketch
 
 variable (E : ECSetup)
 
-/-! ## Historical obligations against the concrete candidate
+/-! ## Obligation sketches against the concrete candidate
 
 Each `theorem` below mirrors a downstream consumer of
-`chord_fiber_product`, delegating to the discharged production
-content; the surrounding comments record the original mathematical
-plan. -/
+`chord_fiber_product`, delegating to the production theorems; the
+surrounding comments record the mathematical plan. -/
 
 /-- **Narrow hard lemma: chord-projection multiplicity accounting.**
 
@@ -145,9 +139,9 @@ theorem chord_fiber_product_concrete_bar_zfiber_pow_dvd
       (∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q)
       ∣ (chord_fiber_product_concrete E lam D).map
           (algebraMap (ZMod E.q) (Fqbar E)) :=
-  -- Delegates to the production theorem (discharged in plan.md Phase 3;
-  -- `Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd` in
-  -- `Divisor/Axioms/AxiomChordFiberDivisibility.lean`).
+  -- Delegates to the production theorem
+  -- `Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd`
+  -- (`Divisor/Bridges/ChordFiberDivisibility.lean`).
   Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd E D lam hD gd z
 
 /-! **Stub 2a**: natDegree bound for the chord-fibre product against the

@@ -1,7 +1,8 @@
 /-
-  Divisor/OrdP/GeomValuationBridge.lean — plan.md P3.pre: the
-  valuation bridge over the base-changed curve `W̄` (the `Fqbar` half
-  of Phase 1, reduced to what Phase 3b consumes).
+  Divisor/OrdP/GeomValuationBridge.lean — the valuation bridge over
+  the base-changed curve `W̄` (the `Fqbar` counterpart of
+  `ValuationBridge.lean`, reduced to what the chord-norm calculus
+  consumes).
 
   Mirrors `Divisor/OrdP/ValuationBridge.lean`, with three changes:
   * the curve is `E.toWBar := E.toW.map (algebraMap F_q F̄)` over the
@@ -14,8 +15,7 @@
     with the residual pair `(geomATilde, geomBTilde)`, which is not a
     base-change of a rational pair.
 
-  Headline (end of file, plan.md P3.pre):
-  `geomPointPrime_intValuation_toBar`:
+  Headline (end of file), `geomPointPrime_intValuation_toBar`:
   `v_Q(D̄) = exp(−geomLocalOrder E D Q)` for every geometric point `Q`
   and nonzero `D` — by the closed formula, with no fuel induction.
 -/
@@ -819,7 +819,7 @@ private theorem rootMultiplicity_normPolyBar_factor (D : CoordRingElt E.q)
   rw [normPolyBar_factor E D x₀, Polynomial.rootMultiplicity_mul hprod,
     Polynomial.rootMultiplicity_X_sub_C_pow]
 
-/-- **The geometric valuation bridge** (plan.md P3.pre): at every
+/-- **The geometric valuation bridge**: at every
 geometric point `Q` of the base-changed curve, the valuation of
 `D̄ = ā − b̄·y` is `exp(−geomLocalOrder E D Q)` — the closed-form local
 order of `Divisor/GeomLocalOrder.lean` computes the

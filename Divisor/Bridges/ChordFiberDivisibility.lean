@@ -1,8 +1,7 @@
 /-
-  Divisor/Axioms/AxiomChordFiberDivisibility.lean
+  Divisor/Bridges/ChordFiberDivisibility.lean
 
-  Narrow divisibility statement for the base-changed chord-fiber
-  product — **formerly an axiom, now a theorem** (plan.md Phase 3).
+  Divisibility lower bound for the base-changed chord-fiber product.
 
   This is the *lower-bound* half of the divisor-of-norm pushforward
   identity for the chord projection π = y - λx : E → ℙ¹. It says
@@ -41,7 +40,7 @@ namespace Divisor
 variable (E : ECSetup)
 
 /-- **Narrow divisor-of-norm divisibility for the concrete resultant**
-(formerly an axiom, discharged via the chord-algebra norm calculus).
+(via the chord-algebra norm calculus).
 
 For each chord-intercept `z : F_qbar`, the chord-fibre product (the
 concrete resultant), as a polynomial over `F_qbar`, is divisible by

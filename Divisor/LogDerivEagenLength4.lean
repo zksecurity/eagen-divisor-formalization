@@ -14,9 +14,10 @@
   Output: `logDerivCheckFn E D P_target k B m A_0 A_1 = 0` for any "good"
   (`¬ badChallengesCompleteness`) pair (A_0, A_1).
 
-  This is the length-4 specialization of the (currently axiomatic)
-  `weil_reciprocity_honest`, with the formerly-unsound axiom statement
-  replaced by a constructive theorem about `eagenBuild_length4_explicit`.
+  This is the length-4 form of Eagen's residue identity, proved
+  constructively for `eagenBuild_length4_explicit` (the universal
+  form is unsound on the diagonal `A₀ = A₁`, so only constructive
+  specializations exist).
 
   ## Axiom closure
 
@@ -836,12 +837,11 @@ theorem numZeros_eagenBuild_length4_eq_four
       Finset.card_insert_of_notMem (by simp [h23]),
       Finset.card_singleton]
 
-/-! ## Integration: rejection set bound for length-4 simple case (NO weil_reciprocity_honest)
+/-! ## Integration: rejection-set bound for the length-4 simple case
 
 End-to-end integration: bound on the set of "bad challenges" for the
-length-4 simple honest-prover D = eagenBuild_length4_explicit. Uses
-`weil_reciprocity_honest_length4_simple` instead of the formerly-unsound
-`weil_reciprocity_honest` axiom.
+length-4 simple honest-prover D = eagenBuild_length4_explicit, via the
+constructive `weil_reciprocity_honest_length4_simple`.
 
 This bypasses the protocol structure layers (DlogStatement / MAProverMsg)
 to focus on the mathematical content: any `(A_0, A_1)` pair where
@@ -1260,13 +1260,13 @@ theorem ma_completeness_via_isHonestForLength4Simple
   exact logDerivCheckFn_zero_via_isHonestForLength4Simple E stmt msg
     h_honest A₀ A₁ hA₀ hA₁ hNV hGood
 
-/-! ## Point-count consolidated form: ma_completeness_clean for length-4 simple
+/-! ## Point-count consolidated form for length-4 simple
 
 Applying the paper-tight `numZeros ≤ degE ≤ degBound` chain, the
 rejection-set cardinality for the length-4 simple honest case is
-bounded by `(3·d + 4)·|E.points|`. Mirrors the existing
-`ma_completeness_clean` but uses the constructive length-4 path.
-Axiom-free; convert to field-size units via `points_card_le_two_q`. -/
+bounded by `(3·d + 4)·|E.points|`. Mirrors `ma_completeness` but uses
+the constructive length-4 path. Axiom-free; convert to field-size
+units via `points_card_le_two_q`. -/
 
 theorem ma_completeness_clean_via_isHonestForLength4Simple
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
