@@ -1,10 +1,10 @@
 /-
-  Divisor/OrdP/ValuationBridge.lean — Phase 1 of plan.md: foundations
+  Divisor/OrdP/ValuationBridge.lean — foundations
   of the valuation bridge between the project's recursive `ordAt` and
   mathlib's `HeightOneSpectrum.intValuation` at the point primes of
   `Divisor/OrdP/DedekindSetup.lean`.
 
-  Contents (plan.md items 1a–1c):
+  Contents:
 
   * membership ↔ vanishing at the point (`mem_pointPrime_iff`),
     valuation-one ↔ non-vanishing;
@@ -19,7 +19,7 @@
     `mul_conj` route already reduced to `normPoly` by
     `norm_toCoordinateRing_eq_normPoly`.
 
-  The `ordAt` bridge theorems themselves (plan.md 1d) build on these
+  The `ordAt` bridge theorems themselves build on these
   in `Divisor/OrdP/ValuationBridgeOrd.lean`.
 -/
 import Divisor.OrdP.DedekindSetup
@@ -307,7 +307,7 @@ theorem pointPrime_intValuation_mul_conjElt (D : CoordRingElt E.q)
   rw [← map_mul, toCoordinateRing_mul_conjElt]
   exact pointPrime_intValuation_mk_C E hP (normPoly_ne_zero E D hD)
 
-/-- **Lone-sheet valuation** (plan.md 1c): at non-2-torsion `P` where
+/-- **Lone-sheet valuation**: at non-2-torsion `P` where
 `D` vanishes but its conjugate does not,
 `v_P(D) = exp(−rootMult x₀ N(D))`. -/
 theorem pointPrime_intValuation_of_lone (D : CoordRingElt E.q)
@@ -441,7 +441,7 @@ private theorem exp_max (s t : ℤ) :
   · rw [max_eq_right h, max_eq_right (exp_le_exp.mpr h)]
   · rw [max_eq_left h, max_eq_left (exp_le_exp.mpr h)]
 
-/-- **2-torsion closed form** (plan.md 1a+1b): at `P = (x₀, 0)`,
+/-- **2-torsion closed form**: at `P = (x₀, 0)`,
 `v_P(D) = exp(−ordAt_twoTorsion E D P)` — the even/odd parity min. -/
 theorem pointPrime_intValuation_twoTorsion (D : CoordRingElt E.q)
     {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) (hy : P.2 = 0)

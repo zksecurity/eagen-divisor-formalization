@@ -1,5 +1,5 @@
 /-
-  Divisor/OrdP/ChordFraction.lean — plan.md Phase 3c, part 1: the
+  Divisor/OrdP/ChordFraction.lean — the
   fraction-field layer of the chord algebra.
 
   With `K := Frac F̄[Z]` and `L := Frac (ChordModel E lam)`:
