@@ -805,7 +805,6 @@ private theorem gd_mult_rationalLift_eq_betaTrue
 
 /-! ## Split rationality of the geometric support -/
 
-set_option maxHeartbeats 800000 in
 private theorem support_point_unique_rational_zero_of_split
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (hSplitOnE : splitsOnE E D)

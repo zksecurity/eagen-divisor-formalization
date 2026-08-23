@@ -1884,7 +1884,6 @@ theorem logDerivCheckFn_symm
       lineThrough_symm E A₁.1 A₁.2 A₀.1 A₀.2 (Ne.symm hNV)]
   ring
 
-set_option maxHeartbeats 1000000 in
 /-- Per-term clearing (i=0): `(old_num_scalar + correction_scalar) · (other) = LT(A₀) · denom`.
     The sum LHS matches the paper-faithful `logDerivTerm` numerator. -/
 private lemma clearedFiberPoly_lhs0_eq_LT_mul_denom
@@ -1957,7 +1956,6 @@ private lemma clearedFiberPoly_lhs0_eq_LT_mul_denom
         fun a b => by ring, hTinv]
   ring
 
-set_option maxHeartbeats 1000000 in
 /-- Per-term clearing (i=1). -/
 private lemma clearedFiberPoly_lhs1_eq_LT_mul_denom
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
@@ -2027,7 +2025,6 @@ private lemma clearedFiberPoly_lhs1_eq_LT_mul_denom
         fun a b => by ring, hTinv]
   ring
 
-set_option maxHeartbeats 1000000 in
 /-- Per-term clearing (i=2). -/
 private lemma clearedFiberPoly_lhs2_eq_LT_mul_denom
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
@@ -2167,7 +2164,6 @@ theorem clearedFiberPoly_identity
     bivEval (clearedFiberPoly (E := E) D P k B m A₀) A₁
       = (A₁.1 - A₀.1) ^ (D.degE + k + 6) *
           logDerivCheckFnCleared E D P k B m A₀ A₁ := by
-  set_option maxHeartbeats 1000000 in
   classical
   obtain ⟨hD0, hD1, hD2, hDx0, hDx1, hDx2, hLP, hLB⟩ :=
     logDerivCheckFnDenom_factors_ne_zero E D P B A₀ A₁ hDef

@@ -464,7 +464,6 @@ private theorem frobMvPoly_prod_erase_support
     rw [(fs Q' (Finset.mem_of_mem_erase hQ')).choose_spec.2.1,
       (fs Q' (Finset.mem_of_mem_erase hQ')).choose_spec.2.2.1]
 
-set_option maxHeartbeats 800000 in
 /-- Frobenius on coefficients fixes `geomPolyGFullBar`. -/
 theorem frobMvPoly_geomPolyGFullBar
     (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
@@ -1077,7 +1076,6 @@ theorem chord_fiber_product_bar_factorisation
             (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q) :=
   chord_fiber_product_bar_eq_geom_prod E D lam hD gd
 
-set_option maxHeartbeats 800000 in
 /--
 Bezout-style helper: under the rational `logDerivCheckFnDefined`
 hypothesis, no `Q ∈ gd.support` lies on the chord through `(A₀, A₁)`.
@@ -1518,7 +1516,6 @@ private theorem geomPolyGFullBar_eval_eq_residue_clear
     ring]
   ring
 
-set_option maxHeartbeats 800000 in
 /--
 Core geometric chord-sum identity at rational challenge points.
 
@@ -5910,7 +5907,6 @@ private theorem geometric_sigma_matching
   geometric_residue_match E stmt hd hd2 msg hDeg hkm hSmooth
     hTargetOnE hBasesOnE hLargeQ hSample hAdm hNoNegP hAllZero
 
-set_option maxHeartbeats 800000 in
 theorem extractor_of_logDerivCheck_all_zero_geometric_general
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)

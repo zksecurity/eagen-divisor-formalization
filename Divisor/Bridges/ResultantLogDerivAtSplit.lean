@@ -573,7 +573,6 @@ private lemma lifted_root_isRoot_map_jet
     field_simp [hf_X]
     ring
 
-set_option maxHeartbeats 800000 in
 /-- First-order factorisation of `f` after applying the dual-number jet. -/
 theorem map_jet_eq_multiset_prod_lifted_roots
     {K : Type*} [Field K]

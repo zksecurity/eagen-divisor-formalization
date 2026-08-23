@@ -2634,7 +2634,6 @@ finite separable field extension) + Silverman ATAEC III §1
 Silverman AEC III Cor 3.5 (principal-divisor characterisation on E).
 -/
 
-set_option maxHeartbeats 1600000 in
 /-- **Paper Step 1** (`thm:ma`, ip.tex `\ref{step:logderiv}`): express
     `f` as the discrepancy of two log-derivatives.
 

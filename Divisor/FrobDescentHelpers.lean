@@ -77,7 +77,6 @@ theorem ZMod_exists_not_mem
     exact Finset.card_le_card (fun x _ => Finset.mem_coe.mp (hall x))
   omega
 
-set_option maxHeartbeats 800000 in
 /--
 Abstract slope-choice lemma. Given `n` points `(x_i, y_i)` in a field over
 `F_p`, a distinguished point that is not Frobenius-fixed, and `n < p`, choose
@@ -307,7 +306,6 @@ from rational protocol points.  The lemma below isolates the coefficient
 of a pole that appears in only the first family.
 -/
 
-set_option maxHeartbeats 800000 in
 /--
 If a two-part partial-fraction sum vanishes at enough evaluation points,
 and one pole `α i₀` is isolated from all other poles in both families,

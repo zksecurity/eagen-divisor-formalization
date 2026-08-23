@@ -37,7 +37,6 @@ theorem zLambdaBar_frob
   congr 1
   rw [mul_pow, fqToBar_frob_fixed]
 
-set_option maxHeartbeats 800000 in
 /--
 For a non-Frobenius-fixed geometric support point `Q`, choose a base-field
 slope whose projection isolates `Q` among `gd.support` and is itself not
