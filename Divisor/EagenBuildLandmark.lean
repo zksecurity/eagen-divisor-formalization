@@ -8689,36 +8689,6 @@ theorem iteratedLevelStepCombineExtras_of_level0SingletonPoints
   apply iteratedLevelStepCombineExtras_of_iteratedPointChordCase E
   simpa [level0_singletons_point_projection] using h
 
-namespace PointSkeletonSmoke
-
-private def pointsF17 : Finset (ZMod 17 × ZMod 17) :=
-  (Finset.univ : Finset (ZMod 17 × ZMod 17)).filter
-    (fun p => p.2 ^ 2 = p.1 ^ 3 + (0 : ZMod 17) * p.1 + (1 : ZMod 17))
-
-private def E17 : ECSetup where
-  q := 17
-  hq_prime := by decide
-  curveA := 0
-  curveB := 1
-  points := pointsF17
-  hOnCurve := by
-    intro p hp
-    exact (Finset.mem_filter.mp hp).2
-  hComplete := by
-    intro x y h
-    exact Finset.mem_filter.mpr ⟨Finset.mem_univ (x, y), h⟩
-  hDisc := by native_decide
-  numPoints := pointsF17.card + 1
-  hNumPoints := rfl
-  hq_ge := by decide
-
-example :
-    IteratedPointChordCase E17 4
-      (level0SingletonPoints E17 [(0, 1), (1, 6), (2, 3), (6, 8)]) := by
-  native_decide
-
-end PointSkeletonSmoke
-
 /-- Decidable instance for `IteratedLevelStepCombineChordCase`. Recurses on
     the iterate count, using the per-level `LevelStepCombineChordCase`
     decidability. This enables `decide` / `native_decide` discharge for

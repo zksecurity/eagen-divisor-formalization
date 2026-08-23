@@ -70,7 +70,7 @@ Audit of the baseline, all verified by tooling on 2026-08-23:
       `Tests.lean`, `Divisor/Bridges.lean` excluded as intentional
       re-export surfaces). Mechanical; zero compilation risk; makes
       the real dependency structure visible.
-- [ ] **P4.4 Move the embedded `PointSkeletonSmoke` fixture out of
+- [x] **P4.4 Move the embedded `PointSkeletonSmoke` fixture out of
       `EagenBuildLandmark.lean`** (lines ~8700+: an `ECSetup` for
       `F₁₇` with `hDisc := by native_decide` plus two `native_decide`
       examples) into `Tests/`, merged with
@@ -146,3 +146,10 @@ axiom closures stay pinned as at the baseline.
   the baseline). No bisection needed — the full build passed on the
   first attempt, as predicted (Lean 4 imports are transitive, so the
   visible environment is unchanged).
+* 2026-08-23 — P4.4 landed. New `Tests/CurveFixtures.lean` with the
+  `mkFilteredCurve` smart constructor and shared `E17`/`E43`; the
+  embedded `PointSkeletonSmoke` block deleted from
+  `EagenBuildLandmark.lean` (its example now
+  `Tests/PointSkeletonSmoke.lean`); `AnyLengthCompletenessSmoke`
+  rewired to the shared `E43`. The library no longer contains any
+  `native_decide` proof step (comment mentions only).
