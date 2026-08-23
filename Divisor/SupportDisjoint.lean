@@ -12,6 +12,7 @@
 -/
 import Divisor.Defs
 import Divisor.Axioms.AxiomHasseWeil
+import Divisor.CubicIntersection
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Algebra.Polynomial.RingDivision
 import Mathlib.Algebra.Polynomial.Roots
@@ -905,24 +906,23 @@ theorem support_disjointness (D : CoordRingElt E.q)
         + E.numAffine + E.numAffine + E.numAffine := by gcongr
     _ = (3 * N + 4) * E.numAffine := by ring
 
-/-- **Hasse-derived `|E| ≤ 2q`** (for `q ≥ 5`).
-    From the integer-squared form `(|E.points| − q)² ≤ 4q`, derive
-    `|E.points| ≤ q + 2√q ≤ 2q` (since `2√q ≤ q` for `q ≥ 4`). -/
-theorem points_card_le_two_q (h : 5 ≤ E.q) :
+/-- **Trivial `|E| ≤ 2q`**: the fiber over each `x`-coordinate holds at
+    most the two points `(x, ±y)` (`card_points_with_fst_eq_le`), and
+    there are `q` fibers. Axiom-free — this bound previously took an
+    unnecessary detour through the Hasse axiom. The `5 ≤ E.q`
+    hypothesis is retained for signature stability but unused. -/
+theorem points_card_le_two_q (_h : 5 ≤ E.q) :
     E.points.card ≤ 2 * E.q := by
-  have hHW := hasse_weil E
-  rw [E.hNumPoints] at hHW
-  have hi : ((E.points.card : ℤ) - E.q)^2 ≤ 4 * E.q := by
-    push_cast at hHW
-    nlinarith [hHW]
-  by_contra hLt
-  push_neg at hLt
-  have hQ5 : (5 : ℤ) ≤ E.q := by exact_mod_cast h
-  have hLow : ((E.points.card : ℤ) - E.q) ≥ E.q + 1 := by
-    have : ((E.points.card : ℤ)) ≥ 2 * E.q + 1 := by exact_mod_cast hLt
-    linarith
-  -- (|E| − q)² ≥ (q + 1)² = q² + 2q + 1; need this > 4q.
-  -- For q ≥ 5: q² ≥ 5q, so q² + 2q + 1 ≥ 7q + 1 > 4q.
-  nlinarith [hi, hLow, hQ5, sq_nonneg ((E.points.card : ℤ) - E.q - (E.q + 1))]
+  classical
+  calc E.points.card
+      = ∑ x₀ : ZMod E.q,
+          (E.points.filter (fun P => P.1 = x₀)).card :=
+        Finset.card_eq_sum_card_fiberwise
+          (fun P _ => Finset.mem_univ P.1)
+    _ ≤ ∑ _x₀ : ZMod E.q, 2 :=
+        Finset.sum_le_sum (fun x₀ _ => card_points_with_fst_eq_le E x₀)
+    _ = 2 * E.q := by
+        rw [Finset.sum_const, Finset.card_univ, ZMod.card, smul_eq_mul,
+          mul_comm]
 
 end Divisor

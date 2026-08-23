@@ -2392,7 +2392,7 @@ nonzero evaluation of the same polynomial. Apply
 `bivariate_poly_zeros_on_ExE_le` with the descended degree bound and use
 `gd.accounting_le_degE` to replace `gd.support.card` by `D.degE`.
 -/
-theorem log_deriv_sz_paper_core_tight_geometric
+theorem log_deriv_sz_paper_core_tight_geometric (hHW : E.HasseBound)
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (_hDeg : D.degE < E.q)
@@ -2445,7 +2445,7 @@ theorem log_deriv_sz_paper_core_tight_geometric
   have hdM1 : gd.support.card + (k + 1) - 1 = gd.support.card + k := by omega
   have hTD' : total_degree_le E G (2 * (gd.support.card + k)) := by
     rwa [hdM1] at hTD
-  have hDKL := bivariate_poly_zeros_on_ExE_le E G
+  have hDKL := bivariate_poly_zeros_on_ExE_le E hHW G
     (2 * (gd.support.card + k)) hTD' hWitness
   calc ((E.points ×ˢ E.points).filter
         (fun p => A₀ne_A₁x_cleared_pair E D P B m p)).card
@@ -2464,7 +2464,7 @@ This replaces `log_deriv_sz_paper_tight` at the headline call site. The
 old theorem remains available for comparison, but this is the intended
 soundness lemma.
 -/
-theorem log_deriv_sz_paper_tight_geometric
+theorem log_deriv_sz_paper_tight_geometric (hHW : E.HasseBound)
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (hDeg : D.degE < E.q)
@@ -2498,7 +2498,7 @@ theorem log_deriv_sz_paper_tight_geometric
         ⟨hEE, hNeq, hDef, hCheck⟩))
     · exact Finset.mem_union.mpr (Or.inr (Finset.mem_filter.mpr
         ⟨hEE, hDef⟩))
-  have hCoreBound := log_deriv_sz_paper_core_tight_geometric E D P B m hDeg hNV
+  have hCoreBound := log_deriv_sz_paper_core_tight_geometric E hHW D P B m hDeg hNV
   have hUndefBound := logDerivCheckFn_undefined_set_bound_tight E D P k B hDnz
   calc (eventNotEq E D P B (fun i => m i)).card
       ≤ ((E.points ×ˢ E.points).filter
@@ -2584,7 +2584,7 @@ bound `≤ 18·(gd.support.card + k)·E.q` on the zero set. But under
 complement (vertical or undefined) is bounded linearly in `|E|` by
 `card_vertical_pairs_le` and `logDerivCheckFn_undefined_set_bound_tight`.
 The threshold `hELarge` rules this out. -/
-private theorem geomPolyGFull_identically_zero_on_ExE
+private theorem geomPolyGFull_identically_zero_on_ExE (hHW : E.HasseBound)
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
@@ -2617,7 +2617,7 @@ private theorem geomPolyGFull_identically_zero_on_ExE
       (2 * (gd.support.card + k)) := by
     rwa [hdM1] at hTD
   -- DKL bound on the zero set, witnessed by `(A₀, A₁)`.
-  have hLW := bivariate_poly_zeros_on_ExE_le E
+  have hLW := bivariate_poly_zeros_on_ExE_le E hHW
     (geomPolyGFull E D gd
       (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)))
     (2 * (gd.support.card + k)) hTD' ⟨A₀, A₁, hA₀, hA₁, hNZ⟩
@@ -2699,10 +2699,10 @@ private theorem geomPolyGFull_identically_zero_on_ExE
 
 Moved up from its original location so that the sharper density bridge
 `hELarge_of_hLargeQ_main` below can use it.  -/
-private theorem hasse_q_le_sharp_nat :
+private theorem hasse_q_le_sharp_nat_of (hHW : E.HasseBound) :
     E.q ≤ E.points.card + 2 + Nat.sqrt (4 * (E.points.card + 1)) := by
   classical
-  have hHW := Divisor.hasse_weil E
+  have hHW : ((E.numPoints : ℤ) - E.q - 1) ^ 2 ≤ 4 * E.q := hHW
   rw [E.hNumPoints] at hHW
   -- hHW: (((card + 1) : ℤ) - q - 1)^2 ≤ 4q.
   have hMcard : ((E.points.card : ℤ) - E.q)^2 ≤ 4 * (E.q : ℤ) := by
@@ -2744,67 +2744,19 @@ private theorem hasse_q_le_sharp_nat :
       exact hSqNat
     omega
 
-/-- **Bridge from a linear `hLargeQ` bound to the quadratic `hELarge`
-hypothesis required by `geomPolyGFull_identically_zero_on_ExE`.**
-
-Combines `hasse_q_le_two_mul_card` (so `E.q ≤ 2·|E|` once `8 ≤ |E|`)
-with `gd.accounting_le_degE` (so `gd.support.card ≤ D.degE`) to discharge
-the cardinality threshold. The threshold `39·D.degE + 45·k + 73 < |E|`
-covers the worst-case combination of the DKL/Lang–Weil zero-set bound,
-the vertical-pairs slack, and the undefined-set boundary. -/
-private theorem hELarge_of_hLargeQ
-    (D : CoordRingElt E.q) (gd : GeometricDivisorData E D) (k : ℕ)
-    (hLargeQ : 39 * D.degE + 45 * k + 73 < E.points.card) :
-    18 * (gd.support.card + k) * E.q +
-        2 * E.points.card +
-        (3 * D.degE + 9 * k + 71) * E.points.card
-      < E.points.card * E.points.card := by
-  classical
-  have hN8 : 8 ≤ E.points.card := by omega
-  have hQ2 : E.q ≤ 2 * E.points.card := hasse_q_le_two_mul_card E hN8
-  have hSC : gd.support.card ≤ D.degE := by
-    calc gd.support.card
-        = ∑ _ ∈ gd.support, 1 := by simp
-      _ ≤ ∑ Q ∈ gd.support, gd.mult Q :=
-          Finset.sum_le_sum (fun Q hQ => gd.mult_pos_on_support Q hQ)
-      _ ≤ D.degE := gd.accounting_le_degE
-  have hPos : 0 < E.points.card := by omega
-  have hStep1 : 18 * (gd.support.card + k) * E.q
-      ≤ 36 * (D.degE + k) * E.points.card := by
-    calc 18 * (gd.support.card + k) * E.q
-        ≤ 18 * (D.degE + k) * E.q := by
-          apply Nat.mul_le_mul_right; apply Nat.mul_le_mul_left; omega
-      _ ≤ 18 * (D.degE + k) * (2 * E.points.card) :=
-          Nat.mul_le_mul_left _ hQ2
-      _ = 36 * (D.degE + k) * E.points.card := by ring
-  have hStep2 :
-      18 * (gd.support.card + k) * E.q +
-          2 * E.points.card +
-          (3 * D.degE + 9 * k + 71) * E.points.card
-        ≤ (39 * D.degE + 45 * k + 73) * E.points.card := by
-    calc _ ≤ 36 * (D.degE + k) * E.points.card +
-            2 * E.points.card +
-            (3 * D.degE + 9 * k + 71) * E.points.card :=
-          Nat.add_le_add_right (Nat.add_le_add_right hStep1 _) _
-      _ = (39 * D.degE + 45 * k + 73) * E.points.card := by ring
-  have hStep3 :
-      (39 * D.degE + 45 * k + 73) * E.points.card
-        < E.points.card * E.points.card :=
-    (Nat.mul_lt_mul_right hPos).mpr hLargeQ
-  exact lt_of_le_of_lt hStep2 hStep3
-
 /-- **Sharper bridge**: same conclusion as `hELarge_of_hLargeQ` but driven
 by the *main* `hLargeQ` threshold used by `geometric_residue_match`,
 i.e. `n > 31·d + 31·k + 140` (stated in the form
 `2·(5·(d+k+2)+3) + 21·(d+k+2) + 72 < n`).
 
-The improvement comes from replacing the loose Hasse bound `q ≤ 2·n` with
-the sharp form `q ≤ n + 2 + ⌊√(4(n+1))⌋` (`hasse_q_le_sharp_nat`), then a
+The improvement comes from replacing the loose bound `q ≤ 2·n` with
+the sharp form `q ≤ n + 2 + ⌊√(4(n+1))⌋` (`hasse_q_le_sharp_nat_of`,
+from the `hHW` hypothesis), then a
 squared-comparison `(4n - 36)² > (18s)²` (valid for `n ≥ 100`, hence
 `n ≥ 141` here) to absorb the surd term into a linear bound. The
 remaining accounting follows the same DKL + vertical-pairs +
 undefined-set decomposition. -/
-private theorem hELarge_of_hLargeQ_main
+private theorem hELarge_of_hLargeQ_main (hHW : E.HasseBound)
     (D : CoordRingElt E.q) (gd : GeometricDivisorData E D) (k : ℕ)
     (hLargeQ : E.points.card >
         2 * (5 * (D.degE + k + 2) + 3) +
@@ -2831,7 +2783,7 @@ private theorem hELarge_of_hLargeQ_main
   have hN141 : n ≥ 141 := by omega
   have hN_pos : 0 < n := by omega
   -- Sharp Hasse bound: q ≤ n + 2 + s where s² ≤ 4(n+1).
-  have hQbound : E.q ≤ n + 2 + Nat.sqrt (4 * (n + 1)) := hasse_q_le_sharp_nat E
+  have hQbound : E.q ≤ n + 2 + Nat.sqrt (4 * (n + 1)) := hasse_q_le_sharp_nat_of E hHW
   set s := Nat.sqrt (4 * (n + 1)) with hs_def
   have hSqrtSq : s * s ≤ 4 * (n + 1) := Nat.sqrt_le _
   -- Key squared comparison: 4·n > 36 + 18·s.
@@ -2936,7 +2888,7 @@ private theorem hELarge_of_hLargeQ_main
 /-- **Convenience corollary**: combine `hELarge_of_hLargeQ` with the density
 theorem to conclude vanishing on every pair `(A₀, A₁) ∈ E.points × E.points`
 directly from the linear `hLargeQ` threshold. -/
-private theorem geomPolyGFull_identically_zero_on_ExE_of_hLargeQ
+private theorem geomPolyGFull_identically_zero_on_ExE_of_hLargeQ (hHW : E.HasseBound)
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
@@ -2953,8 +2905,8 @@ private theorem geomPolyGFull_identically_zero_on_ExE_of_hLargeQ
       bivEval₂ (geomPolyGFull E D gd
           (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)))
           A₀ A₁ = 0 :=
-  geomPolyGFull_identically_zero_on_ExE E D hDnz gd P B m hAllZero
-    (hELarge_of_hLargeQ_main E D gd k hLargeQ)
+  geomPolyGFull_identically_zero_on_ExE E hHW D hDnz gd P B m hAllZero
+    (hELarge_of_hLargeQ_main E hHW D gd k hLargeQ)
 
 /-- Base-change the descended identity for `geomPolyGFull` back to the
 geometric numerator identity required by the residue-uniqueness helper. -/
@@ -2980,7 +2932,7 @@ vanishing statement to the descended polynomial identity. This theorem wires
 the density output through that bridge and returns the required bar-level
 identity.
 -/
-private theorem geomPolyGFullBar_eq_zero_of_hAllZero_density_with_identity_bridge
+private theorem geomPolyGFullBar_eq_zero_of_hAllZero_density_with_identity_bridge (hHW : E.HasseBound)
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
@@ -3003,7 +2955,7 @@ private theorem geomPolyGFullBar_eq_zero_of_hAllZero_density_with_identity_bridg
     geomPolyGFullBar E D gd
       (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)) = 0 := by
   have hOnExE := geomPolyGFull_identically_zero_on_ExE_of_hLargeQ
-    E D hDnz gd P B m hAllZero hLargeDensity
+    E hHW D hDnz gd P B m hAllZero hLargeDensity
   exact geomPolyGFullBar_eq_zero_of_geomPolyGFull_eq_zero E D gd
     (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j))
     (hExEToPoly hOnExE)
@@ -3012,7 +2964,7 @@ private theorem geomPolyGFullBar_eq_zero_of_hAllZero_density_with_identity_bridg
 Residue-rationality consequence of the all-zero density path, assuming only
 the narrow finite-grid-to-polynomial-identity bridge exposed above.
 -/
-private theorem support_rational_of_hAllZero_density_with_identity_bridge
+private theorem support_rational_of_hAllZero_density_with_identity_bridge (hHW : E.HasseBound)
     (D : CoordRingElt E.q) (hDeg : D.degE < E.q)
     (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D)
@@ -3039,7 +2991,7 @@ private theorem support_rational_of_hAllZero_density_with_identity_bridge
       geomPolyGFullBar E D gd
         (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j)) = 0 :=
     geomPolyGFullBar_eq_zero_of_hAllZero_density_with_identity_bridge
-      E D hDnz gd P B m hAllZero hLargeDensity hExEToPoly
+      E hHW D hDnz gd P B m hAllZero hLargeDensity hExEToPoly
   have hRpts :
       ∀ j : Fin (k + 1),
         ((Fin.cons (P.1, -P.2) B :
@@ -3058,7 +3010,7 @@ Statement-level wrapper for the experimental density-to-residue integration.
 The remaining open input is the finite-grid-to-polynomial-identity bridge for
 the specific `geomPolyGFull` instance produced by the verifier message.
 -/
-private theorem gd_support_rational_of_hAllZero_via_density_bridge
+private theorem gd_support_rational_of_hAllZero_via_density_bridge (hHW : E.HasseBound)
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
@@ -3087,7 +3039,7 @@ private theorem gd_support_rational_of_hAllZero_via_density_bridge
         (Fin.cons (-1) (fun j => -(msg.m (hkm ▸ j)))) = 0) :
     gd_support_rational E msg.toD gd := by
   have hDegLt : msg.toD.degE < E.q := lt_of_le_of_lt hDeg hd
-  exact support_rational_of_hAllZero_density_with_identity_bridge E
+  exact support_rational_of_hAllZero_density_with_identity_bridge E hHW
     msg.toD hDegLt hDnz gd stmt.target hTargetOnE stmt.bases
     (fun i => msg.m (hkm ▸ i)) hBasesOnE hAllZero hLargeDensity hExEToPoly
 
@@ -4454,7 +4406,7 @@ private theorem geom_residue_sum_zero_as_zLambda_pf_of_eval_zero
 /-- Sampled partial-fraction identity at a good rational intercept, using
 density to obtain polynomial vanishing and explicit pole avoidance to divide
 the cleared numerator. -/
-private theorem geom_pf_identity_at_good_intercept
+private theorem geom_pf_identity_at_good_intercept (hHW : E.HasseBound)
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (gd : GeometricDivisorData E D)
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
@@ -4509,7 +4461,7 @@ private theorem geom_pf_identity_at_good_intercept
   let m' : Fin (k + 1) → ZMod E.q := Fin.cons (-1) (fun j => -m j)
   have hRatZero :
       bivEval₂ (geomPolyGFull E D gd R m') A₀ A₁ = 0 :=
-    geomPolyGFull_identically_zero_on_ExE_of_hLargeQ E D hDnz gd P B m
+    geomPolyGFull_identically_zero_on_ExE_of_hLargeQ E hHW D hDnz gd P B m
       hAllZero hLargeQ A₀ A₁ hA₀.1 hA₁.1
   have hBarZero :
       MvPolynomial.eval (barBivEval₂Fun E A₀ A₁)
@@ -5172,7 +5124,7 @@ evaluating the residue identity at carefully chosen rational `(A₀, A₁)`
 isolates the `P`-summand and matches it to a unique `distinctR` index;
 unmatched `distinctR` indices have `distinctM' = 0` by the reverse
 specialisation. -/
-private theorem sigma_data_of_gd_support_rational
+private theorem sigma_data_of_gd_support_rational (hHW : E.HasseBound)
     (stmt : DlogStatement E.q) (_hd : stmt.degBound < E.q)
     (msg : MAProverMsg E.q) (_hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
@@ -5275,7 +5227,7 @@ private theorem sigma_data_of_gd_support_rational
       rw [hEq] at h
       exact h
     -- Sharp Hasse: q ≤ n + 2 + s with s² ≤ 4(n+1).
-    have hQbound : E.q ≤ n + 2 + Nat.sqrt (4 * (n + 1)) := hasse_q_le_sharp_nat E
+    have hQbound : E.q ≤ n + 2 + Nat.sqrt (4 * (n + 1)) := hasse_q_le_sharp_nat_of E hHW
     set s := Nat.sqrt (4 * (n + 1)) with hs_def
     have hSqrtSq : s * s ≤ 4 * (n + 1) := Nat.sqrt_le _
     -- Step 1: 13n > 18s (from squared bound 169n² > 324s² ≤ 1296(n+1)).
@@ -5738,7 +5690,7 @@ private theorem sigma_data_of_gd_support_rational
         · push_neg at hA₀nr
           exact h_spec A₀ hA₀ (Or.inr (Or.inl hA₀nr)) A₁ hA₁
     -- Step D: extend to all E × E via polyGFull_vanishes_on_ExE_of_polyG_zero.
-    exact polyGFull_vanishes_on_ExE_of_polyG_zero E _ _ _ _
+    exact polyGFull_vanishes_on_ExE_of_polyG_zero E hHW _ _ _ _
       hAt_nonvert hELargeDkl
   have hELargeThr : E.points.card > 4 * (zerosCard E msg.toD +
         (1 + baseImageCount E stmt msg hkm)) + 2 := by
@@ -5776,7 +5728,7 @@ private theorem sigma_data_of_gd_support_rational
       apply Nat.mul_le_mul_left
       exact Nat.add_le_add_right _hDeg _
     linarith [_hLargeQ]
-  exact sigma_matching_from_polyGFull_vanishing E
+  exact sigma_matching_from_polyGFull_vanishing E hHW
     (zerosAt E msg.toD)
     (fun k => ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q))
     (distinctR E stmt msg hkm)
@@ -5960,7 +5912,7 @@ private theorem exists_goodIntercepts_avoiding_geom_and_rational_poles
 /-- Numeric threshold supplying enough rational samples for the Frobenius
 partial-fraction descent. This is the remaining Hasse/valid-pairs arithmetic
 obligation after the geometric and sampling plumbing is in place. -/
-private theorem frob_sampling_validPairs_threshold
+private theorem frob_sampling_validPairs_threshold (hHW : E.HasseBound)
     (D : CoordRingElt E.q) (gd : GeometricDivisorData E D) (k : ℕ)
     (hLargeQ : E.points.card >
         2 * (5 * (D.degE + k + 2) + 3) +
@@ -5995,7 +5947,7 @@ private theorem frob_sampling_validPairs_threshold
     have hM1 : 1 ≤ M := Nat.succ_le_of_lt hM_pos
     omega
   have hQbound : E.q ≤ n + 2 + Nat.sqrt (4 * (n + 1)) := by
-    simpa [n] using hasse_q_le_sharp_nat E
+    simpa [n] using hasse_q_le_sharp_nat_of E hHW
   set r := Nat.sqrt (4 * (n + 1)) with hr_def
   have hSqrtSq : r * r ≤ 4 * (n + 1) := Nat.sqrt_le _
   have h_169n2 : 169 * n * n > 1296 * (n + 1) := by
@@ -6077,7 +6029,7 @@ enough rational evaluation points. Apply
 `FrobDescentHelpers.partial_fraction_coeff_zero` and read off the coefficient
 at the isolated pole, which is `((gd.mult Q : ℕ) : Fqbar E)`.
 -/
-private theorem frob_descent_mult_zero_of_not_fixed
+private theorem frob_descent_mult_zero_of_not_fixed (hHW : E.HasseBound)
     (D : CoordRingElt E.q) (gd : GeometricDivisorData E D)
     (_hDeg : D.degE < E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (P : ZMod E.q × ZMod E.q) {k : ℕ}
@@ -6098,7 +6050,7 @@ private theorem frob_descent_mult_zero_of_not_fixed
   let N : ℕ := 2 * (gd.support.card + M)
   have hQuant :
       6 * E.q * (N + gd.support.card) + 1 ≤ (validPairs E).card := by
-    have h := frob_sampling_validPairs_threshold E D gd k hLargeQ
+    have h := frob_sampling_validPairs_threshold E hHW D gd k hLargeQ
     simpa [N, M, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
   obtain ⟨lam, hSep, hNonRat, hGood⟩ :=
     exists_slope_zLambdaBar_isolated_non_rational_with_good_intercepts
@@ -6140,7 +6092,7 @@ private theorem frob_descent_mult_zero_of_not_fixed
     intro μ hμ
     change μ ∈ S0.image (fqToBar E) at hμ
     rcases Finset.mem_image.mp hμ with ⟨μ0, hμ0, rfl⟩
-    have hPF := geom_pf_identity_at_good_intercept E D hDnz gd P B m
+    have hPF := geom_pf_identity_at_good_intercept E hHW D hDnz gd P B m
       hAllZero hLargeQ lam μ0 (hS0Good hμ0)
       (by
         intro Q' hQ'
@@ -6160,7 +6112,7 @@ private theorem frob_descent_mult_zero_of_not_fixed
 /-- **Rationality of the geometric support under `hAllZero`.** The all-zero
 hypothesis on `logDerivCheckFn` over rational defined non-vertical pairs
 forces every `Q ∈ gd.support` to have `F_q`-rational coordinates. -/
-private theorem gd_support_rational_of_hAllZero
+private theorem gd_support_rational_of_hAllZero (hHW : E.HasseBound)
     (stmt : DlogStatement E.q) (_hd : stmt.degBound < E.q)
     (msg : MAProverMsg E.q) (_hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
@@ -6188,12 +6140,12 @@ private theorem gd_support_rational_of_hAllZero
   have hMultNZ : ((gd.mult Q : ℕ) : Fqbar E) ≠ 0 :=
     gd_mult_fqbar_ne_zero E msg.toD gd hDegLt Q hQ
   exact absurd
-    (frob_descent_mult_zero_of_not_fixed E msg.toD gd hDegLt
+    (frob_descent_mult_zero_of_not_fixed E hHW msg.toD gd hDegLt
       _hDnz stmt.target stmt.bases (fun i => msg.m (hkm ▸ i))
       _hAllZero _hLargeQ Q hQ hNotFixed)
     hMultNZ
 
-private theorem geometric_residue_match
+private theorem geometric_residue_match (hHW : E.HasseBound)
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)
     (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
@@ -6226,7 +6178,7 @@ private theorem geometric_residue_match
   obtain ⟨gd, _⟩ := exists_geometricDivisorData E msg.toD hDnz
   -- Step 1: gd.support is rational under hAllZero (deep residue-specialisation).
   have hRat : gd_support_rational E msg.toD gd :=
-    gd_support_rational_of_hAllZero E stmt hd msg hDeg hkm hSmooth hTargetOnE
+    gd_support_rational_of_hAllZero E hHW stmt hd msg hDeg hkm hSmooth hTargetOnE
       hBasesOnE hLargeQ hNoNegP hDnz gd hAllZero
   -- Step 2: splitsOnE follows from rational support.
   have hSplit : splitsOnE E msg.toD :=
@@ -6234,7 +6186,7 @@ private theorem geometric_residue_match
   -- Step 3: σ-matching from rational support + chord-sum identity.
   -- (No longer threads _hDenomNZ; the per-A₀ obstruction is absorbed via badDenomA0
   -- inside `sigma_data_of_gd_support_rational`.)
-  have hσ := sigma_data_of_gd_support_rational E stmt hd msg hDeg hkm hTargetOnE
+  have hσ := sigma_data_of_gd_support_rational E hHW stmt hd msg hDeg hkm hTargetOnE
     hBasesOnE hLargeQ hNoNegP hDnz gd hRat hAllZero
   exact ⟨hSplit, hσ⟩
 
@@ -6246,7 +6198,7 @@ The proof is a thin wrapper around the residue-matching helper
 `geometric_residue_match`; see that helper for the mathematical
 content and `PROVIDED SOLUTION` outline.
 -/
-private theorem geometric_sigma_matching
+private theorem geometric_sigma_matching (hHW : E.HasseBound)
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
@@ -6271,11 +6223,11 @@ private theorem geometric_sigma_matching
       (∀ k, ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q)
             + distinctM' E stmt msg hkm (σ k) = 0) ∧
       (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) :=
-  geometric_residue_match E stmt hd hd2 msg hDeg hkm hSmooth
+  geometric_residue_match E hHW stmt hd hd2 msg hDeg hkm hSmooth
     hTargetOnE hBasesOnE hLargeQ hAdm hNoNegP hAllZero
 
 set_option maxHeartbeats 800000 in
-theorem extractor_of_logDerivCheck_all_zero_geometric_general
+theorem extractor_of_logDerivCheck_all_zero_geometric_general (hHW : E.HasseBound)
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
@@ -6300,7 +6252,7 @@ theorem extractor_of_logDerivCheck_all_zero_geometric_general
   have hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg hAdm
   obtain ⟨hSplit, σ, hσ_eq, hσ_betam, hσ_off⟩ :=
-    geometric_sigma_matching E stmt hd hd2 msg hDeg hkm hSmooth
+    geometric_sigma_matching E hHW stmt hd hd2 msg hDeg hkm hSmooth
       hTargetOnE hBasesOnE hLargeQ hAdm hNoNegP hAllZero
   have hβsup := betaCanonical_support E msg.toD
   have hβcov := betaCanonical_covers E msg.toD hDnz
@@ -6361,7 +6313,7 @@ theorem extractor_of_logDerivCheck_all_zero_geometric_general
 Geometric all-zero branch, including the degenerate case where `-P` is
 already one of the advertised bases.
 -/
-theorem extractor_of_logDerivCheck_all_zero_geometric
+theorem extractor_of_logDerivCheck_all_zero_geometric (hHW : E.HasseBound)
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
@@ -6390,7 +6342,7 @@ theorem extractor_of_logDerivCheck_all_zero_geometric
     · unfold maExtractor
       rw [dif_pos hSucc]
     · exact extracted_scalars_valid_special E stmt msg hkm hNegP
-  · exact extractor_of_logDerivCheck_all_zero_geometric_general E stmt hd hd2
+  · exact extractor_of_logDerivCheck_all_zero_geometric_general E hHW stmt hd hd2
       msg hDeg hkm hSmooth hTargetOnE hBasesOnE hLargeQ hAdm hNegP hAllZero
 
 end Divisor

@@ -227,16 +227,28 @@ closure. The exact closures are pinned by `#guard_msgs`-wrapped
 `Tests/F5RegressionAxiomClosure.lean`), so any closure drift fails the
 build.
 
-`Divisor.ma_extractable`, `Divisor.ip_extractable`, and
-`Divisor.ma_completeness` depend on:
+**Every primary headline theorem is axiom-free** — the closures of
+`Divisor.ma_extractable`, `Divisor.ip_extractable`,
+`Divisor.ma_completeness`, `Divisor.ma_completeness_base`, and the
+entire binary completeness chain (`ma_completeness_binary*`) are the
+Lean core three only. The Hasse bound enters the development in exactly
+one of two ways:
+
+* On the completeness side it is not needed at all: the field-size
+  bound uses the trivial `|E| ≤ 2q` fiber count
+  (`points_card_le_two_q`).
+* On the extractability side, the primary theorems take the point-count
+  bound as an explicit hypothesis `(hHW : E.HasseBound)` (the
+  integer-squared Hasse inequality, a checkable arithmetic fact for any
+  concrete curve). The `_hasse` variants (`ma_extractable_hasse`,
+  `ip_extractable_hasse`, `ma_extractable_base_hasse`,
+  `ip_extractable_base_hasse`, `ma_extractable_paper_hasse`, …)
+  discharge that hypothesis via the axiom and recover the original
+  statements; they are the **only** theorems whose closure contains
 
 ```text
 Divisor.hasse_weil_textbook
 ```
-
-`Divisor.ma_completeness_base` and the entire binary completeness chain
-(`ma_completeness_binary*`) are **axiom-free**: their closures are the
-Lean core three only.
 
 The one axiom is a piece of mathematical infrastructure — a point
 count. It does not mention the protocol, the extractor, or the

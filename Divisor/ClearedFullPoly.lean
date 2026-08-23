@@ -1910,11 +1910,12 @@ theorem clearedFullPoly_total_degree_le
     `N = |E|`, `q ≥ 2N+1`, so `(q-N)² ≥ (N+1)²`, but Hasse gives
     `(q-N)² ≤ 4q`. Combining with `q ≥ 2N+1` yields
     `N²-6N-3 ≤ 0`, which fails for `N ≥ 8`. -/
-theorem hasse_q_le_two_mul_card (hN : 8 ≤ E.points.card) :
+theorem hasse_q_le_two_mul_card_of (hHW : E.HasseBound)
+    (hN : 8 ≤ E.points.card) :
     E.q ≤ 2 * E.points.card := by
   by_contra hlt
   push_neg at hlt
-  have hH := hasse_weil E
+  have hH : ((E.numPoints : ℤ) - E.q - 1) ^ 2 ≤ 4 * E.q := hHW
   rw [E.hNumPoints] at hH
   have hH' : ((E.points.card : ℤ) - E.q) ^ 2 ≤ 4 * (E.q : ℤ) := by
     have : (↑(E.points.card + 1) : ℤ) - ↑E.q - 1 = (↑E.points.card : ℤ) - ↑E.q := by push_cast; ring
@@ -1939,7 +1940,7 @@ theorem hasse_q_le_two_mul_card (hN : 8 ≤ E.points.card) :
     by rounding `36·(2d+k+6)` up to `72·(d+k+6)`. The refined form
     preserves the `2d` vs `d` distinction in the DKL degree bound,
     ultimately yielding a tighter constant in `log_deriv_sz_paper`. -/
-theorem log_deriv_sz_paper_core
+theorem log_deriv_sz_paper_core (hHW : E.HasseBound)
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (_hDeg : D.degE < E.q)
@@ -1980,10 +1981,10 @@ theorem log_deriv_sz_paper_core
       · -- Large N: use axiom + Hasse
         push_neg at hSmall
         have hN8 : 8 ≤ N := by omega
-        have hQle : E.q ≤ 2 * N := hasse_q_le_two_mul_card E hN8
+        have hQle : E.q ≤ 2 * N := hasse_q_le_two_mul_card_of E hHW hN8
         have hTD := clearedFullPoly_total_degree_le E D P B m
         have hNZ := clearedFullPoly_nonzero_witness E D P B m hNV
-        have hAxiom := bivariate_poly_zeros_on_ExE_le E
+        have hAxiom := bivariate_poly_zeros_on_ExE_le E hHW
           (clearedFullPoly E D P k B m)
           (4 * d + 2 * k + 12) hTD hNZ
         calc T.card
@@ -1999,7 +2000,7 @@ theorem log_deriv_sz_paper_core
     boundary bound (`(3d+9k+71)·|E|`) from
     `logDerivCheckFn_undefined_set_bound_tight` for the
     denom-undefined pairs. Total: `78·(D.degE + k + 6)·|E|`. -/
-theorem log_deriv_sz_paper
+theorem log_deriv_sz_paper (hHW : E.HasseBound)
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (hDeg : D.degE < E.q)
@@ -2031,7 +2032,7 @@ theorem log_deriv_sz_paper
         ⟨hEE, hDef⟩))
   have hCardSplit : badNE.card ≤ defBad.card + undefAll.card :=
     le_trans (Finset.card_le_card hSub) (Finset.card_union_le _ _)
-  have hCoreBound := log_deriv_sz_paper_core E D P B m hDeg hNV
+  have hCoreBound := log_deriv_sz_paper_core E hHW D P B m hDeg hNV
   -- Derive ¬(D.a = 0 ∧ D.b = 0) from the witness.
   have hD : ¬(D.a = 0 ∧ D.b = 0) := by
     obtain ⟨A₀, A₁, _, _, _, hDef, _⟩ := hNV

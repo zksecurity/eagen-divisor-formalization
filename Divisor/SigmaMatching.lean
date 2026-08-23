@@ -300,7 +300,7 @@ theorem polyGFull_total_degree_le_tight
     somewhere on `E × E`, its zero set would have cardinality
     `≤ 9·2·(d+M)·q = 18·(d+M)·q`, contradicting the non-vertical-pair
     count `|E|² − 2|E|` it must contain. -/
-theorem polyGFull_vanishes_on_ExE_of_polyG_zero
+theorem polyGFull_vanishes_on_ExE_of_polyG_zero (hHW : E.HasseBound)
     {d M : ℕ}
     (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
     (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
@@ -317,7 +317,7 @@ theorem polyGFull_vanishes_on_ExE_of_polyG_zero
   push_neg at h
   obtain ⟨A₀, A₁, hA₀, hA₁, hNZ⟩ := h
   have hDeg := polyGFull_total_degree_le' E Q beta R m
-  have hLW := bivariate_poly_zeros_on_ExE_le E (polyGFull E Q beta R m)
+  have hLW := bivariate_poly_zeros_on_ExE_le E hHW (polyGFull E Q beta R m)
     (2 * (d + M)) hDeg ⟨A₀, A₁, hA₀, hA₁, hNZ⟩
   have hNVsub : (E.points ×ˢ E.points).filter
       (fun p : _ × _ => p.1.1 ≠ p.2.1) ⊆
@@ -661,7 +661,7 @@ private lemma polyG_factorization
     `(∏_k ellP(Q_k)) · G` where `G = residual c σ R` and `c k = β k + m(σ k)`.
     This lemma shows that `G = 0` on all of `E × E` by applying the
     bivariate polynomial zeros axiom contrapositively. -/
-private lemma residual_vanishes_on_ExE
+private lemma residual_vanishes_on_ExE (hHW : E.HasseBound)
     {d M : ℕ}
     (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
     (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
@@ -684,7 +684,7 @@ private lemma residual_vanishes_on_ExE
   obtain ⟨A₀, A₁, hA₀, hA₁, hNZ⟩ := hNontriv
   -- Step 1: Apply the new axiom to residualFull.
   have hTD := residualFull_total_degree_le E R (fun k => beta k + m (σ k)) σ
-  have hLW := bivariate_poly_zeros_on_ExE_le E
+  have hLW := bivariate_poly_zeros_on_ExE_le E hHW
     (residualFull E R (fun k => beta k + m (σ k)) σ)
     (2 * (M - 1)) hTD ⟨A₀, A₁, hA₀, hA₁, hNZ⟩
   -- Step 2: polyG = prod_Q * residualFull. So wherever prod_Q ≠ 0 on E×E,
@@ -740,7 +740,7 @@ private lemma residual_vanishes_on_ExE
     have hWitness : ellP E (Q k) A₀' A₁' ≠ 0 := hA₁'good (Q k) (Finset.mem_singleton.mpr rfl)
     -- Apply LW with total degree 2 and nonzero witness
     have hTD_ell := lineEvalNumAtFull_total_degree_le' E (Q k)
-    have hLW_ell := bivariate_poly_zeros_on_ExE_le E
+    have hLW_ell := bivariate_poly_zeros_on_ExE_le E hHW
       (lineEvalNumAtFull E (Q k)) 2 hTD_ell
       ⟨A₀', A₁', hA₀', hA₁'mem, by rwa [bivEval₂_lineEvalNumAtFull]⟩
     -- zeros ≤ 9 * 2 * q = 18 * q
@@ -850,7 +850,7 @@ the old `bivariate_poly_zeros_on_ExE_le` axiom signature with `bi_x_degree_le`):
     · exact hRes0
   -- Lang-Weil on residualFull: zeros ≤ 4*(M-1)*|E|
   have hBideg := residualFull_bi_x_degree_le E R (fun k => beta k + m (σ k)) σ
-  have hLW := bivariate_poly_zeros_on_ExE_le E
+  have hLW := bivariate_poly_zeros_on_ExE_le E hHW
     (residualFull E R (fun k => beta k + m (σ k)) σ) (M - 1) (M - 1)
     hBideg ⟨A₀, A₁, hA₀, hA₁, hNZ⟩
   -- {residualFull ≠ 0 on E×E} ⊆ {∏ ellP(Q_k) = 0 on E×E}
@@ -912,7 +912,7 @@ the old `bivariate_poly_zeros_on_ExE_le` axiom signature with `bi_x_degree_le`):
           bivEval₂ (lineEvalNumAtFull E (Q k)) A₀ A₁ ≠ 0 := by
         obtain ⟨a0, a1, ha0, ha1, hne⟩ := hWitness
         exact ⟨a0, a1, ha0, ha1, by rwa [bivEval₂_lineEvalNumAtFull]⟩
-      have hLW_k := bivariate_poly_zeros_on_ExE_le E (lineEvalNumAtFull E (Q k)) 1 1 hBi hNZW
+      have hLW_k := bivariate_poly_zeros_on_ExE_le E hHW (lineEvalNumAtFull E (Q k)) 1 1 hBi hNZW
       have hFilterEq : (E.points ×ˢ E.points).filter (fun p => ellP E (Q k) p.1 p.2 = 0) =
           (E.points ×ˢ E.points).filter
             (fun p => bivEval₂ (lineEvalNumAtFull E (Q k)) p.1 p.2 = 0) := by
@@ -1038,7 +1038,7 @@ the old `bivariate_poly_zeros_on_ExE_le` axiom signature with `bi_x_degree_le`):
     4. After simplification, `polyG = (∏_k ellP Q_k) · G`;
        show `G = 0` on `E × E` via the bivariate zeros axiom.
     5. Evaluate `G` at collinear triples: `c_k = β_k + m(σ k) = 0`. -/
-private lemma sigma_matching_core
+private lemma sigma_matching_core (hHW : E.HasseBound)
     {d M : ℕ}
     (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
     (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
@@ -1166,7 +1166,7 @@ private lemma sigma_matching_core
     intro k
     -- Use residual_vanishes_on_ExE to get G = 0 on E×E,
     -- then evaluate at A₀ = R(σ k) = Q k with a good A₁.
-    have hResVan := residual_vanishes_on_ExE E Q beta R m σ
+    have hResVan := residual_vanishes_on_ExE E hHW Q beta R m σ
       (fun k' => (hσ_def k').symm) hM_offrange hPolyGAll hELarge hQonE hELarge_dkl
     -- G(Q k, A₁) = (beta k + m(σ k)) * ∏_{j≠σ(k)} ellP(R j, Q k, A₁)
     -- for all A₁ ∈ E. The product structure means:
@@ -1232,7 +1232,7 @@ private lemma sigma_matching_core
     vanishing pointwise on `E × E` (= Step 2's conclusion) plus
     `hELarge : |E| > 4·(d+M) + 2`, produce the σ-matching output.
     Internally consolidated via `sigma_matching_core`. -/
-theorem sigma_matching_from_polyGFull_vanishing
+theorem sigma_matching_from_polyGFull_vanishing (hHW : E.HasseBound)
     {d M : ℕ}
     (Q : Fin d → ZMod E.q × ZMod E.q) (beta : Fin d → ZMod E.q)
     (R : Fin M → ZMod E.q × ZMod E.q) (m : Fin M → ZMod E.q)
@@ -1258,7 +1258,7 @@ theorem sigma_matching_from_polyGFull_vanishing
     intro A₀ A₁ h₀ h₁
     rw [← bivEval₂_polyGFull_eq_polyG E Q beta R m A₀ A₁]
     exact hVanishing A₀ A₁ h₀ h₁
-  exact sigma_matching_core E Q beta R m hDistinctQ hDistinctR hBetaNz hQonE hRonE hPolyGAll
+  exact sigma_matching_core E hHW Q beta R m hDistinctQ hDistinctR hBetaNz hQonE hRonE hPolyGAll
     hELarge hELarge_dkl
 
 end Divisor

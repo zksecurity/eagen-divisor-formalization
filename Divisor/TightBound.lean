@@ -243,7 +243,7 @@ private lemma hDnz_from_hNV
   unfold logDerivCheckFnDenom CoordRingElt.eval
   simp only [ha, hb, Polynomial.eval_zero, zero_mul, mul_zero, sub_zero]
 
-theorem log_deriv_sz_paper_core_tight
+theorem log_deriv_sz_paper_core_tight (hHW : E.HasseBound)
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (_hDeg : D.degE < E.q)
@@ -287,7 +287,7 @@ theorem log_deriv_sz_paper_core_tight
     (Fin.cons (P.1, -P.2) B) (Fin.cons (-1) (fun j => -m j))
   have hdM1 : d + M - 1 = d + k := by omega
   rw [hdM1] at hTD
-  have hDKL := bivariate_poly_zeros_on_ExE_le E polyGF
+  have hDKL := bivariate_poly_zeros_on_ExE_le E hHW polyGF
     (2 * (d + k)) hTD hWitness
   have hZC : d ≤ D.degE := zerosCard_le_degE' D hDnz
   calc ((E.points ×ˢ E.points).filter
@@ -311,7 +311,7 @@ theorem log_deriv_sz_paper_core_tight
 
     Realised via `lem:log-derivative` (SZ-on-(E×E) applied to the
     cleared log-deriv polynomial) plus the Hasse bound. -/
-theorem log_deriv_sz_paper_tight
+theorem log_deriv_sz_paper_tight (hHW : E.HasseBound)
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
     (hDeg : D.degE < E.q)
@@ -341,7 +341,7 @@ theorem log_deriv_sz_paper_tight
         ⟨hEE, hNeq, hDef, hCheck⟩))
     · exact Finset.mem_union.mpr (Or.inr (Finset.mem_filter.mpr
         ⟨hEE, hDef⟩))
-  have hCoreBound := log_deriv_sz_paper_core_tight D P B m hDeg
+  have hCoreBound := log_deriv_sz_paper_core_tight hHW D P B m hDeg
     hSplit hNV
   have hUndefBound := logDerivCheckFn_undefined_set_bound_tight E D P k B hDnz
   calc (eventNotEq E D P B (fun i => m i)).card
