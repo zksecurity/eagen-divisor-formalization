@@ -346,7 +346,7 @@ theorem geomLocalOrder_pos_of_geomEval_zero
     rootMultiplicity_normPolyBar_pos_of_geomEval_zero E D hDnz Q hQ
   by_cases hy : Q.y = 0 <;> simp_all +decide
   split_ifs
-  · refine' Nat.sub_pos_of_lt _
+  · refine Nat.sub_pos_of_lt ?_
     have h_common :
         2 * commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) Q.x
           ≤ rootMultiplicity Q.x (normPolyBar E D) := by
@@ -394,7 +394,7 @@ theorem geomLocalOrder_multiplicity_spec
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (Q : GeomPoint E) (hQ : D.geomEval E Q = 0) :
     IsGeometricZeroMultiplicity E D Q (geomLocalOrder E D Q) := by
-  refine' ⟨hQ, geomLocalOrder_pos_of_geomEval_zero E D hDnz Q hQ, _⟩
+  refine ⟨hQ, geomLocalOrder_pos_of_geomEval_zero E D hDnz Q hQ, ?_⟩
   unfold geomLocalOrder
   by_cases hy : Q.y = 0 <;> simp +decide [hy]
   split_ifs
@@ -560,7 +560,7 @@ private theorem geomTilde_eval_not_both_zero (D : CoordRingElt E.q)
         rw [hk_eq']
         exact Polynomial.eval_divByMonic_pow_rootMultiplicity_ne_zero α ha
       · right
-        push_neg at h_le
+        push Not at h_le
         have hk_eq' : k = b.rootMultiplicity α := by rw [hk_eq, min_eq_right h_le.le]
         show (b /ₘ (X - C α)^k).eval α ≠ 0
         rw [hk_eq']

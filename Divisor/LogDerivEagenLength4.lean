@@ -361,10 +361,10 @@ theorem eagenBuild_length4_residue_sum_eq
   obtain ⟨h01, h02, h03, h12, h13, h23⟩ := h_inputs_distinct
   have h_P_0_notin_123 : P₀ ∉ ({P₁, P₂, P₃} : Finset (ZMod E.q × ZMod E.q)) := by
     simp only [Finset.mem_insert, Finset.mem_singleton]
-    push_neg; exact ⟨h01, h02, h03⟩
+    push Not; exact ⟨h01, h02, h03⟩
   have h_P_1_notin_23 : P₁ ∉ ({P₂, P₃} : Finset (ZMod E.q × ZMod E.q)) := by
     simp only [Finset.mem_insert, Finset.mem_singleton]
-    push_neg; exact ⟨h12, h13⟩
+    push Not; exact ⟨h12, h13⟩
   have h_P_2_notin_3 : P₂ ∉ ({P₃} : Finset (ZMod E.q × ZMod E.q)) := by
     simp only [Finset.mem_singleton]; exact h23
   rw [show ({P₀, P₁, P₂, P₃} : Finset (ZMod E.q × ZMod E.q))

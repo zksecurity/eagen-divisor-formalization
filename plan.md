@@ -1,7 +1,7 @@
 # Plan 4 — proof cleanliness
 
-> **STATUS: IN PROGRESS (2026-08-23).** P4.1 landed; P4.2–P4.7
-> pending.
+> **STATUS: COMPLETE (2026-08-23).** All seven phases landed; see the
+> status log.
 
 ## Baseline
 
@@ -94,7 +94,7 @@ Audit of the baseline, all verified by tooling on 2026-08-23:
       LogDerivEagenLength4, CoordRingEltC/Bridge, and the P4.1 file).
       Same method as P4.1: external-use inventory, split live core
       from unreferenced exploratory material, prune.
-- [ ] **P4.7 Tactic modernization** (cosmetic; last): replace
+- [x] **P4.7 Tactic modernization** (cosmetic; last): replace
       deprecated `push_neg` with `push Not`, retire `refine'`/`erw`
       in the ported `BivariateZerosOnExE`-style proofs, fix the
       `haveI`-for-`have` and unused-tactic lints. Goal: a lint-quiet
@@ -165,3 +165,15 @@ axiom closures stay pinned as at the baseline.
   deleted: 7928 → 6910 lines. Stale header ("driver not yet
   defined", already-landed "remaining work") rewritten; orphaned
   Length-3 section and a stale TODO removed.
+* 2026-08-23 — P4.7 landed: the full build log is now warning-free
+  (0 warnings, 0 errors). 128 `push_neg` → `push Not`; 26 deprecated
+  lemma names and 4 deprecated imports updated; five committed
+  `exact?;` calls replaced with their found terms; five dead tactic
+  lines, nine `haveI`-for-`have`, six missing `omit [Fact …]`, a
+  Prop-valued `def`, a no-op `revert/intro` pair, and the
+  unused-binder lints all fixed. `refine'` retired in GeomLocalOrder,
+  TightBound and ExtractorBridge (holes needing eager unification
+  kept as `_`); it remains in 4 ported files (45 sites) where the
+  `?_` conversion changes elaboration order and times out, and `erw`
+  remains at 11 sites where plain `rw` does not fire — both compile
+  warning-free on this toolchain.

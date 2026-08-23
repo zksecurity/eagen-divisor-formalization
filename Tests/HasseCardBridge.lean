@@ -32,8 +32,8 @@
   and `equation_iff_nonsingular`.
 -/
 import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
-import Mathlib.Data.Finite.Card
-import Mathlib.Data.Real.Sqrt
+import Mathlib.SetTheory.Cardinal.NatCard
+import Mathlib.Analysis.Real.Sqrt
 
 open WeierstrassCurve
 

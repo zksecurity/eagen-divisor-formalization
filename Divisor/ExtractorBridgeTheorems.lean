@@ -200,7 +200,7 @@ theorem ma_extractable_conditional
       · apply Nat.mul_le_mul_right
         omega
     exact le_trans hCardLe (le_trans hBound hMono)
-  · push_neg at hNV
+  · push Not at hNV
     by_cases hAdm : stmt.admSet (msg.polyA, msg.polyB)
     · left
       exact extractor_of_logDerivCheck_all_zero_geometric E stmt hd hd2 msg hDeg hkm

@@ -113,7 +113,7 @@ private theorem bar_total_degree_le.prod_const
     {α : Type*} (s : Finset α) (f : α → FourVarPolyBar E)
     {D : ℕ} (hf : ∀ i ∈ s, bar_total_degree_le E (f i) D) :
     bar_total_degree_le E (∏ i ∈ s, f i) (s.card * D) := by
-  refine (MvPolynomial.totalDegree_finset_prod s f).trans ?_
+  refine (MvPolynomial.totalDegree_finsetProd s f).trans ?_
   calc (∑ i ∈ s, (f i).totalDegree)
       ≤ ∑ _i ∈ s, D := Finset.sum_le_sum hf
     _ = s.card * D := by rw [Finset.sum_const]; ring
@@ -806,7 +806,7 @@ theorem prod_X_sub_C_zLambdaBar_logDeriv_at_nonroot
   classical
   rw [derivative_prod_X_sub_C_pow_indexed gd.support
         (fun Q => zLambdaBar E lam Q) gd.mult]
-  rw [eval_finset_sum]
+  rw [eval_finsetSum]
   have hProdEval :
       eval μ (∏ Q ∈ gd.support,
           (X - C (zLambdaBar E lam Q)) ^ (gd.mult Q))
@@ -882,7 +882,7 @@ private theorem gd_mult_natCast_ne_zero
     (hDeg : D.degE < E.q)
     (Q : GeomPoint E) (hQ : Q ∈ gd.support) :
     ((gd.mult Q : ℕ) : ZMod E.q) ≠ 0 := by
-  haveI : NeZero E.q := ⟨E.hq_prime.ne_zero⟩
+  have : NeZero E.q := ⟨E.hq_prime.ne_zero⟩
   rw [Ne, ZMod.natCast_eq_zero_iff]
   intro hDvd
   have hPos : 0 < gd.mult Q := gd.mult_pos_on_support Q hQ
@@ -896,7 +896,7 @@ private theorem gd_mult_fqbar_ne_zero
     (hDeg : D.degE < E.q)
     (Q : GeomPoint E) (hQ : Q ∈ gd.support) :
     ((gd.mult Q : ℕ) : Fqbar E) ≠ 0 := by
-  haveI : NeZero E.q := ⟨E.hq_prime.ne_zero⟩
+  have : NeZero E.q := ⟨E.hq_prime.ne_zero⟩
   intro h
   have h' : ((gd.mult Q : ℕ) : ZMod E.q) ≠ 0 :=
     gd_mult_natCast_ne_zero E D gd hDeg Q hQ
@@ -2593,7 +2593,7 @@ private theorem geomPolyGFull_identically_zero_on_ExE
           A₀ A₁ = 0 := by
   classical
   by_contra h
-  push_neg at h
+  push Not at h
   obtain ⟨A₀, A₁, hA₀, hA₁, hNZ⟩ := h
   -- Total-degree bound for the descended polynomial.
   have hTD := geomPolyGFull_total_degree_le_tight E D gd
@@ -3538,7 +3538,6 @@ private theorem rootMultiplicity_normPoly_ge_twice_commonRootMultRatGS
   have hN_ne : normPoly E D ≠ 0 := normPoly_ne_zero E D hDnz
   set k := commonRootMultRatGS E D β
   have h_dvd_a : (Polynomial.X - Polynomial.C β) ^ k ∣ D.a := by
-    unfold commonRootMultRatGS at *
     by_cases h_a : D.a = 0
     · rw [h_a]; exact dvd_zero _
     · exact dvd_trans (pow_dvd_pow _
@@ -3553,7 +3552,6 @@ private theorem rootMultiplicity_normPoly_ge_twice_commonRootMultRatGS
           · rw [if_neg h_b]; exact min_le_left _ _))
         (Polynomial.pow_rootMultiplicity_dvd D.a β)
   have h_dvd_b : (Polynomial.X - Polynomial.C β) ^ k ∣ D.b := by
-    unfold commonRootMultRatGS at *
     by_cases h_a : D.a = 0
     · -- k = D.b.rootMultiplicity β.
       show (Polynomial.X - Polynomial.C β) ^ k ∣ D.b
@@ -3663,7 +3661,7 @@ private theorem ordAt_nonTwoTorsion_aux_eq_geomLocalOrder
         have h_eq := geomLocalOrder_rationalLift_divLin E D hDnz P hP hY ha hb
         omega
       · -- Lone case: ordAt = m; geomLocalOrder = m too.
-        push_neg at hEvalNegP
+        push Not at hEvalNegP
         rw [if_pos hEvalNegP]
         rw [geomLocalOrder_rationalLift_non_two_torsion E D P hP hY]
         have hk : commonRootMultRatGS E D P.1 = 0 :=
@@ -3672,7 +3670,7 @@ private theorem ordAt_nonTwoTorsion_aux_eq_geomLocalOrder
           branchRat_eq_zero_of_lone E D hY hEvalP hEvalNegP
         simp only [hbr, if_true, hk, Nat.sub_zero]
     · -- D.eval P ≠ 0: both = 0.
-      push_neg at hEvalP
+      push Not at hEvalP
       rw [if_pos hEvalP]
       have hGeomZero_iff_evalZero :
           D.geomEval E (rationalLift E P hP) = fqToBar E (D.eval P.1 P.2) := by
@@ -3713,7 +3711,7 @@ theorem ordAt_eq_rationalMultAt_of_gd_support_rational
     rw [gd.mult_eq_geomLocalOrder]
     exact ordAt_eq_geomLocalOrder_at_rationalLift E D hDnz P hP.1
   · rw [dif_neg hP]
-    push_neg at hP
+    push Not at hP
     by_cases hP' : P ∈ E.points
     · exact ordAt_pos_iff_zero E D hDnz P hP' |>.not.mpr (hP hP')
         |> Nat.eq_zero_of_not_pos
@@ -4858,7 +4856,7 @@ private theorem card_logDerivCheckFnDefined_complement_le
       simp only [Finset.mem_filter] at hA₁ ⊢
       refine ⟨hA₁.1, ?_⟩
       unfold logDerivCheckFnDefined at hA₁
-      push_neg at hA₁
+      push Not at hA₁
       rw [bivEval_denomScaledPoly_eq E D P₀ k₀ B₀ A₀ A₁ hA₁.2.2, hA₁.2.1, mul_zero]
     have hFilterSplit : E.points.filter (fun A₁ =>
           ¬logDerivCheckFnDefined E D P₀ B₀ A₀ A₁)
@@ -4889,7 +4887,7 @@ private theorem card_logDerivCheckFnDefined_complement_le
       _ ≤ 18 * D.degE + 10 * stmt.k + 112 := by
           have := hBI; omega
   · -- No defined witness: derive contradiction from hLargeQ.
-    push_neg at hWit
+    push Not at hWit
     exfalso
     have hAllZeroBiv : ∀ A₁ ∈ E.points, A₀.1 ≠ A₁.1 →
         bivEval (denomScaledPoly (E := E) D P₀ k₀ B₀ A₀) A₁ = 0 := by
@@ -4897,7 +4895,7 @@ private theorem card_logDerivCheckFnDefined_complement_le
       rw [bivEval_denomScaledPoly_eq E D P₀ k₀ B₀ A₀ A₁ hNV]
       have hND := hWit A₁ hA₁mem hNV
       unfold logDerivCheckFnDefined at hND
-      push_neg at hND
+      push Not at hND
       rw [hND]; ring
     have hNZ : denomScaledPoly (E := E) D P₀ k₀ B₀ A₀ %ₘ curveEqPoly E ≠ 0 := by
       intro hZero
@@ -4995,7 +4993,7 @@ private theorem sigma_data_of_gd_support_rational
   -- (3) follows from hLargeQ.
   have hBetaNz : ∀ k : Fin (zerosCard E msg.toD),
       ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q) ≠ 0 := by
-    haveI : NeZero E.q := ⟨E.hq_prime.ne_zero⟩
+    have : NeZero E.q := ⟨E.hq_prime.ne_zero⟩
     intro k
     rw [Ne, ZMod.natCast_eq_zero_iff]
     intro hDvd
@@ -5442,7 +5440,7 @@ private theorem sigma_data_of_gd_support_rational
               (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm)
           · exact h_spec A₀ hA₀ (Or.inr (Or.inr hA₀nbad)) A₁ hA₁
           · exact h_nonspec A₀ hA₀ hA₀nz hA₀nr hA₀nbad A₁ hA₁
-        · push_neg at hA₀nr
+        · push Not at hA₀nr
           exact h_spec A₀ hA₀ (Or.inr (Or.inl hA₀nr)) A₁ hA₁
     -- Step D: extend to all E × E via polyGFull_vanishes_on_ExE_of_polyG_zero.
     exact polyGFull_vanishes_on_ExE_of_polyG_zero E _ _ _ _

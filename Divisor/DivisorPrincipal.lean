@@ -370,7 +370,7 @@ theorem sum_multAt_eq_sum_βfun
   apply Finset.sum_subset (Finset.filter_subset _ _)
   intro P hPin hPnotZ
   simp only [Finset.mem_filter] at hPnotZ
-  push_neg at hPnotZ
+  push Not at hPnotZ
   have hEvalNZ : D.eval P.1 P.2 ≠ 0 := hPnotZ hPin
   by_contra hβnz
   exact hEvalNZ (hβsup P hβnz).2

@@ -312,7 +312,7 @@ theorem natDegree_normPoly_chordCoordRingElt_nonvertical (lam mu : ZMod E.q) :
     simp at this
   apply le_antisymm hSubLE
   by_contra hLt
-  push_neg at hLt
+  push Not at hLt
   have : ((C lam * X + C mu) ^ 2 - curveX E : (ZMod E.q)[X]).coeff 3 = 0 := by
     apply coeff_eq_zero_of_natDegree_lt
     omega
@@ -1399,7 +1399,7 @@ private theorem ordAt_aux_fuel_irrelevant
         by_cases h2 : D.eval P.1 (-P.2) ≠ 0
         · rw [if_pos h2, if_pos h2]
         · rw [if_neg h2, if_neg h2]
-          push_neg at h1 h2
+          push Not at h1 h2
           obtain ⟨hax, hbx⟩ : D.a.eval P.1 = 0 ∧ D.b.eval P.1 = 0 :=
             Da_Db_eval_zero_of_both_sheets_zero E D hY h1 h2
           have hMeas' :=
@@ -1426,7 +1426,7 @@ private theorem ordAt_aux_fuel_irrelevant
         by_cases h2 : D.eval P.1 (-P.2) ≠ 0
         · rw [if_pos h2, if_pos h2]
         · rw [if_neg h2, if_neg h2]
-          push_neg at h1 h2
+          push Not at h1 h2
           obtain ⟨hax, hbx⟩ : D.a.eval P.1 = 0 ∧ D.b.eval P.1 = 0 :=
             Da_Db_eval_zero_of_both_sheets_zero E D hY h1 h2
           have hMeas' :=
@@ -4156,7 +4156,7 @@ theorem ordAt_mul_add_at_nonTwoTorsion_when_normPoly_D2_le_one (s : ℕ) :
           rw [← hc, hcz]; simp
         exact h₁ ⟨ha_zero, hb_zero⟩
       · -- D₁ lone at P. Dispatch on D₂.
-        push_neg at hD₁negP
+        push Not at hD₁negP
         -- D₂ branches via rootMult ≤ 1 hypothesis.
         by_cases hD₂P : D₂.eval P.1 P.2 = 0
         · -- D₂ vanishes at P.
@@ -4166,11 +4166,11 @@ theorem ordAt_mul_add_at_nonTwoTorsion_when_normPoly_D2_le_one (s : ℕ) :
             have := rootMult_normPoly_ge_two_when_twin E D₂ h₂ hP hY hD₂P hD₂negP
             omega
           · -- D₂ lone at P (D₂(P) = 0, D₂(-P) ≠ 0). Both lone at P.
-            push_neg at hD₂negP
+            push Not at hD₂negP
             exact ordAt_mul_add_at_both_lone_same_sheet E h₁ h₂ hP hY
               hD₁P hD₁negP hD₂P hD₂negP
         · -- D₂(P) ≠ 0.
-          push_neg at hD₂P
+          push Not at hD₂P
           by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
           · -- D₂ lone at -P. Cross case (D₁ lone at P, D₂ lone at -P).
             -- m_2 = 1 from rootMult ≤ 1 + lone (m_2 ≥ 1).
@@ -4186,10 +4186,10 @@ theorem ordAt_mul_add_at_nonTwoTorsion_when_normPoly_D2_le_one (s : ℕ) :
             exact ordAt_mul_add_in_cross_when_min_eq_one E h₁ h₂ hP hY
               hD₁P hD₁negP hD₂P hD₂negP hMin
           · -- D₂ unit on fiber.
-            push_neg at hD₂negP
+            push Not at hD₂negP
             exact ordAt_mul_add_at_lone_sheet E h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
     · -- D₁(P) ≠ 0. Apply nonvan or lone_sheet_swap.
-      push_neg at hD₁P
+      push Not at hD₁P
       by_cases hD₂P : D₂.eval P.1 P.2 = 0
       · -- D₂ vanishes at P, D₁ doesn't.
         by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
@@ -4198,7 +4198,7 @@ theorem ordAt_mul_add_at_nonTwoTorsion_when_normPoly_D2_le_one (s : ℕ) :
           have := rootMult_normPoly_ge_two_when_twin E D₂ h₂ hP hY hD₂P hD₂negP
           omega
         · -- D₂ lone at P. Apply ordAt_mul_add_at_lone_sheet_swap (D_1 nonvan).
-          push_neg at hD₂negP
+          push Not at hD₂negP
           -- Need D₁ nonvan on fiber. Check D₁(-P).
           by_cases hD₁negP : D₁.eval P.1 (-P.2) = 0
           · -- D₁ lone at -P (D₁(P) ≠ 0, D₁(-P) = 0). D₂ lone at P. Cross at -P.
@@ -4222,11 +4222,11 @@ theorem ordAt_mul_add_at_nonTwoTorsion_when_normPoly_D2_le_one (s : ℕ) :
             exact ordAt_mul_add_in_cross_when_min_eq_one E h₂ h₁ hP hY
               hD₂P hD₂negP hD₁P hD₁negP hMin'
           · -- D₁ nonvan on fiber.
-            push_neg at hD₁negP
+            push Not at hD₁negP
             exact ordAt_mul_add_at_lone_sheet_swap E h₁ h₂ hP hY hD₁P hD₁negP
               hD₂P hD₂negP
       · -- D₁(P) ≠ 0 AND D₂(P) ≠ 0.
-        push_neg at hD₂P
+        push Not at hD₂P
         exact ordAt_mul_add_at_nonvanish E h₁ h₂ hP hD₁P hD₂P
   | succ s' IH =>
     intro D₁ D₂ h₁ h₂ hMeas P hP hY hRoot
@@ -4290,16 +4290,16 @@ theorem ordAt_mul_add_at_nonTwoTorsion_when_normPoly_D2_le_one (s : ℕ) :
         rw [if_neg hY] at *
         omega
       · -- D₁ lone at P. Same dispatch as base case.
-        push_neg at hD₁negP
+        push Not at hD₁negP
         by_cases hD₂P : D₂.eval P.1 P.2 = 0
         · by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
           · exfalso
             have := rootMult_normPoly_ge_two_when_twin E D₂ h₂ hP hY hD₂P hD₂negP
             omega
-          · push_neg at hD₂negP
+          · push Not at hD₂negP
             exact ordAt_mul_add_at_both_lone_same_sheet E h₁ h₂ hP hY
               hD₁P hD₁negP hD₂P hD₂negP
-        · push_neg at hD₂P
+        · push Not at hD₂P
           by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
           · have hm₂_eq_one : Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 1 := by
               have hm₂_pos : 0 < Polynomial.rootMultiplicity P.1 (normPoly E D₂) :=
@@ -4312,16 +4312,16 @@ theorem ordAt_mul_add_at_nonTwoTorsion_when_normPoly_D2_le_one (s : ℕ) :
               rw [hm₂_eq_one]; exact Nat.min_eq_right hm₁_pos
             exact ordAt_mul_add_in_cross_when_min_eq_one E h₁ h₂ hP hY
               hD₁P hD₁negP hD₂P hD₂negP hMin
-          · push_neg at hD₂negP
+          · push Not at hD₂negP
             exact ordAt_mul_add_at_lone_sheet E h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
-    · push_neg at hD₁P
+    · push Not at hD₁P
       -- D₁(P) ≠ 0. Same dispatch as base case.
       by_cases hD₂P : D₂.eval P.1 P.2 = 0
       · by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
         · exfalso
           have := rootMult_normPoly_ge_two_when_twin E D₂ h₂ hP hY hD₂P hD₂negP
           omega
-        · push_neg at hD₂negP
+        · push Not at hD₂negP
           by_cases hD₁negP : D₁.eval P.1 (-P.2) = 0
           · have hm₂_eq_one : Polynomial.rootMultiplicity P.1 (normPoly E D₂) = 1 := by
               have hm₂_pos : 0 < Polynomial.rootMultiplicity P.1 (normPoly E D₂) :=
@@ -4337,10 +4337,10 @@ theorem ordAt_mul_add_at_nonTwoTorsion_when_normPoly_D2_le_one (s : ℕ) :
             rw [mulCoordRingElt_comm E D₁ D₂, add_comm]
             exact ordAt_mul_add_in_cross_when_min_eq_one E h₂ h₁ hP hY
               hD₂P hD₂negP hD₁P hD₁negP hMin'
-          · push_neg at hD₁negP
+          · push Not at hD₁negP
             exact ordAt_mul_add_at_lone_sheet_swap E h₁ h₂ hP hY hD₁P hD₁negP
               hD₂P hD₂negP
-      · push_neg at hD₂P
+      · push Not at hD₂P
         exact ordAt_mul_add_at_nonvanish E h₁ h₂ hP hD₁P hD₂P
 
 /-- Wrapper at fixed natDeg-sum measure. -/
@@ -4764,7 +4764,7 @@ theorem ord_const_one_at_nonTwoTorsion
     simp
   apply Nat.eq_zero_of_le_zero
   by_contra h
-  push_neg at h
+  push Not at h
   apply h1_eval
   exact (ordAt_pos_iff_zero E _ h1NZ P hP).mp h
 
@@ -5205,7 +5205,7 @@ theorem divisorOfD_vertical_at_off_x₀_affine (x₀ : ZMod E.q)
                        : CoordRingElt E.q) P = 0 := by
     apply Nat.eq_zero_of_le_zero
     by_contra h
-    push_neg at h
+    push Not at h
     apply h_eval
     exact (ordAt_pos_iff_zero E _ hLv_NZ P hP).mp h
   -- divisorOfD at affine = ord cast.
@@ -6677,10 +6677,10 @@ theorem ordAt_sum_eagenBuild_length4_eq_four
   obtain ⟨h01, h02, h03, h12, h13, h23⟩ := h_inputs_distinct
   have h_P_0_notin_123 : P₀ ∉ ({P₁, P₂, P₃} : Finset (ZMod E.q × ZMod E.q)) := by
     simp only [Finset.mem_insert, Finset.mem_singleton]
-    push_neg; exact ⟨h01, h02, h03⟩
+    push Not; exact ⟨h01, h02, h03⟩
   have h_P_1_notin_23 : P₁ ∉ ({P₂, P₃} : Finset (ZMod E.q × ZMod E.q)) := by
     simp only [Finset.mem_insert, Finset.mem_singleton]
-    push_neg; exact ⟨h12, h13⟩
+    push Not; exact ⟨h12, h13⟩
   have h_P_2_notin_3 : P₂ ∉ ({P₃} : Finset (ZMod E.q × ZMod E.q)) := by
     simp only [Finset.mem_singleton]; exact h23
   rw [show ({P₀, P₁, P₂, P₃} : Finset (ZMod E.q × ZMod E.q))
@@ -6861,7 +6861,7 @@ theorem splitsOnE_eagenBuild_length4
       -- The total fiber sum is 4 and total rootMult sum is 4 with pointwise ≤,
       -- so equality must hold pointwise.
       by_contra hLE
-      push_neg at hLE
+      push Not at hLE
       have hLT : (∑ P ∈ E.points.filter (fun P => P.1 = α), ordAt E D P)
           < rootMultiplicity α (normPoly E D) := by
         have h0 : (∑ P ∈ E.points.filter (fun P => P.1 = α), ordAt E D P) = 0 := by omega

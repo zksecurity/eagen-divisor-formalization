@@ -38,7 +38,7 @@ lemma simple_pole_fraction_zero {K : Type*} [Field K] {ι : Type*} [DecidableEq 
   -- Evaluate the identity at α k.
   have hE : (∑ i ∈ s, C (c i) * ∏ j ∈ s.erase i, (X - C (α j))).eval (α k) = 0 := by
     rw [h]; simp
-  rw [Polynomial.eval_finset_sum] at hE
+  rw [Polynomial.eval_finsetSum] at hE
   -- For i ∈ s with i ≠ k, the product in the i-th summand contains the factor
   -- (X - C (α k)), which evaluates to zero at α k. Hence that summand is zero.
   have hOther : ∀ i ∈ s, i ≠ k →

@@ -266,7 +266,7 @@ theorem normZ_isRoot_iff
     -- (anything)^0 = 1 ≠ 0).
     have hBetaPos : 0 < β_fun Q := by
       by_contra hNeg
-      push_neg at hNeg
+      push Not at hNeg
       interval_cases (β_fun Q)
       simp at hQeq
     refine ⟨Q, hQ, ?_, hBetaPos⟩

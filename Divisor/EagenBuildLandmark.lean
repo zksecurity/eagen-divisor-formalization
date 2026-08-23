@@ -3289,30 +3289,30 @@ theorem ordAt_mul_add_when_normPoly_D2_le_two_of_iterDivLin
             E D₂ D₁ P hP hY h₂ h₁ hD₁P hD₁negP hRoot₁
         rw [mulCoordRingElt_comm E D₁ D₂, Nat.add_comm]
         exact hSwap
-      · push_neg at hD₁negP
+      · push Not at hD₁negP
         by_cases hD₂P : D₂.eval P.1 P.2 = 0
         · by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
           · exact ordAt_mul_add_when_right_twin_rootMult_le_two
               E D₁ D₂ P hP hY h₁ h₂ hD₂P hD₂negP hRoot
-          · push_neg at hD₂negP
+          · push Not at hD₂negP
             exact Divisor.ordAt_mul_add_at_both_lone_same_sheet
               (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
-        · push_neg at hD₂P
+        · push Not at hD₂P
           by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
           · exact ordAt_mul_add_in_cross_when_rootMult_le_two_of_iterDivLin
               (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
               hRoot₁ hRoot
               (fun hm₁ hm₂ =>
                 hCross₁₂ hY hD₁P hD₁negP hD₂P hD₂negP hm₁ hm₂)
-          · push_neg at hD₂negP
+          · push Not at hD₂negP
             exact Divisor.ordAt_mul_add_at_lone_sheet
               (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
-    · push_neg at hD₁P
+    · push Not at hD₁P
       by_cases hD₂P : D₂.eval P.1 P.2 = 0
       · by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
         · exact ordAt_mul_add_when_right_twin_rootMult_le_two
             E D₁ D₂ P hP hY h₁ h₂ hD₂P hD₂negP hRoot
-        · push_neg at hD₂negP
+        · push Not at hD₂negP
           by_cases hD₁negP : D₁.eval P.1 (-P.2) = 0
           · have hSwap :=
               ordAt_mul_add_in_cross_when_rootMult_le_two_of_iterDivLin
@@ -3322,10 +3322,10 @@ theorem ordAt_mul_add_when_normPoly_D2_le_two_of_iterDivLin
                   hCross₂₁ hY hD₂P hD₂negP hD₁P hD₁negP hm₂ hm₁)
             rw [mulCoordRingElt_comm E D₁ D₂, Nat.add_comm]
             exact hSwap
-          · push_neg at hD₁negP
+          · push Not at hD₁negP
             exact Divisor.ordAt_mul_add_at_lone_sheet_swap
               (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
-      · push_neg at hD₂P
+      · push Not at hD₂P
         exact Divisor.ordAt_mul_add_at_nonvanish
           (E := E) h₁ h₂ hP hD₁P hD₂P
 
@@ -3348,28 +3348,28 @@ theorem ordAt_mul_add_when_normPoly_D2_le_three_of_iterDivLin
             E D₂ D₁ P hP hY h₂ h₁ hD₁P hD₁negP hRoot₁
         rw [mulCoordRingElt_comm E D₁ D₂, Nat.add_comm]
         exact hSwap
-      · push_neg at hD₁negP
+      · push Not at hD₁negP
         by_cases hD₂P : D₂.eval P.1 P.2 = 0
         · by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
           · exact ordAt_mul_add_when_right_twin_rootMult_le_three
               E D₁ D₂ P hP hY h₁ h₂ hD₂P hD₂negP hRoot
-          · push_neg at hD₂negP
+          · push Not at hD₂negP
             exact Divisor.ordAt_mul_add_at_both_lone_same_sheet
               (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
-        · push_neg at hD₂P
+        · push Not at hD₂P
           by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
           · exact ordAt_mul_add_in_cross_when_rootMult_le_three_of_iterDivLin
               (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
               hRoot₁ hRoot
-          · push_neg at hD₂negP
+          · push Not at hD₂negP
             exact Divisor.ordAt_mul_add_at_lone_sheet
               (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
-    · push_neg at hD₁P
+    · push Not at hD₁P
       by_cases hD₂P : D₂.eval P.1 P.2 = 0
       · by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
         · exact ordAt_mul_add_when_right_twin_rootMult_le_three
             E D₁ D₂ P hP hY h₁ h₂ hD₂P hD₂negP hRoot
-        · push_neg at hD₂negP
+        · push Not at hD₂negP
           by_cases hD₁negP : D₁.eval P.1 (-P.2) = 0
           · have hSwap :=
               ordAt_mul_add_in_cross_when_rootMult_le_three_of_iterDivLin
@@ -3377,10 +3377,10 @@ theorem ordAt_mul_add_when_normPoly_D2_le_three_of_iterDivLin
                 hRoot hRoot₁
             rw [mulCoordRingElt_comm E D₁ D₂, Nat.add_comm]
             exact hSwap
-          · push_neg at hD₁negP
+          · push Not at hD₁negP
             exact Divisor.ordAt_mul_add_at_lone_sheet_swap
               (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
-      · push_neg at hD₂P
+      · push Not at hD₂P
         exact Divisor.ordAt_mul_add_at_nonvanish
           (E := E) h₁ h₂ hP hD₁P hD₂P
 
@@ -7874,7 +7874,7 @@ theorem rootMultiplicity_normPoly_eq_fiber_target_sum
       intro Q _hQ
       exact localMult_eq_ordAt E D Q
     rw [← hsum, hlocal_ord]
-  · push_neg at hD
+  · push Not at hD
     have hnorm_zero : normPoly E D = 0 := by
       rw [normPoly_eq, hD.1, hD.2]
       ring
@@ -7908,7 +7908,7 @@ theorem rootMultiplicity_normPoly_le_two_of_fiber_localMult_le_two
       _ = ∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1), localMult E D Q :=
             hlocal_ord.symm
       _ ≤ 2 := h_fiber_localMult_le_two P hPon
-  · push_neg at hD
+  · push Not at hD
     have hnorm_zero : normPoly E D = 0 := by
       rw [normPoly_eq, hD.1, hD.2]
       ring

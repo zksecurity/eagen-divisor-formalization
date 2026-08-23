@@ -415,7 +415,7 @@ theorem rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le
     intro z hz
     refine le_antisymm ?_ (hLower z hz)
     by_contra hLt
-    push_neg at hLt
+    push Not at hLt
     have hStrictAtZ :
         ∑ i ∈ s.filter (fun i => φ i = z), m i < p.rootMultiplicity z :=
       hLt

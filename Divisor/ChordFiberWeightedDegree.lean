@@ -268,7 +268,7 @@ private lemma DLineBiv_coeff_natDegree_le_zero_of_b_coeff_zero
     rw [zero_sub, neg_eq_zero]
     -- Need: ((D.b.map C * Q).coeff k).coeff 1 = D.b.coeff k.
     rw [Polynomial.coeff_mul]
-    rw [Polynomial.finset_sum_coeff]
+    rw [Polynomial.finsetSum_coeff]
     -- Sum over (i, j) ∈ antidiagonal k of (D.b.map C).coeff i .coeff (1 - 0) ·
     --   Q.coeff j .coeff 0 + similar
     -- The only nonzero contribution is (i, j) = (k, 0): (D.b.map C).coeff k = C(D.b.coeff k),
@@ -365,7 +365,7 @@ private lemma normPoly_natDegree_ge_b_curveX
     rw [hDa_zero, zero_sub, neg_ne_zero]
     exact hprod_lead
   · -- 2·D.a.natDegree ≥ 2·D.b.natDegree + 3. Then D.a ≠ 0 (from hb-related parity).
-    push_neg at hdeg
+    push Not at hdeg
     -- We must have D.a ≠ 0, since otherwise 2·D.a.natDegree = 0 and target ≥ 3.
     have ha : D.a ≠ 0 := by
       intro ha0
@@ -444,7 +444,7 @@ private lemma normPoly_natDegree_ge_a_sq
       rw [hprod_zero, sub_zero]
       exact hDa_sq_lead_ne
     · -- D.b² · curveX dominates: 2·D.b.natDegree + 3 ≥ 2·D.a.natDegree, by parity ≥ +1.
-      push_neg at hdeg
+      push Not at hdeg
       -- (D.b² · curveX).natDegree ≥ 2·D.a.natDegree.
       have hprod_lead :
           (D.b ^ 2 * curveX E).coeff (2 * D.b.natDegree + 3) ≠ 0 := by
@@ -735,7 +735,7 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
     rw [hprodzero, Polynomial.natDegree_zero]
     exact Nat.zero_le _
   · -- Case 2: all entries nonzero. Apply weighted-Sylvester sum-bound.
-    push_neg at hzero
+    push Not at hzero
     -- Step 1: support — each (σ j).val is in the row range.
     have hsupp : ∀ j : Fin ((chordCubicBiv E lam).natDegree
                               + (DLineBiv E lam D).natDegree),
@@ -765,7 +765,7 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
         unfold Polynomial.sylvester at hne
         rw [Matrix.of_apply, Fin.addCases_left] at hne
         by_contra hlt
-        push_neg at hlt
+        push Not at hlt
         have hnotin :
             ¬ (σ (Fin.castAdd _ j₁)).val ∈
               Set.Icc j₁.val (j₁.val + (DLineBiv E lam D).natDegree) := by
@@ -779,7 +779,7 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
         unfold Polynomial.sylvester at hne
         rw [Matrix.of_apply, Fin.addCases_right] at hne
         by_contra hlt
-        push_neg at hlt
+        push Not at hlt
         have hnotin :
             ¬ (σ (Fin.natAdd _ j₁)).val ∈
               Set.Icc j₁.val (j₁.val + (chordCubicBiv E lam).natDegree) := by
@@ -831,7 +831,7 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
         -- Extract: (σ ...).val ≤ j₁.val + DLineBiv.natDegree (else entry would be 0).
         have hupper : (σ (Fin.castAdd _ j₁)).val ≤ j₁.val + (DLineBiv E lam D).natDegree := by
           by_contra hgt
-          push_neg at hgt
+          push Not at hgt
           have hnotin :
               ¬ (σ (Fin.castAdd _ j₁)).val ∈
                 Set.Icc j₁.val (j₁.val + (DLineBiv E lam D).natDegree) := by
@@ -865,7 +865,7 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
         rw [Matrix.of_apply, Fin.addCases_right] at hne_j
         have hupper : (σ (Fin.natAdd _ j₁)).val ≤ j₁.val + (chordCubicBiv E lam).natDegree := by
           by_contra hgt
-          push_neg at hgt
+          push Not at hgt
           have hnotin :
               ¬ (σ (Fin.natAdd _ j₁)).val ∈
                 Set.Icc j₁.val (j₁.val + (chordCubicBiv E lam).natDegree) := by

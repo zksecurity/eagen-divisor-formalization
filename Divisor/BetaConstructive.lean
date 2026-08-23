@@ -199,7 +199,7 @@ theorem betaConstructive_twin
   classical
   unfold betaConstructive
   have hNot : ¬ (P.2 = 0 ∨ D.eval P.1 (-P.2) ≠ 0) := by
-    push_neg
+    push Not
     exact ⟨hY, hZneg⟩
   simp [hP, hZ, hNot]
 
@@ -227,7 +227,7 @@ theorem betaConstructive_covers
   by_cases hLone : P.2 = 0 ∨ D.eval P.1 (-P.2) ≠ 0
   · rw [betaConstructive_lone E D hP hZ hLone]
     exact Nat.pos_iff_ne_zero.mp (rootMultiplicity_normPoly_pos E D hP hZ hD)
-  · push_neg at hLone
+  · push Not at hLone
     obtain ⟨hY, hZneg⟩ := hLone
     rw [betaConstructive_twin E D hP hZ hY hZneg]
     have hGe2 : 2 ≤ rootMultiplicity P.1 (normPoly E D) :=

@@ -1884,7 +1884,7 @@ theorem sigma_zero_preimage_exists
       σ k₀ = (⟨0, by omega⟩ : Fin (1 + baseImageCount E stmt msg hkm)) := by
   classical
   by_contra hne
-  push_neg at hne
+  push Not at hne
   have h0notRange :
       (⟨0, by omega⟩ : Fin (1 + baseImageCount E stmt msg hkm))
         ∉ Set.range σ := by
@@ -2057,7 +2057,7 @@ theorem extractorCoeffFromSigma_satisfies_D3
     · rw [extractorCoeffFromSigma_canonical_nohit
             E stmt msg hkm β_fun σ i hC hHit]
       -- pos_i ∉ range σ ⇒ distinctM' pos_i = 0 ⇒ extractorGroupSum i = 0.
-      push_neg at hHit
+      push Not at hHit
       have hPosNotRange :
           baseImagePos E stmt msg hkm (baseIndexOf E stmt msg hkm i)
             ∉ Set.range σ := by
@@ -2720,7 +2720,7 @@ theorem polyG_zero_trace_formula
         (∏ j' ∈ Finset.univ.erase j, ellP E (R_fn j') A₀ A₁) = 0 := by
       apply Finset.sum_eq_zero; intro j _; rw [hProdQ]; ring
     rw [hS1, hS2, add_zero]
-  push_neg at hDnz
+  push Not at hDnz
   -- From here, D is nonzero.
   -- polyG = 0 at fully defined pairs
   have hPhaseA : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
@@ -2818,7 +2818,7 @@ theorem polyG_zero_trace_formula
         -- zerosCard + (1 + baseImageCount) ≤ D.degE + stmt.k + 2
         have hZC : zerosCard E D ≤ D.degE := by
           have hβcov := betaCanonical_covers E D
-            (by push_neg; intro ha; exact hDnz ha)
+            (by push Not; intro ha; exact hDnz ha)
           have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaCanonical E D) D k :=
             fun k => multAt_pos E (betaCanonical E D) D hβcov k
           have hβsum := betaCanonical_sum_le_degE E D
@@ -2887,7 +2887,7 @@ theorem polyG_zero_trace_formula
             · left; exact ⟨hMem, (not_not.mp h1).symm⟩
             · right; left; exact ⟨hMem, h2⟩
             · right; right; refine ⟨hMem, ?_⟩
-              push_neg at h3; obtain ⟨Q, hQmem, hQeval⟩ := h3
+              push Not at h3; obtain ⟨Q, hQmem, hQeval⟩ := h3
               exact ⟨Q, hQmem, hQeval⟩
           -- Bound card(badFilter)
           have hVert : (E.points.filter (fun A₁ => A₁.1 = A₀.1)).card ≤ 2 :=
@@ -2924,7 +2924,7 @@ theorem polyG_zero_trace_formula
                 simp only [Finset.mem_filter] at hA₁ ⊢
                 refine ⟨hA₁.1, ?_⟩
                 unfold logDerivCheckFnDefined at hA₁
-                push_neg at hA₁
+                push Not at hA₁
                 rw [bivEval_denomScaledPoly_eq E D P₀ k₀ B₀ A₀ A₁ hA₁.2.2, hA₁.2.1,
                     mul_zero]
               -- Split filter into vertical + non-vertical
@@ -2960,7 +2960,7 @@ theorem polyG_zero_trace_formula
               -- Every non-vertical A₁ has logDerivCheckFnDenom = 0.
               -- But denomScaledPoly is nonzero as a polynomial (for large E),
               -- so this contradicts large E.points.card from hLargeQ.
-              push_neg at hWit
+              push Not at hWit
               exfalso
               -- Every non-vertical A₁ has bivEval denomScaledPoly = 0.
               have hAllZeroBiv : ∀ A₁ ∈ E.points, A₀.1 ≠ A₁.1 →
@@ -2969,7 +2969,7 @@ theorem polyG_zero_trace_formula
                 rw [bivEval_denomScaledPoly_eq E D P₀ k₀ B₀ A₀ A₁ hNV]
                 have hND := hWit A₁ hA₁mem hNV
                 unfold logDerivCheckFnDefined at hND
-                push_neg at hND
+                push Not at hND
                 rw [hND]; ring
               -- denomScaledPoly %ₘ curveEqPoly ≠ 0 (structural argument).
               -- By curveEqPoly_dvd_mul (primality) + degree analysis of
@@ -3123,7 +3123,7 @@ theorem polyG_zero_trace_formula
                       -- Q ≠ A₀ since Q ∈ zerosFinset and A₀ ∉ zerosFinset
                       have hQne : Q ≠ A₀ := fun heq => hA₀nz (heq ▸ hQ)
                       by_contra h
-                      push_neg at h
+                      push Not at h
                       have hx : Q.1 = A₀.1 := by
                         have := h.2; rw [neg_eq_zero] at this; exact eq_of_sub_eq_zero this
                       have hy : Q.2 = A₀.2 := eq_of_sub_eq_zero h.1
@@ -3186,7 +3186,7 @@ theorem polyG_zero_trace_formula
     · -- Non-special: use the lemma directly
       exact hPhase1a A₀ hA₀ hA₀nz hA₀r
     · -- Special A₀: some R_fn j = A₀
-      push_neg at hA₀r
+      push Not at hA₀r
       -- For A₁ not in zerosFinset, not in R-image, different x:
       -- (applied to A₁ as "A₀") gives polyG(A₁, A₀) = 0
       -- Swap gives polyG(A₀, A₁) = 0
@@ -3215,7 +3215,7 @@ theorem polyG_zero_trace_formula
         -- |bad| ≤ |zerosFinset| + |R-image| + 2 ≤ D.degE + (1 + stmt.k) + 2
         have hZC : zerosCard E D ≤ D.degE := by
           have hβcov := betaCanonical_covers E D
-            (by push_neg; intro ha; exact hDnz ha)
+            (by push Not; intro ha; exact hDnz ha)
           have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaCanonical E D) D k :=
             fun k => multAt_pos E (betaCanonical E D) D hβcov k
           have hβsum := betaCanonical_sum_le_degE E D
@@ -3241,7 +3241,7 @@ theorem polyG_zero_trace_formula
             ≤ D.degE + stmt.k + 5 := by
           -- The cardinality of the bad set is at most the sum of the cardinalities of the three sets.
           have h_bad_card : (Finset.filter (fun A₁ => A₁ ∈ zerosFinset E D ∨ ∃ j, R_fn j = A₁ ∨ A₀.1 = A₁.1) E.points).card ≤ D.degE + (1 + stmt.k) + 2 := by
-            refine' le_trans ( Finset.card_le_card _ ) _;
+            refine le_trans ( Finset.card_le_card (t := ?_) ?_ ) ?_;
             any_goals exact Finset.filter ( fun A₁ => A₁ ∈ zerosFinset E D ) E.points ∪ Finset.image R_fn Finset.univ ∪ Finset.filter ( fun A₁ => A₀.1 = A₁.1 ) E.points;
             · intro x hx
               simp only [Finset.mem_filter] at hx
@@ -3253,9 +3253,9 @@ theorem polyG_zero_trace_formula
               · rcases hj with rfl | heq
                 · exact Or.inl (Or.inr ⟨j, rfl⟩)
                 · exact Or.inr ⟨hMem, heq⟩;
-            · refine' le_trans ( Finset.card_union_le _ _ ) ( add_le_add ( le_trans ( Finset.card_union_le _ _ ) _ ) _ );
-              · refine' add_le_add _ _;
-                · refine' le_trans _ hZC;
+            · refine le_trans ( Finset.card_union_le _ _ ) ( add_le_add ( le_trans ( Finset.card_union_le _ _ ) ?_ ) ?_ );
+              · refine add_le_add ?_ ?_;
+                · refine le_trans ?_ hZC;
                   rw [ ← Finset.card_image_of_injective _ ( show Function.Injective ( fun x : ZMod E.q × ZMod E.q => x ) from fun x y hxy => by simpa using hxy ) ] ; exact Finset.card_le_card fun x hx => by aesop;
                 · exact le_trans ( Finset.card_image_le ) ( by simpa using by linarith );
               · refine le_trans (le_of_eq ?_) (card_points_with_fst_eq_le E A₀.1)
@@ -3275,7 +3275,7 @@ theorem polyG_zero_trace_formula
               · exact Or.inl hZ
               · by_cases hR : ∃ j, R_fn j = A₁
                 · obtain ⟨j, rfl⟩ := hR; exact Or.inr ⟨j, Or.inl rfl⟩
-                · push_neg at hR
+                · push Not at hR
                   exact Or.inr ⟨⟨0, by omega⟩, Or.inr (hp hZ hR)⟩
             · intro hp hnz hR
               rcases hp with h1 | ⟨j, hj⟩
@@ -3330,7 +3330,7 @@ theorem polyG_zero_trace_formula
       have hZCle : (zerosFinset E D).card ≤ D.degE + stmt.k + 2 := by
         have hZCle' : zerosCard E D ≤ D.degE := by
           have hβcov := betaCanonical_covers E D (by
-            push_neg; intro ha; exact hDnz ha)
+            push Not; intro ha; exact hDnz ha)
           have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaCanonical E D) D k :=
             fun k => multAt_pos E (betaCanonical E D) D hβcov k
           have hβsum := betaCanonical_sum_le_degE E D
@@ -3385,7 +3385,7 @@ theorem polyG_zero_trace_formula
       have : zerosCard E D + (1 + baseImageCount E stmt msg hkm) ≤ D.degE + stmt.k + 2 := by
         have hZC : zerosCard E D ≤ D.degE := by
           have hβcov := betaCanonical_covers E D (by
-            push_neg; intro ha; exact hDnz ha)
+            push Not; intro ha; exact hDnz ha)
           have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaCanonical E D) D k :=
             fun k => multAt_pos E (betaCanonical E D) D hβcov k
           have hβsum := betaCanonical_sum_le_degE E D

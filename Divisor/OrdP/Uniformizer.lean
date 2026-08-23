@@ -319,7 +319,7 @@ theorem ordAt_nonTwoTorsion_aux_symm_b_zero
         have hIH := IH (D := D.divLin P.1) hb'
         omega
       · -- Both sheets non-vanishing for D.b = 0.
-        push_neg at hVan
+        push Not at hVan
         have hVan' : D.eval P.1 (-P.2) ≠ 0 := by rw [← hEvalEq]; exact hVan
         rw [if_pos hVan, if_pos hVan']
 
