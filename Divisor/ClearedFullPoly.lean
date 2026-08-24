@@ -1400,10 +1400,9 @@ theorem bivEval₂_clearedFullPoly_eq_zero_of_bad
     factor vanishes. These pairs lie outside the identity's scope but
     are bounded by existing F1-F6 bounds in `ClearedPolyForm.lean`.
 
-    For this session we deliver the **core inclusion bound**, which is
-    the nondegenerate part of the argument. The boundary correction
-    term is delegated to a follow-up alongside the `18·(d+k)` tightening
-    mentioned in the plan's "Open question".  -/
+    This theorem is the **core inclusion bound** — the nondegenerate
+    part of the argument; the boundary pairs are handled by those
+    separate bounds rather than here.  -/
 
 
 /-! ### Total-degree bound on `liftPoly`. -/

@@ -11,7 +11,7 @@
   hypothesis. This is the gcd-1 base case (and more) of stub 2a in
   `Divisor/Sketch/ChordFiberProductConcrete.lean`.
 
-  Strategy (codex-suggested, weight-based Sylvester):
+  Strategy (weight-based Sylvester):
 
   Assign weights `wt(x) = 2`, `wt(Z) = 3` to the bivariate ring
   `(ZMod E.q)[Z][x]`. Define the per-coefficient weight bounds:

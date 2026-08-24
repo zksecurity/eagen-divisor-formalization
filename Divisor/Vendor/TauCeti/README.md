@@ -19,8 +19,8 @@ Seven files vendored from the Tau Ceti library:
 Why vendored rather than a lake dependency: upstream has no release
 tags, tracks Lean `v4.34.0-rc1` with a mathlib *master* pin, and uses
 the `module` / `public import` system throughout; this repository is on
-stable Lean/mathlib v4.33.1. See `plan.md` (repo root) for the plan
-these files serve.
+stable Lean/mathlib v4.33.1. These files supply the Dedekind-domain
+and valuation infrastructure behind `Divisor/OrdP/`.
 
 Local adaptations, uniformly applied and marked `-- [vendor]` where
 nontrivial:

@@ -1,7 +1,7 @@
 /-
   Tests/AnyLengthCompletenessSmoke.lean
 
-  Smoke test for the Plan 3 any-length completeness chain
+  Smoke test for the any-length completeness chain
   (`Divisor/SafeSupport.lean`): on the F₄₃ curve `y² = x³ + 1`, the
   computable general-position certificate `SafePairsCert` holds for a
   concrete LENGTH-5 support — an odd length covered by none of the
