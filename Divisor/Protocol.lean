@@ -175,9 +175,7 @@ fiber), and (iii) the divisor of `msg.toD` extensionally matches
 `honestDivisorCoeffs`. The polynomial `msg.toD` is itself the
 rational-function witness; combined with `splitsOnE`, the consumer
 recovers the degree-zero accounting via
-`sum_ordAt_eq_natDegree_under_split`. The `splitsOnE` contract
-replaces the older `IsPrincipal` conjunct, which was a structural
-round-trip through `principal_divisor_iff`. -/
+`sum_ordAt_eq_natDegree_under_split`. -/
 
 /-- Target divisor coefficients for the honest prover's `D`:
     `+1` at `-P`, `n_i` at each `B_i` (with duplicates summed), and

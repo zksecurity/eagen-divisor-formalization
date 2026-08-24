@@ -25,17 +25,16 @@
     propext, Classical.choice, Quot.sound,
     Divisor.chord_fiber_product_eq_normZ_under_split
 
-  The generic resultant product bridge is now theorem-backed, and
-  there is no `weil_reciprocity_honest` dependency.
+  The generic resultant product bridge is theorem-backed; there is no
+  `weil_reciprocity_honest` dependency.
 
-  ## Discharged side conditions (May 2026 update)
+  ## Side conditions derived internally
 
-  Both `hQline` and `hDen` are now derived internally from `hGood`:
+  Both `hQline` and `hDen` are derived from `hGood`:
   * `hQline_of_hGood_eagenBuild_length4` — Bezout argument.
   * `hDen_of_hGood` — chord-derivative-denominator factorization
     `3·pt.x² + A − 2λ·pt.y = (pt.x − A_i.x)(pt.x − A_j.x)` for various
-    indices. Combined with strengthened bad set excluding the relevant
-    tangent collisions.
+    indices; the bad set excludes the relevant tangent collisions.
 
   The main theorem `logDerivCheckFn_zero_for_eagenBuild_length4` only
   takes `hResidueMatch` as the user-supplied per-pair hypothesis.

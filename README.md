@@ -240,12 +240,10 @@ via `ma_completeness_q`, still axiom-free).
 `isHonestFor`; the constructive supply (an explicit honest message,
 built by the Eagen chord accumulation `eagenBuild_singletons`) is the
 `ma_completeness_binary*` family. Its chain certificate — every
-chord-combine in the accumulation is non-degenerate — was previously
-discharged once-and-for-all only for structured support shapes
-(lengths 2 and 4, and the chord families at 4/6/8), with a decidable
-per-instance certificate beyond.
-
-`Divisor/SafeSupport.lean` closes the gap at **any support length**:
+chord-combine in the accumulation is non-degenerate — comes two ways:
+once-and-for-all for the structured support shapes (lengths 2 and 4,
+and the chord families at 4/6/8), and at **any support length**
+through `Divisor/SafeSupport.lean`:
 `Divisor.ma_completeness_binary_any_length` derives the full chain
 certificate from a single semantic general-position hypothesis,
 `SafePairs` — for every nonempty split `xs ++ ys` of every sublist of
@@ -327,9 +325,10 @@ in disguise.
 ### Lean Axiom Inventory
 
 The axiom is documented below with its formal Lean statement, an
-enumeration of its hypotheses, and an intuition; the two divisor
-axioms the project previously assumed have been proved and are
-documented under "Discharged former axioms".
+enumeration of its hypotheses, and an intuition; the two
+divisor-theoretic theorems that carry the reduction to the coordinate
+ring's Dedekind-domain structure are documented under "Bridge
+theorems".
 
 #### `Divisor.hasse_weil_textbook`
 
@@ -361,17 +360,16 @@ point-count-dependent bound into a bound purely in `q`.
 
 Lean source: `Divisor/Axioms/AxiomHasseWeil.lean`.
 
-### Discharged former axioms
+### Bridge theorems
 
-Both divisor-theoretic facts the project once assumed are now
-theorems, proved on top of the Dedekind-domain structure of the
-curve's coordinate ring (see "Vendored code" below) and
-machine-checked in the build. They live in the bridge layer
-`Divisor/Bridges/`.
+Two divisor-theoretic theorems carry the reduction from the protocol
+statements to the Dedekind-domain structure of the curve's coordinate
+ring (see "Vendored code" below); both are machine-checked in the
+build, in the bridge layer `Divisor/Bridges/` and `Divisor/OrdP/`.
 
 #### `Divisor.CoordRingElt.divisorClass_eq_zero_of_splitsOnE`
 
-> **Theorem (principal-divisor triviality), formerly an axiom.** Let $`E`$ be an elliptic curve
+> **Theorem (principal-divisor triviality).** Let $`E`$ be an elliptic curve
 > over $`\mathbb{F}_q`$, and let $`D = a(x) - b(x) y`$ be a nonzero
 > coordinate-ring element.
 > Assume `splitsOnE E D`: every zero of $`D`$ is visible over
@@ -425,7 +423,7 @@ Lean source: `Divisor/OrdP/LocalRing.lean`.
 
 #### `Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd`
 
-> **Theorem (divisor-of-norm, lower bound), formerly an axiom.** Let $`E`$ be an elliptic curve
+> **Theorem (divisor-of-norm, lower bound).** Let $`E`$ be an elliptic curve
 > over $`\mathbb{F}_q`$, let $`D`$ be a nonzero coordinate-ring element, and
 > let $`\lambda \in \mathbb{F}_q`$ fix the chord projection
 > $`\pi_\lambda(x, y) = y - \lambda x`$. Let `gd` be the geometric divisor
@@ -512,8 +510,8 @@ from the [Tau Ceti library](https://github.com/TauCetiProject/TauCeti)
 retained). They provide the Dedekind-domain structure of an elliptic
 curve's affine coordinate ring (`isDedekindDomain_coordinateRing`,
 `XYIdeal` maximality and the `XYIdeal_eq_iff` point/ideal dictionary),
-which underpins the proofs of both discharged former axioms above.
-They were vendored rather than taken as a lake dependency because
+which underpins the proofs of both bridge theorems above.
+They are vendored rather than taken as a lake dependency because
 upstream has no release tags and tracks a pre-release toolchain with a
 mathlib master pin. See `Divisor/Vendor/TauCeti/README.md` for
 provenance, the file-by-file inventory, and the (mechanical, marked)

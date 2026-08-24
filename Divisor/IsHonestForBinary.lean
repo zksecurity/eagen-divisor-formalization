@@ -4,7 +4,7 @@
   Bridge from the binary Eagen-singletons construction to the protocol
   honesty predicate.
 -/
-import Divisor.EagenBuildLandmark
+import Divisor.SafeSupportDefs
 import Divisor.CoordRingElt.Smul
 import Divisor.Completeness
 
@@ -2787,21 +2787,10 @@ theorem ma_completeness_binary_M_eq_3_clean
   exact ma_completeness_clean_for_length4Simple E stmt msg h_simple wit hk
     h_scalars h_valid h_deg h_deg_k h_adm
 
-/-! ## Automatic binary support constructors -/
+/-! ## Automatic binary support constructors
 
-/-- The binary support list: `(-target)` followed by every statement base
-    whose transported binary witness scalar is `1`. -/
-def binarySupport
-    {E : ECSetup} (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k)
-    (_h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1) :
-    List (ZMod E.q × ZMod E.q) :=
-  (stmt.target.1, -stmt.target.2) ::
-    (List.finRange wit.k).filterMap (fun i =>
-      if wit.scalars i = 1 then
-        some (stmt.bases (Fin.cast hk.symm i))
-      else
-        none)
+`binarySupport` itself is defined in `Divisor/SafeSupportDefs.lean`;
+this section derives its properties. -/
 
 private theorem sumOnE_filterMap_binary
     {E : ECSetup} {α : Type*} [DecidableEq α]

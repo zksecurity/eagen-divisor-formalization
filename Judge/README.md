@@ -25,7 +25,9 @@ replays the whole solution export through a fresh kernel.
 
 * `headline.json` — the axiom-free headliners (`ma_extractable`,
   `ip_extractable`, `ma_completeness`, `ma_completeness_q`,
-  `ip_completeness`, `ip_completeness_q`), permitted axioms exactly
+  `ip_completeness`, `ip_completeness_q`,
+  `ma_completeness_binary_any_length`,
+  `ma_completeness_binary_any_length_cert`), permitted axioms exactly
   `propext`, `Quot.sound`, `Classical.choice`.
 * `hasse.json` — the Hasse–Weil-priced variants
   (`ma_extractable_hasse`, `ip_extractable_hasse`), additionally
@@ -36,11 +38,13 @@ replays the whole solution export through a fresh kernel.
 ## Trust base
 
 To trust a green judge run you must trust: `Challenge.lean` and its
-transitive imports (`Divisor.Soundness` — the protocol/extractor
-*definitions*; nothing that proves a judged theorem), this project's
-`lakefile.toml`, the Lean kernel, and the sandbox. **Review changes to
-`Challenge.lean` with the same care as an axiom**: it is the statement
-of record. The definitions it imports are part of that statement.
+transitive imports (`Divisor.Soundness` for the protocol/extractor
+definitions and `Divisor.SafeSupportDefs` for the binary-support and
+general-position definitions; nothing that proves a judged theorem),
+this project's `lakefile.toml`, the Lean kernel, and the sandbox.
+**Review changes to `Challenge.lean` with the same care as an
+axiom**: it is the statement of record. The definitions it imports
+are part of that statement.
 
 ## Running locally
 
@@ -75,13 +79,3 @@ lake env /path/to/comparator/.lake/build/bin/comparator Judge/hasse.json
 Success prints `Your solution is okay!`. On a machine where you also
 distrust `landrun` itself, wrap the invocation in `systemd-run` as
 described in comparator's README.
-
-## Not judged (yet)
-
-The binary any-length completeness family
-(`ma_completeness_binary_any_length`, `…_cert` in
-`Divisor/SafeSupport.lean`) is not in a config: its statement needs
-`SafePairs`/`SafePairsCert`/`IsHonestForBinary`, which are defined in
-the same files that prove the theorems, so a challenge cannot import
-the definitions without importing the proofs. Judging it requires
-splitting those definitions into a defs-only module first.

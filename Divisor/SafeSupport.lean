@@ -222,22 +222,6 @@ theorem pointLevelStep_map_sumOnE :
 
 /-! ## The general-position hypothesis -/
 
-/-- **Semantic general-position hypothesis on a support list.** For
-every split `xs ++ ys` of every sublist of `Ps` (both halves
-nonempty), the pair of elliptic-curve sums `(Σ xs, Σ ys)` is
-chord-safe. Every combine at every level of the accumulation tree is
-such a pair, so this hypothesis discharges the whole chain
-certificate (`iteratedPointChordCase_of_safePairs` below).
-
-Degenerate supports violating it exist — a 2-torsion point in the
-support, or block sums related by `B = −2A` — and those genuinely
-break the chord accumulation, so some such hypothesis is necessary
-for an any-length statement. -/
-def SafePairs (Ps : List (ZMod E.q × ZMod E.q)) : Prop :=
-  ∀ xs ys : List (ZMod E.q × ZMod E.q),
-    xs ≠ [] → ys ≠ [] → (xs ++ ys).Sublist Ps →
-    PointChordCase E (sumOnE E xs) (sumOnE E ys)
-
 /-- Per-level certificate from `SafePairs`: the current level's chunks
 flatten to a sublist of `Ps`, and each adjacent chunk pair is a
 nonempty split of a sublist. -/
@@ -318,12 +302,6 @@ theorem iteratedPointChordCase_of_safePairs
 
 /-! ## Computable certificate (for `decide`/`native_decide`) -/
 
-/-- Computable elliptic-curve sum of a support list, via the point
-skeleton (`sumOnE` itself is noncomputable through the group-law
-instance). -/
-def pointSum (Ps : List (ZMod E.q × ZMod E.q)) : ECPoint E :=
-  Ps.foldr (fun P S => pointCombine E (ECPoint.affine E P.1 P.2) S) 0
-
 /-- On on-curve lists, `pointSum` computes `sumOnE`. -/
 theorem pointSum_eq_sumOnE
     (Ps : List (ZMod E.q × ZMod E.q))
@@ -338,18 +316,6 @@ theorem pointSum_eq_sumOnE
       rw [pointCombine_eq_add, sumOnE_cons E hP,
         ih (fun Q hQ => hPs_on Q (by simp [hQ])),
         ECPoint.affine_eq_affineOfMem E hP]
-
-/-- Computable form of `SafePairs`: quantify over sublists and split
-positions. `Decidable`, hence dischargeable by `decide` /
-`native_decide` on concrete supports. -/
-def SafePairsCert (Ps : List (ZMod E.q × ZMod E.q)) : Prop :=
-  ∀ zs ∈ Ps.sublists, ∀ k ∈ List.range zs.length,
-    k = 0 ∨ PointChordCase E (pointSum E (zs.take k)) (pointSum E (zs.drop k))
-
-instance safePairsCert_decidable (Ps : List (ZMod E.q × ZMod E.q)) :
-    Decidable (SafePairsCert E Ps) := by
-  unfold SafePairsCert
-  infer_instance
 
 /-- The computable certificate implies the semantic hypothesis (on
 on-curve supports). -/

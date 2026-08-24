@@ -1,16 +1,15 @@
 /-
   Divisor/GeometricSoundness.lean
 
-  Geometric-zero replacement path for the log-derivative soundness proof.
+  Geometric-zero path for the log-derivative soundness proof.
 
-  The older tight proof routed through `zerosAt : Fin d → E(F_q)` and a
-  rational-point multiplicity function. That is the wrong abstraction for
-  arbitrary cheating divisors: the zero divisor of `D` naturally lives over
-  `F_qbar`, and only the final cleared polynomial should descend to `F_q`.
-
-  This file introduces the clean geometric API and proves the branch
-  theorems needed by the headline statement, instead of carrying
-  `splitsOnE` as an external hypothesis.
+  A parameterization through `zerosAt : Fin d → E(F_q)` with a
+  rational-point multiplicity function is the wrong abstraction for
+  arbitrary cheating divisors: the zero divisor of `D` naturally lives
+  over `F_qbar`, and only the final cleared polynomial descends to
+  `F_q`. This file works with the geometric API over the closure and
+  proves the branch theorems needed by the headline statement, instead
+  of carrying `splitsOnE` as an external hypothesis.
 -/
 import Divisor.ExtractorBridge
 import Divisor.HDenomNZBound
@@ -5861,7 +5860,7 @@ private theorem geometric_residue_match
   have hSplit : splitsOnE E msg.toD :=
     splitsOnE_of_gd_support_rational E msg.toD hDnz gd hRat
   -- Step 3: σ-matching from rational support + chord-sum identity.
-  -- (No longer threads _hDenomNZ; the per-A₀ obstruction is absorbed via badDenomA0
+  -- (The per-A₀ denominator obstruction is absorbed via badDenomA0
   -- inside `sigma_data_of_gd_support_rational`.)
   have hσ := sigma_data_of_gd_support_rational E stmt hd msg hDeg hkm hTargetOnE
     hBasesOnE hLargeQ hNoNegP hDnz gd hRat hAllZero

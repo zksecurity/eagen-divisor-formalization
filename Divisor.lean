@@ -54,6 +54,7 @@ import Divisor.GeomLocalOrder
 import Divisor.FrobDescentHelpers
 import Divisor.SlopeChoice
 import Divisor.GeometricSoundness
+import Divisor.SafeSupportDefs
 import Divisor.IsHonestForBinary
 import Divisor.SafeSupport
 import Divisor.CoordRingEltC

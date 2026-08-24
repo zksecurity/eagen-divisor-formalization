@@ -771,11 +771,11 @@ theorem one_le_target_of_residue
 
 /-! ## Strengthened Landmark invariant sketch
 
-`LandmarkInvStrong xs a` is the intended replacement for the older
-vanishing-only invariant.  The pointwise lower bound says the
-accumulator polynomial has at least the required sheet-level
-multiplicity at every affine point of `E`; the `natDegree` equality
-keeps the old global mass accounting. -/
+`LandmarkInvStrong xs a` strengthens the vanishing-only invariant:
+the pointwise lower bound says the accumulator polynomial has at
+least the required sheet-level multiplicity at every affine point of
+`E`, and the `natDegree` equality keeps the global mass
+accounting. -/
 
 noncomputable def LandmarkInvStrong
     (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E) : Prop :=
