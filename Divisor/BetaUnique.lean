@@ -49,21 +49,19 @@
   ### Consequences for `polyG_zero_trace_formula`
 
   The theorem `polyG_zero_trace_formula` (in `ExtractorBridge.lean`)
-  is now stated for the canonical decomposition `betaCanonical` only,
-  not universally over arbitrary β_fun. The original axiom shape
-  was unsound for that universal quantification: pointwise
-  uniqueness fails (the `ZMod E.q`-casts of multiplicities can
-  differ — 5 ≠ 3 in ZMod 17 — and polyG is linear in those casts),
-  so the polyG-vanishing cannot reduce from one decomposition to
+  is stated for the canonical decomposition `betaCanonical` only —
+  universal quantification over arbitrary β_fun would be unsound:
+  pointwise uniqueness fails (the `ZMod E.q`-casts of multiplicities
+  can differ — 5 ≠ 3 in ZMod 17 — and polyG is linear in those
+  casts), so polyG-vanishing cannot reduce from one decomposition to
   another via uniqueness.
 
-  The current narrowed theorem is fully proved (no `sorry`), with
-  classical content drawn from the function-field trace-of-log-
-  derivative identity (Lang *Algebra* §VI.5 + Stichtenoth §III.1–5
-  + Silverman ATAEC III §1). It is no longer the active extractor
-  proof path: the headline `ma_extractable` route now goes through
-  the geometric residue-matching argument in
-  `Divisor/GeometricSoundness.lean` instead.
+  The narrowed theorem is fully proved, with classical content drawn
+  from the function-field trace-of-log-derivative identity (Lang
+  *Algebra* §VI.5 + Stichtenoth §III.1–5 + Silverman ATAEC III §1).
+  The headline `ma_extractable` route goes through the independent
+  geometric residue-matching argument in
+  `Divisor/GeometricSoundness.lean`.
 
   ### Weaker true statements
 
@@ -73,20 +71,16 @@
      any valid β_fun is nonzero at exactly the same points as
      betaConstructive — the zero locus of D on E.
 
-  (A previous "group-sum agreement" lemma asserted that any valid
-  β_fun has the same group sum as betaConstructive — both zero. That
-  rested on `betaConstructive_group_sum_zero`, which is false; see
-  the F_5 counterexample at `AxiomExistsDivisorMultiplicity.lean`.
-  The lemma has been deleted.)
+  ("Group-sum agreement" — any valid β_fun has the same group sum as
+  betaConstructive, both zero — is false; see the F_5 counterexample
+  in `Divisor/Bridges/DivisorMultiplicity.lean`.)
 
   Neither statement suffices to bridge `polyG_zero_trace_formula`
   from the betaConstructive case to the general case, because polyG
   depends on the *individual* multiplicity values (mod q), not just
   their support or group sum.
 -/
-import Divisor.BetaConstructive
 import Divisor.DivisorPrincipal
-import Divisor.HasPrincipalDivisor
 
 open Polynomial Finset
 
@@ -116,18 +110,17 @@ theorem support_iff_of_principal_conditions
     obtain ⟨hPE, hPZ⟩ := betaConstructive_support E D P hBC
     exact hβcov P hPE hPZ
 
-/-! ## Group-sum agreement: deleted as a stand-alone lemma.
+/-! ## No group-sum agreement lemma — the claim is false.
 
-    Previously this file proved that any valid β_fun has the same
-    weighted group sum as `betaConstructive E D`, by appeal to the
-    (now-deleted) `betaConstructive_group_sum_zero` axiom. The
-    underlying claim was false: `betaConstructive`'s twin Nat-division
-    surrogate fails Abel's group-sum identity in general (counter-
-    example: `E : y² = x³ + 1 / F_5`, `D = (x²+1) - (1+2x)·y`, where
-    the β-weighted group sum is `(0,1) ≠ O` despite splitting). The
-    correct group-sum-zero statement holds only for the *true*
-    divisor multiplicity (now `CoordRingElt.exists_divisor_multiplicity`,
-    consumed via `CoordRingElt.has_principal_divisor`), not for
+    "Any valid β_fun has the same weighted group sum as
+    `betaConstructive E D`" fails: `betaConstructive`'s twin
+    Nat-division surrogate breaks Abel's group-sum identity in
+    general (counterexample: `E : y² = x³ + 1 / F_5`,
+    `D = (x²+1) - (1+2x)·y`, where the β-weighted group sum is
+    `(0,1) ≠ O` despite splitting). The group-sum-zero statement
+    holds only for the *true* divisor multiplicity
+    (`CoordRingElt.exists_divisor_multiplicity`, consumed via
+    `CoordRingElt.has_principal_divisor`), not for
     `betaConstructive`. -/
 
 /-! ## Sum-bound agreement
@@ -173,16 +166,13 @@ theorem sum_le_degE_of_principal_conditions
 --       multAt E β_fun D k = multAt E (betaConstructive E D) D k
 -- -/
 
-/-! ## Historical note on `polyG_zero_trace_formula`
+/-! ## Scope of `polyG_zero_trace_formula`
 
-    The former axiom `polyG_zero_trace_formula` (ExtractorBridge.lean)
-    quantified over arbitrary β_fun. That shape was unsound (see
-    above). The current theorem is restricted to `betaCanonical`
-    and fully proved; it is preserved as legacy infrastructure but
-    is no longer the active extractor proof path. The headline
-    extractor proof goes through `geometric_residue_match` in
-    `Divisor/GeometricSoundness.lean`, which uses a different
-    argument:
+    The theorem (ExtractorBridge.lean) is restricted to
+    `betaCanonical`; quantifying over arbitrary β_fun would be
+    unsound (see above). The headline extractor proof goes through
+    `geometric_residue_match` in `Divisor/GeometricSoundness.lean`,
+    which uses a different argument:
 
     1. For any nonzero D ∈ F_q[E] and any principal-divisor
        decomposition β_fun, the residue identity (`\ref{lem:log-derivative}` /

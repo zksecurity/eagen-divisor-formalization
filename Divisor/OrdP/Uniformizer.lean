@@ -43,7 +43,6 @@
       `ord_P(X − x₀) = 1`, we recurse: `ord_P(D) = 1 + ord_P(D')`.
       Termination: `(D'.a.natDegree, D'.b.natDegree)` strictly drops.
 -/
-import Divisor.Defs
 import Divisor.BetaConstructive
 import Mathlib.Algebra.Polynomial.RingDivision
 import Mathlib.Algebra.Polynomial.Roots
@@ -320,7 +319,7 @@ theorem ordAt_nonTwoTorsion_aux_symm_b_zero
         have hIH := IH (D := D.divLin P.1) hb'
         omega
       · -- Both sheets non-vanishing for D.b = 0.
-        push_neg at hVan
+        push Not at hVan
         have hVan' : D.eval P.1 (-P.2) ≠ 0 := by rw [← hEvalEq]; exact hVan
         rw [if_pos hVan, if_pos hVan']
 

@@ -4,7 +4,7 @@
   Parameterized core of the MA completeness theorem. This file is the
   "lower half" of `Divisor/Soundness.lean`, extracted upstream so that
   the explicit honest-divisor bridge in
-  `Divisor/EagenBuildRecursive.lean` can sit between this file and the
+  `Divisor/LineBuildRecursive.lean` can sit between this file and the
   public `ma_completeness` wrapper in `Soundness.lean` without creating
   an import cycle.
 
@@ -12,9 +12,6 @@
   * `ma_completeness_parameterized` — the parameterized rejection-set
     bound, taking the per-pair `logDerivCheckFn = 0` claim as a hook.
 -/
-import Divisor.Defs
-import Divisor.SupportDisjoint
-import Divisor.LogDeriv
 import Divisor.Protocol
 
 namespace Divisor

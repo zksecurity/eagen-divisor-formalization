@@ -3,25 +3,28 @@
 
   Principal-divisor wrapper for a nonzero `D : CoordRingElt E.q`.
 
-  The `CoordRingElt.has_principal_divisor` axiom (Silverman III.3.5
-  specialized) delivers an integer multiplicity function `β : ZMod² → ℕ`
-  satisfying:
+  The `CoordRingElt.has_principal_divisor` theorem (Silverman III.3.5
+  specialized; proved in `Divisor/HasPrincipalDivisor.lean`) delivers
+  an integer multiplicity
+  function `β : ZMod² → ℕ` satisfying:
   * Support on `D`'s affine zeros on `E`.
   * Total weight equals `D.degE`.
   * Group-weighted sum on `E.points` is zero.
 
   This file packages that output into the `ECPoint`-indexed coefficient
   form `dCoeffs D β` (with `-D.degE` at `∞`) and proves
-  `IsPrincipal E (dCoeffs D β)` via `principal_divisor_iff.mpr`. The
-  two concrete conditions of that iff (degree-zero and group-sum-zero)
-  follow directly from the axiom's outputs.
+  `CoordRingElt.exists_principal_dCoeffs`: the two concrete
+  principality conditions (degree-zero and group-sum-zero) hold for
+  `dCoeffs D β`. (An earlier design routed this through an opaque
+  `IsPrincipal` predicate and a `principal_divisor_iff` axiom; both
+  have been removed — the concrete conditions are stated directly.)
 
   Used in `ExtractorBridge.lean` to upgrade the `logDerivCheckFn ≡ 0`
-  hypothesis chain into the `IsPrincipal (extractorDivisorCoeffs)`
-  conclusion, after matching the extractor's coefficients to `D`'s
-  divisor via the σ-matching output of `log_deriv_nonvanishing_criterion`.
+  hypothesis chain into the principality conclusion for
+  `extractorDivisorCoeffs`, after matching the extractor's coefficients
+  to `D`'s divisor via the σ-matching output of
+  `log_deriv_nonvanishing_criterion`.
 -/
-import Divisor.Defs
 import Divisor.HasPrincipalDivisor
 import Divisor.Protocol
 
@@ -54,7 +57,7 @@ noncomputable def dCoeffs (E : ECSetup) (D : CoordRingElt E.q)
 @[simp] theorem dCoeffs_some (D : CoordRingElt E.q)
     (β : ZMod E.q × ZMod E.q → ℕ) {x y : ZMod E.q}
     (h : E.toW.toAffine.Nonsingular x y) :
-    dCoeffs E D β (.some h) = (β (x, y) : ℤ) := rfl
+    dCoeffs E D β (.some _ _ h) = (β (x, y) : ℤ) := rfl
 
 @[simp] theorem dCoeffs_affine (D : CoordRingElt E.q)
     (β : ZMod E.q × ZMod E.q → ℕ) (P : ZMod E.q × ZMod E.q)
@@ -98,7 +101,7 @@ theorem dCoeffs_support_subset_candidate (D : CoordRingElt E.q)
         intro hz; rw [hz, Nat.cast_zero] at hβ; exact hβ rfl
       have hmem : (x, y) ∈ E.points := hβsup (x, y) hβn
       refine Finset.mem_image.mpr ⟨(x, y), hmem, ?_⟩
-      -- ECPoint.affine E x y = .some h since (x, y) is nonsingular
+      -- ECPoint.affine E x y = .some _ _ h since (x, y) is nonsingular
       exact ECPoint.affine_of_nonsingular E h
 
 theorem dCoeffs_finiteSupport (D : CoordRingElt E.q)
@@ -367,7 +370,7 @@ theorem sum_multAt_eq_sum_βfun
   apply Finset.sum_subset (Finset.filter_subset _ _)
   intro P hPin hPnotZ
   simp only [Finset.mem_filter] at hPnotZ
-  push_neg at hPnotZ
+  push Not at hPnotZ
   have hEvalNZ : D.eval P.1 P.2 ≠ 0 := hPnotZ hPin
   by_contra hβnz
   exact hEvalNZ (hβsup P hβnz).2

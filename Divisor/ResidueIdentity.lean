@@ -36,7 +36,6 @@
   requiring the full residue identity closure.
 -/
 import Divisor.BivariateLogDeriv
-import Divisor.NormLogDeriv
 import Divisor.PolyGSlopeProjection
 import Divisor.DivisorPrincipal
 

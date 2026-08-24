@@ -1,8 +1,6 @@
 /-
   Divisor/Protocol.lean — Protocol definitions for the discrete log relation.
 -/
-import Divisor.Defs
-import Divisor.LogDeriv
 import Divisor.OrdP.LocalRing
 
 open Polynomial Finset
@@ -53,10 +51,10 @@ theorem admSetParker_excludes_zero : ¬ (admSetParker (q := q) (0, 0)) := by
   simp at h
 
 /-- Eagen: `{(a, b) : coeff(a, 0) = 1}`. -/
-def admSetEagen : Polynomial (ZMod q) × Polynomial (ZMod q) → Prop :=
+def admSetLine : Polynomial (ZMod q) × Polynomial (ZMod q) → Prop :=
   fun ab => ab.1.coeff 0 = 1
 
-theorem admSetEagen_excludes_zero : ¬ (admSetEagen (q := q) (0, 0)) := by
+theorem admSetLine_excludes_zero : ¬ (admSetLine (q := q) (0, 0)) := by
   intro h
   change (0 : Polynomial (ZMod q)).coeff 0 = 1 at h
   simp at h
@@ -177,9 +175,7 @@ fiber), and (iii) the divisor of `msg.toD` extensionally matches
 `honestDivisorCoeffs`. The polynomial `msg.toD` is itself the
 rational-function witness; combined with `splitsOnE`, the consumer
 recovers the degree-zero accounting via
-`sum_ordAt_eq_natDegree_under_split`. The `splitsOnE` contract
-replaces the older `IsPrincipal` conjunct, which was a structural
-round-trip through `principal_divisor_iff`. -/
+`sum_ordAt_eq_natDegree_under_split`. -/
 
 /-- Target divisor coefficients for the honest prover's `D`:
     `+1` at `-P`, `n_i` at each `B_i` (with duplicates summed), and
@@ -267,11 +263,19 @@ noncomputable def computeA₂ (chal : MAChallenge q) : ZMod q × ZMod q :=
   let y₂ := lam * x₂ + (chal.A₀.2 - lam * chal.A₀.1)
   (x₂, y₂)
 
-/-- The IP verifier checks:
+/-- The IP verifier's *formalized* checks:
     1. degE(D) ≤ d
     2. h_i * D(A_i) = D'(A_i) for i = 0,1,2 where D' is the formal derivative
     3. g * L(-P) = -1
-    4. Σ h_i * dx(A_i)/dz = g + Σ (-m_j)/L(B_j)
+
+    The paper protocol's additional residue-sum check
+    `Σ h_i * dx(A_i)/dz = g + Σ (-m_j)/L(B_j)` is **not** part of this
+    predicate: the theorems proved about IP here (the extraction
+    dichotomy inherited from MA, and third-round uniqueness) do not
+    need it, and omitting it only *weakens* the accept predicate — so
+    `ip_extractable`'s uniqueness clause (any two accepted `msg3` are
+    equal) is, if anything, a stronger statement than over the full
+    paper verifier.
 
     For uniqueness: h_i is determined by D and A_i (check 2),
     and g is determined by L and P (check 3).
@@ -320,5 +324,31 @@ theorem ip_unique_third_round (E : ECSetup)
   cases msg3; cases msg3'
   simp only [IPProverMsg3.mk.injEq] at *
   exact ⟨by ext i; fin_cases i <;> assumption, g_eq⟩
+
+/-- Third-round-uniqueness clause of the IP extraction theorems: for
+    every challenge and second-round point at which `D` is
+    nonvanishing and whose chord misses `-target`, the verifier
+    accepts at most one third-round message. Holds unconditionally
+    (`ipUniqueThirdRound_holds`); the headline IP theorems conjoin it
+    with the MA dichotomy. -/
+def IPUniqueThirdRound (E : ECSetup) (stmt : DlogStatement E.q)
+    (msg1 : MAProverMsg E.q) : Prop :=
+  ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
+      (msg3 msg3' : IPProverMsg3 E.q),
+      msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
+      msg1.toD.eval chal.A₁.1 chal.A₁.2 ≠ 0 →
+      msg1.toD.eval A₂.1 A₂.2 ≠ 0 →
+      (lineThrough chal.A₀.1 chal.A₀.2 chal.A₁.1 chal.A₁.2).eval
+          stmt.target.1 (-stmt.target.2) ≠ 0 →
+      ipVerifierAccepts E stmt msg1 chal A₂ msg3 →
+      ipVerifierAccepts E stmt msg1 chal A₂ msg3' →
+      msg3 = msg3'
+
+theorem ipUniqueThirdRound_holds (E : ECSetup)
+    (stmt : DlogStatement E.q) (msg1 : MAProverMsg E.q) :
+    IPUniqueThirdRound E stmt msg1 :=
+  fun chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc' =>
+    ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
+      hD₀ hD₁ hD₂ hLP hAcc hAcc'
 
 end Divisor

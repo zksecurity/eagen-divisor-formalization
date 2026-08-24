@@ -7,9 +7,9 @@
 
   This feeds the binary completeness point-certificate path.
 -/
-import Divisor.EagenBuildLandmark
+import Divisor.LineBuild
 
-namespace Divisor.Landmark
+namespace Divisor.LineAccum
 
 variable (E : ECSetup)
 
@@ -36,4 +36,4 @@ example (n : ℕ) (points : List (ECPoint E)) :
     This validates the chord-chain certificate computationally and
     feeds into `ma_completeness_binary_*_point_certificate`. -/
 
-end Divisor.Landmark
+end Divisor.LineAccum

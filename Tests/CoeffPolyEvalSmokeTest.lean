@@ -4,7 +4,6 @@
   Sanity #eval for `CoeffPoly` over `F_5`.  Confirms add / mul / eval /
   divXSubC work computably end-to-end.
 -/
-import Divisor.CoeffPoly
 import Divisor.CoordRingEltC
 
 open Divisor.CoeffPoly

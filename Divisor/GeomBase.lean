@@ -117,10 +117,10 @@ private theorem geom_zero_set_finite'
     apply Set.Finite.subset
       (h_roots_finite.biUnion fun x _ => (h_fiber_finite x).image fun y => (x, y))
     intro p hp
-    simp only [Set.mem_image, Set.mem_setOf_eq] at hp
+    simp only [Set.mem_image, Set.mem_ofPred_eq] at hp
     obtain ⟨Q, hQ, hQp⟩ := hp
     rw [← hQp]
-    simp only [Set.mem_iUnion, Set.mem_image, Set.mem_setOf_eq, Prod.mk.injEq]
+    simp only [Set.mem_iUnion, Set.mem_image, Set.mem_ofPred_eq, Prod.mk.injEq]
     exact
       ⟨Q.x, normPolyBar_eval_zero_of_geomEval_zero E D Q hQ,
         Q.y, Q.onCurve, rfl, rfl⟩

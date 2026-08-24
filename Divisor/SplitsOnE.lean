@@ -3,13 +3,10 @@
 
   The `splitsOnE` predicate.
 
-  Extracted from `Divisor/Axioms/AxiomExistsDivisorMultiplicity.lean`
-  so that both the (now-derived) existence theorem and its proof in
-  `Divisor.OrdP.LocalRing` can refer to `splitsOnE` without forming an
-  import cycle (LocalRing previously had to depend on the axiom file
-  just to reference `splitsOnE`; with the axiom turned into a theorem
-  proved via `exists_divisor_multiplicity_proved`, the axiom file now
-  imports LocalRing in turn).
+  Lives in its own module so that both the existence theorem in
+  `Divisor/Bridges/DivisorMultiplicity.lean` and its underlying proof
+  in `Divisor.OrdP.LocalRing` can refer to `splitsOnE` without an
+  import cycle.
 
   `normPoly_splits_over_Fq E D` only requires that `normPoly E D`
   splits as a univariate polynomial in `X` over `F_q`. That is *not*
@@ -21,7 +18,6 @@
   rationality condition: every root of `normPoly E D` lifts to at
   least one F_q-rational point of `E`.
 -/
-import Divisor.Defs
 import Divisor.BetaConstructive
 
 namespace Divisor

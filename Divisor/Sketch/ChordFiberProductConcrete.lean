@@ -1,38 +1,25 @@
 /-
   Divisor/Sketch/ChordFiberProductConcrete.lean
 
-  PROTOTYPE — concrete candidate for `chord_fiber_product`.
+  PROTOTYPE / HISTORICAL SANDBOX — concrete candidate for
+  `chord_fiber_product`.
 
-  The `chord_fiber_product E lam D : (ZMod E.q)[X]` API is opaque
-  (declared as `noncomputable opaque` in
-  `Divisor/Axioms/AxiomChordFiberProductEqNormZUnderSplit.lean`) and
-  pinned only via two axioms:
+  This file predates the production discharge of the chord-fiber
+  bridge. Today, `chord_fiber_product` is a plain `noncomputable def`
+  (equal to the resultant candidate `chord_fiber_product_concrete`;
+  see `Divisor/Bridges/ChordFiberProductNormZ.lean`),
+  and the statements this sandbox sketches are theorem-backed on the
+  production side (`Divisor/Bridges/ChordFiberProductEqNormZUnderSplit.lean`
+  and `Divisor/Bridges/ChordSumEqChordFiberProductLogDeriv.lean`),
+  resting only on the named axioms pinned in
+  `Tests/AxiomClosurePin.lean`.
 
-    chord_fiber_product_eq_normZ_under_split  -- proportionality to normZ
-    chord_fiber_product_bar_eq_geom_prod      -- bar-level factored form
-
-  plus a third axiom for the log-derivative identity
-  (`chord_sum_eq_chord_fiber_product_logDeriv`).
-
-  The axiom-free *concrete plumbing* (bivariate setup, base-change to
-  `F_qbar`, the resultant candidate `chord_fiber_product_concrete`,
-  the evaluation/factorisation helpers, and the non-vanishing theorem)
-  lives in the production module `Divisor/ChordFiberProductConcrete.lean`
-  under `namespace Divisor`. This file contains the three
-  `sorry`-bearing obligations against that candidate:
-  `chord_fiber_product_concrete_bar_eq_geom_prod`,
-  `chord_fiber_product_concrete_eq_normZ_under_split`, and
-  `chord_fiber_product_concrete_logDeriv`. Each is restated against
-  the production-namespace decl. -/
-import Divisor.Axioms.AxiomChordFiberDivisibility
-import Divisor.Axioms.AxiomChordFiberProductBarFactored
+  Sorry-free delegations to production theorems, kept as
+  documentation of the proof plan. The geometric lemmas consumed by
+  production live downstream in
+  `Divisor/Sketch/ChordFiberGeometry.lean`. -/
+import Divisor.Bridges.ChordFiberProductBarFactored
 import Divisor.ChordFiberMultiplicativity
-import Divisor.ChordFiberProductConcrete
-import Divisor.ChordFiberWeightedDegree
-import Divisor.FunctionFieldZ
-import Divisor.GeomLocalOrder
-import Divisor.LogDeriv
-import Divisor.PartialFractionExpansion
 
 open Polynomial
 
@@ -40,11 +27,11 @@ namespace Divisor.Sketch
 
 variable (E : ECSetup)
 
-/-! ## Outstanding obligations against the concrete candidate
+/-! ## Obligation sketches against the concrete candidate
 
-Each `theorem` below mirrors a downstream consumer of the opaque
-`chord_fiber_product`. The proofs are stubbed with `sorry`; the
-surrounding comments record the remaining mathematical content. -/
+Each `theorem` below mirrors a downstream consumer of
+`chord_fiber_product`, delegating to the production theorems; the
+surrounding comments record the mathematical plan. -/
 
 /-- **Narrow hard lemma: chord-projection multiplicity accounting.**
 
@@ -147,9 +134,9 @@ theorem chord_fiber_product_concrete_bar_zfiber_pow_dvd
       (∑ Q ∈ gd.support.filter (fun Q => zLambdaBar E lam Q = z), gd.mult Q)
       ∣ (chord_fiber_product_concrete E lam D).map
           (algebraMap (ZMod E.q) (Fqbar E)) :=
-  -- Delegates to the production axiom
-  -- (`Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd` in
-  -- `Divisor/Axioms/AxiomChordFiberDivisibility.lean`).
+  -- Delegates to the production theorem
+  -- `Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd`
+  -- (`Divisor/Bridges/ChordFiberDivisibility.lean`).
   Divisor.chord_fiber_product_concrete_bar_zfiber_pow_dvd E D lam hD gd z
 
 /-! **Stub 2a**: natDegree bound for the chord-fibre product against the
@@ -394,152 +381,5 @@ theorem chord_fiber_product_concrete_bar_eq_geom_prod
   classical
   exact chord_fiber_product_concrete_bar_eq_geom_prod_of_rootMultiplicity E lam D hD gd
     (chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber E lam D hD gd)
-
-/-- **Narrow gap: bar-level proportionality.**
-
-Under `splitsOnE` and the standard `β_fun` hypotheses, the base-changed
-`chord_fiber_product_concrete` and the base-changed `normZ` agree up to
-a non-zero `Fqbar`-scalar.
-
-This is the *true* missing mathematical step. The
-`support`/`coverage`/`accounting` hypotheses on `β_fun` constrain its
-support and total sum but **do not pin its pointwise multiplicities**:
-for each `P ∈ zerosFinset E D`, the value `β_fun P` is constrained only
-to lie in `[1, ..., (normPoly E D).natDegree − (#zerosFinset − 1)]` with
-the others summing to the rest. The bar-level proportionality forces
-`β_fun P` to equal the *true* divisor multiplicity at `P` (a.k.a.
-`gd.mult Q_P` after lifting), so the right value of `β_fun` is the one
-coming from `betaTrue` / `CoordRingElt.exists_divisor_multiplicity` /
-`HasPrincipalDivisor`.
-
-Since the theorem statement does not enforce this matching, it is
-**not provable from the hypotheses as stated** — concretely, a `β_fun`
-with the right support and sum but wrong pointwise distribution makes
-the LHS and RHS unequal even up to a scalar. The downstream consumer
-always supplies `β_fun = betaTrue`, so this is morally fine, but the
-formalisation needs either an extra matching hypothesis or a switch to
-`gd.mult ∘ lift` directly.
-
-This lemma encapsulates the full gap as a single sorry. -/
-private lemma chord_fiber_product_concrete_eq_normZ_under_split_bar
-    (D : CoordRingElt E.q) (lam : ZMod E.q)
-    (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (_hSplitOnE : splitsOnE E D)
-    (β_fun : ZMod E.q × ZMod E.q → ℕ)
-    (_hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
-    (_hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
-    (_hAccount : (∑ P ∈ E.points, β_fun P) = (normPoly E D).natDegree) :
-    ∃ cBar : Fqbar E, cBar ≠ 0 ∧
-      (chord_fiber_product_concrete E lam D).map
-          (algebraMap (ZMod E.q) (Fqbar E)) =
-        Polynomial.C cBar *
-          (normZ E lam D β_fun).map (algebraMap (ZMod E.q) (Fqbar E)) := by
-  sorry
-
-/-- **Proportionality to `normZ` under splitting** (replacement of
-`chord_fiber_product_eq_normZ_under_split`).
-
-Reduces to the bar-level matching lemma
-`chord_fiber_product_concrete_eq_normZ_under_split_bar` (the only
-remaining `sorry`); descent from `Fqbar` to `ZMod E.q` is mechanical
-via leading coefficients and injectivity of `Polynomial.map (algebraMap)`. -/
-theorem chord_fiber_product_concrete_eq_normZ_under_split
-    (D : CoordRingElt E.q) (lam : ZMod E.q)
-    (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (hSplitOnE : splitsOnE E D)
-    (β_fun : ZMod E.q × ZMod E.q → ℕ)
-    (hβsup : ∀ P, β_fun P ≠ 0 → P ∈ E.points ∧ D.eval P.1 P.2 = 0)
-    (hβcov : ∀ P ∈ E.points, D.eval P.1 P.2 = 0 → β_fun P ≠ 0)
-    (hAccount : (∑ P ∈ E.points, β_fun P) =
-                  (normPoly E D).natDegree) :
-    ∃ c : ZMod E.q, c ≠ 0 ∧
-      chord_fiber_product_concrete E lam D = Polynomial.C c * normZ E lam D β_fun := by
-  classical
-  set f := chord_fiber_product_concrete E lam D with hf_def
-  set g := normZ E lam D β_fun with hg_def
-  have hf_ne : f ≠ 0 := chord_fiber_product_concrete_ne_zero E lam D hD
-  have hg_ne : g ≠ 0 := normZ_ne_zero E lam D hD β_fun
-  -- Bar-level proportionality from the sorry'd lemma.
-  obtain ⟨cBar, hcBar_ne, hbar⟩ :=
-    chord_fiber_product_concrete_eq_normZ_under_split_bar E D lam hD hSplitOnE
-      β_fun hβsup hβcov hAccount
-  -- Descent: cBar must lie in the image of `algebraMap`, namely as the ratio
-  -- of leading coefficients (over the field `ZMod E.q`).
-  set φ : ZMod E.q →+* Fqbar E := algebraMap (ZMod E.q) (Fqbar E)
-  have hφ_inj : Function.Injective φ :=
-    (algebraMap (ZMod E.q) (Fqbar E)).injective
-  -- Leading coefficients: lc(f.map) = cBar * lc(g.map), with both sides via φ.
-  have hlc_eq : φ f.leadingCoeff = cBar * φ g.leadingCoeff := by
-    have h_lc :
-        (f.map φ).leadingCoeff =
-          (Polynomial.C cBar * g.map φ).leadingCoeff := by rw [hbar]
-    have _hg_map_ne : g.map φ ≠ 0 := Polynomial.map_ne_zero hg_ne
-    rw [Polynomial.leadingCoeff_mul, Polynomial.leadingCoeff_C] at h_lc
-    rw [Polynomial.leadingCoeff_map_of_injective hφ_inj f,
-        Polynomial.leadingCoeff_map_of_injective hφ_inj g] at h_lc
-    exact h_lc
-  -- Pick c := lc f / lc g; then φ c = cBar.
-  have hg_lc_ne : g.leadingCoeff ≠ 0 :=
-    Polynomial.leadingCoeff_ne_zero.mpr hg_ne
-  refine ⟨f.leadingCoeff * g.leadingCoeff⁻¹, ?_, ?_⟩
-  · -- c ≠ 0.
-    have hf_lc_ne : f.leadingCoeff ≠ 0 :=
-      Polynomial.leadingCoeff_ne_zero.mpr hf_ne
-    exact mul_ne_zero hf_lc_ne (inv_ne_zero hg_lc_ne)
-  · -- f = C c * g, by descending from f.map = (C c * g).map (injective map).
-    have hφc : φ (f.leadingCoeff * g.leadingCoeff⁻¹) = cBar := by
-      rw [map_mul, map_inv₀]
-      have hφg_ne : φ g.leadingCoeff ≠ 0 := by
-        rw [Ne, ← map_zero φ]; exact fun h => hg_lc_ne (hφ_inj h)
-      rw [hlc_eq]
-      field_simp
-    have hmap_eq :
-        f.map φ = (Polynomial.C (f.leadingCoeff * g.leadingCoeff⁻¹) * g).map φ := by
-      rw [Polynomial.map_mul, Polynomial.map_C]
-      rw [hφc]
-      exact hbar
-    exact Polynomial.map_injective φ hφ_inj hmap_eq
-
-/-- **Log-derivative identity** (replacement of
-`chord_sum_eq_chord_fiber_product_logDeriv`).
-
-*Math (medium)*: from the resultant-as-product form
-`F(μ) = ∏_{i=0,1,2} D.eval(x_i(μ), λx_i(μ) + μ)`, take the logarithmic
-derivative. The implicit-function derivatives `dx_i/dμ` are determined
-by differentiating the chord cubic `x_i³ − λ²x_i² + (A−2λμ)x_i + (B−μ²) = 0`,
-giving `dx_i/dμ = (2λx_i + 2μ) / (3x_i² + A − 2λx_i·(dy_i/dx_i)) `; the
-chain-rule combination of `D` then collapses to the `logDerivTerm`
-formula already encoded in the project. The non-degeneracy hypothesis
-`hDen` rules out the cusp where the implicit-function step would fail. -/
-theorem chord_fiber_product_concrete_logDeriv
-    (D : CoordRingElt E.q) (A₀ A₁ : ZMod E.q × ZMod E.q)
-    (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1)
-    (hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (hA₀def : D.eval A₀.1 A₀.2 ≠ 0)
-    (hA₁def : D.eval A₁.1 A₁.2 ≠ 0)
-    (hA₂def : let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
-              let x₂ := lam ^ 2 - A₀.1 - A₁.1
-              let y₂ := lam * x₂ + (A₀.2 - lam * A₀.1)
-              D.eval x₂ y₂ ≠ 0)
-    (hDen : let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
-            ∀ pt : ZMod E.q × ZMod E.q,
-              pt = A₀ ∨ pt = A₁ ∨
-              pt = (lam ^ 2 - A₀.1 - A₁.1,
-                    lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
-              → 3 * pt.1 ^ 2 + E.curveA - 2 * lam * pt.2 ≠ 0)
-    (hChordNorm :
-      (chord_fiber_product_concrete E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) D).eval
-        (zLambda E (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) A₀) ≠ 0) :
-    let lam := slopeOf A₀.1 A₀.2 A₁.1 A₁.2
-    let μ := zLambda E lam A₀
-    logDerivTerm E D E.curveA lam A₀
-      + logDerivTerm E D E.curveA lam A₁
-      + logDerivTerm E D E.curveA lam
-          (lam ^ 2 - A₀.1 - A₁.1,
-           lam * (lam ^ 2 - A₀.1 - A₁.1) + (A₀.2 - lam * A₀.1))
-    = Polynomial.eval μ
-        (Polynomial.derivative (chord_fiber_product_concrete E lam D))
-      / (chord_fiber_product_concrete E lam D).eval μ := by
-  sorry
 
 end Divisor.Sketch

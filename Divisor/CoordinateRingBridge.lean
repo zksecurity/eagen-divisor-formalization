@@ -23,9 +23,7 @@
   Subsequent files will add the XYIdeal-membership characterisation
   and the local-order ↔ recursive-`ordAt` compatibility theorem.
 -/
-import Divisor.Defs
 import Divisor.BetaConstructive
-import Divisor.CubicIntersection
 import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 
 open Polynomial Polynomial.Bivariate
@@ -179,7 +177,7 @@ giving a cleaner index in the upcoming factorization theorem
 `spanSingleton (D.toCoordinateRing) = ∏_P (xyIdealOfPoint P)^(ordAt D P)`. -/
 
 /-- Extract `Nonsingular` from `(x, y) ∈ E.points`. -/
-noncomputable def nonsing_of_mem {P : ZMod E.q × ZMod E.q}
+theorem nonsing_of_mem {P : ZMod E.q × ZMod E.q}
     (hP : P ∈ E.points) :
     E.toW.toAffine.Nonsingular P.1 P.2 :=
   E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP))
@@ -197,7 +195,8 @@ equals `ClassGroup.mk (xyIdealOfPoint hP)`. -/
 theorem toClass_affine_eq_mk_xyIdealOfPoint
     {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) :
     Point.toClass (ECPoint.affine E P.1 P.2)
-      = Additive.ofMul (ClassGroup.mk (xyIdealOfPoint E hP)) := by
+      = Additive.ofMul (ClassGroup.mk E.toW.toAffine.FunctionField
+          (xyIdealOfPoint E hP)) := by
   rw [ECPoint.affine_of_nonsingular E (nonsing_of_mem E hP)]
   rfl
 
@@ -269,7 +268,7 @@ noncomputable def CoordRingElt.principalFracIdeal
 because it's the image of `Kˣ` under `toPrincipalIdeal`. -/
 theorem CoordRingElt.classGroup_mk_principalFracIdeal_eq_one
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
-    ClassGroup.mk (D.principalFracIdeal E hD) = 1 := by
+    ClassGroup.mk E.toW.toAffine.FunctionField (D.principalFracIdeal E hD) = 1 := by
   -- Membership in toPrincipalIdeal.range gives quotient = 1.
   rw [ClassGroup.mk_eq_one_iff]
   -- (toPrincipalIdeal _ _ x).val = spanSingleton _ x is principal.

@@ -2,12 +2,12 @@
   Divisor/BivariateZerosOnExE.lean
 
   Bound on `|{(A₀, A₁) ∈ E × E : f(A₀, A₁) = 0}|` for a 4-variate `f`
-  of total degree ≤ D, derived from `Divisor.hasse_weil` plus
-  elementary fiber counting. Same `≤ 9·D·q` bound as the
-  classical DKL'14 + Hartshorne (Bezout) corollary.
+  of total degree ≤ D, by elementary fiber counting — in point-count
+  currency `≤ 6·D·|E.points|`, axiom-free. The classical field-size
+  form `≤ 9·D·q` of DKL'14 + Hartshorne (Bezout) is recovered in the
+  terminal Hasse layer.
 -/
 import Divisor.FourVarPoly
-import Divisor.Axioms.AxiomHasseWeil
 import Divisor.CurveEvalZerosHelper
 import Mathlib
 
@@ -150,8 +150,8 @@ lemma fiber_count_le (f : FourVarPoly E.q) (D : ℕ)
   have h := curve_eval_zeros_le E (specialize_first E f A₀) D
     (specialize_first_totalDegree E f A₀ D hDeg)
     (hFiberNZ.imp fun x hx => ⟨hx.1, by simpa only [specialize_first_eval] using hx.2⟩)
-  convert h using 3
-  ext; rw [specialize_first_eval]
+  convert h using 2
+  exact Finset.filter_congr fun x _ => by rw [specialize_first_eval]
 
 /-- Fibre count bound for fixed second coordinate. -/
 lemma fiber_count_le_second (f : FourVarPoly E.q) (D : ℕ)
@@ -162,38 +162,8 @@ lemma fiber_count_le_second (f : FourVarPoly E.q) (D : ℕ)
   have h := curve_eval_zeros_le E (specialize_second E f A₁) D
     (specialize_second_totalDegree E f A₁ D hDeg)
     (hFiberNZ.imp fun x hx => ⟨hx.1, by simpa only [specialize_second_eval] using hx.2⟩)
-  convert h using 3
-  ext; rw [specialize_second_eval]
-
-/-- From Hasse-Weil: 2 * |E.points| ≤ 3 * E.q + 3. -/
-lemma hasse_points_bound : 2 * E.points.card ≤ 3 * E.q + 3 := by
-  have hw := Divisor.hasse_weil E
-  have hnum := E.hNumPoints
-  have hqge := E.hq_ge
-  set m := (E.numPoints : ℤ) - E.q - 1 with hm_def
-  have hm_sq : m ^ 2 ≤ 4 * (E.q : ℤ) := hw
-  have h2m : 2 * m ≤ (E.q : ℤ) + 3 := hasse_int_bound E.q m hqge hm_sq
-  omega
-
-/-- From Hasse-Weil: `q − 3 ≤ 2 * |E.points|`. The lower-side dual of
-`hasse_points_bound`. Apply `hasse_int_bound` to `m = q − numAffine`. -/
-lemma hasse_points_bound_lb : E.q ≤ 2 * E.points.card + 3 := by
-  have hw := Divisor.hasse_weil E
-  have hnum := E.hNumPoints
-  have hqge := E.hq_ge
-  -- Use m' = q + 1 - numPoints (so m'² = (numPoints - q - 1)² ≤ 4q).
-  set m' := (E.q : ℤ) + 1 - E.numPoints with hm'_def
-  have hm'_sq : m' ^ 2 ≤ 4 * (E.q : ℤ) := by
-    have h := hw
-    -- (numPoints - q - 1)² = (q + 1 - numPoints)² = m'²
-    have : ((E.numPoints : ℤ) - E.q - 1) ^ 2 = m' ^ 2 := by ring
-    linarith [this ▸ h]
-  have h2m' : 2 * m' ≤ (E.q : ℤ) + 3 := hasse_int_bound E.q m' hqge hm'_sq
-  omega
-
-lemma arith_bound (D q n : ℕ) (hD : D ≥ 1) (hn : 2 * n ≤ 3 * q + 3) :
-    6 * D * n ≤ 9 * D * q + 9 * D * D := by
-  nlinarith
+  convert h using 2
+  exact Finset.filter_congr fun x _ => by rw [specialize_second_eval]
 
 /-- For D = 0 and constant nonzero f, the filter is empty. -/
 lemma filter_empty_of_D_zero
@@ -211,23 +181,21 @@ lemma main_bound_small_points
     (hSmall : E.points.card ≤ 3 * D) :
     ((E.points ×ˢ E.points).filter
       (fun p => bivEval₂ f p.1 p.2 = 0)).card
-      ≤ 9 * D * E.q := by
+      ≤ 6 * D * E.points.card := by
   refine' le_trans ( Finset.card_filter_le _ _ ) _;
   rw [ Finset.card_product ];
-  nlinarith [ points_card_le_two_mul_q E ]
+  nlinarith
 
 /-- Case when |E.points| > 3D: fiber decomposition + bad fiber bound. -/
 lemma main_bound_large_points
-    (f : FourVarPoly E.q) (D : ℕ) (hD : D ≥ 1)
+    (f : FourVarPoly E.q) (D : ℕ) (_hD : D ≥ 1)
     (hDeg : total_degree_le E f D)
     (hNonzero : ∃ A₀ A₁ : ZMod E.q × ZMod E.q,
         A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ bivEval₂ f A₀ A₁ ≠ 0)
-    (hLarge : E.points.card > 3 * D) :
+    (_hLarge : E.points.card > 3 * D) :
     ((E.points ×ˢ E.points).filter
       (fun p => bivEval₂ f p.1 p.2 = 0)).card
-      ≤ 9 * D * E.q := by
-  revert f D hD hDeg hNonzero hLarge;
-  intro f D hD hDeg hNonzero hLarge
+      ≤ 6 * D * E.points.card := by
   set bad := E.points.filter (fun A₀ => ∀ A₁ ∈ E.points, bivEval₂ f A₀ A₁ = 0) with hbad_def
   have hbad_card : bad.card ≤ 3 * D := by
     have := @fiber_count_le_second E f D hDeg;
@@ -246,8 +214,7 @@ lemma main_bound_large_points
       exact add_le_add ( Finset.sum_le_sum fun x hx => Finset.card_filter_le _ _ ) ( Finset.sum_le_sum hgood_card );
     simp_all +decide [ mul_assoc, Finset.card_sdiff ];
     exact le_trans ‹_› ( htotal_card.trans ( by rw [ Finset.inter_eq_left.mpr ( Finset.filter_subset _ _ ) ] ) );
-  have := hasse_points_bound E;
-  nlinarith only [ this, htotal_card, hbad_card, hLarge, Nat.sub_add_cancel ( show #bad ≤ #E.points from Finset.card_le_card <| Finset.filter_subset _ _ ), arith_bound D E.q #E.points hD this ]
+  nlinarith only [ htotal_card, hbad_card, _hLarge, Nat.sub_add_cancel ( show #bad ≤ #E.points from Finset.card_le_card <| Finset.filter_subset _ _ ) ]
 
 /-! ## Main theorem -/
 
@@ -258,7 +225,7 @@ theorem bivariate_poly_zeros_on_ExE_le_thm
         A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ bivEval₂ f A₀ A₁ ≠ 0) :
     ((E.points ×ˢ E.points).filter
       (fun p => bivEval₂ f p.1 p.2 = 0)).card
-      ≤ 9 * D * E.q := by
+      ≤ 6 * D * E.points.card := by
   rcases Nat.eq_zero_or_pos D with hD | hD
   · subst hD; simp [filter_empty_of_D_zero E f hDeg hNonzero]
   · by_cases h : E.points.card ≤ 3 * D
@@ -281,9 +248,9 @@ variable (E : ECSetup)
 
     Discharged by `BivariateZerosOnExE.bivariate_poly_zeros_on_ExE_le_thm`
     above (reduce mod `Y² = X³+AX+B` → `α(X) + β(X)·Y` → univariate
-    norm-polynomial root count + Hasse-Weil's `2·|E| ≤ 3q+3`). The only
-    project-level axiom in its dependency chain is
-    `Divisor.hasse_weil_textbook`. -/
+    norm-polynomial root count). Point-count currency, fully
+    axiom-free; the field-size `≤ 9·D·q` form lives in the terminal
+    Hasse layer. -/
 theorem bivariate_poly_zeros_on_ExE_le
     (f : FourVarPoly E.q) (D : ℕ)
     (hDeg : total_degree_le E f D)
@@ -291,7 +258,7 @@ theorem bivariate_poly_zeros_on_ExE_le
         A₀ ∈ E.points ∧ A₁ ∈ E.points ∧ bivEval₂ f A₀ A₁ ≠ 0) :
     ((E.points ×ˢ E.points).filter
       (fun p => bivEval₂ f p.1 p.2 = 0)).card
-      ≤ 9 * D * E.q :=
+      ≤ 6 * D * E.points.card :=
   BivariateZerosOnExE.bivariate_poly_zeros_on_ExE_le_thm E f D hDeg hNonzero
 
 end Divisor

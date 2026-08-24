@@ -11,7 +11,7 @@
   hypothesis. This is the gcd-1 base case (and more) of stub 2a in
   `Divisor/Sketch/ChordFiberProductConcrete.lean`.
 
-  Strategy (codex-suggested, weight-based Sylvester):
+  Strategy (weight-based Sylvester):
 
   Assign weights `wt(x) = 2`, `wt(Z) = 3` to the bivariate ring
   `(ZMod E.q)[Z][x]`. Define the per-coefficient weight bounds:
@@ -268,7 +268,7 @@ private lemma DLineBiv_coeff_natDegree_le_zero_of_b_coeff_zero
     rw [zero_sub, neg_eq_zero]
     -- Need: ((D.b.map C * Q).coeff k).coeff 1 = D.b.coeff k.
     rw [Polynomial.coeff_mul]
-    rw [Polynomial.finset_sum_coeff]
+    rw [Polynomial.finsetSum_coeff]
     -- Sum over (i, j) ∈ antidiagonal k of (D.b.map C).coeff i .coeff (1 - 0) ·
     --   Q.coeff j .coeff 0 + similar
     -- The only nonzero contribution is (i, j) = (k, 0): (D.b.map C).coeff k = C(D.b.coeff k),
@@ -277,7 +277,7 @@ private lemma DLineBiv_coeff_natDegree_le_zero_of_b_coeff_zero
     -- coeff 1 of (C(D.b.coeff(k-1)) · Cλ) = C(D.b.coeff(k-1) · λ).coeff 1 = 0.
     apply Finset.sum_eq_zero
     rintro ⟨i, j⟩ hij
-    have hsum : i + j = k := Finset.mem_antidiagonal.mp hij
+    have hsum : i + j = k := Finset.HasAntidiagonal.mem_antidiagonal.mp hij
     rw [Polynomial.coeff_mul]
     -- C(D.b.coeff i).coeff l = D.b.coeff i if l = 0 else 0.
     rw [Polynomial.coeff_map]
@@ -305,7 +305,7 @@ private lemma DLineBiv_coeff_natDegree_le_zero_of_b_coeff_zero
         rw [mul_zero]
     · intro b hbmem hbne
       -- For b ≠ (0, 1): C(D.b.coeff i) only has nonzero coeff at index 0.
-      rcases Finset.mem_antidiagonal.mp hbmem with hb_sum
+      rcases Finset.HasAntidiagonal.mem_antidiagonal.mp hbmem with hb_sum
       have hb1 : b.1 ≠ 0 := by
         rintro h0
         apply hbne
@@ -315,7 +315,7 @@ private lemma DLineBiv_coeff_natDegree_le_zero_of_b_coeff_zero
       rw [Polynomial.coeff_C, if_neg hb1, zero_mul]
     · intro hne
       -- (0, 1) ∈ antidiagonal 1 always.
-      exact absurd (Finset.mem_antidiagonal.mpr (by simp)) hne
+      exact absurd (Finset.HasAntidiagonal.mem_antidiagonal.mpr (by simp)) hne
 
 /-! ### Auxiliary normPoly natDegree bounds
 
@@ -365,7 +365,7 @@ private lemma normPoly_natDegree_ge_b_curveX
     rw [hDa_zero, zero_sub, neg_ne_zero]
     exact hprod_lead
   · -- 2·D.a.natDegree ≥ 2·D.b.natDegree + 3. Then D.a ≠ 0 (from hb-related parity).
-    push_neg at hdeg
+    push Not at hdeg
     -- We must have D.a ≠ 0, since otherwise 2·D.a.natDegree = 0 and target ≥ 3.
     have ha : D.a ≠ 0 := by
       intro ha0
@@ -444,7 +444,7 @@ private lemma normPoly_natDegree_ge_a_sq
       rw [hprod_zero, sub_zero]
       exact hDa_sq_lead_ne
     · -- D.b² · curveX dominates: 2·D.b.natDegree + 3 ≥ 2·D.a.natDegree, by parity ≥ +1.
-      push_neg at hdeg
+      push Not at hdeg
       -- (D.b² · curveX).natDegree ≥ 2·D.a.natDegree.
       have hprod_lead :
           (D.b ^ 2 * curveX E).coeff (2 * D.b.natDegree + 3) ≠ 0 := by
@@ -624,7 +624,8 @@ private lemma sum_sylvesterOff_eq
   · have h1 : ∀ j₁ : Fin m,
         sylvesterOff m n (finSumFinEquiv (Sum.inl j₁)) = j₁.val := by
       intro j₁
-      simp [sylvesterOff, finSumFinEquiv, Fin.addCases]
+      unfold sylvesterOff
+      rw [finSumFinEquiv_apply_left, Fin.addCases_left]
     rw [show (∑ j₁ : Fin m, sylvesterOff m n (finSumFinEquiv (Sum.inl j₁)))
           = ∑ j₁ : Fin m, j₁.val from
           Finset.sum_congr rfl (fun j₁ _ => h1 j₁)]
@@ -632,7 +633,8 @@ private lemma sum_sylvesterOff_eq
   · have h2 : ∀ j₁ : Fin n,
         sylvesterOff m n (finSumFinEquiv (Sum.inr j₁)) = j₁.val := by
       intro j₁
-      simp [sylvesterOff, finSumFinEquiv, Fin.addCases]
+      unfold sylvesterOff
+      rw [finSumFinEquiv_apply_right, Fin.addCases_right]
     rw [show (∑ j₁ : Fin n, sylvesterOff m n (finSumFinEquiv (Sum.inr j₁)))
           = ∑ j₁ : Fin n, j₁.val from
           Finset.sum_congr rfl (fun j₁ _ => h2 j₁)]
@@ -711,7 +713,6 @@ The proof case-splits on whether some entry vanishes (in which case the
 product is zero) or all entries are nonzero (the weighted-Sylvester
 sum-bound applies). -/
 
-set_option maxHeartbeats 400000 in
 private lemma sylvester_chord_DLine_perm_prod_natDegree_le
     (lam : ZMod E.q) (D : CoordRingElt E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0))
@@ -734,7 +735,7 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
     rw [hprodzero, Polynomial.natDegree_zero]
     exact Nat.zero_le _
   · -- Case 2: all entries nonzero. Apply weighted-Sylvester sum-bound.
-    push_neg at hzero
+    push Not at hzero
     -- Step 1: support — each (σ j).val is in the row range.
     have hsupp : ∀ j : Fin ((chordCubicBiv E lam).natDegree
                               + (DLineBiv E lam D).natDegree),
@@ -764,7 +765,7 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
         unfold Polynomial.sylvester at hne
         rw [Matrix.of_apply, Fin.addCases_left] at hne
         by_contra hlt
-        push_neg at hlt
+        push Not at hlt
         have hnotin :
             ¬ (σ (Fin.castAdd _ j₁)).val ∈
               Set.Icc j₁.val (j₁.val + (DLineBiv E lam D).natDegree) := by
@@ -778,7 +779,7 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
         unfold Polynomial.sylvester at hne
         rw [Matrix.of_apply, Fin.addCases_right] at hne
         by_contra hlt
-        push_neg at hlt
+        push Not at hlt
         have hnotin :
             ¬ (σ (Fin.natAdd _ j₁)).val ∈
               Set.Icc j₁.val (j₁.val + (chordCubicBiv E lam).natDegree) := by
@@ -830,7 +831,7 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
         -- Extract: (σ ...).val ≤ j₁.val + DLineBiv.natDegree (else entry would be 0).
         have hupper : (σ (Fin.castAdd _ j₁)).val ≤ j₁.val + (DLineBiv E lam D).natDegree := by
           by_contra hgt
-          push_neg at hgt
+          push Not at hgt
           have hnotin :
               ¬ (σ (Fin.castAdd _ j₁)).val ∈
                 Set.Icc j₁.val (j₁.val + (DLineBiv E lam D).natDegree) := by
@@ -864,7 +865,7 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
         rw [Matrix.of_apply, Fin.addCases_right] at hne_j
         have hupper : (σ (Fin.natAdd _ j₁)).val ≤ j₁.val + (chordCubicBiv E lam).natDegree := by
           by_contra hgt
-          push_neg at hgt
+          push Not at hgt
           have hnotin :
               ¬ (σ (Fin.natAdd _ j₁)).val ∈
                 Set.Icc j₁.val (j₁.val + (chordCubicBiv E lam).natDegree) := by
@@ -910,7 +911,7 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
               (fun _ : Fin (DLineBiv E lam D).natDegree => 6)
               = (normPoly E D).natDegree := by
           intro j₁
-          simp [finSumFinEquiv, Fin.addCases]
+          rw [finSumFinEquiv_apply_left, Fin.addCases_left]
         rw [Finset.sum_congr rfl (fun j₁ _ => hl j₁)]
         simp [mul_comm]
       · have hr : ∀ j₁ : Fin (DLineBiv E lam D).natDegree,
@@ -919,7 +920,7 @@ private lemma sylvester_chord_DLine_perm_prod_natDegree_le
               (fun _ : Fin (DLineBiv E lam D).natDegree => 6)
               = 6 := by
           intro j₁
-          simp [finSumFinEquiv, Fin.addCases]
+          rw [finSumFinEquiv_apply_right, Fin.addCases_right]
         rw [Finset.sum_congr rfl (fun j₁ _ => hr j₁)]
         simp [mul_comm]
     -- Sum the per-column inequalities (using hper_col).

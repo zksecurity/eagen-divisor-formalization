@@ -30,7 +30,6 @@
 
   7. Probability bound: Pr[f=0] <= 18*(degE(D)+M-1)*q / (#E-1)(#E-3).
 -/
-import Divisor.Defs
 import Divisor.BassaMonic
 import Mathlib.Algebra.Polynomial.Derivative
 import Mathlib.Tactic.LinearCombination

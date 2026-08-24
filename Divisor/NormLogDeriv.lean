@@ -177,7 +177,7 @@ theorem eval_sum_off_diag_eq_zero
         (C ((m α : K)) * (X - C α) ^ (m α - 1) *
           ∏ β ∈ S.erase α, (X - C β) ^ (m β))) = 0 := by
   classical
-  rw [eval_finset_sum]
+  rw [eval_finsetSum]
   refine Finset.sum_eq_zero ?_
   intro α hα
   rw [Finset.mem_erase] at hα

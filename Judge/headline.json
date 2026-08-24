@@ -1,0 +1,15 @@
+{
+    "challenge_module": "Challenge",
+    "solution_module": "Divisor",
+    "theorem_names": [
+        "Divisor.ma_extractable",
+        "Divisor.ip_extractable",
+        "Divisor.ma_completeness",
+        "Divisor.ma_completeness_q",
+        "Divisor.ip_completeness",
+        "Divisor.ip_completeness_q",
+        "Divisor.ma_completeness_binary_any_length",
+        "Divisor.ma_completeness_binary_any_length_cert"
+    ],
+    "permitted_axioms": ["propext", "Quot.sound", "Classical.choice"]
+}

@@ -10,8 +10,7 @@
 
   Proof: union bound over three events.
 -/
-import Divisor.Defs
-import Divisor.Axioms.AxiomHasseWeil
+import Divisor.CubicIntersection
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Algebra.Polynomial.RingDivision
 import Mathlib.Algebra.Polynomial.Roots
@@ -68,7 +67,7 @@ the chord through `A₀` and `A₁` is tangent to `E` at `A₀`. Lean's
 `logDerivCheckFn` uses the chord (not the geometric tangent) slope
 in this case, leading to incorrect values.
 
-Codex-confirmed bound: `|S₅| ≤ |E.points|` via `thirdPoint_inj_on_A₁`
+Bound: `|S₅| ≤ |E.points|` via `thirdPoint_inj_on_A₁`
 (group-law: `A₀ + A₁ = -A₀` ⟹ `A₁ = -2A₀`, unique). -/
 
 noncomputable def tangentCollisionAtA₀ :
@@ -231,11 +230,11 @@ theorem thirdPoint_some_eq_neg_add
   have hC0 : A₀.2 ^ 2 = A₀.1 ^ 3 + E.curveA * A₀.1 + E.curveB := E.hOnCurve A₀ hA₀
   -- Show affineOfMem unfolds to .some (with these nonsingular witnesses).
   have heq0 : ECPoint.affineOfMem E hA₀ =
-      (.some hns0 : ECPoint E) := rfl
+      (.some _ _ hns0 : ECPoint E) := rfl
   have heq1 : ECPoint.affineOfMem E hA₁ =
-      (.some hns1 : ECPoint E) := rfl
+      (.some _ _ hns1 : ECPoint E) := rfl
   have heqxy : ECPoint.affineOfMem E hxy_mem =
-      (.some hnsxy : ECPoint E) := rfl
+      (.some _ _ hnsxy : ECPoint E) := rfl
   rw [heq0, heq1, heqxy]
   -- Case-split on the structure of `thirdPoint`.
   unfold thirdPoint at hT
@@ -275,7 +274,7 @@ theorem thirdPoint_some_eq_neg_add
             omega
           exact (mul_eq_zero.mp htwo).resolve_left h2
         -- Replace A₁'s nonsingular witness with A₀'s by congruence.
-        have hpts_eq : (.some hns1 : ECPoint E) = .some hns0 := by
+        have hpts_eq : (.some _ _ hns1 : ECPoint E) = .some _ _ hns0 := by
           congr 1 <;> [exact hxx.symm; exact hyy.symm]
         rw [hpts_eq]
         rw [WeierstrassCurve.Affine.Point.add_self_of_Y_ne' hyneg]
@@ -383,11 +382,11 @@ theorem thirdPoint_inj_on_A₁ (A₀ : ZMod E.q × ZMod E.q) (hA₀ : A₀ ∈ E
   -- Cancel A₀, then extract a = b from .some equality.
   have hpt_eq : ECPoint.affineOfMem E ha_mem = ECPoint.affineOfMem E hb_mem :=
     add_left_cancel hadd_eq
-  -- affineOfMem ha_mem = .some hns_a, affineOfMem hb_mem = .some hns_b;
+  -- affineOfMem ha_mem = .some _ _ hns_a, affineOfMem hb_mem = .some _ _ hns_b;
   -- equality forces a.1 = b.1 ∧ a.2 = b.2.
-  have h_some : (.some (E.equation_iff_nonsingular.mp ((E.equation_iff a.1 a.2).mpr
+  have h_some : (.some a.1 a.2 (E.equation_iff_nonsingular.mp ((E.equation_iff a.1 a.2).mpr
                   (E.hOnCurve a ha_mem))) : ECPoint E)
-              = .some (E.equation_iff_nonsingular.mp ((E.equation_iff b.1 b.2).mpr
+              = .some b.1 b.2 (E.equation_iff_nonsingular.mp ((E.equation_iff b.1 b.2).mpr
                   (E.hOnCurve b hb_mem))) := hpt_eq
   rw [WeierstrassCurve.Affine.Point.some.injEq] at h_some
   exact Prod.ext h_some.1 h_some.2
@@ -905,24 +904,21 @@ theorem support_disjointness (D : CoordRingElt E.q)
         + E.numAffine + E.numAffine + E.numAffine := by gcongr
     _ = (3 * N + 4) * E.numAffine := by ring
 
-/-- **Hasse-derived `|E| ≤ 2q`** (for `q ≥ 5`).
-    From the integer-squared form `(|E.points| − q)² ≤ 4q`, derive
-    `|E.points| ≤ q + 2√q ≤ 2q` (since `2√q ≤ q` for `q ≥ 4`). -/
-theorem points_card_le_two_q (h : 5 ≤ E.q) :
+/-- **Trivial `|E| ≤ 2q`**: the fiber over each `x`-coordinate holds
+    at most the two points `(x, ±y)` (`card_points_with_fst_eq_le`),
+    and there are `q` fibers. Axiom-free. -/
+theorem points_card_le_two_q :
     E.points.card ≤ 2 * E.q := by
-  have hHW := hasse_weil E
-  rw [E.hNumPoints] at hHW
-  have hi : ((E.points.card : ℤ) - E.q)^2 ≤ 4 * E.q := by
-    push_cast at hHW
-    nlinarith [hHW]
-  by_contra hLt
-  push_neg at hLt
-  have hQ5 : (5 : ℤ) ≤ E.q := by exact_mod_cast h
-  have hLow : ((E.points.card : ℤ) - E.q) ≥ E.q + 1 := by
-    have : ((E.points.card : ℤ)) ≥ 2 * E.q + 1 := by exact_mod_cast hLt
-    linarith
-  -- (|E| − q)² ≥ (q + 1)² = q² + 2q + 1; need this > 4q.
-  -- For q ≥ 5: q² ≥ 5q, so q² + 2q + 1 ≥ 7q + 1 > 4q.
-  nlinarith [hi, hLow, hQ5, sq_nonneg ((E.points.card : ℤ) - E.q - (E.q + 1))]
+  classical
+  calc E.points.card
+      = ∑ x₀ : ZMod E.q,
+          (E.points.filter (fun P => P.1 = x₀)).card :=
+        Finset.card_eq_sum_card_fiberwise
+          (fun P _ => Finset.mem_univ P.1)
+    _ ≤ ∑ _x₀ : ZMod E.q, 2 :=
+        Finset.sum_le_sum (fun x₀ _ => card_points_with_fst_eq_le E x₀)
+    _ = 2 * E.q := by
+        rw [Finset.sum_const, Finset.card_univ, ZMod.card, smul_eq_mul,
+          mul_comm]
 
 end Divisor

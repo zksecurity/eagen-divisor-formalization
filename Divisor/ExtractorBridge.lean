@@ -1,7 +1,7 @@
 /-
   Divisor/ExtractorBridge.lean
 
-  T4 extractor bridge theorems (D3, D4, D5 of the axiom elimination plan).
+  T4 extractor bridge theorems (steps D3, D4, D5 of the extractor chain).
 
   These theorems take σ-matching-style hypotheses (distilled from the
   output of `log_deriv_nonvanishing_criterion`) and produce the
@@ -21,14 +21,7 @@
     derived equation `(-P) + Σ [extractedScalars i] · B_i = 0`,
     conclude `target = Σ [extractedScalars i] · B_i`.
 -/
-import Divisor.Soundness
-import Divisor.DivisorPrincipal
-import Divisor.PolyGSlopeProjection
-import Divisor.PolyGTraceFormula
-import Divisor.PolyGDensity
-import Divisor.TraceProof
 import Divisor.DensityBound
-import Divisor.ClearedFullPoly
 import Divisor.TightBound
 
 namespace Divisor
@@ -85,7 +78,7 @@ theorem extractorDivisorCoeffs_negP
   have hNegTargetOnE : (stmt.target.1, -stmt.target.2) ∈ E.points := by
     apply E.hComplete
     have hc := E.hOnCurve _ hTargetOnE
-    simp only at hc ⊢
+    try simp only at hc ⊢
     rw [neg_sq]; exact hc
   have hns : E.toW.toAffine.Nonsingular stmt.target.1 (-stmt.target.2) :=
     E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hNegTargetOnE))
@@ -443,7 +436,7 @@ theorem extractorDivisorCoeffs_support_subset_candidate
   | @some x y hns =>
       refine Finset.mem_insert_of_mem ?_
       -- The `some` value equals `ECPoint.affine E x y` since it's nonsingular.
-      have hAffEq : (WeierstrassCurve.Affine.Point.some hns : ECPoint E)
+      have hAffEq : (WeierstrassCurve.Affine.Point.some _ _ hns : ECPoint E)
           = ECPoint.affine E x y := (ECPoint.affine_of_nonsingular E hns).symm
       by_cases hxy : (x, y) = (stmt.target.1, -stmt.target.2)
       · rw [Prod.mk.injEq] at hxy
@@ -453,7 +446,7 @@ theorem extractorDivisorCoeffs_support_subset_candidate
       · refine Finset.mem_insert_of_mem ?_
         -- Indicator = 0, so filter-sum ≠ 0, so filter is nonempty.
         have hEval : extractorDivisorCoeffs E stmt msg hkm
-                        (WeierstrassCurve.Affine.Point.some hns) =
+                        (WeierstrassCurve.Affine.Point.some _ _ hns) =
                       0 + ∑ j ∈ (Finset.univ : Finset (Fin msg.k)).filter
                         (fun j => extractorBases E stmt msg hkm j = (x, y)),
                         extractedScalars E stmt msg hkm j := by
@@ -518,7 +511,7 @@ theorem negP_notin_image_basesAffineEC
   have hNegTargetOnE : (stmt.target.1, -stmt.target.2) ∈ E.points := by
     apply E.hComplete
     have hc := E.hOnCurve _ hTargetOnE
-    simp only at hc ⊢
+    try simp only at hc ⊢
     rw [neg_sq]; exact hc
   have hBaseOnE : extractorBases E stmt msg hkm j ∈ E.points := by
     unfold extractorBases; exact hBasesOnE _
@@ -543,7 +536,7 @@ theorem infinity_ne_negP_aff
   have hNegTargetOnE : (stmt.target.1, -stmt.target.2) ∈ E.points := by
     apply E.hComplete
     have hc := E.hOnCurve _ hTargetOnE
-    simp only at hc ⊢
+    try simp only at hc ⊢
     rw [neg_sq]; exact hc
   have hns : E.toW.toAffine.Nonsingular stmt.target.1 (-stmt.target.2) :=
     E.equation_iff_nonsingular.mp ((E.equation_iff _ _).mpr (E.hOnCurve _ hNegTargetOnE))
@@ -1891,7 +1884,7 @@ theorem sigma_zero_preimage_exists
       σ k₀ = (⟨0, by omega⟩ : Fin (1 + baseImageCount E stmt msg hkm)) := by
   classical
   by_contra hne
-  push_neg at hne
+  push Not at hne
   have h0notRange :
       (⟨0, by omega⟩ : Fin (1 + baseImageCount E stmt msg hkm))
         ∉ Set.range σ := by
@@ -2064,7 +2057,7 @@ theorem extractorCoeffFromSigma_satisfies_D3
     · rw [extractorCoeffFromSigma_canonical_nohit
             E stmt msg hkm β_fun σ i hC hHit]
       -- pos_i ∉ range σ ⇒ distinctM' pos_i = 0 ⇒ extractorGroupSum i = 0.
-      push_neg at hHit
+      push Not at hHit
       have hPosNotRange :
           baseImagePos E stmt msg hkm (baseIndexOf E stmt msg hkm i)
             ∉ Set.range σ := by
@@ -2108,7 +2101,7 @@ theorem extractorCoeffFromSigma_satisfies_D3
     The packaged theorem `extractor_succeeds_and_isPrincipal` combines
     S4 + S5 + S6 into the full composite conclusion
     `extractorSucceeds ∧ IsPrincipal (extractorDivisorCoeffs)`,
-    as consumed by S7 to replace the former composite T4 bridge axiom.
+    as consumed by S7.
 -/
 
 /-- **Helper: σ k is either 0 or `baseImagePos i`**.
@@ -2613,54 +2606,34 @@ theorem extracted_scalars_valid
         formula). -/
 
 /-
-The original `axiom polyG_zero_trace_formula` universally quantified over
-   `β_fun`. That was unsound: see `BetaUnique.lean` for a counterexample where
-   distinct Silverman III Cor 3.5-compliant decompositions produce different
-   `multAt` values. The original axiom is commented out below and replaced by
-   a narrowed `theorem ... := by sorry` that fixes `β_fun` to
-   `betaConstructive E msg.toD`.
+**Trace-of-log-derivative identity** (`polyG_zero_trace_formula`
+below). Under `hSplit` (normPoly splits over F_q), `hAccount`
+(betaConstructive accounting identity), and `hAllZero`
+(logDerivCheckFn vanishes on every defined non-vertical pair), the
+denominator-cleared polynomial `polyG` formed from
+`betaConstructive E msg.toD` vanishes on every non-vertical pair in
+`E × E`.
 
-   Original (unsound under weakened sum-bound):
-   axiom polyG_zero_trace_formula
-       {E : ECSetup} (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
-       (hkm : stmt.k = msg.k)
-       (hAllZero : ...)
-       (β_fun : ZMod E.q × ZMod E.q → ℕ)
-       (hβsup : ...) (hβcov : ...) (hβsum : ...) (hβgroup : ...) :
-       ∀ A₀ A₁, ... polyG ... (multAt E β_fun msg.toD k) ... = 0
+**All three hypotheses are essential**:
+* Without `hSplit` + `hAccount`, `\ref{lem:log-derivative}`
+  (`chord_sum_eq_residue_sum`) fails; concrete finite-field
+  counterexamples exist.
+* Without `hAllZero`, a cheating prover's `msg.m` can make
+  `polyG ≠ 0` at some non-vertical pair (by the `polyG ⇔
+  paperResidue` Step-5 equivalence).
 
-**Narrowed trace-of-log-derivative identity (sorry'd theorem).**
-    Under the hypotheses `hSplit` (normPoly splits over F_q),
-    `hAccount` (betaConstructive accounting identity), and
-    `hAllZero` (logDerivCheckFn vanishes on every defined non-vertical
-    pair), the denominator-cleared polynomial `polyG` formed from
-    `betaConstructive E msg.toD` vanishes on every non-vertical pair
-    in `E × E`.
+The multiplicity function is fixed to `betaConstructive` — universal
+quantification over all decompositions is unsound; see
+`BetaUnique.lean` for the counterexample.
 
-    **All three hypotheses are essential**:
-    * Without `hSplit` + `hAccount`, `\ref{lem:log-derivative}`
-      (`chord_sum_eq_residue_sum`) fails; concrete finite-field
-      counterexamples exist.
-    * Without `hAllZero`, a cheating prover's `msg.m` can make
-      `polyG ≠ 0` at some non-vertical pair (by the `polyG ⇔
-      paperResidue` Step-5 equivalence).
-
-    The multiplicity function is fixed to `betaConstructive` rather
-    than universally quantified over all decompositions. See
-    `BetaUnique.lean` for why universal quantification is unsound
-    (counterexample on `F_17`).
-
-    Classical content: Lang *Algebra* 3rd ed. §VI.5 (norm/trace of a
-    finite separable field extension) + Silverman ATAEC III §1
-    (function-field extension `F_q(E)/F_q(z)`) + Stichtenoth
-    *Algebraic Function Fields and Codes* 2nd ed. §III.1-5
-    (function-field norm, divisor-of-norm, differentials) +
-    Silverman AEC III Cor 3.5 (principal-divisor characterisation
-    on E). Combined with the Hasse-Weil bound (already an axiom) for
-    the density extension.
+Classical content: Lang *Algebra* 3rd ed. §VI.5 (norm/trace of a
+finite separable field extension) + Silverman ATAEC III §1
+(function-field extension `F_q(E)/F_q(z)`) + Stichtenoth
+*Algebraic Function Fields and Codes* 2nd ed. §III.1-5
+(function-field norm, divisor-of-norm, differentials) +
+Silverman AEC III Cor 3.5 (principal-divisor characterisation on E).
 -/
 
-set_option maxHeartbeats 1600000 in
 /-- **Paper Step 1** (`thm:ma`, ip.tex `\ref{step:logderiv}`): express
     `f` as the discrepancy of two log-derivatives.
 
@@ -2747,7 +2720,7 @@ theorem polyG_zero_trace_formula
         (∏ j' ∈ Finset.univ.erase j, ellP E (R_fn j') A₀ A₁) = 0 := by
       apply Finset.sum_eq_zero; intro j _; rw [hProdQ]; ring
     rw [hS1, hS2, add_zero]
-  push_neg at hDnz
+  push Not at hDnz
   -- From here, D is nonzero.
   -- polyG = 0 at fully defined pairs
   have hPhaseA : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
@@ -2845,7 +2818,7 @@ theorem polyG_zero_trace_formula
         -- zerosCard + (1 + baseImageCount) ≤ D.degE + stmt.k + 2
         have hZC : zerosCard E D ≤ D.degE := by
           have hβcov := betaCanonical_covers E D
-            (by push_neg; intro ha; exact hDnz ha)
+            (by push Not; intro ha; exact hDnz ha)
           have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaCanonical E D) D k :=
             fun k => multAt_pos E (betaCanonical E D) D hβcov k
           have hβsum := betaCanonical_sum_le_degE E D
@@ -2914,7 +2887,7 @@ theorem polyG_zero_trace_formula
             · left; exact ⟨hMem, (not_not.mp h1).symm⟩
             · right; left; exact ⟨hMem, h2⟩
             · right; right; refine ⟨hMem, ?_⟩
-              push_neg at h3; obtain ⟨Q, hQmem, hQeval⟩ := h3
+              push Not at h3; obtain ⟨Q, hQmem, hQeval⟩ := h3
               exact ⟨Q, hQmem, hQeval⟩
           -- Bound card(badFilter)
           have hVert : (E.points.filter (fun A₁ => A₁.1 = A₀.1)).card ≤ 2 :=
@@ -2951,7 +2924,7 @@ theorem polyG_zero_trace_formula
                 simp only [Finset.mem_filter] at hA₁ ⊢
                 refine ⟨hA₁.1, ?_⟩
                 unfold logDerivCheckFnDefined at hA₁
-                push_neg at hA₁
+                push Not at hA₁
                 rw [bivEval_denomScaledPoly_eq E D P₀ k₀ B₀ A₀ A₁ hA₁.2.2, hA₁.2.1,
                     mul_zero]
               -- Split filter into vertical + non-vertical
@@ -2987,7 +2960,7 @@ theorem polyG_zero_trace_formula
               -- Every non-vertical A₁ has logDerivCheckFnDenom = 0.
               -- But denomScaledPoly is nonzero as a polynomial (for large E),
               -- so this contradicts large E.points.card from hLargeQ.
-              push_neg at hWit
+              push Not at hWit
               exfalso
               -- Every non-vertical A₁ has bivEval denomScaledPoly = 0.
               have hAllZeroBiv : ∀ A₁ ∈ E.points, A₀.1 ≠ A₁.1 →
@@ -2996,7 +2969,7 @@ theorem polyG_zero_trace_formula
                 rw [bivEval_denomScaledPoly_eq E D P₀ k₀ B₀ A₀ A₁ hNV]
                 have hND := hWit A₁ hA₁mem hNV
                 unfold logDerivCheckFnDefined at hND
-                push_neg at hND
+                push Not at hND
                 rw [hND]; ring
               -- denomScaledPoly %ₘ curveEqPoly ≠ 0 (structural argument).
               -- By curveEqPoly_dvd_mul (primality) + degree analysis of
@@ -3150,7 +3123,7 @@ theorem polyG_zero_trace_formula
                       -- Q ≠ A₀ since Q ∈ zerosFinset and A₀ ∉ zerosFinset
                       have hQne : Q ≠ A₀ := fun heq => hA₀nz (heq ▸ hQ)
                       by_contra h
-                      push_neg at h
+                      push Not at h
                       have hx : Q.1 = A₀.1 := by
                         have := h.2; rw [neg_eq_zero] at this; exact eq_of_sub_eq_zero this
                       have hy : Q.2 = A₀.2 := eq_of_sub_eq_zero h.1
@@ -3213,7 +3186,7 @@ theorem polyG_zero_trace_formula
     · -- Non-special: use the lemma directly
       exact hPhase1a A₀ hA₀ hA₀nz hA₀r
     · -- Special A₀: some R_fn j = A₀
-      push_neg at hA₀r
+      push Not at hA₀r
       -- For A₁ not in zerosFinset, not in R-image, different x:
       -- (applied to A₁ as "A₀") gives polyG(A₁, A₀) = 0
       -- Swap gives polyG(A₀, A₁) = 0
@@ -3242,7 +3215,7 @@ theorem polyG_zero_trace_formula
         -- |bad| ≤ |zerosFinset| + |R-image| + 2 ≤ D.degE + (1 + stmt.k) + 2
         have hZC : zerosCard E D ≤ D.degE := by
           have hβcov := betaCanonical_covers E D
-            (by push_neg; intro ha; exact hDnz ha)
+            (by push Not; intro ha; exact hDnz ha)
           have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaCanonical E D) D k :=
             fun k => multAt_pos E (betaCanonical E D) D hβcov k
           have hβsum := betaCanonical_sum_le_degE E D
@@ -3268,7 +3241,7 @@ theorem polyG_zero_trace_formula
             ≤ D.degE + stmt.k + 5 := by
           -- The cardinality of the bad set is at most the sum of the cardinalities of the three sets.
           have h_bad_card : (Finset.filter (fun A₁ => A₁ ∈ zerosFinset E D ∨ ∃ j, R_fn j = A₁ ∨ A₀.1 = A₁.1) E.points).card ≤ D.degE + (1 + stmt.k) + 2 := by
-            refine' le_trans ( Finset.card_le_card _ ) _;
+            refine le_trans ( Finset.card_le_card (t := ?_) ?_ ) ?_;
             any_goals exact Finset.filter ( fun A₁ => A₁ ∈ zerosFinset E D ) E.points ∪ Finset.image R_fn Finset.univ ∪ Finset.filter ( fun A₁ => A₀.1 = A₁.1 ) E.points;
             · intro x hx
               simp only [Finset.mem_filter] at hx
@@ -3280,31 +3253,38 @@ theorem polyG_zero_trace_formula
               · rcases hj with rfl | heq
                 · exact Or.inl (Or.inr ⟨j, rfl⟩)
                 · exact Or.inr ⟨hMem, heq⟩;
-            · refine' le_trans ( Finset.card_union_le _ _ ) ( add_le_add ( le_trans ( Finset.card_union_le _ _ ) _ ) _ );
-              · refine' add_le_add _ _;
-                · refine' le_trans _ hZC;
+            · refine le_trans ( Finset.card_union_le _ _ ) ( add_le_add ( le_trans ( Finset.card_union_le _ _ ) ?_ ) ?_ );
+              · refine add_le_add ?_ ?_;
+                · refine le_trans ?_ hZC;
                   rw [ ← Finset.card_image_of_injective _ ( show Function.Injective ( fun x : ZMod E.q × ZMod E.q => x ) from fun x y hxy => by simpa using hxy ) ] ; exact Finset.card_le_card fun x hx => by aesop;
                 · exact le_trans ( Finset.card_image_le ) ( by simpa using by linarith );
-              · convert card_points_with_fst_eq_le E A₀.1 using 1;
-                congr 1; ext x; simp only [Finset.mem_filter, eq_comm];
-          convert h_bad_card.trans _ using 1;
-          · congr 1; ext A₁; simp only [Finset.mem_filter, not_and, not_not, ne_eq]
+              · refine le_trans (le_of_eq ?_) (card_points_with_fst_eq_le E A₀.1)
+                exact congrArg Finset.card
+                  (Finset.filter_congr fun x _ => by rw [eq_comm])
+          have hSetEq : ({A₁ ∈ E.points |
+                ¬(A₁ ∉ zerosFinset E D ∧
+                    (∀ j, R_fn j ≠ A₁) ∧ A₀.1 ≠ A₁.1)} :
+                Finset (ZMod E.q × ZMod E.q))
+              = {A₁ ∈ E.points |
+                  A₁ ∈ zerosFinset E D ∨ ∃ j, R_fn j = A₁ ∨ A₀.1 = A₁.1} := by
+            refine Finset.filter_congr fun A₁ _ => ?_
+            simp only [not_and, not_not, ne_eq]
             constructor
-            · intro ⟨hm, hp⟩; refine ⟨hm, ?_⟩
+            · intro hp
               by_cases hZ : A₁ ∈ zerosFinset E D
               · exact Or.inl hZ
               · by_cases hR : ∃ j, R_fn j = A₁
                 · obtain ⟨j, rfl⟩ := hR; exact Or.inr ⟨j, Or.inl rfl⟩
-                · push_neg at hR
+                · push Not at hR
                   exact Or.inr ⟨⟨0, by omega⟩, Or.inr (hp hZ hR)⟩
-            · intro ⟨hm, hp⟩; refine ⟨hm, ?_⟩
-              intro hnz hR
+            · intro hp hnz hR
               rcases hp with h1 | ⟨j, hj⟩
               · exact absurd h1 hnz
               · rcases hj with hj | hj
                 · exact absurd hj (hR j)
                 · exact hj
-          · linarith
+          refine le_trans (le_of_eq (congrArg Finset.card hSetEq))
+            (h_bad_card.trans (by linarith))
         have hGoodCount := Finset.card_le_card hGoodSub
         have hSplitCard := Finset.card_filter_add_card_filter_not
           (fun A₁ => A₁ ∉ zerosFinset E D ∧ (∀ j, R_fn j ≠ A₁) ∧ A₀.1 ≠ A₁.1)
@@ -3350,7 +3330,7 @@ theorem polyG_zero_trace_formula
       have hZCle : (zerosFinset E D).card ≤ D.degE + stmt.k + 2 := by
         have hZCle' : zerosCard E D ≤ D.degE := by
           have hβcov := betaCanonical_covers E D (by
-            push_neg; intro ha; exact hDnz ha)
+            push Not; intro ha; exact hDnz ha)
           have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaCanonical E D) D k :=
             fun k => multAt_pos E (betaCanonical E D) D hβcov k
           have hβsum := betaCanonical_sum_le_degE E D
@@ -3405,7 +3385,7 @@ theorem polyG_zero_trace_formula
       have : zerosCard E D + (1 + baseImageCount E stmt msg hkm) ≤ D.degE + stmt.k + 2 := by
         have hZC : zerosCard E D ≤ D.degE := by
           have hβcov := betaCanonical_covers E D (by
-            push_neg; intro ha; exact hDnz ha)
+            push Not; intro ha; exact hDnz ha)
           have hβpos : ∀ k : Fin (zerosCard E D), 1 ≤ multAt E (betaCanonical E D) D k :=
             fun k => multAt_pos E (betaCanonical E D) D hβcov k
           have hβsum := betaCanonical_sum_le_degE E D
@@ -3445,7 +3425,7 @@ theorem neg_y_mem_points (x y : ZMod E.q)
     (h : (x, y) ∈ E.points) : (x, -y) ∈ E.points := by
   apply E.hComplete
   have hc := E.hOnCurve _ h
-  simp only at hc ⊢
+  try simp only at hc ⊢
   rw [neg_sq]; exact hc
 
 /-- Every value of `distinctR` lies in `E.points`, given that the

@@ -3,12 +3,11 @@
 
   Concrete proof of the split-rational chord-fiber-product/normZ
   proportionality.  This file is deliberately phrased against
-  `chord_fiber_product_concrete`, so it can be imported by the legacy
-  axiom module without creating a cycle with the bar-factorisation module
+  `chord_fiber_product_concrete`, so `ChordFiberProductNormZ.lean` can
+  import it without creating a cycle with the bar-factorisation module
   that mentions `chord_fiber_product`.
 -/
-import Divisor.Axioms.AxiomChordFiberDivisibility
-import Divisor.Axioms.AxiomExistsDivisorMultiplicity
+import Divisor.Bridges.ChordFiberDivisibility
 import Divisor.ChordFiberWeightedDegree
 import Divisor.FunctionFieldZ
 import Divisor.PartialFractionExpansion
@@ -41,7 +40,7 @@ private theorem exists_root_of_map_root_of_roots_card_eq_natDegree
     ∃ α ∈ p.roots, φ α = β := by
   classical
   by_contra hnone
-  push_neg at hnone
+  push Not at hnone
   have hfac : C p.leadingCoeff * (p.roots.map fun a => X - C a).prod = p :=
     Polynomial.C_leadingCoeff_mul_prod_multiset_X_sub_C hroots
   have hmap := congrArg (Polynomial.map φ) hfac
@@ -351,7 +350,7 @@ private theorem rootMultiplicity_div_X_sub_C
     Polynomial.dvd_iff_isRoot.mpr hroot
   have h_eq : p = (Polynomial.X - Polynomial.C β) *
       (p /ₘ (Polynomial.X - Polynomial.C β)) := by
-    have := Polynomial.modByMonic_add_div p hMonic
+    have := Polynomial.modByMonic_add_div p (Polynomial.X - Polynomial.C β)
     have hmod : p %ₘ (Polynomial.X - Polynomial.C β) = 0 :=
       (Polynomial.modByMonic_eq_zero_iff_dvd hMonic).mpr h_dvd
     rw [hmod, zero_add] at this
@@ -384,8 +383,8 @@ private theorem divByMonic_pow_succ
   set d := (p /ₘ q ^ k) /ₘ q with hd_def
   set r := q ^ k * ((p /ₘ q ^ k) %ₘ q) + (p %ₘ q ^ k) with hr_def
   have hp_eq : r + q ^ (k + 1) * d = p := by
-    have h1 := Polynomial.modByMonic_add_div p hqp
-    have h2 := Polynomial.modByMonic_add_div (p /ₘ q ^ k) hq
+    have h1 := Polynomial.modByMonic_add_div p (q ^ k)
+    have h2 := Polynomial.modByMonic_add_div (p /ₘ q ^ k) q
     rw [show q ^ (k + 1) = q ^ k * q from pow_succ q k]
     linear_combination h1 + q^k * h2
   have hr_deg : r.degree < (q ^ (k + 1)).degree := by
@@ -476,7 +475,7 @@ private theorem commonRootMultRatGS_divLin
           Polynomial.dvd_iff_isRoot.mpr ha
         have hmod : D.a %ₘ (Polynomial.X - Polynomial.C β) = 0 :=
           (Polynomial.modByMonic_eq_zero_iff_dvd hMonic).mpr h_dvd
-        have h_eq2 := Polynomial.modByMonic_add_div D.a hMonic
+        have h_eq2 := Polynomial.modByMonic_add_div D.a (Polynomial.X - Polynomial.C β)
         rw [hmod, zero_add] at h_eq2
         rw [show (D.divLin β).a = D.a /ₘ (Polynomial.X - Polynomial.C β) from rfl] at hq
         rw [← h_eq2, hq, mul_zero] at h_a
@@ -489,7 +488,7 @@ private theorem commonRootMultRatGS_divLin
           Polynomial.dvd_iff_isRoot.mpr hb
         have hmod : D.b %ₘ (Polynomial.X - Polynomial.C β) = 0 :=
           (Polynomial.modByMonic_eq_zero_iff_dvd hMonic).mpr h_dvd
-        have h_eq2 := Polynomial.modByMonic_add_div D.b hMonic
+        have h_eq2 := Polynomial.modByMonic_add_div D.b (Polynomial.X - Polynomial.C β)
         rw [hmod, zero_add] at h_eq2
         rw [show (D.divLin β).b = D.b /ₘ (Polynomial.X - Polynomial.C β) from rfl] at hq
         rw [← h_eq2, hq, mul_zero] at h_b
@@ -644,7 +643,6 @@ private theorem rootMultiplicity_normPoly_ge_twice_commonRootMultRatGS
   have hN_ne : normPoly E D ≠ 0 := normPoly_ne_zero E D hDnz
   set k := commonRootMultRatGS E D β
   have h_dvd_a : (Polynomial.X - Polynomial.C β) ^ k ∣ D.a := by
-    unfold commonRootMultRatGS at *
     by_cases h_a : D.a = 0
     · rw [h_a]; exact dvd_zero _
     · exact dvd_trans (pow_dvd_pow _
@@ -659,7 +657,6 @@ private theorem rootMultiplicity_normPoly_ge_twice_commonRootMultRatGS
           · rw [if_neg h_b]; exact min_le_left _ _))
         (Polynomial.pow_rootMultiplicity_dvd D.a β)
   have h_dvd_b : (Polynomial.X - Polynomial.C β) ^ k ∣ D.b := by
-    unfold commonRootMultRatGS at *
     by_cases h_a : D.a = 0
     · show (Polynomial.X - Polynomial.C β) ^ k ∣ D.b
       have : k = D.b.rootMultiplicity β := by
@@ -759,7 +756,7 @@ private theorem ordAt_nonTwoTorsion_aux_eq_geomLocalOrder
         rw [hIH]
         have h_eq := geomLocalOrder_rationalLift_divLin E D hDnz P hP hY ha hb
         omega
-      · push_neg at hEvalNegP
+      · push Not at hEvalNegP
         rw [if_pos hEvalNegP]
         rw [geomLocalOrder_rationalLift_non_two_torsion E D P hP hY]
         have hk : commonRootMultRatGS E D P.1 = 0 :=
@@ -767,7 +764,7 @@ private theorem ordAt_nonTwoTorsion_aux_eq_geomLocalOrder
         have hbr : branchRat E D P = 0 :=
           branchRat_eq_zero_of_lone E D hY hEvalP hEvalNegP
         simp only [hbr, if_true, hk, Nat.sub_zero]
-    · push_neg at hEvalP
+    · push Not at hEvalP
       rw [if_pos hEvalP]
       have hGeomZero_iff_evalZero :
           D.geomEval E (rationalLift E P hP) = fqToBar E (D.eval P.1 P.2) := by
@@ -806,7 +803,6 @@ private theorem gd_mult_rationalLift_eq_betaTrue
 
 /-! ## Split rationality of the geometric support -/
 
-set_option maxHeartbeats 800000 in
 private theorem support_point_unique_rational_zero_of_split
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (hSplitOnE : splitsOnE E D)

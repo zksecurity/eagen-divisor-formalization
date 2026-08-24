@@ -1,7 +1,18 @@
 /-
-  Divisor/EagenBuildLandmark.lean
+  Divisor/LineBuild.lean
 
-  Axiom-free landmark theorem for Eagen's recursive construction.
+  Axiom-free build theorem for the recursive line-build construction.
+
+  The construction is Miller's: it builds a function with a
+  prescribed degree-0 divisor by combining points pairwise, each step
+  taking the line through the two running points and multiplying the
+  accumulated functions (Victor S. Miller, "Short Programs for
+  functions on Curves", unpublished manuscript, 1986; published as
+  "The Weil Pairing, and Its Efficient Calculation", J. Cryptology
+  17(4):235-261, 2004). The level-by-level scheduling implemented
+  here, with the odd point carried up a level and vertical
+  denominators cleared, follows Eagen, ePrint 2022/596, §3.1.1
+  ("Incremental construction").
 
   Given a sum-zero list `Ps` of distinct affine points on `E`, the
   recursion builds a polynomial `D : CoordRingElt E.q` satisfying:
@@ -11,15 +22,15 @@
     (3) `(normPoly E D).natDegree = Ps.length`
 
   These three properties — "vanishing + right degree" — are the
-  geometric content of Eagen's algorithm. They imply, when combined
-  with `splitsOnE` and `Nodup`, the full per-`R` divisor identity
-  `divisorOfD E D = formalDivisorOfList Ps` (proved separately,
-  outside this file, since the `ordAt`-based machinery pulls in
-  project axioms).
+  geometric content of the line-build algorithm. They imply, when
+  combined with `splitsOnE` and `Nodup`, the full per-`R` divisor
+  identity `divisorOfD E D = formalDivisorOfList Ps` (proved
+  separately, outside this file, since the `ordAt`-based machinery
+  pulls in project axioms).
 
-  The recursion data model here is a sub-namespace `Divisor.Landmark`
+  The recursion data model here is a sub-namespace `Divisor.LineAccum`
   to avoid clashing with the chord-only path in
-  `Divisor.EagenBuildRecursive`. The `EagenAccum.point` field uses
+  `Divisor.LineBuildRecursive`. The `Accum.point` field uses
   `ECPoint E` so the `O` carry (running sum of an absorbed sub-list
   hitting the identity) is representable.
 
@@ -27,52 +38,50 @@
 
   This file is the foundation for the binary completeness path: M1
   (data model), M2 (tangent combine), M3 (ungate chord/vertical), M4
-  (preservation), M5 (landmark + divisor-identity bridge).
+  (preservation), M5 (build theorem + divisor-identity bridge).
 -/
-import Divisor.Defs
 import Divisor.IncrementalConstruction
-import Divisor.OrdP.Uniformizer
 
 open Polynomial
 
-namespace Divisor.Landmark
+namespace Divisor.LineAccum
 
 variable (E : ECSetup)
 
 /-! ## Data model
 
-`EagenAccum` carries a running-sum point on `E` (admitting `O` =
+`Accum` carries a running-sum point on `E` (admitting `O` =
 infinity for sub-lists summing to zero) and the accumulated
 polynomial. -/
 
-/-- Accumulator for the Landmark recursion. `point : ECPoint E`
+/-- Accumulator for the LineAccum recursion. `point : ECPoint E`
 admits `0 = ∞` so vertical-internal sub-sums are first-class.
 
-The invariant `LandmarkInv xs a` (see below) ties the field to a
+The invariant `AccumInv xs a` (see below) ties the field to a
 list of absorbed inputs `xs`. Singletons (odd-carry leftovers from
 `level0`) are NOT yet absorbed; they're staging entries with
-`poly = 1` whose `LandmarkInv` is the trivial `xs = []` form. -/
-structure EagenAccum where
+`poly = 1` whose `AccumInv` is the trivial `xs = []` form. -/
+structure Accum where
   point : ECPoint E
   poly : CoordRingElt E.q
 
 /-- Trivial accumulator: identity polynomial, point at infinity.
     Acts as the unit of `combine`. Used as the level-0 staging for
     "no absorbed inputs". -/
-noncomputable def EagenAccum.unit : EagenAccum E :=
+noncomputable def Accum.unit : Accum E :=
   { point := 0, poly := { a := 1, b := 0 } }
 
 /-- Singleton accumulator: holds a single point with identity
     polynomial (no inputs absorbed yet). The `level0` of an
     odd-trailing element produces this; subsequent combines absorb
     it. -/
-noncomputable def EagenAccum.singleton (P : ZMod E.q × ZMod E.q)
-    (_hP : P ∈ E.points) : EagenAccum E :=
+noncomputable def Accum.singleton (P : ZMod E.q × ZMod E.q)
+    (_hP : P ∈ E.points) : Accum E :=
   { point := ECPoint.affine E P.1 P.2, poly := { a := 1, b := 0 } }
 
 /-! ## Combine helpers
 
-Per Codex's design recommendation, the per-pair combine logic is
+The per-pair combine logic is
 split into six helpers, one for each branch of the
 `(a.point, b.point)` ECPoint pair. The public `combine` matches and
 dispatches; preservation lemmas are proved on the helpers.
@@ -93,15 +102,15 @@ The line factor in each affine-affine case is taken from
 the (P, Q) shape. -/
 
 /-- Both running sums are zero: just multiply polynomials. -/
-noncomputable def EagenAccum.combine_oo (a b : EagenAccum E) : EagenAccum E :=
+noncomputable def Accum.combine_oo (a b : Accum E) : Accum E :=
   { point := 0, poly := mulCoordRingElt E a.poly b.poly }
 
 /-- `a.point = 0`, `b.point ≠ 0`: forward `b`'s residue. -/
-noncomputable def EagenAccum.combine_ol (a b : EagenAccum E) : EagenAccum E :=
+noncomputable def Accum.combine_ol (a b : Accum E) : Accum E :=
   { point := b.point, poly := mulCoordRingElt E a.poly b.poly }
 
 /-- `a.point ≠ 0`, `b.point = 0`: forward `a`'s residue. -/
-noncomputable def EagenAccum.combine_or (a b : EagenAccum E) : EagenAccum E :=
+noncomputable def Accum.combine_or (a b : Accum E) : Accum E :=
   { point := a.point, poly := mulCoordRingElt E a.poly b.poly }
 
 /-- Both points affine with distinct x-coordinates: chord case.
@@ -109,11 +118,11 @@ noncomputable def EagenAccum.combine_or (a b : EagenAccum E) : EagenAccum E :=
     rational point; the new running sum is its negation
     `-(a + b)` in the group law. The polynomial is
     `(line · a.poly · b.poly) / ((X - a.x)(X - b.x))`. -/
-noncomputable def EagenAccum.combine_distinct
-    (a b : EagenAccum E)
+noncomputable def Accum.combine_distinct
+    (a b : Accum E)
     (xa ya xb yb : ZMod E.q)
     (_h_xx : xa ≠ xb) :
-    EagenAccum E :=
+    Accum E :=
   let line := chordCoordRingElt E (xa, ya) (xb, yb)
   let lam := slopeOf xa ya xb yb
   let Qx := lam ^ 2 - xa - xb
@@ -127,29 +136,29 @@ noncomputable def EagenAccum.combine_distinct
 /-- Both points affine, same x, opposite y: vertical line.
     `a.point + b.point = O`, so the new running sum is `O`.
     Polynomial is `(a.poly · b.poly) / (X - a.x)`. -/
-noncomputable def EagenAccum.combine_vertical
-    (a b : EagenAccum E) (xa : ZMod E.q) :
-    EagenAccum E :=
+noncomputable def Accum.combine_vertical
+    (a b : Accum E) (xa : ZMod E.q) :
+    Accum E :=
   let prod := mulCoordRingElt E a.poly b.poly
   { point := 0, poly := prod.divLin xa }
 
 /-- Both points affine, equal, with `y = 0`: 2-torsion doubling.
     Tangent line is vertical `X - x_a`; new running sum = O. -/
-noncomputable def EagenAccum.combine_tangent_torsion
-    (a b : EagenAccum E) (xa : ZMod E.q) :
-    EagenAccum E :=
+noncomputable def Accum.combine_tangent_torsion
+    (a b : Accum E) (xa : ZMod E.q) :
+    Accum E :=
   -- Identical to vertical case at the data level.
-  EagenAccum.combine_vertical E a b xa
+  Accum.combine_vertical E a b xa
 
 /-- Both points affine, equal, with `y ≠ 0`: tangent doubling.
     Tangent line at `(xa, ya)`. The "third intersection" is the
     point `(x₂, y₂)` with `x₂ = λ² - 2·xa`, where
     `λ = (3·xa² + curveA)/(2·ya)`. New running sum = `-(2·a)` =
     `(x₂, -y₂)`. -/
-noncomputable def EagenAccum.combine_tangent_smooth
-    (a b : EagenAccum E)
+noncomputable def Accum.combine_tangent_smooth
+    (a b : Accum E)
     (xa ya : ZMod E.q) (_h_y : ya ≠ 0) :
-    EagenAccum E :=
+    Accum E :=
   let line := chordCoordRingElt E (xa, ya) (xa, ya)
   let lam : ZMod E.q := (3 * xa ^ 2 + E.curveA) * (2 * ya)⁻¹
   let Qx := lam ^ 2 - 2 * xa
@@ -168,29 +177,29 @@ Dispatches on `(a.point, b.point)`. Total via `match`; the
 `some_some` cases delegate to `chordCoordRingElt`'s own 4-way
 dispatch through the helpers above. -/
 
-noncomputable def EagenAccum.combine (a b : EagenAccum E) : EagenAccum E :=
+noncomputable def Accum.combine (a b : Accum E) : Accum E :=
   match _h_a : a.point, _h_b : b.point with
   | WeierstrassCurve.Affine.Point.zero, WeierstrassCurve.Affine.Point.zero =>
-      EagenAccum.combine_oo E a b
+      Accum.combine_oo E a b
   | WeierstrassCurve.Affine.Point.zero,
-    WeierstrassCurve.Affine.Point.some _ =>
-      EagenAccum.combine_ol E a b
-  | WeierstrassCurve.Affine.Point.some _,
+    WeierstrassCurve.Affine.Point.some _ _ _ =>
+      Accum.combine_ol E a b
+  | WeierstrassCurve.Affine.Point.some _ _ _,
     WeierstrassCurve.Affine.Point.zero =>
-      EagenAccum.combine_or E a b
+      Accum.combine_or E a b
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ =>
       if h_xx : xa ≠ xb then
-        EagenAccum.combine_distinct E a b xa ya xb yb h_xx
+        Accum.combine_distinct E a b xa ya xb yb h_xx
       else if _h_yy : ya = -yb then
         -- a.point + b.point = O.
-        EagenAccum.combine_vertical E a b xa
+        Accum.combine_vertical E a b xa
       else
         -- Same x AND not y-flipped ⇒ ya = yb (curve dichotomy).
         if h_y0 : ya = 0 then
-          EagenAccum.combine_tangent_torsion E a b xa
+          Accum.combine_tangent_torsion E a b xa
         else
-          EagenAccum.combine_tangent_smooth E a b xa ya h_y0
+          Accum.combine_tangent_smooth E a b xa ya h_y0
 
 /-! ## Level-0 pair construction
 
@@ -208,7 +217,7 @@ Three branches via `chordCoordRingElt` + `thirdPoint`:
     doubling); new point = O. -/
 
 noncomputable def levelInitPair
-    (P Q : ZMod E.q × ZMod E.q) : EagenAccum E :=
+    (P Q : ZMod E.q × ZMod E.q) : Accum E :=
   let line := chordCoordRingElt E P Q
   match thirdPoint E P Q with
   | none =>
@@ -219,7 +228,7 @@ noncomputable def levelInitPair
       -- is the negation in the group law: ECPoint.affine x₂ (-y₂).
       { point := ECPoint.affine E x₂ (-y₂), poly := line }
 
-/-! ## Driver: level0 (even-length), level_step, iterate, eagenBuild
+/-! ## Driver: level0 (even-length), level_step, iterate, lineBuild
 
 This first cut handles **even-length** input lists. Odd-length
 lists with sum-zero are conceivable (e.g. `[P, Q, R]` with
@@ -232,7 +241,7 @@ selected bases is odd. -/
 /-- Pair adjacent input points; even length only. Each pair becomes
     one level-1 accumulator via `levelInitPair`. -/
 noncomputable def level0 :
-    List (ZMod E.q × ZMod E.q) → List (EagenAccum E)
+    List (ZMod E.q × ZMod E.q) → List (Accum E)
   | [] => []
   | [_] => []  -- ill-formed for sum-zero inputs; produces empty
   | P :: Q :: rest => levelInitPair E P Q :: level0 rest
@@ -242,18 +251,18 @@ noncomputable def level0 :
     on odd-length input doesn't lose the residual; it converges
     in `⌈log₂ n⌉` levels). -/
 noncomputable def level_step :
-    List (EagenAccum E) → List (EagenAccum E)
+    List (Accum E) → List (Accum E)
   | [] => []
   | [a] => [a]
   | a :: b :: rest =>
-      EagenAccum.combine E a b :: level_step rest
+      Accum.combine E a b :: level_step rest
 
-/-- The point projection of one `EagenAccum.combine` dispatch.
+/-- The point projection of one `Accum.combine` dispatch.
     This skips the polynomial side and is computable. -/
 def pointCombine (p q : ECPoint E) : ECPoint E :=
   match p, q with
   | WeierstrassCurve.Affine.Point.zero, _ => q
-  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero => p
+  | WeierstrassCurve.Affine.Point.some _ _ _, WeierstrassCurve.Affine.Point.zero => p
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ =>
       if _h_xx : xa ≠ xb then
@@ -272,7 +281,7 @@ def pointCombine (p q : ECPoint E) : ECPoint E :=
         ECPoint.affine E Qx (-Qy)
 
 /-- The point-projection of `level_step`: operates only on accumulator
-    points, mirroring the `EagenAccum.combine` dispatcher. -/
+    points, mirroring the `Accum.combine` dispatcher. -/
 def pointLevelStep : List (ECPoint E) → List (ECPoint E)
   | [] => []
   | [p] => [p]
@@ -280,15 +289,15 @@ def pointLevelStep : List (ECPoint E) → List (ECPoint E)
 
 /-- Iterate `level_step` `n` times (or until length ≤ 1). -/
 noncomputable def iterate :
-    ℕ → List (EagenAccum E) → List (EagenAccum E)
+    ℕ → List (Accum E) → List (Accum E)
   | 0, xs => xs
   | n + 1, xs =>
       if xs.length ≤ 1 then xs
       else iterate n (level_step E xs)
 
-/-- Top-level Eagen build for a sum-zero list of input points.
+/-- Top-level line build for a sum-zero list of input points.
     Returns the polynomial of the final singleton accumulator. -/
-noncomputable def eagenBuild
+noncomputable def lineBuild
     (Ps : List (ZMod E.q × ZMod E.q)) : CoordRingElt E.q :=
   let acc_list := iterate E Ps.length (level0 E Ps)
   match acc_list with
@@ -299,7 +308,7 @@ noncomputable def eagenBuild
 
 The running EC sum of a list of inputs, lifted to `ECPoint E`. Off
 `E.points` an input contributes nothing (junk on `E.points` membership
-is benign because the recursion's `LandmarkInv` will require all
+is benign because the recursion's `AccumInv` will require all
 inputs to be on `E`). -/
 
 noncomputable def sumOnE (xs : List (ZMod E.q × ZMod E.q)) : ECPoint E :=
@@ -318,9 +327,9 @@ theorem sumOnE_cons {P : ZMod E.q × ZMod E.q} {xs : List _}
   rw [List.foldr_cons]
   rw [dif_pos hP]
 
-/-! ## LandmarkInv — the lightweight invariant
+/-! ## AccumInv — the lightweight invariant
 
-`LandmarkInv xs a` says an accumulator `a` represents the absorbed
+`AccumInv xs a` says an accumulator `a` represents the absorbed
 sub-list `xs` in the following sense:
 
   1. `a.point = sumOnE xs` (running EC sum matches).
@@ -348,7 +357,7 @@ noncomputable def negCoords (P : ECPoint E) : Option (ZMod E.q × ZMod E.q) :=
 
 The definitions below are deliberately parallel to the local-order
 construction in `OrdP.Uniformizer`, but they do not mention `ordAt`.
-They are the polynomial recursion needed for the stronger Landmark
+They are the polynomial recursion needed for the stronger LineAccum
 invariant: on a non-2-torsion sheet, a twin-sheet zero cancels one
 vertical factor `(X - x₀)` from both coordinates and recurses; a lone
 sheet zero is measured by the root multiplicity of the norm polynomial.
@@ -719,7 +728,7 @@ theorem localMult_divLin_decreases_by_two_at_twoTorsion_fiber
   simpa [localMult_eq_ordAt] using
     (ordAt_twoTorsion_divLin_rec E D hD hP h2 ha_eval hb_eval)
 
-/-! ## Target multiplicity carried by a Landmark accumulator -/
+/-! ## Target multiplicity carried by a LineAccum accumulator -/
 
 noncomputable def target
     (xs : List (ZMod E.q × ZMod E.q)) (R : ECPoint E)
@@ -771,62 +780,58 @@ theorem one_le_target_of_residue
   rw [if_pos hR]
   omega
 
-/-! ## Strengthened Landmark invariant sketch
+/-! ## Strengthened LineAccum invariant sketch
 
-`LandmarkInvStrong xs a` is the intended replacement for the older
-vanishing-only invariant.  The pointwise lower bound says the
-accumulator polynomial has at least the required sheet-level
-multiplicity at every affine point of `E`; the `natDegree` equality
-keeps the old global mass accounting. -/
+`AccumInvStrong xs a` strengthens the vanishing-only invariant:
+the pointwise lower bound says the accumulator polynomial has at
+least the required sheet-level multiplicity at every affine point of
+`E`, and the `natDegree` equality keeps the global mass
+accounting. -/
 
-noncomputable def LandmarkInvStrong
-    (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E) : Prop :=
+noncomputable def AccumInvStrong
+    (xs : List (ZMod E.q × ZMod E.q)) (a : Accum E) : Prop :=
   a.point = sumOnE E xs ∧
   (∀ P : ZMod E.q × ZMod E.q,
     P ∈ E.points → target E xs a.point P ≤ localMult E a.poly P) ∧
-  letI : Decidable (a.point = (0 : ECPoint E)) :=
-    Classical.dec _
   (normPoly E a.poly).natDegree =
     xs.length + (if a.point = (0 : ECPoint E) then 0 else 1)
 
-theorem LandmarkInvStrong.running_sum
-    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
-    (h : LandmarkInvStrong E xs a) :
+theorem AccumInvStrong.running_sum
+    {xs : List (ZMod E.q × ZMod E.q)} {a : Accum E}
+    (h : AccumInvStrong E xs a) :
     a.point = sumOnE E xs := h.1
 
-theorem LandmarkInvStrong.target_le
-    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
-    (h : LandmarkInvStrong E xs a) :
+theorem AccumInvStrong.target_le
+    {xs : List (ZMod E.q × ZMod E.q)} {a : Accum E}
+    (h : AccumInvStrong E xs a) :
     ∀ P : ZMod E.q × ZMod E.q,
       P ∈ E.points → target E xs a.point P ≤ localMult E a.poly P := h.2.1
 
-theorem LandmarkInvStrong.natDegree
-    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
-    (h : LandmarkInvStrong E xs a) :
-    letI : Decidable (a.point = (0 : ECPoint E)) :=
-      Classical.dec _
+theorem AccumInvStrong.natDegree
+    {xs : List (ZMod E.q × ZMod E.q)} {a : Accum E}
+    (h : AccumInvStrong E xs a) :
     (normPoly E a.poly).natDegree =
       xs.length + (if a.point = (0 : ECPoint E) then 0 else 1) := h.2.2
 
-theorem LandmarkInvStrong.vanish_of_mem
-    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
-    (h : LandmarkInvStrong E xs a)
+theorem AccumInvStrong.vanish_of_mem
+    {xs : List (ZMod E.q × ZMod E.q)} {a : Accum E}
+    (h : AccumInvStrong E xs a)
     {P : ZMod E.q × ZMod E.q} (hPxs : P ∈ xs) (hPon : P ∈ E.points) :
     a.poly.eval P.1 P.2 = 0 := by
   have htarget : 1 ≤ target E xs a.point P :=
     one_le_target_of_mem E hPxs
-  have hle := LandmarkInvStrong.target_le E h P hPon
+  have hle := AccumInvStrong.target_le E h P hPon
   exact eval_eq_zero_of_localMult_pos E a.poly hPon (by omega)
 
-theorem LandmarkInvStrong.vanish_of_residue
-    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
-    (h : LandmarkInvStrong E xs a)
+theorem AccumInvStrong.vanish_of_residue
+    {xs : List (ZMod E.q × ZMod E.q)} {a : Accum E}
+    (h : AccumInvStrong E xs a)
     {P : ZMod E.q × ZMod E.q}
     (hR : negCoords E a.point = some P) (hPon : P ∈ E.points) :
     a.poly.eval P.1 P.2 = 0 := by
   have htarget : 1 ≤ target E xs a.point P :=
     one_le_target_of_residue E hR
-  have hle := LandmarkInvStrong.target_le E h P hPon
+  have hle := AccumInvStrong.target_le E h P hPon
   exact eval_eq_zero_of_localMult_pos E a.poly hPon (by omega)
 
 /-!
@@ -846,15 +851,15 @@ unconditional:
   pointwise local multiplicity of `chordCoordRingElt E A B`; this is
   the `L(A,B)` term in the identity, including tangent double contact.
 
-* `landmarkInvStrong_combine_oo`, `landmarkInvStrong_combine_ol`,
-  `landmarkInvStrong_combine_or`, `landmarkInvStrong_combine_vertical`,
-  `landmarkInvStrong_combine_distinct`, `landmarkInvStrong_combine_tangent`:
-  the five-plus preservation cases against `LandmarkInvStrong`.
+* `accumInvStrong_combine_oo`, `accumInvStrong_combine_ol`,
+  `accumInvStrong_combine_or`, `accumInvStrong_combine_vertical`,
+  `accumInvStrong_combine_distinct`, `accumInvStrong_combine_tangent`:
+  the five-plus preservation cases against `AccumInvStrong`.
 
-* `pairwiseCombineHyp_of_landmarkInvStrong`:
+* `pairwiseCombineHyp_of_accumInvStrong`:
   convert the strengthened preservation theorem back to the existing
-  `Landmark.PairwiseCombineHyp E`, or replace downstream uses of the
-  old invariant with `LandmarkInvStrong` directly.
+  `LineAccum.PairwiseCombineHyp E`, or replace downstream uses of the
+  old invariant with `AccumInvStrong` directly.
 -/
 
 theorem localMult_chordCoordRingElt_at_left
@@ -904,8 +909,8 @@ theorem localMult_chordCoordRingElt_at_third_neg
   intro lam x₂ y₂
   exact Nat.zero_le _
 
-noncomputable def LandmarkInv
-    (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E) : Prop :=
+noncomputable def AccumInv
+    (xs : List (ZMod E.q × ZMod E.q)) (a : Accum E) : Prop :=
   a.point = sumOnE E xs ∧
   (∀ P ∈ xs, a.poly.eval P.1 P.2 = 0) ∧
   -- Residue vanishing: when running sum is non-zero, the polynomial
@@ -913,37 +918,35 @@ noncomputable def LandmarkInv
   -- of the latest chord, geometrically).
   (∀ Q : ZMod E.q × ZMod E.q,
     negCoords E a.point = some Q → a.poly.eval Q.1 Q.2 = 0) ∧
-  letI : Decidable (a.point = (0 : ECPoint E)) :=
-    Classical.dec _
   (normPoly E a.poly).natDegree =
     xs.length + (if a.point = (0 : ECPoint E) then 0 else 1)
 
-theorem LandmarkInvStrong.to_LandmarkInv
-    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
-    (h : LandmarkInvStrong E xs a)
+theorem AccumInvStrong.to_AccumInv
+    {xs : List (ZMod E.q × ZMod E.q)} {a : Accum E}
+    (h : AccumInvStrong E xs a)
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hres_on : ∀ P : ZMod E.q × ZMod E.q,
       negCoords E a.point = some P → P ∈ E.points) :
-    LandmarkInv E xs a := by
+    AccumInv E xs a := by
   classical
   refine ⟨?_, ?_, ?_, ?_⟩
-  · exact LandmarkInvStrong.running_sum E h
+  · exact AccumInvStrong.running_sum E h
   · intro P hP
-    exact LandmarkInvStrong.vanish_of_mem E h hP (hxs_on P hP)
+    exact AccumInvStrong.vanish_of_mem E h hP (hxs_on P hP)
   · intro P hP
-    exact LandmarkInvStrong.vanish_of_residue E h hP (hres_on P hP)
-  · exact LandmarkInvStrong.natDegree E h
+    exact AccumInvStrong.vanish_of_residue E h hP (hres_on P hP)
+  · exact AccumInvStrong.natDegree E h
 
 /-- The synchronized `Forall₂` form: a list of absorbed sub-lists
-    and a list of accumulators, pointwise satisfying `LandmarkInv`. -/
-def LandmarkInvList (xss : List (List (ZMod E.q × ZMod E.q)))
-    (accs : List (EagenAccum E)) : Prop :=
-  List.Forall₂ (LandmarkInv E) xss accs
+    and a list of accumulators, pointwise satisfying `AccumInv`. -/
+def AccumInvList (xss : List (List (ZMod E.q × ZMod E.q)))
+    (accs : List (Accum E)) : Prop :=
+  List.Forall₂ (AccumInv E) xss accs
 
 /-- The synchronized `Forall₂` form for the strengthened invariant. -/
-def LandmarkInvStrongList (xss : List (List (ZMod E.q × ZMod E.q)))
-    (accs : List (EagenAccum E)) : Prop :=
-  List.Forall₂ (LandmarkInvStrong E) xss accs
+def AccumInvStrongList (xss : List (List (ZMod E.q × ZMod E.q)))
+    (accs : List (Accum E)) : Prop :=
+  List.Forall₂ (AccumInvStrong E) xss accs
 
 /-! ## Helper: sumOnE on append -/
 
@@ -968,18 +971,18 @@ theorem sumOnE_append (xs ys : List (ZMod E.q × ZMod E.q)) :
 /-! ## Preservation: `combine_oo` (both running sums = O)
 
 When two accumulators with `point = 0` are combined, the result
-just multiplies the polynomials. `LandmarkInv` is preserved. -/
+just multiplies the polynomials. `AccumInv` is preserved. -/
 
-theorem landmarkInv_combine_oo
+theorem accumInv_combine_oo
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
-    (ha : LandmarkInv E xs a) (hb : LandmarkInv E ys b)
+    (ha : AccumInv E xs a) (hb : AccumInv E ys b)
     (ha_pt : a.point = (0 : ECPoint E))
     (hb_pt : b.point = (0 : ECPoint E))
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0) :
-    LandmarkInv E (xs ++ ys) (EagenAccum.combine_oo E a b) := by
+    AccumInv E (xs ++ ys) (Accum.combine_oo E a b) := by
   classical
   obtain ⟨ha_sum, ha_van, ha_res, ha_deg⟩ := ha
   obtain ⟨hb_sum, hb_van, hb_res, hb_deg⟩ := hb
@@ -1003,13 +1006,13 @@ theorem landmarkInv_combine_oo
       ring
   · -- Residue: result.point = 0, so negCoords = none. Vacuous.
     intro Q hQ
-    simp [negCoords, EagenAccum.combine_oo] at hQ
+    simp [negCoords, Accum.combine_oo] at hQ
   · -- Degree: (normPoly (a.poly · b.poly)).natDegree = (xs ++ ys).length.
     show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree
-        = (xs ++ ys).length + (if (EagenAccum.combine_oo E a b).point
+        = (xs ++ ys).length + (if (Accum.combine_oo E a b).point
                                   = (0 : ECPoint E) then 0 else 1)
     rw [normPoly_mul_eq]
-    have h_combined_zero : (EagenAccum.combine_oo E a b).point = (0 : ECPoint E) := rfl
+    have h_combined_zero : (Accum.combine_oo E a b).point = (0 : ECPoint E) := rfl
     rw [if_pos h_combined_zero]
     rw [if_pos ha_pt] at ha_deg
     rw [if_pos hb_pt] at hb_deg
@@ -1017,19 +1020,19 @@ theorem landmarkInv_combine_oo
     rw [ha_deg, hb_deg, List.length_append]
     omega
 
-theorem landmarkInvStrong_combine_oo_when_rootMult_le_one
+theorem accumInvStrong_combine_oo_when_rootMult_le_one
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt : a.point = (0 : ECPoint E))
     (hb_pt : b.point = (0 : ECPoint E))
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 1
       ∨ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 1) :
-    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine_oo E a b) := by
+    AccumInvStrong E (xs ++ ys) (Accum.combine_oo E a b) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -1045,11 +1048,11 @@ theorem landmarkInvStrong_combine_oo_when_rootMult_le_one
     ring
   refine ⟨?_, ?_, ?_⟩
   · show (0 : ECPoint E) = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, ha_pt, hb_pt, zero_add]
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, ha_pt, hb_pt, zero_add]
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have ha_count_le : xs.count P ≤ localMult E a.poly P := by
       have htarget : target E xs a.point P = xs.count P := by
         rw [ha_pt]
@@ -1069,40 +1072,40 @@ theorem landmarkInvStrong_combine_oo_when_rootMult_le_one
       · exact Or.inr hroot_a
       · exact Or.inl hroot_b
     calc
-      target E (xs ++ ys) (EagenAccum.combine_oo E a b).point P
+      target E (xs ++ ys) (Accum.combine_oo E a b).point P
           = xs.count P + ys.count P := by
-            simp [target, EagenAccum.combine_oo, negCoords, List.count_append]
+            simp [target, Accum.combine_oo, negCoords, List.count_append]
       _ ≤ localMult E a.poly P + localMult E b.poly P :=
             Nat.add_le_add ha_count_le hb_count_le
-      _ ≤ localMult E (EagenAccum.combine_oo E a b).poly P := by
-            simpa [EagenAccum.combine_oo] using hprod_le
+      _ ≤ localMult E (Accum.combine_oo E a b).poly P := by
+            simpa [Accum.combine_oo] using hprod_le
   · show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree =
-        (xs ++ ys).length + (if (EagenAccum.combine_oo E a b).point
+        (xs ++ ys).length + (if (Accum.combine_oo E a b).point
           = (0 : ECPoint E) then 0 else 1)
     rw [normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
-    have ha_deg := LandmarkInvStrong.natDegree E ha
-    have hb_deg := LandmarkInvStrong.natDegree E hb
+    have ha_deg := AccumInvStrong.natDegree E ha
+    have hb_deg := AccumInvStrong.natDegree E hb
     rw [if_pos ha_pt] at ha_deg
     rw [if_pos hb_pt] at hb_deg
-    have h_combined_zero : (EagenAccum.combine_oo E a b).point = (0 : ECPoint E) := rfl
+    have h_combined_zero : (Accum.combine_oo E a b).point = (0 : ECPoint E) := rfl
     rw [if_pos h_combined_zero, ha_deg, hb_deg, List.length_append]
     omega
 
-theorem landmarkInvStrong_combine_ol_when_rootMult_le_one
+theorem accumInvStrong_combine_ol_when_rootMult_le_one
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
     (h_neg_b_on : ∀ Q : ZMod E.q × ZMod E.q,
       negCoords E b.point = some Q → Q ∈ E.points)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt : a.point = (0 : ECPoint E))
     (hb_pt : b.point ≠ (0 : ECPoint E))
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 1
       ∨ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 1) :
-    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine_ol E a b) := by
+    AccumInvStrong E (xs ++ ys) (Accum.combine_ol E a b) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -1119,11 +1122,11 @@ theorem landmarkInvStrong_combine_ol_when_rootMult_le_one
     ring
   refine ⟨?_, ?_, ?_⟩
   · show b.point = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, ha_pt, zero_add]
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, ha_pt, zero_add]
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have ha_count_le : xs.count P ≤ localMult E a.poly P := by
       have htarget : target E xs a.point P = xs.count P := by
         rw [ha_pt]
@@ -1138,41 +1141,43 @@ theorem landmarkInvStrong_combine_ol_when_rootMult_le_one
       · exact Or.inr hroot_a
       · exact Or.inl hroot_b
     calc
-      target E (xs ++ ys) (EagenAccum.combine_ol E a b).point P
+      target E (xs ++ ys) (Accum.combine_ol E a b).point P
           = xs.count P + target E ys b.point P := by
-            simp [target, EagenAccum.combine_ol, List.count_append]
+            have hpt : (Accum.combine_ol E a b).point = b.point := rfl
+            rw [hpt]
+            simp [target, List.count_append]
             omega
       _ ≤ localMult E a.poly P + localMult E b.poly P :=
             Nat.add_le_add ha_count_le hb_target_le
-      _ ≤ localMult E (EagenAccum.combine_ol E a b).poly P := by
-            simpa [EagenAccum.combine_ol] using hprod_le
+      _ ≤ localMult E (Accum.combine_ol E a b).poly P := by
+            simpa [Accum.combine_ol] using hprod_le
   · show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree =
-        (xs ++ ys).length + (if (EagenAccum.combine_ol E a b).point
+        (xs ++ ys).length + (if (Accum.combine_ol E a b).point
           = (0 : ECPoint E) then 0 else 1)
     rw [normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
-    have ha_deg := LandmarkInvStrong.natDegree E ha
-    have hb_deg := LandmarkInvStrong.natDegree E hb
+    have ha_deg := AccumInvStrong.natDegree E ha
+    have hb_deg := AccumInvStrong.natDegree E hb
     rw [if_pos ha_pt] at ha_deg
     rw [if_neg hb_pt] at hb_deg
-    have h_combined_pt : (EagenAccum.combine_ol E a b).point = b.point := rfl
+    have h_combined_pt : (Accum.combine_ol E a b).point = b.point := rfl
     rw [h_combined_pt, if_neg hb_pt, ha_deg, hb_deg, List.length_append]
     omega
 
-theorem landmarkInvStrong_combine_or_when_rootMult_le_one
+theorem accumInvStrong_combine_or_when_rootMult_le_one
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
     (h_neg_a_on : ∀ Q : ZMod E.q × ZMod E.q,
       negCoords E a.point = some Q → Q ∈ E.points)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt : a.point ≠ (0 : ECPoint E))
     (hb_pt : b.point = (0 : ECPoint E))
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 1
       ∨ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 1) :
-    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine_or E a b) := by
+    AccumInvStrong E (xs ++ ys) (Accum.combine_or E a b) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -1189,11 +1194,11 @@ theorem landmarkInvStrong_combine_or_when_rootMult_le_one
     ring
   refine ⟨?_, ?_, ?_⟩
   · show a.point = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, hb_pt, add_zero]
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, hb_pt, add_zero]
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have hb_count_le : ys.count P ≤ localMult E b.poly P := by
       have htarget : target E ys b.point P = ys.count P := by
         rw [hb_pt]
@@ -1208,23 +1213,25 @@ theorem landmarkInvStrong_combine_or_when_rootMult_le_one
       · exact Or.inr hroot_a
       · exact Or.inl hroot_b
     calc
-      target E (xs ++ ys) (EagenAccum.combine_or E a b).point P
+      target E (xs ++ ys) (Accum.combine_or E a b).point P
           = target E xs a.point P + ys.count P := by
-            simp [target, EagenAccum.combine_or, List.count_append]
+            have hpt : (Accum.combine_or E a b).point = a.point := rfl
+            rw [hpt]
+            simp [target, List.count_append]
             omega
       _ ≤ localMult E a.poly P + localMult E b.poly P :=
             Nat.add_le_add ha_target_le hb_count_le
-      _ ≤ localMult E (EagenAccum.combine_or E a b).poly P := by
-            simpa [EagenAccum.combine_or] using hprod_le
+      _ ≤ localMult E (Accum.combine_or E a b).poly P := by
+            simpa [Accum.combine_or] using hprod_le
   · show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree =
-        (xs ++ ys).length + (if (EagenAccum.combine_or E a b).point
+        (xs ++ ys).length + (if (Accum.combine_or E a b).point
           = (0 : ECPoint E) then 0 else 1)
     rw [normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
-    have ha_deg := LandmarkInvStrong.natDegree E ha
-    have hb_deg := LandmarkInvStrong.natDegree E hb
+    have ha_deg := AccumInvStrong.natDegree E ha
+    have hb_deg := AccumInvStrong.natDegree E hb
     rw [if_neg ha_pt] at ha_deg
     rw [if_pos hb_pt] at hb_deg
-    have h_combined_pt : (EagenAccum.combine_or E a b).point = a.point := rfl
+    have h_combined_pt : (Accum.combine_or E a b).point = a.point := rfl
     rw [h_combined_pt, if_neg ha_pt, ha_deg, hb_deg, List.length_append]
     omega
 
@@ -1233,18 +1240,18 @@ theorem landmarkInvStrong_combine_or_when_rootMult_le_one
 The combined accumulator forwards `b`'s residue point. Polynomial
 is `a.poly · b.poly`. -/
 
-theorem landmarkInv_combine_ol
+theorem accumInv_combine_ol
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
     (h_neg_b_on : ∀ Q : ZMod E.q × ZMod E.q,
       negCoords E b.point = some Q → Q ∈ E.points)
-    (ha : LandmarkInv E xs a) (hb : LandmarkInv E ys b)
+    (ha : AccumInv E xs a) (hb : AccumInv E ys b)
     (ha_pt : a.point = (0 : ECPoint E))
     (hb_pt : b.point ≠ (0 : ECPoint E))
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0) :
-    LandmarkInv E (xs ++ ys) (EagenAccum.combine_ol E a b) := by
+    AccumInv E (xs ++ ys) (Accum.combine_ol E a b) := by
   classical
   obtain ⟨ha_sum, ha_van, ha_res, ha_deg⟩ := ha
   obtain ⟨hb_sum, hb_van, hb_res, hb_deg⟩ := hb
@@ -1263,7 +1270,7 @@ theorem landmarkInv_combine_ol
       rw [hb_van P hP_ys]; ring
   · -- Residue: combined.point = b.point. Show vanishing at neg(b.point).
     intro Q hQ
-    have h_combined_pt : (EagenAccum.combine_ol E a b).point = b.point := rfl
+    have h_combined_pt : (Accum.combine_ol E a b).point = b.point := rfl
     rw [h_combined_pt] at hQ
     -- Q comes from negCoords b.point.
     have hQ_on : Q ∈ E.points := h_neg_b_on Q hQ
@@ -1272,9 +1279,9 @@ theorem landmarkInv_combine_ol
     rw [hb_res Q hQ]
     ring
   · show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree
-        = (xs ++ ys).length + (if (EagenAccum.combine_ol E a b).point
+        = (xs ++ ys).length + (if (Accum.combine_ol E a b).point
                                   = (0 : ECPoint E) then 0 else 1)
-    have h_combined_pt : (EagenAccum.combine_ol E a b).point = b.point := rfl
+    have h_combined_pt : (Accum.combine_ol E a b).point = b.point := rfl
     rw [h_combined_pt, if_neg hb_pt]
     rw [normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
     rw [if_pos ha_pt] at ha_deg
@@ -1286,18 +1293,18 @@ theorem landmarkInv_combine_ol
 
 Symmetric to `combine_ol`. -/
 
-theorem landmarkInv_combine_or
+theorem accumInv_combine_or
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
     (h_neg_a_on : ∀ Q : ZMod E.q × ZMod E.q,
       negCoords E a.point = some Q → Q ∈ E.points)
-    (ha : LandmarkInv E xs a) (hb : LandmarkInv E ys b)
+    (ha : AccumInv E xs a) (hb : AccumInv E ys b)
     (ha_pt : a.point ≠ (0 : ECPoint E))
     (hb_pt : b.point = (0 : ECPoint E))
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0) :
-    LandmarkInv E (xs ++ ys) (EagenAccum.combine_or E a b) := by
+    AccumInv E (xs ++ ys) (Accum.combine_or E a b) := by
   classical
   obtain ⟨ha_sum, ha_van, ha_res, ha_deg⟩ := ha
   obtain ⟨hb_sum, hb_van, hb_res, hb_deg⟩ := hb
@@ -1315,7 +1322,7 @@ theorem landmarkInv_combine_or
       rw [mulCoordRingElt_eval_on_E E a.poly b.poly hP_on]
       rw [hb_van P hP_ys]; ring
   · intro Q hQ
-    have h_combined_pt : (EagenAccum.combine_or E a b).point = a.point := rfl
+    have h_combined_pt : (Accum.combine_or E a b).point = a.point := rfl
     rw [h_combined_pt] at hQ
     have hQ_on : Q ∈ E.points := h_neg_a_on Q hQ
     show (mulCoordRingElt E a.poly b.poly).eval Q.1 Q.2 = 0
@@ -1323,9 +1330,9 @@ theorem landmarkInv_combine_or
     rw [ha_res Q hQ]
     ring
   · show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree
-        = (xs ++ ys).length + (if (EagenAccum.combine_or E a b).point
+        = (xs ++ ys).length + (if (Accum.combine_or E a b).point
                                   = (0 : ECPoint E) then 0 else 1)
-    have h_combined_pt : (EagenAccum.combine_or E a b).point = a.point := rfl
+    have h_combined_pt : (Accum.combine_or E a b).point = a.point := rfl
     rw [h_combined_pt, if_neg ha_pt]
     rw [normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
     rw [if_neg ha_pt] at ha_deg
@@ -1544,13 +1551,13 @@ The divisibility argument: `q := a.poly · b.poly` vanishes at both
 Both sheets ⇒ `q.a.eval xa = 0 ∧ q.b.eval xa = 0` ⇒
 `(X - C xa) ∣ q.a` and `(X - C xa) ∣ q.b` ⇒ divLin succeeds cleanly.
 
-Conditional on no `P ∈ xs ++ ys` having `P.1 = xa`. Future work:
-unconditional via richer multiplicity invariant (Codex-flagged sheet
-dichotomy). -/
+Conditional on no `P ∈ xs ++ ys` having `P.1 = xa`; an unconditional
+form would need a richer multiplicity invariant tracking the sheet
+dichotomy. -/
 
-theorem landmarkInv_combine_vertical_no_collision
+theorem accumInv_combine_vertical_no_collision
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     {xa ya : ZMod E.q}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
@@ -1558,11 +1565,11 @@ theorem landmarkInv_combine_vertical_no_collision
     (hxy_on : (xa, ya) ∈ E.points)
     (hxy_neg_on : (xa, -ya) ∈ E.points)
     (hy_ne : ya ≠ 0)
-    (ha : LandmarkInv E xs a) (hb : LandmarkInv E ys b)
+    (ha : AccumInv E xs a) (hb : AccumInv E ys b)
     (ha_pt_eq : a.point = ECPoint.affine E xa ya)
     (hb_pt_eq : b.point = ECPoint.affine E xa (-ya))
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0) :
-    LandmarkInv E (xs ++ ys) (EagenAccum.combine_vertical E a b xa) := by
+    AccumInv E (xs ++ ys) (Accum.combine_vertical E a b xa) := by
   classical
   obtain ⟨ha_sum, ha_van, ha_res, ha_deg⟩ := ha
   obtain ⟨hb_sum, hb_van, hb_res, hb_deg⟩ := hb
@@ -1593,7 +1600,7 @@ theorem landmarkInv_combine_vertical_no_collision
     qa_qb_eval_zero_of_double_fiber_vanish E q xa ya hy_ne hq_eval_pos hq_eval_neg
   have h_dvd_a : (X - C xa) ∣ q.a := dvd_X_sub_C_of_eval_eq_zero E h_qa_xa
   have h_dvd_b : (X - C xa) ∣ q.b := dvd_X_sub_C_of_eval_eq_zero E h_qb_xa
-  -- Step 4: assemble the four LandmarkInv conjuncts.
+  -- Step 4: assemble the four AccumInv conjuncts.
   refine ⟨?_, ?_, ?_, ?_⟩
   · -- (combine_vertical).point = 0 = sumOnE (xs ++ ys).
     show (0 : ECPoint E) = sumOnE E (xs ++ ys)
@@ -1605,15 +1612,15 @@ theorem landmarkInv_combine_vertical_no_collision
       E.equation_iff_nonsingular.mp ((E.equation_iff xa (-ya)).mpr (E.hOnCurve _ hxy_neg_on))
     rw [ECPoint.affine_of_nonsingular E hns_a, ECPoint.affine_of_nonsingular E hns_b]
     -- Use mathlib's Affine.Point negation: .some (x, y) + .some (x, -y) = 0.
-    show (0 : ECPoint E) = (.some hns_a + .some hns_b : ECPoint E)
+    show (0 : ECPoint E) = (.some _ _ hns_a + .some _ _ hns_b : ECPoint E)
     -- The sum of a point with its negative is the identity.
     -- mathlib: WeierstrassCurve.Affine.Point.add_neg or similar.
-    have h_neg : (.some hns_b : ECPoint E) = -(.some hns_a) := by
-      show WeierstrassCurve.Affine.Point.some hns_b
-            = -WeierstrassCurve.Affine.Point.some hns_a
+    have h_neg : (.some _ _ hns_b : ECPoint E) = -(.some _ _ hns_a) := by
+      show WeierstrassCurve.Affine.Point.some _ _ hns_b
+            = -WeierstrassCurve.Affine.Point.some _ _ hns_a
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg]
-    show (0 : ECPoint E) = .some hns_a + (-.some hns_a)
+    show (0 : ECPoint E) = .some _ _ hns_a + (-.some _ _ hns_a)
     rw [add_neg_cancel]
   · -- Vanishing at every P ∈ xs ++ ys (using no-collision hypothesis).
     intro P hP_mem
@@ -1634,15 +1641,15 @@ theorem landmarkInv_combine_vertical_no_collision
     exact divLin_eval_zero_of_x_ne E q xa h_dvd_a h_dvd_b h_q_eval hP_ne
   · -- Residue: result.point = 0, vacuous.
     intro Q hQ
-    have h_combined_pt : (EagenAccum.combine_vertical E a b xa).point
+    have h_combined_pt : (Accum.combine_vertical E a b xa).point
         = (0 : ECPoint E) := rfl
     rw [h_combined_pt] at hQ
     simp [negCoords] at hQ
   · -- Degree.
     show (normPoly E (q.divLin xa)).natDegree
-        = (xs ++ ys).length + (if (EagenAccum.combine_vertical E a b xa).point
+        = (xs ++ ys).length + (if (Accum.combine_vertical E a b xa).point
                                   = (0 : ECPoint E) then 0 else 1)
-    have h_combined_zero : (EagenAccum.combine_vertical E a b xa).point
+    have h_combined_zero : (Accum.combine_vertical E a b xa).point
         = (0 : ECPoint E) := rfl
     rw [if_pos h_combined_zero]
     -- normPoly q = (X - C xa)^2 · normPoly (q.divLin xa).
@@ -1689,23 +1696,23 @@ theorem landmarkInv_combine_vertical_no_collision
     rw [List.length_append]
     omega
 
-theorem landmarkInvStrong_combine_vertical_when_rootMult_le_one
+theorem accumInvStrong_combine_vertical_when_rootMult_le_one
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     {xa ya : ZMod E.q}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
     (hxy_on : (xa, ya) ∈ E.points)
     (hxy_neg_on : (xa, -ya) ∈ E.points)
     (hy_ne : ya ≠ 0)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt_eq : a.point = ECPoint.affine E xa ya)
     (hb_pt_eq : b.point = ECPoint.affine E xa (-ya))
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 1
       ∨ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 1) :
-    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine_vertical E a b xa) := by
+    AccumInvStrong E (xs ++ ys) (Accum.combine_vertical E a b xa) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -1735,9 +1742,9 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_one
     show some (xa, -(-ya)) = some (xa, ya)
     rw [neg_neg]
   have ha_van_neg : a.poly.eval xa (-ya) = 0 :=
-    LandmarkInvStrong.vanish_of_residue E ha ha_neg hxy_neg_on
+    AccumInvStrong.vanish_of_residue E ha ha_neg hxy_neg_on
   have hb_van_pos : b.poly.eval xa ya = 0 :=
-    LandmarkInvStrong.vanish_of_residue E hb hb_neg hxy_on
+    AccumInvStrong.vanish_of_residue E hb hb_neg hxy_on
   set q := mulCoordRingElt E a.poly b.poly with hq_def
   have hq_eval_pos : q.eval xa ya = 0 := by
     rw [hq_def, mulCoordRingElt_eval_on_E E _ _ hxy_on, hb_van_pos]
@@ -1764,24 +1771,24 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_one
     simpa [Lv] using mulCoordRingElt_divLin_vertical_recompose E q xa h_dvd_a h_dvd_b
   refine ⟨?_, ?_, ?_⟩
   · show (0 : ECPoint E) = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
     have hns_a : E.toW.toAffine.Nonsingular xa ya :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxy_on))
     have hns_b : E.toW.toAffine.Nonsingular xa (-ya) :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa (-ya)).mpr (E.hOnCurve _ hxy_neg_on))
     rw [ECPoint.affine_of_nonsingular E hns_a, ECPoint.affine_of_nonsingular E hns_b]
-    show (0 : ECPoint E) = (.some hns_a + .some hns_b : ECPoint E)
-    have h_neg : (.some hns_b : ECPoint E) = -(.some hns_a) := by
-      show WeierstrassCurve.Affine.Point.some hns_b
-            = -WeierstrassCurve.Affine.Point.some hns_a
+    show (0 : ECPoint E) = (.some _ _ hns_a + .some _ _ hns_b : ECPoint E)
+    have h_neg : (.some _ _ hns_b : ECPoint E) = -(.some _ _ hns_a) := by
+      show WeierstrassCurve.Affine.Point.some _ _ hns_b
+            = -WeierstrassCurve.Affine.Point.some _ _ hns_a
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg]
-    show (0 : ECPoint E) = .some hns_a + (-.some hns_a)
+    show (0 : ECPoint E) = .some _ _ hns_a + (-.some _ _ hns_a)
     rw [add_neg_cancel]
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have ha_target_le' :
         xs.count P + (if negCoords E a.point = some P then 1 else 0)
           ≤ localMult E a.poly P := by
@@ -1863,9 +1870,9 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_one
           rw [← localMult_eq_ordAt E (q.divLin xa) P,
               ← localMult_eq_ordAt E Lv P]
     calc
-      target E (xs ++ ys) (EagenAccum.combine_vertical E a b xa).point P
+      target E (xs ++ ys) (Accum.combine_vertical E a b xa).point P
           = xs.count P + ys.count P := by
-            simp [target, EagenAccum.combine_vertical, negCoords, List.count_append]
+            simp [target, Accum.combine_vertical, negCoords, List.count_append]
       _ ≤ localMult E (q.divLin xa) P := by
             have h :
                 xs.count P + ys.count P + localMult E Lv P
@@ -1877,12 +1884,12 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_one
                 _ ≤ localMult E q P := hprod_le
                 _ = localMult E (q.divLin xa) P + localMult E Lv P := hq_local_eq
             omega
-      _ = localMult E (EagenAccum.combine_vertical E a b xa).poly P := by
-            simp [EagenAccum.combine_vertical, hq_def]
+      _ = localMult E (Accum.combine_vertical E a b xa).poly P := by
+            simp [Accum.combine_vertical, hq_def]
   · show (normPoly E (q.divLin xa)).natDegree
-        = (xs ++ ys).length + (if (EagenAccum.combine_vertical E a b xa).point
+        = (xs ++ ys).length + (if (Accum.combine_vertical E a b xa).point
                                   = (0 : ECPoint E) then 0 else 1)
-    have h_combined_zero : (EagenAccum.combine_vertical E a b xa).point
+    have h_combined_zero : (Accum.combine_vertical E a b xa).point
         = (0 : ECPoint E) := rfl
     rw [if_pos h_combined_zero]
     have h_factorize := normPoly_eq_X_sub_C_sq_mul_normPoly_divLin
@@ -1915,30 +1922,30 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_one
           E.equation_iff_nonsingular.mp ((E.equation_iff xa (-ya)).mpr (E.hOnCurve _ hxy_neg_on))
         rw [ECPoint.affine_of_nonsingular E hns] at h
         exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
-      have ha_deg := LandmarkInvStrong.natDegree E ha
-      have hb_deg := LandmarkInvStrong.natDegree E hb
+      have ha_deg := AccumInvStrong.natDegree E ha
+      have hb_deg := AccumInvStrong.natDegree E hb
       rw [if_neg hap] at ha_deg
       rw [if_neg hbp] at hb_deg
       omega
     rw [List.length_append]
     omega
 
-theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_one
+theorem accumInvStrong_combine_tangent_torsion_when_rootMult_le_one
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     {xa : ZMod E.q}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
     (hxy_on : (xa, (0 : ZMod E.q)) ∈ E.points)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt_eq : a.point = ECPoint.affine E xa 0)
     (hb_pt_eq : b.point = ECPoint.affine E xa 0)
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 1
       ∨ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 1) :
-    LandmarkInvStrong E (xs ++ ys)
-      (EagenAccum.combine_tangent_torsion E a b xa) := by
+    AccumInvStrong E (xs ++ ys)
+      (Accum.combine_tangent_torsion E a b xa) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -1967,9 +1974,9 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_one
     show some (xa, -(0 : ZMod E.q)) = some (xa, 0)
     rw [neg_zero]
   have ha_van : a.poly.eval xa 0 = 0 :=
-    LandmarkInvStrong.vanish_of_residue E ha ha_neg hxy_on
+    AccumInvStrong.vanish_of_residue E ha ha_neg hxy_on
   have hb_van : b.poly.eval xa 0 = 0 :=
-    LandmarkInvStrong.vanish_of_residue E hb hb_neg hxy_on
+    AccumInvStrong.vanish_of_residue E hb hb_neg hxy_on
   set q := mulCoordRingElt E a.poly b.poly with hq_def
   obtain ⟨h_qa_xa, h_qb_xa⟩ : q.a.eval xa = 0 ∧ q.b.eval xa = 0 := by
     rw [hq_def]
@@ -1996,24 +2003,24 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_one
     simpa [Lv] using mulCoordRingElt_divLin_vertical_recompose E q xa h_dvd_a h_dvd_b
   refine ⟨?_, ?_, ?_⟩
   · show (0 : ECPoint E) = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
     have hns : E.toW.toAffine.Nonsingular xa 0 :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa 0).mpr (E.hOnCurve _ hxy_on))
     rw [ECPoint.affine_of_nonsingular E hns]
-    show (0 : ECPoint E) = (.some hns + .some hns : ECPoint E)
-    have hself_neg : (-(.some hns : ECPoint E)) = .some hns := by
-      show -(WeierstrassCurve.Affine.Point.some hns : ECPoint E)
-          = WeierstrassCurve.Affine.Point.some hns
+    show (0 : ECPoint E) = (.some _ _ hns + .some _ _ hns : ECPoint E)
+    have hself_neg : (-(.some _ _ hns : ECPoint E)) = .some _ _ hns := by
+      show -(WeierstrassCurve.Affine.Point.some _ _ hns : ECPoint E)
+          = WeierstrassCurve.Affine.Point.some _ _ hns
       simp [WeierstrassCurve.Affine.Point.neg_some]
     calc
-      (0 : ECPoint E) = (.some hns : ECPoint E) + (-.some hns) := by
+      (0 : ECPoint E) = (.some _ _ hns : ECPoint E) + (-.some _ _ hns) := by
         rw [add_neg_cancel]
-      _ = (.some hns : ECPoint E) + .some hns := by
+      _ = (.some _ _ hns : ECPoint E) + .some _ _ hns := by
         rw [hself_neg]
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have ha_target_le' :
         xs.count P + (if negCoords E a.point = some P then 1 else 0)
           ≤ localMult E a.poly P := by
@@ -2082,10 +2089,10 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_one
           rw [← localMult_eq_ordAt E (q.divLin xa) P,
               ← localMult_eq_ordAt E Lv P]
     calc
-      target E (xs ++ ys) (EagenAccum.combine_tangent_torsion E a b xa).point P
+      target E (xs ++ ys) (Accum.combine_tangent_torsion E a b xa).point P
           = xs.count P + ys.count P := by
-            simp [target, EagenAccum.combine_tangent_torsion,
-              EagenAccum.combine_vertical, negCoords, List.count_append]
+            simp [target, Accum.combine_tangent_torsion,
+              Accum.combine_vertical, negCoords, List.count_append]
       _ ≤ localMult E (q.divLin xa) P := by
             have h :
                 xs.count P + ys.count P + localMult E Lv P
@@ -2097,14 +2104,14 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_one
                 _ ≤ localMult E q P := hprod_le
                 _ = localMult E (q.divLin xa) P + localMult E Lv P := hq_local_eq
             omega
-      _ = localMult E (EagenAccum.combine_tangent_torsion E a b xa).poly P := by
-            simp [EagenAccum.combine_tangent_torsion,
-              EagenAccum.combine_vertical, hq_def]
+      _ = localMult E (Accum.combine_tangent_torsion E a b xa).poly P := by
+            simp [Accum.combine_tangent_torsion,
+              Accum.combine_vertical, hq_def]
   · show (normPoly E (q.divLin xa)).natDegree
         = (xs ++ ys).length
-          + (if (EagenAccum.combine_tangent_torsion E a b xa).point
+          + (if (Accum.combine_tangent_torsion E a b xa).point
                 = (0 : ECPoint E) then 0 else 1)
-    have h_combined_zero : (EagenAccum.combine_tangent_torsion E a b xa).point
+    have h_combined_zero : (Accum.combine_tangent_torsion E a b xa).point
         = (0 : ECPoint E) := rfl
     rw [if_pos h_combined_zero]
     have h_factorize := normPoly_eq_X_sub_C_sq_mul_normPoly_divLin
@@ -2137,8 +2144,8 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_one
           E.equation_iff_nonsingular.mp ((E.equation_iff xa 0).mpr (E.hOnCurve _ hxy_on))
         rw [ECPoint.affine_of_nonsingular E hns] at h
         exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
-      have ha_deg := LandmarkInvStrong.natDegree E ha
-      have hb_deg := LandmarkInvStrong.natDegree E hb
+      have ha_deg := AccumInvStrong.natDegree E ha
+      have hb_deg := AccumInvStrong.natDegree E hb
       rw [if_neg hap] at ha_deg
       rw [if_neg hbp] at hb_deg
       omega
@@ -2223,7 +2230,7 @@ theorem points_neg_y {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) :
 The two tangent-doubling cases need (X - C xa)^2 divisibility into
 the product polynomial, which requires either a derivative-based
 argument (Taylor expansion on q.a, q.b) or strengthening the
-LandmarkInv invariant to track multiplicity at running-sum fibers.
+AccumInv invariant to track multiplicity at running-sum fibers.
 Deferred. -/
 
 /-! ## Helpers (re-positioned for forward reference) -/
@@ -2252,16 +2259,16 @@ theorem chordCoordRingElt_natDegree_normPoly_of_xx_ne
   rw [dif_neg h_xx]
   exact natDegree_normPoly_chordCoordRingElt_nonvertical E _ _
 
-/-! ## levelInitPair satisfies LandmarkInv (chord case)
+/-! ## levelInitPair satisfies AccumInv (chord case)
 
 For an input pair `(P, Q)` on `E` with `P.1 ≠ Q.1`, the level-0
-output `levelInitPair P Q` satisfies `LandmarkInv [P, Q]`. -/
+output `levelInitPair P Q` satisfies `AccumInv [P, Q]`. -/
 
-theorem landmarkInv_levelInitPair_chord
+theorem accumInv_levelInitPair_chord
     {P Q : ZMod E.q × ZMod E.q}
     (hP : P ∈ E.points) (hQ : Q ∈ E.points)
     (h_xx : P.1 ≠ Q.1) :
-    LandmarkInv E [P, Q] (levelInitPair E P Q) := by
+    AccumInv E [P, Q] (levelInitPair E P Q) := by
   classical
   -- thirdPoint = some (Qx, Qy). levelInitPair gives chord polynomial,
   -- result.point = ECPoint.affine E Qx (-Qy).
@@ -2295,19 +2302,19 @@ theorem landmarkInv_levelInitPair_chord
     rw [show sumOnE E [P, Q] = ECPoint.affineOfMem E hP + sumOnE E [Q] from sumOnE_cons E hP]
     rw [show sumOnE E [Q] = ECPoint.affineOfMem E hQ + sumOnE E [] from sumOnE_cons E hQ]
     rw [sumOnE_nil, add_zero]
-    have heq_P : ECPoint.affineOfMem E hP = (.some hns_P : ECPoint E) := rfl
-    have heq_Q : ECPoint.affineOfMem E hQ = (.some hns_Q : ECPoint E) := rfl
+    have heq_P : ECPoint.affineOfMem E hP = (.some _ _ hns_P : ECPoint E) := rfl
+    have heq_Q : ECPoint.affineOfMem E hQ = (.some _ _ hns_Q : ECPoint E) := rfl
     rw [heq_P, heq_Q]
     rw [ECPoint.affine_of_nonsingular E hns_Qneg]
-    -- (.some hns_P) + (.some hns_Q) = -(.some hns_Qpos) = .some hns_Qneg.
+    -- (.some _ _ hns_P) + (.some _ _ hns_Q) = -(.some _ _ hns_Qpos) = .some _ _ hns_Qneg.
     have hSum := thirdPoint_some_eq_neg_add (E := E) hP hQ hT
     have heq_QxQy : ECPoint.affineOfMem E h_QxQy_on
-        = (.some (E.equation_iff_nonsingular.mp
+        = (.some Qx Qy (E.equation_iff_nonsingular.mp
                   ((E.equation_iff Qx Qy).mpr (E.hOnCurve _ h_QxQy_on))) : ECPoint E) := rfl
     rw [heq_P, heq_Q, heq_QxQy] at hSum
-    -- (.some hns_Qneg) = -(.some hns_third).
+    -- (.some _ _ hns_Qneg) = -(.some _ _ hns_third).
     set hns_third := E.equation_iff_nonsingular.mp ((E.equation_iff Qx Qy).mpr (E.hOnCurve _ h_QxQy_on))
-    have h_neg : (.some hns_Qneg : ECPoint E) = -(.some hns_third : ECPoint E) := by
+    have h_neg : (.some _ _ hns_Qneg : ECPoint E) = -(.some _ _ hns_third : ECPoint E) := by
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg]
     exact hSum.symm
@@ -2324,7 +2331,7 @@ theorem landmarkInv_levelInitPair_chord
     rw [h_levelInit_pt] at hpt_neg
     rw [ECPoint.affine_of_nonsingular E hns_Qneg] at hpt_neg
     have hpt_eq : pt = (Qx, Qy) := by
-      have : negCoords E (.some hns_Qneg : ECPoint E) = some (Qx, Qy) := by
+      have : negCoords E (.some _ _ hns_Qneg : ECPoint E) = some (Qx, Qy) := by
         show some (Qx, -(-Qy)) = some (Qx, Qy)
         rw [neg_neg]
       rw [this] at hpt_neg
@@ -2404,33 +2411,33 @@ theorem chordCoordRingElt_eq_vertical_of_sum_zero
   · subst hPQ
     rw [dif_pos rfl, if_pos hP_zero]
 
-/-! ## Codex insight: levelInitSingleton bypasses levelInitPair
+/-! ## levelInitSingleton bypasses levelInitPair
 
-Per Codex consultation, the cleanest level-0 construction is to
-make every input point an "absorbed singleton": each P becomes the
+The cleanest level-0 construction makes
+every input point an "absorbed singleton": each P becomes the
 accumulator `{ point := ECPoint.affine E P.1 P.2, poly := (X - C P.1, 0) }`,
-which satisfies `LandmarkInv [P]` directly. Then level_step
+which satisfies `AccumInv [P]` directly. Then level_step
 handles all the pairing logic uniformly.
 
 The vertical line `(X - C P.1, 0)` has divisor on E:
   - vanishes at (P.1, P.2) and (P.1, -P.2) (the fiber).
   - infinity coefficient: -(normPoly).natDegree = -2.
 
-For LandmarkInv [P]:
+For AccumInv [P]:
   - point = ECPoint.affine E P.1 P.2 = sumOnE [P] ✓
   - vanishing at P (and at -P via residue) ✓
   - normPoly natDegree = 2 = 1 (xs.length) + 1 (point ≠ 0) ✓ -/
 
 /-- The on-curve assumption is unused at the data level (Junk if off-curve
-    via `ECPoint.affine`'s `dif_*` fallback to 0). LandmarkInv requires it. -/
+    via `ECPoint.affine`'s `dif_*` fallback to 0). AccumInv requires it. -/
 noncomputable def levelInitSingleton
-    (P : ZMod E.q × ZMod E.q) : EagenAccum E :=
+    (P : ZMod E.q × ZMod E.q) : Accum E :=
   { point := ECPoint.affine E P.1 P.2,
     poly := { a := X - C P.1, b := 0 } }
 
-theorem landmarkInv_levelInitSingleton
+theorem accumInv_levelInitSingleton
     (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) :
-    LandmarkInv E [P] (levelInitSingleton E P) := by
+    AccumInv E [P] (levelInitSingleton E P) := by
   classical
   have hns : E.toW.toAffine.Nonsingular P.1 P.2 :=
     E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP))
@@ -2454,7 +2461,7 @@ theorem landmarkInv_levelInitSingleton
     rw [h_levelInit_pt] at hQ
     rw [ECPoint.affine_of_nonsingular E hns] at hQ
     have hQ_eq : Q = (P.1, -P.2) := by
-      have : negCoords E (.some hns : ECPoint E) = some (P.1, -P.2) := rfl
+      have : negCoords E (.some _ _ hns : ECPoint E) = some (P.1, -P.2) := rfl
       rw [this] at hQ
       exact (Option.some.inj hQ).symm
     rw [hQ_eq]
@@ -2480,9 +2487,9 @@ theorem levelInitSingleton_poly_not_both_zero
   intro hzero
   exact (X_sub_C_ne_zero P.1) hzero.1
 
-theorem landmarkInvStrong_levelInitSingleton
+theorem accumInvStrong_levelInitSingleton
     (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) :
-    LandmarkInvStrong E [P] (levelInitSingleton E P) := by
+    AccumInvStrong E [P] (levelInitSingleton E P) := by
   classical
   let Lv : CoordRingElt E.q := { a := X - C P.1, b := 0 }
   have hns : E.toW.toAffine.Nonsingular P.1 P.2 :=
@@ -2593,7 +2600,7 @@ theorem landmarkInvStrong_levelInitSingleton
 
 /-- Singletonized level-0: each input becomes a vertical-line accumulator. -/
 noncomputable def level0_singletons (Ps : List (ZMod E.q × ZMod E.q)) :
-    List (EagenAccum E) :=
+    List (Accum E) :=
   Ps.map (levelInitSingleton E)
 
 /-- The computable point projection of `level0_singletons`. -/
@@ -2606,10 +2613,10 @@ def level0SingletonPoints (Ps : List (ZMod E.q × ZMod E.q)) :
     (level0_singletons E Ps).map (·.point) = level0SingletonPoints E Ps := by
   simp [level0_singletons, level0SingletonPoints, levelInitSingleton]
 
-theorem landmarkInvList_level0_singletons
+theorem accumInvList_level0_singletons
     (Ps : List (ZMod E.q × ZMod E.q))
     (hPs_on : ∀ P ∈ Ps, P ∈ E.points) :
-    LandmarkInvList E (Ps.map (fun P => [P])) (level0_singletons E Ps) := by
+    AccumInvList E (Ps.map (fun P => [P])) (level0_singletons E Ps) := by
   classical
   induction Ps with
   | nil =>
@@ -2622,12 +2629,12 @@ theorem landmarkInvList_level0_singletons
     show List.Forall₂ _ ([P] :: rest.map (fun P => [P]))
         (levelInitSingleton E P :: rest.map (levelInitSingleton E))
     refine List.Forall₂.cons ?_ h_ih
-    exact landmarkInv_levelInitSingleton E P (hPs_on P (List.mem_cons_self))
+    exact accumInv_levelInitSingleton E P (hPs_on P (List.mem_cons_self))
 
-theorem landmarkInvStrongList_level0_singletons
+theorem accumInvStrongList_level0_singletons
     (Ps : List (ZMod E.q × ZMod E.q))
     (hPs_on : ∀ P ∈ Ps, P ∈ E.points) :
-    LandmarkInvStrongList E (Ps.map (fun P => [P])) (level0_singletons E Ps) := by
+    AccumInvStrongList E (Ps.map (fun P => [P])) (level0_singletons E Ps) := by
   classical
   induction Ps with
   | nil =>
@@ -2640,11 +2647,11 @@ theorem landmarkInvStrongList_level0_singletons
     show List.Forall₂ _ ([P] :: rest.map (fun P => [P]))
         (levelInitSingleton E P :: rest.map (levelInitSingleton E))
     refine List.Forall₂.cons ?_ h_ih
-    exact landmarkInvStrong_levelInitSingleton E P (hPs_on P (List.mem_cons_self))
+    exact accumInvStrong_levelInitSingleton E P (hPs_on P (List.mem_cons_self))
 
-theorem landmarkInv_combine_distinct_no_collision
+theorem accumInv_combine_distinct_no_collision
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     {xa ya xb yb : ZMod E.q}
     (h_xx : xa ≠ xb)
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
@@ -2657,12 +2664,12 @@ theorem landmarkInv_combine_distinct_no_collision
     (hyb_ne : yb ≠ 0)
     (h_third_xa : (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xa)
     (h_third_xb : (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xb)
-    (ha : LandmarkInv E xs a) (hb : LandmarkInv E ys b)
+    (ha : AccumInv E xs a) (hb : AccumInv E ys b)
     (ha_pt_eq : a.point = ECPoint.affine E xa ya)
     (hb_pt_eq : b.point = ECPoint.affine E xb yb)
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0) :
-    LandmarkInv E (xs ++ ys)
-      (EagenAccum.combine_distinct E a b xa ya xb yb h_xx) := by
+    AccumInv E (xs ++ ys)
+      (Accum.combine_distinct E a b xa ya xb yb h_xx) := by
   classical
   obtain ⟨ha_sum, ha_van, ha_res, ha_deg⟩ := ha
   obtain ⟨hb_sum, hb_van, hb_res, hb_deg⟩ := hb
@@ -2718,10 +2725,10 @@ theorem landmarkInv_combine_distinct_no_collision
   have h_dvd_qb_xa : (X - C xa) ∣ q.b := dvd_X_sub_C_of_eval_eq_zero E h_qb_xa
   have h_dvd_qa_xb : (X - C xb) ∣ q.a := dvd_X_sub_C_of_eval_eq_zero E h_qa_xb
   have h_dvd_qb_xb : (X - C xb) ∣ q.b := dvd_X_sub_C_of_eval_eq_zero E h_qb_xb
-  -- Build LandmarkInv conjuncts.
+  -- Build AccumInv conjuncts.
   refine ⟨?_, ?_, ?_, ?_⟩
   · -- Running sum.
-    show (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point = sumOnE E (xs ++ ys)
+    show (Accum.combine_distinct E a b xa ya xb yb h_xx).point = sumOnE E (xs ++ ys)
     rw [sumOnE_append, ← ha_sum, ← hb_sum, ha_pt_eq, hb_pt_eq]
     have hns_a : E.toW.toAffine.Nonsingular xa ya :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxa_on))
@@ -2731,7 +2738,7 @@ theorem landmarkInv_combine_distinct_no_collision
     show (ECPoint.affine E (slopeOf xa ya xb yb ^ 2 - xa - xb)
             (-(slopeOf xa ya xb yb * (slopeOf xa ya xb yb ^ 2 - xa - xb)
                 + (ya - slopeOf xa ya xb yb * xa))))
-        = (.some hns_a + .some hns_b : ECPoint E)
+        = (.some _ _ hns_a + .some _ _ hns_b : ECPoint E)
     set Qx := slopeOf xa ya xb yb ^ 2 - xa - xb with hQx_def
     set Qy := slopeOf xa ya xb yb * Qx + (ya - slopeOf xa ya xb yb * xa) with hQy_def
     have hT : thirdPoint E (xa, ya) (xb, yb) = some (Qx, Qy) := by
@@ -2739,20 +2746,20 @@ theorem landmarkInv_combine_distinct_no_collision
       rw [if_neg h_xx]
       simp [Qx, Qy, slopeOf]
     have hSum := thirdPoint_some_eq_neg_add (E := E) hxa_on hxb_on hT
-    have heq_a : ECPoint.affineOfMem E hxa_on = (.some hns_a : ECPoint E) := rfl
-    have heq_b : ECPoint.affineOfMem E hxb_on = (.some hns_b : ECPoint E) := rfl
+    have heq_a : ECPoint.affineOfMem E hxa_on = (.some _ _ hns_a : ECPoint E) := rfl
+    have heq_b : ECPoint.affineOfMem E hxb_on = (.some _ _ hns_b : ECPoint E) := rfl
     rw [heq_a, heq_b] at hSum
     have h_Qxy_on : (Qx, Qy) ∈ E.points :=
       third_point_on_curve E (xa, ya) (xb, yb) hxa_on hxb_on hT
     have hns_third : E.toW.toAffine.Nonsingular Qx Qy :=
       E.equation_iff_nonsingular.mp ((E.equation_iff Qx Qy).mpr (E.hOnCurve _ h_Qxy_on))
-    have heq_third : ECPoint.affineOfMem E h_Qxy_on = (.some hns_third : ECPoint E) := rfl
+    have heq_third : ECPoint.affineOfMem E h_Qxy_on = (.some _ _ hns_third : ECPoint E) := rfl
     rw [heq_third] at hSum
     have h_Qxy_neg_on : (Qx, -Qy) ∈ E.points := points_neg_y E h_Qxy_on
     have hns_third_neg : E.toW.toAffine.Nonsingular Qx (-Qy) :=
       E.equation_iff_nonsingular.mp ((E.equation_iff Qx (-Qy)).mpr (E.hOnCurve _ h_Qxy_neg_on))
     rw [ECPoint.affine_of_nonsingular E hns_third_neg]
-    have h_neg_third : (.some hns_third_neg : ECPoint E) = -(.some hns_third : ECPoint E) := by
+    have h_neg_third : (.some _ _ hns_third_neg : ECPoint E) = -(.some _ _ hns_third : ECPoint E) := by
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg_third]
     exact hSum.symm
@@ -2778,7 +2785,7 @@ theorem landmarkInv_combine_distinct_no_collision
   · -- Residue.
     intro Q hQ
     show ((q.divLin xa).divLin xb).eval Q.1 Q.2 = 0
-    have h_combined_pt : (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point
+    have h_combined_pt : (Accum.combine_distinct E a b xa ya xb yb h_xx).point
         = ECPoint.affine E (slopeOf xa ya xb yb ^ 2 - xa - xb)
           (-(slopeOf xa ya xb yb * (slopeOf xa ya xb yb ^ 2 - xa - xb)
               + (ya - slopeOf xa ya xb yb * xa))) := rfl
@@ -2796,7 +2803,7 @@ theorem landmarkInv_combine_distinct_no_collision
       E.equation_iff_nonsingular.mp ((E.equation_iff Qx (-Qy)).mpr (E.hOnCurve _ h_neg_on))
     rw [ECPoint.affine_of_nonsingular E hns] at hQ
     have hQ_eq : Q = (Qx, Qy) := by
-      have : negCoords E (.some hns : ECPoint E) = some (Qx, Qy) := by
+      have : negCoords E (.some _ _ hns : ECPoint E) = some (Qx, Qy) := by
         show some (Qx, -(-Qy)) = some (Qx, Qy)
         rw [neg_neg]
       rw [this] at hQ
@@ -2816,11 +2823,11 @@ theorem landmarkInv_combine_distinct_no_collision
   · -- Degree.
     show (normPoly E ((q.divLin xa).divLin xb)).natDegree
         = (xs ++ ys).length
-          + (if (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point
+          + (if (Accum.combine_distinct E a b xa ya xb yb h_xx).point
                 = (0 : ECPoint E) then 0 else 1)
-    have h_combined_ne : (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point
+    have h_combined_ne : (Accum.combine_distinct E a b xa ya xb yb h_xx).point
         ≠ (0 : ECPoint E) := by
-      have h_combined_pt : (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point
+      have h_combined_pt : (Accum.combine_distinct E a b xa ya xb yb h_xx).point
           = ECPoint.affine E (slopeOf xa ya xb yb ^ 2 - xa - xb)
             (-(slopeOf xa ya xb yb * (slopeOf xa ya xb yb ^ 2 - xa - xb)
                 + (ya - slopeOf xa ya xb yb * xa))) := rfl
@@ -3293,30 +3300,30 @@ theorem ordAt_mul_add_when_normPoly_D2_le_two_of_iterDivLin
             E D₂ D₁ P hP hY h₂ h₁ hD₁P hD₁negP hRoot₁
         rw [mulCoordRingElt_comm E D₁ D₂, Nat.add_comm]
         exact hSwap
-      · push_neg at hD₁negP
+      · push Not at hD₁negP
         by_cases hD₂P : D₂.eval P.1 P.2 = 0
         · by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
           · exact ordAt_mul_add_when_right_twin_rootMult_le_two
               E D₁ D₂ P hP hY h₁ h₂ hD₂P hD₂negP hRoot
-          · push_neg at hD₂negP
+          · push Not at hD₂negP
             exact Divisor.ordAt_mul_add_at_both_lone_same_sheet
               (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
-        · push_neg at hD₂P
+        · push Not at hD₂P
           by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
           · exact ordAt_mul_add_in_cross_when_rootMult_le_two_of_iterDivLin
               (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
               hRoot₁ hRoot
               (fun hm₁ hm₂ =>
                 hCross₁₂ hY hD₁P hD₁negP hD₂P hD₂negP hm₁ hm₂)
-          · push_neg at hD₂negP
+          · push Not at hD₂negP
             exact Divisor.ordAt_mul_add_at_lone_sheet
               (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
-    · push_neg at hD₁P
+    · push Not at hD₁P
       by_cases hD₂P : D₂.eval P.1 P.2 = 0
       · by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
         · exact ordAt_mul_add_when_right_twin_rootMult_le_two
             E D₁ D₂ P hP hY h₁ h₂ hD₂P hD₂negP hRoot
-        · push_neg at hD₂negP
+        · push Not at hD₂negP
           by_cases hD₁negP : D₁.eval P.1 (-P.2) = 0
           · have hSwap :=
               ordAt_mul_add_in_cross_when_rootMult_le_two_of_iterDivLin
@@ -3326,10 +3333,10 @@ theorem ordAt_mul_add_when_normPoly_D2_le_two_of_iterDivLin
                   hCross₂₁ hY hD₂P hD₂negP hD₁P hD₁negP hm₂ hm₁)
             rw [mulCoordRingElt_comm E D₁ D₂, Nat.add_comm]
             exact hSwap
-          · push_neg at hD₁negP
+          · push Not at hD₁negP
             exact Divisor.ordAt_mul_add_at_lone_sheet_swap
               (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
-      · push_neg at hD₂P
+      · push Not at hD₂P
         exact Divisor.ordAt_mul_add_at_nonvanish
           (E := E) h₁ h₂ hP hD₁P hD₂P
 
@@ -3352,28 +3359,28 @@ theorem ordAt_mul_add_when_normPoly_D2_le_three_of_iterDivLin
             E D₂ D₁ P hP hY h₂ h₁ hD₁P hD₁negP hRoot₁
         rw [mulCoordRingElt_comm E D₁ D₂, Nat.add_comm]
         exact hSwap
-      · push_neg at hD₁negP
+      · push Not at hD₁negP
         by_cases hD₂P : D₂.eval P.1 P.2 = 0
         · by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
           · exact ordAt_mul_add_when_right_twin_rootMult_le_three
               E D₁ D₂ P hP hY h₁ h₂ hD₂P hD₂negP hRoot
-          · push_neg at hD₂negP
+          · push Not at hD₂negP
             exact Divisor.ordAt_mul_add_at_both_lone_same_sheet
               (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
-        · push_neg at hD₂P
+        · push Not at hD₂P
           by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
           · exact ordAt_mul_add_in_cross_when_rootMult_le_three_of_iterDivLin
               (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
               hRoot₁ hRoot
-          · push_neg at hD₂negP
+          · push Not at hD₂negP
             exact Divisor.ordAt_mul_add_at_lone_sheet
               (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
-    · push_neg at hD₁P
+    · push Not at hD₁P
       by_cases hD₂P : D₂.eval P.1 P.2 = 0
       · by_cases hD₂negP : D₂.eval P.1 (-P.2) = 0
         · exact ordAt_mul_add_when_right_twin_rootMult_le_three
             E D₁ D₂ P hP hY h₁ h₂ hD₂P hD₂negP hRoot
-        · push_neg at hD₂negP
+        · push Not at hD₂negP
           by_cases hD₁negP : D₁.eval P.1 (-P.2) = 0
           · have hSwap :=
               ordAt_mul_add_in_cross_when_rootMult_le_three_of_iterDivLin
@@ -3381,10 +3388,10 @@ theorem ordAt_mul_add_when_normPoly_D2_le_three_of_iterDivLin
                 hRoot hRoot₁
             rw [mulCoordRingElt_comm E D₁ D₂, Nat.add_comm]
             exact hSwap
-          · push_neg at hD₁negP
+          · push Not at hD₁negP
             exact Divisor.ordAt_mul_add_at_lone_sheet_swap
               (E := E) h₁ h₂ hP hY hD₁P hD₁negP hD₂P hD₂negP
-      · push_neg at hD₂P
+      · push Not at hD₂P
         exact Divisor.ordAt_mul_add_at_nonvanish
           (E := E) h₁ h₂ hP hD₁P hD₂P
 
@@ -3478,19 +3485,19 @@ theorem localMult_mulCoordRingElt_ge_add_when_rootMult_le_two
     (E := E) D₁ D₂ P hP hD₁ hD₂ hRoot₂ hRoot₁
   exact le_of_eq hEq.symm
 
-theorem landmarkInvStrong_combine_oo_when_rootMult_le_two
+theorem accumInvStrong_combine_oo_when_rootMult_le_two
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt : a.point = (0 : ECPoint E))
     (hb_pt : b.point = (0 : ECPoint E))
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2
       ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 2) :
-    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine_oo E a b) := by
+    AccumInvStrong E (xs ++ ys) (Accum.combine_oo E a b) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -3506,11 +3513,11 @@ theorem landmarkInvStrong_combine_oo_when_rootMult_le_two
     ring
   refine ⟨?_, ?_, ?_⟩
   · show (0 : ECPoint E) = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, ha_pt, hb_pt, zero_add]
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, ha_pt, hb_pt, zero_add]
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have ha_count_le : xs.count P ≤ localMult E a.poly P := by
       have htarget : target E xs a.point P = xs.count P := by
         rw [ha_pt]
@@ -3528,40 +3535,40 @@ theorem landmarkInvStrong_combine_oo_when_rootMult_le_two
         E a.poly b.poly P hPon ha_poly_nz hb_poly_nz
         (h_root_le P hPon).1 (h_root_le P hPon).2
     calc
-      target E (xs ++ ys) (EagenAccum.combine_oo E a b).point P
+      target E (xs ++ ys) (Accum.combine_oo E a b).point P
           = xs.count P + ys.count P := by
-            simp [target, EagenAccum.combine_oo, negCoords, List.count_append]
+            simp [target, Accum.combine_oo, negCoords, List.count_append]
       _ ≤ localMult E a.poly P + localMult E b.poly P :=
             Nat.add_le_add ha_count_le hb_count_le
-      _ ≤ localMult E (EagenAccum.combine_oo E a b).poly P := by
-            simpa [EagenAccum.combine_oo] using hprod_le
+      _ ≤ localMult E (Accum.combine_oo E a b).poly P := by
+            simpa [Accum.combine_oo] using hprod_le
   · show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree =
-        (xs ++ ys).length + (if (EagenAccum.combine_oo E a b).point
+        (xs ++ ys).length + (if (Accum.combine_oo E a b).point
           = (0 : ECPoint E) then 0 else 1)
     rw [normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
-    have ha_deg := LandmarkInvStrong.natDegree E ha
-    have hb_deg := LandmarkInvStrong.natDegree E hb
+    have ha_deg := AccumInvStrong.natDegree E ha
+    have hb_deg := AccumInvStrong.natDegree E hb
     rw [if_pos ha_pt] at ha_deg
     rw [if_pos hb_pt] at hb_deg
-    have h_combined_zero : (EagenAccum.combine_oo E a b).point = (0 : ECPoint E) := rfl
+    have h_combined_zero : (Accum.combine_oo E a b).point = (0 : ECPoint E) := rfl
     rw [if_pos h_combined_zero, ha_deg, hb_deg, List.length_append]
     omega
 
-theorem landmarkInvStrong_combine_ol_when_rootMult_le_two
+theorem accumInvStrong_combine_ol_when_rootMult_le_two
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
     (h_neg_b_on : ∀ Q : ZMod E.q × ZMod E.q,
       negCoords E b.point = some Q → Q ∈ E.points)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt : a.point = (0 : ECPoint E))
     (hb_pt : b.point ≠ (0 : ECPoint E))
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2
       ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 2) :
-    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine_ol E a b) := by
+    AccumInvStrong E (xs ++ ys) (Accum.combine_ol E a b) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -3578,11 +3585,11 @@ theorem landmarkInvStrong_combine_ol_when_rootMult_le_two
     ring
   refine ⟨?_, ?_, ?_⟩
   · show b.point = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, ha_pt, zero_add]
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, ha_pt, zero_add]
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have ha_count_le : xs.count P ≤ localMult E a.poly P := by
       have htarget : target E xs a.point P = xs.count P := by
         rw [ha_pt]
@@ -3595,41 +3602,43 @@ theorem landmarkInvStrong_combine_ol_when_rootMult_le_two
         E a.poly b.poly P hPon ha_poly_nz hb_poly_nz
         (h_root_le P hPon).1 (h_root_le P hPon).2
     calc
-      target E (xs ++ ys) (EagenAccum.combine_ol E a b).point P
+      target E (xs ++ ys) (Accum.combine_ol E a b).point P
           = xs.count P + target E ys b.point P := by
-            simp [target, EagenAccum.combine_ol, List.count_append]
+            have hpt : (Accum.combine_ol E a b).point = b.point := rfl
+            rw [hpt]
+            simp [target, List.count_append]
             omega
       _ ≤ localMult E a.poly P + localMult E b.poly P :=
             Nat.add_le_add ha_count_le hb_target_le
-      _ ≤ localMult E (EagenAccum.combine_ol E a b).poly P := by
-            simpa [EagenAccum.combine_ol] using hprod_le
+      _ ≤ localMult E (Accum.combine_ol E a b).poly P := by
+            simpa [Accum.combine_ol] using hprod_le
   · show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree =
-        (xs ++ ys).length + (if (EagenAccum.combine_ol E a b).point
+        (xs ++ ys).length + (if (Accum.combine_ol E a b).point
           = (0 : ECPoint E) then 0 else 1)
     rw [normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
-    have ha_deg := LandmarkInvStrong.natDegree E ha
-    have hb_deg := LandmarkInvStrong.natDegree E hb
+    have ha_deg := AccumInvStrong.natDegree E ha
+    have hb_deg := AccumInvStrong.natDegree E hb
     rw [if_pos ha_pt] at ha_deg
     rw [if_neg hb_pt] at hb_deg
-    have h_combined_pt : (EagenAccum.combine_ol E a b).point = b.point := rfl
+    have h_combined_pt : (Accum.combine_ol E a b).point = b.point := rfl
     rw [h_combined_pt, if_neg hb_pt, ha_deg, hb_deg, List.length_append]
     omega
 
-theorem landmarkInvStrong_combine_or_when_rootMult_le_two
+theorem accumInvStrong_combine_or_when_rootMult_le_two
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
     (h_neg_a_on : ∀ Q : ZMod E.q × ZMod E.q,
       negCoords E a.point = some Q → Q ∈ E.points)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt : a.point ≠ (0 : ECPoint E))
     (hb_pt : b.point = (0 : ECPoint E))
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2
       ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 2) :
-    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine_or E a b) := by
+    AccumInvStrong E (xs ++ ys) (Accum.combine_or E a b) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -3646,11 +3655,11 @@ theorem landmarkInvStrong_combine_or_when_rootMult_le_two
     ring
   refine ⟨?_, ?_, ?_⟩
   · show a.point = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, hb_pt, add_zero]
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, hb_pt, add_zero]
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have hb_count_le : ys.count P ≤ localMult E b.poly P := by
       have htarget : target E ys b.point P = ys.count P := by
         rw [hb_pt]
@@ -3663,43 +3672,45 @@ theorem landmarkInvStrong_combine_or_when_rootMult_le_two
         E a.poly b.poly P hPon ha_poly_nz hb_poly_nz
         (h_root_le P hPon).1 (h_root_le P hPon).2
     calc
-      target E (xs ++ ys) (EagenAccum.combine_or E a b).point P
+      target E (xs ++ ys) (Accum.combine_or E a b).point P
           = target E xs a.point P + ys.count P := by
-            simp [target, EagenAccum.combine_or, List.count_append]
+            have hpt : (Accum.combine_or E a b).point = a.point := rfl
+            rw [hpt]
+            simp [target, List.count_append]
             omega
       _ ≤ localMult E a.poly P + localMult E b.poly P :=
             Nat.add_le_add ha_target_le hb_count_le
-      _ ≤ localMult E (EagenAccum.combine_or E a b).poly P := by
-            simpa [EagenAccum.combine_or] using hprod_le
+      _ ≤ localMult E (Accum.combine_or E a b).poly P := by
+            simpa [Accum.combine_or] using hprod_le
   · show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree =
-        (xs ++ ys).length + (if (EagenAccum.combine_or E a b).point
+        (xs ++ ys).length + (if (Accum.combine_or E a b).point
           = (0 : ECPoint E) then 0 else 1)
     rw [normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
-    have ha_deg := LandmarkInvStrong.natDegree E ha
-    have hb_deg := LandmarkInvStrong.natDegree E hb
+    have ha_deg := AccumInvStrong.natDegree E ha
+    have hb_deg := AccumInvStrong.natDegree E hb
     rw [if_neg ha_pt] at ha_deg
     rw [if_pos hb_pt] at hb_deg
-    have h_combined_pt : (EagenAccum.combine_or E a b).point = a.point := rfl
+    have h_combined_pt : (Accum.combine_or E a b).point = a.point := rfl
     rw [h_combined_pt, if_neg ha_pt, ha_deg, hb_deg, List.length_append]
     omega
 
-theorem landmarkInvStrong_combine_vertical_when_rootMult_le_two
+theorem accumInvStrong_combine_vertical_when_rootMult_le_two
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     {xa ya : ZMod E.q}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
     (hxy_on : (xa, ya) ∈ E.points)
     (hxy_neg_on : (xa, -ya) ∈ E.points)
     (hy_ne : ya ≠ 0)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt_eq : a.point = ECPoint.affine E xa ya)
     (hb_pt_eq : b.point = ECPoint.affine E xa (-ya))
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2
       ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 2) :
-    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine_vertical E a b xa) := by
+    AccumInvStrong E (xs ++ ys) (Accum.combine_vertical E a b xa) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -3727,9 +3738,9 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_two
     show some (xa, -(-ya)) = some (xa, ya)
     rw [neg_neg]
   have ha_van_neg : a.poly.eval xa (-ya) = 0 :=
-    LandmarkInvStrong.vanish_of_residue E ha ha_neg hxy_neg_on
+    AccumInvStrong.vanish_of_residue E ha ha_neg hxy_neg_on
   have hb_van_pos : b.poly.eval xa ya = 0 :=
-    LandmarkInvStrong.vanish_of_residue E hb hb_neg hxy_on
+    AccumInvStrong.vanish_of_residue E hb hb_neg hxy_on
   set q := mulCoordRingElt E a.poly b.poly with hq_def
   have hq_eval_pos : q.eval xa ya = 0 := by
     rw [hq_def, mulCoordRingElt_eval_on_E E _ _ hxy_on, hb_van_pos]
@@ -3756,24 +3767,24 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_two
     simpa [Lv] using mulCoordRingElt_divLin_vertical_recompose E q xa h_dvd_a h_dvd_b
   refine ⟨?_, ?_, ?_⟩
   · show (0 : ECPoint E) = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
     have hns_a : E.toW.toAffine.Nonsingular xa ya :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxy_on))
     have hns_b : E.toW.toAffine.Nonsingular xa (-ya) :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa (-ya)).mpr (E.hOnCurve _ hxy_neg_on))
     rw [ECPoint.affine_of_nonsingular E hns_a, ECPoint.affine_of_nonsingular E hns_b]
-    show (0 : ECPoint E) = (.some hns_a + .some hns_b : ECPoint E)
-    have h_neg : (.some hns_b : ECPoint E) = -(.some hns_a) := by
-      show WeierstrassCurve.Affine.Point.some hns_b
-            = -WeierstrassCurve.Affine.Point.some hns_a
+    show (0 : ECPoint E) = (.some _ _ hns_a + .some _ _ hns_b : ECPoint E)
+    have h_neg : (.some _ _ hns_b : ECPoint E) = -(.some _ _ hns_a) := by
+      show WeierstrassCurve.Affine.Point.some _ _ hns_b
+            = -WeierstrassCurve.Affine.Point.some _ _ hns_a
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg]
-    show (0 : ECPoint E) = .some hns_a + (-.some hns_a)
+    show (0 : ECPoint E) = .some _ _ hns_a + (-.some _ _ hns_a)
     rw [add_neg_cancel]
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have ha_target_le' :
         xs.count P + (if negCoords E a.point = some P then 1 else 0)
           ≤ localMult E a.poly P := by
@@ -3853,9 +3864,9 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_two
           rw [← localMult_eq_ordAt E (q.divLin xa) P,
               ← localMult_eq_ordAt E Lv P]
     calc
-      target E (xs ++ ys) (EagenAccum.combine_vertical E a b xa).point P
+      target E (xs ++ ys) (Accum.combine_vertical E a b xa).point P
           = xs.count P + ys.count P := by
-            simp [target, EagenAccum.combine_vertical, negCoords, List.count_append]
+            simp [target, Accum.combine_vertical, negCoords, List.count_append]
       _ ≤ localMult E (q.divLin xa) P := by
             have h :
                 xs.count P + ys.count P + localMult E Lv P
@@ -3867,12 +3878,12 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_two
                 _ ≤ localMult E q P := hprod_le
                 _ = localMult E (q.divLin xa) P + localMult E Lv P := hq_local_eq
             omega
-      _ = localMult E (EagenAccum.combine_vertical E a b xa).poly P := by
-            simp [EagenAccum.combine_vertical, hq_def]
+      _ = localMult E (Accum.combine_vertical E a b xa).poly P := by
+            simp [Accum.combine_vertical, hq_def]
   · show (normPoly E (q.divLin xa)).natDegree
-        = (xs ++ ys).length + (if (EagenAccum.combine_vertical E a b xa).point
+        = (xs ++ ys).length + (if (Accum.combine_vertical E a b xa).point
                                   = (0 : ECPoint E) then 0 else 1)
-    have h_combined_zero : (EagenAccum.combine_vertical E a b xa).point
+    have h_combined_zero : (Accum.combine_vertical E a b xa).point
         = (0 : ECPoint E) := rfl
     rw [if_pos h_combined_zero]
     have h_factorize := normPoly_eq_X_sub_C_sq_mul_normPoly_divLin
@@ -3905,30 +3916,30 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_two
           E.equation_iff_nonsingular.mp ((E.equation_iff xa (-ya)).mpr (E.hOnCurve _ hxy_neg_on))
         rw [ECPoint.affine_of_nonsingular E hns] at h
         exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
-      have ha_deg := LandmarkInvStrong.natDegree E ha
-      have hb_deg := LandmarkInvStrong.natDegree E hb
+      have ha_deg := AccumInvStrong.natDegree E ha
+      have hb_deg := AccumInvStrong.natDegree E hb
       rw [if_neg hap] at ha_deg
       rw [if_neg hbp] at hb_deg
       omega
     rw [List.length_append]
     omega
 
-theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_two
+theorem accumInvStrong_combine_tangent_torsion_when_rootMult_le_two
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     {xa : ZMod E.q}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
     (hxy_on : (xa, (0 : ZMod E.q)) ∈ E.points)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt_eq : a.point = ECPoint.affine E xa 0)
     (hb_pt_eq : b.point = ECPoint.affine E xa 0)
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2
       ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 2) :
-    LandmarkInvStrong E (xs ++ ys)
-      (EagenAccum.combine_tangent_torsion E a b xa) := by
+    AccumInvStrong E (xs ++ ys)
+      (Accum.combine_tangent_torsion E a b xa) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -3957,9 +3968,9 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_two
     show some (xa, -(0 : ZMod E.q)) = some (xa, 0)
     rw [neg_zero]
   have ha_van : a.poly.eval xa 0 = 0 :=
-    LandmarkInvStrong.vanish_of_residue E ha ha_neg hxy_on
+    AccumInvStrong.vanish_of_residue E ha ha_neg hxy_on
   have hb_van : b.poly.eval xa 0 = 0 :=
-    LandmarkInvStrong.vanish_of_residue E hb hb_neg hxy_on
+    AccumInvStrong.vanish_of_residue E hb hb_neg hxy_on
   set q := mulCoordRingElt E a.poly b.poly with hq_def
   obtain ⟨h_qa_xa, h_qb_xa⟩ : q.a.eval xa = 0 ∧ q.b.eval xa = 0 := by
     rw [hq_def]
@@ -3986,24 +3997,24 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_two
     simpa [Lv] using mulCoordRingElt_divLin_vertical_recompose E q xa h_dvd_a h_dvd_b
   refine ⟨?_, ?_, ?_⟩
   · show (0 : ECPoint E) = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
     have hns : E.toW.toAffine.Nonsingular xa 0 :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa 0).mpr (E.hOnCurve _ hxy_on))
     rw [ECPoint.affine_of_nonsingular E hns]
-    show (0 : ECPoint E) = (.some hns + .some hns : ECPoint E)
-    have hself_neg : (-(.some hns : ECPoint E)) = .some hns := by
-      show -(WeierstrassCurve.Affine.Point.some hns : ECPoint E)
-          = WeierstrassCurve.Affine.Point.some hns
+    show (0 : ECPoint E) = (.some _ _ hns + .some _ _ hns : ECPoint E)
+    have hself_neg : (-(.some _ _ hns : ECPoint E)) = .some _ _ hns := by
+      show -(WeierstrassCurve.Affine.Point.some _ _ hns : ECPoint E)
+          = WeierstrassCurve.Affine.Point.some _ _ hns
       simp [WeierstrassCurve.Affine.Point.neg_some]
     calc
-      (0 : ECPoint E) = (.some hns : ECPoint E) + (-.some hns) := by
+      (0 : ECPoint E) = (.some _ _ hns : ECPoint E) + (-.some _ _ hns) := by
         rw [add_neg_cancel]
-      _ = (.some hns : ECPoint E) + .some hns := by
+      _ = (.some _ _ hns : ECPoint E) + .some _ _ hns := by
         rw [hself_neg]
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have ha_target_le' :
         xs.count P + (if negCoords E a.point = some P then 1 else 0)
           ≤ localMult E a.poly P := by
@@ -4070,10 +4081,10 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_two
           rw [← localMult_eq_ordAt E (q.divLin xa) P,
               ← localMult_eq_ordAt E Lv P]
     calc
-      target E (xs ++ ys) (EagenAccum.combine_tangent_torsion E a b xa).point P
+      target E (xs ++ ys) (Accum.combine_tangent_torsion E a b xa).point P
           = xs.count P + ys.count P := by
-            simp [target, EagenAccum.combine_tangent_torsion,
-              EagenAccum.combine_vertical, negCoords, List.count_append]
+            simp [target, Accum.combine_tangent_torsion,
+              Accum.combine_vertical, negCoords, List.count_append]
       _ ≤ localMult E (q.divLin xa) P := by
             have h :
                 xs.count P + ys.count P + localMult E Lv P
@@ -4085,14 +4096,14 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_two
                 _ ≤ localMult E q P := hprod_le
                 _ = localMult E (q.divLin xa) P + localMult E Lv P := hq_local_eq
             omega
-      _ = localMult E (EagenAccum.combine_tangent_torsion E a b xa).poly P := by
-            simp [EagenAccum.combine_tangent_torsion,
-              EagenAccum.combine_vertical, hq_def]
+      _ = localMult E (Accum.combine_tangent_torsion E a b xa).poly P := by
+            simp [Accum.combine_tangent_torsion,
+              Accum.combine_vertical, hq_def]
   · show (normPoly E (q.divLin xa)).natDegree
         = (xs ++ ys).length
-          + (if (EagenAccum.combine_tangent_torsion E a b xa).point
+          + (if (Accum.combine_tangent_torsion E a b xa).point
                 = (0 : ECPoint E) then 0 else 1)
-    have h_combined_zero : (EagenAccum.combine_tangent_torsion E a b xa).point
+    have h_combined_zero : (Accum.combine_tangent_torsion E a b xa).point
         = (0 : ECPoint E) := rfl
     rw [if_pos h_combined_zero]
     have h_factorize := normPoly_eq_X_sub_C_sq_mul_normPoly_divLin
@@ -4125,27 +4136,27 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_two
           E.equation_iff_nonsingular.mp ((E.equation_iff xa 0).mpr (E.hOnCurve _ hxy_on))
         rw [ECPoint.affine_of_nonsingular E hns] at h
         exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
-      have ha_deg := LandmarkInvStrong.natDegree E ha
-      have hb_deg := LandmarkInvStrong.natDegree E hb
+      have ha_deg := AccumInvStrong.natDegree E ha
+      have hb_deg := AccumInvStrong.natDegree E hb
       rw [if_neg hap] at ha_deg
       rw [if_neg hbp] at hb_deg
       omega
     rw [List.length_append]
     omega
 
-theorem landmarkInvStrong_combine_oo_when_rootMult_le_three
+theorem accumInvStrong_combine_oo_when_rootMult_le_three
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt : a.point = (0 : ECPoint E))
     (hb_pt : b.point = (0 : ECPoint E))
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 3
       ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 3) :
-    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine_oo E a b) := by
+    AccumInvStrong E (xs ++ ys) (Accum.combine_oo E a b) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -4161,11 +4172,11 @@ theorem landmarkInvStrong_combine_oo_when_rootMult_le_three
     ring
   refine ⟨?_, ?_, ?_⟩
   · show (0 : ECPoint E) = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, ha_pt, hb_pt, zero_add]
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, ha_pt, hb_pt, zero_add]
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have ha_count_le : xs.count P ≤ localMult E a.poly P := by
       have htarget : target E xs a.point P = xs.count P := by
         rw [ha_pt]
@@ -4183,40 +4194,40 @@ theorem landmarkInvStrong_combine_oo_when_rootMult_le_three
         E a.poly b.poly P hPon ha_poly_nz hb_poly_nz
         (h_root_le P hPon).1 (h_root_le P hPon).2
     calc
-      target E (xs ++ ys) (EagenAccum.combine_oo E a b).point P
+      target E (xs ++ ys) (Accum.combine_oo E a b).point P
           = xs.count P + ys.count P := by
-            simp [target, EagenAccum.combine_oo, negCoords, List.count_append]
+            simp [target, Accum.combine_oo, negCoords, List.count_append]
       _ ≤ localMult E a.poly P + localMult E b.poly P :=
             Nat.add_le_add ha_count_le hb_count_le
-      _ ≤ localMult E (EagenAccum.combine_oo E a b).poly P := by
-            simpa [EagenAccum.combine_oo] using hprod_le
+      _ ≤ localMult E (Accum.combine_oo E a b).poly P := by
+            simpa [Accum.combine_oo] using hprod_le
   · show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree =
-        (xs ++ ys).length + (if (EagenAccum.combine_oo E a b).point
+        (xs ++ ys).length + (if (Accum.combine_oo E a b).point
           = (0 : ECPoint E) then 0 else 1)
     rw [normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
-    have ha_deg := LandmarkInvStrong.natDegree E ha
-    have hb_deg := LandmarkInvStrong.natDegree E hb
+    have ha_deg := AccumInvStrong.natDegree E ha
+    have hb_deg := AccumInvStrong.natDegree E hb
     rw [if_pos ha_pt] at ha_deg
     rw [if_pos hb_pt] at hb_deg
-    have h_combined_zero : (EagenAccum.combine_oo E a b).point = (0 : ECPoint E) := rfl
+    have h_combined_zero : (Accum.combine_oo E a b).point = (0 : ECPoint E) := rfl
     rw [if_pos h_combined_zero, ha_deg, hb_deg, List.length_append]
     omega
 
-theorem landmarkInvStrong_combine_ol_when_rootMult_le_three
+theorem accumInvStrong_combine_ol_when_rootMult_le_three
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
     (h_neg_b_on : ∀ Q : ZMod E.q × ZMod E.q,
       negCoords E b.point = some Q → Q ∈ E.points)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt : a.point = (0 : ECPoint E))
     (hb_pt : b.point ≠ (0 : ECPoint E))
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 3
       ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 3) :
-    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine_ol E a b) := by
+    AccumInvStrong E (xs ++ ys) (Accum.combine_ol E a b) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -4233,11 +4244,11 @@ theorem landmarkInvStrong_combine_ol_when_rootMult_le_three
     ring
   refine ⟨?_, ?_, ?_⟩
   · show b.point = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, ha_pt, zero_add]
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, ha_pt, zero_add]
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have ha_count_le : xs.count P ≤ localMult E a.poly P := by
       have htarget : target E xs a.point P = xs.count P := by
         rw [ha_pt]
@@ -4250,41 +4261,43 @@ theorem landmarkInvStrong_combine_ol_when_rootMult_le_three
         E a.poly b.poly P hPon ha_poly_nz hb_poly_nz
         (h_root_le P hPon).1 (h_root_le P hPon).2
     calc
-      target E (xs ++ ys) (EagenAccum.combine_ol E a b).point P
+      target E (xs ++ ys) (Accum.combine_ol E a b).point P
           = xs.count P + target E ys b.point P := by
-            simp [target, EagenAccum.combine_ol, List.count_append]
+            have hpt : (Accum.combine_ol E a b).point = b.point := rfl
+            rw [hpt]
+            simp [target, List.count_append]
             omega
       _ ≤ localMult E a.poly P + localMult E b.poly P :=
             Nat.add_le_add ha_count_le hb_target_le
-      _ ≤ localMult E (EagenAccum.combine_ol E a b).poly P := by
-            simpa [EagenAccum.combine_ol] using hprod_le
+      _ ≤ localMult E (Accum.combine_ol E a b).poly P := by
+            simpa [Accum.combine_ol] using hprod_le
   · show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree =
-        (xs ++ ys).length + (if (EagenAccum.combine_ol E a b).point
+        (xs ++ ys).length + (if (Accum.combine_ol E a b).point
           = (0 : ECPoint E) then 0 else 1)
     rw [normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
-    have ha_deg := LandmarkInvStrong.natDegree E ha
-    have hb_deg := LandmarkInvStrong.natDegree E hb
+    have ha_deg := AccumInvStrong.natDegree E ha
+    have hb_deg := AccumInvStrong.natDegree E hb
     rw [if_pos ha_pt] at ha_deg
     rw [if_neg hb_pt] at hb_deg
-    have h_combined_pt : (EagenAccum.combine_ol E a b).point = b.point := rfl
+    have h_combined_pt : (Accum.combine_ol E a b).point = b.point := rfl
     rw [h_combined_pt, if_neg hb_pt, ha_deg, hb_deg, List.length_append]
     omega
 
-theorem landmarkInvStrong_combine_or_when_rootMult_le_three
+theorem accumInvStrong_combine_or_when_rootMult_le_three
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
     (h_neg_a_on : ∀ Q : ZMod E.q × ZMod E.q,
       negCoords E a.point = some Q → Q ∈ E.points)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt : a.point ≠ (0 : ECPoint E))
     (hb_pt : b.point = (0 : ECPoint E))
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 3
       ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 3) :
-    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine_or E a b) := by
+    AccumInvStrong E (xs ++ ys) (Accum.combine_or E a b) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -4301,11 +4314,11 @@ theorem landmarkInvStrong_combine_or_when_rootMult_le_three
     ring
   refine ⟨?_, ?_, ?_⟩
   · show a.point = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, hb_pt, add_zero]
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, hb_pt, add_zero]
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have hb_count_le : ys.count P ≤ localMult E b.poly P := by
       have htarget : target E ys b.point P = ys.count P := by
         rw [hb_pt]
@@ -4318,43 +4331,45 @@ theorem landmarkInvStrong_combine_or_when_rootMult_le_three
         E a.poly b.poly P hPon ha_poly_nz hb_poly_nz
         (h_root_le P hPon).1 (h_root_le P hPon).2
     calc
-      target E (xs ++ ys) (EagenAccum.combine_or E a b).point P
+      target E (xs ++ ys) (Accum.combine_or E a b).point P
           = target E xs a.point P + ys.count P := by
-            simp [target, EagenAccum.combine_or, List.count_append]
+            have hpt : (Accum.combine_or E a b).point = a.point := rfl
+            rw [hpt]
+            simp [target, List.count_append]
             omega
       _ ≤ localMult E a.poly P + localMult E b.poly P :=
             Nat.add_le_add ha_target_le hb_count_le
-      _ ≤ localMult E (EagenAccum.combine_or E a b).poly P := by
-            simpa [EagenAccum.combine_or] using hprod_le
+      _ ≤ localMult E (Accum.combine_or E a b).poly P := by
+            simpa [Accum.combine_or] using hprod_le
   · show (normPoly E (mulCoordRingElt E a.poly b.poly)).natDegree =
-        (xs ++ ys).length + (if (EagenAccum.combine_or E a b).point
+        (xs ++ ys).length + (if (Accum.combine_or E a b).point
           = (0 : ECPoint E) then 0 else 1)
     rw [normPoly_mul_eq, Polynomial.natDegree_mul ha_nz hb_nz]
-    have ha_deg := LandmarkInvStrong.natDegree E ha
-    have hb_deg := LandmarkInvStrong.natDegree E hb
+    have ha_deg := AccumInvStrong.natDegree E ha
+    have hb_deg := AccumInvStrong.natDegree E hb
     rw [if_neg ha_pt] at ha_deg
     rw [if_pos hb_pt] at hb_deg
-    have h_combined_pt : (EagenAccum.combine_or E a b).point = a.point := rfl
+    have h_combined_pt : (Accum.combine_or E a b).point = a.point := rfl
     rw [h_combined_pt, if_neg ha_pt, ha_deg, hb_deg, List.length_append]
     omega
 
-theorem landmarkInvStrong_combine_vertical_when_rootMult_le_three
+theorem accumInvStrong_combine_vertical_when_rootMult_le_three
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     {xa ya : ZMod E.q}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
     (hxy_on : (xa, ya) ∈ E.points)
     (hxy_neg_on : (xa, -ya) ∈ E.points)
     (hy_ne : ya ≠ 0)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt_eq : a.point = ECPoint.affine E xa ya)
     (hb_pt_eq : b.point = ECPoint.affine E xa (-ya))
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 3
       ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 3) :
-    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine_vertical E a b xa) := by
+    AccumInvStrong E (xs ++ ys) (Accum.combine_vertical E a b xa) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -4382,9 +4397,9 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_three
     show some (xa, -(-ya)) = some (xa, ya)
     rw [neg_neg]
   have ha_van_neg : a.poly.eval xa (-ya) = 0 :=
-    LandmarkInvStrong.vanish_of_residue E ha ha_neg hxy_neg_on
+    AccumInvStrong.vanish_of_residue E ha ha_neg hxy_neg_on
   have hb_van_pos : b.poly.eval xa ya = 0 :=
-    LandmarkInvStrong.vanish_of_residue E hb hb_neg hxy_on
+    AccumInvStrong.vanish_of_residue E hb hb_neg hxy_on
   set q := mulCoordRingElt E a.poly b.poly with hq_def
   have hq_eval_pos : q.eval xa ya = 0 := by
     rw [hq_def, mulCoordRingElt_eval_on_E E _ _ hxy_on, hb_van_pos]
@@ -4411,24 +4426,24 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_three
     simpa [Lv] using mulCoordRingElt_divLin_vertical_recompose E q xa h_dvd_a h_dvd_b
   refine ⟨?_, ?_, ?_⟩
   · show (0 : ECPoint E) = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
     have hns_a : E.toW.toAffine.Nonsingular xa ya :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxy_on))
     have hns_b : E.toW.toAffine.Nonsingular xa (-ya) :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa (-ya)).mpr (E.hOnCurve _ hxy_neg_on))
     rw [ECPoint.affine_of_nonsingular E hns_a, ECPoint.affine_of_nonsingular E hns_b]
-    show (0 : ECPoint E) = (.some hns_a + .some hns_b : ECPoint E)
-    have h_neg : (.some hns_b : ECPoint E) = -(.some hns_a) := by
-      show WeierstrassCurve.Affine.Point.some hns_b
-            = -WeierstrassCurve.Affine.Point.some hns_a
+    show (0 : ECPoint E) = (.some _ _ hns_a + .some _ _ hns_b : ECPoint E)
+    have h_neg : (.some _ _ hns_b : ECPoint E) = -(.some _ _ hns_a) := by
+      show WeierstrassCurve.Affine.Point.some _ _ hns_b
+            = -WeierstrassCurve.Affine.Point.some _ _ hns_a
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg]
-    show (0 : ECPoint E) = .some hns_a + (-.some hns_a)
+    show (0 : ECPoint E) = .some _ _ hns_a + (-.some _ _ hns_a)
     rw [add_neg_cancel]
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have ha_target_le' :
         xs.count P + (if negCoords E a.point = some P then 1 else 0)
           ≤ localMult E a.poly P := by
@@ -4508,9 +4523,9 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_three
           rw [← localMult_eq_ordAt E (q.divLin xa) P,
               ← localMult_eq_ordAt E Lv P]
     calc
-      target E (xs ++ ys) (EagenAccum.combine_vertical E a b xa).point P
+      target E (xs ++ ys) (Accum.combine_vertical E a b xa).point P
           = xs.count P + ys.count P := by
-            simp [target, EagenAccum.combine_vertical, negCoords, List.count_append]
+            simp [target, Accum.combine_vertical, negCoords, List.count_append]
       _ ≤ localMult E (q.divLin xa) P := by
             have h :
                 xs.count P + ys.count P + localMult E Lv P
@@ -4522,12 +4537,12 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_three
                 _ ≤ localMult E q P := hprod_le
                 _ = localMult E (q.divLin xa) P + localMult E Lv P := hq_local_eq
             omega
-      _ = localMult E (EagenAccum.combine_vertical E a b xa).poly P := by
-            simp [EagenAccum.combine_vertical, hq_def]
+      _ = localMult E (Accum.combine_vertical E a b xa).poly P := by
+            simp [Accum.combine_vertical, hq_def]
   · show (normPoly E (q.divLin xa)).natDegree
-        = (xs ++ ys).length + (if (EagenAccum.combine_vertical E a b xa).point
+        = (xs ++ ys).length + (if (Accum.combine_vertical E a b xa).point
                                   = (0 : ECPoint E) then 0 else 1)
-    have h_combined_zero : (EagenAccum.combine_vertical E a b xa).point
+    have h_combined_zero : (Accum.combine_vertical E a b xa).point
         = (0 : ECPoint E) := rfl
     rw [if_pos h_combined_zero]
     have h_factorize := normPoly_eq_X_sub_C_sq_mul_normPoly_divLin
@@ -4560,30 +4575,30 @@ theorem landmarkInvStrong_combine_vertical_when_rootMult_le_three
           E.equation_iff_nonsingular.mp ((E.equation_iff xa (-ya)).mpr (E.hOnCurve _ hxy_neg_on))
         rw [ECPoint.affine_of_nonsingular E hns] at h
         exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
-      have ha_deg := LandmarkInvStrong.natDegree E ha
-      have hb_deg := LandmarkInvStrong.natDegree E hb
+      have ha_deg := AccumInvStrong.natDegree E ha
+      have hb_deg := AccumInvStrong.natDegree E hb
       rw [if_neg hap] at ha_deg
       rw [if_neg hbp] at hb_deg
       omega
     rw [List.length_append]
     omega
 
-theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_three
+theorem accumInvStrong_combine_tangent_torsion_when_rootMult_le_three
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     {xa : ZMod E.q}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
     (hxy_on : (xa, (0 : ZMod E.q)) ∈ E.points)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt_eq : a.point = ECPoint.affine E xa 0)
     (hb_pt_eq : b.point = ECPoint.affine E xa 0)
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 3
       ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 3) :
-    LandmarkInvStrong E (xs ++ ys)
-      (EagenAccum.combine_tangent_torsion E a b xa) := by
+    AccumInvStrong E (xs ++ ys)
+      (Accum.combine_tangent_torsion E a b xa) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -4612,9 +4627,9 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_three
     show some (xa, -(0 : ZMod E.q)) = some (xa, 0)
     rw [neg_zero]
   have ha_van : a.poly.eval xa 0 = 0 :=
-    LandmarkInvStrong.vanish_of_residue E ha ha_neg hxy_on
+    AccumInvStrong.vanish_of_residue E ha ha_neg hxy_on
   have hb_van : b.poly.eval xa 0 = 0 :=
-    LandmarkInvStrong.vanish_of_residue E hb hb_neg hxy_on
+    AccumInvStrong.vanish_of_residue E hb hb_neg hxy_on
   set q := mulCoordRingElt E a.poly b.poly with hq_def
   obtain ⟨h_qa_xa, h_qb_xa⟩ : q.a.eval xa = 0 ∧ q.b.eval xa = 0 := by
     rw [hq_def]
@@ -4641,24 +4656,24 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_three
     simpa [Lv] using mulCoordRingElt_divLin_vertical_recompose E q xa h_dvd_a h_dvd_b
   refine ⟨?_, ?_, ?_⟩
   · show (0 : ECPoint E) = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
     have hns : E.toW.toAffine.Nonsingular xa 0 :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa 0).mpr (E.hOnCurve _ hxy_on))
     rw [ECPoint.affine_of_nonsingular E hns]
-    show (0 : ECPoint E) = (.some hns + .some hns : ECPoint E)
-    have hself_neg : (-(.some hns : ECPoint E)) = .some hns := by
-      show -(WeierstrassCurve.Affine.Point.some hns : ECPoint E)
-          = WeierstrassCurve.Affine.Point.some hns
+    show (0 : ECPoint E) = (.some _ _ hns + .some _ _ hns : ECPoint E)
+    have hself_neg : (-(.some _ _ hns : ECPoint E)) = .some _ _ hns := by
+      show -(WeierstrassCurve.Affine.Point.some _ _ hns : ECPoint E)
+          = WeierstrassCurve.Affine.Point.some _ _ hns
       simp [WeierstrassCurve.Affine.Point.neg_some]
     calc
-      (0 : ECPoint E) = (.some hns : ECPoint E) + (-.some hns) := by
+      (0 : ECPoint E) = (.some _ _ hns : ECPoint E) + (-.some _ _ hns) := by
         rw [add_neg_cancel]
-      _ = (.some hns : ECPoint E) + .some hns := by
+      _ = (.some _ _ hns : ECPoint E) + .some _ _ hns := by
         rw [hself_neg]
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have ha_target_le' :
         xs.count P + (if negCoords E a.point = some P then 1 else 0)
           ≤ localMult E a.poly P := by
@@ -4725,10 +4740,10 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_three
           rw [← localMult_eq_ordAt E (q.divLin xa) P,
               ← localMult_eq_ordAt E Lv P]
     calc
-      target E (xs ++ ys) (EagenAccum.combine_tangent_torsion E a b xa).point P
+      target E (xs ++ ys) (Accum.combine_tangent_torsion E a b xa).point P
           = xs.count P + ys.count P := by
-            simp [target, EagenAccum.combine_tangent_torsion,
-              EagenAccum.combine_vertical, negCoords, List.count_append]
+            simp [target, Accum.combine_tangent_torsion,
+              Accum.combine_vertical, negCoords, List.count_append]
       _ ≤ localMult E (q.divLin xa) P := by
             have h :
                 xs.count P + ys.count P + localMult E Lv P
@@ -4740,14 +4755,14 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_three
                 _ ≤ localMult E q P := hprod_le
                 _ = localMult E (q.divLin xa) P + localMult E Lv P := hq_local_eq
             omega
-      _ = localMult E (EagenAccum.combine_tangent_torsion E a b xa).poly P := by
-            simp [EagenAccum.combine_tangent_torsion,
-              EagenAccum.combine_vertical, hq_def]
+      _ = localMult E (Accum.combine_tangent_torsion E a b xa).poly P := by
+            simp [Accum.combine_tangent_torsion,
+              Accum.combine_vertical, hq_def]
   · show (normPoly E (q.divLin xa)).natDegree
         = (xs ++ ys).length
-          + (if (EagenAccum.combine_tangent_torsion E a b xa).point
+          + (if (Accum.combine_tangent_torsion E a b xa).point
                 = (0 : ECPoint E) then 0 else 1)
-    have h_combined_zero : (EagenAccum.combine_tangent_torsion E a b xa).point
+    have h_combined_zero : (Accum.combine_tangent_torsion E a b xa).point
         = (0 : ECPoint E) := rfl
     rw [if_pos h_combined_zero]
     have h_factorize := normPoly_eq_X_sub_C_sq_mul_normPoly_divLin
@@ -4780,8 +4795,8 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_three
           E.equation_iff_nonsingular.mp ((E.equation_iff xa 0).mpr (E.hOnCurve _ hxy_on))
         rw [ECPoint.affine_of_nonsingular E hns] at h
         exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
-      have ha_deg := LandmarkInvStrong.natDegree E ha
-      have hb_deg := LandmarkInvStrong.natDegree E hb
+      have ha_deg := AccumInvStrong.natDegree E ha
+      have hb_deg := AccumInvStrong.natDegree E hb
       rw [if_neg hap] at ha_deg
       rw [if_neg hbp] at hb_deg
       omega
@@ -4789,9 +4804,9 @@ theorem landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_three
     omega
 
 
-theorem landmarkInvStrong_combine_distinct_when_rootMult_le_one
+theorem accumInvStrong_combine_distinct_when_rootMult_le_one
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     {xa ya xb yb : ZMod E.q}
     (h_xx : xa ≠ xb)
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
@@ -4802,15 +4817,15 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_one
     (hyb_ne : yb ≠ 0)
     (h_third_xa : (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xa)
     (h_third_xb : (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xb)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt_eq : a.point = ECPoint.affine E xa ya)
     (hb_pt_eq : b.point = ECPoint.affine E xb yb)
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 1
       ∨ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 1) :
-    LandmarkInvStrong E (xs ++ ys)
-      (EagenAccum.combine_distinct E a b xa ya xb yb h_xx) := by
+    AccumInvStrong E (xs ++ ys)
+      (Accum.combine_distinct E a b xa ya xb yb h_xx) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -4886,9 +4901,9 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_one
     rw [ECPoint.affine_of_nonsingular E hns]
     rfl
   have ha_neg_eval : a.poly.eval xa (-ya) = 0 :=
-    LandmarkInvStrong.vanish_of_residue E ha ha_neg hxa_neg_on
+    AccumInvStrong.vanish_of_residue E ha ha_neg hxa_neg_on
   have hb_neg_eval : b.poly.eval xb (-yb) = 0 :=
-    LandmarkInvStrong.vanish_of_residue E hb hb_neg hxb_neg_on
+    AccumInvStrong.vanish_of_residue E hb hb_neg hxb_neg_on
   have hline_eval_a : line.eval xa ya = 0 := by
     rw [hline_def]
     exact chordCoordRingElt_eval_left E (xa, ya) (xb, yb)
@@ -4991,37 +5006,37 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_one
   have hns_Qneg : E.toW.toAffine.Nonsingular Qx (-Qy) :=
     E.equation_iff_nonsingular.mp ((E.equation_iff Qx (-Qy)).mpr (E.hOnCurve _ hQ_neg_on))
   have h_combined_neg :
-      negCoords E (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point
+      negCoords E (Accum.combine_distinct E a b xa ya xb yb h_xx).point
         = some (Qx, Qy) := by
     show negCoords E (ECPoint.affine E Qx (-Qy)) = some (Qx, Qy)
     rw [ECPoint.affine_of_nonsingular E hns_Qneg]
     show some (Qx, -(-Qy)) = some (Qx, Qy)
     rw [neg_neg]
   refine ⟨?_, ?_, ?_⟩
-  · show (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
+  · show (Accum.combine_distinct E a b xa ya xb yb h_xx).point = sumOnE E (xs ++ ys)
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
     have hns_a : E.toW.toAffine.Nonsingular xa ya :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxa_on))
     have hns_b : E.toW.toAffine.Nonsingular xb yb :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xb yb).mpr (E.hOnCurve _ hxb_on))
     rw [ECPoint.affine_of_nonsingular E hns_a, ECPoint.affine_of_nonsingular E hns_b]
-    show ECPoint.affine E Qx (-Qy) = (.some hns_a + .some hns_b : ECPoint E)
+    show ECPoint.affine E Qx (-Qy) = (.some _ _ hns_a + .some _ _ hns_b : ECPoint E)
     have hSum := thirdPoint_some_eq_neg_add (E := E) hxa_on hxb_on hT
     have hns_Q : E.toW.toAffine.Nonsingular Qx Qy :=
       E.equation_iff_nonsingular.mp ((E.equation_iff Qx Qy).mpr (E.hOnCurve _ hQ_on))
-    have heq_a : ECPoint.affineOfMem E hxa_on = (.some hns_a : ECPoint E) := rfl
-    have heq_b : ECPoint.affineOfMem E hxb_on = (.some hns_b : ECPoint E) := rfl
-    have heq_Q : ECPoint.affineOfMem E hQ_on = (.some hns_Q : ECPoint E) := rfl
+    have heq_a : ECPoint.affineOfMem E hxa_on = (.some _ _ hns_a : ECPoint E) := rfl
+    have heq_b : ECPoint.affineOfMem E hxb_on = (.some _ _ hns_b : ECPoint E) := rfl
+    have heq_Q : ECPoint.affineOfMem E hQ_on = (.some _ _ hns_Q : ECPoint E) := rfl
     rw [heq_a, heq_b, heq_Q] at hSum
     rw [ECPoint.affine_of_nonsingular E hns_Qneg]
-    have h_neg_third : (.some hns_Qneg : ECPoint E) = -(.some hns_Q : ECPoint E) := by
+    have h_neg_third : (.some _ _ hns_Qneg : ECPoint E) = -(.some _ _ hns_Q : ECPoint E) := by
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg_third]
     exact hSum.symm
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have ha_target_le' :
         xs.count P + (if P = (xa, -ya) then 1 else 0)
           ≤ localMult E a.poly P := by
@@ -5283,18 +5298,18 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_one
                 + localMult E Lvb P + localMult E Lva P := hq_local_eq
       omega
     calc
-      target E (xs ++ ys) (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point P
+      target E (xs ++ ys) (Accum.combine_distinct E a b xa ya xb yb h_xx).point P
           = xs.count P + ys.count P + (if P = (Qx, Qy) then 1 else 0) := by
             simp [target, h_combined_neg, List.count_append, eq_comm]
       _ ≤ localMult E ((q.divLin xa).divLin xb) P := htarget_base_le_after
-      _ = localMult E (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).poly P := by
-            simp [EagenAccum.combine_distinct, hq_def, hline_def]
+      _ = localMult E (Accum.combine_distinct E a b xa ya xb yb h_xx).poly P := by
+            simp [Accum.combine_distinct, hq_def, hline_def]
   · show (normPoly E ((q.divLin xa).divLin xb)).natDegree
         = (xs ++ ys).length
-          + (if (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point
+          + (if (Accum.combine_distinct E a b xa ya xb yb h_xx).point
                 = (0 : ECPoint E) then 0 else 1)
     have h_combined_ne :
-        (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point
+        (Accum.combine_distinct E a b xa ya xb yb h_xx).point
           ≠ (0 : ECPoint E) := by
       show ECPoint.affine E Qx (-Qy) ≠ (0 : ECPoint E)
       rw [ECPoint.affine_of_nonsingular E hns_Qneg]
@@ -5339,8 +5354,8 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_one
         E.equation_iff_nonsingular.mp ((E.equation_iff xb yb).mpr (E.hOnCurve _ hxb_on))
       rw [ECPoint.affine_of_nonsingular E hns] at h
       exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
-    have ha_deg := LandmarkInvStrong.natDegree E ha
-    have hb_deg := LandmarkInvStrong.natDegree E hb
+    have ha_deg := AccumInvStrong.natDegree E ha
+    have hb_deg := AccumInvStrong.natDegree E hb
     rw [if_neg hap] at ha_deg
     rw [if_neg hbp] at hb_deg
     have h_qnp : (normPoly E q).natDegree = xs.length + ys.length + 5 := by
@@ -5352,9 +5367,9 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_one
     rw [h_natDeg2, h_natDeg1, h_qnp, List.length_append]
     omega
 
-theorem landmarkInvStrong_combine_distinct_when_rootMult_le_two
+theorem accumInvStrong_combine_distinct_when_rootMult_le_two
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     {xa ya xb yb : ZMod E.q}
     (h_xx : xa ≠ xb)
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
@@ -5365,15 +5380,15 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_two
     (hyb_ne : yb ≠ 0)
     (h_third_xa : (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xa)
     (h_third_xb : (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xb)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt_eq : a.point = ECPoint.affine E xa ya)
     (hb_pt_eq : b.point = ECPoint.affine E xb yb)
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2
       ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 2) :
-    LandmarkInvStrong E (xs ++ ys)
-      (EagenAccum.combine_distinct E a b xa ya xb yb h_xx) := by
+    AccumInvStrong E (xs ++ ys)
+      (Accum.combine_distinct E a b xa ya xb yb h_xx) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -5449,9 +5464,9 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_two
     rw [ECPoint.affine_of_nonsingular E hns]
     rfl
   have ha_neg_eval : a.poly.eval xa (-ya) = 0 :=
-    LandmarkInvStrong.vanish_of_residue E ha ha_neg hxa_neg_on
+    AccumInvStrong.vanish_of_residue E ha ha_neg hxa_neg_on
   have hb_neg_eval : b.poly.eval xb (-yb) = 0 :=
-    LandmarkInvStrong.vanish_of_residue E hb hb_neg hxb_neg_on
+    AccumInvStrong.vanish_of_residue E hb hb_neg hxb_neg_on
   have hline_eval_a : line.eval xa ya = 0 := by
     rw [hline_def]
     exact chordCoordRingElt_eval_left E (xa, ya) (xb, yb)
@@ -5554,37 +5569,37 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_two
   have hns_Qneg : E.toW.toAffine.Nonsingular Qx (-Qy) :=
     E.equation_iff_nonsingular.mp ((E.equation_iff Qx (-Qy)).mpr (E.hOnCurve _ hQ_neg_on))
   have h_combined_neg :
-      negCoords E (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point
+      negCoords E (Accum.combine_distinct E a b xa ya xb yb h_xx).point
         = some (Qx, Qy) := by
     show negCoords E (ECPoint.affine E Qx (-Qy)) = some (Qx, Qy)
     rw [ECPoint.affine_of_nonsingular E hns_Qneg]
     show some (Qx, -(-Qy)) = some (Qx, Qy)
     rw [neg_neg]
   refine ⟨?_, ?_, ?_⟩
-  · show (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
+  · show (Accum.combine_distinct E a b xa ya xb yb h_xx).point = sumOnE E (xs ++ ys)
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
     have hns_a : E.toW.toAffine.Nonsingular xa ya :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxa_on))
     have hns_b : E.toW.toAffine.Nonsingular xb yb :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xb yb).mpr (E.hOnCurve _ hxb_on))
     rw [ECPoint.affine_of_nonsingular E hns_a, ECPoint.affine_of_nonsingular E hns_b]
-    show ECPoint.affine E Qx (-Qy) = (.some hns_a + .some hns_b : ECPoint E)
+    show ECPoint.affine E Qx (-Qy) = (.some _ _ hns_a + .some _ _ hns_b : ECPoint E)
     have hSum := thirdPoint_some_eq_neg_add (E := E) hxa_on hxb_on hT
     have hns_Q : E.toW.toAffine.Nonsingular Qx Qy :=
       E.equation_iff_nonsingular.mp ((E.equation_iff Qx Qy).mpr (E.hOnCurve _ hQ_on))
-    have heq_a : ECPoint.affineOfMem E hxa_on = (.some hns_a : ECPoint E) := rfl
-    have heq_b : ECPoint.affineOfMem E hxb_on = (.some hns_b : ECPoint E) := rfl
-    have heq_Q : ECPoint.affineOfMem E hQ_on = (.some hns_Q : ECPoint E) := rfl
+    have heq_a : ECPoint.affineOfMem E hxa_on = (.some _ _ hns_a : ECPoint E) := rfl
+    have heq_b : ECPoint.affineOfMem E hxb_on = (.some _ _ hns_b : ECPoint E) := rfl
+    have heq_Q : ECPoint.affineOfMem E hQ_on = (.some _ _ hns_Q : ECPoint E) := rfl
     rw [heq_a, heq_b, heq_Q] at hSum
     rw [ECPoint.affine_of_nonsingular E hns_Qneg]
-    have h_neg_third : (.some hns_Qneg : ECPoint E) = -(.some hns_Q : ECPoint E) := by
+    have h_neg_third : (.some _ _ hns_Qneg : ECPoint E) = -(.some _ _ hns_Q : ECPoint E) := by
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg_third]
     exact hSum.symm
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have ha_target_le' :
         xs.count P + (if P = (xa, -ya) then 1 else 0)
           ≤ localMult E a.poly P := by
@@ -5833,18 +5848,18 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_two
                 + localMult E Lvb P + localMult E Lva P := hq_local_eq
       omega
     calc
-      target E (xs ++ ys) (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point P
+      target E (xs ++ ys) (Accum.combine_distinct E a b xa ya xb yb h_xx).point P
           = xs.count P + ys.count P + (if P = (Qx, Qy) then 1 else 0) := by
             simp [target, h_combined_neg, List.count_append, eq_comm]
       _ ≤ localMult E ((q.divLin xa).divLin xb) P := htarget_base_le_after
-      _ = localMult E (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).poly P := by
-            simp [EagenAccum.combine_distinct, hq_def, hline_def]
+      _ = localMult E (Accum.combine_distinct E a b xa ya xb yb h_xx).poly P := by
+            simp [Accum.combine_distinct, hq_def, hline_def]
   · show (normPoly E ((q.divLin xa).divLin xb)).natDegree
         = (xs ++ ys).length
-          + (if (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point
+          + (if (Accum.combine_distinct E a b xa ya xb yb h_xx).point
                 = (0 : ECPoint E) then 0 else 1)
     have h_combined_ne :
-        (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point
+        (Accum.combine_distinct E a b xa ya xb yb h_xx).point
           ≠ (0 : ECPoint E) := by
       show ECPoint.affine E Qx (-Qy) ≠ (0 : ECPoint E)
       rw [ECPoint.affine_of_nonsingular E hns_Qneg]
@@ -5889,8 +5904,8 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_two
         E.equation_iff_nonsingular.mp ((E.equation_iff xb yb).mpr (E.hOnCurve _ hxb_on))
       rw [ECPoint.affine_of_nonsingular E hns] at h
       exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
-    have ha_deg := LandmarkInvStrong.natDegree E ha
-    have hb_deg := LandmarkInvStrong.natDegree E hb
+    have ha_deg := AccumInvStrong.natDegree E ha
+    have hb_deg := AccumInvStrong.natDegree E hb
     rw [if_neg hap] at ha_deg
     rw [if_neg hbp] at hb_deg
     have h_qnp : (normPoly E q).natDegree = xs.length + ys.length + 5 := by
@@ -5902,9 +5917,9 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_two
     rw [h_natDeg2, h_natDeg1, h_qnp, List.length_append]
     omega
 
-theorem landmarkInvStrong_combine_distinct_when_rootMult_le_three
+theorem accumInvStrong_combine_distinct_when_rootMult_le_three
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     {xa ya xb yb : ZMod E.q}
     (h_xx : xa ≠ xb)
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
@@ -5915,15 +5930,15 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_three
     (hyb_ne : yb ≠ 0)
     (h_third_xa : (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xa)
     (h_third_xb : (slopeOf xa ya xb yb ^ 2 - xa - xb) ≠ xb)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt_eq : a.point = ECPoint.affine E xa ya)
     (hb_pt_eq : b.point = ECPoint.affine E xb yb)
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 3
       ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 3) :
-    LandmarkInvStrong E (xs ++ ys)
-      (EagenAccum.combine_distinct E a b xa ya xb yb h_xx) := by
+    AccumInvStrong E (xs ++ ys)
+      (Accum.combine_distinct E a b xa ya xb yb h_xx) := by
   classical
   have _hxs_on := hxs_on
   have _hys_on := hys_on
@@ -5999,9 +6014,9 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_three
     rw [ECPoint.affine_of_nonsingular E hns]
     rfl
   have ha_neg_eval : a.poly.eval xa (-ya) = 0 :=
-    LandmarkInvStrong.vanish_of_residue E ha ha_neg hxa_neg_on
+    AccumInvStrong.vanish_of_residue E ha ha_neg hxa_neg_on
   have hb_neg_eval : b.poly.eval xb (-yb) = 0 :=
-    LandmarkInvStrong.vanish_of_residue E hb hb_neg hxb_neg_on
+    AccumInvStrong.vanish_of_residue E hb hb_neg hxb_neg_on
   have hline_eval_a : line.eval xa ya = 0 := by
     rw [hline_def]
     exact chordCoordRingElt_eval_left E (xa, ya) (xb, yb)
@@ -6104,37 +6119,37 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_three
   have hns_Qneg : E.toW.toAffine.Nonsingular Qx (-Qy) :=
     E.equation_iff_nonsingular.mp ((E.equation_iff Qx (-Qy)).mpr (E.hOnCurve _ hQ_neg_on))
   have h_combined_neg :
-      negCoords E (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point
+      negCoords E (Accum.combine_distinct E a b xa ya xb yb h_xx).point
         = some (Qx, Qy) := by
     show negCoords E (ECPoint.affine E Qx (-Qy)) = some (Qx, Qy)
     rw [ECPoint.affine_of_nonsingular E hns_Qneg]
     show some (Qx, -(-Qy)) = some (Qx, Qy)
     rw [neg_neg]
   refine ⟨?_, ?_, ?_⟩
-  · show (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point = sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
+  · show (Accum.combine_distinct E a b xa ya xb yb h_xx).point = sumOnE E (xs ++ ys)
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
     have hns_a : E.toW.toAffine.Nonsingular xa ya :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxa_on))
     have hns_b : E.toW.toAffine.Nonsingular xb yb :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xb yb).mpr (E.hOnCurve _ hxb_on))
     rw [ECPoint.affine_of_nonsingular E hns_a, ECPoint.affine_of_nonsingular E hns_b]
-    show ECPoint.affine E Qx (-Qy) = (.some hns_a + .some hns_b : ECPoint E)
+    show ECPoint.affine E Qx (-Qy) = (.some _ _ hns_a + .some _ _ hns_b : ECPoint E)
     have hSum := thirdPoint_some_eq_neg_add (E := E) hxa_on hxb_on hT
     have hns_Q : E.toW.toAffine.Nonsingular Qx Qy :=
       E.equation_iff_nonsingular.mp ((E.equation_iff Qx Qy).mpr (E.hOnCurve _ hQ_on))
-    have heq_a : ECPoint.affineOfMem E hxa_on = (.some hns_a : ECPoint E) := rfl
-    have heq_b : ECPoint.affineOfMem E hxb_on = (.some hns_b : ECPoint E) := rfl
-    have heq_Q : ECPoint.affineOfMem E hQ_on = (.some hns_Q : ECPoint E) := rfl
+    have heq_a : ECPoint.affineOfMem E hxa_on = (.some _ _ hns_a : ECPoint E) := rfl
+    have heq_b : ECPoint.affineOfMem E hxb_on = (.some _ _ hns_b : ECPoint E) := rfl
+    have heq_Q : ECPoint.affineOfMem E hQ_on = (.some _ _ hns_Q : ECPoint E) := rfl
     rw [heq_a, heq_b, heq_Q] at hSum
     rw [ECPoint.affine_of_nonsingular E hns_Qneg]
-    have h_neg_third : (.some hns_Qneg : ECPoint E) = -(.some hns_Q : ECPoint E) := by
+    have h_neg_third : (.some _ _ hns_Qneg : ECPoint E) = -(.some _ _ hns_Q : ECPoint E) := by
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg_third]
     exact hSum.symm
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have ha_target_le' :
         xs.count P + (if P = (xa, -ya) then 1 else 0)
           ≤ localMult E a.poly P := by
@@ -6383,18 +6398,18 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_three
                 + localMult E Lvb P + localMult E Lva P := hq_local_eq
       omega
     calc
-      target E (xs ++ ys) (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point P
+      target E (xs ++ ys) (Accum.combine_distinct E a b xa ya xb yb h_xx).point P
           = xs.count P + ys.count P + (if P = (Qx, Qy) then 1 else 0) := by
             simp [target, h_combined_neg, List.count_append, eq_comm]
       _ ≤ localMult E ((q.divLin xa).divLin xb) P := htarget_base_le_after
-      _ = localMult E (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).poly P := by
-            simp [EagenAccum.combine_distinct, hq_def, hline_def]
+      _ = localMult E (Accum.combine_distinct E a b xa ya xb yb h_xx).poly P := by
+            simp [Accum.combine_distinct, hq_def, hline_def]
   · show (normPoly E ((q.divLin xa).divLin xb)).natDegree
         = (xs ++ ys).length
-          + (if (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point
+          + (if (Accum.combine_distinct E a b xa ya xb yb h_xx).point
                 = (0 : ECPoint E) then 0 else 1)
     have h_combined_ne :
-        (EagenAccum.combine_distinct E a b xa ya xb yb h_xx).point
+        (Accum.combine_distinct E a b xa ya xb yb h_xx).point
           ≠ (0 : ECPoint E) := by
       show ECPoint.affine E Qx (-Qy) ≠ (0 : ECPoint E)
       rw [ECPoint.affine_of_nonsingular E hns_Qneg]
@@ -6439,8 +6454,8 @@ theorem landmarkInvStrong_combine_distinct_when_rootMult_le_three
         E.equation_iff_nonsingular.mp ((E.equation_iff xb yb).mpr (E.hOnCurve _ hxb_on))
       rw [ECPoint.affine_of_nonsingular E hns] at h
       exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
-    have ha_deg := LandmarkInvStrong.natDegree E ha
-    have hb_deg := LandmarkInvStrong.natDegree E hb
+    have ha_deg := AccumInvStrong.natDegree E ha
+    have hb_deg := AccumInvStrong.natDegree E hb
     rw [if_neg hap] at ha_deg
     rw [if_neg hbp] at hb_deg
     have h_qnp : (normPoly E q).natDegree = xs.length + ys.length + 5 := by
@@ -6462,18 +6477,18 @@ hypotheses made explicit:
   bound before the two vertical cancellations.
 
 This is the non-2-torsion tangent analogue of
-`landmarkInvStrong_combine_distinct_when_rootMult_le_one`, isolating the
+`accumInvStrong_combine_distinct_when_rootMult_le_one`, isolating the
 remaining tangent multiplicity arithmetic. -/
-theorem landmarkInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
+theorem accumInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     {xa ya : ZMod E.q}
     (hxy_on : (xa, ya) ∈ E.points)
     (hxy_neg_on : (xa, -ya) ∈ E.points)
     (hy_ne : ya ≠ 0)
     (h_third_xa :
       ((3 * xa ^ 2 + E.curveA) * (2 * ya)⁻¹) ^ 2 - 2 * xa ≠ xa)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt_eq : a.point = ECPoint.affine E xa ya)
     (hb_pt_eq : b.point = ECPoint.affine E xa ya)
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
@@ -6495,8 +6510,8 @@ theorem landmarkInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
             (mulCoordRingElt E
               (mulCoordRingElt E (chordCoordRingElt E (xa, ya) (xa, ya)) a.poly)
               b.poly) P) :
-    LandmarkInvStrong E (xs ++ ys)
-      (EagenAccum.combine_tangent_smooth E a b xa ya hy_ne) := by
+    AccumInvStrong E (xs ++ ys)
+      (Accum.combine_tangent_smooth E a b xa ya hy_ne) := by
   classical
   set lam : ZMod E.q := (3 * xa ^ 2 + E.curveA) * (2 * ya)⁻¹ with hlam_def
   set Qx : ZMod E.q := lam ^ 2 - 2 * xa with hQx_def
@@ -6600,35 +6615,35 @@ theorem landmarkInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
   have hns_Qneg : E.toW.toAffine.Nonsingular Qx (-Qy) :=
     E.equation_iff_nonsingular.mp ((E.equation_iff Qx (-Qy)).mpr (E.hOnCurve _ hQ_neg_on))
   have h_combined_neg :
-      negCoords E (EagenAccum.combine_tangent_smooth E a b xa ya hy_ne).point
+      negCoords E (Accum.combine_tangent_smooth E a b xa ya hy_ne).point
         = some (Qx, Qy) := by
     show negCoords E (ECPoint.affine E Qx (-Qy)) = some (Qx, Qy)
     rw [ECPoint.affine_of_nonsingular E hns_Qneg]
     show some (Qx, -(-Qy)) = some (Qx, Qy)
     rw [neg_neg]
   refine ⟨?_, ?_, ?_⟩
-  · show (EagenAccum.combine_tangent_smooth E a b xa ya hy_ne).point =
+  · show (Accum.combine_tangent_smooth E a b xa ya hy_ne).point =
       sumOnE E (xs ++ ys)
-    rw [sumOnE_append, ← LandmarkInvStrong.running_sum E ha,
-      ← LandmarkInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
+    rw [sumOnE_append, ← AccumInvStrong.running_sum E ha,
+      ← AccumInvStrong.running_sum E hb, ha_pt_eq, hb_pt_eq]
     have hns_a : E.toW.toAffine.Nonsingular xa ya :=
       E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxy_on))
     rw [ECPoint.affine_of_nonsingular E hns_a]
-    show ECPoint.affine E Qx (-Qy) = (.some hns_a + .some hns_a : ECPoint E)
+    show ECPoint.affine E Qx (-Qy) = (.some _ _ hns_a + .some _ _ hns_a : ECPoint E)
     have hSum := thirdPoint_some_eq_neg_add (E := E) hxy_on hxy_on hT
     have hns_Q : E.toW.toAffine.Nonsingular Qx Qy :=
       E.equation_iff_nonsingular.mp ((E.equation_iff Qx Qy).mpr (E.hOnCurve _ hQ_on))
-    have heq_a : ECPoint.affineOfMem E hxy_on = (.some hns_a : ECPoint E) := rfl
+    have heq_a : ECPoint.affineOfMem E hxy_on = (.some _ _ hns_a : ECPoint E) := rfl
     rw [heq_a] at hSum
-    change (.some hns_a + .some hns_a : ECPoint E) = -(.some hns_Q : ECPoint E) at hSum
+    change (.some _ _ hns_a + .some _ _ hns_a : ECPoint E) = -(.some _ _ hns_Q : ECPoint E) at hSum
     rw [ECPoint.affine_of_nonsingular E hns_Qneg]
-    have h_neg_third : (.some hns_Qneg : ECPoint E) = -(.some hns_Q : ECPoint E) := by
+    have h_neg_third : (.some _ _ hns_Qneg : ECPoint E) = -(.some _ _ hns_Q : ECPoint E) := by
       simp [WeierstrassCurve.Affine.Point.neg_some]
     rw [h_neg_third]
     exact hSum.symm
   · intro P hPon
-    have ha_target_le := LandmarkInvStrong.target_le E ha P hPon
-    have hb_target_le := LandmarkInvStrong.target_le E hb P hPon
+    have ha_target_le := AccumInvStrong.target_le E ha P hPon
+    have hb_target_le := AccumInvStrong.target_le E hb P hPon
     have ha_target_le' :
         xs.count P + (if P = (xa, -ya) then 1 else 0)
           ≤ localMult E a.poly P := by
@@ -6795,18 +6810,18 @@ theorem landmarkInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
                 + localMult E Lv P + localMult E Lv P := hq_local_eq
       omega
     calc
-      target E (xs ++ ys) (EagenAccum.combine_tangent_smooth E a b xa ya hy_ne).point P
+      target E (xs ++ ys) (Accum.combine_tangent_smooth E a b xa ya hy_ne).point P
           = xs.count P + ys.count P + (if P = (Qx, Qy) then 1 else 0) := by
             simp [target, h_combined_neg, List.count_append, eq_comm]
       _ ≤ localMult E ((q.divLin xa).divLin xa) P := htarget_base_le_after
-      _ = localMult E (EagenAccum.combine_tangent_smooth E a b xa ya hy_ne).poly P := by
-            simp [EagenAccum.combine_tangent_smooth, hq_def, hline_def]
+      _ = localMult E (Accum.combine_tangent_smooth E a b xa ya hy_ne).poly P := by
+            simp [Accum.combine_tangent_smooth, hq_def, hline_def]
   · show (normPoly E ((q.divLin xa).divLin xa)).natDegree
         = (xs ++ ys).length
-          + (if (EagenAccum.combine_tangent_smooth E a b xa ya hy_ne).point
+          + (if (Accum.combine_tangent_smooth E a b xa ya hy_ne).point
                 = (0 : ECPoint E) then 0 else 1)
     have h_combined_ne :
-        (EagenAccum.combine_tangent_smooth E a b xa ya hy_ne).point
+        (Accum.combine_tangent_smooth E a b xa ya hy_ne).point
           ≠ (0 : ECPoint E) := by
       show ECPoint.affine E Qx (-Qy) ≠ (0 : ECPoint E)
       rw [ECPoint.affine_of_nonsingular E hns_Qneg]
@@ -6851,8 +6866,8 @@ theorem landmarkInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
         E.equation_iff_nonsingular.mp ((E.equation_iff xa ya).mpr (E.hOnCurve _ hxy_on))
       rw [ECPoint.affine_of_nonsingular E hns] at h
       exact WeierstrassCurve.Affine.Point.some_ne_zero hns h
-    have ha_deg := LandmarkInvStrong.natDegree E ha
-    have hb_deg := LandmarkInvStrong.natDegree E hb
+    have ha_deg := AccumInvStrong.natDegree E ha
+    have hb_deg := AccumInvStrong.natDegree E hb
     rw [if_neg hap] at ha_deg
     rw [if_neg hbp] at hb_deg
     have h_qnp : (normPoly E q).natDegree = xs.length + ys.length + 5 := by
@@ -6864,16 +6879,16 @@ theorem landmarkInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
     rw [h_natDeg2, h_natDeg1, h_qnp, List.length_append]
     omega
 
-theorem landmarkInvStrong_combine_tangent_smooth_when_rootMult_le_two
+theorem accumInvStrong_combine_tangent_smooth_when_rootMult_le_two
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     {xa ya : ZMod E.q}
     (hxy_on : (xa, ya) ∈ E.points)
     (hxy_neg_on : (xa, -ya) ∈ E.points)
     (hy_ne : ya ≠ 0)
     (h_third_xa :
       ((3 * xa ^ 2 + E.curveA) * (2 * ya)⁻¹) ^ 2 - 2 * xa ≠ xa)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt_eq : a.point = ECPoint.affine E xa ya)
     (hb_pt_eq : b.point = ECPoint.affine E xa ya)
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
@@ -6898,23 +6913,23 @@ theorem landmarkInvStrong_combine_tangent_smooth_when_rootMult_le_two
             (mulCoordRingElt E
               (mulCoordRingElt E (chordCoordRingElt E (xa, ya) (xa, ya)) a.poly)
               b.poly) P) :
-    LandmarkInvStrong E (xs ++ ys)
-      (EagenAccum.combine_tangent_smooth E a b xa ya hy_ne) := by
+    AccumInvStrong E (xs ++ ys)
+      (Accum.combine_tangent_smooth E a b xa ya hy_ne) := by
   have _h_root_le := h_root_le
-  exact landmarkInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
+  exact accumInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
     E hxy_on hxy_neg_on hy_ne h_third_xa ha hb ha_pt_eq hb_pt_eq
     ha_nz hb_nz h_dvd_qa_sq h_dvd_qb_sq hprod_all_ge
 
-theorem landmarkInvStrong_combine_tangent_smooth_when_rootMult_le_three
+theorem accumInvStrong_combine_tangent_smooth_when_rootMult_le_three
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     {xa ya : ZMod E.q}
     (hxy_on : (xa, ya) ∈ E.points)
     (hxy_neg_on : (xa, -ya) ∈ E.points)
     (hy_ne : ya ≠ 0)
     (h_third_xa :
       ((3 * xa ^ 2 + E.curveA) * (2 * ya)⁻¹) ^ 2 - 2 * xa ≠ xa)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_pt_eq : a.point = ECPoint.affine E xa ya)
     (hb_pt_eq : b.point = ECPoint.affine E xa ya)
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
@@ -6939,10 +6954,10 @@ theorem landmarkInvStrong_combine_tangent_smooth_when_rootMult_le_three
             (mulCoordRingElt E
               (mulCoordRingElt E (chordCoordRingElt E (xa, ya) (xa, ya)) a.poly)
               b.poly) P) :
-    LandmarkInvStrong E (xs ++ ys)
-      (EagenAccum.combine_tangent_smooth E a b xa ya hy_ne) := by
+    AccumInvStrong E (xs ++ ys)
+      (Accum.combine_tangent_smooth E a b xa ya hy_ne) := by
   have _h_root_le := h_root_le
-  exact landmarkInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
+  exact accumInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
     E hxy_on hxy_neg_on hy_ne h_third_xa ha hb ha_pt_eq hb_pt_eq
     ha_nz hb_nz h_dvd_qa_sq h_dvd_qb_sq hprod_all_ge
 
@@ -6954,9 +6969,9 @@ The distinct chord branch needs non-2-torsion endpoints and the third
 intersection's x-coordinate to differ from both endpoints. The smooth
 tangent branch currently depends on the explicit double-divisibility and
 local-multiplicity product hypotheses isolated by
-`landmarkInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult`. -/
-def LandmarkInvStrongCombineAffineExtras
-    (a b : EagenAccum E) : Prop :=
+`accumInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult`. -/
+def AccumInvStrongCombineAffineExtras
+    (a b : Accum E) : Prop :=
   ∀ ⦃xa ya xb yb : ZMod E.q⦄,
     a.point = ECPoint.affine E xa ya →
     b.point = ECPoint.affine E xb yb →
@@ -6980,24 +6995,24 @@ def LandmarkInvStrongCombineAffineExtras
     the full universally-quantified affine predicate too strong; the
     `combine` dispatcher never consults it outside the nonzero/nonzero
     affine branch. -/
-def LandmarkInvStrongCombineExtras (a b : EagenAccum E) : Prop :=
+def AccumInvStrongCombineExtras (a b : Accum E) : Prop :=
   a.point ≠ (0 : ECPoint E) →
   b.point ≠ (0 : ECPoint E) →
-    LandmarkInvStrongCombineAffineExtras E a b
+    AccumInvStrongCombineAffineExtras E a b
 
 /-- Branch-shaped certificate for the affine-affine extras used by
-`EagenAccum.combine`.
+`Accum.combine`.
 
 The predicate follows the actual dispatcher. Branches that do not consult
 affine-affine extras are `True`. The distinct-x chord branch exposes only the
-four simple inequalities needed by `landmarkInvStrong_combine_distinct_*`.
+four simple inequalities needed by `accumInvStrong_combine_distinct_*`.
 The smooth tangent branch exposes the remaining divisibility and local
 multiplicity obligations. This is an `abbrev` so concrete non-smooth branches
 can reduce before `native_decide` looks for a `Decidable` instance. -/
-abbrev combineCanFire (a b : EagenAccum E) : Prop :=
+abbrev combineCanFire (a b : Accum E) : Prop :=
   match a.point, b.point with
   | WeierstrassCurve.Affine.Point.zero, _ => True
-  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero => True
+  | WeierstrassCurve.Affine.Point.some _ _ _, WeierstrassCurve.Affine.Point.zero => True
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ =>
       match decEq xa xb with
@@ -7027,10 +7042,10 @@ namespace combineCanFire
 /-- Decidable subcertificate for runs where the smooth tangent branch is not
 expected to fire. The smooth branch is `False`; all other branches mirror
 `combineCanFire`. -/
-abbrev chordCase (a b : EagenAccum E) : Prop :=
+abbrev chordCase (a b : Accum E) : Prop :=
   match a.point, b.point with
   | WeierstrassCurve.Affine.Point.zero, _ => True
-  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero => True
+  | WeierstrassCurve.Affine.Point.some _ _ _, WeierstrassCurve.Affine.Point.zero => True
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ =>
       match decEq xa xb with
@@ -7046,12 +7061,12 @@ abbrev chordCase (a b : EagenAccum E) : Prop :=
               | isTrue _ => True
               | isFalse _ => False
 
-instance chordCase_decidable (a b : EagenAccum E) :
+instance chordCase_decidable (a b : Accum E) :
     Decidable (combineCanFire.chordCase E a b) := by
   match hpa : a.point, hpb : b.point with
   | WeierstrassCurve.Affine.Point.zero, _ =>
       simpa [chordCase, hpa, hpb] using (isTrue True.intro : Decidable True)
-  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero =>
+  | WeierstrassCurve.Affine.Point.some _ _ _, WeierstrassCurve.Affine.Point.zero =>
       simpa [chordCase, hpa, hpb] using (isTrue True.intro : Decidable True)
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ =>
@@ -7077,13 +7092,13 @@ instance chordCase_decidable (a b : EagenAccum E) :
                   simpa [chordCase, hpa, hpb, hxx, hyy, hy0] using
                     (isFalse (fun hFalse : False => hFalse) : Decidable False)
 
-theorem of_chordCase {a b : EagenAccum E}
+theorem of_chordCase {a b : Accum E}
     (h : combineCanFire.chordCase E a b) :
     combineCanFire E a b := by
   match hpa : a.point, hpb : b.point with
   | WeierstrassCurve.Affine.Point.zero, _ =>
       simp [combineCanFire, hpa, hpb]
-  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero =>
+  | WeierstrassCurve.Affine.Point.some _ _ _, WeierstrassCurve.Affine.Point.zero =>
       simp [combineCanFire, hpa, hpb]
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) hns_a,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) hns_b =>
@@ -7109,7 +7124,7 @@ private theorem affine_eq_some_coords
     {x y xa ya : ZMod E.q}
     (hns : E.toW.toAffine.Nonsingular x y)
     (h : ECPoint.affine E xa ya =
-      (WeierstrassCurve.Affine.Point.some hns : ECPoint E)) :
+      (WeierstrassCurve.Affine.Point.some _ _ hns : ECPoint E)) :
     xa = x ∧ ya = y := by
   unfold ECPoint.affine at h
   by_cases hns' : E.toW.toAffine.Nonsingular xa ya
@@ -7119,15 +7134,15 @@ private theorem affine_eq_some_coords
     exfalso
     exact (WeierstrassCurve.Affine.Point.some_ne_zero hns) h.symm
 
-theorem landmarkInvStrongCombineAffineExtras_of_combineCanFire
-    (a b : EagenAccum E) (h : combineCanFire E a b)
+theorem accumInvStrongCombineAffineExtras_of_combineCanFire
+    (a b : Accum E) (h : combineCanFire E a b)
     (ha_ne : a.point ≠ (0 : ECPoint E))
     (hb_ne : b.point ≠ (0 : ECPoint E)) :
-    LandmarkInvStrongCombineAffineExtras E a b := by
+    AccumInvStrongCombineAffineExtras E a b := by
   match hpa : a.point, hpb : b.point with
   | WeierstrassCurve.Affine.Point.zero, _ =>
       exact False.elim (ha_ne hpa)
-  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero =>
+  | WeierstrassCurve.Affine.Point.some _ _ _, WeierstrassCurve.Affine.Point.zero =>
       exact False.elim (hb_ne hpb)
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) hns_a,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) hns_b =>
@@ -7140,11 +7155,11 @@ theorem landmarkInvStrongCombineAffineExtras_of_combineCanFire
       intro xa' ya' xb' yb' h_a_pt h_b_pt
       have h_a_eq_some :
           ECPoint.affine E xa' ya' =
-            (WeierstrassCurve.Affine.Point.some hns_a : ECPoint E) := by
+            (WeierstrassCurve.Affine.Point.some _ _ hns_a : ECPoint E) := by
         rw [← h_a_pt, hpa]
       have h_b_eq_some :
           ECPoint.affine E xb' yb' =
-            (WeierstrassCurve.Affine.Point.some hns_b : ECPoint E) := by
+            (WeierstrassCurve.Affine.Point.some _ _ hns_b : ECPoint E) := by
         rw [← h_b_pt, hpb]
       have hxa' : xa' = xa ∧ ya' = ya :=
         affine_eq_some_coords E hns_a h_a_eq_some
@@ -7225,11 +7240,11 @@ theorem landmarkInvStrongCombineAffineExtras_of_combineCanFire
                   · intro _ _ _
                     simpa [hxa'_eq, hya'_eq] using h_smooth
 
-theorem landmarkInvStrongCombineExtras_of_combineCanFire
-    (a b : EagenAccum E) (h : combineCanFire E a b) :
-    LandmarkInvStrongCombineExtras E a b := by
+theorem accumInvStrongCombineExtras_of_combineCanFire
+    (a b : Accum E) (h : combineCanFire E a b) :
+    AccumInvStrongCombineExtras E a b := by
   intro ha_ne hb_ne
-  exact landmarkInvStrongCombineAffineExtras_of_combineCanFire
+  exact accumInvStrongCombineAffineExtras_of_combineCanFire
     E a b h ha_ne hb_ne
 
 /-- Certifying affine-affine extras from `combineCanFire`, with the smooth
@@ -7237,11 +7252,11 @@ tangent square-divisibility obligation discharged from pointwise vanishing of
 the accumulator polynomials at their affine points.
 
 The final nonzero point hypotheses are the same gate used by
-`LandmarkInvStrongCombineExtras`: when an accumulator point is infinity,
+`AccumInvStrongCombineExtras`: when an accumulator point is infinity,
 `ECPoint.affine`'s off-curve fallback makes the full affine predicate too
 strong, and the combine dispatcher never consults it. -/
-theorem landmarkInvStrongCombineAffineExtras_of_combineCanFire_full
-    (a b : EagenAccum E) (h : combineCanFire E a b)
+theorem accumInvStrongCombineAffineExtras_of_combineCanFire_full
+    (a b : Accum E) (h : combineCanFire E a b)
     (h_a_vanish : ∀ xa ya, a.point = ECPoint.affine E xa ya →
       a.poly.a.eval xa = 0 ∧ a.poly.b.eval xa = 0)
     (h_b_vanish : ∀ xa ya, b.point = ECPoint.affine E xa ya →
@@ -7250,11 +7265,11 @@ theorem landmarkInvStrongCombineAffineExtras_of_combineCanFire_full
     (_h_b_nz : ¬ (b.poly.a = 0 ∧ b.poly.b = 0))
     (ha_ne : a.point ≠ (0 : ECPoint E))
     (hb_ne : b.point ≠ (0 : ECPoint E)) :
-    LandmarkInvStrongCombineAffineExtras E a b := by
+    AccumInvStrongCombineAffineExtras E a b := by
   classical
   have hbase :
-      LandmarkInvStrongCombineAffineExtras E a b :=
-    landmarkInvStrongCombineAffineExtras_of_combineCanFire
+      AccumInvStrongCombineAffineExtras E a b :=
+    accumInvStrongCombineAffineExtras_of_combineCanFire
       E a b h ha_ne hb_ne
   intro xa ya xb yb h_a_pt h_b_pt
   have hbase_at := hbase h_a_pt h_b_pt
@@ -7315,50 +7330,50 @@ theorem landmarkInvStrongCombineAffineExtras_of_combineCanFire_full
 
 /-- Gated strong-combine extras wrapper using the smooth-tangent vanishing
 certificate for square divisibility. -/
-theorem landmarkInvStrongCombineExtras_of_combineCanFire_full
-    (a b : EagenAccum E) (h : combineCanFire E a b)
+theorem accumInvStrongCombineExtras_of_combineCanFire_full
+    (a b : Accum E) (h : combineCanFire E a b)
     (h_a_vanish : ∀ xa ya, a.point = ECPoint.affine E xa ya →
       a.poly.a.eval xa = 0 ∧ a.poly.b.eval xa = 0)
     (h_b_vanish : ∀ xa ya, b.point = ECPoint.affine E xa ya →
       b.poly.a.eval xa = 0 ∧ b.poly.b.eval xa = 0)
     (h_a_nz : ¬ (a.poly.a = 0 ∧ a.poly.b = 0))
     (h_b_nz : ¬ (b.poly.a = 0 ∧ b.poly.b = 0)) :
-    LandmarkInvStrongCombineExtras E a b := by
+    AccumInvStrongCombineExtras E a b := by
   intro ha_ne hb_ne
-  exact landmarkInvStrongCombineAffineExtras_of_combineCanFire_full
+  exact accumInvStrongCombineAffineExtras_of_combineCanFire_full
     E a b h h_a_vanish h_b_vanish h_a_nz h_b_nz ha_ne hb_ne
 
-theorem landmarkInvStrongCombineExtras_of_chordCase
-    (a b : EagenAccum E) (h : combineCanFire.chordCase E a b) :
-    LandmarkInvStrongCombineExtras E a b :=
-  landmarkInvStrongCombineExtras_of_combineCanFire E a b
+theorem accumInvStrongCombineExtras_of_chordCase
+    (a b : Accum E) (h : combineCanFire.chordCase E a b) :
+    AccumInvStrongCombineExtras E a b :=
+  accumInvStrongCombineExtras_of_combineCanFire E a b
     (combineCanFire.of_chordCase E h)
 
 /-- Unified dispatcher for the case-specific strong combine lemmas. -/
-theorem landmarkInvStrong_combine_when_rootMult_le_one
+theorem accumInvStrong_combine_when_rootMult_le_one
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
     (h_neg_a_on : ∀ Q : ZMod E.q × ZMod E.q,
       negCoords E a.point = some Q → Q ∈ E.points)
     (h_neg_b_on : ∀ Q : ZMod E.q × ZMod E.q,
       negCoords E b.point = some Q → Q ∈ E.points)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 1
       ∨ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 1)
-    (h_aff_aff_extras : LandmarkInvStrongCombineAffineExtras E a b) :
-    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine E a b) := by
+    (h_aff_aff_extras : AccumInvStrongCombineAffineExtras E a b) :
+    AccumInvStrong E (xs ++ ys) (Accum.combine E a b) := by
   classical
   match hpa : a.point, hpb : b.point with
   | WeierstrassCurve.Affine.Point.zero, WeierstrassCurve.Affine.Point.zero =>
-      have hcase := landmarkInvStrong_combine_oo_when_rootMult_le_one
+      have hcase := accumInvStrong_combine_oo_when_rootMult_le_one
         E hxs_on hys_on ha hb hpa hpb ha_nz hb_nz h_root_le
       have hcombine :
-          EagenAccum.combine E a b = EagenAccum.combine_oo E a b := by
-        unfold EagenAccum.combine
+          Accum.combine E a b = Accum.combine_oo E a b := by
+        unfold Accum.combine
         rw [hpa, hpb]
       rw [hcombine]
       exact hcase
@@ -7367,11 +7382,11 @@ theorem landmarkInvStrong_combine_when_rootMult_le_one
       have hb_ne : b.point ≠ (0 : ECPoint E) := by
         rw [hpb]
         exact WeierstrassCurve.Affine.Point.some_ne_zero hns_b
-      have hcase := landmarkInvStrong_combine_ol_when_rootMult_le_one
+      have hcase := accumInvStrong_combine_ol_when_rootMult_le_one
         E hxs_on hys_on h_neg_b_on ha hb hpa hb_ne ha_nz hb_nz h_root_le
       have hcombine :
-          EagenAccum.combine E a b = EagenAccum.combine_ol E a b := by
-        unfold EagenAccum.combine
+          Accum.combine E a b = Accum.combine_ol E a b := by
+        unfold Accum.combine
         rw [hpa, hpb]
       rw [hcombine]
       exact hcase
@@ -7380,11 +7395,11 @@ theorem landmarkInvStrong_combine_when_rootMult_le_one
       have ha_ne : a.point ≠ (0 : ECPoint E) := by
         rw [hpa]
         exact WeierstrassCurve.Affine.Point.some_ne_zero hns_a
-      have hcase := landmarkInvStrong_combine_or_when_rootMult_le_one
+      have hcase := accumInvStrong_combine_or_when_rootMult_le_one
         E hxs_on hys_on h_neg_a_on ha hb ha_ne hpb ha_nz hb_nz h_root_le
       have hcombine :
-          EagenAccum.combine E a b = EagenAccum.combine_or E a b := by
-        unfold EagenAccum.combine
+          Accum.combine E a b = Accum.combine_or E a b := by
+        unfold Accum.combine
         rw [hpa, hpb]
       rw [hcombine]
       exact hcase
@@ -7403,14 +7418,14 @@ theorem landmarkInvStrong_combine_when_rootMult_le_one
       by_cases h_xx : xa ≠ xb
       · obtain ⟨hya_ne, hyb_ne, h_third_xa, h_third_xb⟩ :=
           (h_aff_aff_extras ha_pt_eq hb_pt_eq).1 h_xx
-        have hcase := landmarkInvStrong_combine_distinct_when_rootMult_le_one
+        have hcase := accumInvStrong_combine_distinct_when_rootMult_le_one
           E h_xx hxs_on hys_on hxa_on hxb_on hya_ne hyb_ne
           h_third_xa h_third_xb ha hb ha_pt_eq hb_pt_eq
           ha_nz hb_nz h_root_le
         have hcombine :
-            EagenAccum.combine E a b =
-              EagenAccum.combine_distinct E a b xa ya xb yb h_xx := by
-          unfold EagenAccum.combine
+            Accum.combine E a b =
+              Accum.combine_distinct E a b xa ya xb yb h_xx := by
+          unfold Accum.combine
           rw [hpa, hpb]
           simp [h_xx]
         rw [hcombine]
@@ -7433,16 +7448,16 @@ theorem landmarkInvStrong_combine_when_rootMult_le_one
                 b.point = ECPoint.affine E xb yb := hb_pt_eq
                 _ = ECPoint.affine E xa (0 : ZMod E.q) := by
                   rw [← hxeq, hyb_zero]
-            have hcase := landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_one
+            have hcase := accumInvStrong_combine_tangent_torsion_when_rootMult_le_one
               E hxs_on hys_on hxy_on ha hb ha_torsion_pt hb_torsion_pt
               ha_nz hb_nz h_root_le
             have hcombine :
-                EagenAccum.combine E a b = EagenAccum.combine_vertical E a b xa := by
-              unfold EagenAccum.combine
+                Accum.combine E a b = Accum.combine_vertical E a b xa := by
+              unfold Accum.combine
               rw [hpa, hpb]
               simp [hxeq, h_yy]
             rw [hcombine]
-            simpa [EagenAccum.combine_tangent_torsion] using hcase
+            simpa [Accum.combine_tangent_torsion] using hcase
           · have hyb_eq_neg : yb = -ya := by
               have hneg := congrArg Neg.neg h_yy
               simpa [neg_neg] using hneg.symm
@@ -7452,12 +7467,12 @@ theorem landmarkInvStrong_combine_when_rootMult_le_one
                 b.point = ECPoint.affine E xb yb := hb_pt_eq
                 _ = ECPoint.affine E xa (-ya) := by
                   rw [← hxeq, hyb_eq_neg]
-            have hcase := landmarkInvStrong_combine_vertical_when_rootMult_le_one
+            have hcase := accumInvStrong_combine_vertical_when_rootMult_le_one
               E hxs_on hys_on hxa_on hxy_neg_on hya_zero ha hb
               ha_pt_eq hb_vertical_pt ha_nz hb_nz h_root_le
             have hcombine :
-                EagenAccum.combine E a b = EagenAccum.combine_vertical E a b xa := by
-              unfold EagenAccum.combine
+                Accum.combine E a b = Accum.combine_vertical E a b xa := by
+              unfold Accum.combine
               rw [hpa, hpb]
               simp [hxeq, h_yy]
             rw [hcombine]
@@ -7487,43 +7502,43 @@ theorem landmarkInvStrong_combine_when_rootMult_le_one
             obtain ⟨h_third_xa, h_dvd_qa_sq, h_dvd_qb_sq, hprod_all_ge⟩ :=
               (h_aff_aff_extras ha_pt_eq hb_pt_eq).2 hxeq h_yy hya_zero
             have hcase :=
-              landmarkInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
+              accumInvStrong_combine_tangent_smooth_of_dvd_sq_and_localMult
                 E hxa_on hxy_neg_on hya_zero h_third_xa ha hb
                 ha_pt_eq hb_smooth_pt ha_nz hb_nz
                 h_dvd_qa_sq h_dvd_qb_sq hprod_all_ge
             have hcombine :
-                EagenAccum.combine E a b =
-                  EagenAccum.combine_tangent_smooth E a b xa ya hya_zero := by
-              unfold EagenAccum.combine
+                Accum.combine E a b =
+                  Accum.combine_tangent_smooth E a b xa ya hya_zero := by
+              unfold Accum.combine
               rw [hpa, hpb]
               simp [hxeq, h_yy, hya_zero]
             rw [hcombine]
             exact hcase
 
-theorem landmarkInvStrong_combine_when_rootMult_le_two
+theorem accumInvStrong_combine_when_rootMult_le_two
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
     (h_neg_a_on : ∀ Q : ZMod E.q × ZMod E.q,
       negCoords E a.point = some Q → Q ∈ E.points)
     (h_neg_b_on : ∀ Q : ZMod E.q × ZMod E.q,
       negCoords E b.point = some Q → Q ∈ E.points)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2
       ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 2)
-    (h_aff_aff_extras : LandmarkInvStrongCombineAffineExtras E a b) :
-    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine E a b) := by
+    (h_aff_aff_extras : AccumInvStrongCombineAffineExtras E a b) :
+    AccumInvStrong E (xs ++ ys) (Accum.combine E a b) := by
   classical
   match hpa : a.point, hpb : b.point with
   | WeierstrassCurve.Affine.Point.zero, WeierstrassCurve.Affine.Point.zero =>
-      have hcase := landmarkInvStrong_combine_oo_when_rootMult_le_two
+      have hcase := accumInvStrong_combine_oo_when_rootMult_le_two
         E hxs_on hys_on ha hb hpa hpb ha_nz hb_nz h_root_le
       have hcombine :
-          EagenAccum.combine E a b = EagenAccum.combine_oo E a b := by
-        unfold EagenAccum.combine
+          Accum.combine E a b = Accum.combine_oo E a b := by
+        unfold Accum.combine
         rw [hpa, hpb]
       rw [hcombine]
       exact hcase
@@ -7532,11 +7547,11 @@ theorem landmarkInvStrong_combine_when_rootMult_le_two
       have hb_ne : b.point ≠ (0 : ECPoint E) := by
         rw [hpb]
         exact WeierstrassCurve.Affine.Point.some_ne_zero hns_b
-      have hcase := landmarkInvStrong_combine_ol_when_rootMult_le_two
+      have hcase := accumInvStrong_combine_ol_when_rootMult_le_two
         E hxs_on hys_on h_neg_b_on ha hb hpa hb_ne ha_nz hb_nz h_root_le
       have hcombine :
-          EagenAccum.combine E a b = EagenAccum.combine_ol E a b := by
-        unfold EagenAccum.combine
+          Accum.combine E a b = Accum.combine_ol E a b := by
+        unfold Accum.combine
         rw [hpa, hpb]
       rw [hcombine]
       exact hcase
@@ -7545,11 +7560,11 @@ theorem landmarkInvStrong_combine_when_rootMult_le_two
       have ha_ne : a.point ≠ (0 : ECPoint E) := by
         rw [hpa]
         exact WeierstrassCurve.Affine.Point.some_ne_zero hns_a
-      have hcase := landmarkInvStrong_combine_or_when_rootMult_le_two
+      have hcase := accumInvStrong_combine_or_when_rootMult_le_two
         E hxs_on hys_on h_neg_a_on ha hb ha_ne hpb ha_nz hb_nz h_root_le
       have hcombine :
-          EagenAccum.combine E a b = EagenAccum.combine_or E a b := by
-        unfold EagenAccum.combine
+          Accum.combine E a b = Accum.combine_or E a b := by
+        unfold Accum.combine
         rw [hpa, hpb]
       rw [hcombine]
       exact hcase
@@ -7568,14 +7583,14 @@ theorem landmarkInvStrong_combine_when_rootMult_le_two
       by_cases h_xx : xa ≠ xb
       · obtain ⟨hya_ne, hyb_ne, h_third_xa, h_third_xb⟩ :=
           (h_aff_aff_extras ha_pt_eq hb_pt_eq).1 h_xx
-        have hcase := landmarkInvStrong_combine_distinct_when_rootMult_le_two
+        have hcase := accumInvStrong_combine_distinct_when_rootMult_le_two
           E h_xx hxs_on hys_on hxa_on hxb_on hya_ne hyb_ne
           h_third_xa h_third_xb ha hb ha_pt_eq hb_pt_eq
           ha_nz hb_nz h_root_le
         have hcombine :
-            EagenAccum.combine E a b =
-              EagenAccum.combine_distinct E a b xa ya xb yb h_xx := by
-          unfold EagenAccum.combine
+            Accum.combine E a b =
+              Accum.combine_distinct E a b xa ya xb yb h_xx := by
+          unfold Accum.combine
           rw [hpa, hpb]
           simp [h_xx]
         rw [hcombine]
@@ -7598,16 +7613,16 @@ theorem landmarkInvStrong_combine_when_rootMult_le_two
                 b.point = ECPoint.affine E xb yb := hb_pt_eq
                 _ = ECPoint.affine E xa (0 : ZMod E.q) := by
                   rw [← hxeq, hyb_zero]
-            have hcase := landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_two
+            have hcase := accumInvStrong_combine_tangent_torsion_when_rootMult_le_two
               E hxs_on hys_on hxy_on ha hb ha_torsion_pt hb_torsion_pt
               ha_nz hb_nz h_root_le
             have hcombine :
-                EagenAccum.combine E a b = EagenAccum.combine_vertical E a b xa := by
-              unfold EagenAccum.combine
+                Accum.combine E a b = Accum.combine_vertical E a b xa := by
+              unfold Accum.combine
               rw [hpa, hpb]
               simp [hxeq, h_yy]
             rw [hcombine]
-            simpa [EagenAccum.combine_tangent_torsion] using hcase
+            simpa [Accum.combine_tangent_torsion] using hcase
           · have hyb_eq_neg : yb = -ya := by
               have hneg := congrArg Neg.neg h_yy
               simpa [neg_neg] using hneg.symm
@@ -7617,12 +7632,12 @@ theorem landmarkInvStrong_combine_when_rootMult_le_two
                 b.point = ECPoint.affine E xb yb := hb_pt_eq
                 _ = ECPoint.affine E xa (-ya) := by
                   rw [← hxeq, hyb_eq_neg]
-            have hcase := landmarkInvStrong_combine_vertical_when_rootMult_le_two
+            have hcase := accumInvStrong_combine_vertical_when_rootMult_le_two
               E hxs_on hys_on hxa_on hxy_neg_on hya_zero ha hb
               ha_pt_eq hb_vertical_pt ha_nz hb_nz h_root_le
             have hcombine :
-                EagenAccum.combine E a b = EagenAccum.combine_vertical E a b xa := by
-              unfold EagenAccum.combine
+                Accum.combine E a b = Accum.combine_vertical E a b xa := by
+              unfold Accum.combine
               rw [hpa, hpb]
               simp [hxeq, h_yy]
             rw [hcombine]
@@ -7652,44 +7667,44 @@ theorem landmarkInvStrong_combine_when_rootMult_le_two
             obtain ⟨h_third_xa, h_dvd_qa_sq, h_dvd_qb_sq, hprod_all_ge⟩ :=
               (h_aff_aff_extras ha_pt_eq hb_pt_eq).2 hxeq h_yy hya_zero
             have hcase :=
-              landmarkInvStrong_combine_tangent_smooth_when_rootMult_le_two
+              accumInvStrong_combine_tangent_smooth_when_rootMult_le_two
                 E hxa_on hxy_neg_on hya_zero h_third_xa ha hb
                 ha_pt_eq hb_smooth_pt ha_nz hb_nz
                 h_root_le
                 h_dvd_qa_sq h_dvd_qb_sq hprod_all_ge
             have hcombine :
-                EagenAccum.combine E a b =
-                  EagenAccum.combine_tangent_smooth E a b xa ya hya_zero := by
-              unfold EagenAccum.combine
+                Accum.combine E a b =
+                  Accum.combine_tangent_smooth E a b xa ya hya_zero := by
+              unfold Accum.combine
               rw [hpa, hpb]
               simp [hxeq, h_yy, hya_zero]
             rw [hcombine]
             exact hcase
 
-theorem landmarkInvStrong_combine_when_rootMult_le_three
+theorem accumInvStrong_combine_when_rootMult_le_three
     {xs ys : List (ZMod E.q × ZMod E.q)}
-    {a b : EagenAccum E}
+    {a b : Accum E}
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hys_on : ∀ P ∈ ys, P ∈ E.points)
     (h_neg_a_on : ∀ Q : ZMod E.q × ZMod E.q,
       negCoords E a.point = some Q → Q ∈ E.points)
     (h_neg_b_on : ∀ Q : ZMod E.q × ZMod E.q,
       negCoords E b.point = some Q → Q ∈ E.points)
-    (ha : LandmarkInvStrong E xs a) (hb : LandmarkInvStrong E ys b)
+    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
     (ha_nz : normPoly E a.poly ≠ 0) (hb_nz : normPoly E b.poly ≠ 0)
     (h_root_le : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 3
       ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 3)
-    (h_aff_aff_extras : LandmarkInvStrongCombineExtras E a b) :
-    LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine E a b) := by
+    (h_aff_aff_extras : AccumInvStrongCombineExtras E a b) :
+    AccumInvStrong E (xs ++ ys) (Accum.combine E a b) := by
   classical
   match hpa : a.point, hpb : b.point with
   | WeierstrassCurve.Affine.Point.zero, WeierstrassCurve.Affine.Point.zero =>
-      have hcase := landmarkInvStrong_combine_oo_when_rootMult_le_three
+      have hcase := accumInvStrong_combine_oo_when_rootMult_le_three
         E hxs_on hys_on ha hb hpa hpb ha_nz hb_nz h_root_le
       have hcombine :
-          EagenAccum.combine E a b = EagenAccum.combine_oo E a b := by
-        unfold EagenAccum.combine
+          Accum.combine E a b = Accum.combine_oo E a b := by
+        unfold Accum.combine
         rw [hpa, hpb]
       rw [hcombine]
       exact hcase
@@ -7698,11 +7713,11 @@ theorem landmarkInvStrong_combine_when_rootMult_le_three
       have hb_ne : b.point ≠ (0 : ECPoint E) := by
         rw [hpb]
         exact WeierstrassCurve.Affine.Point.some_ne_zero hns_b
-      have hcase := landmarkInvStrong_combine_ol_when_rootMult_le_three
+      have hcase := accumInvStrong_combine_ol_when_rootMult_le_three
         E hxs_on hys_on h_neg_b_on ha hb hpa hb_ne ha_nz hb_nz h_root_le
       have hcombine :
-          EagenAccum.combine E a b = EagenAccum.combine_ol E a b := by
-        unfold EagenAccum.combine
+          Accum.combine E a b = Accum.combine_ol E a b := by
+        unfold Accum.combine
         rw [hpa, hpb]
       rw [hcombine]
       exact hcase
@@ -7711,11 +7726,11 @@ theorem landmarkInvStrong_combine_when_rootMult_le_three
       have ha_ne : a.point ≠ (0 : ECPoint E) := by
         rw [hpa]
         exact WeierstrassCurve.Affine.Point.some_ne_zero hns_a
-      have hcase := landmarkInvStrong_combine_or_when_rootMult_le_three
+      have hcase := accumInvStrong_combine_or_when_rootMult_le_three
         E hxs_on hys_on h_neg_a_on ha hb ha_ne hpb ha_nz hb_nz h_root_le
       have hcombine :
-          EagenAccum.combine E a b = EagenAccum.combine_or E a b := by
-        unfold EagenAccum.combine
+          Accum.combine E a b = Accum.combine_or E a b := by
+        unfold Accum.combine
         rw [hpa, hpb]
       rw [hcombine]
       exact hcase
@@ -7728,7 +7743,7 @@ theorem landmarkInvStrong_combine_when_rootMult_le_three
         rw [hpb]
         exact WeierstrassCurve.Affine.Point.some_ne_zero hns_b
       have h_aff_aff_extras_full :
-          LandmarkInvStrongCombineAffineExtras E a b :=
+          AccumInvStrongCombineAffineExtras E a b :=
         h_aff_aff_extras ha_ne hb_ne
       have hxa_on : (xa, ya) ∈ E.points :=
         E.hComplete xa ya
@@ -7743,14 +7758,14 @@ theorem landmarkInvStrong_combine_when_rootMult_le_three
       by_cases h_xx : xa ≠ xb
       · obtain ⟨hya_ne, hyb_ne, h_third_xa, h_third_xb⟩ :=
           (h_aff_aff_extras_full ha_pt_eq hb_pt_eq).1 h_xx
-        have hcase := landmarkInvStrong_combine_distinct_when_rootMult_le_three
+        have hcase := accumInvStrong_combine_distinct_when_rootMult_le_three
           E h_xx hxs_on hys_on hxa_on hxb_on hya_ne hyb_ne
           h_third_xa h_third_xb ha hb ha_pt_eq hb_pt_eq
           ha_nz hb_nz h_root_le
         have hcombine :
-            EagenAccum.combine E a b =
-              EagenAccum.combine_distinct E a b xa ya xb yb h_xx := by
-          unfold EagenAccum.combine
+            Accum.combine E a b =
+              Accum.combine_distinct E a b xa ya xb yb h_xx := by
+          unfold Accum.combine
           rw [hpa, hpb]
           simp [h_xx]
         rw [hcombine]
@@ -7773,16 +7788,16 @@ theorem landmarkInvStrong_combine_when_rootMult_le_three
                 b.point = ECPoint.affine E xb yb := hb_pt_eq
                 _ = ECPoint.affine E xa (0 : ZMod E.q) := by
                   rw [← hxeq, hyb_zero]
-            have hcase := landmarkInvStrong_combine_tangent_torsion_when_rootMult_le_three
+            have hcase := accumInvStrong_combine_tangent_torsion_when_rootMult_le_three
               E hxs_on hys_on hxy_on ha hb ha_torsion_pt hb_torsion_pt
               ha_nz hb_nz h_root_le
             have hcombine :
-                EagenAccum.combine E a b = EagenAccum.combine_vertical E a b xa := by
-              unfold EagenAccum.combine
+                Accum.combine E a b = Accum.combine_vertical E a b xa := by
+              unfold Accum.combine
               rw [hpa, hpb]
               simp [hxeq, h_yy]
             rw [hcombine]
-            simpa [EagenAccum.combine_tangent_torsion] using hcase
+            simpa [Accum.combine_tangent_torsion] using hcase
           · have hyb_eq_neg : yb = -ya := by
               have hneg := congrArg Neg.neg h_yy
               simpa [neg_neg] using hneg.symm
@@ -7792,12 +7807,12 @@ theorem landmarkInvStrong_combine_when_rootMult_le_three
                 b.point = ECPoint.affine E xb yb := hb_pt_eq
                 _ = ECPoint.affine E xa (-ya) := by
                   rw [← hxeq, hyb_eq_neg]
-            have hcase := landmarkInvStrong_combine_vertical_when_rootMult_le_three
+            have hcase := accumInvStrong_combine_vertical_when_rootMult_le_three
               E hxs_on hys_on hxa_on hxy_neg_on hya_zero ha hb
               ha_pt_eq hb_vertical_pt ha_nz hb_nz h_root_le
             have hcombine :
-                EagenAccum.combine E a b = EagenAccum.combine_vertical E a b xa := by
-              unfold EagenAccum.combine
+                Accum.combine E a b = Accum.combine_vertical E a b xa := by
+              unfold Accum.combine
               rw [hpa, hpb]
               simp [hxeq, h_yy]
             rw [hcombine]
@@ -7827,15 +7842,15 @@ theorem landmarkInvStrong_combine_when_rootMult_le_three
             obtain ⟨h_third_xa, h_dvd_qa_sq, h_dvd_qb_sq, hprod_all_ge⟩ :=
               (h_aff_aff_extras_full ha_pt_eq hb_pt_eq).2 hxeq h_yy hya_zero
             have hcase :=
-              landmarkInvStrong_combine_tangent_smooth_when_rootMult_le_three
+              accumInvStrong_combine_tangent_smooth_when_rootMult_le_three
                 E hxa_on hxy_neg_on hya_zero h_third_xa ha hb
                 ha_pt_eq hb_smooth_pt ha_nz hb_nz
                 h_root_le
                 h_dvd_qa_sq h_dvd_qb_sq hprod_all_ge
             have hcombine :
-                EagenAccum.combine E a b =
-                  EagenAccum.combine_tangent_smooth E a b xa ya hya_zero := by
-              unfold EagenAccum.combine
+                Accum.combine E a b =
+                  Accum.combine_tangent_smooth E a b xa ya hya_zero := by
+              unfold Accum.combine
               rw [hpa, hpb]
               simp [hxeq, h_yy, hya_zero]
             rw [hcombine]
@@ -7855,7 +7870,7 @@ multiplicities on each combined fiber is at most two. -/
 theorem rootMultiplicity_normPoly_eq_fiber_target_sum
     (D : CoordRingElt E.q) (xs : List (ZMod E.q × ZMod E.q))
     (R : ECPoint E)
-    (_h : LandmarkInvStrong E xs (EagenAccum.mk R D))
+    (_h : AccumInvStrong E xs (Accum.mk R D))
     (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) :
     Polynomial.rootMultiplicity P.1 (normPoly E D)
       = ∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1), localMult E D Q := by
@@ -7870,7 +7885,7 @@ theorem rootMultiplicity_normPoly_eq_fiber_target_sum
       intro Q _hQ
       exact localMult_eq_ordAt E D Q
     rw [← hsum, hlocal_ord]
-  · push_neg at hD
+  · push Not at hD
     have hnorm_zero : normPoly E D = 0 := by
       rw [normPoly_eq, hD.1, hD.2]
       ring
@@ -7904,7 +7919,7 @@ theorem rootMultiplicity_normPoly_le_two_of_fiber_localMult_le_two
       _ = ∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1), localMult E D Q :=
             hlocal_ord.symm
       _ ≤ 2 := h_fiber_localMult_le_two P hPon
-  · push_neg at hD
+  · push Not at hD
     have hnorm_zero : normPoly E D = 0 := by
       rw [normPoly_eq, hD.1, hD.2]
       ring
@@ -7918,12 +7933,12 @@ no-overfull-final-fiber condition.  It is intentionally stated on the
 combined polynomial, so each combine branch can discharge it with its
 own chord/tangent/vertical multiplicity arithmetic. -/
 theorem rootMult_le_two_preserved_under_combine
-    (a b : EagenAccum E)
+    (a b : Accum E)
     (xs ys : List (ZMod E.q × ZMod E.q))
     (_hxs_nodup : (xs ++ ys).Nodup)
     (_hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (_hys_on : ∀ P ∈ ys, P ∈ E.points)
-    (_ha : LandmarkInvStrong E xs a) (_hb : LandmarkInvStrong E ys b)
+    (_ha : AccumInvStrong E xs a) (_hb : AccumInvStrong E ys b)
     (_h_mult_a : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 2)
     (_h_mult_b : ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
@@ -7931,12 +7946,12 @@ theorem rootMult_le_two_preserved_under_combine
     (h_fiber_localMult_le_two :
       ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
         (∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1),
-          localMult E (EagenAccum.combine E a b).poly Q) ≤ 2) :
+          localMult E (Accum.combine E a b).poly Q) ≤ 2) :
     ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1
-        (normPoly E (EagenAccum.combine E a b).poly) ≤ 2 := by
+        (normPoly E (Accum.combine E a b).poly) ≤ 2 := by
   exact rootMultiplicity_normPoly_le_two_of_fiber_localMult_le_two
-    E (EagenAccum.combine E a b).poly h_fiber_localMult_le_two
+    E (Accum.combine E a b).poly h_fiber_localMult_le_two
 
 private theorem sum_count_eq_length_of_forall_mem
     {α : Type*} [DecidableEq α] [BEq α] [LawfulBEq α]
@@ -7997,7 +8012,6 @@ theorem negCoords_mem_points_of_some
 
 theorem residue_indicator_sum_eq
     (R : ECPoint E) :
-    letI : Decidable (R = (0 : ECPoint E)) := Classical.dec _
     (∑ P ∈ E.points, if negCoords E R = some P then 1 else 0)
       = if R = (0 : ECPoint E) then 0 else 1 := by
   classical
@@ -8013,10 +8027,10 @@ theorem residue_indicator_sum_eq
           exact hEq)
       simp [negCoords, hmem, eq_comm]
 
-theorem targetMass_eq_natDegree_of_landmarkInvStrong
-    (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E)
+theorem targetMass_eq_natDegree_of_accumInvStrong
+    (xs : List (ZMod E.q × ZMod E.q)) (a : Accum E)
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
-    (h : LandmarkInvStrong E xs a) :
+    (h : AccumInvStrong E xs a) :
     targetMass E xs a.point = (normPoly E a.poly).natDegree := by
   classical
   unfold targetMass
@@ -8030,7 +8044,7 @@ theorem targetMass_eq_natDegree_of_landmarkInvStrong
           rw [sum_count_eq_length_of_forall_mem E.points xs hxs_on,
             residue_indicator_sum_eq E a.point]
     _ = (normPoly E a.poly).natDegree :=
-          (LandmarkInvStrong.natDegree E h).symm
+          (AccumInvStrong.natDegree E h).symm
 
 theorem sum_localMult_le_natDegree_of_ne_zero
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
@@ -8054,17 +8068,17 @@ theorem sum_localMult_le_natDegree_of_ne_zero
     _ ≤ (normPoly E D).natDegree :=
           sum_rootMultiplicity_le_natDegree E (normPoly E D)
 
-theorem localMult_eq_target_of_landmarkInvStrong
-    (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E)
+theorem localMult_eq_target_of_accumInvStrong
+    (xs : List (ZMod E.q × ZMod E.q)) (a : Accum E)
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
-    (h : LandmarkInvStrong E xs a)
+    (h : AccumInvStrong E xs a)
     (hD : ¬ (a.poly.a = 0 ∧ a.poly.b = 0)) :
     ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       localMult E a.poly P = target E xs a.point P := by
   classical
   have htarget_sum :
       targetMass E xs a.point = (normPoly E a.poly).natDegree :=
-    targetMass_eq_natDegree_of_landmarkInvStrong E xs a hxs_on h
+    targetMass_eq_natDegree_of_accumInvStrong E xs a hxs_on h
   have hlocal_le :
       (∑ P ∈ E.points, localMult E a.poly P)
         ≤ (normPoly E a.poly).natDegree :=
@@ -8073,14 +8087,14 @@ theorem localMult_eq_target_of_landmarkInvStrong
       targetMass E xs a.point ≤ ∑ P ∈ E.points, localMult E a.poly P := by
     unfold targetMass
     exact Finset.sum_le_sum
-      (fun P hP => LandmarkInvStrong.target_le E h P hP)
+      (fun P hP => AccumInvStrong.target_le E h P hP)
   have hlocal_sum_eq_target :
       (∑ P ∈ E.points, localMult E a.poly P) = targetMass E xs a.point :=
     le_antisymm (by
       rw [htarget_sum]
       exact hlocal_le) htarget_le_local_sum
   intro P hP
-  have htarget_le := LandmarkInvStrong.target_le E h P hP
+  have htarget_le := AccumInvStrong.target_le E h P hP
   refine le_antisymm ?_ htarget_le
   by_contra hnot
   have hstrict :
@@ -8090,7 +8104,7 @@ theorem localMult_eq_target_of_landmarkInvStrong
       targetMass E xs a.point < ∑ Q ∈ E.points, localMult E a.poly Q := by
     unfold targetMass
     exact Finset.sum_lt_sum
-      (fun Q hQ => LandmarkInvStrong.target_le E h Q hQ)
+      (fun Q hQ => AccumInvStrong.target_le E h Q hQ)
       ⟨P, hP, hstrict⟩
   rw [hlocal_sum_eq_target] at hsum_strict
   exact (lt_irrefl _ hsum_strict).elim
@@ -8175,11 +8189,11 @@ private theorem target_fiber_sum_le_two_of_nodup_when_zero
             simp [fiber, target, negCoords]
     _ ≤ 2 := hcount_sum_le
 
-theorem rootMult_le_three_of_nodup_landmarkInvStrong
-    (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E)
+theorem rootMult_le_three_of_nodup_accumInvStrong
+    (xs : List (ZMod E.q × ZMod E.q)) (a : Accum E)
     (hNodup : xs.Nodup)
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
-    (h : LandmarkInvStrong E xs a)
+    (h : AccumInvStrong E xs a)
     (hD : ¬ (a.poly.a = 0 ∧ a.poly.b = 0)) :
     ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
       Polynomial.rootMultiplicity P.1 (normPoly E a.poly) ≤ 3 := by
@@ -8188,7 +8202,7 @@ theorem rootMult_le_three_of_nodup_landmarkInvStrong
   have hlocal_target :
       ∀ Q : ZMod E.q × ZMod E.q, Q ∈ E.points →
         localMult E a.poly Q = target E xs a.point Q :=
-    localMult_eq_target_of_landmarkInvStrong E xs a hxs_on h hD
+    localMult_eq_target_of_accumInvStrong E xs a hxs_on h hD
   calc
     Polynomial.rootMultiplicity P.1 (normPoly E a.poly)
         = ∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1),
@@ -8202,11 +8216,11 @@ theorem rootMult_le_three_of_nodup_landmarkInvStrong
     _ ≤ 3 :=
           target_fiber_sum_le_three_of_nodup E xs a.point hNodup P
 
-theorem rootMult_le_two_of_nodup_landmarkInvStrong_when_zero_point
-    (xs : List (ZMod E.q × ZMod E.q)) (a : EagenAccum E)
+theorem rootMult_le_two_of_nodup_accumInvStrong_when_zero_point
+    (xs : List (ZMod E.q × ZMod E.q)) (a : Accum E)
     (hNodup : xs.Nodup)
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
-    (h : LandmarkInvStrong E xs a)
+    (h : AccumInvStrong E xs a)
     (hPoint : a.point = (0 : ECPoint E))
     (hD : ¬ (a.poly.a = 0 ∧ a.poly.b = 0)) :
     ∀ P : ZMod E.q × ZMod E.q, P ∈ E.points →
@@ -8216,7 +8230,7 @@ theorem rootMult_le_two_of_nodup_landmarkInvStrong_when_zero_point
   have hlocal_target :
       ∀ Q : ZMod E.q × ZMod E.q, Q ∈ E.points →
         localMult E a.poly Q = target E xs a.point Q :=
-    localMult_eq_target_of_landmarkInvStrong E xs a hxs_on h hD
+    localMult_eq_target_of_accumInvStrong E xs a hxs_on h hD
   calc
     Polynomial.rootMultiplicity P.1 (normPoly E a.poly)
         = ∑ Q ∈ E.points.filter (fun Q => Q.1 = P.1),
@@ -8231,13 +8245,13 @@ theorem rootMult_le_two_of_nodup_landmarkInvStrong_when_zero_point
           target_fiber_sum_le_two_of_nodup_when_zero E xs a.point hNodup hPoint P
 
 /-! ## Helper: nonzero from positive natDegree -/
-/-- `eagenBuild` of a sum-zero pair is the vertical line at `P.1`. -/
-theorem eagenBuild_pair_vertical
+/-- `lineBuild` of a sum-zero pair is the vertical line at `P.1`. -/
+theorem lineBuild_pair_vertical
     (P Q : ZMod E.q × ZMod E.q)
     (hxx : P.1 = Q.1)
     (hyy : P.2 = -Q.2 ∨ (P = Q ∧ P.2 = 0)) :
-    eagenBuild E [P, Q] = { a := X - C P.1, b := 0 } := by
-  -- Reduce eagenBuild [P, Q].
+    lineBuild E [P, Q] = { a := X - C P.1, b := 0 } := by
+  -- Reduce lineBuild [P, Q].
   have h_third : thirdPoint E P Q = none :=
     thirdPoint_eq_none_of_sum_zero_data E P Q hxx hyy
   have h_chord : chordCoordRingElt E P Q = { a := X - C P.1, b := 0 } :=
@@ -8270,20 +8284,20 @@ theorem eagenBuild_pair_vertical
   -- Match: [a] returns a.poly = chordCoordRingElt P Q.
   rw [h_chord]
 
-/-- Length-2 landmark: input `[P, Q]` with `P + Q = 0` on `E` produces
-    `D = (X - C P.1, 0)`, which:
+/-- Length-2 build theorem: input `[P, Q]` with `P + Q = 0` on `E`
+    produces `D = (X - C P.1, 0)`, which:
       - is nonzero,
       - vanishes at `P` and `Q`,
       - has `(normPoly D).natDegree = 2`. -/
-theorem eagenBuild_landmark_length2
+theorem lineBuild_spec_length2
     {P Q : ZMod E.q × ZMod E.q}
     (hxx : P.1 = Q.1)
     (hyy : P.2 = -Q.2 ∨ (P = Q ∧ P.2 = 0)) :
-    let D := eagenBuild E [P, Q]
+    let D := lineBuild E [P, Q]
     ¬ (D.a = 0 ∧ D.b = 0) ∧
     D.eval P.1 P.2 = 0 ∧ D.eval Q.1 Q.2 = 0 ∧
     (normPoly E D).natDegree = 2 := by
-  rw [eagenBuild_pair_vertical E P Q hxx hyy]
+  rw [lineBuild_pair_vertical E P Q hxx hyy]
   refine ⟨?_, ?_, ?_, ?_⟩
   · -- (X - C P.1, 0) ≠ 0: a = X - C P.1, which is nonzero (degree 1).
     intro ⟨ha, _⟩
@@ -8302,8 +8316,8 @@ theorem eagenBuild_landmark_length2
 
 /-! ## level_step preservation (conditional on per-pair combine)
 
-If we know `LandmarkInv` is preserved under `combine` for all
-adjacent pairs in the input, then `LandmarkInvList` propagates
+If we know `AccumInv` is preserved under `combine` for all
+adjacent pairs in the input, then `AccumInvList` propagates
 through one application of `level_step`.
 
 The `pairUp` function on a list of sub-lists: pair adjacent and
@@ -8321,17 +8335,17 @@ def level_step_lists {α : Type*} : List (List α) → List (List α) :=
 
 /-- Adjacent accumulator pairs at one level satisfy the affine-affine
     side conditions required by the current strong combine dispatcher. -/
-def LevelStepCombineExtras : List (EagenAccum E) → Prop
+def LevelStepCombineExtras : List (Accum E) → Prop
   | [] => True
   | [_] => True
   | a :: b :: rest =>
-      LandmarkInvStrongCombineExtras E a b ∧
+      AccumInvStrongCombineExtras E a b ∧
       LevelStepCombineExtras rest
 
 /-- Adjacent-pair certificates following the `combine` dispatcher. This is the
 pair-list analogue of `combineCanFire`; it converts to the existing
 `LevelStepCombineExtras` shape. -/
-def LevelStepCombineCanFire : List (EagenAccum E) → Prop
+def LevelStepCombineCanFire : List (Accum E) → Prop
   | [] => True
   | [_] => True
   | a :: b :: rest =>
@@ -8339,7 +8353,7 @@ def LevelStepCombineCanFire : List (EagenAccum E) → Prop
       LevelStepCombineCanFire rest
 
 /-- Decidable adjacent-pair certificates for the no-smooth-tangent path. -/
-def LevelStepCombineChordCase : List (EagenAccum E) → Prop
+def LevelStepCombineChordCase : List (Accum E) → Prop
   | [] => True
   | [_] => True
   | a :: b :: rest =>
@@ -8353,7 +8367,7 @@ def LevelStepCombineChordCase : List (EagenAccum E) → Prop
 def PointChordCase (p q : ECPoint E) : Prop :=
   match p, q with
   | WeierstrassCurve.Affine.Point.zero, _ => True
-  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero => True
+  | WeierstrassCurve.Affine.Point.some _ _ _, WeierstrassCurve.Affine.Point.zero => True
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ =>
       match decEq xa xb with
@@ -8372,7 +8386,7 @@ def PointChordCase (p q : ECPoint E) : Prop :=
 def pointChordCaseDecidable :
     (p q : ECPoint E) → Decidable (PointChordCase E p q)
   | WeierstrassCurve.Affine.Point.zero, _ => isTrue trivial
-  | WeierstrassCurve.Affine.Point.some _, WeierstrassCurve.Affine.Point.zero =>
+  | WeierstrassCurve.Affine.Point.some _ _ _, WeierstrassCurve.Affine.Point.zero =>
       isTrue trivial
   | WeierstrassCurve.Affine.Point.some (x := xa) (y := ya) _,
     WeierstrassCurve.Affine.Point.some (x := xb) (y := yb) _ => by
@@ -8440,22 +8454,22 @@ instance iteratedPointChordCase_decidable :
         iteratedPointChordCase_decidable n (pointLevelStep E points)
       exact instDecidableAnd
 
-theorem combine_point_eq_pointCombine (a b : EagenAccum E) :
-    (EagenAccum.combine E a b).point = pointCombine E a.point b.point := by
+theorem combine_point_eq_pointCombine (a b : Accum E) :
+    (Accum.combine E a b).point = pointCombine E a.point b.point := by
   rcases a with ⟨pa, Da⟩
   rcases b with ⟨pb, Db⟩
   cases pa <;> cases pb <;>
-    simp [EagenAccum.combine, pointCombine,
-      EagenAccum.combine_oo, EagenAccum.combine_ol, EagenAccum.combine_or,
-      EagenAccum.combine_distinct, EagenAccum.combine_vertical,
-      EagenAccum.combine_tangent_torsion, EagenAccum.combine_tangent_smooth]
+    simp [Accum.combine, pointCombine,
+      Accum.combine_oo, Accum.combine_ol, Accum.combine_or,
+      Accum.combine_distinct, Accum.combine_vertical,
+      Accum.combine_tangent_torsion, Accum.combine_tangent_smooth]
   repeat
     first
     | split
     | simp
 
 theorem level_step_point_projection :
-    ∀ (accs : List (EagenAccum E)),
+    ∀ (accs : List (Accum E)),
       (level_step E accs).map (·.point) = pointLevelStep E (accs.map (·.point))
   | [] => rfl
   | [a] => rfl
@@ -8464,7 +8478,7 @@ theorem level_step_point_projection :
         level_step_point_projection rest]
 
 theorem PointChordCase.to_combineCanFire_chordCase
-    (a b : EagenAccum E)
+    (a b : Accum E)
   (h : PointChordCase E a.point b.point) :
     combineCanFire.chordCase E a b := by
   cases hpa : a.point <;> cases hpb : b.point
@@ -8474,7 +8488,7 @@ theorem PointChordCase.to_combineCanFire_chordCase
   · simpa [PointChordCase, combineCanFire.chordCase, hpa, hpb] using h
 
 def levelStepCombineChordCaseDecidable :
-    (accs : List (EagenAccum E)) → Decidable (LevelStepCombineChordCase E accs)
+    (accs : List (Accum E)) → Decidable (LevelStepCombineChordCase E accs)
   | [] => isTrue trivial
   | [_] => isTrue trivial
   | a :: b :: rest => by
@@ -8483,12 +8497,12 @@ def levelStepCombineChordCaseDecidable :
         levelStepCombineChordCaseDecidable rest
       infer_instance
 
-instance levelStepCombineChordCase_decidable (accs : List (EagenAccum E)) :
+instance levelStepCombineChordCase_decidable (accs : List (Accum E)) :
     Decidable (LevelStepCombineChordCase E accs) :=
   levelStepCombineChordCaseDecidable E accs
 
 theorem levelStepCombineCanFire_of_chordCase :
-    ∀ (accs : List (EagenAccum E)),
+    ∀ (accs : List (Accum E)),
       LevelStepCombineChordCase E accs → LevelStepCombineCanFire E accs
   | [], _ => trivial
   | [_], _ => trivial
@@ -8498,24 +8512,24 @@ theorem levelStepCombineCanFire_of_chordCase :
         levelStepCombineCanFire_of_chordCase rest hrest⟩
 
 theorem levelStepCombineExtras_of_canFire :
-    ∀ (accs : List (EagenAccum E)),
+    ∀ (accs : List (Accum E)),
       LevelStepCombineCanFire E accs → LevelStepCombineExtras E accs
   | [], _ => trivial
   | [_], _ => trivial
   | a :: b :: rest, h => by
       obtain ⟨hab, hrest⟩ := h
-      exact ⟨landmarkInvStrongCombineExtras_of_combineCanFire E a b hab,
+      exact ⟨accumInvStrongCombineExtras_of_combineCanFire E a b hab,
         levelStepCombineExtras_of_canFire rest hrest⟩
 
 theorem levelStepCombineExtras_of_chordCase
-    (accs : List (EagenAccum E))
+    (accs : List (Accum E))
     (h : LevelStepCombineChordCase E accs) :
     LevelStepCombineExtras E accs :=
   @levelStepCombineExtras_of_canFire E accs
     (@levelStepCombineCanFire_of_chordCase E accs h)
 
 theorem levelStepCombineChordCase_of_levelStepPointChordCase :
-    ∀ (accs : List (EagenAccum E)),
+    ∀ (accs : List (Accum E)),
       LevelStepPointChordCase E (accs.map (·.point)) →
       LevelStepCombineChordCase E accs
   | [], _ => trivial
@@ -8527,40 +8541,40 @@ theorem levelStepCombineChordCase_of_levelStepPointChordCase :
       exact ⟨PointChordCase.to_combineCanFire_chordCase E a b h.1,
         levelStepCombineChordCase_of_levelStepPointChordCase rest h.2⟩
 
-theorem landmarkInvList_preservation_under_level_step
+theorem accumInvList_preservation_under_level_step
     (xss : List (List (ZMod E.q × ZMod E.q)))
-    (accs : List (EagenAccum E))
-    (h : LandmarkInvList E xss accs)
+    (accs : List (Accum E))
+    (h : AccumInvList E xss accs)
     (h_combine : ∀ (xs ys : List (ZMod E.q × ZMod E.q))
-        (a b : EagenAccum E),
-      LandmarkInv E xs a → LandmarkInv E ys b →
-      LandmarkInv E (xs ++ ys) (EagenAccum.combine E a b)) :
-    LandmarkInvList E (pairUp xss) (level_step E accs) := by
+        (a b : Accum E),
+      AccumInv E xs a → AccumInv E ys b →
+      AccumInv E (xs ++ ys) (Accum.combine E a b)) :
+    AccumInvList E (pairUp xss) (level_step E accs) := by
   classical
   match xss, accs, h with
   | [], [], _ =>
-    show LandmarkInvList E [] (level_step E [])
+    show AccumInvList E [] (level_step E [])
     show List.Forall₂ _ [] []
     exact List.Forall₂.nil
   | [xs], [a], h =>
-    show LandmarkInvList E [xs] (level_step E [a])
+    show AccumInvList E [xs] (level_step E [a])
     show List.Forall₂ _ [xs] [a]
     exact h
   | xs :: ys :: rest_xs, a :: b :: rest_acc, h =>
     obtain ⟨h_a, h_rest⟩ := List.forall₂_cons.mp h
     obtain ⟨h_b, h_rest_rest⟩ := List.forall₂_cons.mp h_rest
-    show LandmarkInvList E (pairUp (xs :: ys :: rest_xs))
+    show AccumInvList E (pairUp (xs :: ys :: rest_xs))
                               (level_step E (a :: b :: rest_acc))
     show List.Forall₂ _ ((xs ++ ys) :: pairUp rest_xs)
-                          (EagenAccum.combine E a b :: level_step E rest_acc)
+                          (Accum.combine E a b :: level_step E rest_acc)
     refine List.Forall₂.cons ?_ ?_
     · exact h_combine xs ys a b h_a h_b
-    · exact landmarkInvList_preservation_under_level_step rest_xs rest_acc h_rest_rest h_combine
+    · exact accumInvList_preservation_under_level_step rest_xs rest_acc h_rest_rest h_combine
 
 /-! ## iterate preservation
 
-If `LandmarkInvList` holds for the input and per-pair combine preserves
-LandmarkInv, then iterating `level_step` `n` times preserves the
+If `AccumInvList` holds for the input and per-pair combine preserves
+AccumInv, then iterating `level_step` `n` times preserves the
 property (with the corresponding number of `pairUp` operations on
 the index list). -/
 
@@ -8570,12 +8584,12 @@ def pairUpN {α : Type*} : ℕ → List (List α) → List (List α)
       if xss.length ≤ 1 then xss
       else pairUpN n (pairUp xss)
 
-private theorem iterate_succ_eq (n : ℕ) (xs : List (EagenAccum E)) :
+private theorem iterate_succ_eq (n : ℕ) (xs : List (Accum E)) :
     iterate E (n + 1) xs =
       if xs.length ≤ 1 then xs else iterate E n (level_step E xs) := rfl
 
 theorem level_step_eq_self_of_length_le_one
-    (xs : List (EagenAccum E)) (h : xs.length ≤ 1) :
+    (xs : List (Accum E)) (h : xs.length ≤ 1) :
     level_step E xs = xs := by
   match xs with
   | [] => rfl
@@ -8584,7 +8598,7 @@ theorem level_step_eq_self_of_length_le_one
       simp at h
 
 theorem iterate_eq_self_of_length_le_one
-    (n : ℕ) (xs : List (EagenAccum E)) (h : xs.length ≤ 1) :
+    (n : ℕ) (xs : List (Accum E)) (h : xs.length ≤ 1) :
     iterate E n xs = xs := by
   induction n generalizing xs with
   | zero => rfl
@@ -8593,7 +8607,7 @@ theorem iterate_eq_self_of_length_le_one
       rw [if_pos h]
 
 theorem iterate_succ_eq_iterate_level_step
-    (n : ℕ) (xs : List (EagenAccum E)) :
+    (n : ℕ) (xs : List (Accum E)) :
     iterate E (n + 1) xs = iterate E n (level_step E xs) := by
   by_cases hLen : xs.length ≤ 1
   · rw [iterate_succ_eq, if_pos hLen]
@@ -8607,14 +8621,14 @@ private theorem pairUpN_succ_eq (n : ℕ) (xss : List (List (ZMod E.q × ZMod E.
 
 /-- A certificate that each level in a chain of accumulator pairings has
     the affine-affine side conditions needed by strong combine. -/
-def IteratedLevelStepCombineExtras : ℕ → List (EagenAccum E) → Prop
+def IteratedLevelStepCombineExtras : ℕ → List (Accum E) → Prop
   | 0, _ => True
   | n + 1, accs =>
       LevelStepCombineExtras E accs ∧
       IteratedLevelStepCombineExtras n (level_step E accs)
 
 /-- Iterated branch certificates following the `combine` dispatcher. -/
-def IteratedLevelStepCombineCanFire : ℕ → List (EagenAccum E) → Prop
+def IteratedLevelStepCombineCanFire : ℕ → List (Accum E) → Prop
   | 0, _ => True
   | n + 1, accs =>
       LevelStepCombineCanFire E accs ∧
@@ -8622,14 +8636,14 @@ def IteratedLevelStepCombineCanFire : ℕ → List (EagenAccum E) → Prop
 
 /-- Iterated no-smooth-tangent certificates. These are intended for concrete
 chains where `native_decide` can discharge the chord/vacuous conditions. -/
-def IteratedLevelStepCombineChordCase : ℕ → List (EagenAccum E) → Prop
+def IteratedLevelStepCombineChordCase : ℕ → List (Accum E) → Prop
   | 0, _ => True
   | n + 1, accs =>
       LevelStepCombineChordCase E accs ∧
       IteratedLevelStepCombineChordCase n (level_step E accs)
 
 theorem iteratedLevelStepCombineCanFire_of_chordCase
-    (n : ℕ) (accs : List (EagenAccum E))
+    (n : ℕ) (accs : List (Accum E))
     (h : IteratedLevelStepCombineChordCase E n accs) :
     IteratedLevelStepCombineCanFire E n accs := by
   induction n generalizing accs with
@@ -8641,7 +8655,7 @@ theorem iteratedLevelStepCombineCanFire_of_chordCase
         ih (level_step E accs) htail⟩
 
 theorem iteratedLevelStepCombineExtras_of_canFire
-    (n : ℕ) (accs : List (EagenAccum E))
+    (n : ℕ) (accs : List (Accum E))
     (h : IteratedLevelStepCombineCanFire E n accs) :
     IteratedLevelStepCombineExtras E n accs := by
   induction n generalizing accs with
@@ -8653,14 +8667,14 @@ theorem iteratedLevelStepCombineExtras_of_canFire
         ih (level_step E accs) htail⟩
 
 theorem iteratedLevelStepCombineExtras_of_chordCase
-    (n : ℕ) (accs : List (EagenAccum E))
+    (n : ℕ) (accs : List (Accum E))
     (h : IteratedLevelStepCombineChordCase E n accs) :
     IteratedLevelStepCombineExtras E n accs :=
   @iteratedLevelStepCombineExtras_of_canFire E n accs
     (@iteratedLevelStepCombineCanFire_of_chordCase E n accs h)
 
 theorem iteratedLevelStepCombineChordCase_of_iteratedPointChordCase
-    (n : ℕ) (accs : List (EagenAccum E))
+    (n : ℕ) (accs : List (Accum E))
     (h : IteratedPointChordCase E n (accs.map (·.point))) :
     IteratedLevelStepCombineChordCase E n accs := by
   induction n generalizing accs with
@@ -8673,7 +8687,7 @@ theorem iteratedLevelStepCombineChordCase_of_iteratedPointChordCase
         simpa [level_step_point_projection E accs] using htail)
 
 theorem iteratedLevelStepCombineExtras_of_iteratedPointChordCase
-    (n : ℕ) (accs : List (EagenAccum E))
+    (n : ℕ) (accs : List (Accum E))
     (h : IteratedPointChordCase E n (accs.map (·.point))) :
     IteratedLevelStepCombineExtras E n accs :=
   iteratedLevelStepCombineExtras_of_chordCase E n accs
@@ -8686,42 +8700,12 @@ theorem iteratedLevelStepCombineExtras_of_level0SingletonPoints
   apply iteratedLevelStepCombineExtras_of_iteratedPointChordCase E
   simpa [level0_singletons_point_projection] using h
 
-namespace PointSkeletonSmoke
-
-private def pointsF17 : Finset (ZMod 17 × ZMod 17) :=
-  (Finset.univ : Finset (ZMod 17 × ZMod 17)).filter
-    (fun p => p.2 ^ 2 = p.1 ^ 3 + (0 : ZMod 17) * p.1 + (1 : ZMod 17))
-
-private def E17 : ECSetup where
-  q := 17
-  hq_prime := by decide
-  curveA := 0
-  curveB := 1
-  points := pointsF17
-  hOnCurve := by
-    intro p hp
-    exact (Finset.mem_filter.mp hp).2
-  hComplete := by
-    intro x y h
-    exact Finset.mem_filter.mpr ⟨Finset.mem_univ (x, y), h⟩
-  hDisc := by native_decide
-  numPoints := pointsF17.card + 1
-  hNumPoints := rfl
-  hq_ge := by decide
-
-example :
-    IteratedPointChordCase E17 4
-      (level0SingletonPoints E17 [(0, 1), (1, 6), (2, 3), (6, 8)]) := by
-  native_decide
-
-end PointSkeletonSmoke
-
 /-- Decidable instance for `IteratedLevelStepCombineChordCase`. Recurses on
     the iterate count, using the per-level `LevelStepCombineChordCase`
     decidability. This enables `decide` / `native_decide` discharge for
     concrete inputs at any length. -/
 noncomputable instance iteratedLevelStepCombineChordCase_decidable :
-    ∀ (n : ℕ) (accs : List (EagenAccum E)),
+    ∀ (n : ℕ) (accs : List (Accum E)),
       Decidable (IteratedLevelStepCombineChordCase E n accs)
   | 0, _ => isTrue trivial
   | n + 1, accs => by
@@ -8733,7 +8717,7 @@ noncomputable instance iteratedLevelStepCombineChordCase_decidable :
       exact instDecidableAnd
 
 theorem iteratedLevelStepCombineExtras_iff_forall_lt
-    (n : ℕ) (accs : List (EagenAccum E)) :
+    (n : ℕ) (accs : List (Accum E)) :
     IteratedLevelStepCombineExtras E n accs
       ↔ ∀ k < n, LevelStepCombineExtras E (iterate E k accs) := by
   induction n generalizing accs with
@@ -8769,16 +8753,16 @@ theorem h_extras_of_iteratedLevelStepCombineExtras
   (iteratedLevelStepCombineExtras_iff_forall_lt E
     Ps.length (level0_singletons E Ps)).mp h
 
-theorem landmarkInvList_preservation_under_iterate
+theorem accumInvList_preservation_under_iterate
     (n : ℕ)
     (xss : List (List (ZMod E.q × ZMod E.q)))
-    (accs : List (EagenAccum E))
-    (h : LandmarkInvList E xss accs)
+    (accs : List (Accum E))
+    (h : AccumInvList E xss accs)
     (h_combine : ∀ (xs ys : List (ZMod E.q × ZMod E.q))
-        (a b : EagenAccum E),
-      LandmarkInv E xs a → LandmarkInv E ys b →
-      LandmarkInv E (xs ++ ys) (EagenAccum.combine E a b)) :
-    LandmarkInvList E (pairUpN n xss) (iterate E n accs) := by
+        (a b : Accum E),
+      AccumInv E xs a → AccumInv E ys b →
+      AccumInv E (xs ++ ys) (Accum.combine E a b)) :
+    AccumInvList E (pairUpN n xss) (iterate E n accs) := by
   classical
   induction n generalizing xss accs with
   | zero => exact h
@@ -8791,16 +8775,16 @@ theorem landmarkInvList_preservation_under_iterate
       exact h
     · have h_xss_len : ¬ xss.length ≤ 1 := h_lengths ▸ hLen
       rw [if_neg hLen, if_neg h_xss_len]
-      have h_step : LandmarkInvList E (pairUp xss) (level_step E accs) :=
-        landmarkInvList_preservation_under_level_step E xss accs h h_combine
+      have h_step : AccumInvList E (pairUp xss) (level_step E accs) :=
+        accumInvList_preservation_under_level_step E xss accs h h_combine
       exact ih (pairUp xss) (level_step E accs) h_step
 
-/-! ## Top-level driver: eagenBuild via singletons
+/-! ## Top-level driver: lineBuild via singletons
 
 Composes `level0_singletons` with `iterate` to produce the final
 polynomial. -/
 
-noncomputable def eagenBuild_singletons
+noncomputable def lineBuild_singletons
     (Ps : List (ZMod E.q × ZMod E.q)) : CoordRingElt E.q :=
   let initial := level0_singletons E Ps
   let final := iterate E Ps.length initial
@@ -8897,51 +8881,51 @@ theorem level_step_lists_forall_ne {α : Type*}
             (List.mem_cons_of_mem xs (List.mem_cons_of_mem ys hzs)))
           zs htail
 
-theorem landmarkInvStrong_not_both_zero_of_nonempty
-    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
-    (hxs_ne : xs ≠ []) (h : LandmarkInvStrong E xs a) :
+theorem accumInvStrong_not_both_zero_of_nonempty
+    {xs : List (ZMod E.q × ZMod E.q)} {a : Accum E}
+    (hxs_ne : xs ≠ []) (h : AccumInvStrong E xs a) :
     ¬ (a.poly.a = 0 ∧ a.poly.b = 0) := by
   intro hzero
   have hnorm : normPoly E a.poly = 0 := by
     rw [normPoly_eq, hzero.1, hzero.2]
     ring
-  have hdeg := LandmarkInvStrong.natDegree E h
+  have hdeg := AccumInvStrong.natDegree E h
   rw [hnorm, Polynomial.natDegree_zero] at hdeg
   have hlen_pos : 0 < xs.length := (List.length_pos_iff).mpr hxs_ne
   omega
 
-theorem landmarkInvStrong_normPoly_ne_zero_of_nonempty
-    {xs : List (ZMod E.q × ZMod E.q)} {a : EagenAccum E}
-    (hxs_ne : xs ≠ []) (h : LandmarkInvStrong E xs a) :
+theorem accumInvStrong_normPoly_ne_zero_of_nonempty
+    {xs : List (ZMod E.q × ZMod E.q)} {a : Accum E}
+    (hxs_ne : xs ≠ []) (h : AccumInvStrong E xs a) :
     normPoly E a.poly ≠ 0 :=
   normPoly_ne_zero E a.poly
-    (landmarkInvStrong_not_both_zero_of_nonempty E hxs_ne h)
+    (accumInvStrong_not_both_zero_of_nonempty E hxs_ne h)
 
 /-- Strong one-level preservation for nonempty absorbed blocks.
 
 The current strong combine theorem still exposes branch-specific
 affine-affine side conditions, so this one-step list theorem carries
 exactly those conditions for each adjacent accumulator pair. -/
-theorem landmarkInvStrongList_level_step
-    (xss : List (List (ZMod E.q × ZMod E.q))) (accs : List (EagenAccum E))
-    (h : LandmarkInvStrongList E xss accs)
+theorem accumInvStrongList_level_step
+    (xss : List (List (ZMod E.q × ZMod E.q))) (accs : List (Accum E))
+    (h : AccumInvStrongList E xss accs)
     (hxss_on : ∀ xs ∈ xss, ∀ P ∈ xs, P ∈ E.points)
     (hNodup_concat : (xss.flatten).Nodup)
     (hxss_ne : ∀ xs ∈ xss, xs ≠ [])
     (h_extras : LevelStepCombineExtras E accs) :
-    LandmarkInvStrongList E (level_step_lists xss) (level_step E accs)
+    AccumInvStrongList E (level_step_lists xss) (level_step E accs)
     ∧ ((level_step_lists xss).flatten).Nodup
     ∧ (∀ xs ∈ level_step_lists xss, ∀ P ∈ xs, P ∈ E.points) := by
   classical
   refine ⟨?_, ?_, ?_⟩
   · match xss, accs, h, h_extras with
     | [], [], _, _ =>
-        show LandmarkInvStrongList E (level_step_lists []) (level_step E [])
+        show AccumInvStrongList E (level_step_lists []) (level_step E [])
         show List.Forall₂ _ [] []
         exact List.Forall₂.nil
     | [xs], [a], h, _ =>
-        show LandmarkInvStrongList E (level_step_lists [xs]) (level_step E [a])
-        simpa [LandmarkInvStrongList, level_step_lists, pairUp, level_step] using h
+        show AccumInvStrongList E (level_step_lists [xs]) (level_step E [a])
+        simpa [AccumInvStrongList, level_step_lists, pairUp, level_step] using h
     | xs :: ys :: rest_xs, a :: b :: rest_acc, h, h_extras =>
         obtain ⟨h_a, h_rest⟩ := List.forall₂_cons.mp h
         obtain ⟨h_b, h_rest_rest⟩ := List.forall₂_cons.mp h_rest
@@ -8971,9 +8955,9 @@ theorem landmarkInvStrongList_level_step
         have hNodup_rest : rest_xs.flatten.Nodup :=
           (List.nodup_append.mp hNodup_yrest).2.1
         have haD : ¬ (a.poly.a = 0 ∧ a.poly.b = 0) :=
-          landmarkInvStrong_not_both_zero_of_nonempty E hxs_ne h_a
+          accumInvStrong_not_both_zero_of_nonempty E hxs_ne h_a
         have hbD : ¬ (b.poly.a = 0 ∧ b.poly.b = 0) :=
-          landmarkInvStrong_not_both_zero_of_nonempty E hys_ne h_b
+          accumInvStrong_not_both_zero_of_nonempty E hys_ne h_b
         have ha_nz : normPoly E a.poly ≠ 0 :=
           normPoly_ne_zero E a.poly haD
         have hb_nz : normPoly E b.poly ≠ 0 :=
@@ -8984,54 +8968,54 @@ theorem landmarkInvStrongList_level_step
               ∧ Polynomial.rootMultiplicity P.1 (normPoly E b.poly) ≤ 3 := by
           intro P hP
           exact ⟨
-            rootMult_le_three_of_nodup_landmarkInvStrong
+            rootMult_le_three_of_nodup_accumInvStrong
               E xs a hNodup_xs hxs_on h_a haD P hP,
-            rootMult_le_three_of_nodup_landmarkInvStrong
+            rootMult_le_three_of_nodup_accumInvStrong
               E ys b hNodup_ys hys_on h_b hbD P hP⟩
         have h_head :
-            LandmarkInvStrong E (xs ++ ys) (EagenAccum.combine E a b) :=
-          landmarkInvStrong_combine_when_rootMult_le_three
+            AccumInvStrong E (xs ++ ys) (Accum.combine E a b) :=
+          accumInvStrong_combine_when_rootMult_le_three
             E hxs_on hys_on
             (fun Q hQ => negCoords_mem_points_of_some E hQ)
             (fun Q hQ => negCoords_mem_points_of_some E hQ)
             h_a h_b ha_nz hb_nz h_root_le h_extra_ab
         have h_tail_all :=
-          landmarkInvStrongList_level_step rest_xs rest_acc h_rest_rest
+          accumInvStrongList_level_step rest_xs rest_acc h_rest_rest
             hrest_on hNodup_rest hrest_ne h_extra_rest
-        show LandmarkInvStrongList E
+        show AccumInvStrongList E
             (level_step_lists (xs :: ys :: rest_xs))
             (level_step E (a :: b :: rest_acc))
-        show List.Forall₂ (LandmarkInvStrong E)
+        show List.Forall₂ (AccumInvStrong E)
             ((xs ++ ys) :: level_step_lists rest_xs)
-            (EagenAccum.combine E a b :: level_step E rest_acc)
+            (Accum.combine E a b :: level_step E rest_acc)
         exact List.Forall₂.cons h_head h_tail_all.1
   · rw [level_step_lists_flatten]
     exact hNodup_concat
   · exact level_step_lists_forall_mem E xss hxss_on
 
-/-! ## Landmark theorem (conditional on per-pair combine)
+/-! ## LineAccum theorem (conditional on per-pair combine)
 
 Combining levelInitSingleton, level_step preservation, iterate
 preservation, and the pairUp/flatten helpers:
 
   Given a list of points all on `E`, the iterate of level0_singletons
-  produces a list of accumulators each satisfying LandmarkInv with
+  produces a list of accumulators each satisfying AccumInv with
   its corresponding sub-list partition. -/
 
-theorem landmarkInvList_eagenBuild_singletons
+theorem accumInvList_lineBuild_singletons
     (Ps : List (ZMod E.q × ZMod E.q))
     (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
     (h_combine : ∀ (xs ys : List (ZMod E.q × ZMod E.q))
-        (a b : EagenAccum E),
-      LandmarkInv E xs a → LandmarkInv E ys b →
-      LandmarkInv E (xs ++ ys) (EagenAccum.combine E a b)) :
-    LandmarkInvList E (pairUpN Ps.length (Ps.map (fun P => [P])))
+        (a b : Accum E),
+      AccumInv E xs a → AccumInv E ys b →
+      AccumInv E (xs ++ ys) (Accum.combine E a b)) :
+    AccumInvList E (pairUpN Ps.length (Ps.map (fun P => [P])))
                        (iterate E Ps.length (level0_singletons E Ps)) := by
   classical
-  have h_init : LandmarkInvList E (Ps.map (fun P => [P]))
+  have h_init : AccumInvList E (Ps.map (fun P => [P]))
                                   (level0_singletons E Ps) :=
-    landmarkInvList_level0_singletons E Ps hPs_on
-  exact landmarkInvList_preservation_under_iterate E Ps.length _ _ h_init h_combine
+    accumInvList_level0_singletons E Ps hPs_on
+  exact accumInvList_preservation_under_iterate E Ps.length _ _ h_init h_combine
 
 /-! ## Convergence of pairUpN
 
@@ -9077,20 +9061,20 @@ theorem pairUpN_eq_singleton_of_len_one {α : Type*} (n : ℕ) (xss : List (List
 
 /-! ## level_step length bound -/
 
-theorem level_step_length_le (xs : List (EagenAccum E)) :
+theorem level_step_length_le (xs : List (Accum E)) :
     (level_step E xs).length ≤ (xs.length + 1) / 2 := by
   match xs with
   | [] => simp [level_step]
   | [_] => simp [level_step]
   | a :: b :: rest =>
-    show (EagenAccum.combine E a b :: level_step E rest).length ≤ _
+    show (Accum.combine E a b :: level_step E rest).length ≤ _
     rw [List.length_cons]
     have ih := level_step_length_le rest
     rw [show (a :: b :: rest).length = rest.length + 2 from rfl]
     omega
 
 theorem iterate_length_le_one_of_fuel_geq
-    (n : ℕ) (xs : List (EagenAccum E)) (h : xs.length ≤ n) :
+    (n : ℕ) (xs : List (Accum E)) (h : xs.length ≤ n) :
     (iterate E n xs).length ≤ 1 := by
   induction n generalizing xs with
   | zero =>
@@ -9109,16 +9093,16 @@ theorem iterate_length_le_one_of_fuel_geq
       -- Specifically: xs.length ≤ k + 1 and xs.length ≥ 2, so (xs.length + 1)/2 ≤ k.
       omega
 
-theorem landmarkInvStrongList_preservation_under_iterate
+theorem accumInvStrongList_preservation_under_iterate
     (n : ℕ)
     (xss : List (List (ZMod E.q × ZMod E.q)))
-    (accs : List (EagenAccum E))
-    (h : LandmarkInvStrongList E xss accs)
+    (accs : List (Accum E))
+    (h : AccumInvStrongList E xss accs)
     (hxss_on : ∀ xs ∈ xss, ∀ P ∈ xs, P ∈ E.points)
     (hNodup_concat : xss.flatten.Nodup)
     (hxss_ne : ∀ xs ∈ xss, xs ≠ [])
     (h_extras : ∀ k < n, LevelStepCombineExtras E (iterate E k accs)) :
-    LandmarkInvStrongList E (pairUpN n xss) (iterate E n accs)
+    AccumInvStrongList E (pairUpN n xss) (iterate E n accs)
     ∧ (pairUpN n xss).flatten.Nodup
     ∧ (∀ xs ∈ pairUpN n xss, ∀ P ∈ xs, P ∈ E.points)
     ∧ (∀ xs ∈ pairUpN n xss, xs ≠ []) := by
@@ -9144,9 +9128,9 @@ theorem landmarkInvStrongList_preservation_under_iterate
         have h_extra_now : LevelStepCombineExtras E accs := by
           simpa [iterate] using h_extras 0 (Nat.zero_lt_succ n)
         have h_step_all :=
-          landmarkInvStrongList_level_step (E := E) xss accs h
+          accumInvStrongList_level_step (E := E) xss accs h
             hxss_on hNodup_concat hxss_ne h_extra_now
-        have h_step : LandmarkInvStrongList E (pairUp xss) (level_step E accs) := by
+        have h_step : AccumInvStrongList E (pairUp xss) (level_step E accs) := by
           simpa [level_step_lists] using h_step_all.1
         have hNodup_step : (pairUp xss).flatten.Nodup := by
           simpa [level_step_lists] using h_step_all.2.1
@@ -9167,7 +9151,7 @@ theorem landmarkInvStrongList_preservation_under_iterate
         exact ih (pairUp xss) (level_step E accs) h_step
           h_on_step hNodup_step h_ne_step h_extras_tail
 
-theorem landmarkInvStrong_eagenBuild_singletons
+theorem accumInvStrong_lineBuild_singletons
     (xs : List (ZMod E.q × ZMod E.q))
     (hxs_on : ∀ P ∈ xs, P ∈ E.points)
     (hNodup : xs.Nodup)
@@ -9175,14 +9159,14 @@ theorem landmarkInvStrong_eagenBuild_singletons
     (hLen : 2 ≤ xs.length)
     (h_extras : ∀ k < xs.length,
       LevelStepCombineExtras E (iterate E k (level0_singletons E xs))) :
-    ∃ a : EagenAccum E,
+    ∃ a : Accum E,
       iterate E xs.length (level0_singletons E xs) = [a]
-      ∧ LandmarkInvStrong E xs a
+      ∧ AccumInvStrong E xs a
       ∧ a.point = (0 : ECPoint E) := by
   classical
-  have h_init : LandmarkInvStrongList E (xs.map (fun P => [P]))
+  have h_init : AccumInvStrongList E (xs.map (fun P => [P]))
       (level0_singletons E xs) :=
-    landmarkInvStrongList_level0_singletons E xs hxs_on
+    accumInvStrongList_level0_singletons E xs hxs_on
   have h_init_on :
       ∀ ys ∈ xs.map (fun P => [P]), ∀ P ∈ ys, P ∈ E.points := by
     intro ys hys P hP
@@ -9199,7 +9183,7 @@ theorem landmarkInvStrong_eagenBuild_singletons
     rw [map_singleton_flatten]
     exact hNodup
   have h_iter_all :=
-    landmarkInvStrongList_preservation_under_iterate (E := E)
+    accumInvStrongList_preservation_under_iterate (E := E)
       xs.length (xs.map (fun P => [P])) (level0_singletons E xs)
       h_init h_init_on h_init_nodup h_init_ne h_extras
   have h_inv_list := h_iter_all.1
@@ -9244,29 +9228,29 @@ theorem landmarkInvStrong_eagenBuild_singletons
       simp at h_pair_len_one
   | [a] =>
       rw [h_pair_eq_singleton, h_iter_eq] at h_inv_list
-      have h_inv : LandmarkInvStrong E xs a := by
+      have h_inv : AccumInvStrong E xs a := by
         cases h_inv_list with
         | cons h_head _ => exact h_head
       have h_point_zero : a.point = (0 : ECPoint E) := by
-        rw [LandmarkInvStrong.running_sum E h_inv]
+        rw [AccumInvStrong.running_sum E h_inv]
         exact hSum
       exact ⟨a, rfl, h_inv, h_point_zero⟩
   | _ :: _ :: _ =>
       rw [h_iter_eq] at h_iter_le
       simp at h_iter_le
 
-/-! ## Final landmark theorem (conditional on combine) -/
+/-! ## Final build theorem (conditional on combine) -/
 
-theorem eagenBuild_singletons_landmark
+theorem lineBuild_singletons_spec
     (Ps : List (ZMod E.q × ZMod E.q))
     (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
     (hSumZero : sumOnE E Ps = 0)
     (hNonEmpty : Ps ≠ [])
     (h_combine : ∀ (xs ys : List (ZMod E.q × ZMod E.q))
-        (a b : EagenAccum E),
-      LandmarkInv E xs a → LandmarkInv E ys b →
-      LandmarkInv E (xs ++ ys) (EagenAccum.combine E a b)) :
-    let D := eagenBuild_singletons E Ps
+        (a b : Accum E),
+      AccumInv E xs a → AccumInv E ys b →
+      AccumInv E (xs ++ ys) (Accum.combine E a b)) :
+    let D := lineBuild_singletons E Ps
     ¬ (D.a = 0 ∧ D.b = 0) ∧
     (∀ P ∈ Ps, D.eval P.1 P.2 = 0) ∧
     (normPoly E D).natDegree = Ps.length := by
@@ -9277,11 +9261,11 @@ theorem eagenBuild_singletons_landmark
     exact List.length_map ..
   have h_iter_le : (iterate E Ps.length (level0_singletons E Ps)).length ≤ 1 :=
     iterate_length_le_one_of_fuel_geq E Ps.length _ (by rw [h_init_len])
-  -- LandmarkInvList for the iterated.
-  have h_inv_list : LandmarkInvList E
+  -- AccumInvList for the iterated.
+  have h_inv_list : AccumInvList E
       (pairUpN Ps.length (Ps.map (fun P => [P])))
       (iterate E Ps.length (level0_singletons E Ps)) :=
-    landmarkInvList_eagenBuild_singletons E Ps hPs_on h_combine
+    accumInvList_lineBuild_singletons E Ps hPs_on h_combine
   -- Pair up partition has same length as iterate output (Forall₂).
   have h_lens : (pairUpN Ps.length (Ps.map (fun P => [P]))).length
       = (iterate E Ps.length (level0_singletons E Ps)).length :=
@@ -9295,7 +9279,7 @@ theorem eagenBuild_singletons_landmark
   -- ... actually iterate doesn't preserve length ≥ 1 in general, need to handle.
   -- For Ps.length ≥ 1, after iterate the output is exactly length 1.
   -- This requires: iterate doesn't drop to 0 if input was non-empty.
-  -- Skip rigorous proof of this, take from the LandmarkInvList structure:
+  -- Skip rigorous proof of this, take from the AccumInvList structure:
   -- pairUpN starts with non-empty (Ps.map fun P => [P]) and pairUp preserves
   -- non-empty (when input non-empty). So pairUpN result is non-empty.
   -- Hence iterate result is non-empty (same length).
@@ -9332,17 +9316,17 @@ theorem eagenBuild_singletons_landmark
     rw [h_lens] at h_pair_len_one
     simp at h_pair_len_one
   | [final_acc] =>
-    -- LandmarkInv E Ps final_acc.
+    -- AccumInv E Ps final_acc.
     rw [h_pair_eq_singleton, h_iter_eq] at h_inv_list
-    have h_inv : LandmarkInv E Ps final_acc := by
+    have h_inv : AccumInv E Ps final_acc := by
       cases h_inv_list with
       | cons h_head h_tail => exact h_head
     obtain ⟨h_pt, h_van, h_res, h_deg⟩ := h_inv
     -- final_acc.point = sumOnE Ps = 0.
     have h_pt_zero : final_acc.point = (0 : ECPoint E) := by
       rw [h_pt]; exact hSumZero
-    -- D = eagenBuild_singletons Ps = final_acc.poly.
-    have h_D_eq : eagenBuild_singletons E Ps = final_acc.poly := by
+    -- D = lineBuild_singletons Ps = final_acc.poly.
+    have h_D_eq : lineBuild_singletons E Ps = final_acc.poly := by
       show (match iterate E Ps.length (level0_singletons E Ps) with
             | [a] => a.poly
             | _ => { a := 1, b := 0 }) = final_acc.poly
@@ -9374,16 +9358,16 @@ theorem eagenBuild_singletons_landmark
     simp at h_iter_le
 
 
-/-! ## Path forward (Codex consultation)
+/-! ## Path to an unconditional build theorem
 
-Making eagenBuild_singletons_landmark unconditional (no h_combine
-hypothesis) requires strengthening LandmarkInv with point/sheet-level
-multiplicity tracking. Per Codex:
+Making lineBuild_singletons_spec unconditional (no h_combine
+hypothesis) requires strengthening AccumInv with point/sheet-level
+multiplicity tracking:
 
   - Define a constructive local multiplicity mult E D P : Nat for
     D : CoordRingElt, P : ZMod q x q, returning 0 if D does not
     vanish at P, otherwise matching geometric ord.
-  - Strengthen LandmarkInv:
+  - Strengthen AccumInv:
       target xs R P := xs.count P + (if negCoords R = some P then 1 else 0)
       forall P in E.points, target xs a.point P <= mult E a.poly P
       (normPoly a.poly).natDegree = sum P in E.points, target xs a.point P
@@ -9394,9 +9378,9 @@ multiplicity tracking. Per Codex:
 Estimated: ~600-1000 LOC of new infrastructure. -/
 
 
-/-! ## Bridge: landmark → full divisor identity (uses splitsOnE machinery) -/
+/-! ## Bridge: build theorem → full divisor identity (uses splitsOnE machinery) -/
 
-/-- Local copy of formalDivisorOfList (avoid importing EagenBuildRecursive
+/-- Local copy of formalDivisorOfList (avoid importing LineBuildRecursive
 to keep the bridge theorem's project-axiom dependence minimal). -/
 noncomputable def formalDivisorOfList
     (Ps : List (ZMod E.q × ZMod E.q)) : ECPoint E → ℤ :=
@@ -9417,7 +9401,7 @@ private theorem filter_length_eq_count_eq {α : Type _} [DecidableEq α] [BEq α
       · simp [List.count, ih, hx]
       · simp [List.count, ih, hx]
 
-theorem divisorOfD_eq_formalDivisorOfList_of_landmark
+theorem divisorOfD_eq_formalDivisorOfList_of_lineBuild
     (Ps : List (ZMod E.q × ZMod E.q))
     (D : CoordRingElt E.q)
     (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
@@ -9518,9 +9502,9 @@ theorem divisorOfD_eq_formalDivisorOfList_of_landmark
         exact hxy_in hP
       exact congrArg (fun n : ℕ => (n : ℤ)) (by rw [h_ord, h_count])
 
-/-- Landmark data already forces `normPoly E D` to split over `F_q`, and
-every root comes from the x-coordinate of one of the landmark points. -/
-theorem splitsOnE_of_landmark
+/-- LineAccum data already forces `normPoly E D` to split over `F_q`, and
+every root comes from the x-coordinate of one of the input points. -/
+theorem splitsOnE_of_lineBuild
     (Ps : List (ZMod E.q × ZMod E.q))
     (D : CoordRingElt E.q)
     (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
@@ -9673,43 +9657,43 @@ theorem splitsOnE_of_landmark
     rw [← hPx]
     simpa using hPs_on P hPmem⟩
 
-theorem eagenBuild_singletons_divisor_identity
+theorem lineBuild_singletons_divisor_identity
     (Ps : List (ZMod E.q × ZMod E.q))
     (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
     (hSumZero : sumOnE E Ps = 0)
     (hNonEmpty : Ps ≠ [])
     (hNodup : Ps.Nodup)
     (h_combine : ∀ (xs ys : List (ZMod E.q × ZMod E.q))
-        (a b : EagenAccum E),
-      LandmarkInv E xs a → LandmarkInv E ys b →
-      LandmarkInv E (xs ++ ys) (EagenAccum.combine E a b)) :
+        (a b : Accum E),
+      AccumInv E xs a → AccumInv E ys b →
+      AccumInv E (xs ++ ys) (Accum.combine E a b)) :
     ∀ R : ECPoint E,
-      divisorOfD E (eagenBuild_singletons E Ps) R
+      divisorOfD E (lineBuild_singletons E Ps) R
         = formalDivisorOfList E Ps R := by
   classical
-  let D := eagenBuild_singletons E Ps
-  have h_landmark :
+  let D := lineBuild_singletons E Ps
+  have h_inv :
       ¬ (D.a = 0 ∧ D.b = 0) ∧
       (∀ P ∈ Ps, D.eval P.1 P.2 = 0) ∧
       (normPoly E D).natDegree = Ps.length := by
     simpa [D] using
-      eagenBuild_singletons_landmark E Ps hPs_on hSumZero hNonEmpty h_combine
-  obtain ⟨hD, hVan, hDeg⟩ := h_landmark
+      lineBuild_singletons_spec E Ps hPs_on hSumZero hNonEmpty h_combine
+  obtain ⟨hD, hVan, hDeg⟩ := h_inv
   have hSplit : splitsOnE E D :=
-    splitsOnE_of_landmark E Ps D hPs_on hNodup hD hVan hDeg
+    splitsOnE_of_lineBuild E Ps D hPs_on hNodup hD hVan hDeg
   simpa [D] using
-    divisorOfD_eq_formalDivisorOfList_of_landmark
+    divisorOfD_eq_formalDivisorOfList_of_lineBuild
       E Ps D hPs_on hNodup hD hVan hDeg hSplit
 
-/-! ## Unconditional landmark theorems (using `LandmarkInvStrong`) -/
+/-! ## Unconditional build theorems (using `AccumInvStrong`) -/
 
-/-- Unconditional landmark theorem: derived from `landmarkInvStrong_eagenBuild_singletons`,
+/-- Unconditional build theorem: derived from `accumInvStrong_lineBuild_singletons`,
     requires only Nodup, on-curve, sum-zero, length ≥ 2, plus per-input `h_extras`
     (geometric side conditions for each level of iterate).
 
     Eliminates the `PairwiseCombineHyp E` quantifying over all xs/ys/a/b — replaced by
     `h_extras`, which is a SPECIFIC condition on this `Ps`'s iterate states. -/
-theorem eagenBuild_singletons_landmark_unconditional
+theorem lineBuild_singletons_spec_unconditional
     (Ps : List (ZMod E.q × ZMod E.q))
     (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
     (hSumZero : sumOnE E Ps = 0)
@@ -9717,21 +9701,21 @@ theorem eagenBuild_singletons_landmark_unconditional
     (hLen : 2 ≤ Ps.length)
     (h_extras : ∀ k < Ps.length,
       LevelStepCombineExtras E (iterate E k (level0_singletons E Ps))) :
-    let D := eagenBuild_singletons E Ps
+    let D := lineBuild_singletons E Ps
     ¬ (D.a = 0 ∧ D.b = 0) ∧
     (∀ P ∈ Ps, D.eval P.1 P.2 = 0) ∧
     (normPoly E D).natDegree = Ps.length := by
   classical
   obtain ⟨a, h_iter_eq, h_inv, h_point_zero⟩ :=
-    landmarkInvStrong_eagenBuild_singletons E Ps hPs_on hNodup hSumZero hLen h_extras
-  have h_D_eq : eagenBuild_singletons E Ps = a.poly := by
+    accumInvStrong_lineBuild_singletons E Ps hPs_on hNodup hSumZero hLen h_extras
+  have h_D_eq : lineBuild_singletons E Ps = a.poly := by
     show (match iterate E Ps.length (level0_singletons E Ps) with
           | [a] => a.poly
           | _ => { a := 1, b := 0 }) = a.poly
     rw [h_iter_eq]
   have h_natDegree :
       (normPoly E a.poly).natDegree = Ps.length + (if a.point = (0 : ECPoint E) then 0 else 1) :=
-    LandmarkInvStrong.natDegree E h_inv
+    AccumInvStrong.natDegree E h_inv
   have h_natDegree' : (normPoly E a.poly).natDegree = Ps.length := by
     rw [h_natDegree, if_pos h_point_zero, Nat.add_zero]
   have h_natDegree_pos : 0 < (normPoly E a.poly).natDegree := by
@@ -9750,13 +9734,13 @@ theorem eagenBuild_singletons_landmark_unconditional
     exact h_not_both_zero
   · intro P hP
     rw [h_D_eq]
-    exact LandmarkInvStrong.vanish_of_mem E h_inv hP (hPs_on P hP)
+    exact AccumInvStrong.vanish_of_mem E h_inv hP (hPs_on P hP)
   · rw [h_D_eq]
     exact h_natDegree'
 
-/-- Unconditional divisor identity: derived from the unconditional landmark theorem
-    plus the existing `splitsOnE_of_landmark` and `divisorOfD_eq_formalDivisorOfList_of_landmark`. -/
-theorem eagenBuild_singletons_divisor_identity_unconditional
+/-- Unconditional divisor identity: derived from the unconditional build theorem
+    plus the existing `splitsOnE_of_lineBuild` and `divisorOfD_eq_formalDivisorOfList_of_lineBuild`. -/
+theorem lineBuild_singletons_divisor_identity_unconditional
     (Ps : List (ZMod E.q × ZMod E.q))
     (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
     (hSumZero : sumOnE E Ps = 0)
@@ -9765,28 +9749,28 @@ theorem eagenBuild_singletons_divisor_identity_unconditional
     (h_extras : ∀ k < Ps.length,
       LevelStepCombineExtras E (iterate E k (level0_singletons E Ps))) :
     ∀ R : ECPoint E,
-      divisorOfD E (eagenBuild_singletons E Ps) R
+      divisorOfD E (lineBuild_singletons E Ps) R
         = formalDivisorOfList E Ps R := by
   classical
-  let D := eagenBuild_singletons E Ps
-  have h_landmark :
+  let D := lineBuild_singletons E Ps
+  have h_inv :
       ¬ (D.a = 0 ∧ D.b = 0) ∧
       (∀ P ∈ Ps, D.eval P.1 P.2 = 0) ∧
       (normPoly E D).natDegree = Ps.length := by
     simpa [D] using
-      eagenBuild_singletons_landmark_unconditional E Ps hPs_on hSumZero hNodup hLen h_extras
-  obtain ⟨hD, hVan, hDeg⟩ := h_landmark
+      lineBuild_singletons_spec_unconditional E Ps hPs_on hSumZero hNodup hLen h_extras
+  obtain ⟨hD, hVan, hDeg⟩ := h_inv
   have hSplit : splitsOnE E D :=
-    splitsOnE_of_landmark E Ps D hPs_on hNodup hD hVan hDeg
+    splitsOnE_of_lineBuild E Ps D hPs_on hNodup hD hVan hDeg
   simpa [D] using
-    divisorOfD_eq_formalDivisorOfList_of_landmark
+    divisorOfD_eq_formalDivisorOfList_of_lineBuild
       E Ps D hPs_on hNodup hD hVan hDeg hSplit
 
 /-! ## Length-2 sum-zero: `h_extras` holds vacuously.
 
 For `Ps = [P, Q]` with `P + Q = 0` on `E`, the only adjacent pair at
 level 0 has `xa = xb` (since `Q.1 = P.1`) and `ya = -yb` (since
-`Q = -P`), so both branches of `LandmarkInvStrongCombineAffineExtras`
+`Q = -P`), so both branches of `AccumInvStrongCombineAffineExtras`
 have failing hypotheses — extras hold vacuously. -/
 theorem h_extras_holds_for_length2_sum_zero
     (P Q : ZMod E.q × ZMod E.q)
@@ -9805,7 +9789,7 @@ theorem h_extras_holds_for_length2_sum_zero
     -- level0_singletons E [P, Q] = [levelInitSingleton P, levelInitSingleton Q].
     show LevelStepCombineExtras E [levelInitSingleton E P, levelInitSingleton E Q]
     -- LevelStepCombineExtras [a, b] = (affine_extras a b) ∧ True.
-    show LandmarkInvStrongCombineExtras E
+    show AccumInvStrongCombineExtras E
             (levelInitSingleton E P) (levelInitSingleton E Q)
           ∧ LevelStepCombineExtras E []
     refine ⟨?_, ?_⟩
@@ -9824,9 +9808,9 @@ theorem h_extras_holds_for_length2_sum_zero
         E.equation_iff_nonsingular.mp ((E.equation_iff Q.1 Q.2).mpr (E.hOnCurve _ hQ_on))
       rw [ECPoint.affine_of_nonsingular E hP_ns] at h_a_eq
       rw [ECPoint.affine_of_nonsingular E hQ_ns] at h_b_eq
-      have h_a_eq2 : ECPoint.affine E xa ya = (.some hP_ns : ECPoint E) := by
+      have h_a_eq2 : ECPoint.affine E xa ya = (.some _ _ hP_ns : ECPoint E) := by
         rw [← h_a_pt, h_a_eq]
-      have h_b_eq2 : ECPoint.affine E xb yb = (.some hQ_ns : ECPoint E) := by
+      have h_b_eq2 : ECPoint.affine E xb yb = (.some _ _ hQ_ns : ECPoint E) := by
         rw [← h_b_pt, h_b_eq]
       -- Extract xa = P.1, ya = P.2 from h_a_eq2 ; xb = Q.1, yb = Q.2 from h_b_eq2.
       have hxa_eq : xa = P.1 ∧ ya = P.2 := by
@@ -9886,24 +9870,24 @@ theorem h_extras_holds_for_length2_sum_zero
     show LevelStepCombineExtras E
           (level_step E [levelInitSingleton E P, levelInitSingleton E Q])
     show LevelStepCombineExtras E
-          [EagenAccum.combine E (levelInitSingleton E P) (levelInitSingleton E Q)]
+          [Accum.combine E (levelInitSingleton E P) (levelInitSingleton E Q)]
     show True
     trivial
 
 /-! ## Affine extras vacuous on inverse pairs.
 
 When two accumulator points are inverses on `E` (`b.point = -a.point`),
-both branches of `LandmarkInvStrongCombineAffineExtras` have failing
+both branches of `AccumInvStrongCombineAffineExtras` have failing
 hypotheses, since the inverse has the same x-coordinate but flipped y.
 
 The `a.point ≠ 0` hypothesis is needed to ensure the universal
 quantification over `xa, ya` is reachable only when `a.point` actually
 has affine coordinates. -/
 theorem affine_extras_vacuous_on_inverse_affine_points
-    (a b : EagenAccum E)
+    (a b : Accum E)
     (h_neg : b.point = -a.point)
     (h_a_ne : a.point ≠ (0 : ECPoint E)) :
-    LandmarkInvStrongCombineAffineExtras E a b := by
+    AccumInvStrongCombineAffineExtras E a b := by
   classical
   intro xa ya xb yb h_a_eq h_b_eq
   -- a.point = ECPoint.affine xa ya, and a.point ≠ 0, so (xa, ya) is non-singular.
@@ -9947,12 +9931,12 @@ theorem affine_extras_vacuous_on_inverse_affine_points
     rw [h_zero] at h_b_eq2
     exact (WeierstrassCurve.Affine.Point.some_ne_zero hns_a_neg) h_b_eq2
 
-/-- Under the nonzero gate in `LandmarkInvStrongCombineExtras`, a pair whose
+/-- Under the nonzero gate in `AccumInvStrongCombineExtras`, a pair whose
     left accumulator is the point at infinity needs no affine-affine data. -/
 theorem combine_extras_vacuous_of_left_zero
-    (a b : EagenAccum E)
+    (a b : Accum E)
     (ha_zero : a.point = (0 : ECPoint E)) :
-    LandmarkInvStrongCombineExtras E a b := by
+    AccumInvStrongCombineExtras E a b := by
   intro ha_ne _
   exact False.elim (ha_ne ha_zero)
 
@@ -9961,7 +9945,7 @@ theorem combine_extras_vacuous_of_left_zero
 theorem combine_levelInitSingleton_inverse_point_eq_zero
     (P : ZMod E.q × ZMod E.q)
     (hP_on : P ∈ E.points) :
-    (EagenAccum.combine E (levelInitSingleton E P)
+    (Accum.combine E (levelInitSingleton E P)
       (levelInitSingleton E (P.1, -P.2))).point = (0 : ECPoint E) := by
   classical
   have hP_neg_on : (P.1, -P.2) ∈ E.points := points_neg_y E hP_on
@@ -9970,18 +9954,18 @@ theorem combine_levelInitSingleton_inverse_point_eq_zero
   have hP_neg_ns : E.toW.toAffine.Nonsingular P.1 (-P.2) :=
     E.equation_iff_nonsingular.mp
       ((E.equation_iff P.1 (-P.2)).mpr (E.hOnCurve _ hP_neg_on))
-  unfold EagenAccum.combine
+  unfold Accum.combine
   rw [show (levelInitSingleton E P).point = ECPoint.affine E P.1 P.2 from rfl]
   rw [show (levelInitSingleton E (P.1, -P.2)).point =
       ECPoint.affine E P.1 (-P.2) from rfl]
   rw [ECPoint.affine_of_nonsingular E hP_ns,
       ECPoint.affine_of_nonsingular E hP_neg_ns]
-  simp [EagenAccum.combine_vertical]
+  simp [Accum.combine_vertical]
 
 /-- Length-4 inverse-pair inputs have all per-level combine extras needed by
-    the singleton Eagen landmark theorem.  Level 0 reduces to the length-2
-    inverse-pair lemma for each adjacent pair; level 1 has two zero-point
-    accumulators; later levels are singletons. -/
+    the build theorem for the singleton line build.  Level 0 reduces to
+    the length-2 inverse-pair lemma for each adjacent pair; level 1 has
+    two zero-point accumulators; later levels are singletons. -/
 theorem h_extras_holds_for_length4_two_inverse_pairs
     (P R : ZMod E.q × ZMod E.q)
     (hP_on : P ∈ E.points) (hR_on : R ∈ E.points) :
@@ -9994,25 +9978,25 @@ theorem h_extras_holds_for_length4_two_inverse_pairs
   have hP_neg_on : (P.1, -P.2) ∈ E.points := points_neg_y E hP_on
   have hR_neg_on : (R.1, -R.2) ∈ E.points := points_neg_y E hR_on
   have hP_pair :
-      LandmarkInvStrongCombineExtras E
+      AccumInvStrongCombineExtras E
         (levelInitSingleton E P)
         (levelInitSingleton E (P.1, -P.2)) := by
     have h :=
       h_extras_holds_for_length2_sum_zero E P (P.1, -P.2)
         hP_on hP_neg_on rfl rfl 0 (by simp)
-    change LandmarkInvStrongCombineExtras E
+    change AccumInvStrongCombineExtras E
         (levelInitSingleton E P)
         (levelInitSingleton E (P.1, -P.2)) ∧
         LevelStepCombineExtras E [] at h
     exact h.1
   have hR_pair :
-      LandmarkInvStrongCombineExtras E
+      AccumInvStrongCombineExtras E
         (levelInitSingleton E R)
         (levelInitSingleton E (R.1, -R.2)) := by
     have h :=
       h_extras_holds_for_length2_sum_zero E R (R.1, -R.2)
         hR_on hR_neg_on rfl rfl 0 (by simp)
-    change LandmarkInvStrongCombineExtras E
+    change AccumInvStrongCombineExtras E
         (levelInitSingleton E R)
         (levelInitSingleton E (R.1, -R.2)) ∧
         LevelStepCombineExtras E [] at h
@@ -10023,10 +10007,10 @@ theorem h_extras_holds_for_length4_two_inverse_pairs
   · show LevelStepCombineExtras E
       [levelInitSingleton E P, levelInitSingleton E (P.1, -P.2),
        levelInitSingleton E R, levelInitSingleton E (R.1, -R.2)]
-    change LandmarkInvStrongCombineExtras E
+    change AccumInvStrongCombineExtras E
         (levelInitSingleton E P)
         (levelInitSingleton E (P.1, -P.2)) ∧
-      (LandmarkInvStrongCombineExtras E
+      (AccumInvStrongCombineExtras E
         (levelInitSingleton E R)
         (levelInitSingleton E (R.1, -R.2)) ∧ True)
     exact ⟨hP_pair, hR_pair, trivial⟩
@@ -10048,14 +10032,14 @@ theorem h_extras_holds_for_length4_two_inverse_pairs
         [levelInitSingleton E P, levelInitSingleton E (P.1, -P.2),
          levelInitSingleton E R, levelInitSingleton E (R.1, -R.2)])
     show LevelStepCombineExtras E
-      [EagenAccum.combine E (levelInitSingleton E P)
+      [Accum.combine E (levelInitSingleton E P)
           (levelInitSingleton E (P.1, -P.2)),
-       EagenAccum.combine E (levelInitSingleton E R)
+       Accum.combine E (levelInitSingleton E R)
           (levelInitSingleton E (R.1, -R.2))]
-    change LandmarkInvStrongCombineExtras E
-      (EagenAccum.combine E (levelInitSingleton E P)
+    change AccumInvStrongCombineExtras E
+      (Accum.combine E (levelInitSingleton E P)
         (levelInitSingleton E (P.1, -P.2)))
-      (EagenAccum.combine E (levelInitSingleton E R)
+      (Accum.combine E (levelInitSingleton E R)
         (levelInitSingleton E (R.1, -R.2))) ∧ True
     refine ⟨?_, trivial⟩
     exact combine_extras_vacuous_of_left_zero E _ _
@@ -10063,4 +10047,4 @@ theorem h_extras_holds_for_length4_two_inverse_pairs
   · simp [iterate, level0_singletons, level_step, LevelStepCombineExtras]
   · simp [iterate, level0_singletons, level_step, LevelStepCombineExtras]
 
-end Divisor.Landmark
+end Divisor.LineAccum

@@ -1,7 +1,7 @@
 /-
-  Tests/EagenBuildEvalSmokeTest.lean
+  Tests/LineBuildEvalSmokeTest.lean
 
-  Full end-to-end `#eval` of `eagenBuildC` over `y² = x³ + 1` / F_5.
+  Full end-to-end `#eval` of `lineBuildC` over `y² = x³ + 1` / F_5.
 
   Affine points: (0, 1), (0, 4), (2, 2), (2, 3), (4, 0).  The
   2-torsion point is (4, 0).
@@ -11,22 +11,22 @@
                   (0,4)+(2,2) = -(4,0) = (4,0).
                   Sum = 2·(4,0) = O.  ✓
 
-  Eagen level-0: pair adjacent inputs.
+  Line-build level-0: pair adjacent inputs.
     Pair 1: chord through (0,1),(2,3) ⇒ accumulator point (4, 0).
     Pair 2: chord through (0,4),(2,2) ⇒ accumulator point (4, 0).
-  Eagen level-1: both points equal (4, 0), and the vertical branch
+  Line-build level-1: both points equal (4, 0), and the vertical branch
     fires (since (4,0).2 = 0 = -0).  Output is
     `(chord_1 · chord_2) / (X − 4)`.
 
-  Expected divisor of the eagenBuild output:
+  Expected divisor of the lineBuild output:
     chord_1 + chord_2 − (X−4) =
        (0,1)+(2,3)+(4,0) + (0,4)+(2,2)+(4,0) − 2·(4,0) − 4·∞
        = (0,1)+(2,3)+(0,4)+(2,2) − 4·∞.
 
-  So the eagenBuild output should vanish at each of the four input
+  So the lineBuild output should vanish at each of the four input
   points, with no other zeros over the affine support.
 -/
-import Divisor.EagenBuildComputable
+import Divisor.LineBuildComputable
 
 instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 
@@ -35,9 +35,9 @@ open Divisor
 /-- The four input points, sum-zero on `y² = x³ + 1` / F_5. -/
 def Ps : List (ZMod 5 × ZMod 5) := [(0, 1), (2, 3), (0, 4), (2, 2)]
 
-/-- eagenBuild output for the sum-zero length-4 list. -/
+/-- lineBuild output for the sum-zero length-4 list. -/
 def D : CoordRingEltC 5 :=
-  eagenBuildC (curveA := (0 : ZMod 5)) (curveB := (1 : ZMod 5)) Ps
+  lineBuildC (curveA := (0 : ZMod 5)) (curveB := (1 : ZMod 5)) Ps
 
 #eval D.a.coeffs
 #eval D.b.coeffs

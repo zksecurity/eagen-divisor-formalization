@@ -5,10 +5,7 @@
   Does NOT import ExtractorBridge to avoid circular dependency.
 -/
 import Divisor.PolyGTraceFormula
-import Divisor.PolyGDensity
 import Divisor.Soundness
-import Divisor.DivisorPrincipal
-import Divisor.Protocol
 
 open Polynomial Finset Classical
 

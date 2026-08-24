@@ -2,10 +2,10 @@
   Divisor/LogDerivEagenLength4.lean
 
   Length-4-specific application of `logDerivCheckFn_zero_of_explicit_divisor_data`
-  using `eagenBuild_length4_explicit` as the divisor witness.
+  using `lineBuild_length4_explicit` as the divisor witness.
 
   This wires together:
-  * The constructive D = `eagenBuild_length4_explicit P_0 P_1 P_2 P_3`.
+  * The constructive D = `lineBuild_length4_explicit P_0 P_1 P_2 P_3`.
   * Static prerequisites (D ≠ 0, splitsOnE, zerosFinset = {P_0..P_3},
     sum of ordAt = natDegree, β_fun = ordAt = betaTrue) — all proved.
   * Per-pair side conditions (hQline, hDen, hResidueMatch) as explicit
@@ -14,41 +14,41 @@
   Output: `logDerivCheckFn E D P_target k B m A_0 A_1 = 0` for any "good"
   (`¬ badChallengesCompleteness`) pair (A_0, A_1).
 
-  This is the length-4 specialization of the (currently axiomatic)
-  `weil_reciprocity_honest`, with the formerly-unsound axiom statement
-  replaced by a constructive theorem about `eagenBuild_length4_explicit`.
+  This is the length-4 form of Eagen's residue identity, proved
+  constructively for `lineBuild_length4_explicit` (the universal
+  form is unsound on the diagonal `A₀ = A₁`, so only constructive
+  specializations exist).
 
   ## Axiom closure
 
-  `#print axioms logDerivCheckFn_zero_for_eagenBuild_length4` shows:
+  `#print axioms logDerivCheckFn_zero_for_lineBuild_length4` shows:
     propext, Classical.choice, Quot.sound,
     Divisor.chord_fiber_product_eq_normZ_under_split
 
-  The generic resultant product bridge is now theorem-backed, and
-  there is no `weil_reciprocity_honest` dependency.
+  The generic resultant product bridge is theorem-backed; there is no
+  `weil_reciprocity_honest` dependency.
 
-  ## Discharged side conditions (May 2026 update)
+  ## Side conditions derived internally
 
-  Both `hQline` and `hDen` are now derived internally from `hGood`:
-  * `hQline_of_hGood_eagenBuild_length4` — Bezout argument.
+  Both `hQline` and `hDen` are derived from `hGood`:
+  * `hQline_of_hGood_lineBuild_length4` — Bezout argument.
   * `hDen_of_hGood` — chord-derivative-denominator factorization
     `3·pt.x² + A − 2λ·pt.y = (pt.x − A_i.x)(pt.x − A_j.x)` for various
-    indices. Combined with strengthened bad set excluding the relevant
-    tangent collisions.
+    indices; the bad set excludes the relevant tangent collisions.
 
-  The main theorem `logDerivCheckFn_zero_for_eagenBuild_length4` only
+  The main theorem `logDerivCheckFn_zero_for_lineBuild_length4` only
   takes `hResidueMatch` as the user-supplied per-pair hypothesis.
 
   ## Remaining gaps to fully discharge `weil_reciprocity_honest`
 
-  1. `hResidueMatch` (protocol-level identification of the four eagenBuild
+  1. `hResidueMatch` (protocol-level identification of the four lineBuild
      inputs `{P_0..P_3}` with the honest message structure
      `{(-P), B_j with multiplicities}`) — genuinely application-specific.
      For length-4 with k=3 distinct bases at scalars 1, this is the
      identification `[P_0, P_1, P_2, P_3] = [(-P), B_1, B_2, B_3]`
      after a permutation determined by `wit.scalars`.
 
-  2. General-N `eagenBuild` — currently only length-4. Honest divisors
+  2. General-N `lineBuild` — currently only length-4. Honest divisors
      for general k bases + scalars require the recursive driver from
      Eagen §3.1.1 (paper p. 4). Length-4 only handles the special case
      where the input list has exactly 4 elements with all distinct
@@ -240,7 +240,7 @@ The chord-residue sum on the LHS of `hResidueMatch` expands explicitly to
 the sum of L-evaluation-reciprocals at each input point P_i (since
 zerosFinset = {P_0..P_3} and ordAt = 1 at each). -/
 
-theorem eagenBuild_length4_residue_sum_eq
+theorem lineBuild_length4_residue_sum_eq
     (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
     (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
     (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
@@ -288,71 +288,71 @@ theorem eagenBuild_length4_residue_sum_eq
       (Q₀x, -Q₀y) ≠ P₀ ∧ (Q₀x, -Q₀y) ≠ P₁ ∧ (Q₀x, -Q₀y) ≠ (Q₀x, Q₀y))
     (h_inputs_distinct : P₀ ≠ P₁ ∧ P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₂ ≠ P₃)
     (L : Line E.q) :
-    (∑ Q ∈ zerosFinset E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃),
-        (ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) Q : ZMod E.q) *
+    (∑ Q ∈ zerosFinset E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃),
+        (ordAt E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃) Q : ZMod E.q) *
         (L.eval Q.1 Q.2)⁻¹)
       = (L.eval P₀.1 P₀.2)⁻¹ + (L.eval P₁.1 P₁.2)⁻¹
         + (L.eval P₂.1 P₂.2)⁻¹ + (L.eval P₃.1 P₃.2)⁻¹ := by
   classical
   -- ordAt = 1 at each input.
-  have ord_P₀ : ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) P₀ = 1 := by
-    have hDiv := eagenBuild_length4_div_at_P₀ E P₀ P₁ P₂ P₃
+  have ord_P₀ : ordAt E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃) P₀ = 1 := by
+    have hDiv := lineBuild_length4_div_at_P₀ E P₀ P₁ P₂ P₃
       hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
       h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_third_match h_y_match h_Q₀_nontorsion
-    have h_eq : divisorOfD E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+    have h_eq : divisorOfD E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃)
                   (ECPoint.affine E P₀.1 P₀.2)
-          = (ordAtPoint E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+          = (ordAtPoint E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃)
               (ECPoint.affine E P₀.1 P₀.2) : ℤ) := by
       rw [ECPoint.affine_of_nonsingular E
             (E.equation_iff_nonsingular.mp ((E.equation_iff P₀.1 P₀.2).mpr (E.hOnCurve _ hP₀)))]
       rfl
     rw [h_eq, ordAtPoint_affine E _ hP₀] at hDiv
-    have : (ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) P₀ : ℤ) = 1 := hDiv
+    have : (ordAt E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃) P₀ : ℤ) = 1 := hDiv
     omega
-  have ord_P₁ : ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) P₁ = 1 := by
-    have hDiv := eagenBuild_length4_div_at_P₁ E P₀ P₁ P₂ P₃
+  have ord_P₁ : ordAt E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃) P₁ = 1 := by
+    have hDiv := lineBuild_length4_div_at_P₁ E P₀ P₁ P₂ P₃
       hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
       h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₁_off_L₂ h_third_match h_y_match h_Q₀_nontorsion
-    have h_eq : divisorOfD E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+    have h_eq : divisorOfD E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃)
                   (ECPoint.affine E P₁.1 P₁.2)
-          = (ordAtPoint E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+          = (ordAtPoint E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃)
               (ECPoint.affine E P₁.1 P₁.2) : ℤ) := by
       rw [ECPoint.affine_of_nonsingular E
             (E.equation_iff_nonsingular.mp ((E.equation_iff P₁.1 P₁.2).mpr (E.hOnCurve _ hP₁)))]
       rfl
     rw [h_eq, ordAtPoint_affine E _ hP₁] at hDiv
-    have : (ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) P₁ : ℤ) = 1 := hDiv
+    have : (ordAt E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃) P₁ : ℤ) = 1 := hDiv
     omega
-  have ord_P₂ : ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) P₂ = 1 := by
-    have hDiv := eagenBuild_length4_div_at_P₂ E P₀ P₁ P₂ P₃
+  have ord_P₂ : ordAt E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃) P₂ = 1 := by
+    have hDiv := lineBuild_length4_div_at_P₂ E P₀ P₁ P₂ P₃
       hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
       h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₂_off_L₁ h_third_match h_y_match h_Q₀_nontorsion
-    have h_eq : divisorOfD E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+    have h_eq : divisorOfD E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃)
                   (ECPoint.affine E P₂.1 P₂.2)
-          = (ordAtPoint E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+          = (ordAtPoint E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃)
               (ECPoint.affine E P₂.1 P₂.2) : ℤ) := by
       rw [ECPoint.affine_of_nonsingular E
             (E.equation_iff_nonsingular.mp ((E.equation_iff P₂.1 P₂.2).mpr (E.hOnCurve _ hP₂)))]
       rfl
     rw [h_eq, ordAtPoint_affine E _ hP₂] at hDiv
-    have : (ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) P₂ : ℤ) = 1 := hDiv
+    have : (ordAt E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃) P₂ : ℤ) = 1 := hDiv
     omega
-  have ord_P₃ : ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) P₃ = 1 := by
-    have hDiv := eagenBuild_length4_div_at_P₃ E P₀ P₁ P₂ P₃
+  have ord_P₃ : ordAt E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃) P₃ = 1 := by
+    have hDiv := lineBuild_length4_div_at_P₃ E P₀ P₁ P₂ P₃
       hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
       h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₃_off_L₁ h_third_match h_y_match h_Q₀_nontorsion
-    have h_eq : divisorOfD E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+    have h_eq : divisorOfD E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃)
                   (ECPoint.affine E P₃.1 P₃.2)
-          = (ordAtPoint E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+          = (ordAtPoint E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃)
               (ECPoint.affine E P₃.1 P₃.2) : ℤ) := by
       rw [ECPoint.affine_of_nonsingular E
             (E.equation_iff_nonsingular.mp ((E.equation_iff P₃.1 P₃.2).mpr (E.hOnCurve _ hP₃)))]
       rfl
     rw [h_eq, ordAtPoint_affine E _ hP₃] at hDiv
-    have : (ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) P₃ : ℤ) = 1 := hDiv
+    have : (ordAt E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃) P₃ : ℤ) = 1 := hDiv
     omega
   -- zerosFinset = {P_0, P_1, P_2, P_3}.
-  rw [zerosFinset_eagenBuild_length4_eq E P₀ P₁ P₂ P₃
+  rw [zerosFinset_lineBuild_length4_eq E P₀ P₁ P₂ P₃
       hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
       h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
       h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs]
@@ -360,10 +360,10 @@ theorem eagenBuild_length4_residue_sum_eq
   obtain ⟨h01, h02, h03, h12, h13, h23⟩ := h_inputs_distinct
   have h_P_0_notin_123 : P₀ ∉ ({P₁, P₂, P₃} : Finset (ZMod E.q × ZMod E.q)) := by
     simp only [Finset.mem_insert, Finset.mem_singleton]
-    push_neg; exact ⟨h01, h02, h03⟩
+    push Not; exact ⟨h01, h02, h03⟩
   have h_P_1_notin_23 : P₁ ∉ ({P₂, P₃} : Finset (ZMod E.q × ZMod E.q)) := by
     simp only [Finset.mem_insert, Finset.mem_singleton]
-    push_neg; exact ⟨h12, h13⟩
+    push Not; exact ⟨h12, h13⟩
   have h_P_2_notin_3 : P₂ ∉ ({P₃} : Finset (ZMod E.q × ZMod E.q)) := by
     simp only [Finset.mem_singleton]; exact h23
   rw [show ({P₀, P₁, P₂, P₃} : Finset (ZMod E.q × ZMod E.q))
@@ -380,7 +380,7 @@ theorem eagenBuild_length4_residue_sum_eq
 
 For the length-4 honest divisor structure with input list
 `[(-P_target), B 0, B 1, B 2]` (k = 3 bases, all scalars 1),
-`hResidueMatch` follows trivially from `eagenBuild_length4_residue_sum_eq`. -/
+`hResidueMatch` follows trivially from `lineBuild_length4_residue_sum_eq`. -/
 
 theorem hResidueMatch_for_simple_honest
     (P_target : ZMod E.q × ZMod E.q)
@@ -434,14 +434,14 @@ theorem hResidueMatch_for_simple_honest
       (Q₀x, -Q₀y) ≠ P₀ ∧ (Q₀x, -Q₀y) ≠ P₁ ∧ (Q₀x, -Q₀y) ≠ (Q₀x, Q₀y))
     (h_inputs_distinct : P₀ ≠ P₁ ∧ P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₂ ≠ P₃)
     (A₀ A₁ : ZMod E.q × ZMod E.q) :
-    (∑ Q ∈ zerosFinset E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃),
-        (ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) Q : ZMod E.q) *
+    (∑ Q ∈ zerosFinset E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃),
+        (ordAt E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃) Q : ZMod E.q) *
         ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2)⁻¹)
       = ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P_target.1 (-P_target.2))⁻¹
         + (Finset.univ : Finset (Fin 3)).sum
             (fun j => (1 : ZMod E.q) *
               ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2)⁻¹) := by
-  rw [eagenBuild_length4_residue_sum_eq E P₀ P₁ P₂ P₃
+  rw [lineBuild_length4_residue_sum_eq E P₀ P₁ P₂ P₃
       hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
       h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
       h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs
@@ -454,13 +454,13 @@ theorem hResidueMatch_for_simple_honest
 
 /-! ## hQline derivation: chord doesn't pass through any zero
 
-For length-4 `D = eagenBuild_length4`, `zerosFinset = {P_0..P_3}`. A
+For length-4 `D = lineBuild_length4`, `zerosFinset = {P_0..P_3}`. A
 chord through `(A_0, A_1)` (non-vertical) intersects `E` in
 `{A_0, A_1, A_2}`. The pair being "good" (`¬badPairCompletenessPred`)
 excludes `D` vanishing at any of `{A_0, A_1, A_2}`. Hence no zero of
 `D` lies on the chord. -/
 
-theorem hQline_of_hGood_eagenBuild_length4
+theorem hQline_of_hGood_lineBuild_length4
     (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
     (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
     (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
@@ -510,13 +510,13 @@ theorem hQline_of_hGood_eagenBuild_length4
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
     (hNV : A₀.1 ≠ A₁.1)
     (hGood : (A₀, A₁) ∉ badChallengesCompleteness E
-              (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)) :
-    ∀ Q ∈ zerosFinset E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃),
+              (lineBuild_length4_explicit E P₀ P₁ P₂ P₃)) :
+    ∀ Q ∈ zerosFinset E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃),
       (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 ≠ 0 := by
   classical
   intro Q hQzeros
   -- Q ∈ zerosFinset implies Q.1, Q.2 are coords of some P_i.
-  have hQfin := zerosFinset_eagenBuild_length4_eq E P₀ P₁ P₂ P₃
+  have hQfin := zerosFinset_lineBuild_length4_eq E P₀ P₁ P₂ P₃
     hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
     h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
     h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs
@@ -540,16 +540,16 @@ theorem hQline_of_hGood_eagenBuild_length4
   -- ¬bad: D doesn't vanish at A_0, A_1, A_2.
   have hMem : (A₀, A₁) ∈ E.points ×ˢ E.points := Finset.mk_mem_product hA₀ hA₁
   have h_unbad : ¬ badPairCompletenessPred E
-      (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) (A₀, A₁) := fun hbad =>
+      (lineBuild_length4_explicit E P₀ P₁ P₂ P₃) (A₀, A₁) := fun hbad =>
     hGood (Finset.mem_filter.mpr ⟨hMem, hbad⟩)
   -- Q ∈ zerosFinset means D.eval Q = 0.
-  have hQzero : (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃).eval Q.1 Q.2 = 0 := by
+  have hQzero : (lineBuild_length4_explicit E P₀ P₁ P₂ P₃).eval Q.1 Q.2 = 0 := by
     -- zerosFinset = E.points.filter (D.eval = 0) — extract the filter.
-    have h_back := zerosFinset_eagenBuild_length4_eq E P₀ P₁ P₂ P₃
+    have h_back := zerosFinset_lineBuild_length4_eq E P₀ P₁ P₂ P₃
       hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
       h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
       h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs
-    have : Q ∈ zerosFinset E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) := by
+    have : Q ∈ zerosFinset E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃) := by
       rw [h_back]; exact hQzeros
     unfold zerosFinset zeros at this
     exact (Finset.mem_filter.mp this).2
@@ -573,17 +573,17 @@ theorem hQline_of_hGood_eagenBuild_length4
     refine Or.inr (Or.inr (Or.inl ?_))
     show (match thirdPoint E (A₀, A₁).1 (A₀, A₁).2 with
       | none => True
-      | some (x, y) => (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃).eval x y = 0)
+      | some (x, y) => (lineBuild_length4_explicit E P₀ P₁ P₂ P₃).eval x y = 0)
     rw [show (A₀, A₁).1 = A₀ from rfl, show (A₀, A₁).2 = A₁ from rfl]
     rw [hThirdEq]
     rw [← hQA₂]; exact hQzero
 
-/-- Length-4-specific `logDerivCheckFn = 0`: for `D = eagenBuild_length4`
+/-- Length-4-specific `logDerivCheckFn = 0`: for `D = lineBuild_length4`
     with all the genericity hypotheses required, and any "good"
     `(A_0, A_1)` pair, the log-derivative check vanishes — modulo the
     per-pair side conditions `hQline`, `hDen`, and the protocol-level
     residue match `hResidueMatch`. -/
-theorem logDerivCheckFn_zero_for_eagenBuild_length4
+theorem logDerivCheckFn_zero_for_lineBuild_length4
     (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
     (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
     (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
@@ -636,34 +636,34 @@ theorem logDerivCheckFn_zero_for_eagenBuild_length4
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
     (hNV : A₀.1 ≠ A₁.1)
     (hGood : (A₀, A₁) ∉ badChallengesCompleteness E
-              (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃))
+              (lineBuild_length4_explicit E P₀ P₁ P₂ P₃))
     (hResidueMatch :
-      (∑ Q ∈ zerosFinset E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃),
-          (ordAt E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) Q : ZMod E.q) *
+      (∑ Q ∈ zerosFinset E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃),
+          (ordAt E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃) Q : ZMod E.q) *
           ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2)⁻¹)
         = ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval P_target.1 (-P_target.2))⁻¹
           + (Finset.univ : Finset (Fin k)).sum
               (fun j => (m j) *
                 ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (B j).1 (B j).2)⁻¹)) :
-    logDerivCheckFn E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+    logDerivCheckFn E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃)
         P_target k B m A₀ A₁ = 0 := by
   classical
-  set D := eagenBuild_length4_explicit E P₀ P₁ P₂ P₃ with hD_def
+  set D := lineBuild_length4_explicit E P₀ P₁ P₂ P₃ with hD_def
   -- Discharge static prerequisites.
-  have hNZ : ¬ (D.a = 0 ∧ D.b = 0) := eagenBuild_length4_explicit_ne_zero E P₀ P₁ P₂ P₃
+  have hNZ : ¬ (D.a = 0 ∧ D.b = 0) := lineBuild_length4_explicit_ne_zero E P₀ P₁ P₂ P₃
     hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_third_match h_y_match h_Q₀_nontorsion
-  have hSplit : splitsOnE E D := splitsOnE_eagenBuild_length4 E P₀ P₁ P₂ P₃
+  have hSplit : splitsOnE E D := splitsOnE_lineBuild_length4 E P₀ P₁ P₂ P₃
     hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
     h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
     h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs
     h_inputs_distinct
   have hAccount : (∑ Q ∈ E.points, ordAt E D Q) = (normPoly E D).natDegree := by
-    rw [ordAt_sum_eagenBuild_length4_eq_four E P₀ P₁ P₂ P₃
+    rw [ordAt_sum_lineBuild_length4_eq_four E P₀ P₁ P₂ P₃
       hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
       h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
       h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs
       h_inputs_distinct]
-    rw [eagenBuild_length4_normPoly_natDegree_eq_four E P₀ P₁ P₂ P₃
+    rw [lineBuild_length4_normPoly_natDegree_eq_four E P₀ P₁ P₂ P₃
       hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₂_ne_A2_23 h_P₃_ne_A2_23
       h_third_match h_y_match h_Q₀_nontorsion]
   -- β_fun = ordAt = betaTrue.
@@ -675,7 +675,7 @@ theorem logDerivCheckFn_zero_for_eagenBuild_length4
     omega
   have hβtrue : ∀ Q, ordAt E D Q = betaTrue E D hNZ Q := fun _ => rfl
   -- hQline: derived from hGood via Bezout.
-  have hQline := hQline_of_hGood_eagenBuild_length4 E P₀ P₁ P₂ P₃
+  have hQline := hQline_of_hGood_lineBuild_length4 E P₀ P₁ P₂ P₃
     hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
     h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
     h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs
@@ -753,8 +753,8 @@ theorem weil_reciprocity_honest_length4_simple
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
     (hNV : A₀.1 ≠ A₁.1)
     (hGood : (A₀, A₁) ∉ badChallengesCompleteness E
-              (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)) :
-    logDerivCheckFn E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+              (lineBuild_length4_explicit E P₀ P₁ P₂ P₃)) :
+    logDerivCheckFn E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃)
         P_target 3 B (fun _ => 1) A₀ A₁ = 0 := by
   -- Apply main theorem with hResidueMatch discharged via hResidueMatch_for_simple_honest.
   have hRM := hResidueMatch_for_simple_honest E P_target B P₀ P₁ P₂ P₃
@@ -763,7 +763,7 @@ theorem weil_reciprocity_honest_length4_simple
     h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
     h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs
     h_inputs_distinct A₀ A₁
-  exact logDerivCheckFn_zero_for_eagenBuild_length4 E P₀ P₁ P₂ P₃
+  exact logDerivCheckFn_zero_for_lineBuild_length4 E P₀ P₁ P₂ P₃
     hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
     h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
     h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs
@@ -772,7 +772,7 @@ theorem weil_reciprocity_honest_length4_simple
 
 /-! ## numZeros = 4 corollary -/
 
-theorem numZeros_eagenBuild_length4_eq_four
+theorem numZeros_lineBuild_length4_eq_four
     (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
     (hP₀ : P₀ ∈ E.points) (hP₁ : P₁ ∈ E.points)
     (hP₂ : P₂ ∈ E.points) (hP₃ : P₃ ∈ E.points)
@@ -819,12 +819,12 @@ theorem numZeros_eagenBuild_length4_eq_four
       let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
       (Q₀x, -Q₀y) ≠ P₀ ∧ (Q₀x, -Q₀y) ≠ P₁ ∧ (Q₀x, -Q₀y) ≠ (Q₀x, Q₀y))
     (h_inputs_distinct : P₀ ≠ P₁ ∧ P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₂ ≠ P₃) :
-    numZeros E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) = 4 := by
+    numZeros E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃) = 4 := by
   classical
   unfold numZeros
-  rw [show zeros (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) E.points
-      = zerosFinset E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃) from rfl]
-  rw [zerosFinset_eagenBuild_length4_eq E P₀ P₁ P₂ P₃
+  rw [show zeros (lineBuild_length4_explicit E P₀ P₁ P₂ P₃) E.points
+      = zerosFinset E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃) from rfl]
+  rw [zerosFinset_lineBuild_length4_eq E P₀ P₁ P₂ P₃
       hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
       h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
       h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs]
@@ -836,12 +836,11 @@ theorem numZeros_eagenBuild_length4_eq_four
       Finset.card_insert_of_notMem (by simp [h23]),
       Finset.card_singleton]
 
-/-! ## Integration: rejection set bound for length-4 simple case (NO weil_reciprocity_honest)
+/-! ## Integration: rejection-set bound for the length-4 simple case
 
 End-to-end integration: bound on the set of "bad challenges" for the
-length-4 simple honest-prover D = eagenBuild_length4_explicit. Uses
-`weil_reciprocity_honest_length4_simple` instead of the formerly-unsound
-`weil_reciprocity_honest` axiom.
+length-4 simple honest-prover D = lineBuild_length4_explicit, via the
+constructive `weil_reciprocity_honest_length4_simple`.
 
 This bypasses the protocol structure layers (DlogStatement / MAProverMsg)
 to focus on the mathematical content: any `(A_0, A_1)` pair where
@@ -902,11 +901,11 @@ theorem rejectSet_bound_length4_simple
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           p.1.1 ≠ p.2.1 ∧
-          logDerivCheckFn E (eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+          logDerivCheckFn E (lineBuild_length4_explicit E P₀ P₁ P₂ P₃)
               P_target 3 B (fun _ => 1) p.1 p.2 ≠ 0)).card
       ≤ (3 * 4 + 4) * E.numAffine := by
   classical
-  set D := eagenBuild_length4_explicit E P₀ P₁ P₂ P₃ with hD_def
+  set D := lineBuild_length4_explicit E P₀ P₁ P₂ P₃ with hD_def
   set rejectSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
     (E.points ×ˢ E.points).filter
       (fun p => p.1.1 ≠ p.2.1 ∧
@@ -926,7 +925,7 @@ theorem rejectSet_bound_length4_simple
       h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs
       h_inputs_distinct p.1 p.2 hpPts.1 hpPts.2 hNV hNotBad
   -- Bound badChallengesCompleteness card.
-  have hNZ : numZeros E D = 4 := numZeros_eagenBuild_length4_eq_four E P₀ P₁ P₂ P₃
+  have hNZ : numZeros E D = 4 := numZeros_lineBuild_length4_eq_four E P₀ P₁ P₂ P₃
     hP₀ hP₁ hP₂ hP₃ h_xx_01 h_xx_23 h_P₀_ne_A2_01 h_P₁_ne_A2_01
     h_P₂_ne_A2_23 h_P₃_ne_A2_23 h_P₀_off_L₂ h_P₁_off_L₂ h_P₂_off_L₁ h_P₃_off_L₁
     h_third_match h_y_match h_Q₀_nontorsion h_Q₀_off_L₂_inputs h_negQ₀_off_L₁_inputs
@@ -939,7 +938,7 @@ theorem rejectSet_bound_length4_simple
 
 /-! ## Stronger constructive honesty predicate: `isHonestForLength4Simple`
 
-Per Codex D-option-1: add a predicate stronger than `isHonestFor` that
+A predicate stronger than `isHonestFor` that
 captures the explicit length-4 simple construction. Proves the
 implication into the existing API (provides `isHonestFor`) and into
 the rejection-set bound (axiom-free).
@@ -948,7 +947,7 @@ This bridges the constructive length-4 work to the existing protocol
 structures without requiring invasive changes to `isHonestFor` itself. -/
 
 /-- The length-4 simple honest construction: msg.toD is built from
-    `eagenBuild_length4_explicit` on the inputs `[(-P_target), B 0, B 1, B 2]`,
+    `lineBuild_length4_explicit` on the inputs `[(-P_target), B 0, B 1, B 2]`,
     with k=3 bases all at scalar 1. Captures all the genericity
     hypotheses needed for the length-4 simple discharge. -/
 structure MAProverMsg.IsHonestForLength4Simple (E : ECSetup)
@@ -957,7 +956,7 @@ structure MAProverMsg.IsHonestForLength4Simple (E : ECSetup)
   hk_eq_3 : stmt.k = 3
   /-- msg has k=3 scalar slots. -/
   hkm_eq_3 : msg.k = 3
-  /-- The four eagenBuild input points. -/
+  /-- The four lineBuild input points. -/
   P₀ : ZMod E.q × ZMod E.q
   P₁ : ZMod E.q × ZMod E.q
   P₂ : ZMod E.q × ZMod E.q
@@ -968,8 +967,8 @@ structure MAProverMsg.IsHonestForLength4Simple (E : ECSetup)
   h_P₁_eq : P₁ = stmt.bases (hk_eq_3 ▸ (0 : Fin 3))
   h_P₂_eq : P₂ = stmt.bases (hk_eq_3 ▸ (1 : Fin 3))
   h_P₃_eq : P₃ = stmt.bases (hk_eq_3 ▸ (2 : Fin 3))
-  /-- msg.toD is the constructive eagenBuild_length4 D. -/
-  h_toD_eq : msg.toD = eagenBuild_length4_explicit E P₀ P₁ P₂ P₃
+  /-- msg.toD is the constructive lineBuild_length4 D. -/
+  h_toD_eq : msg.toD = lineBuild_length4_explicit E P₀ P₁ P₂ P₃
   /-- All scalars in msg.m equal 1. -/
   h_m_eq_one : ∀ i : Fin msg.k, msg.m i = 1
   /-- Each input is on E. -/
@@ -977,7 +976,7 @@ structure MAProverMsg.IsHonestForLength4Simple (E : ECSetup)
   hP₁ : P₁ ∈ E.points
   hP₂ : P₂ ∈ E.points
   hP₃ : P₃ ∈ E.points
-  /-- Genericity hypotheses for eagenBuild_length4 input. -/
+  /-- Genericity hypotheses for lineBuild_length4 input. -/
   h_xx_01 : P₀.1 ≠ P₁.1
   h_xx_23 : P₂.1 ≠ P₃.1
   h_P₀_ne_A2_01 : P₀.1 ≠ slopeOf P₀.1 P₀.2 P₁.1 P₁.2 ^ 2 - P₀.1 - P₁.1
@@ -1083,7 +1082,7 @@ theorem logDerivCheckFn_zero_via_isHonestForLength4Simple_raw
       let Q₀y := slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * Q₀x + (P₀.2 - slopeOf P₀.1 P₀.2 P₁.1 P₁.2 * P₀.1)
       (Q₀x, -Q₀y) ≠ P₀ ∧ (Q₀x, -Q₀y) ≠ P₁ ∧ (Q₀x, -Q₀y) ≠ (Q₀x, Q₀y))
     (h_inputs_distinct : P₀ ≠ P₁ ∧ P₀ ≠ P₂ ∧ P₀ ≠ P₃ ∧ P₁ ≠ P₂ ∧ P₁ ≠ P₃ ∧ P₂ ≠ P₃)
-    (h_toD_eq : D = eagenBuild_length4_explicit E P₀ P₁ P₂ P₃)
+    (h_toD_eq : D = lineBuild_length4_explicit E P₀ P₁ P₂ P₃)
     (h_m_eq_one : ∀ i : Fin 3, m i = 1)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
@@ -1260,28 +1259,28 @@ theorem ma_completeness_via_isHonestForLength4Simple
   exact logDerivCheckFn_zero_via_isHonestForLength4Simple E stmt msg
     h_honest A₀ A₁ hA₀ hA₁ hNV hGood
 
-/-! ## Hasse-clean form: ma_completeness_clean for length-4 simple
+/-! ## Point-count consolidated form for length-4 simple
 
-Applying Hasse (`|E| ≤ 2q` for `q ≥ 5`) and the paper-tight bound, the
-rejection-set cardinality for length-4 simple honest case is bounded
-by `6·(d+1)·q + 6q`. Mirrors the existing `ma_completeness_clean` but
-uses the constructive length-4 path. -/
+Applying the paper-tight `numZeros ≤ degE ≤ degBound` chain, the
+rejection-set cardinality for the length-4 simple honest case is
+bounded by `(3·d + 4)·|E.points|`. Mirrors `ma_completeness` but uses
+the constructive length-4 path. Axiom-free; convert to field-size
+units via `points_card_le_two_q`. -/
 
 theorem ma_completeness_clean_via_isHonestForLength4Simple
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
     (h_honest : MAProverMsg.IsHonestForLength4Simple E msg stmt)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hQ : 5 ≤ E.q) :
+    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
-      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
+      ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have hMA := ma_completeness_via_isHonestForLength4Simple E stmt msg hkm
     h_honest hDegK hAdm
   -- D is nonzero by length-4 construction.
   have hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) := by
     rw [h_honest.h_toD_eq]
-    exact eagenBuild_length4_explicit_ne_zero E
+    exact lineBuild_length4_explicit_ne_zero E
       h_honest.P₀ h_honest.P₁ h_honest.P₂ h_honest.P₃
       h_honest.hP₀ h_honest.hP₁ h_honest.hP₂ h_honest.hP₃
       h_honest.h_xx_01 h_honest.h_xx_23
@@ -1289,10 +1288,9 @@ theorem ma_completeness_clean_via_isHonestForLength4Simple
   have hNZ : numZeros E msg.toD ≤ stmt.degBound := by
     have h1 := numZeros_le_degE E msg.toD hD
     omega
-  have hHasse : E.numAffine ≤ 2 * E.q := points_card_le_two_q E hQ
   calc _ ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := hMA
-    _ ≤ (3 * stmt.degBound + 4) * (2 * E.q) := by
-        apply Nat.mul_le_mul (by omega) hHasse
-    _ ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by ring_nf; omega
+    _ ≤ (3 * stmt.degBound + 4) * E.points.card := by
+        unfold ECSetup.numAffine
+        exact Nat.mul_le_mul_right _ (by omega)
 
 end Divisor

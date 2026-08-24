@@ -40,10 +40,7 @@
 
   No new axioms, no `sorry` / `admit`.
 -/
-import Divisor.LogDeriv
 import Divisor.NormLogDeriv
-import Divisor.BetaConstructive
-import Divisor.CubicIntersection
 import Mathlib.Algebra.Polynomial.Derivative
 
 open Polynomial Finset
@@ -347,24 +344,22 @@ theorem logDerivTermSum_denom_cleared_sumform
       show _ = _
       have := logDerivTerm_denom_cleared_pointwise E D
         (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) hA₀ hDA₀ hXDen₀
-      convert this using 0
+      exact this
   | ⟨1, _⟩ =>
       show _ = _
       have := logDerivTerm_denom_cleared_pointwise E D
         (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) hA₁ hDA₁ hXDen₁
-      convert this using 0
+      exact this
   | ⟨2, _⟩ =>
       show _ = _
       have := logDerivTerm_denom_cleared_pointwise E D
         (slopeOf A₀.1 A₀.2 A₁.1 A₁.2) hA₂ hDA₂ hXDen₂
       convert this using 0
 
-/-! ## Historical note on paper-faithful integrand
+/-! ## Paper-faithful integrand
 
-    `logDerivTerm` is now the paper-faithful form.
-    The previous `logDerivTermPaper` / `logDerivTermPaper_sub_logDerivTerm`
-    reference lemmas are obsolete and have been removed. The correction
-    term `−(a + b·y) · b · (3x² + A)` now appears directly in the
-    RHS of `logDerivTerm_denom_cleared_pointwise`. -/
+    `logDerivTerm` is the paper-faithful form: the correction term
+    `−(a + b·y) · b · (3x² + A)` appears directly in the RHS of
+    `logDerivTerm_denom_cleared_pointwise`. -/
 
 end Divisor

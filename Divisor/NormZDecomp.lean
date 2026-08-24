@@ -30,7 +30,6 @@
   No new axioms, no `sorry` / `admit`.
 -/
 import Divisor.FunctionFieldZ
-import Divisor.PartialFractionExpansion
 import Divisor.ResidueIdentity
 
 open Polynomial Finset
@@ -76,7 +75,7 @@ theorem normZ_derivative_eval
             ∏ Q' ∈ (zerosFinset E D).erase Q,
               (μ - zLambda E lam Q') ^ (β_fun Q')) := by
   classical
-  rw [normZ_derivative, eval_mul, eval_C, eval_finset_sum]
+  rw [normZ_derivative, eval_mul, eval_C, eval_finsetSum]
   congr 1
   apply Finset.sum_congr rfl
   intro Q _

@@ -14,7 +14,6 @@
     * Total bound `logDerivCheckFn_undefined_set_bound` (and tight
       version `logDerivCheckFn_undefined_set_bound_tight`).
 
-  Split from `ClearedPolyForm.lean` .
 -/
 import Divisor.ClearedPolyForm
 
@@ -182,7 +181,7 @@ theorem dxdzDenA₀Scaled_coeff_zero (A₀ : ZMod E.q × ZMod E.q) :
 theorem dxdzDenA₀Scaled_coeff_one (A₀ : ZMod E.q × ZMod E.q) :
     (dxdzDenA₀Scaled (E := E) A₀).coeff 1 = C (-(2 * A₀.2)) := by
   rw [dxdzDenA₀Scaled_eq, Polynomial.coeff_add,
-      Polynomial.coeff_C_ne_zero (by norm_num : (1 : ℕ) ≠ 0),
+      Polynomial.coeff_C_of_ne_zero (by norm_num : (1 : ℕ) ≠ 0),
       Polynomial.coeff_C_mul_X, if_pos rfl, zero_add]
 
 theorem dxdzDenA₀Scaled_xPart (A₀ : ZMod E.q × ZMod E.q) :
@@ -407,7 +406,7 @@ theorem dxdzDenA₁Reduced_coeff_one (A₀ : ZMod E.q × ZMod E.q) :
     (dxdzDenA₁Reduced (E := E) A₀).coeff 1 = C (2 * A₀.2) := by
   unfold dxdzDenA₁Reduced
   rw [Polynomial.coeff_add,
-      Polynomial.coeff_C_ne_zero (by norm_num : (1 : ℕ) ≠ 0),
+      Polynomial.coeff_C_of_ne_zero (by norm_num : (1 : ℕ) ≠ 0),
       Polynomial.coeff_C_mul_X, if_pos rfl, zero_add]
 
 theorem dxdzDenA₁Reduced_xPart (A₀ : ZMod E.q × ZMod E.q) :
@@ -528,7 +527,7 @@ theorem dxdzDenA₁Reduced_ne_zero (A₀ : ZMod E.q × ZMod E.q) :
     rw [Polynomial.coeff_C_mul]
     simp [Polynomial.coeff_X]
   have e4 : (C (E.curveA * A₀.1 + 2 * E.curveB) : (ZMod E.q)[X]).coeff 3 = 0 :=
-    Polynomial.coeff_C_ne_zero (by norm_num : (3 : ℕ) ≠ 0)
+    Polynomial.coeff_C_of_ne_zero (by norm_num : (3 : ℕ) ≠ 0)
   have hxp3 : (Polynomial.X ^ 3 - C (3 * A₀.1) * Polynomial.X ^ 2
                 - C E.curveA * Polynomial.X
                 - C (E.curveA * A₀.1 + 2 * E.curveB)).coeff 3 = 1 := by
@@ -674,7 +673,7 @@ theorem dxdzDenA₂Reduced_coeff_one (A₀ : ZMod E.q × ZMod E.q) :
     (dxdzDenA₂Reduced (E := E) A₀).coeff 1 = dxdzDenA₂yPart (E := E) A₀ := by
   unfold dxdzDenA₂Reduced
   rw [Polynomial.coeff_add,
-      Polynomial.coeff_C_ne_zero (by norm_num : (1 : ℕ) ≠ 0),
+      Polynomial.coeff_C_of_ne_zero (by norm_num : (1 : ℕ) ≠ 0),
       Polynomial.coeff_C_mul_X, if_pos rfl, zero_add]
 
 theorem dxdzDenA₂Reduced_xPart (A₀ : ZMod E.q × ZMod E.q) :
@@ -950,7 +949,7 @@ theorem lineEvalNumAt_coeff_zero (A₀ pt : ZMod E.q × ZMod E.q) :
 theorem lineEvalNumAt_coeff_one (A₀ pt : ZMod E.q × ZMod E.q) :
     (lineEvalNumAt (E := E) A₀ pt).coeff 1 = C (-(pt.1 - A₀.1)) := by
   rw [lineEvalNumAt_eq, Polynomial.coeff_add,
-      Polynomial.coeff_C_ne_zero (by norm_num : (1 : ℕ) ≠ 0),
+      Polynomial.coeff_C_of_ne_zero (by norm_num : (1 : ℕ) ≠ 0),
       Polynomial.coeff_C_mul_X, if_pos rfl, zero_add]
 
 theorem lineEvalNumAt_xPart (A₀ pt : ZMod E.q × ZMod E.q) :
@@ -1892,7 +1891,7 @@ theorem pow {f : (ZMod E.q)[X][X]} {m : ℕ}
 theorem sum {α : Type*} (s : Finset α) (f : α → (ZMod E.q)[X][X]) (m : ℕ)
     (hf : ∀ a ∈ s, InnerDegLe (E := E) (f a) m) :
     InnerDegLe (E := E) (∑ a ∈ s, f a) m := fun i => by
-  rw [Polynomial.finset_sum_coeff]
+  rw [Polynomial.finsetSum_coeff]
   refine Polynomial.natDegree_sum_le_of_forall_le _ _ ?_
   intro a ha
   exact hf a ha i
@@ -2423,7 +2422,7 @@ private lemma add_mul_monic_modByMonic_aux {R : Type*} [CommRing R] [Nontrivial 
     (p + q * m) %ₘ m = p %ₘ m := by
   apply (Polynomial.div_modByMonic_unique (q + p /ₘ m) (p %ₘ m) hm ?_).2
   refine ⟨?_, Polynomial.degree_modByMonic_lt p hm⟩
-  have h1 := Polynomial.modByMonic_add_div p hm
+  have h1 := Polynomial.modByMonic_add_div p m
   calc (p %ₘ m) + m * (q + p /ₘ m)
       = m * q + ((p %ₘ m) + m * (p /ₘ m)) := by ring
     _ = m * q + p := by rw [h1]
@@ -2505,17 +2504,15 @@ theorem InnerDegLe_modByMonic_curveEqPoly (f : (ZMod E.q)[X][X]) (M k : ℕ)
     -- (2) g.natDegree ≤ 2k+1 = N-2.
     -- Compute A and B's coefficients explicitly.
     have hA_eq : A = C cN * X ^ N - C (cN * curveX E) * X ^ (N - 2) := by
-      simp only [hAdef, curveEqPoly, mul_sub]
-      congr 1
-      · rw [mul_assoc, ← pow_add, hN2_sub]
-      · rw [show C cN * X ^ (N - 2) * C (curveX E) = C (cN * curveX E) * X ^ (N - 2) by
-              rw [C_mul]; ring]
+      rw [hAdef]
+      simp only [curveEqPoly]
+      rw [C_mul, mul_sub, mul_assoc, ← pow_add, hN2_sub]
+      ring
     have hB_eq : B = C cNm1 * X ^ (N - 1) - C (cNm1 * curveX E) * X ^ (N - 3) := by
-      simp only [hBdef, curveEqPoly, mul_sub]
-      congr 1
-      · rw [mul_assoc, ← pow_add, hN3_sub]
-      · rw [show C cNm1 * X ^ (N - 3) * C (curveX E) = C (cNm1 * curveX E) * X ^ (N - 3) by
-              rw [C_mul]; ring]
+      rw [hBdef]
+      simp only [curveEqPoly]
+      rw [C_mul, mul_sub, mul_assoc, ← pow_add, hN3_sub]
+      ring
     -- Coefficient of g at indices ≥ N-1 are zero; g.natDegree ≤ N - 2.
     have hg_nd : g.natDegree ≤ 2 * k + 1 := by
       have hNrel : 2 * k + 1 = N - 2 := by omega
@@ -2830,7 +2827,7 @@ theorem logDerivCheckFn_fiber_count_bound
       _ ≤ 18 * (D.degE + k + 6) + 2 := by omega
   · -- No non-vertical witness: Or.inr.
     right
-    push_neg at hNVWitness
+    push Not at hNVWitness
     exact hNVWitness
 
 /-- Bad-A₀ count on the defined subset: when the check is globally
@@ -2933,7 +2930,7 @@ theorem logDerivCheckFn_badA₀_bound
         rw [bivEval_denomScaledPoly_eq E D P k B A₁s A₀ hVne]
         have hDenomZero : logDerivCheckFnDenom E D P B A₁s A₀ = 0 := by
           unfold logDerivCheckFnDefined at hDef
-          push_neg at hDef
+          push Not at hDef
           rw [logDerivCheckFnDenom_symm E D P B A₁s A₀ hVne]
           exact hDef
         rw [hDenomZero]; ring

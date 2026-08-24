@@ -10,7 +10,6 @@
   `GeometricDivisorData` is routine and proved below.
 -/
 import Divisor.GeomBase
-import Divisor.BetaConstructive
 import Mathlib.Algebra.CharP.Lemmas
 import Mathlib.FieldTheory.Perfect
 import Mathlib.RingTheory.Polynomial.Basic
@@ -289,6 +288,7 @@ theorem normPolyBar_dvd_pow_twice_commonRootMultiplicity
   unfold curveX
   norm_num [geomAPoly, geomBPoly]
   ring_nf
+  exact Or.inl trivial
 
 /-- The norm root multiplicity is at least twice the common coefficient order. -/
 theorem rootMultiplicity_normPolyBar_ge_twice_common
@@ -314,7 +314,7 @@ theorem normPolyBar_eval_eq_zero_iff_geomEval_zero_of_y_eq_zero
           D.a^2 - D.b^2 *
             (Polynomial.X^3 + Polynomial.C E.curveA * Polynomial.X +
               Polynomial.C E.curveB) := by
-      convert normPoly_eq E D
+      rw [normPoly_eq, show curveX E = Polynomial.X^3 + Polynomial.C E.curveA * Polynomial.X + Polynomial.C E.curveB from rfl]
     unfold normPolyBar geomAPoly geomBPoly
     simp +decide [h_normPoly_def]
     exact Or.inl rfl
@@ -346,7 +346,7 @@ theorem geomLocalOrder_pos_of_geomEval_zero
     rootMultiplicity_normPolyBar_pos_of_geomEval_zero E D hDnz Q hQ
   by_cases hy : Q.y = 0 <;> simp_all +decide
   split_ifs
-  · refine' Nat.sub_pos_of_lt _
+  · refine Nat.sub_pos_of_lt ?_
     have h_common :
         2 * commonRootMultiplicity E (geomAPoly E D) (geomBPoly E D) Q.x
           ≤ rootMultiplicity Q.x (normPolyBar E D) := by
@@ -394,7 +394,7 @@ theorem geomLocalOrder_multiplicity_spec
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
     (Q : GeomPoint E) (hQ : D.geomEval E Q = 0) :
     IsGeometricZeroMultiplicity E D Q (geomLocalOrder E D Q) := by
-  refine' ⟨hQ, geomLocalOrder_pos_of_geomEval_zero E D hDnz Q hQ, _⟩
+  refine ⟨hQ, geomLocalOrder_pos_of_geomEval_zero E D hDnz Q hQ, ?_⟩
   unfold geomLocalOrder
   by_cases hy : Q.y = 0 <;> simp +decide [hy]
   split_ifs
@@ -415,7 +415,7 @@ private theorem normPolyBar_decomp (D : CoordRingElt E.q) :
         D.a^2 - D.b^2 *
           (Polynomial.X^3 + Polynomial.C E.curveA * Polynomial.X +
             Polynomial.C E.curveB) := by
-    convert normPoly_eq E D
+    rw [normPoly_eq, show curveX E = Polynomial.X^3 + Polynomial.C E.curveA * Polynomial.X + Polynomial.C E.curveB from rfl]
   unfold normPolyBar geomAPoly geomBPoly
   simp +decide [h_normPoly_def]
   exact Or.inl rfl
@@ -439,7 +439,7 @@ private theorem geomAPoly_factored (D : CoordRingElt E.q) (α : Fqbar E) :
     commonRootFactor_dvd_left E (geomAPoly E D) (geomBPoly E D) α
   have hmod : geomAPoly E D %ₘ ((X - C α)^k) = 0 :=
     (Polynomial.modByMonic_eq_zero_iff_dvd hm).mpr hdvd
-  have h := Polynomial.modByMonic_add_div (geomAPoly E D) hm
+  have h := Polynomial.modByMonic_add_div (geomAPoly E D) ((X - C α) ^ k)
   rw [hmod, zero_add] at h
   show geomAPoly E D = _ * (geomAPoly E D /ₘ ((X - C α)^k))
   exact h.symm
@@ -455,7 +455,7 @@ private theorem geomBPoly_factored (D : CoordRingElt E.q) (α : Fqbar E) :
     commonRootFactor_dvd_right E (geomAPoly E D) (geomBPoly E D) α
   have hmod : geomBPoly E D %ₘ ((X - C α)^k) = 0 :=
     (Polynomial.modByMonic_eq_zero_iff_dvd hm).mpr hdvd
-  have h := Polynomial.modByMonic_add_div (geomBPoly E D) hm
+  have h := Polynomial.modByMonic_add_div (geomBPoly E D) ((X - C α) ^ k)
   rw [hmod, zero_add] at h
   show geomBPoly E D = _ * (geomBPoly E D /ₘ ((X - C α)^k))
   exact h.symm
@@ -560,7 +560,7 @@ private theorem geomTilde_eval_not_both_zero (D : CoordRingElt E.q)
         rw [hk_eq']
         exact Polynomial.eval_divByMonic_pow_rootMultiplicity_ne_zero α ha
       · right
-        push_neg at h_le
+        push Not at h_le
         have hk_eq' : k = b.rootMultiplicity α := by rw [hk_eq, min_eq_right h_le.le]
         show (b /ₘ (X - C α)^k).eval α ≠ 0
         rw [hk_eq']
@@ -594,7 +594,6 @@ private theorem fiber_subset_pair (_D : CoordRingElt E.q) (α : Fqbar E)
     have hconj_y : (Q.conjugate E).y = -Q.y := by rw [GeomPoint.conjugate_y]
     exact geomPoint_eq_of_xy_eq E hQ''_x_eq_conj (hy_eq.trans hconj_y.symm)
 
-set_option maxHeartbeats 800000 in
 /--
 Fiber accounting for the explicit local-order candidate.
 
@@ -1235,9 +1234,13 @@ theorem geomLocalOrderCore_accounting_le_degE
   have hcard :
       (normPolyBar E D).roots.card ≤ (normPoly E D).natDegree := by
     exact le_trans (Polynomial.card_roots' _) (by erw [Polynomial.natDegree_map])
-  convert hcard.trans (normPoly_natDegree_le E D) using 1
-  rw [← Multiset.toFinset_sum_count_eq]
-  exact Finset.sum_congr rfl fun α _hα => by rw [Polynomial.count_roots]
+  calc (∑ α ∈ (normPolyBar E D).roots.toFinset,
+          rootMultiplicity α (normPolyBar E D))
+      = ∑ α ∈ (normPolyBar E D).roots.toFinset, (normPolyBar E D).roots.count α :=
+        Finset.sum_congr rfl fun α _hα => (Polynomial.count_roots _).symm
+    _ = Multiset.card (normPolyBar E D).roots := Multiset.toFinset_sum_count_eq _
+    _ ≤ (normPoly E D).natDegree := hcard
+    _ ≤ D.degE := normPoly_natDegree_le E D
 
 /--
 **Equality form of degree accounting**: the total geometric divisor

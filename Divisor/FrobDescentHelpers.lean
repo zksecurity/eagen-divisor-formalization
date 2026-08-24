@@ -46,7 +46,7 @@ theorem partial_fraction_coeff_zero
     · intro μ hμ
       have h_eval :
           N.eval μ = (∏ j, (μ - α j)) * (∑ i, c i * (μ - α i)⁻¹) := by
-        simp +decide [N, Polynomial.eval_finset_sum, Polynomial.eval_prod,
+        simp +decide [N, Polynomial.eval_finsetSum, Polynomial.eval_prod,
           Finset.mul_sum _ _ _]
         exact Finset.sum_congr rfl fun i hi => by
           rw [← Finset.prod_erase_mul _ _ hi, mul_left_comm, mul_assoc,
@@ -55,7 +55,7 @@ theorem partial_fraction_coeff_zero
   intro i
   have h_eval : N.eval (α i) =
       c i * ∏ j ∈ Finset.univ.erase i, (α i - α j) := by
-    rw [Polynomial.eval_finset_sum, Finset.sum_eq_single i] <;>
+    rw [Polynomial.eval_finsetSum, Finset.sum_eq_single i] <;>
       simp +contextual [Polynomial.eval_prod]
     exact fun j hj => Or.inr <|
       Finset.prod_eq_zero
@@ -71,13 +71,12 @@ theorem ZMod_exists_not_mem
     (S : Finset (ZMod p)) (h : S.card < Fintype.card (ZMod p)) :
     ∃ x : ZMod p, x ∉ S := by
   by_contra hall
-  push_neg at hall
+  push Not at hall
   have hle : Fintype.card (ZMod p) ≤ S.card := by
     rw [← Finset.card_univ]
     exact Finset.card_le_card (fun x _ => Finset.mem_coe.mp (hall x))
   omega
 
-set_option maxHeartbeats 800000 in
 /--
 Abstract slope-choice lemma. Given `n` points `(x_i, y_i)` in a field over
 `F_p`, a distinguished point that is not Frobenius-fixed, and `n < p`, choose
@@ -307,7 +306,6 @@ from rational protocol points.  The lemma below isolates the coefficient
 of a pole that appears in only the first family.
 -/
 
-set_option maxHeartbeats 800000 in
 /--
 If a two-part partial-fraction sum vanishes at enough evaluation points,
 and one pole `α i₀` is isolated from all other poles in both families,
@@ -345,7 +343,7 @@ theorem isolated_coeff_zero_of_pf_sum
           (∏ i, (μ - α i)) * (∏ j, (μ - β j)) *
             ((∑ i, c i * (μ - α i)⁻¹) +
               ∑ j, d j * (μ - β j)⁻¹) := by
-        simp +decide [N, Polynomial.eval_finset_sum, Polynomial.eval_prod,
+        simp +decide [N, Polynomial.eval_finsetSum, Polynomial.eval_prod,
           mul_add, mul_assoc, mul_comm, mul_left_comm, Finset.mul_sum _ _ _]
         simp +decide [Finset.mul_sum _ _ _, mul_assoc, mul_left_comm,
           Finset.sum_mul]
@@ -381,7 +379,7 @@ theorem isolated_coeff_zero_of_pf_sum
       c i₀ * (∏ j ∈ Finset.erase Finset.univ i₀, (α i₀ - α j)) *
         (∏ j, (α i₀ - β j)) := by
     simp +zetaDelta at *
-    rw [Polynomial.eval_finset_sum, Polynomial.eval_finset_sum]
+    rw [Polynomial.eval_finsetSum, Polynomial.eval_finsetSum]
     rw [Finset.sum_eq_single i₀, Finset.sum_eq_zero] <;>
       simp +contextual [Polynomial.eval_prod, Finset.prod_eq_zero_iff, sub_eq_zero, *]
     exact fun j hj => Or.inl <| Or.inr ⟨i₀, Ne.symm hj, rfl⟩

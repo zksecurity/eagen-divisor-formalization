@@ -1,25 +1,22 @@
 /-
-  Divisor/Axioms/AxiomResultantLogDerivAtSplit.lean
+  Divisor/Bridges/ResultantLogDerivAtSplit.lean
 
   Logarithmic derivative of a bivariate resultant at a split
-  specialization point.
-
-  This file contains the generic narrowing of the chord-fiber
+  specialization point — the generic core of the chord-fiber
   log-derivative identity. The chord-specific theorem
-  `chord_fiber_product_logDeriv_eq_logDerivTerm_trace`
-  in `Divisor/Axioms/AxiomChordSumEqChordFiberProductLogDeriv.lean` is
+  `chord_fiber_product_logDeriv_eq_logDerivTerm_trace` in
+  `Divisor/Bridges/ChordSumEqChordFiberProductLogDeriv.lean` is
   derived from the theorems here plus chord-cubic-specific algebra.
 
-  The generic resultant/specialisation bridge is theorem-backed below:
-  first prove the dual-number product formula for resultants at a split
-  specialization, then take the `ε` coefficient to obtain the derivative
-  product formula, and finally divide by the nonzero resultant value for
-  the logarithmic-derivative form.
+  Route: prove the dual-number product formula for resultants at a
+  split specialization, take the `ε` coefficient for the derivative
+  product formula, and divide by the nonzero resultant value for the
+  logarithmic-derivative form.
 -/
 import Mathlib.RingTheory.Polynomial.Resultant.Basic
 import Mathlib.Algebra.Polynomial.Derivative
 import Mathlib.Algebra.DualNumber
-import Divisor.Axioms.AxiomTraceLogDeriv
+import Divisor.Bridges.TraceLogDeriv
 import Divisor.PolynomialDifferential
 
 namespace Polynomial
@@ -553,7 +550,7 @@ private lemma roots_nodup_of_derivative_ne_zero
   · rw [Polynomial.count_roots]
     exact (rootMultiplicity_eq_one_of_mem_roots_of_derivative_ne_zero hx (hp' x hx)).le
   · rw [Multiset.count_eq_zero.mpr hx]
-    exact zero_le 1
+    exact Nat.zero_le 1
 
 /-- The implicit-function first-order lift of a simple root of
 `f(X,t₀)` is a root of `f(X,t₀ + ε)`. -/
@@ -576,7 +573,6 @@ private lemma lifted_root_isRoot_map_jet
     field_simp [hf_X]
     ring
 
-set_option maxHeartbeats 800000 in
 /-- First-order factorisation of `f` after applying the dual-number jet. -/
 theorem map_jet_eq_multiset_prod_lifted_roots
     {K : Type*} [Field K]

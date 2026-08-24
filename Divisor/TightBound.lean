@@ -1,7 +1,6 @@
 /-
   Divisor/TightBound.lean — Paper-tight bound via polyGFull
 -/
-import Divisor.ClearedFullPoly
 import Divisor.SigmaMatching
 import Divisor.TraceProof
 
@@ -32,7 +31,7 @@ theorem chord_avoids_D_zeros_of_denom_defined
       grind +extAll;
     · exact Or.inr ( sub_ne_zero_of_ne <| Ne.symm hNV );
   contrapose! h_card; simp_all +decide ;
-  refine' lt_of_lt_of_le _ ( Finset.card_mono <| show { A₀, A₁, ( slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1, slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * ( slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1 ) + ( A₀.2 - slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.1 ) ), Q } ⊆ Finset.filter ( fun p => ( lineThrough A₀.1 A₀.2 A₁.1 A₁.2 ).eval p.1 p.2 = 0 ) E.points from _ );
+  refine lt_of_lt_of_le ?_ ( Finset.card_mono <| show { A₀, A₁, ( slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1, slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * ( slopeOf A₀.1 A₀.2 A₁.1 A₁.2 ^ 2 - A₀.1 - A₁.1 ) + ( A₀.2 - slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * A₀.1 ) ), Q } ⊆ Finset.filter ( fun p => ( lineThrough A₀.1 A₀.2 A₁.1 A₁.2 ).eval p.1 p.2 = 0 ) E.points from ?_ );
   · rw [ Finset.card_insert_of_notMem, Finset.card_insert_of_notMem, Finset.card_insert_of_notMem ] <;> simp +decide [ * ];
     · intro h; simp_all +decide [ zerosFinset ] ;
       unfold zeros at hQ₁; aesop;
@@ -40,22 +39,20 @@ theorem chord_avoids_D_zeros_of_denom_defined
       · grind +suggestions;
       · rintro rfl; simp_all +decide [ zerosFinset ] ;
         unfold zeros at hQ₁; aesop;
-    · refine' ⟨ _, _, _ ⟩;
+    · refine ⟨ ?_, ?_, ?_ ⟩;
       · grind;
       · grind +suggestions;
       · rintro rfl; simp_all +decide [ zerosFinset ] ;
         unfold zeros at hQ₁; simp_all +decide [ Finset.mem_filter ] ;
   · simp_all +decide [ Finset.subset_iff ];
-    refine' ⟨ _, _, _, _ ⟩;
+    refine ⟨ ?_, ?_, ?_, ?_ ⟩;
     · unfold lineThrough; simp +decide ;
       unfold Line.eval; simp +decide ;
     · unfold lineThrough; simp +decide ;
       unfold Line.eval slopeOf; simp +decide [ sub_eq_iff_eq_add ] ;
       field_simp;
-      rw [ sub_div', ← add_div, eq_div_iff ] <;> ring ; simp +decide [ sub_eq_iff_eq_add ];
-      · exact Ne.symm hNV;
-      · exact sub_ne_zero_of_ne <| Ne.symm hNV;
-    · refine' ⟨ _, _ ⟩;
+      ring;
+    · refine ⟨ ?_, ?_ ⟩;
       · exact E.hComplete _ _ ( chord_third_point_on_E E A₀ A₁ hA₀ hA₁ hNV );
       · unfold lineThrough; simp +decide [ slopeOf ] ; ring;
         unfold Line.eval; ring;
@@ -132,6 +129,9 @@ theorem logDerivCheckFn_zero_of_polyG_zero
             ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
               (zerosAt E D k').1 (zerosAt E D k').2)⁻¹ := by
     convert hLemma6 using 2
+    exact Finset.sum_congr rfl fun k' _ => by
+      rw [show multAt E (betaTrue E D hDnz) D k'
+            = betaTrue E D hDnz (zerosAt E D k') from rfl]
   -- Bridge polyG = 0 → paperResidueDivided = 0.
   have hQlineFin : ∀ k' : Fin (zerosCard E D),
       (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
@@ -253,7 +253,7 @@ theorem log_deriv_sz_paper_core_tight
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           A₀ne_A₁x_cleared_pair E D P B m p)).card
-      ≤ 18 * (D.degE + k) * E.q := by
+      ≤ 12 * (D.degE + k) * E.points.card := by
   classical
   have hDnz := hDnz_from_hNV D P B m hNV
   set polyGF := polyGFull E (zerosAt E D)
@@ -294,9 +294,9 @@ theorem log_deriv_sz_paper_core_tight
       ≤ ((E.points ×ˢ E.points).filter
           (fun p => bivEval₂ polyGF p.1 p.2 = 0)).card :=
         Finset.card_le_card hBadSub
-    _ ≤ 9 * (2 * (d + k)) * E.q := hDKL
-    _ = 18 * (d + k) * E.q := by ring
-    _ ≤ 18 * (D.degE + k) * E.q := by
+    _ ≤ 6 * (2 * (d + k)) * E.points.card := hDKL
+    _ = 12 * (d + k) * E.points.card := by ring
+    _ ≤ 12 * (D.degE + k) * E.points.card := by
         apply Nat.mul_le_mul_right; apply Nat.mul_le_mul_left; omega
 
 /-! ### Paper-tight outer bound -/
@@ -306,10 +306,11 @@ theorem log_deriv_sz_paper_core_tight
     and nonzero (i.e. `f ≢ 0` in the paper's notation), bound the
     cardinality of the accepting challenge set by
 
-      `18·(d + k)·|F_q| + (3·d + 9·k + 71)·|E.points|`.
+      `12·(d + k)·|E.points| + (3·d + 9·k + 71)·|E.points|`.
 
     Realised via `lem:log-derivative` (SZ-on-(E×E) applied to the
-    cleared log-deriv polynomial) plus the Hasse bound. -/
+    cleared log-deriv polynomial) in point-count currency — no Hasse
+    content. -/
 theorem log_deriv_sz_paper_tight
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
@@ -319,7 +320,7 @@ theorem log_deriv_sz_paper_tight
         logDerivCheckFnDefined E D P B A₀ A₁ ∧
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     (eventNotEq E D P B (fun i => m i)).card
-      ≤ 18 * (D.degE + k) * E.q +
+      ≤ 12 * (D.degE + k) * E.points.card +
         (3 * D.degE + 9 * k + 71) * E.points.card := by
   classical
   have hDnz := hDnz_from_hNV D P B m hNV
@@ -349,7 +350,7 @@ theorem log_deriv_sz_paper_tight
         ((E.points ×ˢ E.points).filter
           (fun p => ¬ logDerivCheckFnDefined E D P B p.1 p.2)).card :=
         le_trans (Finset.card_le_card hSub) (Finset.card_union_le _ _)
-    _ ≤ 18 * (D.degE + k) * E.q +
+    _ ≤ 12 * (D.degE + k) * E.points.card +
           (3 * D.degE + 9 * k + 71) * E.points.card :=
         Nat.add_le_add hCoreBound hUndefBound
 

@@ -1,5 +1,5 @@
 /-
-  Divisor/Axioms/AxiomTraceLogDeriv.lean
+  Divisor/Bridges/TraceLogDeriv.lean
 
   Trace-of-logarithmic-derivative formula for finite Galois
   differential field extensions:

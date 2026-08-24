@@ -15,14 +15,13 @@
     `ordAt_nonTwoTorsion` (recursive lone/twin trichotomy) elsewhere.
   * Proves all support / coverage / sum bounds and the splitting-time
     `Σ ordAt = natDeg(normPoly)` identity from primitives.
-  * Reduces the function-field / regular-function content to a
-    single explicit principal fractional-ideal axiom
-    `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit`
-    (Section 7), from which the former zero-class bridge
-    `ordAt_divisorClass_zero` is derived. The unrestricted form
-    `CoordRingElt.divisorClass_isPrincipal` is a re-exported theorem,
-    case-split between the trivial constant-unit case and the
-    narrowed axiom.
+  * Proves the function-field / regular-function content
+    (`CoordRingElt.divisorClass_eq_zero_of_splitsOnE`) via the
+    Dedekind-domain structure of the coordinate ring
+    (`Divisor.OrdP.DedekindSetup`, vendored Tau Ceti), the valuation
+    bridge `ordAt = v_P` (`Divisor.OrdP.ValuationBridge*`), and the
+    support classification / span factorization
+    (`Divisor.OrdP.SupportClassification`).
 
   Layout:
 
@@ -38,25 +37,28 @@
                  induction on the recursive helper.
     Section 5:   `sum_ordAt_le_degE` (unconditional).
     Section 6:   `sum_ordAt_eq_natDegree_under_split` (proved).
-    Section 7:   `divisorOfD` definition + the class-group bridge
-                 axiom + `ordAt_group_sum_zero_under_split`.
-    Section 8:   `exists_divisor_multiplicity_proved` — discharges
-                 the existential axiom with witness `ordAt E D`.
+    Section 7:   `divisorOfD` definition + the class-group bridge +
+                 `ordAt_group_sum_zero_under_split`.
+    Section 8:   `exists_divisor_multiplicity_proved` — the
+                 divisor-multiplicity existence statement, with
+                 witness `ordAt E D`.
 
-  Axiomatic surface introduced by this file: exactly one axiom,
-  `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit` (the
-  concrete principal fractional-ideal bridge for the specific divisor
-  `divisorOfD E D`, narrowed to non-constant-unit `D`). The old
-  `ordAt_divisorClass_zero` statement is now a theorem derived from
-  the unrestricted re-export `CoordRingElt.divisorClass_isPrincipal`
-  (case-split between the trivial constant-unit case and the
-  narrowed axiom) and mathlib's `ClassGroup.mk_eq_one_iff`.
+  Axiomatic surface introduced by this file: NONE.
+  `CoordRingElt.divisorClass_eq_zero_of_splitsOnE` — the
+  divisor-class triviality of `divisorOfD E D` in mathlib's class
+  group of the affine coordinate ring — holds because the class of
+  `divisorOfD` is the class of `∏_P XYIdeal'(P)^(ordAt P)`, which is
+  the principal class of `D` by the factorization
+  `span {D} = ∏_P XYIdeal(P)^(ordAt P)`
+  (`Divisor.OrdP.SupportClassification`). The shapes
+  `CoordRingElt.divisorClass_eq_zero_of_not_const_unit` and
+  `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit` are
+  theorems derived from it by case-split on `D.b` (plus mathlib's
+  `ClassGroup.mk_eq_one_iff` for the principal-ideal re-export).
 -/
-import Divisor.OrdP.Uniformizer
 import Divisor.OrdP.PrincipalClass
-import Divisor.SplitsOnE
-import Divisor.CoordinateRingBridge
-import Mathlib.RingTheory.ClassGroup
+import Divisor.OrdP.SupportClassification
+import Mathlib.RingTheory.ClassGroup.Basic
 
 open Polynomial Finset
 
@@ -100,7 +102,7 @@ theorem ordAt_nonTwoTorsion_aux_pos_iff
   by_cases h2 : D.eval P.1 P.2 ≠ 0
   · rw [if_pos h2]
     refine ⟨fun hp => absurd hp (lt_irrefl 0), fun he => absurd he h2⟩
-  · push_neg at h2
+  · push Not at h2
     rw [if_neg (not_not.mpr h2)]
     by_cases h3 : D.eval P.1 (-P.2) ≠ 0
     · rw [if_pos h3]
@@ -252,7 +254,7 @@ theorem rootMultiplicity_sub_of_lt
   -- ≤ direction: if rootMultiplicity x₀ (p - q) > j, contradiction.
   have hUB : rootMultiplicity x₀ (p - q) ≤ j := by
     by_contra hContra
-    push_neg at hContra
+    push Not at hContra
     have : (Polynomial.X - Polynomial.C x₀) ^ (j + 1) ∣ (p - q) :=
       (Polynomial.le_rootMultiplicity_iff hpqNZ).mp hContra
     have hpDiv : (Polynomial.X - Polynomial.C x₀) ^ (j + 1) ∣ p := by
@@ -605,7 +607,7 @@ theorem ordAt_nonTwoTorsion_aux_pair_eq_rootMult
         rw [if_neg (not_not.mpr h2), if_pos h1]
         ring
       · -- Neither vanishes.
-        push_neg at h2
+        push Not at h2
         rw [if_pos h2]
         symm
         apply rootMultiplicity_eq_zero
@@ -739,7 +741,7 @@ theorem sum_ordAt_le_degE
       _ ≤ (normPoly E D).natDegree :=
           sum_rootMultiplicity_le_natDegree E (normPoly E D)
       _ ≤ D.degE := normPoly_natDegree_le E D
-  · push_neg at hD
+  · push Not at hD
     have hAllZero : ∀ P ∈ E.points, ordAt E D P = 0 := by
       intro P _; exact ordAt_eq_zero_of_zero E hD P
     calc (∑ P ∈ E.points, ordAt E D P)
@@ -802,7 +804,7 @@ noncomputable def ordAtPoint (D : CoordRingElt E.q) : ECPoint E → ℕ
 
 @[simp] theorem ordAtPoint_some (D : CoordRingElt E.q)
     {x y : ZMod E.q} (h : E.toW.toAffine.Nonsingular x y) :
-    ordAtPoint E D (.some h) = ordAt E D (x, y) := rfl
+    ordAtPoint E D (.some _ _ h) = ordAt E D (x, y) := rfl
 
 /-- Pair-based local order and `ECPoint` local order agree on `E.points`. -/
 theorem ordAtPoint_affine (D : CoordRingElt E.q)
@@ -857,7 +859,7 @@ theorem divisorOfD_finiteSupport
         (E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hns)
       have hMem : (x, y) ∈ E.points := E.hComplete x y hOC
       refine ⟨(x, y), hMem, ?_⟩
-      -- Need ECPoint.affine E x y = ECPoint.some hns.
+      -- Need ECPoint.affine E x y = ECPoint.some _ _ hns.
       exact ECPoint.affine_of_nonsingular E hns
 
 /-- `divisorClass` is independent of the finite-support witness for a fixed
@@ -1008,7 +1010,7 @@ theorem divisorClass_eq_zero_of_ordAt_all_zero
         (E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hns)
       have hMem : (x, y) ∈ E.points := E.hComplete x y hOC
       have hOrd : ordAt E D (x, y) = 0 := h_all_zero (x, y) hMem
-      show divisorOfD E D (.some hns) = 0
+      show divisorOfD E D (.some _ _ hns) = 0
       unfold divisorOfD
       simp [hOrd]
 
@@ -1270,7 +1272,7 @@ theorem CoordRingElt.divisorClass_isPrincipal_const_unit
         (divisorClass E
           (divisorOfD E ({ a := Polynomial.C c, b := 0 } : CoordRingElt E.q))
           (divisorOfD_finiteSupport E _)) =
-      ClassGroup.mk I := by
+      ClassGroup.mk (FractionRing E.toW.toAffine.CoordinateRing) I := by
   classical
   refine ⟨1, ?_, ?_⟩
   · -- (1 : (FractionalIdeal ..)ˣ).val.IsPrincipal — the unit submodule
@@ -1282,43 +1284,145 @@ theorem CoordRingElt.divisorClass_isPrincipal_const_unit
           (divisorOfD_const_unit_eq_zero E hc) _]
     -- Goal: Additive.toMul (0 : Additive (ClassGroup _)) = ClassGroup.mk 1.
     -- LHS = 1; RHS = ClassGroup.mk 1 = 1 by `map_one`.
-    exact (map_one ClassGroup.mk).symm
+    exact (map_one (ClassGroup.mk (FractionRing E.toW.toAffine.CoordinateRing))).symm
 
-/-- **Citable boundary axiom — narrowed to `D.b ≠ 0`.**
+/-! ## The divisor-class collapse
 
-    The divisor class of the concrete rational function
-    `D = a - b·y ∈ F_q[E]^×` is *zero* in mathlib's class group of the
-    affine coordinate ring, provided all geometric divisor mass is
-    visible over `F_q` AND `D` actually has a `Y`-component (`D.b ≠ 0`).
+`divisorClass (divisorOfD D)` is rewritten as the class of the
+fractional-ideal product `∏_P XYIdeal'(P)^(ordAt P)`, whose underlying
+ideal is `span {D}` by the factorization
+(`span_toCoordinateRing_eq_prod`), so the class is that of the
+principal ideal generated by `D`, which is trivial. -/
 
-    The `D.b = 0` case (polynomial-in-X) is now a theorem
-    (`divisorClass_eq_zero_of_b_zero` above) — proven via the
-    y-flip involution `σ(x, y) = (x, -y)` and the fiber-cancellation
-    primitives in `Divisor/Defs.lean`. The constant-unit case
-    `D = (C c, 0)` with `c ≠ 0` is also a theorem
-    (`divisorClass_isPrincipal_const_unit` above; sub-case of `D.b = 0`).
+/-- The divisor class of `divisorOfD` as a sum over the rational
+points; the infinity term dies through `toClass 0 = 0`. -/
+private theorem divisorClass_divisorOfD_eq_sum (D : CoordRingElt E.q) :
+    divisorClass E (divisorOfD E D) (divisorOfD_finiteSupport E D) =
+      ∑ P ∈ E.points, (ordAt E D P : ℤ) •
+        WeierstrassCurve.Affine.Point.toClass (ECPoint.affine E P.1 P.2) := by
+  classical
+  unfold divisorClass
+  have hsub : (divisorOfD_finiteSupport E D).toFinset ⊆ divisorOfD_cover E := by
+    intro P hP
+    rw [Set.Finite.mem_toFinset] at hP
+    exact divisorOfD_support_subset_cover E D hP
+  rw [Finset.sum_subset hsub (fun P _ hPnot => by
+    rw [Set.Finite.mem_toFinset, Function.mem_support, not_not] at hPnot
+    rw [hPnot, zero_smul])]
+  unfold divisorOfD_cover
+  rw [Finset.sum_insert (infinity_notin_affinePoints E)]
+  have hInf : divisorOfD E D (ECPoint.infinity : ECPoint E) •
+      WeierstrassCurve.Affine.Point.toClass (ECPoint.infinity : ECPoint E)
+        = 0 := by
+    rw [show WeierstrassCurve.Affine.Point.toClass
+        (ECPoint.infinity : ECPoint E) = 0 from
+      WeierstrassCurve.Affine.Point.toClass_zero, smul_zero]
+  rw [hInf, zero_add]
+  unfold ECPoint.affinePoints
+  rw [Finset.sum_image
+    (fun P₁ hP₁ P₂ hP₂ heq => affine_inj_on_points E hP₁ hP₂ heq)]
+  apply Finset.sum_congr rfl
+  intro P hP
+  rw [divisorOfD_affine E D hP]
 
-    The unrestricted re-export `_eq_zero_of_not_const_unit` is also a
-    theorem (case-splits on `D.b`); see below.
+/-- The units-of-fractional-ideals identity behind the class collapse:
+the product of the point ideals with exponents `ordAt` **is** the
+principal fractional ideal generated by `D`. -/
+private theorem prod_xyIdealOfPoint_pow_eq_principalFracIdeal
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hSplit : splitsOnE E D) :
+    (∏ P ∈ E.points.attach, xyIdealOfPoint E P.2 ^ ordAt E D P.1) =
+      D.principalFracIdeal E hD := by
+  classical
+  apply Units.ext
+  -- Underlying fractional ideals.
+  have hcoe : ((∏ P ∈ E.points.attach,
+      xyIdealOfPoint E P.2 ^ ordAt E D P.1 :
+        (FractionalIdeal (nonZeroDivisors E.toW.toAffine.CoordinateRing)
+          E.toW.toAffine.FunctionField)ˣ) :
+        FractionalIdeal (nonZeroDivisors E.toW.toAffine.CoordinateRing)
+          E.toW.toAffine.FunctionField) =
+      ∏ P ∈ E.points.attach,
+        ((WeierstrassCurve.Affine.CoordinateRing.XYIdeal E.toW.toAffine P.1.1
+            (Polynomial.C P.1.2) : Ideal E.toW.toAffine.CoordinateRing) :
+          FractionalIdeal (nonZeroDivisors E.toW.toAffine.CoordinateRing)
+            E.toW.toAffine.FunctionField) ^ ordAt E D P.1 := by
+    refine (map_prod (Units.coeHom
+      (FractionalIdeal (nonZeroDivisors E.toW.toAffine.CoordinateRing)
+        E.toW.toAffine.FunctionField)) _ E.points.attach).trans ?_
+    apply Finset.prod_congr rfl
+    intro P _
+    rw [Units.coeHom_apply, Units.val_pow_eq_pow_val]
+    rfl
+  rw [hcoe]
+  -- Collapse the product of coerced ideals through 2b.
+  have hprod : (∏ P ∈ E.points.attach,
+      ((WeierstrassCurve.Affine.CoordinateRing.XYIdeal E.toW.toAffine P.1.1
+          (Polynomial.C P.1.2) : Ideal E.toW.toAffine.CoordinateRing) :
+        FractionalIdeal (nonZeroDivisors E.toW.toAffine.CoordinateRing)
+          E.toW.toAffine.FunctionField) ^ ordAt E D P.1) =
+      ((Ideal.span {D.toCoordinateRing E} :
+          Ideal E.toW.toAffine.CoordinateRing) :
+        FractionalIdeal (nonZeroDivisors E.toW.toAffine.CoordinateRing)
+          E.toW.toAffine.FunctionField) := by
+    rw [span_toCoordinateRing_eq_prod E D hD hSplit]
+    refine Eq.trans ?_
+      (map_prod (FractionalIdeal.coeIdealHom _ _) _ E.points.attach).symm
+    apply Finset.prod_congr rfl
+    intro P _
+    exact (map_pow (FractionalIdeal.coeIdealHom _ _) _ _).symm
+  rw [hprod, FractionalIdeal.coeIdeal_span_singleton]
+  -- The right-hand side is the principal span-singleton by definition.
+  unfold CoordRingElt.principalFracIdeal
+  rw [coe_toPrincipalIdeal]
+  rfl
 
-    The remaining content is the non-trivial case where `D` has both
-    `X` and `Y` components: the local-order compatibility between
-    `ordAt` and the affine prime ideals of
-    `E.toW.toAffine.CoordinateRing`.
+/-- **Divisor-class triviality.** The divisor class of the concrete
+    rational function `D = a - b·y ∈ F_q[E]^×` is *zero* in mathlib's
+    class group of the affine coordinate ring, provided all geometric
+    divisor mass is visible over `F_q` (`splitsOnE`).
 
-    Human-readable version: for a nonzero function
-    `D = a(x) - b(x)y` with `b` nonzero and with its affine divisor
-    visible over `F_q`, the divisor cut out by `D` is principal, so its
-    class in the affine coordinate-ring class group is zero. -/
-axiom CoordRingElt.divisorClass_eq_zero_of_b_ne_zero
-    (D : CoordRingElt E.q) (_hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (_hSplit : splitsOnE E D)
-    (_hbNZ : D.b ≠ 0) :
-    divisorClass E (divisorOfD E D) (divisorOfD_finiteSupport E D) = 0
+    Proof: `divisorClass (divisorOfD D)` is the class of
+    `∏_P XYIdeal'(P)^(ordAt P)` by `toClass_affine_eq_mk_xyIdealOfPoint`;
+    that unit equals `D.principalFracIdeal` because the underlying
+    ideals agree — the factorization
+    `span {D} = ∏_P XYIdeal(P)^(ordAt P)`, resting on the support
+    classification and the valuation bridge `count = ordAt` — and
+    principal classes are trivial. -/
+theorem CoordRingElt.divisorClass_eq_zero_of_splitsOnE
+    (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hSplit : splitsOnE E D) :
+    divisorClass E (divisorOfD E D) (divisorOfD_finiteSupport E D) = 0 := by
+  classical
+  have h1 := CoordRingElt.classGroup_mk_principalFracIdeal_eq_one E D hD
+  have hEq : Additive.toMul
+      (divisorClass E (divisorOfD E D) (divisorOfD_finiteSupport E D)) =
+      ClassGroup.mk (FractionRing E.toW.toAffine.CoordinateRing)
+        (D.principalFracIdeal E hD) := by
+    rw [divisorClass_divisorOfD_eq_sum E D,
+      ← Finset.sum_attach E.points (fun P => (ordAt E D P : ℤ) •
+        WeierstrassCurve.Affine.Point.toClass (ECPoint.affine E P.1 P.2)),
+      toMul_sum]
+    have hterm : ∀ P : {x // x ∈ E.points},
+        ((ordAt E D P.1 : ℤ) •
+          WeierstrassCurve.Affine.Point.toClass
+            (ECPoint.affine E P.1.1 P.1.2)).toMul =
+        ClassGroup.mk E.toW.toAffine.FunctionField (xyIdealOfPoint E P.2) ^
+          ordAt E D P.1 := by
+      intro P
+      rw [toMul_zsmul, toClass_affine_eq_mk_xyIdealOfPoint E P.2,
+        toMul_ofMul, zpow_natCast]
+    rw [Finset.prod_congr rfl (fun P _ => hterm P),
+      Finset.prod_congr rfl (fun P _ =>
+        (map_pow (ClassGroup.mk E.toW.toAffine.FunctionField)
+          (xyIdealOfPoint E P.2) (ordAt E D P.1)).symm),
+      ← map_prod (ClassGroup.mk E.toW.toAffine.FunctionField) _
+        E.points.attach,
+      prod_xyIdealOfPoint_pow_eq_principalFracIdeal E D hD hSplit]
+  exact hEq.trans h1
 
-/-- **Re-export of the older `_eq_zero_of_not_const_unit` shape**, now
-a theorem derived from `divisorClass_eq_zero_of_b_zero` (D.b = 0 case)
-plus the narrower `_eq_zero_of_b_ne_zero` axiom (D.b ≠ 0 case). -/
+/-- Constant-unit-excluding shape of the divisor-class triviality;
+the exclusion hypothesis is not needed by the proof. -/
 theorem CoordRingElt.divisorClass_eq_zero_of_not_const_unit
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (hSplit : splitsOnE E D)
@@ -1326,9 +1430,7 @@ theorem CoordRingElt.divisorClass_eq_zero_of_not_const_unit
       ¬ ∃ c : ZMod E.q, c ≠ 0 ∧ D.a = Polynomial.C c ∧ D.b = 0) :
     divisorClass E (divisorOfD E D) (divisorOfD_finiteSupport E D) = 0 := by
   classical
-  by_cases hb : D.b = 0
-  · exact divisorClass_eq_zero_of_b_zero E D hD hb
-  · exact CoordRingElt.divisorClass_eq_zero_of_b_ne_zero E D hD hSplit hb
+  exact CoordRingElt.divisorClass_eq_zero_of_splitsOnE E D hD hSplit
 
 /-- **Reduction lemma for the discharge plan**: if the project's
 `divisorClass` matches the principal-class image of `D` via
@@ -1346,14 +1448,14 @@ theorem CoordRingElt.divisorClass_eq_zero_of_eq_principalFracIdeal_class
     (hEq : Additive.toMul
         (divisorClass E (divisorOfD E D)
           (divisorOfD_finiteSupport E D))
-      = ClassGroup.mk (D.principalFracIdeal E hD)) :
+      = ClassGroup.mk (FractionRing E.toW.toAffine.CoordinateRing) (D.principalFracIdeal E hD)) :
     divisorClass E (divisorOfD E D) (divisorOfD_finiteSupport E D) = 0 := by
   have h1 := CoordRingElt.classGroup_mk_principalFracIdeal_eq_one E D hD
   exact hEq.trans h1
 
-/-- **Re-export of the older `_isPrincipal_of_not_const_unit` shape**,
-now a theorem derived from the cleaner zero-class axiom by picking
-`I = 1` (the trivial principal fractional ideal). -/
+/-- Principal-ideal shape of the divisor-class triviality, from the
+zero-class theorem by picking `I = 1` (the trivial principal
+fractional ideal). -/
 theorem CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))
     (hSplit : splitsOnE E D)
@@ -1366,14 +1468,14 @@ theorem CoordRingElt.divisorClass_isPrincipal_of_not_const_unit
       Additive.toMul
         (divisorClass E (divisorOfD E D)
           (divisorOfD_finiteSupport E D)) =
-      ClassGroup.mk I := by
+      ClassGroup.mk (FractionRing E.toW.toAffine.CoordinateRing) I := by
   classical
   refine ⟨1, ?_, ?_⟩
   · rw [Units.val_one, FractionalIdeal.coe_one, Submodule.one_eq_span]
     exact ⟨1, rfl⟩
   · rw [CoordRingElt.divisorClass_eq_zero_of_not_const_unit E D hD hSplit
           hNotConstUnit]
-    exact (map_one ClassGroup.mk).symm
+    exact (map_one (ClassGroup.mk (FractionRing E.toW.toAffine.CoordinateRing))).symm
 
 /-- **Re-export — unrestricted principal-class statement**, now a
 theorem derived from the cleaner axiom plus the constant-unit case. -/
@@ -1387,7 +1489,7 @@ theorem CoordRingElt.divisorClass_isPrincipal
       Additive.toMul
         (divisorClass E (divisorOfD E D)
           (divisorOfD_finiteSupport E D)) =
-      ClassGroup.mk I := by
+      ClassGroup.mk (FractionRing E.toW.toAffine.CoordinateRing) I := by
   classical
   by_cases hConstUnit :
       ∃ c : ZMod E.q, c ≠ 0 ∧ D.a = Polynomial.C c ∧ D.b = 0
@@ -1404,9 +1506,9 @@ theorem CoordRingElt.divisorClass_isPrincipal
 
 /-- **Derived zero-class bridge.**
 
-    Direct corollary of the cleaner zero-class axiom
+    Direct corollary of
     `CoordRingElt.divisorClass_eq_zero_of_not_const_unit` plus the
-    constant-unit theorem (the divisor of a constant unit is identically
+    constant-unit case (the divisor of a constant unit is identically
     zero, so its class is trivially zero). -/
 theorem ordAt_divisorClass_zero
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0))

@@ -1,7 +1,7 @@
 /-
-  Divisor/Axioms/AxiomChordFiberProductBarFactored.lean
+  Divisor/Bridges/ChordFiberProductBarFactored.lean
 
-  Narrow multiplicity bridge for the base-changed chord-fiber product.
+  Multiplicity bridge for the base-changed chord-fiber product.
 
   Over `F_qbar`, the chord-fiber product of `D` (a function-field norm
   for the extension `F_qbar(E) / F_qbar(zLambdaBar lam)`) splits as a
@@ -15,20 +15,16 @@
   multiplicities equal to `gd.mult Q`. The remaining unit is a nonzero
   leading scalar.
 
-  The remaining citable axiom is the root-multiplicity version of this
-  statement for the concrete resultant. The global factored form below is
-  now a theorem by ordinary polynomial factorisation over `F_qbar`.
+  The root-multiplicity identity for the concrete resultant is proved
+  by a squeeze argument (per-fibre divisibility against the global
+  degree bound); the global factored form follows by ordinary
+  polynomial factorisation over `F_qbar`.
 
   No projection / accounting hypotheses are needed in the statement;
   the geometric data carried by `gd` (a `GeometricDivisorData E D`)
   already pins them down.
 -/
-import Divisor.Axioms.AxiomChordFiberProductEqNormZUnderSplit
-import Divisor.Axioms.AxiomChordFiberDivisibility
-import Divisor.ChordFiberWeightedDegree
-import Divisor.GeomBase
-import Divisor.GeomLocalOrder
-import Divisor.PartialFractionExpansion
+import Divisor.Bridges.ChordFiberProductNormZ
 
 open Polynomial
 
@@ -41,18 +37,17 @@ variable (E : ECSetup)
 The all-`z` form of the divisor-of-norm pushforward can be split into
 two pieces:
 
-* **Off-image side** (provable, no axiom): if `z` is not in the image
+* **Off-image side**: if `z` is not in the image
   of `gd.support` under `zLambdaBar lam`, then both sides of the
   equality are zero. The LHS `rootMultiplicity z` is zero because the
   set of roots of the bar-resultant is exactly that image (existing
   `chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image`),
   and the RHS sum is empty.
-* **In-image side** (the remaining axiom below): for `z` in the image,
-  the multiplicity equals the sum of `gd.mult Q` over the fibre.
+* **In-image side**: for `z` in the image, the multiplicity equals
+  the sum of `gd.mult Q` over the fibre (the squeeze argument below).
 
-The off-image side is proved here as a theorem; the in-image side is
-the narrowed axiom and the unrestricted form is re-exported as a
-theorem via case-splitting on image membership. -/
+The unrestricted form combines the two by case-splitting on image
+membership. -/
 
 /-- Off-image: when `z` is not in `zLambdaBar lam`'s image of
 `gd.support`, no `Q ∈ gd.support` projects to `z`, so the per-fibre
@@ -110,24 +105,18 @@ theorem chord_fiber_product_concrete_bar_rootMultiplicity_eq_zero_of_not_image
     This is exactly the push-forward of the zero divisor under the chord
     projection, i.e. `div(N(D)) = π_*(div D)` written coefficientwise.
 
-    **Now a theorem (mod the narrower divisibility axiom).** Discharged
-    via the squeeze argument
-    `Divisor.rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le`:
-    - root set: `chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image`.
+    Proof: the squeeze argument
+    `Divisor.rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le` on
+    - root set: `chord_fiber_product_concrete_bar_roots_toFinset_eq_support_image`;
     - per-fibre divisibility (lower bound):
-      `chord_fiber_product_concrete_bar_zfiber_pow_dvd` — narrowed
-      divisibility-only axiom (the local divisor-of-norm inequality
-      content).
+      `chord_fiber_product_concrete_bar_zfiber_pow_dvd`, from the
+      chord-algebra relNorm calculus and the norm-is-resultant
+      identity (`Divisor/OrdP/ChordNorm.lean`,
+      `Divisor/OrdP/ChordResultant.lean`);
     - global natDegree bound (upper bound):
       `chord_fiber_product_concrete_natDegree_le_normPoly_natDegree`
-      via the weighted-Sylvester analysis (now a complete theorem).
-    - `mult_sum_eq_normPoly_natDegree`: Σ_Q gd.mult Q = (normPoly).natDegree.
-
-    The closure now uses the divisibility axiom
-    `chord_fiber_product_concrete_bar_zfiber_pow_dvd`, replacing the
-    previous multiplicity-equality axiom. The new axiom is the
-    lower-bound (divisibility) half only, since the upper bound is now
-    a coordinate-native theorem. -/
+      via the weighted-Sylvester analysis;
+    - `mult_sum_eq_normPoly_natDegree`: Σ_Q gd.mult Q = (normPoly).natDegree. -/
 theorem chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image
     (E : ECSetup) (D : CoordRingElt E.q) (lam : ZMod E.q)
     [DecidableEq (Fqbar E)]
@@ -162,9 +151,9 @@ theorem chord_fiber_product_concrete_bar_rootMultiplicity_eq_zfiber_of_mem_image
     Divisor.rootMultiplicity_eq_of_fiberwise_dvd_natDegree_le
       p gd.support (zLambdaBar E lam) gd.mult hpne hroots hdvd hdeg z
 
-/-- **Re-export — the unrestricted divisor-of-norm pushforward**, now a
-theorem derived from the narrowed in-image axiom plus the off-image
-boundary lemma.
+/-- **The unrestricted divisor-of-norm pushforward**: the in-image
+identity plus the off-image boundary lemma, combined by
+case-splitting.
 
 The unrestricted form is what downstream consumers
 (`chord_fiber_product_concrete_bar_eq_geom_prod_of_rootMultiplicity`,

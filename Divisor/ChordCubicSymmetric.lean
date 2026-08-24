@@ -27,7 +27,6 @@
   with `y_i = λ x_i + μ`, which gives `(λ x_i + μ)² = x_i³ + A x_i + B`,
   a cubic in `x_i` whose three roots are the `x_i`.
 -/
-import Divisor.Defs
 import Divisor.PolyGSlopeProjection
 import Mathlib
 

@@ -2,7 +2,7 @@
   Divisor/CoeffPoly.lean
 
   Computable polynomial representation over `ZMod q`, used as the
-  underlying value for the computable Eagen construction.  Mathlib's
+  underlying value for the computable line-build construction.  Mathlib's
   `Polynomial` API is in `noncomputable section`, so it cannot host
   `#eval`-style evaluation.
 
@@ -170,7 +170,7 @@ variable [Fact (Nat.Prime q)]
 theorem toPolynomial_coeff (p : CoeffPoly q) (n : ℕ) :
     (toPolynomial p).coeff n = p.coeff n := by
   unfold toPolynomial
-  rw [Polynomial.finset_sum_coeff]
+  rw [Polynomial.finsetSum_coeff]
   by_cases hn : n < p.coeffs.length
   · rw [Finset.sum_eq_single n]
     · rw [Polynomial.coeff_monomial, if_pos rfl]
@@ -178,7 +178,7 @@ theorem toPolynomial_coeff (p : CoeffPoly q) (n : ℕ) :
       rw [Polynomial.coeff_monomial]
       exact if_neg hin
     · intro h; exact absurd (Finset.mem_range.mpr hn) h
-  · push_neg at hn
+  · push Not at hn
     have hp : p.coeff n = 0 := by
       unfold coeff
       have := List.getElem?_eq_none (l := p.coeffs) (i := n) hn
@@ -196,7 +196,7 @@ theorem toPolynomial_coeff (p : CoeffPoly q) (n : ℕ) :
 theorem toPolynomial_eval (p : CoeffPoly q) (x : ZMod q) :
     (toPolynomial p).eval x = p.eval x := by
   unfold toPolynomial
-  rw [Polynomial.eval_finset_sum]
+  rw [Polynomial.eval_finsetSum]
   simp only [Polynomial.eval_monomial]
   -- Goal: ∑ i ∈ range length, coeff i * x^i = foldr ... 0 coeffs
   unfold CoeffPoly.eval
@@ -265,6 +265,7 @@ theorem toPolynomial_eval (p : CoeffPoly q) (x : ZMod q) :
 
 /-! ### `add` bridge -/
 
+omit [Fact (Nat.Prime q)] in
 /-- Coefficient of `add.addList`. -/
 theorem coeff_addList (as bs : List (ZMod q)) (n : ℕ) :
     ((⟨add.addList as bs⟩ : CoeffPoly q).coeff n) =
@@ -308,6 +309,7 @@ theorem coeff_addList (as bs : List (ZMod q)) (n : ℕ) :
         simp only [List.getElem?_cons_succ]
         exact ih bs' k
 
+omit [Fact (Nat.Prime q)] in
 /-- Coefficient bridge for `add`. -/
 @[simp] theorem coeff_add (p₁ p₂ : CoeffPoly q) (n : ℕ) :
     (p₁ + p₂).coeff n = p₁.coeff n + p₂.coeff n := by
@@ -326,6 +328,7 @@ theorem toPolynomial_add (p₁ p₂ : CoeffPoly q) :
 
 /-! ### `neg` and `sub` bridges -/
 
+omit [Fact (Nat.Prime q)] in
 @[simp] theorem coeff_neg (p : CoeffPoly q) (n : ℕ) :
     (-p).coeff n = -(p.coeff n) := by
   show (p.neg).coeff n = _
@@ -343,6 +346,7 @@ theorem toPolynomial_neg (p : CoeffPoly q) :
   intro n
   rw [toPolynomial_coeff, Polynomial.coeff_neg, toPolynomial_coeff, coeff_neg]
 
+omit [Fact (Nat.Prime q)] in
 @[simp] theorem coeff_sub (p₁ p₂ : CoeffPoly q) (n : ℕ) :
     (p₁ - p₂).coeff n = p₁.coeff n - p₂.coeff n := by
   show (p₁ + (-p₂)).coeff n = _
@@ -358,6 +362,7 @@ theorem toPolynomial_sub (p₁ p₂ : CoeffPoly q) :
 
 /-! ### `mul` bridge -/
 
+omit [Fact (Nat.Prime q)] in
 /-- Coefficient formula for `mul`, matching `Polynomial.coeff_mul`. -/
 theorem coeff_mul (p₁ p₂ : CoeffPoly q) (n : ℕ) :
     (p₁ * p₂).coeff n =
@@ -374,7 +379,7 @@ theorem coeff_mul (p₁ p₂ : CoeffPoly q) (n : ℕ) :
       rw [List.length_range]; exact hn
     rw [List.getElem?_eq_getElem hlen]
     simp [List.getElem_range]
-  · push_neg at hn
+  · push Not at hn
     rw [if_neg hn.not_gt]
     have hlen : (List.range (p₁.coeffs.length + p₂.coeffs.length)).length ≤ n := by
       rw [List.length_range]; exact hn
@@ -401,7 +406,7 @@ theorem toPolynomial_mul (p₁ p₂ : CoeffPoly q) :
     apply Finset.sum_congr rfl
     intro k _
     rw [toPolynomial_coeff, toPolynomial_coeff]
-  · push_neg at hn
+  · push Not at hn
     rw [if_neg hn.not_gt]
     -- RHS is 0 when natDeg(p₁) + natDeg(p₂) < n.
     -- We have p₁.coeff i = 0 for i ≥ length(p₁), and similarly p₂.
@@ -412,17 +417,17 @@ theorem toPolynomial_mul (p₁ p₂ : CoeffPoly q) :
     symm
     apply Finset.sum_eq_zero
     rintro ⟨i, j⟩ hij
-    rw [Finset.mem_antidiagonal] at hij
+    rw [Finset.HasAntidiagonal.mem_antidiagonal] at hij
     rw [toPolynomial_coeff, toPolynomial_coeff]
     by_cases hi : i < p₁.coeffs.length
     · have hj : ¬ j < p₂.coeffs.length := by omega
-      push_neg at hj
+      push Not at hj
       have h2 : p₂.coeff j = 0 := by
         unfold coeff
         have := List.getElem?_eq_none (l := p₂.coeffs) (i := j) hj
         simp [this]
       rw [h2, mul_zero]
-    · push_neg at hi
+    · push Not at hi
       have h1 : p₁.coeff i = 0 := by
         unfold coeff
         have := List.getElem?_eq_none (l := p₁.coeffs) (i := i) hi
@@ -437,6 +442,7 @@ closed-form coefficient sum that mathlib also produces
 (`coeff_divByMonic_X_sub_C`), the bridge reduces to coefficient
 equality plus a `length`-vs-`natDegree` argument. -/
 
+omit [Fact (Nat.Prime q)] in
 /-- Coefficient formula for `divXSubC`. -/
 theorem coeff_divXSubC (p : CoeffPoly q) (x₀ : ZMod q) (n : ℕ) :
     (p.divXSubC x₀).coeff n =
@@ -454,7 +460,7 @@ theorem coeff_divXSubC (p : CoeffPoly q) (x₀ : ZMod q) (n : ℕ) :
       rw [List.length_range]; exact hn
     rw [List.getElem?_eq_getElem hlen]
     simp [List.getElem_range]
-  · push_neg at hn
+  · push Not at hn
     rw [if_neg hn.not_gt]
     have hlen : (List.range (p.coeffs.length - 1)).length ≤ n := by
       rw [List.length_range]; exact hn
@@ -517,7 +523,7 @@ theorem toPolynomial_divXSubC (p : CoeffPoly q) (x₀ : ZMod q) :
         -- Bound j via natDegree(toPolynomial p).
         have hjlen : j < p.coeffs.length := by
           by_contra h
-          push_neg at h
+          push Not at h
           have hnone := List.getElem?_eq_none (l := p.coeffs) (i := j) h
           unfold coeff at hne
           simp [hnone] at hne
@@ -529,7 +535,7 @@ theorem toPolynomial_divXSubC (p : CoeffPoly q) (x₀ : ZMod q) :
       rw [hcoeff, mul_zero]
     · intro j _
       rw [toPolynomial_coeff]
-  · push_neg at hn
+  · push Not at hn
     rw [if_neg hn.not_gt]
     -- Need: 0 = ∑ j ∈ Icc (n+1) (toPolynomial p).natDegree, x₀^... * coeff j
     -- The Icc has natDeg ≤ p.coeffs.length - 1 ≤ n, so n+1 > natDeg, so Icc is empty.

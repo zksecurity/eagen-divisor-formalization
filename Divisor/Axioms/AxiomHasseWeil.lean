@@ -2,8 +2,13 @@
   Divisor/Axioms/AxiomHasseWeil.lean
 
   Hasse-Weil bound on #E(F_q): |#E(F_q) - q - 1| ≤ 2√q.
+
+  This is the project's single axiom. It is imported ONLY by the
+  terminal leaf module `Divisor/Hasse.lean` (not by the
+  `Divisor.Axioms` hub), so every theorem outside that leaf is
+  axiom-free by construction.
 -/
-import Mathlib.Data.Real.Sqrt
+import Mathlib.Analysis.Real.Sqrt
 import Divisor.Defs
 
 namespace Divisor

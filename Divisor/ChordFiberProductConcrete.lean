@@ -11,9 +11,9 @@
   candidate `chord_fiber_product_concrete`, the four already-proved
   evaluation/factorisation helpers (`*_eval`,
   `*_eval_eq_prod_split`, `*_bar_eval`, `*_bar_eval_eq_prod`), and
-  the now-proved non-vanishing theorem
-  `chord_fiber_product_concrete_ne_zero`.  The three remaining
-  sorry-bearing obligations against this candidate live in
+  the non-vanishing theorem
+  `chord_fiber_product_concrete_ne_zero`.  Sorry-free obligation
+  sketches against this candidate live in
   `Divisor/Sketch/ChordFiberProductConcrete.lean`.
 
   Imports are intentionally narrow:
@@ -28,9 +28,6 @@
   In particular this file does **not** import `Divisor.Axioms` or
   any module that transitively imports
   `AxiomChordFiberProductEqNormZUnderSplit`. -/
-import Divisor.Defs
-import Divisor.SlopeDist
-import Divisor.GeomBase
 import Divisor.GeomLocalOrder
 import Mathlib.RingTheory.Polynomial.Resultant.Basic
 

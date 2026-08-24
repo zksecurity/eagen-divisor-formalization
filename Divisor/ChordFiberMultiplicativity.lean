@@ -207,12 +207,12 @@ theorem DLineBiv_eq_C_mul_divByMonic
   -- D.a = p * (D.a /ₘ p) using modByMonic_eq_zero_iff_dvd + modByMonic_add_div.
   have ha_factor : p * (D.a /ₘ p) = D.a := by
     have hmod : D.a %ₘ p = 0 := (Polynomial.modByMonic_eq_zero_iff_dvd hpm).mpr hpa
-    have := Polynomial.modByMonic_add_div D.a hpm
+    have := Polynomial.modByMonic_add_div D.a p
     rw [hmod, zero_add] at this
     exact this
   have hb_factor : p * (D.b /ₘ p) = D.b := by
     have hmod : D.b %ₘ p = 0 := (Polynomial.modByMonic_eq_zero_iff_dvd hpm).mpr hpb
-    have := Polynomial.modByMonic_add_div D.b hpm
+    have := Polynomial.modByMonic_add_div D.b p
     rw [hmod, zero_add] at this
     exact this
   unfold DLineBiv
@@ -384,12 +384,12 @@ theorem normPoly_eq_p_sq_mul_of_div
   classical
   have ha_factor : p * (D.a /ₘ p) = D.a := by
     have hmod : D.a %ₘ p = 0 := (Polynomial.modByMonic_eq_zero_iff_dvd hpm).mpr hpa
-    have := Polynomial.modByMonic_add_div D.a hpm
+    have := Polynomial.modByMonic_add_div D.a p
     rw [hmod, zero_add] at this
     exact this
   have hb_factor : p * (D.b /ₘ p) = D.b := by
     have hmod : D.b %ₘ p = 0 := (Polynomial.modByMonic_eq_zero_iff_dvd hpm).mpr hpb
-    have := Polynomial.modByMonic_add_div D.b hpm
+    have := Polynomial.modByMonic_add_div D.b p
     rw [hmod, zero_add] at this
     exact this
   rw [normPoly_eq, normPoly_eq]

@@ -39,8 +39,6 @@
   classical (pole at `∞` is exactly `D.degE`) but over `F_q` it
   requires `N(D)` to split; we only establish the upper bound here.
 -/
-import Divisor.Defs
-import Divisor.ClearedPolyForm
 import Divisor.ClearedPolyFormBounds
 import Mathlib.Algebra.Polynomial.Roots
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
@@ -201,7 +199,7 @@ theorem betaConstructive_twin
   classical
   unfold betaConstructive
   have hNot : ¬ (P.2 = 0 ∨ D.eval P.1 (-P.2) ≠ 0) := by
-    push_neg
+    push Not
     exact ⟨hY, hZneg⟩
   simp [hP, hZ, hNot]
 
@@ -229,7 +227,7 @@ theorem betaConstructive_covers
   by_cases hLone : P.2 = 0 ∨ D.eval P.1 (-P.2) ≠ 0
   · rw [betaConstructive_lone E D hP hZ hLone]
     exact Nat.pos_iff_ne_zero.mp (rootMultiplicity_normPoly_pos E D hP hZ hD)
-  · push_neg at hLone
+  · push Not at hLone
     obtain ⟨hY, hZneg⟩ := hLone
     rw [betaConstructive_twin E D hP hZ hY hZneg]
     have hGe2 : 2 ≤ rootMultiplicity P.1 (normPoly E D) :=
@@ -458,21 +456,24 @@ theorem betaConstructive_sum_le_degE
         sum_rootMultiplicity_le_natDegree E (normPoly E D)
     _ ≤ D.degE := normPoly_natDegree_le E D
 
-/-! ## Split predicate (used as precondition for the Abel-theorem axiom below) -/
+/-! ## Split predicate (used as precondition for the split-time
+    Abel-theorem content documented below and delivered downstream by
+    `ordAt_group_sum_zero_under_split`) -/
 
 /-- Split predicate: `N(D)` has as many roots as its degree (counted with
 multiplicity) over `F_q`. Equivalent to saying every root is `F_q`-rational. -/
 def normPoly_splits_over_Fq (D : CoordRingElt E.q) : Prop :=
   Multiset.card (normPoly E D).roots = (normPoly E D).natDegree
 
-/-! ## Narrow Abel-theorem axiom (under splitting)
+/-! ## Abel-theorem content under splitting
 
-    The remaining property of `betaConstructive` needed downstream —
-    the weighted group-sum-zero identity (the "Abel's theorem on E"
-    content) — depends on function-field / Weierstrass-preparation
-    machinery beyond what we mechanize here. We record it as a narrow
-    axiom covering exactly the classical fact it invokes, with no
-    bundling of support / coverage content (those are derived above).
+    The group-sum-zero property needed downstream — the weighted
+    group-sum-zero identity ("Abel's theorem on E") — is
+    `ordAt_group_sum_zero_under_split` in
+    `Divisor/OrdP/LocalRing.lean`, a theorem resting on the
+    divisor-class theorem `CoordRingElt.divisorClass_eq_zero_of_splitsOnE`.
+    It cannot be stated for `betaConstructive` (see the note below).
+    The classical background here documents the precondition story.
 
     Classical citation: **Silverman, "The Arithmetic of Elliptic
     Curves" (AEC), Chapter III, Corollary 3.5** (p. 63) — a divisor
@@ -510,14 +511,13 @@ def normPoly_splits_over_Fq (D : CoordRingElt E.q) : Prop :=
     used downstream.
 -/
 
--- The previous `CoordRingElt.divisor_group_sum_zero` axiom (and its
--- derived `betaConstructive_group_sum_zero` theorem) have been
--- deleted. Both were unsound: `betaConstructive`'s twin Nat-division
--- surrogate is provably non-faithful to the true ord_P, so the
--- β-weighted group sum is not always zero (counterexample over
--- `F_5`, see `Divisor/Axioms/AxiomExistsDivisorMultiplicity.lean`).
--- Group-sum-zero now comes from `betaCanonical_group_sum_zero` in
--- the new axiom file, with witness from the existential β.
+-- No group-sum-zero statement is possible for `betaConstructive`:
+-- its twin Nat-division surrogate is provably non-faithful to the
+-- true ord_P, so the β-weighted group sum is not always zero
+-- (counterexample over `F_5`, see
+-- `Divisor/Bridges/DivisorMultiplicity.lean`). Group-sum-zero comes
+-- from `betaCanonical_group_sum_zero` in that module, with witness
+-- from the existential β.
 -- `betaConstructive` here is retained only for the unconditional
 -- bound `Σ β ≤ D.degE` and the support/coverage shape; it is NOT
 -- in the trust closure.
@@ -563,12 +563,9 @@ theorem sum_rootMultiplicity_eq_natDegree_of_splits
   rw [sum_rootMultiplicity_eq_card_roots]
   exact hSplit
 
-/-! The former `sum_betaConstructive_eq_sum_rootMultiplicity_of_splits`,
-`normPoly_natDegree_eq_degE_of_splits`, and `sum_betaConstructive_fst_eq_of_splits`
-lemmas were removed along with `betaConstructive_sum_eq_degE`. Their
-proofs relied on the equality `∑ β = D.degE`, which is unavailable after
-the counterexample removed the `divisor_degree_eq` axiom. The
-split-case equalities remain true classically but are not required by
-any downstream consumer of `Divisor.ma_extractable`. -/
+/-! No unconditional `∑ β = D.degE` identity is stated here: it is
+false for general `D` (there is a counterexample). The corresponding
+split-case equalities hold classically but are not required by any
+downstream consumer of `Divisor.ma_extractable`. -/
 
 end Divisor

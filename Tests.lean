@@ -1,1 +1,15 @@
+import Tests.AnyLengthCompletenessSmoke
+import Tests.AxiomClosurePin
+import Tests.BridgeCrossChecks
+import Tests.CoeffPolyEvalSmokeTest
+import Tests.CrossCaseSmokeTest
+import Tests.CurveFixtures
+import Tests.LineBuildEvalSmokeTest
 import Tests.EndToEndSmoke
+import Tests.F5RegressionAxiomClosure
+import Tests.HasseCardBridge
+import Tests.IncrementalSmokeTest
+import Tests.PointCertificateDecidable
+import Tests.PointSkeletonSmoke
+import Tests.RegressionDoublingChallenge
+import Tests.SplitsOnEFiberCheck

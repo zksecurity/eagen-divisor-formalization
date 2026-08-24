@@ -27,12 +27,8 @@
   expressions like `(ZMod q)[X]`. `Polynomial` is globally opened; the
   `MvPolynomial` namespace is not.
 -/
-import Divisor.ClearedPolyForm
 import Divisor.ClearedPolyFormBounds
-import Divisor.FourVarPoly
 import Divisor.BivariateZerosOnExE
-import Divisor.Axioms.AxiomHasseWeil
-import Divisor.SlopeDist
 
 open Polynomial Finset
 
@@ -1404,10 +1400,9 @@ theorem bivEval₂_clearedFullPoly_eq_zero_of_bad
     factor vanishes. These pairs lie outside the identity's scope but
     are bounded by existing F1-F6 bounds in `ClearedPolyForm.lean`.
 
-    For this session we deliver the **core inclusion bound**, which is
-    the nondegenerate part of the argument. The boundary correction
-    term is delegated to a follow-up alongside the `18·(d+k)` tightening
-    mentioned in the plan's "Open question".  -/
+    This theorem is the **core inclusion bound** — the nondegenerate
+    part of the argument; the boundary pairs are handled by those
+    separate bounds rather than here.  -/
 
 
 /-! ### Total-degree bound on `liftPoly`. -/
@@ -1905,40 +1900,16 @@ theorem clearedFullPoly_total_degree_le
 
 /-! ### Hasse-Weil derived bound: q ≤ 2·|E| for |E| ≥ 8. -/
 
-/-- From the Hasse-Weil bound `(|E|-q)² ≤ 4q`, deduce `q ≤ 2·|E|`
-    whenever `|E| ≥ 8`. Proof: if `q > 2·|E|`, then setting
-    `N = |E|`, `q ≥ 2N+1`, so `(q-N)² ≥ (N+1)²`, but Hasse gives
-    `(q-N)² ≤ 4q`. Combining with `q ≥ 2N+1` yields
-    `N²-6N-3 ≤ 0`, which fails for `N ≥ 8`. -/
-theorem hasse_q_le_two_mul_card (hN : 8 ≤ E.points.card) :
-    E.q ≤ 2 * E.points.card := by
-  by_contra hlt
-  push_neg at hlt
-  have hH := hasse_weil E
-  rw [E.hNumPoints] at hH
-  have hH' : ((E.points.card : ℤ) - E.q) ^ 2 ≤ 4 * (E.q : ℤ) := by
-    have : (↑(E.points.card + 1) : ℤ) - ↑E.q - 1 = (↑E.points.card : ℤ) - ↑E.q := by push_cast; ring
-    rw [this] at hH; exact hH
-  have hN' : (E.points.card : ℤ) ≥ 8 := by exact_mod_cast hN
-  have hQ' : (E.q : ℤ) ≥ 2 * (E.points.card : ℤ) + 1 := by exact_mod_cast hlt
-  nlinarith [sq_nonneg ((E.q : ℤ) - 2 * (E.points.card : ℤ) - 1)]
-
 /-- **`log_deriv_sz_paper` (core, non-degenerate part).**
 
     The cardinality of the non-degenerate bad set —
     pairs `(A₀, A₁) ∈ E.points × E.points` where the verifier's
     log-derivative check vanishes AND the denominator stays defined
     AND the line is non-vertical — is at most
-    `36·(2·D.degE + k + 6)·|E|`.
+    `12·(2·D.degE + k + 6)·|E|`.
 
-    This uses the `bivariate_poly_zeros_on_ExE_le` theorem with total
-    degree ≤ 4·D.degE + 2·k + 12 and Hasse `q ≤ 2·|E|` (for |E| ≥ 8),
-    combined with a small-|E| case split.
-
-    **Tightened**: previous bound `72·(D.degE+k+6)·|E|` lost precision
-    by rounding `36·(2d+k+6)` up to `72·(d+k+6)`. The refined form
-    preserves the `2d` vs `d` distinction in the DKL degree bound,
-    ultimately yielding a tighter constant in `log_deriv_sz_paper`. -/
+    Via the `bivariate_poly_zeros_on_ExE_le` bound `6·D·|E|` at total
+    degree ≤ 4·D.degE + 2·k + 12 — no case split, no Hasse content. -/
 theorem log_deriv_sz_paper_core
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
@@ -1949,7 +1920,7 @@ theorem log_deriv_sz_paper_core
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
           A₀ne_A₁x_cleared_pair E D P B m p)).card
-      ≤ 36 * (2 * D.degE + k + 6) * E.points.card := by
+      ≤ 12 * (2 * D.degE + k + 6) * E.points.card := by
   classical
   set S : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
     (E.points ×ˢ E.points).filter
@@ -1965,40 +1936,22 @@ theorem log_deriv_sz_paper_core
     obtain ⟨hNVx, hDef, hCheck⟩ := hp.2
     exact bivEval₂_clearedFullPoly_eq_zero_of_bad E D P B m p.1 p.2 hNVx
       hDef hCheck
-  set N := E.points.card with hN_def
-  set d := D.degE with hd_def
+  have hTD := clearedFullPoly_total_degree_le E D P B m
+  have hNZ := clearedFullPoly_nonzero_witness E D P B m hNV
+  have hAxiom := bivariate_poly_zeros_on_ExE_le E
+    (clearedFullPoly E D P k B m)
+    (4 * D.degE + 2 * k + 12) hTD hNZ
   calc S.card ≤ T.card := Finset.card_le_card hSub
-    _ ≤ 36 * (2 * d + k + 6) * N := by
-      by_cases hSmall : N ≤ 36 * (2 * d + k + 6)
-      · -- Small N: T.card ≤ N² ≤ 36*(2d+k+6)*N
-        have hTsub : T ⊆ E.points ×ˢ E.points := Finset.filter_subset _ _
-        have hTcard : T.card ≤ N * N :=
-          le_trans (Finset.card_le_card hTsub)
-            (by rw [Finset.card_product])
-        calc T.card ≤ N * N := hTcard
-          _ ≤ 36 * (2 * d + k + 6) * N := Nat.mul_le_mul_right N hSmall
-      · -- Large N: use axiom + Hasse
-        push_neg at hSmall
-        have hN8 : 8 ≤ N := by omega
-        have hQle : E.q ≤ 2 * N := hasse_q_le_two_mul_card E hN8
-        have hTD := clearedFullPoly_total_degree_le E D P B m
-        have hNZ := clearedFullPoly_nonzero_witness E D P B m hNV
-        have hAxiom := bivariate_poly_zeros_on_ExE_le E
-          (clearedFullPoly E D P k B m)
-          (4 * d + 2 * k + 12) hTD hNZ
-        calc T.card
-          ≤ 9 * (4 * d + 2 * k + 12) * E.q := hAxiom
-          _ ≤ 9 * (4 * d + 2 * k + 12) * (2 * N) :=
-              Nat.mul_le_mul_left _ hQle
-          _ ≤ 36 * (2 * d + k + 6) * N := by nlinarith
+    _ ≤ 6 * (4 * D.degE + 2 * k + 12) * E.points.card := hAxiom
+    _ = 12 * (2 * D.degE + k + 6) * E.points.card := by ring
 
 /-- **`log_deriv_sz_paper` (outer, with-boundary form).**
 
-    Combines the tightened core Lang-Weil bound
-    (`36·(2d+k+6)·|E|`) on the denom-defined pairs with the tight
-    boundary bound (`(3d+9k+71)·|E|`) from
+    Combines the core Lang-Weil bound (`12·(2d+k+6)·|E|`) on the
+    denom-defined pairs with the tight boundary bound
+    (`(3d+9k+71)·|E|`) from
     `logDerivCheckFn_undefined_set_bound_tight` for the
-    denom-undefined pairs. Total: `78·(D.degE + k + 6)·|E|`. -/
+    denom-undefined pairs. Total: `27·(D.degE + k + 6)·|E|`. -/
 theorem log_deriv_sz_paper
     (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) (m : Fin k → ZMod E.q)
@@ -2007,7 +1960,7 @@ theorem log_deriv_sz_paper
         logDerivCheckFnDefined E D P B A₀ A₁ ∧
         logDerivCheckFn E D P k B m A₀ A₁ ≠ 0) :
     (eventNotEq E D P B m).card ≤
-      78 * (D.degE + k + 6) * E.points.card := by
+      27 * (D.degE + k + 6) * E.points.card := by
   classical
   -- eventNotEq splits by `logDerivCheckFnDefined`.
   set badNE := eventNotEq E D P B m with hBNE_def
@@ -2043,19 +1996,19 @@ theorem log_deriv_sz_paper
   have hUndefBound := logDerivCheckFn_undefined_set_bound_tight E D P k B hD
   calc badNE.card
     ≤ defBad.card + undefAll.card := hCardSplit
-    _ ≤ 36 * (2 * D.degE + k + 6) * E.points.card +
+    _ ≤ 12 * (2 * D.degE + k + 6) * E.points.card +
         (3 * D.degE + 9 * k + 71) * E.points.card :=
         Nat.add_le_add hCoreBound hUndefBound
-    _ ≤ 78 * (D.degE + k + 6) * E.points.card := by
-        have : 36 * (2 * D.degE + k + 6) + (3 * D.degE + 9 * k + 71)
-               ≤ 78 * (D.degE + k + 6) := by omega
-        calc 36 * (2 * D.degE + k + 6) * E.points.card +
+    _ ≤ 27 * (D.degE + k + 6) * E.points.card := by
+        have : 12 * (2 * D.degE + k + 6) + (3 * D.degE + 9 * k + 71)
+               ≤ 27 * (D.degE + k + 6) := by omega
+        calc 12 * (2 * D.degE + k + 6) * E.points.card +
                (3 * D.degE + 9 * k + 71) * E.points.card
-            = (36 * (2 * D.degE + k + 6) + (3 * D.degE + 9 * k + 71)) *
+            = (12 * (2 * D.degE + k + 6) + (3 * D.degE + 9 * k + 71)) *
                 E.points.card := by ring
-          _ ≤ (78 * (D.degE + k + 6)) * E.points.card :=
+          _ ≤ (27 * (D.degE + k + 6)) * E.points.card :=
                 Nat.mul_le_mul_right _ this
-          _ = 78 * (D.degE + k + 6) * E.points.card := by ring
+          _ = 27 * (D.degE + k + 6) * E.points.card := by ring
 
 
 

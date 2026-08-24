@@ -1,44 +1,29 @@
 /-
-  Divisor/Axioms/AxiomExistsDivisorMultiplicity.lean
+  Divisor/Bridges/DivisorMultiplicity.lean
 
-  Existential "true divisor multiplicity" axiom.
+  Existence of the true divisor-multiplicity function: for nonzero
+  `D` there is a `β` supported on `D`'s rational zeros, with total
+  mass ≤ degE, whose accounting (`Σ β = natDeg (normPoly)`) and
+  group-sum-zero clauses hold under `splitsOnE E D`.
 
-  History:
-  * v1 (retired): asserted the β-weighted group sum on `betaConstructive E D`
-    is zero under polynomial-splitting. False on F_5 — the constructive β
-    Nat-divides twin-sheet root multiplicities, losing the per-sheet split
-    that the group sum is sensitive to.
-  * v2 (the previous form of this axiom): replaced v1's β by an existential,
-    but still gated the deeper clauses (accounting + group-sum-zero) on
-    `normPoly_splits_over_Fq E D` alone — i.e. only on `normPoly E D`'s
-    splitting AS A POLYNOMIAL IN `X`. Also unsound: when an x-root α of
-    `normPoly E D` corresponds to no F_q-rational `(α, y)` on `E` (the
-    fiber `α³ + Aα + B` not being a QR in F_q), the F_q-only sum cannot
-    pick up its multiplicity, so accounting `Σ β = natDeg` is forced
-    false.  Concrete failure: `E : y² = x³ + 1 / F_5`, `D = X − 1`;
-    `normPoly E D = (X−1)²` splits and has natDeg 2, but `2 = 1+1` is
-    not a square in F_5, so no F_5-points have x = 1 and `Σ β = 0 ≠ 2`.
-  * v3 (current): gates the accounting and group-sum-zero clauses on a
-    *stronger* hypothesis `splitsOnE E D` that adds the missing
-    fiber-rationality condition.
+  The `splitsOnE` gate on the strong clauses is necessary, not an
+  artifact. Gating them on `normPoly`-splitting alone — splitting as
+  a polynomial in `X` — is unsound: an x-root α of `normPoly E D` may
+  have no F_q-rational point above it (the fiber `α³ + Aα + B` not a
+  QR in F_q), and then the F_q-only sum cannot pick up its
+  multiplicity. Concrete failure: `E : y² = x³ + 1 / F_5`, `D = X − 1`;
+  `normPoly E D = (X−1)²` splits with natDeg 2, but `2` is not a
+  square in F_5, so no F_5-point has x = 1 and `Σ β = 0 ≠ 2`.
+  `splitsOnE` adds the missing fiber-rationality condition.
 
-  Phase-1 plan (now realised): this existence statement is no longer
-  asserted as an axiom but proved as a theorem with witness
-  `ordAt E D`, derived from the narrower class-group bridge
-  axiom `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit`
-  (via the unrestricted re-export
-  `CoordRingElt.divisorClass_isPrincipal`). The theorem
+  The witness is `ordAt E D`: the underlying theorem
   `Divisor.exists_divisor_multiplicity_proved` lives in
-  `Divisor/OrdP/LocalRing.lean`; this file re-exports it under the
-  legacy name `CoordRingElt.exists_divisor_multiplicity` so that
-  downstream `betaTrue` / `betaCanonical` consumers continue to work
-  unchanged. Importing `Divisor.OrdP.LocalRing` here is safe because
-  `splitsOnE` was extracted into `Divisor.SplitsOnE` to break the
-  prior import cycle.
+  `Divisor/OrdP/LocalRing.lean`, and this file exposes it as
+  `CoordRingElt.exists_divisor_multiplicity` for the
+  `betaTrue` / `betaCanonical` consumers. Importing
+  `Divisor.OrdP.LocalRing` here is cycle-free because `splitsOnE`
+  lives in its own module `Divisor.SplitsOnE`.
 -/
-import Divisor.Defs
-import Divisor.BetaConstructive
-import Divisor.SplitsOnE
 import Divisor.OrdP.LocalRing
 
 namespace Divisor
@@ -48,9 +33,9 @@ variable (E : ECSetup)
 /-- ECPoint-indexed form of true affine divisor multiplicity.
 
     This is the preferred internal API when downstream code already
-    works with the mathlib point type `ECPoint E`. The legacy
-    pair-indexed theorem below remains for protocol-facing code whose
-    inputs are still coordinate pairs. -/
+    works with the mathlib point type `ECPoint E`; the pair-indexed
+    theorem below serves protocol-facing code whose inputs are
+    coordinate pairs. -/
 theorem CoordRingElt.exists_divisor_multiplicity_ecpoint
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     ∃ β : ECPoint E → ℕ,
@@ -81,12 +66,9 @@ theorem CoordRingElt.exists_divisor_multiplicity_ecpoint
     * under `splitsOnE E D`,
         the β-weighted group sum on `E.points` is `O` (Abel's theorem).
 
-    Proved via `exists_divisor_multiplicity_proved` (witness
-    `ordAt E D`); the only remaining axiom in the dependency closure
-    of this statement is
-    `CoordRingElt.divisorClass_isPrincipal_of_not_const_unit` (the
-    narrower class-group bridge for `divisorOfD E D`, exclusive of
-    the trivial constant-unit case). -/
+    Proved via `exists_divisor_multiplicity_proved`, with witness
+    `ordAt E D`; axiom-free (pinned in
+    `Tests/AxiomClosurePin.lean`). -/
 theorem CoordRingElt.exists_divisor_multiplicity
     (D : CoordRingElt E.q) (hD : ¬ (D.a = 0 ∧ D.b = 0)) :
     ∃ β : ZMod E.q × ZMod E.q → ℕ,
@@ -179,7 +161,7 @@ theorem betaCanonical_support (E : ECSetup) (D : CoordRingElt E.q) :
   by_cases hD : ¬ (D.a = 0 ∧ D.b = 0)
   · rw [betaCanonical_eq_betaTrue E D hD] at hP
     exact betaTrue_support E D hD P hP
-  · push_neg at hD
+  · push Not at hD
     rw [betaCanonical_eq_zero E D hD] at hP
     exact absurd rfl hP
 
@@ -194,7 +176,7 @@ theorem betaCanonical_sum_le_degE (E : ECSetup) (D : CoordRingElt E.q) :
   by_cases hD : ¬ (D.a = 0 ∧ D.b = 0)
   · rw [betaCanonical_eq_betaTrue E D hD]
     exact betaTrue_sum_le_degE E D hD
-  · push_neg at hD
+  · push Not at hD
     rw [betaCanonical_eq_zero E D hD]
     simp
 
@@ -205,7 +187,7 @@ theorem betaCanonical_account (E : ECSetup)
   by_cases hD : ¬ (D.a = 0 ∧ D.b = 0)
   · rw [betaCanonical_eq_betaTrue E D hD]
     exact betaTrue_account E D hD hSplitOnE
-  · push_neg at hD
+  · push Not at hD
     -- D = 0: normPoly = 0, both sides are 0.
     rw [betaCanonical_eq_zero E D hD]
     have hZero : normPoly E D = 0 := by
@@ -222,7 +204,7 @@ theorem betaCanonical_group_sum_zero (E : ECSetup)
   by_cases hD : ¬ (D.a = 0 ∧ D.b = 0)
   · rw [betaCanonical_eq_betaTrue E D hD]
     exact betaTrue_group_sum_zero E D hD hSplitOnE
-  · push_neg at hD
+  · push Not at hD
     rw [betaCanonical_eq_zero E D hD]
     apply Finset.sum_eq_zero
     intro P _
