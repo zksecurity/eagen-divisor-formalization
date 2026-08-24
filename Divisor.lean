@@ -61,6 +61,7 @@ import Divisor.CoordRingEltC
 import Divisor.CoordRingEltC.Bridge
 import Divisor.EagenBuildComputable
 import Divisor.EagenBuildComputable.Bridge
+import Divisor.Headlines
 import Divisor.Hasse
 import Divisor.Sketch.ChordFiberProductConcrete
 import Divisor.Sketch.ChordFiberGeometry

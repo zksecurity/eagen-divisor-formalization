@@ -406,7 +406,7 @@ info: 'Divisor.ma_completeness_binary_admSetHash_point_certificate' depends on a
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_completeness_binary_admSetHash_point_certificate
 
-/-! Any-length binary completeness (`Divisor/SafeSupport.lean`):
+/-! Any-length binary completeness (`Divisor/Headlines.lean`):
   the chain certificate discharged for ANY support length from the
   semantic general-position hypothesis `SafePairs` (decidable per
   instance via `SafePairsCert`). Axiom-free, like the rest of the

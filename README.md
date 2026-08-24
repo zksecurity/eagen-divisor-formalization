@@ -15,9 +15,9 @@ Requires elan + Lean 4 toolchain (see `lean-toolchain`).
 
 ## Theorem Surface
 
-The headline theorems live in `Divisor/ExtractorBridgeTheorems.lean`
-(knowledge soundness), `Divisor/Completeness.lean` (completeness), and
-`Divisor/Hasse.lean` (field-size forms). The public surface below is
+Every axiom-free headline theorem lives in `Divisor/Headlines.lean`;
+the Hasse–Weil-priced field-size forms live in `Divisor/Hasse.lean`.
+The public surface below is
 the axiom-free
 point-count surface: every bound is stated in the currency
 `n = |E(F_q)|` (`E.points.card`). Naming convention: a short name is
@@ -243,7 +243,7 @@ built by the Eagen chord accumulation `eagenBuild_singletons`) is the
 chord-combine in the accumulation is non-degenerate — comes two ways:
 once-and-for-all for the structured support shapes (lengths 2 and 4,
 and the chord families at 4/6/8), and at **any support length**
-through `Divisor/SafeSupport.lean`:
+through the `SafePairs` machinery of `Divisor/SafeSupport.lean`:
 `Divisor.ma_completeness_binary_any_length` derives the full chain
 certificate from a single semantic general-position hypothesis,
 `SafePairs` — for every nonempty split `xs ++ ys` of every sublist of

@@ -13,8 +13,9 @@
     `eventNotEqDefinedSet`, `badChallenges`) and their cardinality
     budgets (`eventNotEqBound`, `eventDegBound`).
 
-  The knowledge-soundness headlines built on these live in
-  `Divisor/ExtractorBridgeTheorems.lean`; the completeness theorems in
+  The headline statements built on these live in
+  `Divisor/Headlines.lean`; the proof machinery in
+  `Divisor/ExtractorBridgeTheorems.lean` and
   `Divisor/Completeness.lean`.
 -/
 import Divisor.Bridges
