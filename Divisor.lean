@@ -56,6 +56,10 @@ import Divisor.SlopeChoice
 import Divisor.GeometricSoundness
 import Divisor.IsHonestForBinary
 import Divisor.SafeSupport
+import Divisor.CoordRingEltC
+import Divisor.CoordRingEltC.Bridge
+import Divisor.EagenBuildComputable
+import Divisor.EagenBuildComputable.Bridge
 import Divisor.Hasse
 import Divisor.Sketch.ChordFiberProductConcrete
 import Divisor.Sketch.ChordFiberGeometry

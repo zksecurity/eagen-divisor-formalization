@@ -1,0 +1,14 @@
+{
+    "challenge_module": "Challenge",
+    "solution_module": "Divisor",
+    "theorem_names": [
+        "Divisor.ma_extractable_hasse",
+        "Divisor.ip_extractable_hasse"
+    ],
+    "permitted_axioms": [
+        "propext",
+        "Quot.sound",
+        "Classical.choice",
+        "Divisor.hasse_weil_textbook"
+    ]
+}

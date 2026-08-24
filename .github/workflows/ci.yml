@@ -13,6 +13,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v6
 
@@ -20,7 +21,72 @@ jobs:
         uses: leanprover/lean-action@v1
         with:
           use-mathlib-cache: true
-          # Build the Tests lib too: Tests/AxiomClosurePin.lean and
-          # Tests/F5RegressionAxiomClosure.lean carry #guard_msgs-pinned
-          # axiom closures, so CI fails on any axiom-surface drift.
-          build-args: "Divisor Tests"
+          # Tests carries the #guard_msgs-pinned axiom closures (CI fails
+          # on axiom-surface drift); Challenge is the frozen headline
+          # statements the Comparator judge below compares against.
+          build-args: "Divisor Tests Challenge"
+
+      # Kernel replay of every declaration-bearing module in this
+      # library with the toolchain's built-in leanchecker. Catches
+      # "environment hacking": declarations added to the environment
+      # without going through the kernel. Scoped to this library's
+      # modules — the dependency oleans come from the mathlib cache
+      # (leanchecked by mathlib's own CI), and the unscoped sweep
+      # forks per-olean across all of mathlib, which exhausts runner
+      # memory. Pure-import hubs (Divisor.lean, Tests.lean,
+      # Divisor/Bridges.lean) declare nothing and are skipped; run
+      # sequentially — each replay loads a multi-GB environment.
+      - name: leanchecker kernel replay
+        run: |
+          { git ls-files '*.lean' \
+              | grep -vE '^(Challenge|Divisor|Tests)\.lean$' \
+              | grep -E '^(Divisor|Tests)/' \
+              | grep -v '^Divisor/Bridges\.lean$' \
+              | sed 's/\.lean$//; s#/#.#g'; \
+            echo Challenge; } \
+          | while read -r mod; do
+              lake env leanchecker "$mod" \
+                || { echo "leanchecker FAILED on $mod"; exit 1; }
+            done
+
+      - name: Set up Go (for landrun)
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Build landrun (Comparator sandbox)
+        run: |
+          git clone https://github.com/Zouuup/landrun "$RUNNER_TEMP/landrun"
+          git -C "$RUNNER_TEMP/landrun" checkout 811cfff51ceaf3d9843708aa6d22e9b84ccac8b4
+          mkdir -p "$RUNNER_TEMP/bin"
+          cd "$RUNNER_TEMP/landrun" && go build -o "$RUNNER_TEMP/bin/landrun" ./cmd/landrun
+
+      - name: Build lean4export (project toolchain)
+        run: |
+          git clone https://github.com/leanprover/lean4export "$RUNNER_TEMP/lean4export"
+          git -C "$RUNNER_TEMP/lean4export" checkout 15f6055e299ad5b89345e533cc2192f4cc00f659  # v4.33.0
+          cp lean-toolchain "$RUNNER_TEMP/lean4export/lean-toolchain"
+          cd "$RUNNER_TEMP/lean4export" && lake build
+
+      - name: Build Comparator
+        run: |
+          git clone https://github.com/leanprover/comparator "$RUNNER_TEMP/comparator"
+          git -C "$RUNNER_TEMP/comparator" checkout 10dd2b33dc43751af3257f4d684535375306f162
+          cd "$RUNNER_TEMP/comparator" && lake build
+
+      # Statement-identity + axiom-allowlist + kernel-replay judgment of
+      # the headline theorems against the frozen Challenge statements
+      # (Judge/README.md). Catches proofs that drift from the intended
+      # statement — including smuggled hypotheses — which no axiom check
+      # can see.
+      - name: Judge headline theorems (axiom-free)
+        env:
+          COMPARATOR_LANDRUN: ${{ runner.temp }}/bin/landrun
+          COMPARATOR_LEAN4EXPORT: ${{ runner.temp }}/lean4export/.lake/build/bin/lean4export
+        run: lake env "$RUNNER_TEMP/comparator/.lake/build/bin/comparator" Judge/headline.json
+
+      - name: Judge Hasse-priced theorems
+        env:
+          COMPARATOR_LANDRUN: ${{ runner.temp }}/bin/landrun
+          COMPARATOR_LEAN4EXPORT: ${{ runner.temp }}/lean4export/.lake/build/bin/lean4export
+        run: lake env "$RUNNER_TEMP/comparator/.lake/build/bin/comparator" Judge/hasse.json
