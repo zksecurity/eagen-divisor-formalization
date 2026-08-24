@@ -58,16 +58,13 @@ theorem toPolynomial_curveX_coeff (curveA curveB : ZMod q) :
     simp [curveX_coeff, CoeffPoly.coeff, Polynomial.coeff_X_pow, Polynomial.coeff_C]
   | 1 =>
     show (curveX_coeff curveA curveB).coeff 1 = _
-    simp [curveX_coeff, CoeffPoly.coeff, Polynomial.coeff_X_pow, Polynomial.coeff_C,
-      Polynomial.coeff_C_mul, Polynomial.coeff_X]
+    simp [curveX_coeff, CoeffPoly.coeff, Polynomial.coeff_X_pow, Polynomial.coeff_C]
   | 2 =>
     show (curveX_coeff curveA curveB).coeff 2 = _
-    simp [curveX_coeff, CoeffPoly.coeff, Polynomial.coeff_X_pow, Polynomial.coeff_C,
-      Polynomial.coeff_C_mul, Polynomial.coeff_X]
+    simp [curveX_coeff, CoeffPoly.coeff, Polynomial.coeff_X_pow]
   | 3 =>
     show (curveX_coeff curveA curveB).coeff 3 = _
-    simp [curveX_coeff, CoeffPoly.coeff, Polynomial.coeff_X_pow, Polynomial.coeff_C,
-      Polynomial.coeff_C_mul, Polynomial.coeff_X]
+    simp [curveX_coeff, CoeffPoly.coeff, Polynomial.coeff_X_pow]
   | k + 4 =>
     show (curveX_coeff curveA curveB).coeff (k + 4) = _
     have h_left : (curveX_coeff curveA curveB).coeff (k + 4) = 0 := by

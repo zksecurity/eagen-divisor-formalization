@@ -2101,7 +2101,7 @@ theorem extractorCoeffFromSigma_satisfies_D3
     The packaged theorem `extractor_succeeds_and_isPrincipal` combines
     S4 + S5 + S6 into the full composite conclusion
     `extractorSucceeds ∧ IsPrincipal (extractorDivisorCoeffs)`,
-    as consumed by S7 to replace the former composite T4 bridge axiom.
+    as consumed by S7.
 -/
 
 /-- **Helper: σ k is either 0 or `baseImagePos i`**.

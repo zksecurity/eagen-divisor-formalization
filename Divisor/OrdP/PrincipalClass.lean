@@ -47,9 +47,8 @@ theorem divisorClass_eq_toClass_weightedSum
   rw [map_zsmul]
 
 /-- If the class of a finite-support divisor is zero, then its weighted
-sum in the elliptic-curve group is zero. This replaces the part of the
-old `principal_divisor_iff` axiom that the MA extraction path used to
-consume. -/
+sum in the elliptic-curve group is zero. This is the form the MA
+extraction path consumes. -/
 theorem weightedSum_zero_of_divisorClass_zero
     (coeffs : ECPoint E → ℤ)
     (h : Set.Finite (Function.support coeffs))

@@ -3,9 +3,11 @@
 
   This module states the headline theorems with `sorry`, importing only
   the definition layer (`Divisor.Soundness` for the protocol, extractor
-  and accept/reject-set definitions; `Divisor.Axioms.AxiomHasseWeil` so
-  the judge can also pin the statement of the one permitted axiom).
-  Neither import proves any of the theorems below.
+  and accept/reject-set definitions; `Divisor.SafeSupportDefs` for the
+  binary-support and general-position definitions;
+  `Divisor.Axioms.AxiomHasseWeil` so the judge can also pin the
+  statement of the one permitted axiom). No import proves any of the
+  theorems below.
 
   `leanprover/comparator` compares these statements against the library
   (`Judge/README.md` has the procedure): the solution must prove
@@ -15,6 +17,7 @@
   independence.
 -/
 import Divisor.Soundness
+import Divisor.SafeSupportDefs
 import Divisor.Axioms.AxiomHasseWeil
 
 namespace Divisor
@@ -137,6 +140,52 @@ theorem ip_extractable_hasse
      (maAcceptSet E stmt msg1 hkm).card
       ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q)
     ∧ IPUniqueThirdRound E stmt msg1 := by
+  sorry
+
+theorem ma_completeness_binary_any_length
+    (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
+    (h_valid : relDlog E stmt wit)
+    (h_toD_eq : msg.toD =
+       Landmark.eagenBuild_singletons E
+         (binarySupport stmt wit hk h_binary))
+    (h_degE_eq :
+       msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
+    (h_scalars_match : ∀ i : Fin stmt.k,
+       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+    (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
+    (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
+    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
+    (h_safe : Landmark.SafePairs E (binarySupport stmt wit hk h_binary))
+    (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
+    (maRejectSet E stmt msg hkm).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+  sorry
+
+theorem ma_completeness_binary_any_length_cert
+    (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
+    (h_valid : relDlog E stmt wit)
+    (h_toD_eq : msg.toD =
+       Landmark.eagenBuild_singletons E
+         (binarySupport stmt wit hk h_binary))
+    (h_degE_eq :
+       msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
+    (h_scalars_match : ∀ i : Fin stmt.k,
+       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+    (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
+    (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
+    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
+    (h_cert : Landmark.SafePairsCert E (binarySupport stmt wit hk h_binary))
+    (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
+    (h_deg : msg.toD.degE ≤ wit.degBound)
+    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
+    (maRejectSet E stmt msg hkm).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   sorry
 
 end Divisor
