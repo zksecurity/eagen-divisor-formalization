@@ -43,7 +43,7 @@
     `ip_extractable_witness_of_excess_hasse` —
     field-size forms of the extractability headlines.
 -/
-import Divisor.ExtractorBridgeTheorems
+import Divisor.Headlines
 import Divisor.Axioms.AxiomHasseWeil
 
 open Polynomial Finset Classical

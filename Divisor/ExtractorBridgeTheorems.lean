@@ -1,11 +1,13 @@
 /-
   Divisor/ExtractorBridgeTheorems.lean
 
-  Knowledge soundness of the MA and IP protocols — paper
+  Knowledge-soundness machinery for the MA and IP protocols — paper
   `\ref{thm:ma}` and `\ref{thm:ip}`. Every theorem is axiom-free and
-  stated in the point-count currency `n = E.points.card`; field-size
-  (`q`-only) corollaries live in `Divisor/Hasse.lean`, the only file
-  consuming the Hasse–Weil axiom.
+  stated in the point-count currency `n = E.points.card`. The headline
+  statements built from these (`ma_extractable`, `ip_extractable`, the
+  probability and `witness_of_excess` forms) live in
+  `Divisor/Headlines.lean`; field-size (`q`-only) corollaries in
+  `Divisor/Hasse.lean`, the only file consuming the Hasse–Weil axiom.
 
   Layout, in dependency order:
 
@@ -14,16 +16,10 @@
     consolidated `badChallenges_card_le_clean` (≤ `24·(d+k+3)·n`).
   * **MA extractability** — `ma_extractable_base` (two-event
     accounting), the accept-set inclusion
-    `maAcceptSet_subset_badChallenges`, the implication form
-    `ma_extractable_paper`, and the headline `ma_extractable`
-    (witness, or accept set ≤ `24·(d+k+3)·n`).
-  * **IP extractability** — `ip_extractable_base`,
-    `ip_extractable_paper`, and the headline `ip_extractable`
-    (the MA dichotomy plus third-round uniqueness).
-  * **Soundness probability** — `ma_soundness_probability`, the
-    division-free `|accept|/|validPairs|` bound.
-  * **Contrapositives** — the `witness_of_excess` family: observed
-    acceptance above the bound forces extraction.
+    `maAcceptSet_subset_badChallenges`, and the implication form
+    `ma_extractable_paper`.
+  * **IP extractability** — `ip_extractable_base` and
+    `ip_extractable_paper`.
 
   Proof infrastructure comes from `Divisor/ExtractorBridge.lean`
   (D3–D5, polyG bridges, trace formula, sigma matching) and
@@ -340,45 +336,6 @@ theorem ma_extractable_paper
   · exact hWit
   · exact False.elim ((Nat.not_lt_of_ge hSmall) hAcceptLarge)
 
-/-- **MA extractability** (headline, axiom-free). Same disjunction as
-    `ma_extractable_base`, with the two-event bound consolidated into
-    a single point-count term:
-
-      `≤ 24 · (d + k + 3) · |E.points|`.
-
-    The field-size corollary (`≤ 36·(d+k+4)·q` under the Hasse–Weil
-    axiom) is `ma_extractable_hasse` in `Divisor/Hasse.lean`. -/
-theorem ma_extractable
-    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k)
-    (hTargetOnE : stmt.target ∈ E.points)
-    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hLargeQ : E.points.card >
-        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg.toD.degE + stmt.k + 2) + 72)
-    (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
-        (validPairs E).card) :
-    (∃ wit : DlogWitness E.q,
-        maExtractor E stmt msg stmt.degBound hd hkm = some wit
-        ∧ relDlog E stmt wit) ∨
-    (maAcceptSet E stmt msg hkm).card
-      ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card := by
-  rcases ma_extractable_base E stmt hd hd2 msg hkm
-          hTargetOnE hBasesOnE hLargeQ hSample with hWit | hBound
-  · left; exact hWit
-  · right
-    unfold eventNotEqBound eventDegBound at hBound
-    calc
-      (maAcceptSet E stmt msg hkm).card
-          ≤ 12 * (stmt.degBound + stmt.k) * E.points.card +
-            (3 * stmt.degBound + 9 * stmt.k + 71) * E.points.card := hBound
-      _ = (12 * (stmt.degBound + stmt.k)
-            + (3 * stmt.degBound + 9 * stmt.k + 71)) * E.points.card := by ring
-      _ ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card := by
-          apply Nat.mul_le_mul_right
-          omega
-
 /-! ## `\ref{thm:ip}`: Knowledge-Sound IP -/
 
 /-- **`\ref{thm:ip}` (IP knowledge soundness).**
@@ -441,212 +398,3 @@ theorem ip_extractable_paper
   · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
-
-/-- **IP extractability** (headline, axiom-free). Same as
-    `ip_extractable_base` but with the cardinality bound consolidated
-    into the single point-count term `≤ 24 · (d + k + 3) · |E.points|`.
-
-    The field-size corollary is `ip_extractable_hasse` in
-    `Divisor/Hasse.lean`. -/
-theorem ip_extractable
-    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg1 : MAProverMsg E.q)
-    (hkm : stmt.k = msg1.k)
-    (hTargetOnE : stmt.target ∈ E.points)
-    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hLargeQ : E.points.card >
-        2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg1.toD.degE + stmt.k + 2) + 72)
-    (hSample : 18 * (msg1.toD.degE + stmt.k + 1) * E.q + 1 ≤
-        (validPairs E).card) :
-    ((∃ wit : DlogWitness E.q,
-         maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
-         ∧ relDlog E stmt wit) ∨
-     (maAcceptSet E stmt msg1 hkm).card
-      ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card)
-    ∧ IPUniqueThirdRound E stmt msg1 := by
-  refine ⟨?_, ?_⟩
-  · exact ma_extractable E stmt hd hd2 msg1 hkm
-           hTargetOnE hBasesOnE hLargeQ hSample
-  · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
-    exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
-            hD₀ hD₁ hD₂ hLP hAcc hAcc'
-
-/-! ## Soundness probability -/
-
-/-- **Soundness probability bound** in natural-number form (axiom-free).
-
-Multiplied form of `|accept|/|validPairs| ≤ 24·(d + k + 3)·n /
-(n·(n − 3))` with `n = |E.points|`, avoiding division. Gives the
-headline soundness-error ratio: any prover who beats this on a
-uniformly random valid challenge pair has a witness extracted.
-
-Combines `ma_extractable` (numerator) with
-`card_validPairs_lb` (denominator). The single-`q` form is
-`ma_soundness_probability_hasse` in `Divisor/Hasse.lean`. -/
-theorem ma_soundness_probability
-    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k)
-    (hTargetOnE : stmt.target ∈ E.points)
-    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hLargeQ : E.points.card >
-        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg.toD.degE + stmt.k + 2) + 72)
-    (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
-        (validPairs E).card) :
-    (∃ wit : DlogWitness E.q,
-        maExtractor E stmt msg stmt.degBound hd hkm = some wit
-        ∧ relDlog E stmt wit) ∨
-    (maAcceptSet E stmt msg hkm).card
-      * (E.points.card * E.points.card - 3 * E.points.card)
-      ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card
-          * (validPairs E).card := by
-  rcases ma_extractable E stmt hd hd2 msg hkm
-          hTargetOnE hBasesOnE hLargeQ hSample with hWit | hBound
-  · left; exact hWit
-  · right
-    have hVPlb := card_validPairs_lb E
-    -- |accept| ≤ 24(d+k+3)n. Multiply both sides by n²-3n; chain via |validPairs|.
-    have hStep1 :
-        (maAcceptSet E stmt msg hkm).card
-          * (E.points.card * E.points.card - 3 * E.points.card)
-        ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card
-          * (E.points.card * E.points.card - 3 * E.points.card) :=
-      Nat.mul_le_mul_right _ hBound
-    have hStep2 :
-        24 * (stmt.degBound + stmt.k + 3) * E.points.card
-          * (E.points.card * E.points.card - 3 * E.points.card)
-        ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card
-          * (validPairs E).card := by
-      apply Nat.mul_le_mul_left
-      -- card_validPairs_lb uses numAffine; numAffine = E.points.card by defn.
-      have h := hVPlb
-      unfold ECSetup.numAffine at h
-      exact h
-    exact hStep1.trans hStep2
-
-/-! ## Auditing-friendly contrapositive forms
-
-If a prover's accept-set strictly exceeds the soundness bound, the
-extractor is guaranteed to produce a witness. These are
-the contrapositive shapes a verifier or auditor would actually use:
-"observed acceptance > bound ⟹ extraction succeeds". -/
-
-/-- **Auditing-friendly ratio form** (contrapositive of
-`ma_soundness_probability`). If a prover's accept-set exceeds
-`24·(d+k+3)·n · |validPairs| / (n·(n−3))`, the extractor returns a
-witness.
-
-Stated multiplicatively to avoid division: `|accept|·(n² − 3n) >
-24·(d+k+3)·n · |validPairs|` ⟹ extractor succeeds. -/
-theorem ma_extractable_witness_of_excess_ratio
-    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k)
-    (hTargetOnE : stmt.target ∈ E.points)
-    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hLargeQ : E.points.card >
-        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg.toD.degE + stmt.k + 2) + 72)
-    (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
-        (validPairs E).card)
-    (hExcess :
-      (maAcceptSet E stmt msg hkm).card
-        * (E.points.card * E.points.card - 3 * E.points.card)
-        > 24 * (stmt.degBound + stmt.k + 3) * E.points.card
-            * (validPairs E).card) :
-    ∃ wit : DlogWitness E.q,
-      maExtractor E stmt msg stmt.degBound hd hkm = some wit
-      ∧ relDlog E stmt wit := by
-  rcases ma_soundness_probability E stmt hd hd2 msg hkm
-          hTargetOnE hBasesOnE hLargeQ hSample with hWit | hBound
-  · exact hWit
-  · exact absurd hBound (Nat.not_le.mpr hExcess)
-
-/-- **Auditing-friendly point-count form** (contrapositive of
-`ma_extractable`). If accept-count exceeds `24·(d+k+3)·|E.points|`,
-the extractor returns a witness. Cheap corollary of the ratio form
-for local counting arguments where `|validPairs|` cancellation isn't
-needed. -/
-theorem ma_extractable_witness_of_excess_clean
-    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k)
-    (hTargetOnE : stmt.target ∈ E.points)
-    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hLargeQ : E.points.card >
-        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg.toD.degE + stmt.k + 2) + 72)
-    (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
-        (validPairs E).card)
-    (hExcess :
-      (maAcceptSet E stmt msg hkm).card
-        > 24 * (stmt.degBound + stmt.k + 3) * E.points.card) :
-    ∃ wit : DlogWitness E.q,
-      maExtractor E stmt msg stmt.degBound hd hkm = some wit
-      ∧ relDlog E stmt wit := by
-  rcases ma_extractable E stmt hd hd2 msg hkm
-          hTargetOnE hBasesOnE hLargeQ hSample with hWit | hBound
-  · exact hWit
-  · exact absurd hBound (Nat.not_le.mpr hExcess)
-
-/-- **IP auditing-friendly ratio form** (contrapositive of
-`ip_extractable` ratio shape). If the prover's accept-set
-exceeds the soundness ratio bound, the extractor returns a witness
-*and* the IP third-round message is uniquely determined. -/
-theorem ip_extractable_witness_of_excess_ratio
-    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg1 : MAProverMsg E.q)
-    (hkm : stmt.k = msg1.k)
-    (hTargetOnE : stmt.target ∈ E.points)
-    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hLargeQ : E.points.card >
-        2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg1.toD.degE + stmt.k + 2) + 72)
-    (hSample : 18 * (msg1.toD.degE + stmt.k + 1) * E.q + 1 ≤
-        (validPairs E).card)
-    (hExcess :
-      (maAcceptSet E stmt msg1 hkm).card
-        * (E.points.card * E.points.card - 3 * E.points.card)
-        > 24 * (stmt.degBound + stmt.k + 3) * E.points.card
-            * (validPairs E).card) :
-    (∃ wit : DlogWitness E.q,
-        maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
-        ∧ relDlog E stmt wit)
-    ∧ IPUniqueThirdRound E stmt msg1 := by
-  refine ⟨?_, ?_⟩
-  · exact ma_extractable_witness_of_excess_ratio E stmt hd hd2 msg1 hkm
-           hTargetOnE hBasesOnE hLargeQ hSample hExcess
-  · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
-    exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
-            hD₀ hD₁ hD₂ hLP hAcc hAcc'
-
-/-- **IP auditing-friendly point-count form** (contrapositive of
-`ip_extractable`). -/
-theorem ip_extractable_witness_of_excess_clean
-    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg1 : MAProverMsg E.q)
-    (hkm : stmt.k = msg1.k)
-    (hTargetOnE : stmt.target ∈ E.points)
-    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hLargeQ : E.points.card >
-        2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg1.toD.degE + stmt.k + 2) + 72)
-    (hSample : 18 * (msg1.toD.degE + stmt.k + 1) * E.q + 1 ≤
-        (validPairs E).card)
-    (hExcess :
-      (maAcceptSet E stmt msg1 hkm).card
-        > 24 * (stmt.degBound + stmt.k + 3) * E.points.card) :
-    (∃ wit : DlogWitness E.q,
-        maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
-        ∧ relDlog E stmt wit)
-    ∧ IPUniqueThirdRound E stmt msg1 := by
-  refine ⟨?_, ?_⟩
-  · exact ma_extractable_witness_of_excess_clean E stmt hd hd2 msg1 hkm
-           hTargetOnE hBasesOnE hLargeQ hSample hExcess
-  · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
-    exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
-            hD₀ hD₁ hD₂ hLP hAcc hAcc'
-
-

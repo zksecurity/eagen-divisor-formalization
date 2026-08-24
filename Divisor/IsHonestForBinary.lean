@@ -306,7 +306,7 @@ theorem ma_completeness_binary_via_combineHyp_clean
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg h_adm
-  exact ma_completeness E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+  exact ma_completeness_degBound E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinary_via_combineHyp (E := E) h_binary h_combine)
     h_d
 
@@ -324,7 +324,7 @@ theorem ma_completeness_binary_with_scalar_via_combineHyp_clean
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg h_adm
-  exact ma_completeness E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+  exact ma_completeness_degBound E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinaryScaled_via_combineHyp (E := E) h_binary h_combine)
     h_d
 
@@ -538,7 +538,7 @@ theorem ma_completeness_binary_extras_clean
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg h_adm
-  exact ma_completeness E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+  exact ma_completeness_degBound E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinary (E := E) h_binary h_len h_extras)
     h_d
 
@@ -559,7 +559,7 @@ theorem ma_completeness_binary_with_scalar_extras_clean
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg h_adm
-  exact ma_completeness E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+  exact ma_completeness_degBound E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinaryScaled (E := E)
       h_binary h_len h_extras)
     h_d

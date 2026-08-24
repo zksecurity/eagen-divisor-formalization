@@ -38,9 +38,9 @@
   * `Landmark.SafePairs` (semantic) and `Landmark.SafePairsCert`
     (computable, `Decidable`), with `SafePairs.of_cert`.
   * `Landmark.iteratedPointChordCase_of_safePairs` — the certificate
-    for the whole accumulation, at any length.
-  * `ma_completeness_binary_any_length` — headline: binary
-    completeness at any support length under `SafePairs`.
+    for the whole accumulation, at any length. The headline built on
+    it, `ma_completeness_binary_any_length`, lives in
+    `Divisor/Headlines.lean`.
 
   Degenerate supports genuinely exist (2-torsion points in the
   support; block sums colliding as `B = −2A`), so an unconditional
@@ -364,75 +364,5 @@ theorem binarySupport_on_curve
       exact hi ▸ h_bases_on_curve (Fin.cast hk.symm i)
     · rw [if_neg hs] at hi
       simp at hi
-
-/-- **Any-length binary completeness.** For a binary
-witness whose support satisfies the semantic general-position
-hypothesis `SafePairs` — every nonempty split of every sublist has a
-chord-safe pair of subset sums — the honest Eagen-singletons message
-achieves the completeness bound, at ANY support length. The
-hypothesis is decidable per instance via `SafePairsCert` +
-`SafePairs.of_cert`. -/
-theorem ma_completeness_binary_any_length
-    (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (h_valid : relDlog E stmt wit)
-    (h_toD_eq : msg.toD =
-       Landmark.eagenBuild_singletons E
-         (binarySupport stmt wit hk h_binary))
-    (h_degE_eq :
-       msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
-    (h_scalars_match : ∀ i : Fin stmt.k,
-       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
-    (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
-    (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
-    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
-    (h_safe : Landmark.SafePairs E (binarySupport stmt wit hk h_binary))
-    (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
-    (h_deg : msg.toD.degE ≤ wit.degBound)
-    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
-      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  have h_ps_on := binarySupport_on_curve stmt wit hk h_binary
-    h_target_on_curve h_bases_on_curve
-  exact ma_completeness_binary_point_certificate E stmt wit hk msg hkm
-    h_binary h_valid h_toD_eq h_degE_eq h_scalars_match
-    h_target_on_curve h_bases_on_curve h_nodup
-    (Landmark.iteratedPointChordCase_of_safePairs E
-      (binarySupport stmt wit hk h_binary) h_ps_on h_safe)
-    h_admSetMax h_deg h_deg_k
-
-/-- Any-length binary completeness with the general-position
-hypothesis supplied by the computable certificate
-(`decide`/`native_decide`-friendly). -/
-theorem ma_completeness_binary_any_length_cert
-    (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (h_valid : relDlog E stmt wit)
-    (h_toD_eq : msg.toD =
-       Landmark.eagenBuild_singletons E
-         (binarySupport stmt wit hk h_binary))
-    (h_degE_eq :
-       msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
-    (h_scalars_match : ∀ i : Fin stmt.k,
-       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
-    (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
-    (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
-    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
-    (h_cert : Landmark.SafePairsCert E (binarySupport stmt wit hk h_binary))
-    (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
-    (h_deg : msg.toD.degE ≤ wit.degBound)
-    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
-      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness_binary_any_length E stmt wit hk msg hkm h_binary h_valid
-    h_toD_eq h_degE_eq h_scalars_match h_target_on_curve h_bases_on_curve
-    h_nodup
-    (Landmark.SafePairs.of_cert E
-      (binarySupport_on_curve stmt wit hk h_binary
-        h_target_on_curve h_bases_on_curve)
-      h_cert)
-    h_admSetMax h_deg h_deg_k
 
 end Divisor
