@@ -17,9 +17,8 @@ Requires elan + Lean 4 toolchain (see `lean-toolchain`).
 
 Every axiom-free headline theorem lives in `Divisor/Headlines.lean`;
 the Hasse–Weil-priced field-size forms live in `Divisor/Hasse.lean`.
-The public surface below is
-the axiom-free
-point-count surface: every bound is stated in the currency
+The surface below is the axiom-free point-count surface: every bound
+is stated in the currency
 `n = |E(F_q)|` (`E.points.card`). Naming convention: a short name is
 the point-count form (axiom-free); a `_q` suffix is the field-size form
 obtained by the trivial fiber bound `n ≤ 2q` (still axiom-free;
@@ -234,6 +233,36 @@ Conclusion: the verifier rejects the honest prover on at most
 `(3d+4)·|E(F_q)|` challenge pairs (equivalently at most `(6(d+1)+6)·q`
 via `ma_completeness_q`, still axiom-free).
 
+#### `Divisor.ip_completeness`
+
+> **Theorem (IP completeness).** Let `msg` be a first-round message
+> with nonzero divisor whose degree $`d'`$ is within the statement
+> bound. Then an accepted third-round response exists for every
+> challenge pair outside a set of at most
+> $`(3d' + 9k + 71)\,|E(\mathbb{F}_q)|`$ pairs. The field-size form
+> ($`\le 18(d+k+12)q`$, via the trivial fiber bound — no axiom) is
+> `ip_completeness_q`.
+
+Lean:
+```lean
+theorem ip_completeness
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hDegK : msg.toD.degE ≤ stmt.degBound)
+    (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
+    ((E.points ×ˢ E.points).filter
+        (fun p => ¬ ∃ msg3 : IPProverMsg3 E.q,
+                  ipVerifierAccepts E stmt msg ⟨p.1, p.2⟩
+                       (computeA₂ ⟨p.1, p.2⟩) msg3)).card
+      ≤ (3 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card
+```
+
+Unlike the MA side, no honesty predicate is needed: for *any*
+first-round message meeting the degree and nonzero-divisor
+hypotheses, the honest third-round response (the log-derivative
+values and the line coefficient) exists and is accepted off the bad
+set; `IPUniqueThirdRound` makes it the only accepted response
+wherever its nonvanishing side conditions hold.
+
 #### Any-length constructive completeness
 
 `ma_completeness` is conditional on the honesty predicate
@@ -274,15 +303,16 @@ Beyond the pins, CI independently verifies the headline theorems with
 against the frozen statements in `Challenge.lean` — statement identity
 (so a proof cannot drift from the stated theorem or smuggle the
 conclusion in as a hypothesis), an axiom allowlist, and a kernel replay
-of the full export — and replays every `.olean` through the toolchain's
-built-in `leanchecker` to rule out environment hacking. See
-`Judge/README.md`.
+of the full export — and replays every module of this library through
+the toolchain's built-in `leanchecker` to rule out environment hacking
+(dependency oleans come from the mathlib cache, which mathlib's own CI
+leanchecks). See `Judge/README.md`.
 
-**Every primary headline theorem is axiom-free** — the closures of
-`Divisor.ma_extractable`, `Divisor.ip_extractable`,
-`Divisor.ma_completeness`, `Divisor.ma_completeness_base`, and the
-entire binary completeness chain (`ma_completeness_binary*`) are the
-Lean core three only. This is enforced *by import structure*: the axiom
+**Every primary headline theorem is axiom-free** — the closure of
+every theorem in `Divisor/Headlines.lean` (`ma_extractable`,
+`ip_extractable`, the four completeness bounds, the binary
+completeness chain `ma_completeness_binary*`, and the
+probability/contrapositive forms) is the Lean core three only. This is enforced *by import structure*: the axiom
 file `Divisor/Axioms/AxiomHasseWeil.lean` is imported by exactly one
 module, the terminal leaf `Divisor/Hasse.lean`, which sits above the
 whole library and below nothing. All internal bounds are carried in the
@@ -304,17 +334,17 @@ in exactly one of two ways:
   `ma_soundness_probability_hasse`, the witness-of-excess
   contrapositives, and the point-count conversion lemmas
   `hasse_points_bound` / `hasse_points_bound_lb`) are the **only**
-  theorems whose closure contains the axiom. Each field-size final
-  also has an axiom-free `_of_count` flavor (e.g.
-  `ma_extractable_of_count`) taking the two linear count bounds
+  theorems whose closure contains
+
+  ```text
+  Divisor.hasse_weil_textbook
+  ```
+
+  Each field-size final also has an axiom-free `_of_count` flavor
+  (e.g. `ma_extractable_of_count`) taking the two linear count bounds
   `2n ≤ 3q + 3` and `q ≤ 2n + 3` as explicit hypotheses — checkable
   arithmetic for any concrete curve, so fully machine-checked
-  field-size instances need no axiom at all. The `_hasse` forms are
-  the only theorems whose closure contains
-
-```text
-Divisor.hasse_weil_textbook
-```
+  field-size instances need no axiom at all.
 
 The one axiom is a piece of mathematical infrastructure — a point
 count. It does not mention the protocol, the extractor, or the
@@ -384,8 +414,8 @@ Formal statement:
 ```lean
 theorem CoordRingElt.divisorClass_eq_zero_of_splitsOnE
     (E : ECSetup) (D : CoordRingElt E.q)
-    (_hD : ¬ (D.a = 0 ∧ D.b = 0))
-    (_hSplit : splitsOnE E D) :
+    (hD : ¬ (D.a = 0 ∧ D.b = 0))
+    (hSplit : splitsOnE E D) :
     divisorClass E (divisorOfD E D)
       (divisorOfD_finiteSupport E D) = 0
 ```
@@ -394,8 +424,8 @@ Hypotheses:
 
 - `E : ECSetup`, `D : CoordRingElt E.q`: a curve, and a coordinate-ring
   element `D = a(x) − b(x)·y`, i.e. a rational function on the curve.
-- `_hD : ¬ (D.a = 0 ∧ D.b = 0)`: `D` is not the zero function.
-- `_hSplit : splitsOnE E D`: every zero of `D` is visible over `F_q`:
+- `hD : ¬ (D.a = 0 ∧ D.b = 0)`: `D` is not the zero function.
+- `hSplit : splitsOnE E D`: every zero of `D` is visible over `F_q`:
   the norm polynomial of `D` splits into linear factors over `F_q`, and
   each root has an `F_q`-rational fibre on the curve. Without this, `D`
   could have zeros only over an extension field, and the project's
