@@ -4,7 +4,7 @@
   Parameterized core of the MA completeness theorem. This file is the
   "lower half" of `Divisor/Soundness.lean`, extracted upstream so that
   the explicit honest-divisor bridge in
-  `Divisor/EagenBuildRecursive.lean` can sit between this file and the
+  `Divisor/LineBuildRecursive.lean` can sit between this file and the
   public `ma_completeness` wrapper in `Soundness.lean` without creating
   an import cycle.
 

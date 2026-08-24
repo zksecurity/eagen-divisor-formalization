@@ -2,9 +2,9 @@
   Divisor/SafeSupportDefs.lean
 
   Definitions for the any-length binary completeness statements: the
-  general-position hypothesis on a support list (`Landmark.SafePairs`),
-  its computable, decidable form (`Landmark.SafePairsCert` via
-  `Landmark.pointSum`), and the binary support constructor
+  general-position hypothesis on a support list (`LineAccum.SafePairs`),
+  its computable, decidable form (`LineAccum.SafePairsCert` via
+  `LineAccum.pointSum`), and the binary support constructor
   (`binarySupport`).
 
   This module carries no completeness theorems — the proofs live in
@@ -12,10 +12,10 @@
   `Challenge.lean` can import it to state the binary headline theorems
   without importing their proofs.
 -/
-import Divisor.EagenBuildLandmark
+import Divisor.LineBuild
 import Divisor.Protocol
 
-namespace Divisor.Landmark
+namespace Divisor.LineAccum
 
 variable (E : ECSetup)
 
@@ -54,7 +54,7 @@ instance safePairsCert_decidable (Ps : List (ZMod E.q × ZMod E.q)) :
   unfold SafePairsCert
   infer_instance
 
-end Divisor.Landmark
+end Divisor.LineAccum
 
 namespace Divisor
 

@@ -1,9 +1,9 @@
 /-
-  Divisor/EagenBuildRecursive.lean
+  Divisor/LineBuildRecursive.lean
 
   Two things live here:
 
-  1. The recursive `eagenBuild` driver for general-N point lists,
+  1. The recursive `lineBuild` driver for general-N point lists,
      following Eagen §3.1.1 ("Incremental construction") in 596.pdf.
   2. The `IsHonestForExplicit` completeness bridge: from an honest
      message (divisor identity + on-curve invariants) to verifier
@@ -38,8 +38,8 @@
   **Odd lengths**: carry the unpaired entry forward to the next level.
 
   No correctness theorem for the recursive driver is proved here; the
-  production completeness chain goes through the Landmark route
-  (`EagenBuildLandmark.lean`, `IsHonestForBinary.lean`,
+  production completeness chain goes through the LineAccum route
+  (`LineBuild.lean`, `IsHonestForBinary.lean`,
   `SafeSupport.lean`). The length-4 base case is handled explicitly in
   `Divisor/IncrementalConstruction.lean`.
 -/
@@ -56,7 +56,7 @@ variable (E : ECSetup)
     level chord = group-sum of absorbed P's at this level) and the
     accumulated polynomial whose divisor incorporates the absorbed P's
     plus the third intersection. -/
-structure EagenAccum where
+structure Accum where
   point : ZMod E.q × ZMod E.q
   poly : CoordRingElt E.q
 
@@ -72,8 +72,8 @@ Odd-length input: the last (unpaired) point becomes a level-1 entry
 /-- Build a level-1 accumulator from two distinct affine points.
     The chord through `P, Q` has third intersection `-(P+Q)`; the new
     accumulator is `(-(P+Q), chord)`. -/
-noncomputable def EagenAccum.fromChordPair_distinct
-    (P Q : ZMod E.q × ZMod E.q) (_h_xx : P.1 ≠ Q.1) : EagenAccum E :=
+noncomputable def Accum.fromChordPair_distinct
+    (P Q : ZMod E.q × ZMod E.q) (_h_xx : P.1 ≠ Q.1) : Accum E :=
   let chord := chordCoordRingElt E P Q
   let lam := slopeOf P.1 P.2 Q.1 Q.2
   let Qx := lam ^ 2 - P.1 - Q.1
@@ -87,39 +87,39 @@ noncomputable def EagenAccum.fromChordPair_distinct
     has divisor `(P) + (-P) - 2·O`. The "third intersection" is `O`;
     the new accumulator carries the vertical line as polynomial and `P`
     as point (sentinel — actual contribution is at infinity). -/
-noncomputable def EagenAccum.fromChordPair_vertical
+noncomputable def Accum.fromChordPair_vertical
     (P Q : ZMod E.q × ZMod E.q) (_h_xx : P.1 = Q.1) (_h_yy : P.2 = -Q.2) :
-    EagenAccum E :=
+    Accum E :=
   { point := P,  -- Sentinel; level transitions handle this.
     poly := { a := Polynomial.X - Polynomial.C P.1, b := 0 } }
 
 /-- Process the initial input list, pairing adjacent points and building
     chord lines. Returns the level-1 accumulator list. Odd input lengths
     carry the last point forward as `(P_last, 1)`. -/
-noncomputable def eagenBuild_level0 (Ps : List (ZMod E.q × ZMod E.q)) :
-    List (EagenAccum E) :=
+noncomputable def lineBuild_level0 (Ps : List (ZMod E.q × ZMod E.q)) :
+    List (Accum E) :=
   match Ps with
   | [] => []
   | [P] => [{ point := P, poly := { a := 1, b := 0 } }]
   | P :: Q :: rest =>
       if h : P.1 ≠ Q.1 then
-        EagenAccum.fromChordPair_distinct E P Q h :: eagenBuild_level0 rest
+        Accum.fromChordPair_distinct E P Q h :: lineBuild_level0 rest
       else if hYY : P.2 = -Q.2 then
         -- Vertical chord case: P = -Q.
-        EagenAccum.fromChordPair_vertical E P Q
+        Accum.fromChordPair_vertical E P Q
           (Classical.byContradiction (fun h_neq => h h_neq)) hYY ::
-          eagenBuild_level0 rest
+          lineBuild_level0 rest
       else
         -- Tangent doubling case (P = Q): deferred.
-        { point := P, poly := { a := 1, b := 0 } } :: eagenBuild_level0 rest
+        { point := P, poly := { a := 1, b := 0 } } :: lineBuild_level0 rest
 
 /-! ## Level-(k+1) step (k ≥ 1): combine two level-k accumulators
 
 Combine `(a_pt, a_poly)` and `(b_pt, b_poly)` per the paper formula:
     `new_poly = chord(a_pt, b_pt) · a_poly · b_poly / divLin(a_pt.1) / divLin(b_pt.1)`. -/
 
-noncomputable def EagenAccum.combine_higher_distinct
-    (a b : EagenAccum E) (_h_xx : a.point.1 ≠ b.point.1) : EagenAccum E :=
+noncomputable def Accum.combine_higher_distinct
+    (a b : Accum E) (_h_xx : a.point.1 ≠ b.point.1) : Accum E :=
   let chord := chordCoordRingElt E a.point b.point
   let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
   let Qx := lam ^ 2 - a.point.1 - b.point.1
@@ -137,10 +137,10 @@ noncomputable def EagenAccum.combine_higher_distinct
 
     Polynomial: `(X - x(a.point)) · a.poly · b.poly / (X - x(a.point))^2
                 = a.poly · b.poly / (X - x(a.point))`. -/
-noncomputable def EagenAccum.combine_higher_vertical
-    (a b : EagenAccum E)
+noncomputable def Accum.combine_higher_vertical
+    (a b : Accum E)
     (_h_xx : a.point.1 = b.point.1) (_h_yy : a.point.2 = -b.point.2) :
-    EagenAccum E :=
+    Accum E :=
   -- Combined = a.poly · b.poly / (X - x(a.point)).
   let mul_ab := mulCoordRingElt E a.poly b.poly
   let combined := mul_ab.divLin a.point.1
@@ -152,42 +152,42 @@ noncomputable def EagenAccum.combine_higher_vertical
 
 /-- Process a level-k (k ≥ 1) accumulator list, pairing adjacent entries
     and combining each pair. Odd-length lists carry the last entry forward. -/
-noncomputable def eagenBuild_level_step (xs : List (EagenAccum E)) :
-    List (EagenAccum E) :=
+noncomputable def lineBuild_level_step (xs : List (Accum E)) :
+    List (Accum E) :=
   match xs with
   | [] => []
   | [a] => [a]
   | a :: b :: rest =>
       if h : a.point.1 ≠ b.point.1 then
-        EagenAccum.combine_higher_distinct E a b h :: eagenBuild_level_step rest
+        Accum.combine_higher_distinct E a b h :: lineBuild_level_step rest
       else if hYY : a.point.2 = -b.point.2 then
         -- Vertical chord case (a.point = -b.point).
-        EagenAccum.combine_higher_vertical E a b
+        Accum.combine_higher_vertical E a b
           (Classical.byContradiction (fun h_neq => h h_neq)) hYY ::
-          eagenBuild_level_step rest
+          lineBuild_level_step rest
       else
         -- Tangent doubling: a.point = b.point. Deferred.
-        a :: b :: eagenBuild_level_step rest
+        a :: b :: lineBuild_level_step rest
 
 /-! ## Top-level driver
 
-Iterate `eagenBuild_level_step` until the list reduces to one entry. Use
+Iterate `lineBuild_level_step` until the list reduces to one entry. Use
 `fuel := xs.length` as a termination measure (each step at least halves
 the list, so log₂ of length is sufficient; length itself is overkill but
 safe). -/
 
-noncomputable def eagenBuild_iterate :
-    ℕ → List (EagenAccum E) → List (EagenAccum E)
+noncomputable def lineBuild_iterate :
+    ℕ → List (Accum E) → List (Accum E)
   | 0, xs => xs
   | n + 1, xs =>
       if xs.length ≤ 1 then xs
-      else eagenBuild_iterate n (eagenBuild_level_step E xs)
+      else lineBuild_iterate n (lineBuild_level_step E xs)
 
-/-- Top-level eagenBuild: from a list of input points (assumed sum-zero),
+/-- Top-level lineBuild: from a list of input points (assumed sum-zero),
     produces the polynomial witness whose divisor is `Σ (P_i) - n·O`. -/
-noncomputable def eagenBuild (Ps : List (ZMod E.q × ZMod E.q)) : CoordRingElt E.q :=
-  let level1 := eagenBuild_level0 E Ps
-  let final := eagenBuild_iterate E Ps.length level1
+noncomputable def lineBuild (Ps : List (ZMod E.q × ZMod E.q)) : CoordRingElt E.q :=
+  let level1 := lineBuild_level0 E Ps
+  let final := lineBuild_iterate E Ps.length level1
   match final with
   | [] => { a := 1, b := 0 }
   | [single] => single.poly
@@ -273,7 +273,7 @@ hAccount, and residue-match side conditions (protocol- and D-specific).
 Produces logDerivCheckFn = 0.
 
 For length-4 simple, all these can be discharged via length-4 work.
-For general k, the user provides them (e.g., via recursive eagenBuild). -/
+For general k, the user provides them (e.g., via recursive lineBuild). -/
 
 theorem logDerivCheckFn_zero_via_isHonestForExplicit_with_sides
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
@@ -1059,7 +1059,7 @@ theorem divisor_identity_at_infinity_for_length4Simple
     divisorOfD E msg.toD (0 : ECPoint E)
       = honestDivisorCoeffs E stmt wit hk msg (0 : ECPoint E) := by
   rw [h_simple.h_toD_eq]
-  rw [eagenBuild_length4_div_at_infinity E
+  rw [lineBuild_length4_div_at_infinity E
         h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
         h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
         h_simple.h_xx_01 h_simple.h_xx_23
@@ -1068,7 +1068,7 @@ theorem divisor_identity_at_infinity_for_length4Simple
   show (-4 : ℤ) = -((msg.toD.degE : ℤ))
   have h_degE : msg.toD.degE = 4 := by
     rw [h_simple.h_toD_eq]
-    exact eagenBuild_length4_explicit_degE_eq_four E
+    exact lineBuild_length4_explicit_degE_eq_four E
       h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
       h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
       h_simple.h_xx_01 h_simple.h_xx_23
@@ -1132,7 +1132,7 @@ theorem divisor_identity_at_affine_off_support_for_length4Simple
   rw [show (WeierstrassCurve.Affine.Point.some _ _ hns : ECPoint E)
         = ECPoint.affine E x y from (ECPoint.affine_of_nonsingular E hns).symm]
   -- Step 1: divisorOfD = 0. Use zerosFinset characterization.
-  have h_zeros := zerosFinset_eagenBuild_length4_eq E
+  have h_zeros := zerosFinset_lineBuild_length4_eq E
     h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
     h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
     h_simple.h_xx_01 h_simple.h_xx_23
@@ -1154,7 +1154,7 @@ theorem divisor_identity_at_affine_off_support_for_length4Simple
     exact ⟨hP, h⟩
   have hD_NZ : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) := by
     rw [h_simple.h_toD_eq]
-    exact eagenBuild_length4_explicit_ne_zero E
+    exact lineBuild_length4_explicit_ne_zero E
       h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
       h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
       h_simple.h_xx_01 h_simple.h_xx_23
@@ -1231,7 +1231,7 @@ theorem divisor_identity_at_affine_off_support_for_length4Simple
 /-! ### Affine on-support case: R ∈ {P_0..P_3}
 
 For each P_i, the divisor identity at .some P_i is `1 = 1`:
-* `divisorOfD = 1` from `eagenBuild_length4_div_at_P_i`.
+* `divisorOfD = 1` from `lineBuild_length4_div_at_P_i`.
 * `honestDivisorCoeffs = 1` from indicator (i = 0) or base-sum (i ≥ 1).
 
 Each sub-case is structurally the same; we keep them separate for
@@ -1254,7 +1254,7 @@ private theorem div_eq_one_at_P_for_length4Simple
     have hx : x = h_simple.P₀.1 := by rw [show x = (x, y).1 from rfl, h0]
     have hy : y = h_simple.P₀.2 := by rw [show y = (x, y).2 from rfl, h0]
     rw [hx, hy]
-    exact eagenBuild_length4_div_at_P₀ E
+    exact lineBuild_length4_div_at_P₀ E
       h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
       h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
       h_simple.h_xx_01 h_simple.h_xx_23
@@ -1265,7 +1265,7 @@ private theorem div_eq_one_at_P_for_length4Simple
   · have hx : x = h_simple.P₁.1 := by rw [show x = (x, y).1 from rfl, h1]
     have hy : y = h_simple.P₁.2 := by rw [show y = (x, y).2 from rfl, h1]
     rw [hx, hy]
-    exact eagenBuild_length4_div_at_P₁ E
+    exact lineBuild_length4_div_at_P₁ E
       h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
       h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
       h_simple.h_xx_01 h_simple.h_xx_23
@@ -1276,7 +1276,7 @@ private theorem div_eq_one_at_P_for_length4Simple
   · have hx : x = h_simple.P₂.1 := by rw [show x = (x, y).1 from rfl, h2]
     have hy : y = h_simple.P₂.2 := by rw [show y = (x, y).2 from rfl, h2]
     rw [hx, hy]
-    exact eagenBuild_length4_div_at_P₂ E
+    exact lineBuild_length4_div_at_P₂ E
       h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
       h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
       h_simple.h_xx_01 h_simple.h_xx_23
@@ -1287,7 +1287,7 @@ private theorem div_eq_one_at_P_for_length4Simple
   · have hx : x = h_simple.P₃.1 := by rw [show x = (x, y).1 from rfl, h3]
     have hy : y = h_simple.P₃.2 := by rw [show y = (x, y).2 from rfl, h3]
     rw [hx, hy]
-    exact eagenBuild_length4_div_at_P₃ E
+    exact lineBuild_length4_div_at_P₃ E
       h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
       h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
       h_simple.h_xx_01 h_simple.h_xx_23
@@ -1509,7 +1509,7 @@ theorem divisor_identity_for_length4Simple
 
 /-! ### `splitsOnE msg.toD` for length-4 simple
 
-Direct dispatch to `splitsOnE_eagenBuild_length4` (existing
+Direct dispatch to `splitsOnE_lineBuild_length4` (existing
 infrastructure in `Divisor/IncrementalConstruction.lean`). -/
 
 theorem splitsOnE_msg_toD_for_length4Simple
@@ -1517,7 +1517,7 @@ theorem splitsOnE_msg_toD_for_length4Simple
     (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt) :
     splitsOnE E msg.toD := by
   rw [h_simple.h_toD_eq]
-  exact splitsOnE_eagenBuild_length4 E
+  exact splitsOnE_lineBuild_length4 E
     h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
     h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
     h_simple.h_xx_01 h_simple.h_xx_23

@@ -15,7 +15,7 @@ import Tests.CurveFixtures
 
 namespace Tests.AnyLengthCompletenessSmoke
 
-open Divisor Divisor.Landmark Tests.CurveFixtures
+open Divisor Divisor.LineAccum Tests.CurveFixtures
 
 /-- A sum-zero, nodup, length-5 support in general position (found by
 search; not closed under negation, so not an inverse-pair shape). -/

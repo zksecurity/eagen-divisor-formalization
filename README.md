@@ -267,7 +267,7 @@ wherever its nonvanishing side conditions hold.
 
 `ma_completeness` is conditional on the honesty predicate
 `isHonestFor`; the constructive supply (an explicit honest message,
-built by the Eagen chord accumulation `eagenBuild_singletons`) is the
+built by the line accumulation `lineBuild_singletons`) is the
 `ma_completeness_binary*` family. Its chain certificate — every
 chord-combine in the accumulation is non-degenerate — comes two ways:
 once-and-for-all for the structured support shapes (lengths 2 and 4,
@@ -282,7 +282,7 @@ the support; block sums related by `B = −2A`), so some such exclusion
 is necessary; `SafePairs` is decidable per instance
 (`SafePairsCert`, `decide`/`native_decide`-friendly via the
 computable point skeleton). The enabling bridge is
-`Landmark.pointCombine_eq_add`: the computable point-skeleton combine
+`LineAccum.pointCombine_eq_add`: the computable point-skeleton combine
 agrees with mathlib's elliptic-curve group law on every pair of
 points, so skeleton blocks are genuine subset sums. Axiom-free, like
 the whole completeness side.

@@ -51,10 +51,10 @@ theorem admSetParker_excludes_zero : ¬ (admSetParker (q := q) (0, 0)) := by
   simp at h
 
 /-- Eagen: `{(a, b) : coeff(a, 0) = 1}`. -/
-def admSetEagen : Polynomial (ZMod q) × Polynomial (ZMod q) → Prop :=
+def admSetLine : Polynomial (ZMod q) × Polynomial (ZMod q) → Prop :=
   fun ab => ab.1.coeff 0 = 1
 
-theorem admSetEagen_excludes_zero : ¬ (admSetEagen (q := q) (0, 0)) := by
+theorem admSetLine_excludes_zero : ¬ (admSetLine (q := q) (0, 0)) := by
   intro h
   change (0 : Polynomial (ZMod q)).coeff 0 = 1 at h
   simp at h

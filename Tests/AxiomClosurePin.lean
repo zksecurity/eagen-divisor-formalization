@@ -183,7 +183,7 @@ info: 'Divisor.ma_extractable_paper' depends on axioms: [propext,
   The binary chain (`ma_completeness_binary_extras` and its `_clean`
   variant, gated on the per-input `h_extras` certificate rather than
   the universal `PairwiseCombineHyp`) has the same closure as
-  `ma_completeness*`: the LandmarkInvStrong infrastructure introduces
+  `ma_completeness*`: the AccumInvStrong infrastructure introduces
   no axioms. -/
 /--
 info: 'Divisor.ma_completeness_binary_extras' depends on axioms: [propext,
@@ -302,19 +302,19 @@ info: 'Divisor.ma_completeness_binary_chain_admSetParker' depends on axioms: [pr
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_completeness_binary_chain_admSetParker
 /--
-info: 'Divisor.ma_completeness_binary_admSetEagen_extras' depends on axioms: [propext,
+info: 'Divisor.ma_completeness_binary_admSetLine_extras' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_admSetEagen_extras
+#print axioms Divisor.ma_completeness_binary_admSetLine_extras
 /--
-info: 'Divisor.ma_completeness_binary_chain_admSetEagen' depends on axioms: [propext,
+info: 'Divisor.ma_completeness_binary_chain_admSetLine' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_chain_admSetEagen
+#print axioms Divisor.ma_completeness_binary_chain_admSetLine
 /--
 info: 'Divisor.ma_completeness_binary_admSetHash_extras' depends on axioms: [propext,
  Classical.choice,
@@ -346,12 +346,12 @@ info: 'Divisor.ma_completeness_binary_admSetParker' depends on axioms: [propext,
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_completeness_binary_admSetParker
 /--
-info: 'Divisor.ma_completeness_binary_admSetEagen' depends on axioms: [propext,
+info: 'Divisor.ma_completeness_binary_admSetLine' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_admSetEagen
+#print axioms Divisor.ma_completeness_binary_admSetLine
 /--
 info: 'Divisor.ma_completeness_binary_admSetHash' depends on axioms: [propext,
  Classical.choice,
@@ -362,19 +362,19 @@ info: 'Divisor.ma_completeness_binary_admSetHash' depends on axioms: [propext,
 
 /-! Certifying-wrapper bridges for the combine certificates -/
 /--
-info: 'Divisor.Landmark.landmarkInvStrongCombineAffineExtras_of_combineCanFire_full' depends on axioms: [propext,
+info: 'Divisor.LineAccum.accumInvStrongCombineAffineExtras_of_combineCanFire_full' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.Landmark.landmarkInvStrongCombineAffineExtras_of_combineCanFire_full
+#print axioms Divisor.LineAccum.accumInvStrongCombineAffineExtras_of_combineCanFire_full
 /--
-info: 'Divisor.Landmark.landmarkInvStrongCombineExtras_of_combineCanFire_full' depends on axioms: [propext,
+info: 'Divisor.LineAccum.accumInvStrongCombineExtras_of_combineCanFire_full' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.Landmark.landmarkInvStrongCombineExtras_of_combineCanFire_full
+#print axioms Divisor.LineAccum.accumInvStrongCombineExtras_of_combineCanFire_full
 
 /-! Point-skeleton certificate — Decidable, native_decide-able -/
 /--
@@ -392,12 +392,12 @@ info: 'Divisor.ma_completeness_binary_admSetParker_point_certificate' depends on
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_completeness_binary_admSetParker_point_certificate
 /--
-info: 'Divisor.ma_completeness_binary_admSetEagen_point_certificate' depends on axioms: [propext,
+info: 'Divisor.ma_completeness_binary_admSetLine_point_certificate' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_admSetEagen_point_certificate
+#print axioms Divisor.ma_completeness_binary_admSetLine_point_certificate
 /--
 info: 'Divisor.ma_completeness_binary_admSetHash_point_certificate' depends on axioms: [propext,
  Classical.choice,
@@ -427,19 +427,19 @@ info: 'Divisor.ma_completeness_binary_any_length_cert' depends on axioms: [prope
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_completeness_binary_any_length_cert
 /--
-info: 'Divisor.Landmark.pointCombine_eq_add' depends on axioms: [propext,
+info: 'Divisor.LineAccum.pointCombine_eq_add' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.Landmark.pointCombine_eq_add
+#print axioms Divisor.LineAccum.pointCombine_eq_add
 /--
-info: 'Divisor.Landmark.iteratedPointChordCase_of_safePairs' depends on axioms: [propext,
+info: 'Divisor.LineAccum.iteratedPointChordCase_of_safePairs' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.Landmark.iteratedPointChordCase_of_safePairs
+#print axioms Divisor.LineAccum.iteratedPointChordCase_of_safePairs
 
 /-! ## Terminal Hasse layer (`Divisor/Hasse.lean`)
 

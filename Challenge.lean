@@ -148,7 +148,7 @@ theorem ma_completeness_binary_any_length
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
     (h_toD_eq : msg.toD =
-       Landmark.eagenBuild_singletons E
+       LineAccum.lineBuild_singletons E
          (binarySupport stmt wit hk h_binary))
     (h_degE_eq :
        msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
@@ -157,7 +157,7 @@ theorem ma_completeness_binary_any_length
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
     (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
-    (h_safe : Landmark.SafePairs E (binarySupport stmt wit hk h_binary))
+    (h_safe : LineAccum.SafePairs E (binarySupport stmt wit hk h_binary))
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
@@ -171,7 +171,7 @@ theorem ma_completeness_binary_any_length_cert
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
     (h_toD_eq : msg.toD =
-       Landmark.eagenBuild_singletons E
+       LineAccum.lineBuild_singletons E
          (binarySupport stmt wit hk h_binary))
     (h_degE_eq :
        msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
@@ -180,7 +180,7 @@ theorem ma_completeness_binary_any_length_cert
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
     (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
-    (h_cert : Landmark.SafePairsCert E (binarySupport stmt wit hk h_binary))
+    (h_cert : LineAccum.SafePairsCert E (binarySupport stmt wit hk h_binary))
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :

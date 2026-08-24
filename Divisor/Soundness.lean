@@ -19,7 +19,7 @@
   `Divisor/Completeness.lean`.
 -/
 import Divisor.Bridges
-import Divisor.EagenBuildRecursive
+import Divisor.LineBuildRecursive
 
 namespace Divisor
 

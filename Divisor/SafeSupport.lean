@@ -18,7 +18,7 @@
     neither is 2-torsion, and the chord's third intersection avoids
     both.
 
-  Why this shape: the accumulation tree of `eagenBuild_singletons`
+  Why this shape: the accumulation tree of `lineBuild_singletons`
   (`iterate`/`level_step`) combines, at every level, blocks whose
   underlying support chunks are adjacent — so each combined pair of
   block sums is `(Σ xs, Σ ys)` for some split `xs ++ ys` that is a
@@ -32,12 +32,12 @@
   skeleton are therefore genuine subset sums.
 
   Deliverables:
-  * `Landmark.pointCombine_eq_add` — skeleton combine = group law.
-  * `Landmark.pointSum` — computable EC sum of a support list, with
+  * `LineAccum.pointCombine_eq_add` — skeleton combine = group law.
+  * `LineAccum.pointSum` — computable EC sum of a support list, with
     `pointSum_eq_sumOnE` (so certificates can be `native_decide`d).
-  * `Landmark.SafePairs` (semantic) and `Landmark.SafePairsCert`
+  * `LineAccum.SafePairs` (semantic) and `LineAccum.SafePairsCert`
     (computable, `Decidable`), with `SafePairs.of_cert`.
-  * `Landmark.iteratedPointChordCase_of_safePairs` — the certificate
+  * `LineAccum.iteratedPointChordCase_of_safePairs` — the certificate
     for the whole accumulation, at any length. The headline built on
     it, `ma_completeness_binary_any_length`, lives in
     `Divisor/Headlines.lean`.
@@ -51,7 +51,7 @@ import Divisor.IsHonestForBinary
 
 open Polynomial Classical
 
-namespace Divisor.Landmark
+namespace Divisor.LineAccum
 
 variable (E : ECSetup)
 
@@ -341,11 +341,11 @@ theorem SafePairs.of_cert
     rwa [pointSum_eq_sumOnE E xs hxs_on, pointSum_eq_sumOnE E ys hys_on]
       at hpcc
 
-end Divisor.Landmark
+end Divisor.LineAccum
 
 namespace Divisor
 
-open Landmark
+open LineAccum
 
 /-- Every point of `binarySupport` lies on the curve. -/
 theorem binarySupport_on_curve

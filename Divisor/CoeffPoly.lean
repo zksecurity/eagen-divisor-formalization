@@ -2,7 +2,7 @@
   Divisor/CoeffPoly.lean
 
   Computable polynomial representation over `ZMod q`, used as the
-  underlying value for the computable Eagen construction.  Mathlib's
+  underlying value for the computable line-build construction.  Mathlib's
   `Polynomial` API is in `noncomputable section`, so it cannot host
   `#eval`-style evaluation.
 

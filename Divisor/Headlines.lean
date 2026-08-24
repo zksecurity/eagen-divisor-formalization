@@ -221,8 +221,8 @@ theorem ip_completeness_q
 /-- **Any-length binary completeness.** For a binary
 witness whose support satisfies the semantic general-position
 hypothesis `SafePairs` — every nonempty split of every sublist has a
-chord-safe pair of subset sums — the honest Eagen-singletons message
-achieves the completeness bound, at ANY support length. The
+chord-safe pair of subset sums — the honest line-build-singletons
+message achieves the completeness bound, at ANY support length. The
 hypothesis is decidable per instance via `SafePairsCert` +
 `SafePairs.of_cert`. -/
 theorem ma_completeness_binary_any_length
@@ -231,7 +231,7 @@ theorem ma_completeness_binary_any_length
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
     (h_toD_eq : msg.toD =
-       Landmark.eagenBuild_singletons E
+       LineAccum.lineBuild_singletons E
          (binarySupport stmt wit hk h_binary))
     (h_degE_eq :
        msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
@@ -240,7 +240,7 @@ theorem ma_completeness_binary_any_length
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
     (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
-    (h_safe : Landmark.SafePairs E (binarySupport stmt wit hk h_binary))
+    (h_safe : LineAccum.SafePairs E (binarySupport stmt wit hk h_binary))
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
@@ -251,7 +251,7 @@ theorem ma_completeness_binary_any_length
   exact ma_completeness_binary_point_certificate E stmt wit hk msg hkm
     h_binary h_valid h_toD_eq h_degE_eq h_scalars_match
     h_target_on_curve h_bases_on_curve h_nodup
-    (Landmark.iteratedPointChordCase_of_safePairs E
+    (LineAccum.iteratedPointChordCase_of_safePairs E
       (binarySupport stmt wit hk h_binary) h_ps_on h_safe)
     h_admSetMax h_deg h_deg_k
 
@@ -264,7 +264,7 @@ theorem ma_completeness_binary_any_length_cert
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
     (h_toD_eq : msg.toD =
-       Landmark.eagenBuild_singletons E
+       LineAccum.lineBuild_singletons E
          (binarySupport stmt wit hk h_binary))
     (h_degE_eq :
        msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
@@ -273,7 +273,7 @@ theorem ma_completeness_binary_any_length_cert
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
     (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
-    (h_cert : Landmark.SafePairsCert E (binarySupport stmt wit hk h_binary))
+    (h_cert : LineAccum.SafePairsCert E (binarySupport stmt wit hk h_binary))
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
@@ -282,7 +282,7 @@ theorem ma_completeness_binary_any_length_cert
   ma_completeness_binary_any_length E stmt wit hk msg hkm h_binary h_valid
     h_toD_eq h_degE_eq h_scalars_match h_target_on_curve h_bases_on_curve
     h_nodup
-    (Landmark.SafePairs.of_cert E
+    (LineAccum.SafePairs.of_cert E
       (binarySupport_on_curve stmt wit hk h_binary
         h_target_on_curve h_bases_on_curve)
       h_cert)

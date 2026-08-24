@@ -14,7 +14,7 @@
   rewrites of `logDerivCheckFn`.
 
   **`logDerivCheckFn_zero_of_explicit_divisor_data`** (the external
-  entry point, consumed by `EagenBuildRecursive` and
+  entry point, consumed by `LineBuildRecursive` and
   `LogDerivEagenLength4`): `logDerivCheckFn = 0` given an explicit
   divisor multiplicity function `β_fun` matching `D`'s zero divisor,
   plus the per-challenge geometric side conditions.
