@@ -271,6 +271,15 @@ closure. The exact closures are pinned by `#guard_msgs`-wrapped
 `Tests/F5RegressionAxiomClosure.lean`), so any closure drift fails the
 build.
 
+Beyond the pins, CI independently verifies the headline theorems with
+[`leanprover/comparator`](https://github.com/leanprover/comparator)
+against the frozen statements in `Challenge.lean` — statement identity
+(so a proof cannot drift from the stated theorem or smuggle the
+conclusion in as a hypothesis), an axiom allowlist, and a kernel replay
+of the full export — and replays every `.olean` through the toolchain's
+built-in `leanchecker` to rule out environment hacking. See
+`Judge/README.md`.
+
 **Every primary headline theorem is axiom-free** — the closures of
 `Divisor.ma_extractable`, `Divisor.ip_extractable`,
 `Divisor.ma_completeness`, `Divisor.ma_completeness_base`, and the
