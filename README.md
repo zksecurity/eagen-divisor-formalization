@@ -19,7 +19,8 @@ Every axiom-free headline theorem lives in `Divisor/Headlines.lean`;
 the Hasse–Weil-priced field-size forms live in `Divisor/Hasse.lean`.
 The surface below is the axiom-free point-count surface: every bound
 is stated in the currency
-`n = |E(F_q)|` (`E.points.card`). Naming convention: a short name is
+`n = E.points.card`, the number of affine points (the
+group order is `n + 1`). Naming convention: a short name is
 the point-count form (axiom-free); a `_q` suffix is the field-size form
 obtained by the trivial fiber bound `n ≤ 2q` (still axiom-free;
 completeness only); a `_hasse` suffix is the field-size form priced by
@@ -64,21 +65,22 @@ enumerated in full for `ma_extractable` and referenced thereafter.
 #### `Divisor.ma_extractable`
 
 > **Theorem (MA knowledge soundness).** Let $`E`$ be an elliptic curve over
-> $`\mathbb{F}_q`$, and let `stmt` be a discrete-log
-> statement of arity $`k`$ and degree bound $`d`$ with $`2 \le d \le q - 1`$,
-> whose target and $`k`$ basis points all lie on $`E`$. Fix a first-round
-> prover message `msg` of matching arity, and assume the curve is large
-> enough for the counting argument: $`|E(\mathbb{F}_q)|`$ exceeds
-> $`2(5(d'+k+2)+3) + 21(d'+k+2) + 72`$ and the challenge space satisfies
-> $`18(d'+k+1)q < |\mathrm{validPairs}|`$, where $`d'`$ is the degree of the
-> message divisor. Then one of two things holds; either
-> the extractor `maExtractor` returns a witness `wit` satisfying the
-> relation `relDlog(stmt, wit)`, or `msg` is accepted on at most
-> $`24(d+k+3)\,|E(\mathbb{F}_q)|`$ challenges. The content is the
-> contrapositive: a `msg` accepted on more challenges is one from which
-> `maExtractor` recovers a valid witness. The field-size form
-> ($`\le 36(d+k+4)q`$, with both largeness hypotheses replaced by one
-> threshold on $`q`$) is `ma_extractable_hasse` in `Divisor/Hasse.lean`.
+> $`\mathbb{F}_q`$, write $`n = |E.\mathrm{points}|`$ for its number of
+> affine points, and let `stmt` be a discrete-log statement of arity
+> $`k`$ and degree bound $`d`$ with $`2 \le d \le q - 1`$, whose target
+> and $`k`$ basis points all lie on $`E`$. Fix a first-round prover
+> message `msg` of matching arity and write $`d' = \texttt{msg.toD.degE}`$
+> for its syntactic degree bound. Assume the curve is large enough for the counting argument,
+> $`n > 2(5(d'+k+2)+3) + 21(d'+k+2) + 72`$, and that the challenge space
+> satisfies $`18(d'+k+1)q < |\mathrm{validPairs}|`$. Then either the
+> extractor `maExtractor` returns a witness `wit` satisfying
+> `relDlog(stmt, wit)`, or `msg` is accepted on at most
+> $`24(d+k+3)\,n`$ pairs of `validPairs`. Hence acceptance on more than
+> $`24(d+k+3)\,n`$ valid pairs forces the extractor to produce a
+> witness. Under the Hasse–Weil axiom, `ma_extractable_hasse` in
+> `Divisor/Hasse.lean` replaces the two largeness hypotheses by
+> $`72(d'+k+4) \le q`$, and assumes $`d+k+3 \le q`$ in addition to reach
+> the bound $`36(d+k+4)q`$.
 
 Lean:
 ```lean
@@ -101,27 +103,62 @@ theorem ma_extractable
       ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card
 ```
 
+Two degrees occur in the statement. The statement fixes `d =
+stmt.degBound`; the message carries its own degree `d' = degE(msg.toD) =
+max(2·deg polyA, 3 + 2·deg polyB)`. The latter is a syntactic bound and
+a deliberately loose one: Lean defines `natDegree 0 = 0`, so
+`(polyA, polyB) = (1, 0)` has `d' = 3` while the constant function it
+denotes has pole order zero.
+
 Hypotheses:
 
-- `stmt : DlogStatement E.q`: the discrete-log relation to extract a
-  witness for.
-- `hd : stmt.degBound < E.q`: the degree bound is below the field size.
-- `hd2 : 2 ≤ stmt.degBound`: the degree bound is at least 2.
-- `msg : MAProverMsg E.q`: the prover's first-round message.
-- `hkm : stmt.k = msg.k`: the message arity matches the statement arity.
-- `hTargetOnE : stmt.target ∈ E.points`: the target is a curve point.
-- `hBasesOnE : ∀ j, stmt.bases j ∈ E.points`: every basis point is on the curve.
-- `hLargeQ : ...`: the large-curve condition needed by the counting
-  argument (a lower bound on the point count).
-- `hSample : ...`: the challenge sample space is large enough for the
-  Frobenius slope-sampling pigeonhole. Both largeness hypotheses follow
-  from the single field-size threshold `72·(d'+k+4) ≤ q` under the
-  Hasse–Weil axiom (`Divisor/Hasse.lean`).
+- `E : ECSetup` bundles the curve with what the proof needs of it: `q`
+  prime, so that `ZMod q` is a field; `q ≥ 5`, excluding characteristics
+  two and three; `hOnCurve` with `hComplete`, which pin `E.points` to
+  the affine solution set; and `hDisc : 4A³ + 27B² ≠ 0`, the smoothness
+  assumption of `ma_extractable_conditional`.
+- `stmt.admSet_excludes_zero` gives `¬ msg.toD.isZero` for any message
+  passing the admissibility check (`admSet_implies_toD_nonzero`). The
+  log-derivative argument requires a nonzero coordinate-ring element:
+  for `D = 0`, `D(A₀)` is a factor of `logDerivCheckFnDenom`, hence
+  `logDerivCheckFnDefined` is false at every pair.
+- `hd : stmt.degBound < E.q` is used twice. On the branch where the
+  verifier's degree check gives `d' ≤ d`, `hd` yields `d' < q`, which
+  the Schwartz-Zippel count consumes; and it bounds the extracted
+  residue below `q`, so `ZMod.val` returns the multiplicity itself
+  rather than a representative shifted by `q`. `maExtractor` carries
+  the proof without inspecting it (`_hd`).
+- `hd2 : 2 ≤ stmt.degBound` covers the collision `−P = B_j`. There the
+  extractor answers `−1` at the least such index and `0` elsewhere,
+  discarding `msg.m`, and `(−1).natAbs < d` is what makes that answer
+  pass its own range check.
+- `hkm : stmt.k = msg.k` transports statement indices to `Fin msg.k`
+  when reading `msg.m`; `maAcceptSet` and `maExtractor` take this
+  equality explicitly.
+- `hTargetOnE` and `hBasesOnE` stop the junk branch of `ECPoint.affine`,
+  which sends off-curve coordinates to infinity. Without them `relDlog`
+  still typechecks, but its target may be the identity; with them the
+  coordinates denote the points that residue matching and the closing
+  group equation range over.
+- `hLargeQ` is what makes the extraction branch's density argument go
+  through: zeros on the defined non-vertical pairs force the cleared
+  polynomial identity, and the same inequality rules out the case where
+  no such pair is defined. The counting branch never uses it.
+- `hSample` is the cardinality inequality the Frobenius descent uses to
+  choose a separating slope and enough good intercepts from
+  `validPairs`. Like `hLargeQ`, it is confined to the extraction
+  branch. Both follow from `72·(d'+k+4) ≤ q` once the Hasse–Weil axiom
+  bounds the point count.
 
-Conclusion: for every first-round message, either the extractor returns
-`some wit` and `wit` is a valid discrete-log witness for `stmt`, or the
-accepting challenge set has cardinality at most
-`24·(d+k+3)·|E(F_q)|`.
+A `DlogWitness` packages integers `n_i` with `|n_i| < wit.degBound`,
+which `maExtractor` instantiates at `d`, and `relDlog E stmt wit`
+asserts `target = Σ_i [n_i]·B_i` in the group. On the general branch
+`−P ∉ {B_j}` the extractor sums `msg.m` over each equal-base group,
+stores that sum's `ZMod.val` at the group's least index and zeroes the
+rest; the special branch ignores `msg.m` entirely. It is straight-line, depending on the setup, statement
+and first-round message but never on a challenge, an oracle or
+rewinding; it is also `noncomputable`, so the theorem establishes
+mathematical extractability and not an executable extractor.
 
 #### `Divisor.ip_extractable`
 
@@ -132,7 +169,7 @@ accepting challenge set has cardinality at most
 > and the same largeness bounds; write the first message as `msg1`. Then
 > two statements hold at once. The first is the extraction dichotomy of
 > `ma_extractable`: either `maExtractor` recovers a witness, or `msg1` is
-> accepted on at most $`24(d+k+3)\,|E(\mathbb{F}_q)|`$ challenges. The
+> accepted on at most $`24(d+k+3)\,n`$ challenges. The
 > second is uniqueness of
 > the third-round response: fix a challenge with points $`A_0, A_1`$, a
 > second-round point $`A_2`$, and two third responses `msg3`, `msg3'`. If
@@ -190,7 +227,7 @@ pins the prover's polynomials to the witness.
 > and its polynomials `(msg.polyA, msg.polyB)` lie in the admissible set.
 > Then the honest prover is rejected on few challenges: the number of pairs
 > $`(P_1, P_2) \in E \times E`$ on which the verifier does not accept is at
-> most $`(3d+4)\,|E(\mathbb{F}_q)|`$. The field-size form
+> most $`(3d+4)\,n`$. The field-size form
 > ($`\le (6(d+1)+6)q`$, via the trivial fiber bound — no axiom) is
 > `ma_completeness_q`.
 
@@ -239,7 +276,7 @@ via `ma_completeness_q`, still axiom-free).
 > with nonzero divisor whose degree $`d'`$ is within the statement
 > bound. Then an accepted third-round response exists for every
 > challenge pair outside a set of at most
-> $`(3d' + 9k + 71)\,|E(\mathbb{F}_q)|`$ pairs. The field-size form
+> $`(3d' + 9k + 71)\,n`$ pairs. The field-size form
 > ($`\le 18(d+k+12)q`$, via the trivial fiber bound — no axiom) is
 > `ip_completeness_q`.
 

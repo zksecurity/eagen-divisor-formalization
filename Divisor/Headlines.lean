@@ -32,7 +32,7 @@ variable (E : ECSetup)
 
 /-! ## Knowledge soundness -/
 
-/-- **MA extractability** (headline, axiom-free). Same disjunction as
+/-- **MA extractability**. Same disjunction as
     `ma_extractable_base`, with the two-event bound consolidated into
     a single point-count term:
 
@@ -71,7 +71,7 @@ theorem ma_extractable
           apply Nat.mul_le_mul_right
           omega
 
-/-- **IP extractability** (headline, axiom-free). Same as
+/-- **IP extractability**. Same as
     `ip_extractable_base` but with the cardinality bound consolidated
     into the single point-count term `≤ 24 · (d + k + 3) · |E.points|`.
 
