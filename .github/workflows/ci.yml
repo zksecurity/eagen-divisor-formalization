@@ -54,6 +54,17 @@ jobs:
                 || { echo "leanchecker FAILED on $mod"; exit 1; }
             done
 
+      # The project toolchain, the mathlib cache and the build tree already
+      # fill most of the runner disk; Comparator then pins a second Lean
+      # toolchain of its own, which is what exhausts it. Drop the
+      # preinstalled SDKs we never touch before the third-party builds.
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+            /usr/local/share/boost /opt/hostedtoolcache/CodeQL
+          df -h /
+
       - name: Set up Go (for landrun)
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
