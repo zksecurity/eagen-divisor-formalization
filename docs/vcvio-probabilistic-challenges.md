@@ -139,21 +139,55 @@ settled in implementation.
 
 ### 4.1 MA soundness, probabilistic dichotomy
 
+Two small supporting definitions carry the plumbing so the theorem
+reads like the paper sentence:
+
 ```lean
 open scoped ENNReal
 
+/-- A uniformly random valid challenge: an ordered pair of affine points
+of `E` with distinct x-coordinates, the second not the negation of the
+first. Fails only when `validPairs E` is empty — ruled out by `hSample`
+wherever this is consumed. -/
+noncomputable def uniformValidChallenge (E : ECSetup) :
+    OptionT ProbComp (MAChallenge E.q) :=
+  (fun p => ⟨p.1, p.2⟩) <$> $ (validPairs E)
+
+/-- The MA soundness error `24(d+k+3)·n / (n² − 3n)`, with
+`n = E.points.card` the number of affine points; roughly `24(d+k+3)/n`. -/
+noncomputable def maSoundnessError (E : ECSetup) (d k : ℕ) : ℝ≥0∞ :=
+  (24 * (d + k + 3) * E.points.card : ℝ≥0∞) /
+    ((E.points.card ^ 2 - 3 * E.points.card : ℕ) : ℝ≥0∞)
+
 /-- **MA knowledge soundness, probabilistic form.** Either the
-straight-line extractor produces a valid witness, or a uniformly
-random valid challenge pair is accepted with probability at most
-`24(d+k+3)·n / (n² − 3n)`. -/
-theorem ma_soundness_vcv (stmt : DlogStatement E.q) …same hypotheses as ma_extractable… :
+straight-line extractor recovers a valid witness from the prover's
+message, or a uniformly random valid challenge accepts it with
+probability at most the soundness error. -/
+theorem ma_extractable_prob
+    (stmt : DlogStatement E.q) …hypotheses byte-identical to ma_extractable… :
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg stmt.degBound hd hkm = some wit
         ∧ relDlog E stmt wit) ∨
-    Pr[ (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) | $ (validPairs E) ]
-      ≤ (24 * (stmt.degBound + stmt.k + 3) * E.points.card : ℝ≥0∞) /
-        ((E.points.card * E.points.card - 3 * E.points.card : ℕ) : ℝ≥0∞)
+    Pr[ (maVerifierAccepts E stmt msg · hkm) | uniformValidChallenge E ]
+      ≤ maSoundnessError E stmt.degBound stmt.k
 ```
+
+Design choices, each additive to readability:
+
+- `uniformValidChallenge` returns `MAChallenge E.q`, not a raw pair —
+  the Finset plumbing and `⟨p.1, p.2⟩` destructuring leave the theorem,
+  the event becomes the section `(maVerifierAccepts E stmt msg · hkm)`,
+  and the IP theorems reuse the same distribution. Costs one
+  `probEvent_map` rewrite in the proof.
+- `maSoundnessError` names ε as a first-class `ℝ≥0∞`, docstringed in
+  one place and shared by the `ma_`/`ip_` variants; lemmas about it
+  (monotonicity, `< 1` under `hLargeQ`, the `_hasse` comparison) get a
+  subject. The denominator subtraction happens in ℕ before a single
+  cast, so no truncation lemmas arise.
+- Hypotheses stay byte-identical to `ma_extractable` (no bundling into
+  a `CountingRegime` predicate): cross-referencing the counting
+  headline stays trivial, and the proof is `rcases ma_extractable …`
+  plus two rewrites and `ENNReal.div_le_div`.
 
 Proof: `rcases ma_extractable …`; on the counting branch,
 `rw [probEvent_uniformSelectFinset]`, identify the filter with
