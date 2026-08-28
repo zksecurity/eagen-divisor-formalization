@@ -204,6 +204,35 @@ for downstream consumers who need it (they can reprove it in one
 line). Same policy for the completeness, IP, and `_hasse` variants
 below.
 
+### 4.1b Probabilistic contrapositive (witness-of-excess form)
+
+The direction an auditor actually uses — "accepted with probability
+above the soundness error ⟹ the extractor produces a valid witness" —
+is classically contained in the `∨` of §4.1, but the repo's convention
+(`ma_extractable_witness_of_excess_ratio` / `_clean` in
+`Headlines.lean`) is to state it explicitly. Probabilistic analogue:
+
+```lean
+/-- **Probabilistic contrapositive.** A prover whose message is accepted
+on a uniformly random valid challenge with probability exceeding the
+soundness error has a valid witness, and the extractor finds it. -/
+theorem ma_extractable_witness_of_excess_prob
+    (stmt : DlogStatement E.q) …hypotheses byte-identical to ma_extractable…
+    (hExcess : maSoundnessError E stmt.degBound stmt.k <
+        Pr[ (maVerifierAccepts E stmt msg · hkm) | uniformValidChallenge E ]) :
+    ∃ wit : DlogWitness E.q,
+      maExtractor E stmt msg stmt.degBound hd hkm = some wit
+      ∧ relDlog E stmt wit
+```
+
+One-line proof from §4.1 (`ℝ≥0∞` is a linear order, so `> ε` refutes
+the right disjunct): `(ma_extractable_prob …).resolve_right
+(not_le.mpr hExcess)`. Because the extractor is straight-line with
+zero extraction error, the conversion from "beats ε" to "knows a
+witness" is unconditional — no probabilistic loss, no rewinding. The
+IP variant conjoins `IPUniqueThirdRound`, mirroring
+`ip_extractable_witness_of_excess_ratio`.
+
 ### 4.2 MA completeness, probabilistic form
 
 ```lean
