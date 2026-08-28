@@ -137,7 +137,16 @@ New file(s), additive only — nothing existing moves. Sketches below
 type-check "on paper" against the verified API; exact casts to be
 settled in implementation.
 
-### 4.1 MA soundness, probabilistic dichotomy
+### 4.1 MA knowledge soundness — the headline
+
+**Decision: the headline is the knowledge-soundness conditional, not
+the dichotomy.** A proof of knowledge with knowledge error `κ` is
+defined in the literature as: any prover convincing the verifier with
+probability above `κ` yields a witness through the extractor. The
+headline states exactly that sentence; the dichotomy (which is what
+falls mechanically out of `ma_extractable`) is demoted to the
+proof-shaped auxiliary lemma (§4.1b). Classically the two are
+interderivable in one line each, so nothing is lost.
 
 Two small supporting definitions carry the plumbing so the theorem
 reads like the paper sentence:
@@ -153,85 +162,94 @@ noncomputable def uniformValidChallenge (E : ECSetup) :
     OptionT ProbComp (MAChallenge E.q) :=
   (fun p => ⟨p.1, p.2⟩) <$> $ (validPairs E)
 
-/-- The MA soundness error `24(d+k+3)·n / (n² − 3n)`, with
+/-- The MA knowledge error `κ = 24(d+k+3)·n / (n² − 3n)`, with
 `n = E.points.card` the number of affine points; roughly `24(d+k+3)/n`. -/
-noncomputable def maSoundnessError (E : ECSetup) (d k : ℕ) : ℝ≥0∞ :=
+noncomputable def maKnowledgeError (E : ECSetup) (d k : ℕ) : ℝ≥0∞ :=
   (24 * (d + k + 3) * E.points.card : ℝ≥0∞) /
     ((E.points.card ^ 2 - 3 * E.points.card : ℕ) : ℝ≥0∞)
 
-/-- **MA knowledge soundness, probabilistic form.** Either the
-straight-line extractor recovers a valid witness from the prover's
-message, or a uniformly random valid challenge accepts it with
-probability at most the soundness error. -/
+/-- **MA knowledge soundness.** Any first-round message that a uniformly
+random valid challenge accepts with probability exceeding the knowledge
+error yields a witness: the straight-line extractor succeeds and its
+output satisfies the discrete-log relation. -/
 theorem ma_extractable_prob
-    (stmt : DlogStatement E.q) …hypotheses byte-identical to ma_extractable… :
-    (∃ wit : DlogWitness E.q,
-        maExtractor E stmt msg stmt.degBound hd hkm = some wit
-        ∧ relDlog E stmt wit) ∨
-    Pr[ (maVerifierAccepts E stmt msg · hkm) | uniformValidChallenge E ]
-      ≤ maSoundnessError E stmt.degBound stmt.k
-```
-
-Design choices, each additive to readability:
-
-- `uniformValidChallenge` returns `MAChallenge E.q`, not a raw pair —
-  the Finset plumbing and `⟨p.1, p.2⟩` destructuring leave the theorem,
-  the event becomes the section `(maVerifierAccepts E stmt msg · hkm)`,
-  and the IP theorems reuse the same distribution. Costs one
-  `probEvent_map` rewrite in the proof.
-- `maSoundnessError` names ε as a first-class `ℝ≥0∞`, docstringed in
-  one place and shared by the `ma_`/`ip_` variants; lemmas about it
-  (monotonicity, `< 1` under `hLargeQ`, the `_hasse` comparison) get a
-  subject. The denominator subtraction happens in ℕ before a single
-  cast, so no truncation lemmas arise.
-- Hypotheses stay byte-identical to `ma_extractable` (no bundling into
-  a `CountingRegime` predicate): cross-referencing the counting
-  headline stays trivial, and the proof is `rcases ma_extractable …`
-  plus two rewrites and `ENNReal.div_le_div`.
-
-Proof: `rcases ma_extractable …`; on the counting branch,
-`rw [probEvent_uniformSelectFinset]`, identify the filter with
-`maAcceptSet`, finish with `ENNReal.div_le_div` +
-`card_validPairs_lb`.
-
-**Decision: closed form only.** The exact-denominator variant
-(`≤ …/(validPairs E).card`) will not be stated as a headline: the
-closed form keeps every bound in the repo's single currency
-`n = E.points.card`, and the exact ratio
-`Pr = |maAcceptSet|/|validPairs|` still appears inside the proof as
-the `probEvent_uniformSelectFinset` rewrite step, so nothing is lost
-for downstream consumers who need it (they can reprove it in one
-line). Same policy for the completeness, IP, and `_hasse` variants
-below.
-
-### 4.1b Probabilistic contrapositive (witness-of-excess form)
-
-The direction an auditor actually uses — "accepted with probability
-above the soundness error ⟹ the extractor produces a valid witness" —
-is classically contained in the `∨` of §4.1, but the repo's convention
-(`ma_extractable_witness_of_excess_ratio` / `_clean` in
-`Headlines.lean`) is to state it explicitly. Probabilistic analogue:
-
-```lean
-/-- **Probabilistic contrapositive.** A prover whose message is accepted
-on a uniformly random valid challenge with probability exceeding the
-soundness error has a valid witness, and the extractor finds it. -/
-theorem ma_extractable_witness_of_excess_prob
     (stmt : DlogStatement E.q) …hypotheses byte-identical to ma_extractable…
-    (hExcess : maSoundnessError E stmt.degBound stmt.k <
+    (hConvincing : maKnowledgeError E stmt.degBound stmt.k <
         Pr[ (maVerifierAccepts E stmt msg · hkm) | uniformValidChallenge E ]) :
     ∃ wit : DlogWitness E.q,
       maExtractor E stmt msg stmt.degBound hd hkm = some wit
       ∧ relDlog E stmt wit
 ```
 
-One-line proof from §4.1 (`ℝ≥0∞` is a linear order, so `> ε` refutes
-the right disjunct): `(ma_extractable_prob …).resolve_right
-(not_le.mpr hExcess)`. Because the extractor is straight-line with
-zero extraction error, the conversion from "beats ε" to "knows a
-witness" is unconditional — no probabilistic loss, no rewinding. The
-IP variant conjoins `IPUniqueThirdRound`, mirroring
-`ip_extractable_witness_of_excess_ratio`.
+Why this shape:
+
+- **It is the definition it formalizes.** One conclusion, no
+  disjunction; the probability appears exactly once, as the hypothesis
+  `hConvincing`; `maKnowledgeError` sits in its natural role as the
+  threshold `κ` (hence the rename from the earlier `maSoundnessError`).
+  Every hypothesis is one of three recognizable kinds: well-formedness
+  of the protocol data, the largeness regime, or "the prover is
+  convincing".
+- `uniformValidChallenge` returns `MAChallenge E.q`, not a raw pair —
+  the Finset plumbing and `⟨p.1, p.2⟩` destructuring leave the theorem,
+  the event becomes the section `(maVerifierAccepts E stmt msg · hkm)`,
+  and the IP theorems reuse the same distribution. Costs one
+  `probEvent_map` rewrite in the proof.
+- `maKnowledgeError` names κ as a first-class `ℝ≥0∞`, docstringed in
+  one place and shared by the `ma_`/`ip_` variants; lemmas about it
+  (monotonicity, `< 1` under `hLargeQ`, the `_hasse` comparison) get a
+  subject. The denominator subtraction happens in ℕ before a single
+  cast, so no truncation lemmas arise.
+- Hypotheses stay byte-identical to `ma_extractable` apart from the
+  added `hConvincing` (no bundling into a `CountingRegime` predicate):
+  cross-referencing the counting headline stays trivial.
+- Because the extractor is straight-line with zero extraction error,
+  the conversion from "beats κ" to "knows a witness" is unconditional —
+  no probabilistic loss, no rewinding.
+
+The IP headline is the same statement with `IPUniqueThirdRound`
+conjoined to the conclusion.
+
+**Decision: closed form only.** The exact-denominator variant of κ
+(`…/(validPairs E).card`) will not appear in any headline: the closed
+form keeps every bound in the repo's single currency
+`n = E.points.card`, and the exact ratio
+`Pr = |maAcceptSet|/|validPairs|` still appears inside the proof as
+the `probEvent_uniformSelectFinset` rewrite step, so nothing is lost
+for downstream consumers who need it (they can reprove it in one
+line). Same policy for the completeness, IP, and `_hasse` variants.
+
+### 4.1b Auxiliary forms: dichotomy and plain soundness
+
+The **dichotomy** is the proof-shaped intermediate — it is what
+`ma_extractable` delivers directly, so it is proved first (as a
+`private`/auxiliary lemma or inlined) and the headline is its one-line
+corollary:
+
+```lean
+-- auxiliary: rcases ma_extractable …; on the counting branch
+-- rw [probEvent_map, probEvent_uniformSelectFinset], identify the
+-- filter with maAcceptSet, finish with ENNReal.div_le_div +
+-- card_validPairs_lb.
+(∃ wit, maExtractor … = some wit ∧ relDlog E stmt wit) ∨
+  Pr[ … | uniformValidChallenge E ] ≤ maKnowledgeError E stmt.degBound stmt.k
+
+-- headline := auxiliary.resolve_right (not_le.mpr hConvincing)
+```
+
+**Plain statistical soundness** falls out as a corollary worth naming
+(`ma_sound_prob`): for a statement admitting *no* valid witness, the
+extraction branch is impossible, so a uniformly random valid challenge
+accepts any message with probability at most κ — the same quantity in
+its soundness-error role:
+
+```lean
+theorem ma_sound_prob
+    (stmt : DlogStatement E.q) …hypotheses as above, minus hConvincing…
+    (hNoWit : ∀ wit : DlogWitness E.q, ¬ relDlog E stmt wit) :
+    Pr[ (maVerifierAccepts E stmt msg · hkm) | uniformValidChallenge E ]
+      ≤ maKnowledgeError E stmt.degBound stmt.k
+```
 
 ### 4.2 MA completeness, probabilistic form
 
@@ -255,7 +273,7 @@ makes this true even when the bound exceeds 1).
 
 ### 4.3 IP variants and `_hasse` variants
 
-- `ip_soundness_vcv`: the §4.1 dichotomy conjoined with
+- `ip_extractable_prob`: the §4.1 headline conjoined with
   `IPUniqueThirdRound` (unchanged — uniqueness is not probabilistic).
 - `ip_completeness_vcv`: `Pr[¬∃ msg3, ipVerifierAccepts … | $ (E.points ×ˢ E.points)]
   ≤ (3d′ + 9k + 71)/n`, from `ip_completeness`.
