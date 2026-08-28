@@ -158,9 +158,17 @@ theorem ma_soundness_vcv (stmt : DlogStatement E.q) …same hypotheses as ma_ext
 Proof: `rcases ma_extractable …`; on the counting branch,
 `rw [probEvent_uniformSelectFinset]`, identify the filter with
 `maAcceptSet`, finish with `ENNReal.div_le_div` +
-`card_validPairs_lb`. An *exact-denominator* variant
-(`≤ …/(validPairs E).card`) is even shorter and arguably the more
-faithful statement; we can state both.
+`card_validPairs_lb`.
+
+**Decision: closed form only.** The exact-denominator variant
+(`≤ …/(validPairs E).card`) will not be stated as a headline: the
+closed form keeps every bound in the repo's single currency
+`n = E.points.card`, and the exact ratio
+`Pr = |maAcceptSet|/|validPairs|` still appears inside the proof as
+the `probEvent_uniformSelectFinset` rewrite step, so nothing is lost
+for downstream consumers who need it (they can reprove it in one
+line). Same policy for the completeness, IP, and `_hasse` variants
+below.
 
 ### 4.2 MA completeness, probabilistic form
 
@@ -305,9 +313,10 @@ means committing to M1/M2 does not lock us in.
 
 1. Pinning: which VCVio commit? (Suggest: current `main` at
    implementation time; re-pin deliberately thereafter.)
-2. Statement currency: exact `…/|validPairs|` vs closed-form
-   `…/(n²−3n)` — propose stating both, mirroring how the repo already
-   layers point-count vs field-size forms.
+2. ~~Statement currency: exact `…/|validPairs|` vs closed-form
+   `…/(n²−3n)`.~~ **Decided: closed form only** (see §4.1) — one
+   headline per theorem, in the point-count currency `n`; the exact
+   ratio remains a proof-internal step.
 3. Should the probabilistic forms join the frozen `Challenge.lean`
    judge surface eventually, or remain a convenience layer? (Freezing
    them would make the judge depend on VCVio — recommend against, at
