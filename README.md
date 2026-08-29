@@ -10,8 +10,9 @@ Techniques*](https://blog.zksecurity.xyz/posts/divisor-notes/divisor-techniques.
 The Lean proof differs slightly from the notes; in particular, `ma_soundness`
 uses explicit point-count hypotheses and does not rely on Hasse's theorem.
 
-> `ma_soundness` is kernel-checked in Lean 4 using only Lean's standard
-> classical foundation: `propext`, `Classical.choice`, and `Quot.sound`.
+> `ma_soundness` and `ma_completeness` are kernel-checked in Lean 4 using only
+> Lean's standard classical foundation: `propext`, `Classical.choice`, and
+> `Quot.sound`.
 
 The headline result is a soundness theorem for the Merlin-Arthur discrete-log
 protocol:
