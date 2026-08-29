@@ -14,7 +14,7 @@
     The library is stated in the point-count currency
     `n = E.points.card`, and the leaf is the only module importing
     the axiom file, so this class is axiom-free by construction.
-    It includes the extractability headlines (`ma_soundness_count_bound`,
+    It includes the soundness headlines (`ma_soundness`, `ma_soundness_count_bound`,
     `ip_extractable` and their `_base`/`_paper`/probability/
     contrapositive forms), the whole completeness side
     (`ma_completeness*`, `ip_completeness*`, the binary chain, the
@@ -42,6 +42,13 @@
 import Divisor.SafeSupport
 import Divisor.Hasse
 
+/--
+info: 'Divisor.ma_soundness' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ma_soundness
 /--
 info: 'Divisor.ma_soundness_count_bound' depends on axioms: [propext,
  Classical.choice,

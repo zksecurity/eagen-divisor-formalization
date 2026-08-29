@@ -10,6 +10,14 @@ import Divisor.Completeness
 import Divisor.Hasse
 
 /--
+info: 'Divisor.ma_soundness' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.ma_soundness
+
+/--
 info: 'Divisor.ma_soundness_count_bound' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]

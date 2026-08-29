@@ -463,6 +463,29 @@ theorem maSoundnessError_lt_one_iff (stmt : DlogStatement E.q)
   norm_cast
   simp
 
+/-- The point-count hypothesis used by `ma_soundness` makes its knowledge
+    error genuinely smaller than one. -/
+theorem maSoundnessError_lt_one_of_large (stmt : DlogStatement E.q)
+    (hLargeQ : E.points.card >
+      2 * (5 * (stmt.degBound + stmt.k + 2) + 3) +
+      21 * (stmt.degBound + stmt.k + 2) + 72) :
+    maSoundnessError E stmt < 1 := by
+  have hn : 24 * (stmt.degBound + stmt.k + 3) + 3 < E.points.card := by
+    omega
+  have hnPos : 0 < E.points.card := by omega
+  have hMul := Nat.mul_lt_mul_of_pos_right hn hnPos
+  have hNumerator :
+      24 * (stmt.degBound + stmt.k + 3) * E.points.card <
+        E.points.card * E.points.card - 3 * E.points.card := by
+    rw [Nat.lt_sub_iff_add_lt]
+    nlinarith
+  have hCount : 24 * (stmt.degBound + stmt.k + 3) * E.points.card <
+      (validPairs E).card :=
+    hNumerator.trans_le (by
+      simpa only [ECSetup.numAffine] using card_validPairs_lb E)
+  apply (maSoundnessError_lt_one_iff E stmt ?_).2 hCount
+  exact Finset.card_pos.mp (Nat.zero_lt_of_lt hCount)
+
 /-- Any instance of the headline's strict acceptance hypothesis already
     certifies that the advertised knowledge error is below one. This is kept
     separate from soundness so the headline does not carry a redundant
