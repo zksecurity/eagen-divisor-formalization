@@ -1,8 +1,11 @@
 # Formalization of Eagen's ECIP Proof
 
 This repository formalizes the divisor techniques behind the
-Eagen/Bassa/Parker protocols in Lean 4. The headline result is a soundness
-theorem for the Merlin-Arthur discrete-log protocol:
+Eagen/Bassa/Parker protocols in Lean 4. The construction starts with Liam
+Eagen's [*Zero Knowledge Proofs of Elliptic Curve Inner Products from
+Principal Divisors and Weil Reciprocity*](https://eprint.iacr.org/2022/596),
+IACR ePrint 2022/596. The headline result is a soundness theorem for the
+Merlin-Arthur discrete-log protocol:
 
 > Fix an elliptic curve `E`, a public statement `stmt`, and *any* Merlin
 > message `msg` of matching arity. If the statement is well formed, the
