@@ -2,7 +2,7 @@
     "challenge_module": "Challenge",
     "solution_module": "Divisor",
     "theorem_names": [
-        "Divisor.ma_extractable",
+        "Divisor.ma_soundness",
         "Divisor.ip_extractable",
         "Divisor.ma_completeness",
         "Divisor.ma_completeness_q",

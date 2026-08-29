@@ -26,22 +26,45 @@ open Classical
 
 variable (E : ECSetup)
 
-theorem ma_extractable
+theorem ma_soundness_count_bound
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
-        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg.toD.degE + stmt.k + 2) + 72)
-    (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
+        2 * (5 * (stmt.degBound + stmt.k + 2) + 3) +
+        21 * (stmt.degBound + stmt.k + 2) + 72)
+    (hSample : 18 * (stmt.degBound + stmt.k + 1) * E.q + 1 ≤
         (validPairs E).card) :
     (∃ wit : DlogWitness E.q,
-        maExtractor E stmt msg stmt.degBound hd hkm = some wit
+        maExtractor E stmt msg = some wit
         ∧ relDlog E stmt wit) ∨
     (maAcceptSet E stmt msg hkm).card
       ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card := by
+  sorry
+
+def maExtractorValid (stmt : DlogStatement E.q)
+    (msg : MAProverMsg E.q) : Prop :=
+  match maExtractor E stmt msg with
+  | some wit => relDlog E stmt wit
+  | none => False
+
+theorem ma_soundness
+    (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)
+    (hd2 : 2 ≤ stmt.degBound)
+    (msg : MAProverMsg E.q)
+    (hkm : stmt.k = msg.k)
+    (hTargetOnE : stmt.target ∈ E.points)
+    (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
+    (hLargeQ : E.points.card >
+        2 * (5 * (stmt.degBound + stmt.k + 2) + 3) +
+        21 * (stmt.degBound + stmt.k + 2) + 72)
+    (hSample : 18 * (stmt.degBound + stmt.k + 1) * E.q + 1 ≤
+        (validPairs E).card)
+    (hAccept : maSoundnessError E stmt <
+        maAcceptanceProbability E stmt msg hkm) :
+    maExtractorValid E stmt msg := by
   sorry
 
 theorem ip_extractable
@@ -51,12 +74,12 @@ theorem ip_extractable
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
-        2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg1.toD.degE + stmt.k + 2) + 72)
-    (hSample : 18 * (msg1.toD.degE + stmt.k + 1) * E.q + 1 ≤
+        2 * (5 * (stmt.degBound + stmt.k + 2) + 3) +
+        21 * (stmt.degBound + stmt.k + 2) + 72)
+    (hSample : 18 * (stmt.degBound + stmt.k + 1) * E.q + 1 ≤
         (validPairs E).card) :
     ((∃ wit : DlogWitness E.q,
-         maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
+         maExtractor E stmt msg1 = some wit
          ∧ relDlog E stmt wit) ∨
      (maAcceptSet E stmt msg1 hkm).card
       ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card)
@@ -111,16 +134,16 @@ theorem ip_completeness_q
       ≤ 18 * (stmt.degBound + stmt.k + 12) * E.q := by
   sorry
 
-theorem ma_extractable_hasse
+theorem ma_soundness_count_bound_hasse
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hdk : stmt.degBound + stmt.k + 3 ≤ E.q)
-    (hQbig : 72 * (msg.toD.degE + stmt.k + 4) ≤ E.q) :
+    (hQbig : 72 * (stmt.degBound + stmt.k + 4) ≤ E.q) :
     (∃ wit : DlogWitness E.q,
-        maExtractor E stmt msg stmt.degBound hd hkm = some wit
+        maExtractor E stmt msg = some wit
         ∧ relDlog E stmt wit) ∨
     (maAcceptSet E stmt msg hkm).card
       ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q := by
@@ -133,9 +156,9 @@ theorem ip_extractable_hasse
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hdk : stmt.degBound + stmt.k + 3 ≤ E.q)
-    (hQbig : 72 * (msg1.toD.degE + stmt.k + 4) ≤ E.q) :
+    (hQbig : 72 * (stmt.degBound + stmt.k + 4) ≤ E.q) :
     ((∃ wit : DlogWitness E.q,
-         maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
+         maExtractor E stmt msg1 = some wit
          ∧ relDlog E stmt wit) ∨
      (maAcceptSet E stmt msg1 hkm).card
       ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q)

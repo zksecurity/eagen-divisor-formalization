@@ -20,6 +20,7 @@
 -/
 import Divisor.Bridges
 import Divisor.LineBuildRecursive
+import VCVio.OracleComp.ProbComp
 
 namespace Divisor
 
@@ -126,19 +127,23 @@ noncomputable def extractorSucceeds (stmt : DlogStatement E.q)
 
 /-- The full-grouping extractor.
 
-    Returns `some` iff `extractorSucceeds` (range condition on every
-    extracted scalar). -/
+    This is a total function on the public statement and Merlin message.
+    The arity check only makes the dependent indexing executable; soundness
+    is stated for every matching-arity message and does not assume anything
+    about the mismatch branch. The returned witness uses the statement's
+    public degree bound. -/
 noncomputable def maExtractor (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (d : ℕ) (_hd : d < E.q)
-    (hk : stmt.k = msg.k) :
-    Option (DlogWitness E.q) :=
-  if h : extractorSucceeds E stmt msg d hk then
-    some {
-      k := msg.k
-      scalars := extractedScalars E stmt msg hk
-      degBound := d
-      hRange := h
-    }
+    (msg : MAProverMsg E.q) : Option (DlogWitness E.q) :=
+  if hk : stmt.k = msg.k then
+    if h : extractorSucceeds E stmt msg stmt.degBound hk then
+      some {
+        k := msg.k
+        scalars := extractedScalars E stmt msg hk
+        degBound := stmt.degBound
+        hRange := h
+      }
+    else
+      none
   else
     none
 
@@ -248,7 +253,7 @@ theorem extracted_scalars_valid_special
 /-! ## Extractor validity and MA extractability
 
     The general-case bridge `extracted_scalars_valid` and the
-    knowledge-soundness headlines `ma_extractable` / `ip_extractable`
+    knowledge-soundness headlines `ma_soundness_count_bound` / `ip_extractable`
     live in `ExtractorBridge.lean` and
     `ExtractorBridgeTheorems.lean`, the layers of the import graph
     with access to both the extractor definitions here and the
@@ -368,7 +373,7 @@ statements bound the accept set over the distinct-x sample space
 full challenge space `E.points ×ˢ E.points`. -/
 
 /-- Challenge pairs in `validPairs E` on which the MA verifier accepts
-    `msg`. The soundness headlines (`ma_extractable`, `ip_extractable`
+    `msg`. The soundness headlines (`ma_soundness_count_bound`, `ip_extractable`
     and variants) bound `(maAcceptSet …).card`. -/
 noncomputable def maAcceptSet (stmt : DlogStatement E.q)
     (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
@@ -389,6 +394,20 @@ theorem maAcceptSet_eq (stmt : DlogStatement E.q)
       p ∈ validPairs E ∧ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm := by
   classical
   simp [maAcceptSet]
+
+/-- Arthur's acceptance probability for a fixed public statement and a fixed
+    Merlin message. Arthur samples uniformly from `validPairs E`; the theorem
+    therefore models the protocol's valid-chord challenge distribution rather
+    than conditioning an ambient sample after the fact. -/
+noncomputable def maAcceptanceProbability (stmt : DlogStatement E.q)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) : ENNReal :=
+  Pr[fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm |
+    $ (validPairs E)]
+
+/-- Point-count knowledge error for the MA protocol. -/
+noncomputable def maSoundnessError (stmt : DlogStatement E.q) : ENNReal :=
+  ((24 * (stmt.degBound + stmt.k + 3) * E.points.card : ℕ) : ENNReal) /
+    ((validPairs E).card : ENNReal)
 
 /-- Challenge pairs in `E.points ×ˢ E.points` on which the MA verifier
     rejects `msg`. The completeness headlines (`ma_completeness` and

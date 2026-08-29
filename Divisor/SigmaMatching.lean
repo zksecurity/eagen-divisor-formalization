@@ -2,7 +2,7 @@
   Divisor/SigmaMatching.lean
 
   σ-matching from polyGFull vanishing: T5-replacement path that
-  closes the `hAllZero` branch of `ma_extractable` without the
+  closes the `hAllZero` branch of `ma_soundness_count_bound` without the
   quadratic `|validPairs|` threshold of the original T5.
 
   Path: view `polyG` as a 4-variate polynomial (`polyGFull`) and
@@ -24,7 +24,7 @@ variable (E : ECSetup)
 /-! ## T5 replacement scaffolding
 
     To eliminate the quadratic `6·q·((d+k+1)+(d+k+1)·(d+k))` summand in
-    `ma_extractable`'s bound, we need to close the `hAllZero` branch
+    `ma_soundness_count_bound`'s bound, we need to close the `hAllZero` branch
     (where `logDerivCheckFn ≡ 0` on non-vertical E×E) without T5's
     `exists_good_lambda` step (whose quadratic threshold on
     `|validPairs|` is the source of the quadratic summand).

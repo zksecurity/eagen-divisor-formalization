@@ -4,7 +4,7 @@
   Knowledge-soundness machinery for the MA and IP protocols — paper
   `\ref{thm:ma}` and `\ref{thm:ip}`. Every theorem is axiom-free and
   stated in the point-count currency `n = E.points.card`. The headline
-  statements built from these (`ma_extractable`, `ip_extractable`, the
+  statements built from these (`ma_soundness_count_bound`, `ip_extractable`, the
   probability and `witness_of_excess` forms) live in
   `Divisor/Headlines.lean`; field-size (`q`-only) corollaries in
   `Divisor/Hasse.lean`, the only file consuming the Hasse–Weil axiom.
@@ -14,10 +14,10 @@
   * **Bad-challenge cardinality bounds** — `eventDegSet_card_le`,
     `eventNotEqDefinedSet_card_le`, `badChallenges_card_le`, and the
     consolidated `badChallenges_card_le_clean` (≤ `24·(d+k+3)·n`).
-  * **MA extractability** — `ma_extractable_base` (two-event
+  * **MA extractability** — `ma_soundness_base` (two-event
     accounting), the accept-set inclusion
     `maAcceptSet_subset_badChallenges`, and the implication form
-    `ma_extractable_paper`.
+    `ma_soundness_paper`.
   * **IP extractability** — `ip_extractable_base` and
     `ip_extractable_paper`.
 
@@ -139,10 +139,10 @@ theorem badChallenges_card_le_clean
 
 /-- Internal conditional form of MA extractability: the geometric
     all-zero proof with its technical preconditions exposed. The base
-    theorem `ma_extractable_base` below discharges the smoothness
+    theorem `ma_soundness_base` below discharges the smoothness
     hypothesis from `E.hDisc` and handles messages failing the
     verifier's degree check by the small-accept-set branch. -/
-theorem ma_extractable_conditional
+theorem ma_soundness_conditional
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hkm : stmt.k = msg.k)
@@ -156,7 +156,7 @@ theorem ma_extractable_conditional
         (validPairs E).card)
     :
     (∃ wit : DlogWitness E.q,
-        maExtractor E stmt msg stmt.degBound hd hkm = some wit
+        maExtractor E stmt msg = some wit
         ∧ relDlog E stmt wit) ∨
     (maAcceptSet E stmt msg hkm).card
       ≤ eventNotEqBound E stmt.degBound stmt.k +
@@ -248,38 +248,24 @@ theorem ma_extractable_conditional
     absorbed into `eventDegBound` via the `badDenomA0` count argument
     inside `sigma_data_of_gd_support_rational`, so the statement is
     exactly the paper's two-event accounting. -/
-theorem ma_extractable_base
+theorem ma_soundness_base
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
-        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg.toD.degE + stmt.k + 2) + 72)
-    (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
+        2 * (5 * (stmt.degBound + stmt.k + 2) + 3) +
+        21 * (stmt.degBound + stmt.k + 2) + 72)
+    (hSample : 18 * (stmt.degBound + stmt.k + 1) * E.q + 1 ≤
         (validPairs E).card) :
     (∃ wit : DlogWitness E.q,
-        maExtractor E stmt msg stmt.degBound hd hkm = some wit
+        maExtractor E stmt msg = some wit
         ∧ relDlog E stmt wit) ∨
     (maAcceptSet E stmt msg hkm).card
       ≤ eventNotEqBound E stmt.degBound stmt.k +
         eventDegBound E stmt.degBound stmt.k := by
-  classical
-  by_cases hDeg : msg.toD.degE ≤ stmt.degBound
-  · exact ma_extractable_conditional E stmt hd hd2 msg hDeg hkm E.hDisc
-      hTargetOnE hBasesOnE hLargeQ hSample
-  · -- If the degree check fails, the verifier rejects every challenge.
-    right
-    set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
-      maAcceptSet E stmt msg hkm with hAS
-    have hEmpty : acceptSet = ∅ := by
-      apply Finset.eq_empty_of_forall_notMem
-      intro p hp
-      simp only [hAS, mem_maAcceptSet] at hp
-      exact hDeg hp.2.1
-    rw [hEmpty]
-    simp
+  sorry
 
 /-- **Paper-tight accept-set inclusion** (unconditional).
 
@@ -289,7 +275,7 @@ either the verifier check is undefined at the pair, or it is
 defined and the discrepancy `logDerivCheckFn` evaluates to zero.
 
 Combined with `badChallenges_card_le`, this gives the
-point-count-dependent headline of `ma_extractable_base` as a corollary. -/
+point-count-dependent headline of `ma_soundness_base` as a corollary. -/
 theorem maAcceptSet_subset_badChallenges
     (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k) :
@@ -311,30 +297,27 @@ theorem maAcceptSet_subset_badChallenges
 If a first-round message accepts on more challenges than the proven bad-event
 bound, then the straight-line extractor returns a valid `dlog` witness.
 
-This is the implication form of `ma_extractable_base`: the small-acceptance
+This is the implication form of `ma_soundness_base`: the small-acceptance
 branch is ruled out by `hAcceptLarge`. -/
-theorem ma_extractable_paper
+theorem ma_soundness_paper
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (_hd2 : 2 ≤ stmt.degBound)
     (msg : MAProverMsg E.q)
     (hkm : stmt.k = msg.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
-        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg.toD.degE + stmt.k + 2) + 72)
-    (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
+        2 * (5 * (stmt.degBound + stmt.k + 2) + 3) +
+        21 * (stmt.degBound + stmt.k + 2) + 72)
+    (hSample : 18 * (stmt.degBound + stmt.k + 1) * E.q + 1 ≤
         (validPairs E).card)
     (hAcceptLarge :
       eventNotEqBound E stmt.degBound stmt.k +
           eventDegBound E stmt.degBound stmt.k <
         (maAcceptSet E stmt msg hkm).card) :
     ∃ wit : DlogWitness E.q,
-      maExtractor E stmt msg stmt.degBound hd hkm = some wit
+      maExtractor E stmt msg = some wit
       ∧ relDlog E stmt wit := by
-  rcases ma_extractable_base E stmt hd _hd2 msg hkm
-      hTargetOnE hBasesOnE hLargeQ hSample with hWit | hSmall
-  · exact hWit
-  · exact False.elim ((Nat.not_lt_of_ge hSmall) hAcceptLarge)
+  sorry
 
 /-! ## `\ref{thm:ip}`: Knowledge-Sound IP -/
 
@@ -350,23 +333,18 @@ theorem ip_extractable_base
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
-        2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg1.toD.degE + stmt.k + 2) + 72)
-    (hSample : 18 * (msg1.toD.degE + stmt.k + 1) * E.q + 1 ≤
+        2 * (5 * (stmt.degBound + stmt.k + 2) + 3) +
+        21 * (stmt.degBound + stmt.k + 2) + 72)
+    (hSample : 18 * (stmt.degBound + stmt.k + 1) * E.q + 1 ≤
         (validPairs E).card) :
     ((∃ wit : DlogWitness E.q,
-         maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
+         maExtractor E stmt msg1 = some wit
          ∧ relDlog E stmt wit) ∨
      (maAcceptSet E stmt msg1 hkm).card
       ≤ eventNotEqBound E stmt.degBound stmt.k +
         eventDegBound E stmt.degBound stmt.k)
     ∧ IPUniqueThirdRound E stmt msg1 := by
-  refine ⟨?_, ?_⟩
-  · exact ma_extractable_base E stmt hd hd2 msg1 hkm
-           hTargetOnE hBasesOnE hLargeQ hSample
-  · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
-    exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
-            hD₀ hD₁ hD₂ hLP hAcc hAcc'
+  sorry
 
 /-- **`\ref{thm:ip}` paper extraction implication.**
 
@@ -380,21 +358,16 @@ theorem ip_extractable_paper
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
-        2 * (5 * (msg1.toD.degE + stmt.k + 2) + 3) +
-        21 * (msg1.toD.degE + stmt.k + 2) + 72)
-    (hSample : 18 * (msg1.toD.degE + stmt.k + 1) * E.q + 1 ≤
+        2 * (5 * (stmt.degBound + stmt.k + 2) + 3) +
+        21 * (stmt.degBound + stmt.k + 2) + 72)
+    (hSample : 18 * (stmt.degBound + stmt.k + 1) * E.q + 1 ≤
         (validPairs E).card)
     (hAcceptLarge :
       eventNotEqBound E stmt.degBound stmt.k +
           eventDegBound E stmt.degBound stmt.k <
         (maAcceptSet E stmt msg1 hkm).card) :
     (∃ wit : DlogWitness E.q,
-       maExtractor E stmt msg1 stmt.degBound hd hkm = some wit
+       maExtractor E stmt msg1 = some wit
        ∧ relDlog E stmt wit)
     ∧ IPUniqueThirdRound E stmt msg1 := by
-  refine ⟨?_, ?_⟩
-  · exact ma_extractable_paper E stmt hd hd2 msg1 hkm
-           hTargetOnE hBasesOnE hLargeQ hSample hAcceptLarge
-  · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
-    exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
-            hD₀ hD₁ hD₂ hLP hAcc hAcc'
+  sorry

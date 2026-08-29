@@ -566,6 +566,6 @@ theorem sum_rootMultiplicity_eq_natDegree_of_splits
 /-! No unconditional `∑ β = D.degE` identity is stated here: it is
 false for general `D` (there is a counterexample). The corresponding
 split-case equalities hold classically but are not required by any
-downstream consumer of `Divisor.ma_extractable`. -/
+downstream consumer of `Divisor.ma_soundness_count_bound`. -/
 
 end Divisor

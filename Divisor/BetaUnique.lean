@@ -59,7 +59,7 @@
   The narrowed theorem is fully proved, with classical content drawn
   from the function-field trace-of-log-derivative identity (Lang
   *Algebra* §VI.5 + Stichtenoth §III.1–5 + Silverman ATAEC III §1).
-  The headline `ma_extractable` route goes through the independent
+  The headline `ma_soundness_count_bound` route goes through the independent
   geometric residue-matching argument in
   `Divisor/GeometricSoundness.lean`.
 

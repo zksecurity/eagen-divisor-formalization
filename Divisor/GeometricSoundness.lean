@@ -5925,7 +5925,7 @@ theorem extractor_of_logDerivCheck_all_zero_geometric_general
         logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
           (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
     ∃ wit : DlogWitness E.q,
-      maExtractor E stmt msg stmt.degBound hd hkm = some wit
+      maExtractor E stmt msg = some wit
       ∧ relDlog E stmt wit := by
   classical
   have hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
@@ -5984,8 +5984,7 @@ theorem extractor_of_logDerivCheck_all_zero_geometric_general
       hNoNegP hWSum
   exact ⟨⟨msg.k, extractedScalars E stmt msg hkm, stmt.degBound, hSucc⟩,
     by
-      unfold maExtractor
-      rw [dif_pos hSucc],
+      simp only [maExtractor, dif_pos hkm, dif_pos hSucc],
     ⟨hkm, hTarget⟩⟩
 
 /--
@@ -6012,7 +6011,7 @@ theorem extractor_of_logDerivCheck_all_zero_geometric
         logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
           (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
     ∃ wit : DlogWitness E.q,
-      maExtractor E stmt msg stmt.degBound hd hkm = some wit
+      maExtractor E stmt msg = some wit
       ∧ relDlog E stmt wit := by
   classical
   by_cases hNegP : (negPIndexSet E stmt msg hkm).Nonempty
@@ -6021,7 +6020,7 @@ theorem extractor_of_logDerivCheck_all_zero_geometric
     refine ⟨⟨msg.k, extractedScalars E stmt msg hkm, stmt.degBound, hSucc⟩,
       ?_, ⟨hkm, ?_⟩⟩
     · unfold maExtractor
-      rw [dif_pos hSucc]
+      simp only [dif_pos hkm, dif_pos hSucc]
     · exact extracted_scalars_valid_special E stmt msg hkm hNegP
   · exact extractor_of_logDerivCheck_all_zero_geometric_general E stmt hd hd2
       msg hDeg hkm hSmooth hTargetOnE hBasesOnE hLargeQ hSample hAdm hNegP hAllZero

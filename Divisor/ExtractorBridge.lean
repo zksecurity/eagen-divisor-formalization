@@ -1088,7 +1088,7 @@ theorem distinctM'_tail_group_invariant
     argument transferring vanishing from defined pairs to all
     non-vertical pairs.
 
-    `ma_extractable` uses `hPolyGZero` as an extra hypothesis,
+    `ma_soundness_count_bound` uses `hPolyGZero` as an extra hypothesis,
     which a future phase can discharge by finishing `\ref{lem:log-derivative}`
     (requires mechanizing `chordLogDerivMatchesNormZ` from
     `Divisor/Lemma6.lean`; reduced `\ref{lem:log-derivative}` to that scalar

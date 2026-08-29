@@ -14,7 +14,7 @@
     The library is stated in the point-count currency
     `n = E.points.card`, and the leaf is the only module importing
     the axiom file, so this class is axiom-free by construction.
-    It includes the extractability headlines (`ma_extractable`,
+    It includes the extractability headlines (`ma_soundness_count_bound`,
     `ip_extractable` and their `_base`/`_paper`/probability/
     contrapositive forms), the whole completeness side
     (`ma_completeness*`, `ip_completeness*`, the binary chain, the
@@ -43,12 +43,12 @@ import Divisor.SafeSupport
 import Divisor.Hasse
 
 /--
-info: 'Divisor.ma_extractable' depends on axioms: [propext,
+info: 'Divisor.ma_soundness_count_bound' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_extractable
+#print axioms Divisor.ma_soundness_count_bound
 /--
 info: 'Divisor.ip_extractable' depends on axioms: [propext,
  Classical.choice,
@@ -57,12 +57,12 @@ info: 'Divisor.ip_extractable' depends on axioms: [propext,
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ip_extractable
 /--
-info: 'Divisor.ma_extractable_base' depends on axioms: [propext,
+info: 'Divisor.ma_soundness_base' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_extractable_base
+#print axioms Divisor.ma_soundness_base
 /--
 info: 'Divisor.ip_extractable_base' depends on axioms: [propext,
  Classical.choice,
@@ -171,12 +171,12 @@ example {E : Divisor.ECSetup} (D : Divisor.CoordRingElt E.q)
 -- The paper implication: large acceptance ⇒ extraction, not a
 -- vacuous disjunction.
 /--
-info: 'Divisor.ma_extractable_paper' depends on axioms: [propext,
+info: 'Divisor.ma_soundness_paper' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_extractable_paper
+#print axioms Divisor.ma_soundness_paper
 
 /-! ## Binary completeness chain
 
@@ -466,13 +466,13 @@ info: 'Divisor.hasse_points_bound_lb' depends on axioms: [propext,
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.hasse_points_bound_lb
 /--
-info: 'Divisor.ma_extractable_hasse' depends on axioms: [propext,
+info: 'Divisor.ma_soundness_count_bound_hasse' depends on axioms: [propext,
  Classical.choice,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_extractable_hasse
+#print axioms Divisor.ma_soundness_count_bound_hasse
 /--
 info: 'Divisor.ip_extractable_hasse' depends on axioms: [propext,
  Classical.choice,
@@ -482,13 +482,13 @@ info: 'Divisor.ip_extractable_hasse' depends on axioms: [propext,
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ip_extractable_hasse
 /--
-info: 'Divisor.ma_extractable_base_hasse' depends on axioms: [propext,
+info: 'Divisor.ma_soundness_base_hasse' depends on axioms: [propext,
  Classical.choice,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_extractable_base_hasse
+#print axioms Divisor.ma_soundness_base_hasse
 /--
 info: 'Divisor.ip_extractable_base_hasse' depends on axioms: [propext,
  Classical.choice,
@@ -498,21 +498,21 @@ info: 'Divisor.ip_extractable_base_hasse' depends on axioms: [propext,
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ip_extractable_base_hasse
 /--
-info: 'Divisor.ma_soundness_probability_hasse' depends on axioms: [propext,
+info: 'Divisor.ma_soundness_ratio_bound_hasse' depends on axioms: [propext,
  Classical.choice,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_soundness_probability_hasse
+#print axioms Divisor.ma_soundness_ratio_bound_hasse
 /--
-info: 'Divisor.ma_extractable_witness_of_excess_hasse' depends on axioms: [propext,
+info: 'Divisor.ma_soundness_of_excess_hasse' depends on axioms: [propext,
  Classical.choice,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_extractable_witness_of_excess_hasse
+#print axioms Divisor.ma_soundness_of_excess_hasse
 /--
 info: 'Divisor.ip_extractable_witness_of_excess_hasse' depends on axioms: [propext,
  Classical.choice,
@@ -525,26 +525,26 @@ info: 'Divisor.ip_extractable_witness_of_excess_hasse' depends on axioms: [prope
 /-! ## Axiom-free soundness-probability chain (point-count currency) -/
 
 /--
-info: 'Divisor.ma_soundness_probability' depends on axioms: [propext,
+info: 'Divisor.ma_soundness_ratio_bound' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_soundness_probability
+#print axioms Divisor.ma_soundness_ratio_bound
 /--
-info: 'Divisor.ma_extractable_witness_of_excess_ratio' depends on axioms: [propext,
+info: 'Divisor.ma_soundness_of_excess_ratio' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_extractable_witness_of_excess_ratio
+#print axioms Divisor.ma_soundness_of_excess_ratio
 /--
-info: 'Divisor.ma_extractable_witness_of_excess_clean' depends on axioms: [propext,
+info: 'Divisor.ma_soundness_of_excess_count' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_extractable_witness_of_excess_clean
+#print axioms Divisor.ma_soundness_of_excess_count
 
 /-! ## `_of_count` flavors in the leaf: axiom-free field-size forms
 
@@ -554,12 +554,12 @@ hypotheses instead of invoking the axiom — checkable arithmetic for
 any concrete curve, so their closures stay at the Lean core three. -/
 
 /--
-info: 'Divisor.ma_extractable_of_count' depends on axioms: [propext,
+info: 'Divisor.ma_soundness_count_bound_of_count' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_extractable_of_count
+#print axioms Divisor.ma_soundness_count_bound_of_count
 /--
 info: 'Divisor.ip_extractable_of_count' depends on axioms: [propext,
  Classical.choice,
@@ -568,12 +568,12 @@ info: 'Divisor.ip_extractable_of_count' depends on axioms: [propext,
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ip_extractable_of_count
 /--
-info: 'Divisor.ma_soundness_probability_of_count' depends on axioms: [propext,
+info: 'Divisor.ma_soundness_ratio_bound_of_count' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_soundness_probability_of_count
+#print axioms Divisor.ma_soundness_ratio_bound_of_count
 /--
 info: 'Divisor.validPairs_card_ge_q_of_count' depends on axioms: [propext,
  Classical.choice,

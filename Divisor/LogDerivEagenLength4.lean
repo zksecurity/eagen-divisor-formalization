@@ -696,7 +696,7 @@ provable with NO hypotheses beyond on-curve + genericity + `¬bad`.
 This demonstrates that the `weil_reciprocity_honest` axiom CAN be
 discharged constructively for this specific honest divisor structure,
 without any new mathematical axioms beyond those already in
-`ma_extractable`'s closure. -/
+`ma_soundness_count_bound`'s closure. -/
 
 theorem weil_reciprocity_honest_length4_simple
     (P_target : ZMod E.q × ZMod E.q)

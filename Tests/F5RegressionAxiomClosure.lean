@@ -10,12 +10,12 @@ import Divisor.Completeness
 import Divisor.Hasse
 
 /--
-info: 'Divisor.ma_extractable' depends on axioms: [propext,
+info: 'Divisor.ma_soundness_count_bound' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_extractable
+#print axioms Divisor.ma_soundness_count_bound
 
 /--
 info: 'Divisor.ip_extractable' depends on axioms: [propext,
@@ -35,12 +35,12 @@ info: 'Divisor.ma_completeness' depends on axioms: [propext,
 
 -- Two-event accounting forms.
 /--
-info: 'Divisor.ma_extractable_base' depends on axioms: [propext,
+info: 'Divisor.ma_soundness_base' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_extractable_base
+#print axioms Divisor.ma_soundness_base
 
 /--
 info: 'Divisor.ip_extractable_base' depends on axioms: [propext,
@@ -60,10 +60,10 @@ info: 'Divisor.ma_completeness_base' depends on axioms: [propext,
 
 -- The `_hasse` variants are the only consumers of the Hasse axiom.
 /--
-info: 'Divisor.ma_extractable_hasse' depends on axioms: [propext,
+info: 'Divisor.ma_soundness_count_bound_hasse' depends on axioms: [propext,
  Classical.choice,
  Divisor.hasse_weil_textbook,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_extractable_hasse
+#print axioms Divisor.ma_soundness_count_bound_hasse

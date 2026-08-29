@@ -2,7 +2,7 @@
     "challenge_module": "Challenge",
     "solution_module": "Divisor",
     "theorem_names": [
-        "Divisor.ma_extractable_hasse",
+        "Divisor.ma_soundness_count_bound_hasse",
         "Divisor.ip_extractable_hasse"
     ],
     "permitted_axioms": [
