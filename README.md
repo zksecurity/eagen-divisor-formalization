@@ -8,8 +8,12 @@ IACR ePrint 2022/596, and Mathias Hall-Andersen and Diego F. Aranha's
 [*Notes and Proofs for Divisor
 Techniques*](https://blog.zksecurity.xyz/posts/divisor-notes/divisor-techniques.pdf).
 The Lean proof differs slightly from the notes; in particular, `ma_soundness`
-uses explicit point-count hypotheses and does not rely on Hasse's theorem. The
-headline result is a soundness theorem for the Merlin-Arthur discrete-log
+uses explicit point-count hypotheses and does not rely on Hasse's theorem.
+
+> `ma_soundness` is kernel-checked in Lean 4 using only Lean's standard
+> classical foundation: `propext`, `Classical.choice`, and `Quot.sound`.
+
+The headline result is a soundness theorem for the Merlin-Arthur discrete-log
 protocol:
 
 > Fix an elliptic curve `E`, a public statement `stmt`, and *any* Merlin
