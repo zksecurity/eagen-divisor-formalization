@@ -129,8 +129,7 @@ the prover's claimed message degree.
 
 ## The Headline Theorem
 
-The named predicate is intentionally boring: it says that the *exact* output
-of `maExtractor`, rather than some unrelated existential witness, is valid.
+The formal statement of the main result is:
 
 ```lean
 def maExtractorValid (E : ECSetup)
