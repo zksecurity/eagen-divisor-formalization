@@ -18,7 +18,7 @@ The headline result is a soundness theorem for the Merlin-Arthur discrete-log
 protocol:
 
 > Fix an elliptic curve `E`, a public statement `stmt`, and *any* Merlin
-> message `msg` of matching arity. If the statement is well formed, the
+> message `msg : MAProverMsg E.q stmt.k`. If the statement is well formed, the
 > explicit counting hypotheses hold, and Arthur accepts `msg` with
 > probability greater than the knowledge error, then `maExtractor E stmt msg`
 > returns a witness which is valid for `stmt`.
@@ -41,9 +41,8 @@ recovery function turns it into a valid witness.
 
 Write `P = stmt.target` and `B_i = stmt.bases i`. The theorem also takes
 proofs about this data. `hd` and `hd2` say
-`2 ≤ stmt.degBound < E.q`; `hkm` says that the independently supplied message
-has the same arity. The point hypotheses `hTargetOnE` and `hBasesOnE` say, for
-every index `i`:
+`2 ≤ stmt.degBound < E.q`. The point hypotheses `hTargetOnE` and
+`hBasesOnE` say, for every index `i`:
 
 $$
 P, B_i \in \mathbb{E}(\mathbb{F}_q)
@@ -65,10 +64,9 @@ $$
 Here the `n_i` are signed integers. This is deliberate: the extractor's
 special case uses the scalar `-1`.
 
-`MAProverMsg E.q` is just prover-controlled data:
+`MAProverMsg E.q stmt.k` is just prover-controlled data:
 
-- an arity `k`;
-- residues `m : Fin k → ZMod q`;
+- residues `m : Fin stmt.k → ZMod q`;
 - polynomials `polyA` and `polyB`, representing the coordinate-ring element
   `msg.toD`.
 
@@ -82,18 +80,12 @@ The public recovery interface is:
 ```lean
 def maExtractor (E : ECSetup)
     (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) : Option (DlogWitness E.q)
+    (msg : MAProverMsg E.q stmt.k) : Option (DlogWitness E.q)
 ```
 
-It is a total, executable function. It first checks `stmt.k = msg.k`; this is
-only the dependent-type plumbing needed to compare the two inputs. The
-mismatch branch returns `none`. Soundness does not assume that this branch, or
-any other branch of the extractor, is reasonable. It proves that the exact
-function above works whenever the theorem's acceptance hypothesis holds.
-
-For matching arities, the extractor groups equal bases. On the general branch
-it sums the residues `msg.m` in each group, stores the canonical integer lift
-at the least index, and sets the remaining indices to zero. There is one
+It is a total, executable function. It groups equal bases. On the general
+branch it sums the residues `msg.m` in each group, stores the canonical integer
+lift at the least index, and sets the remaining indices to zero. There is one
 necessary special case: if some base is `-target`, the extractor returns `-1`
 at the least such index and zero elsewhere. This already gives:
 
@@ -102,7 +94,7 @@ $$
 $$
 
 The final finite check verifies `|n_i| < stmt.degBound` for every extracted
-scalar. The current direct implementation takes quadratic time in `msg.k`;
+scalar. The current direct implementation takes quadratic time in `stmt.k`;
 the message polynomials are not inspected. `Tests/MAExtractorExec.lean`
 compiles the function to native code and evaluates the special branch to
 `some (1, -1)`.
@@ -120,7 +112,7 @@ p_A = \Pr_{(A_0,A_1)\leftarrow V}[A(E,s,m,A_0,A_1)]
 $$
 
 The formal bridge `maAcceptanceProbability_eq_card_div` proves that this is
-exactly the finite ratio below, where `S_A = maAcceptSet E stmt msg hkm`:
+exactly the finite ratio below, where `S_A = maAcceptSet E stmt msg`:
 
 $$
 p_A = \frac{|S_A|}{|V|}
@@ -143,7 +135,8 @@ of `maExtractor`, rather than some unrelated existential witness, is valid.
 
 ```lean
 def maExtractorValid (E : ECSetup)
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) : Prop :=
+    (stmt : DlogStatement E.q)
+    (msg : MAProverMsg E.q stmt.k) : Prop :=
   match maExtractor E stmt msg with
   | some wit => relDlog E stmt wit
   | none => False
@@ -153,8 +146,7 @@ theorem ma_soundness
     (stmt : DlogStatement E.q)
     (hd : stmt.degBound < E.q)
     (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
@@ -163,12 +155,12 @@ theorem ma_soundness
     (hSample : 18 * (stmt.degBound + stmt.k + 1) * E.q + 1 ≤
         (validPairs E).card)
     (hAccept : maSoundnessError E stmt <
-        maAcceptanceProbability E stmt msg hkm) :
+        maAcceptanceProbability E stmt msg) :
     maExtractorValid E stmt msg
 ```
 
-In words: for a curve `E`, a statement `stmt`, and an arbitrary matching-arity
-message `msg`, if:
+In words: for a curve `E`, a statement `stmt`, and an arbitrary message
+`msg : MAProverMsg E.q stmt.k`, if:
 
 1. `2 ≤ stmt.degBound < E.q`;
 2. $P, B_i \in \mathbb{E}(\mathbb{F}_q)$ for every index `i`;
