@@ -99,7 +99,7 @@ the message polynomials are not inspected. `Tests/MAExtractorExec.lean`
 compiles the function to native code and evaluates the special branch to
 `some (1, -1)`.
 
-## Arthur's Experiment
+## Acceptance Probability
 
 Arthur samples uniformly from `validPairs E`: pairs of affine curve points
 which are distinct and do not form a vertical chord. Write `V = validPairs E`,
