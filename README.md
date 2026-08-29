@@ -26,20 +26,27 @@ recovery function turns it into a valid witness.
 - `admSet`: the admissible set used by the verifier;
 - `admSet_excludes_zero`: the zero divisor is not admissible.
 
-The theorem also takes proofs about this data. `hd` and `hd2` say
+Write `P = stmt.target` and `B_i = stmt.bases i`. The theorem also takes
+proofs about this data. `hd` and `hd2` say
 `2 ≤ stmt.degBound < E.q`; `hkm` says that the independently supplied message
-has the same arity; `hTargetOnE` and `hBasesOnE` say that the coordinate pairs
-really are points of `E`. Thus `d` is not another input hidden beside `stmt`:
-it is shorthand for `stmt.degBound`. These proof arguments certify the public
-instance; none says that the prover is honest.
-
-The structure does not define a language by itself. A `DlogWitness` separately
-bundles its scalars with their range proof. Write `P = stmt.target` and
-`B_i = stmt.bases i`. The relation `relDlog E stmt wit` then says that
-`(stmt, wit)` has matching arity and satisfies the following group equation:
+has the same arity. The point hypotheses `hTargetOnE` and `hBasesOnE` say, for
+every index `i`:
 
 $$
-P = \sum_{i=0}^{k-1} [n_i] B_i
+P, B_i \in \mathbb{E}(\mathbb{F}_q)
+$$
+
+Thus `d` is not another input hidden beside `stmt`: it is shorthand for
+`stmt.degBound`. These proof arguments certify the public instance; none says
+that the prover is honest.
+
+The structure does not define a language by itself. A `DlogWitness` separately
+bundles its scalars with their range proof. The relation `relDlog E stmt wit`
+then says that `(stmt, wit)` has matching arity and satisfies the following
+group equation:
+
+$$
+P = \sum_{i=0}^{k-1} [n_i] \cdot B_i
 $$
 
 Here the `n_i` are signed integers. This is deliberate: the extractor's
@@ -78,7 +85,7 @@ necessary special case: if some base is `-target`, the extractor returns `-1`
 at the least such index and zero elsewhere. This already gives:
 
 $$
-[-1](-P) = P
+[-1] \cdot (-P) = P
 $$
 
 The final finite check verifies `|n_i| < stmt.degBound` for every extracted
@@ -110,7 +117,7 @@ Write `d = stmt.degBound`, `k = stmt.k`, and
 `n = E.points.card`. The advertised knowledge error is:
 
 $$
-\varepsilon(E,s) = \frac{24(d+k+3)n}{|V|}
+\varepsilon(E,s) = \frac{24 \cdot (d + k + 3) \cdot n}{|V|}
 $$
 
 Observe that the error depends on the public statement and the curve, not on
@@ -151,7 +158,7 @@ In words: for a curve `E`, a statement `stmt`, and an arbitrary matching-arity
 message `msg`, if:
 
 1. `2 ≤ stmt.degBound < E.q`;
-2. the target and every base are affine points of `E`;
+2. $P, B_i \in \mathbb{E}(\mathbb{F}_q)$ for every index `i`;
 3. the curve has enough affine points for the polynomial-identity argument;
 4. `validPairs E` is large enough for the Frobenius sampling argument; and
 5. Arthur accepts `msg` with probability strictly greater than the explicit
@@ -177,42 +184,13 @@ or are derived from acceptance:
 Hence a malicious message cannot manufacture the theorem's antecedent by
 failing a side condition; failure gives acceptance probability zero.
 
-## Why the Implication Is Non-Vacuous
-
-Write `R(E,s,m)` for `maExtractorValid E stmt msg`. The implication points in
-the useful direction:
-
-$$
-\varepsilon(E,s) < p_A \quad\Longrightarrow\quad R(E,s,m)
-$$
-
-The antecedent is not a reformulation of the conclusion, nor does it assume
-that recovery already succeeded. It is an observable property of the
-verifier experiment.
-
-The theorem `maSoundnessError_lt_one_of_large` proves that the headline's
-`hLargeQ` hypothesis already forces `ε < 1`; this uses the lower bound
-`|validPairs E| ≥ n² - 3n`. Thus the advertised error is nontrivial before we
-look at `msg` or assume `hAccept`. We also prove the exact arithmetic
-criterion, provided `validPairs E` is nonempty:
-
-$$
-\varepsilon(E,s) < 1 \quad\Longleftrightarrow\quad 24(d+k+3)n < |V|
-$$
-
-Finally, `maSoundnessError_lt_one_of_accept` records the independent sanity
-check that any instance of the strict acceptance hypothesis forces `ε < 1`,
-since every VCVio event probability is at most one. These facts are kept
-separate from `ma_soundness`; adding `ε < 1` as another premise would merely
-repeat a proved consequence of `hLargeQ`.
-
 ## What the Proof Does
 
 The proof is a short probabilistic wrapper around a long counting argument:
 
 1. `ma_soundness_count_bound` proves a dichotomy for every message. Either the
    extractor returns a valid witness, or the message accepts on at most
-   `24(d+k+3)n` valid challenge pairs.
+   $24 \cdot (d + k + 3) \cdot n$ valid challenge pairs.
 2. `maAcceptanceProbability_eq_card_div` turns the VCVio experiment into the
    corresponding cardinality ratio.
 3. If `p_acc > ε`, the small-accept-set branch is impossible. Hence the exact
@@ -235,7 +213,7 @@ a valid witness and a message satisfying `MAProverMsg.isHonestFor`; it bounds
 the number of rejected challenge pairs by:
 
 $$
-(3d+4)n
+(3 \cdot d + 4) \cdot n
 $$
 
 The constructive `ma_completeness_binary_any_length` family verifies messages
