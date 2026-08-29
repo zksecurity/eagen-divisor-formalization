@@ -14,12 +14,11 @@ uses explicit point-count hypotheses and does not rely on Hasse's theorem.
 > Lean's standard classical foundation: `propext`, `Classical.choice`, and
 > `Quot.sound`.
 
-The headline result is a soundness theorem for the Merlin-Arthur discrete-log
-protocol:
+The headline result is a soundness theorem for the discrete-log protocol:
 
-> Fix an elliptic curve `E`, a public statement `stmt`, and *any* Merlin
+> Fix an elliptic curve `E`, a public statement `stmt`, and *any* prover
 > message `msg : MAProverMsg E.q stmt.k`. If the statement is well formed, the
-> explicit counting hypotheses hold, and Arthur accepts `msg` with
+> explicit counting hypotheses hold, and the verifier accepts `msg` with
 > probability greater than the knowledge error, then `maExtractor E stmt msg`
 > returns a witness which is valid for `stmt`.
 
@@ -101,11 +100,11 @@ compiles the function to native code and evaluates the special branch to
 
 ## Acceptance Probability
 
-Arthur samples uniformly from `validPairs E`: pairs of affine curve points
-which are distinct and do not form a vertical chord. Write `V = validPairs E`,
-`s = stmt`, `m = msg`, and let `A(E,s,m,A₀,A₁)` mean that the MA verifier
-accepts. For fixed `stmt` and `msg`, VCVio defines the acceptance probability
-`p_A` as:
+The verifier samples uniformly from `validPairs E`: pairs of affine curve
+points which are distinct and do not form a vertical chord. Write
+`V = validPairs E`, `s = stmt`, `m = msg`, and let `A(E,s,m,A₀,A₁)` mean
+that the verifier accepts. For fixed `stmt` and `msg`, VCVio defines the
+acceptance probability `p_A` as:
 
 $$
 p_A = \Pr_{(A_0,A_1)\leftarrow V}[A(E,s,m,A_0,A_1)]
@@ -166,8 +165,8 @@ In words: for a curve `E`, a statement `stmt`, and an arbitrary message
 2. $P, B_i \in \mathbb{E}(\mathbb{F}_q)$ for every index `i`;
 3. the curve has enough affine points for the polynomial-identity argument;
 4. `validPairs E` is large enough for the Frobenius sampling argument; and
-5. Arthur accepts `msg` with probability strictly greater than the explicit
-   error `ε(E, stmt)`;
+5. the verifier accepts `msg` with probability strictly greater than the
+   explicit error `ε(E, stmt)`;
 
 then `maExtractor E stmt msg = some wit` for a witness satisfying
 `relDlog E stmt wit`.
@@ -207,7 +206,7 @@ vanishes on enough defined pairs, the divisor argument recovers the group
 equation and proves the extracted scalars valid. A message whose degree check
 fails is handled before either case: its accept set is empty.
 
-## MA Completeness
+## Completeness
 
 Soundness quantifies over malicious messages. Completeness is the opposite
 direction and therefore has an honesty premise. `ma_completeness` starts from
