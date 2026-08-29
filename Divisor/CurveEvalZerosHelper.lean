@@ -47,7 +47,7 @@ lemma eval_eq_alpha_beta (g : MvPolynomial (Fin 2) (ZMod E.q))
   simp +decide [ MvPolynomial.eval_eq', alphaPoly, betaPoly ];
   simp +decide [ Polynomial.eval_finsetSum, Finset.sum_filter ];
   rw [ Finset.sum_mul _ _ _ ];
-  rw [ ← Finset.sum_add_distrib ] ; refine' Finset.sum_congr rfl fun i hi => _ ; rcases Nat.even_or_odd' ( i 1 ) with ⟨ k, hk | hk ⟩ <;> simp +decide [ hk, pow_add, pow_mul, hy ] ; ring;
+  rw [ ← Finset.sum_add_distrib ] ; refine' Finset.sum_congr rfl fun i hi => _ ; rcases Nat.even_or_odd' ( i 1 ) with ⟨ k, hk | hk ⟩ <;> simp +decide [ hk, pow_add, pow_mul, hy ] ; ring_nf;
   · norm_num [ Nat.even_iff, Nat.odd_iff, Nat.mul_mod ];
   · ring
 

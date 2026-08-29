@@ -27,7 +27,7 @@ theorem chord_avoids_D_zeros_of_denom_defined
     have := @linear_form_zeros_le_three E;
     convert this ( A₀.2 - A₁.2 ) ( A₁.1 - A₀.1 ) ( A₁.2 * A₀.1 - A₀.2 * A₁.1 ) _ using 1 <;> simp +decide [ lineThrough ];
     · congr! 2;
-      ext; simp +decide [ slopeOf, Line.eval ] ; ring;
+      ext; simp +decide [ slopeOf, Line.eval ] ; ring_nf;
       grind +extAll;
     · exact Or.inr ( sub_ne_zero_of_ne <| Ne.symm hNV );
   contrapose! h_card; simp_all +decide ;
@@ -54,7 +54,7 @@ theorem chord_avoids_D_zeros_of_denom_defined
       ring;
     · refine ⟨ ?_, ?_ ⟩;
       · exact E.hComplete _ _ ( chord_third_point_on_E E A₀ A₁ hA₀ hA₁ hNV );
-      · unfold lineThrough; simp +decide [ slopeOf ] ; ring;
+      · unfold lineThrough; simp +decide [ slopeOf ] ; ring_nf;
         unfold Line.eval; ring;
     · exact Finset.mem_filter.mp hQ₁ |>.1
 

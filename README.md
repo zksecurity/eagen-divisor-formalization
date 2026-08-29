@@ -90,30 +90,32 @@ compiles the function to native code and evaluates the special branch to
 
 The verifier samples uniformly from `validPairs E`: pairs of affine curve
 points which are distinct and do not form a vertical chord. Write
-`V = validPairs E`, `s = stmt`, `m = msg`, and let `A(E,s,m,A₀,A₁)` mean
-that the verifier accepts. For fixed `stmt` and `msg`, VCVio defines the
-acceptance probability `p_A` as:
+`V = validPairs E`, `s = stmt`, `m = msg`, and let
+$\mathsf{Accept}(E,s,m,A_0,A_1)$ mean that the verifier accepts. For fixed
+`stmt` and `msg`, VCVio defines the
+acceptance probability $p_{\mathsf{Accept}}$ as:
 
 $$
-p_A = \Pr_{(A_0,A_1)\leftarrow V}[A(E,s,m,A_0,A_1)]
+p_{\mathsf{Accept}} = \Pr_{(A_0,A_1)\leftarrow V}[\mathsf{Accept}(E,s,m,A_0,A_1)]
 $$
 
 The formal bridge `maAcceptanceProbability_eq_card_div` proves that this is
 exactly the finite ratio below, where `S_A = maAcceptSet E stmt msg`:
 
 $$
-p_A = \frac{|S_A|}{|V|}
+p_{\mathsf{Accept}} = \frac{|S_A|}{|V|}
 $$
 
-Write `d = stmt.degBound`, `k = stmt.k`, and
-`n = E.points.card`. The advertised knowledge error is:
+Write `d = stmt.degBound`, `k = stmt.k`, and `n = E.points.card`.
+
+The knowledge error is:
 
 $$
 \varepsilon(E,s) = \frac{24 \cdot (d + k + 3) \cdot n}{|V|}
 $$
 
-Observe that the error depends on the public statement and the curve, not on
-the prover's claimed message degree.
+In layman's terms, if $p_{\mathsf{Accept}} > \varepsilon(E,s)$, then the prover
+knows a witness.
 
 ## The Headline Theorem
 
