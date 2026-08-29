@@ -265,7 +265,34 @@ theorem ma_soundness_base
     (maAcceptSet E stmt msg hkm).card
       ≤ eventNotEqBound E stmt.degBound stmt.k +
         eventDegBound E stmt.degBound stmt.k := by
-  sorry
+  classical
+  by_cases hDeg : msg.toD.degE ≤ stmt.degBound
+  · have hLargeQ' : E.points.card >
+        2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
+        21 * (msg.toD.degE + stmt.k + 2) + 72 := by
+      omega
+    have hCore : msg.toD.degE + stmt.k + 1 ≤
+        stmt.degBound + stmt.k + 1 := by
+      omega
+    have hScaled : 18 * (msg.toD.degE + stmt.k + 1) * E.q ≤
+        18 * (stmt.degBound + stmt.k + 1) * E.q := by
+      exact Nat.mul_le_mul_right E.q (Nat.mul_le_mul_left 18 hCore)
+    have hSample' : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
+        (validPairs E).card :=
+      le_trans (Nat.add_le_add_right hScaled 1) hSample
+    exact ma_soundness_conditional E stmt hd hd2 msg hDeg hkm E.hDisc
+      hTargetOnE hBasesOnE hLargeQ' hSample'
+  · -- If the degree check fails, the verifier rejects every challenge.
+    right
+    set acceptSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
+      maAcceptSet E stmt msg hkm with hAS
+    have hEmpty : acceptSet = ∅ := by
+      apply Finset.eq_empty_of_forall_notMem
+      intro p hp
+      simp only [hAS, mem_maAcceptSet] at hp
+      exact hDeg hp.2.1
+    rw [hEmpty]
+    simp
 
 /-- **Paper-tight accept-set inclusion** (unconditional).
 
@@ -317,7 +344,10 @@ theorem ma_soundness_paper
     ∃ wit : DlogWitness E.q,
       maExtractor E stmt msg = some wit
       ∧ relDlog E stmt wit := by
-  sorry
+  rcases ma_soundness_base E stmt hd _hd2 msg hkm
+      hTargetOnE hBasesOnE hLargeQ hSample with hWit | hSmall
+  · exact hWit
+  · exact False.elim ((Nat.not_lt_of_ge hSmall) hAcceptLarge)
 
 /-! ## `\ref{thm:ip}`: Knowledge-Sound IP -/
 
@@ -344,7 +374,12 @@ theorem ip_extractable_base
       ≤ eventNotEqBound E stmt.degBound stmt.k +
         eventDegBound E stmt.degBound stmt.k)
     ∧ IPUniqueThirdRound E stmt msg1 := by
-  sorry
+  refine ⟨?_, ?_⟩
+  · exact ma_soundness_base E stmt hd hd2 msg1 hkm
+           hTargetOnE hBasesOnE hLargeQ hSample
+  · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
+    exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
+            hD₀ hD₁ hD₂ hLP hAcc hAcc'
 
 /-- **`\ref{thm:ip}` paper extraction implication.**
 
@@ -370,4 +405,9 @@ theorem ip_extractable_paper
        maExtractor E stmt msg1 = some wit
        ∧ relDlog E stmt wit)
     ∧ IPUniqueThirdRound E stmt msg1 := by
-  sorry
+  refine ⟨?_, ?_⟩
+  · exact ma_soundness_paper E stmt hd hd2 msg1 hkm
+           hTargetOnE hBasesOnE hLargeQ hSample hAcceptLarge
+  · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
+    exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
+            hD₀ hD₁ hD₂ hLP hAcc hAcc'

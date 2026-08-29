@@ -56,7 +56,20 @@ theorem ma_soundness_count_bound
         ∧ relDlog E stmt wit) ∨
     (maAcceptSet E stmt msg hkm).card
       ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card := by
-  sorry
+  rcases ma_soundness_base E stmt hd hd2 msg hkm
+          hTargetOnE hBasesOnE hLargeQ hSample with hWit | hBound
+  · left; exact hWit
+  · right
+    unfold eventNotEqBound eventDegBound at hBound
+    calc
+      (maAcceptSet E stmt msg hkm).card
+          ≤ 12 * (stmt.degBound + stmt.k) * E.points.card +
+            (3 * stmt.degBound + 9 * stmt.k + 71) * E.points.card := hBound
+      _ = (12 * (stmt.degBound + stmt.k)
+            + (3 * stmt.degBound + 9 * stmt.k + 71)) * E.points.card := by ring
+      _ ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card := by
+          apply Nat.mul_le_mul_right
+          omega
 
 /-- Here `maExtractorValid E stmt msg` says that `maExtractor` returns a
     witness and that this exact output satisfies `relDlog E stmt`.
@@ -104,7 +117,12 @@ theorem ip_extractable
      (maAcceptSet E stmt msg1 hkm).card
       ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card)
     ∧ IPUniqueThirdRound E stmt msg1 := by
-  sorry
+  refine ⟨?_, ?_⟩
+  · exact ma_soundness_count_bound E stmt hd hd2 msg1 hkm
+           hTargetOnE hBasesOnE hLargeQ hSample
+  · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
+    exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
+            hD₀ hD₁ hD₂ hLP hAcc hAcc'
 
 /-! ## Completeness -/
 
