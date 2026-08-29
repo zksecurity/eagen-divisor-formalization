@@ -23,14 +23,15 @@ replays the whole solution export through a fresh kernel.
 
 ## The two configurations
 
-* `headline.json` — the axiom-free headliners (`ma_extractable`,
+* `headline.json` — the axiom-free headliners (`ma_soundness`,
+  `ma_soundness_count_bound`,
   `ip_extractable`, `ma_completeness`, `ma_completeness_q`,
   `ip_completeness`, `ip_completeness_q`,
   `ma_completeness_binary_any_length`,
   `ma_completeness_binary_any_length_cert`), permitted axioms exactly
   `propext`, `Quot.sound`, `Classical.choice`.
 * `hasse.json` — the Hasse–Weil-priced variants
-  (`ma_extractable_hasse`, `ip_extractable_hasse`), additionally
+  (`ma_soundness_count_bound_hasse`, `ip_extractable_hasse`), additionally
   permitting `Divisor.hasse_weil_textbook`. Because permitted axioms
   are themselves compared between challenge and solution, the judge
   also pins the *statement* of that axiom.

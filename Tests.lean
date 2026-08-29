@@ -5,6 +5,7 @@ import Tests.CoeffPolyEvalSmokeTest
 import Tests.CrossCaseSmokeTest
 import Tests.CurveFixtures
 import Tests.LineBuildEvalSmokeTest
+import Tests.MAExtractorExec
 import Tests.EndToEndSmoke
 import Tests.F5RegressionAxiomClosure
 import Tests.HasseCardBridge
