@@ -92,7 +92,20 @@ theorem ma_soundness
     (hAccept : maSoundnessError E stmt <
         maAcceptanceProbability E stmt msg hkm) :
     maExtractorValid E stmt msg := by
-  sorry
+  rcases ma_soundness_count_bound E stmt hd hd2 msg hkm
+      hTargetOnE hBasesOnE hLargeQ hSample with hWit | hSmall
+  · obtain ⟨wit, hExtract, hValid⟩ := hWit
+    simp [maExtractorValid, hExtract, hValid]
+  · have hCast :
+        ((maAcceptSet E stmt msg hkm).card : ENNReal) ≤
+          ((24 * (stmt.degBound + stmt.k + 3) * E.points.card : ℕ) : ENNReal) := by
+      exact_mod_cast hSmall
+    have hProbabilityLe : maAcceptanceProbability E stmt msg hkm ≤
+        maSoundnessError E stmt := by
+      rw [maAcceptanceProbability_eq_card_div]
+      unfold maSoundnessError
+      exact ENNReal.div_le_div_right hCast _
+    exact False.elim ((not_lt_of_ge hProbabilityLe) hAccept)
 
 /-- **IP extractability**. Same as
     `ip_extractable_base` but with the cardinality bound consolidated

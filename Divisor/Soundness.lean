@@ -435,10 +435,46 @@ noncomputable def maAcceptanceProbability (stmt : DlogStatement E.q)
   Pr[fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm |
     $ (validPairs E)]
 
+/-- The VCVio experiment is exactly the accept-set count divided by the
+    number of valid challenge pairs. -/
+theorem maAcceptanceProbability_eq_card_div (stmt : DlogStatement E.q)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
+    maAcceptanceProbability E stmt msg hkm =
+      ((maAcceptSet E stmt msg hkm).card : ENNReal) /
+        ((validPairs E).card : ENNReal) := by
+  classical
+  simp [maAcceptanceProbability, maAcceptSet]
+
 /-- Point-count knowledge error for the MA protocol. -/
 noncomputable def maSoundnessError (stmt : DlogStatement E.q) : ENNReal :=
   ((24 * (stmt.degBound + stmt.k + 3) * E.points.card : ℕ) : ENNReal) /
     ((validPairs E).card : ENNReal)
+
+/-- Exact non-vacuity criterion for the advertised error bound. -/
+theorem maSoundnessError_lt_one_iff (stmt : DlogStatement E.q)
+    (hValidPairs : (validPairs E).Nonempty) :
+    maSoundnessError E stmt < 1 ↔
+      24 * (stmt.degBound + stmt.k + 3) * E.points.card <
+        (validPairs E).card := by
+  unfold maSoundnessError
+  have hDenom : ((validPairs E).card : ENNReal) ≠ 0 := by
+    exact_mod_cast Finset.card_ne_zero.mpr hValidPairs
+  rw [ENNReal.div_lt_iff (Or.inl hDenom) (Or.inl (by simp))]
+  norm_cast
+  simp
+
+/-- Any instance of the headline's strict acceptance hypothesis already
+    certifies that the advertised knowledge error is below one. This is kept
+    separate from soundness so the headline does not carry a redundant
+    non-vacuity premise. -/
+theorem maSoundnessError_lt_one_of_accept (stmt : DlogStatement E.q)
+    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hAccept : maSoundnessError E stmt <
+      maAcceptanceProbability E stmt msg hkm) :
+    maSoundnessError E stmt < 1 := by
+  exact hAccept.trans_le (by
+    unfold maAcceptanceProbability
+    exact probEvent_le_one)
 
 /-- Challenge pairs in `E.points ×ˢ E.points` on which the MA verifier
     rejects `msg`. The completeness headlines (`ma_completeness` and
