@@ -1,4 +1,4 @@
-# MA Soundness for Divisor Protocols
+# Formalization of Eagen's ECIP Proof
 
 This repository formalizes the divisor techniques behind the
 Eagen/Bassa/Parker protocols in Lean 4. The headline result is a soundness
