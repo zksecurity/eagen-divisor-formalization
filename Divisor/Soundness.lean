@@ -281,7 +281,7 @@ theorem extracted_scalars_valid_special
       exact fun h => hi_ne (h.trans hJStar_def.symm)
     simp only [hExtracted, ECPoint.zsmul_zero]
 
-/-! ## Extractor validity and MA extractability
+/-! ## Extractor validity and MA soundness
 
     The general-case bridge `extracted_scalars_valid` and the
     knowledge-soundness headlines `ma_soundness_count_bound` / `ip_extractable`

@@ -6,7 +6,7 @@
   axiom-free and stated in the point-count currency
   `n = E.points.card`; this leaf bounds `n` as a function of the
   field size `q` — in both directions — exactly once, and derives
-  the field-size (`_hasse`) corollaries of the extractability
+  the field-size (`_hasse`) corollaries of the knowledge-soundness
   headlines.
 
   Currency conversions live here because only the *lower* bound on
@@ -41,7 +41,7 @@
     `ma_soundness_base_hasse`, `ip_extractable_base_hasse`,
     `ma_soundness_of_excess_hasse`,
     `ip_extractable_witness_of_excess_hasse` —
-    field-size forms of the extractability headlines.
+    field-size forms of the knowledge-soundness headlines.
 -/
 import Divisor.Headlines
 import Divisor.Axioms.AxiomHasseWeil
@@ -156,9 +156,9 @@ theorem validPairs_card_ge_q (hQ : 9 ≤ E.q) :
     (E.q - 3) * (E.q - 9) ≤ 4 * (validPairs E).card :=
   validPairs_card_ge_q_of_count E (hasse_points_bound_lb E) hQ
 
-/-! ## Field-size extractability headlines -/
+/-! ## Field-size knowledge-soundness headlines -/
 
-/-- **MA extractability, field-size form from explicit count bounds**
+/-- **MA soundness, field-size form from explicit count bounds**
 (axiom-free). The two linear point-count bounds `2n ≤ 3q + 3` and
 `q ≤ 2n + 3` — checkable arithmetic for any concrete curve — replace
 the point-count largeness hypotheses of `ma_soundness_count_bound` by the single
@@ -167,7 +167,7 @@ field-size threshold `72·(degE + k + 4) ≤ q`, and convert the
 
   `≤ 36 · (d + k + 4) · q`
 
-(using `d + k + 3 ≤ q`). -/
+(the weaker `d + k + 3 ≤ q` follows from the field-size threshold). -/
 theorem ma_soundness_count_bound_of_count
     (hUB : 2 * E.points.card ≤ 3 * E.q + 3)
     (hLB : E.q ≤ 2 * E.points.card + 3)
@@ -176,7 +176,6 @@ theorem ma_soundness_count_bound_of_count
     (hkm : stmt.k = msg.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hdk : stmt.degBound + stmt.k + 3 ≤ E.q)
     (hQbig : 72 * (stmt.degBound + stmt.k + 4) ≤ E.q) :
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg = some wit
@@ -189,6 +188,7 @@ theorem ma_soundness_count_bound_of_count
     with hWit | hBound
   · left; exact hWit
   · right
+    have hdk : stmt.degBound + stmt.k + 3 ≤ E.q := by omega
     have h1 : 12 * (stmt.degBound + stmt.k + 3) * (2 * E.points.card)
         ≤ 12 * (stmt.degBound + stmt.k + 3) * (3 * E.q + 3) :=
       Nat.mul_le_mul_left _ hUB
@@ -196,7 +196,7 @@ theorem ma_soundness_count_bound_of_count
         ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card := hBound
       _ ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q := by nlinarith [h1, hdk]
 
-/-- **MA extractability, field-size form** (axiom-priced). The
+/-- **MA soundness, field-size form** (axiom-priced). The
 Hasse–Weil axiom supplies both count bounds of
 `ma_soundness_count_bound_of_count`. -/
 theorem ma_soundness_count_bound_hasse
@@ -205,7 +205,6 @@ theorem ma_soundness_count_bound_hasse
     (hkm : stmt.k = msg.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hdk : stmt.degBound + stmt.k + 3 ≤ E.q)
     (hQbig : 72 * (stmt.degBound + stmt.k + 4) ≤ E.q) :
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg = some wit
@@ -213,7 +212,7 @@ theorem ma_soundness_count_bound_hasse
     (maAcceptSet E stmt msg hkm).card
       ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q :=
   ma_soundness_count_bound_of_count E (hasse_points_bound E) (hasse_points_bound_lb E)
-    stmt hd hd2 msg hkm hTargetOnE hBasesOnE hdk hQbig
+    stmt hd hd2 msg hkm hTargetOnE hBasesOnE hQbig
 
 /-- `ma_soundness_base` with `hLargeQ` and `hSample` discharged by
 the Hasse–Weil axiom from the single field-size threshold
@@ -270,7 +269,6 @@ theorem ip_extractable_of_count
     (hkm : stmt.k = msg1.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hdk : stmt.degBound + stmt.k + 3 ≤ E.q)
     (hQbig : 72 * (stmt.degBound + stmt.k + 4) ≤ E.q) :
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 = some wit
@@ -280,7 +278,7 @@ theorem ip_extractable_of_count
     ∧ IPUniqueThirdRound E stmt msg1 := by
   refine ⟨?_, ?_⟩
   · exact ma_soundness_count_bound_of_count E hUB hLB stmt hd hd2 msg1 hkm
-      hTargetOnE hBasesOnE hdk hQbig
+      hTargetOnE hBasesOnE hQbig
   · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'
@@ -294,7 +292,6 @@ theorem ip_extractable_hasse
     (hkm : stmt.k = msg1.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hdk : stmt.degBound + stmt.k + 3 ≤ E.q)
     (hQbig : 72 * (stmt.degBound + stmt.k + 4) ≤ E.q) :
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 = some wit
@@ -303,7 +300,7 @@ theorem ip_extractable_hasse
       ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q)
     ∧ IPUniqueThirdRound E stmt msg1 :=
   ip_extractable_of_count E (hasse_points_bound E) (hasse_points_bound_lb E)
-    stmt hd hd2 msg1 hkm hTargetOnE hBasesOnE hdk hQbig
+    stmt hd hd2 msg1 hkm hTargetOnE hBasesOnE hQbig
 
 /-- **Single-`q` soundness probability bound from explicit count
 bounds** (axiom-free). Field-size form of `ma_soundness_ratio_bound`
@@ -323,7 +320,6 @@ theorem ma_soundness_ratio_bound_of_count
     (hkm : stmt.k = msg.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hdk : stmt.degBound + stmt.k + 3 ≤ E.q)
     (hQbig : 72 * (stmt.degBound + stmt.k + 4) ≤ E.q) :
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg = some wit
@@ -333,7 +329,7 @@ theorem ma_soundness_ratio_bound_of_count
       ≤ 144 * (stmt.degBound + stmt.k + 4) * E.q * (validPairs E).card := by
   have hQ9 : 9 ≤ E.q := by omega
   rcases ma_soundness_count_bound_of_count E hUB hLB stmt hd hd2 msg hkm
-          hTargetOnE hBasesOnE hdk hQbig with hWit | hBound
+          hTargetOnE hBasesOnE hQbig with hWit | hBound
   · left; exact hWit
   · right
     have hVP := validPairs_card_ge_q_of_count E hLB hQ9
@@ -353,7 +349,6 @@ theorem ma_soundness_ratio_bound_hasse
     (hkm : stmt.k = msg.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hdk : stmt.degBound + stmt.k + 3 ≤ E.q)
     (hQbig : 72 * (stmt.degBound + stmt.k + 4) ≤ E.q) :
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg = some wit
@@ -362,7 +357,7 @@ theorem ma_soundness_ratio_bound_hasse
       * ((E.q - 3) * (E.q - 9))
       ≤ 144 * (stmt.degBound + stmt.k + 4) * E.q * (validPairs E).card :=
   ma_soundness_ratio_bound_of_count E (hasse_points_bound E)
-    (hasse_points_bound_lb E) stmt hd hd2 msg hkm hTargetOnE hBasesOnE hdk hQbig
+    (hasse_points_bound_lb E) stmt hd hd2 msg hkm hTargetOnE hBasesOnE hQbig
 
 /-- **Auditing-friendly field-size contrapositive** (axiom-priced).
 If accept-count exceeds `36·(d+k+4)·q`, the extractor returns a
@@ -373,7 +368,6 @@ theorem ma_soundness_of_excess_hasse
     (hkm : stmt.k = msg.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hdk : stmt.degBound + stmt.k + 3 ≤ E.q)
     (hQbig : 72 * (stmt.degBound + stmt.k + 4) ≤ E.q)
     (hExcess :
       (maAcceptSet E stmt msg hkm).card
@@ -382,7 +376,7 @@ theorem ma_soundness_of_excess_hasse
       maExtractor E stmt msg = some wit
       ∧ relDlog E stmt wit := by
   rcases ma_soundness_count_bound_hasse E stmt hd hd2 msg hkm
-          hTargetOnE hBasesOnE hdk hQbig with hWit | hBound
+          hTargetOnE hBasesOnE hQbig with hWit | hBound
   · exact hWit
   · exact absurd hBound (Nat.not_le.mpr hExcess)
 
@@ -393,7 +387,6 @@ theorem ip_extractable_witness_of_excess_hasse
     (hkm : stmt.k = msg1.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hdk : stmt.degBound + stmt.k + 3 ≤ E.q)
     (hQbig : 72 * (stmt.degBound + stmt.k + 4) ≤ E.q)
     (hExcess :
       (maAcceptSet E stmt msg1 hkm).card
@@ -404,7 +397,7 @@ theorem ip_extractable_witness_of_excess_hasse
     ∧ IPUniqueThirdRound E stmt msg1 := by
   refine ⟨?_, ?_⟩
   · exact ma_soundness_of_excess_hasse E stmt hd hd2 msg1 hkm
-      hTargetOnE hBasesOnE hdk hQbig hExcess
+      hTargetOnE hBasesOnE hQbig hExcess
   · intro chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc'
     exact ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'
             hD₀ hD₁ hD₂ hLP hAcc hAcc'

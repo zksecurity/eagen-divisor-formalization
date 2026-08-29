@@ -30,8 +30,8 @@
   Suffix conventions: short name = point-count form; `_q` =
   field-size form via the trivial fiber bound `|E| ≤ 2q` (axiom-free,
   completeness side); `_hasse` = field-size form priced by the axiom,
-  which supplies the lower bound `q ≤ 2n + 3` the extractability side
-  needs (density/sampling hypotheses and the `36·(d+k+4)·q`
+    which supplies the lower bound `q ≤ 2n + 3` the soundness side
+    needs (density/sampling hypotheses and the `36·(d+k+4)·q`
   constant); `_of_count` = the same conversion with the count bounds
   as explicit hypotheses.
 

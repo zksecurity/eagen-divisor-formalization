@@ -134,7 +134,6 @@ theorem ma_soundness_count_bound_hasse
     (hkm : stmt.k = msg.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hdk : stmt.degBound + stmt.k + 3 ≤ E.q)
     (hQbig : 72 * (stmt.degBound + stmt.k + 4) ≤ E.q) :
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg = some wit
@@ -149,7 +148,6 @@ theorem ip_extractable_hasse
     (hkm : stmt.k = msg1.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
-    (hdk : stmt.degBound + stmt.k + 3 ≤ E.q)
     (hQbig : 72 * (stmt.degBound + stmt.k + 4) ≤ E.q) :
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 = some wit

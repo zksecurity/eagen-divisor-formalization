@@ -32,7 +32,7 @@ variable (E : ECSetup)
 
 /-! ## Knowledge soundness -/
 
-/-- **MA extractability**. Same disjunction as
+/-- **MA soundness count bound**. Same disjunction as
     `ma_soundness_base`, with the two-event bound consolidated into
     a single point-count term:
 

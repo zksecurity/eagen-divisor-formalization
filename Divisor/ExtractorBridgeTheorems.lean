@@ -14,7 +14,7 @@
   * **Bad-challenge cardinality bounds** — `eventDegSet_card_le`,
     `eventNotEqDefinedSet_card_le`, `badChallenges_card_le`, and the
     consolidated `badChallenges_card_le_clean` (≤ `24·(d+k+3)·n`).
-  * **MA extractability** — `ma_soundness_base` (two-event
+  * **MA knowledge soundness** — `ma_soundness_base` (two-event
     accounting), the accept-set inclusion
     `maAcceptSet_subset_badChallenges`, and the implication form
     `ma_soundness_paper`.
@@ -135,9 +135,9 @@ theorem badChallenges_card_le_clean
     _ ≤ 24 * (D.degE + k + 3) * E.points.card := by
         apply Nat.mul_le_mul_right; omega
 
-/-! ## `\ref{thm:ma}`: Extractable MA protocol -/
+/-! ## `\ref{thm:ma}`: Sound MA protocol -/
 
-/-- Internal conditional form of MA extractability: the geometric
+/-- Internal conditional form of MA soundness: the geometric
     all-zero proof with its technical preconditions exposed. The base
     theorem `ma_soundness_base` below discharges the smoothness
     hypothesis from `E.hDisc` and handles messages failing the
