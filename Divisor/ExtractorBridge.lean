@@ -115,12 +115,7 @@ theorem extractedScalars_zero_of_notCanonical
     (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
     (i : Fin msg.k) (hNotCanon : ¬ extractorIsCanonical E stmt msg hkm i) :
     extractedScalars E stmt msg hkm i = 0 := by
-  show (if hne : (negPIndexSet E stmt msg hkm).Nonempty
-        then (if i = (negPIndexSet E stmt msg hkm).min' hne
-              then (-1 : ℤ) else 0)
-        else if extractorIsCanonical E stmt msg hkm i
-             then ((extractorGroupSum E stmt msg hkm i).val : ℤ)
-             else 0) = 0
+  unfold extractedScalars
   rw [dif_neg hNoNegP, if_neg hNotCanon]
 
 /-- Within an extractor group, only the canonical (minimum-index)
@@ -657,12 +652,7 @@ theorem extractorSucceeds_of_natural_witness
   -- Step 1: show extractedScalars i = (coeff i : ℤ) for every i.
   have hScalars_eq : ∀ i, extractedScalars E stmt msg hkm i = (coeff i : ℤ) := by
     intro i
-    show (if hNegP : (negPIndexSet E stmt msg hkm).Nonempty
-          then (if i = (negPIndexSet E stmt msg hkm).min' hNegP
-                then (-1 : ℤ) else 0)
-          else if extractorIsCanonical E stmt msg hkm i
-               then ((extractorGroupSum E stmt msg hkm i).val : ℤ)
-               else 0) = _
+    unfold extractedScalars
     rw [dif_neg hNoNegP]
     by_cases hC : extractorIsCanonical E stmt msg hkm i
     · rw [if_pos hC]

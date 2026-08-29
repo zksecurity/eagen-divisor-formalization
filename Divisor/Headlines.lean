@@ -58,17 +58,10 @@ theorem ma_soundness_count_bound
       ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card := by
   sorry
 
-/-- The executable extractor succeeds and its exact output satisfies the
-    discrete-log relation. The `none` branch is false, so this proposition
-    asserts both recovery and validity without introducing an arbitrary
-    existential witness into the headline. -/
-def maExtractorValid (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) : Prop :=
-  match maExtractor E stmt msg with
-  | some wit => relDlog E stmt wit
-  | none => False
+/-- Here `maExtractorValid E stmt msg` says that `maExtractor` returns a
+    witness and that this exact output satisfies `relDlog E stmt`.
 
-/-- **MA knowledge soundness.** For every matching-arity Merlin message,
+    **MA knowledge soundness.** For every matching-arity Merlin message,
     honest or malicious, acceptance above the explicit knowledge error forces
     the executable extractor's exact output to satisfy `relDlog`. -/
 theorem ma_soundness

@@ -44,12 +44,6 @@ theorem ma_soundness_count_bound
       ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card := by
   sorry
 
-def maExtractorValid (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) : Prop :=
-  match maExtractor E stmt msg with
-  | some wit => relDlog E stmt wit
-  | none => False
-
 theorem ma_soundness
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)
     (hd2 : 2 ≤ stmt.degBound)

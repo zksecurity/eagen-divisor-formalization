@@ -3,6 +3,7 @@
     "solution_module": "Divisor",
     "theorem_names": [
         "Divisor.ma_soundness",
+        "Divisor.ma_soundness_count_bound",
         "Divisor.ip_extractable",
         "Divisor.ma_completeness",
         "Divisor.ma_completeness_q",

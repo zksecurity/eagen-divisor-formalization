@@ -63,23 +63,30 @@ lemma extractorGroup_nonempty (stmt : DlogStatement E.q)
   ⟨i, mem_extractorGroup_self E stmt msg hk i⟩
 
 /-- Combined coefficient at the group containing `i`, in `ZMod E.q`. -/
-noncomputable def extractorGroupSum (stmt : DlogStatement E.q)
+def extractorGroupSum (stmt : DlogStatement E.q)
     (msg : MAProverMsg E.q) (hk : stmt.k = msg.k) (i : Fin msg.k) :
     ZMod E.q :=
   (extractorGroup E stmt msg hk i).sum (fun j => msg.m j)
 
 /-- Canonical predicate: `i` is the minimum-index representative of its
     equal-base group. -/
-noncomputable def extractorIsCanonical (stmt : DlogStatement E.q)
+def extractorIsCanonical (stmt : DlogStatement E.q)
     (msg : MAProverMsg E.q) (hk : stmt.k = msg.k) (i : Fin msg.k) : Prop :=
   (extractorGroup E stmt msg hk i).min'
     (extractorGroup_nonempty E stmt msg hk i) = i
 
 /-- Set of indices whose base point equals `-P`. -/
-noncomputable def negPIndexSet (stmt : DlogStatement E.q)
+def negPIndexSet (stmt : DlogStatement E.q)
     (msg : MAProverMsg E.q) (hk : stmt.k = msg.k) : Finset (Fin msg.k) :=
   (Finset.univ : Finset (Fin msg.k)).filter
     (fun j => extractorBases E stmt msg hk j = (stmt.target.1, -stmt.target.2))
+
+/-- Constructive decision procedure for canonical extractor indices. -/
+def extractorIsCanonicalDecidable (stmt : DlogStatement E.q)
+    (msg : MAProverMsg E.q) (hk : stmt.k = msg.k) (i : Fin msg.k) :
+    Decidable (extractorIsCanonical E stmt msg hk i) := by
+  unfold extractorIsCanonical
+  infer_instance
 
 /-- Scalars extracted from the first-round message.
 
@@ -104,9 +111,13 @@ noncomputable def negPIndexSet (stmt : DlogStatement E.q)
       `polyG`'s additive convention is aligned with
       `logDerivCheckFn`'s RHS sign (via the negated `distinctMCons`
       tail), so `groupSum.val` needs no extra negation. -/
-noncomputable def extractedScalars (stmt : DlogStatement E.q)
+def extractedScalars (stmt : DlogStatement E.q)
     (msg : MAProverMsg E.q) (hk : stmt.k = msg.k) : Fin msg.k → ℤ :=
   fun i =>
+    letI : Decidable ((negPIndexSet E stmt msg hk).Nonempty) :=
+      Finset.decidableNonempty
+    letI : Decidable (extractorIsCanonical E stmt msg hk i) :=
+      extractorIsCanonicalDecidable E stmt msg hk i
     if hNegP : (negPIndexSet E stmt msg hk).Nonempty then
       -- Special case: -P ∈ {B_j}. Trivial witness at j* = min.
       if i = (negPIndexSet E stmt msg hk).min' hNegP then (-1 : ℤ) else 0
@@ -121,9 +132,16 @@ noncomputable def extractedScalars (stmt : DlogStatement E.q)
     needed: the residue `+1` at `-P` is absorbed by the special-case
     branch, which returns `-1` directly (`(-1).natAbs = 1 < d` for
     `d ≥ 2`). -/
-noncomputable def extractorSucceeds (stmt : DlogStatement E.q)
+def extractorSucceeds (stmt : DlogStatement E.q)
     (msg : MAProverMsg E.q) (d : ℕ) (hk : stmt.k = msg.k) : Prop :=
   ∀ i, ((extractedScalars E stmt msg hk i).natAbs) < d
+
+/-- Constructive decision procedure for the extractor's finite range check. -/
+def extractorSucceedsDecidable (stmt : DlogStatement E.q)
+    (msg : MAProverMsg E.q) (d : ℕ) (hk : stmt.k = msg.k) :
+    Decidable (extractorSucceeds E stmt msg d hk) := by
+  unfold extractorSucceeds
+  infer_instance
 
 /-- The full-grouping extractor.
 
@@ -131,10 +149,14 @@ noncomputable def extractorSucceeds (stmt : DlogStatement E.q)
     The arity check only makes the dependent indexing executable; soundness
     is stated for every matching-arity message and does not assume anything
     about the mismatch branch. The returned witness uses the statement's
-    public degree bound. -/
-noncomputable def maExtractor (stmt : DlogStatement E.q)
+    public degree bound. Its finite grouping and range check take polynomial
+    time (quadratic in `msg.k` with the current direct implementation); the
+    message polynomials are not inspected. -/
+def maExtractor (stmt : DlogStatement E.q)
     (msg : MAProverMsg E.q) : Option (DlogWitness E.q) :=
   if hk : stmt.k = msg.k then
+    letI : Decidable (extractorSucceeds E stmt msg stmt.degBound hk) :=
+      extractorSucceedsDecidable E stmt msg stmt.degBound hk
     if h : extractorSucceeds E stmt msg stmt.degBound hk then
       some {
         k := msg.k
@@ -146,6 +168,15 @@ noncomputable def maExtractor (stmt : DlogStatement E.q)
       none
   else
     none
+
+/-- The executable extractor succeeds and its exact output satisfies the
+    discrete-log relation. The `none` branch is false, so this pins validity
+    to the witness returned by `maExtractor`. -/
+def maExtractorValid (stmt : DlogStatement E.q)
+    (msg : MAProverMsg E.q) : Prop :=
+  match maExtractor E stmt msg with
+  | some wit => relDlog E stmt wit
+  | none => False
 
 /-! ## Bad events -/
 
