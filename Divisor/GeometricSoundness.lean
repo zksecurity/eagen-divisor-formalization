@@ -1440,7 +1440,7 @@ theorem geometric_chord_sum_eq_residue_sum
   intro Q hQ
   rw [hLineRewrite Q hQ]
   -- Goal: (mult Q) · (μ_bar - zLambdaBar Q)⁻¹
-  --     = -fqToBar(A₁.1-A₀.1) · ((mult Q) · (-(fqToBar(A₁.1-A₀.1))⁻¹ · (μ_bar - zLambdaBar Q)⁻¹))
+  -- = -fqToBar(A₁.1-A₀.1) · ((mult Q) · (-(fqToBar(A₁.1-A₀.1))⁻¹ · (μ_bar - zLambdaBar Q)⁻¹))
   field_simp
 
 /-- **Bar-eval factorisation of `geomPolyGFullBar`.** When every line factor
@@ -1787,12 +1787,12 @@ private theorem splitsOnE_of_gd_support_rational
   classical
   -- Strategy:
   -- 1. Every root α of normPolyBar has rootMultiplicity > 0; by
-  --    gd.fiber_accounting, ∃ Q ∈ gd.support with Q.x = α and gd.mult Q > 0.
+  -- gd.fiber_accounting, ∃ Q ∈ gd.support with Q.x = α and gd.mult Q > 0.
   -- 2. By hRat, Q.x = fqToBar β for some rational β; so α = fqToBar β.
   -- 3. Every Fqbar-root of normPolyBar is in fqToBar(ZMod E.q), and by
-  --    fqToBar injectivity, normPoly E D splits over F_q.
+  -- fqToBar injectivity, normPoly E D splits over F_q.
   -- 4. Each F_q-root α has a rational lift Q ∈ E.points with Q.x = α
-  --    (from the rational point P with P.1 = α derived from hRat).
+  -- (from the rational point P with P.1 = α derived from hRat).
   refine ⟨?_, ?_⟩
   · -- normPoly_splits_over_Fq E D: card roots = natDegree.
     unfold normPoly_splits_over_Fq
@@ -2844,8 +2844,7 @@ the specific `geomPolyGFull` instance produced by the verifier message.
 -/
 private theorem gd_support_rational_of_hAllZero_via_density_bridge
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)
-    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
-    (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeDensity : E.points.card >
@@ -2858,22 +2857,22 @@ private theorem gd_support_rational_of_hAllZero_via_density_bridge
         A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
         logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
         logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-          (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
+          (fun i => msg.m i) A₀ A₁ = 0)
     (hExEToPoly :
       (∀ A₀ A₁ : ZMod E.q × ZMod E.q,
         A₀ ∈ E.points → A₁ ∈ E.points →
         bivEval₂ (geomPolyGFull E msg.toD gd
           (Fin.cons (stmt.target.1, -stmt.target.2) stmt.bases)
-          (Fin.cons (-1) (fun j => -(msg.m (hkm ▸ j)))))
+          (Fin.cons (-1) (fun j => -(msg.m j))))
           A₀ A₁ = 0) →
       geomPolyGFull E msg.toD gd
         (Fin.cons (stmt.target.1, -stmt.target.2) stmt.bases)
-        (Fin.cons (-1) (fun j => -(msg.m (hkm ▸ j)))) = 0) :
+        (Fin.cons (-1) (fun j => -(msg.m j))) = 0) :
     gd_support_rational E msg.toD gd := by
   have hDegLt : msg.toD.degE < E.q := lt_of_le_of_lt hDeg hd
   exact support_rational_of_hAllZero_density_with_identity_bridge E
     msg.toD hDegLt hDnz gd stmt.target hTargetOnE stmt.bases
-    (fun i => msg.m (hkm ▸ i)) hBasesOnE hAllZero hLargeDensity hExEToPoly
+    (fun i => msg.m i) hBasesOnE hAllZero hLargeDensity hExEToPoly
 
 /-- Under `gd_support_rational`, the rational image of `gd.support`
 coincides with `zerosFinset E D`. Each `Q ∈ gd.support` rationalizes to
@@ -3406,10 +3405,10 @@ private theorem divByMonic_X_sub_C_comm_pow
     -- By divByMonic_pow_succ: p /ₘ q^(n+1) /ₘ q = p /ₘ q^(n+2).
     -- IH: (p /ₘ q) /ₘ q^n = (p /ₘ q^n) /ₘ q.
     -- We want: (p /ₘ q) /ₘ q^(n+1) = p /ₘ q^(n+1) /ₘ q.
-    -- (p /ₘ q) /ₘ q^(n+1) = ((p /ₘ q) /ₘ q^n) /ₘ q  [divByMonic_pow_succ]
-    --                     = ((p /ₘ q^n) /ₘ q) /ₘ q  [IH]
-    --                     = (p /ₘ q^n) /ₘ q^2       [divByMonic_pow_succ]
-    --                     = p /ₘ q^(n+2)            [hmm, need iterated]
+    -- (p /ₘ q) /ₘ q^(n+1) = ((p /ₘ q) /ₘ q^n) /ₘ q [divByMonic_pow_succ]
+    -- = ((p /ₘ q^n) /ₘ q) /ₘ q [IH]
+    -- = (p /ₘ q^n) /ₘ q^2 [divByMonic_pow_succ]
+    -- = p /ₘ q^(n+2) [hmm, need iterated]
     -- OR more directly: use divByMonic_pow_succ on both sides reaching p /ₘ q^(n+2).
     rw [← divByMonic_pow_succ E _ hMonic]
     rw [IH]
@@ -4717,21 +4716,20 @@ private theorem polyG_zero_at_defined_betaCanonical_of_hAllZero_and_hRat
 /-- **Layer A bridge**: raw `hAllZero` (on `stmt.bases`, `msg.m`) implies
 the distinct-form `hAllZero` (on `baseAt`, `distinctM'_tail`). -/
 private theorem hAllZero_baseAt_of_hAllZero_raw
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k)
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (hAllZeroRaw : ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
+        (fun i => msg.m i) A₀ A₁ = 0) :
     ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target
-        (baseAt E stmt msg hkm) A₀ A₁ →
+        (baseAt E stmt msg) A₀ A₁ →
       logDerivCheckFn E msg.toD stmt.target
-        (baseImageCount E stmt msg hkm)
-        (baseAt E stmt msg hkm)
-        (distinctM'_tail E stmt msg hkm) A₀ A₁ = 0 := by
+        (baseImageCount E stmt msg)
+        (baseAt E stmt msg)
+        (distinctM'_tail E stmt msg) A₀ A₁ = 0 := by
   intro A₀ A₁ hA₀ hA₁ hNV hDefDistinct
   -- Translate `defined`-distinct to `defined`-raw at `stmt.bases`.
   have hDefRaw : logDerivCheckFnDefined E msg.toD stmt.target
@@ -4756,19 +4754,19 @@ private theorem hAllZero_baseAt_of_hAllZero_raw
     change common * ∏ j : Fin stmt.k,
       (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
         (stmt.bases j).1 (stmt.bases j).2 = 0 at hRawEqZero
-    change common * ∏ i : Fin (baseImageCount E stmt msg hkm),
+    change common * ∏ i : Fin (baseImageCount E stmt msg),
       (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval
-        (baseAt E stmt msg hkm i).1 (baseAt E stmt msg hkm i).2 = 0
+        (baseAt E stmt msg i).1 (baseAt E stmt msg i).2 = 0
     rcases mul_eq_zero.mp hRawEqZero with hCommon | hProd
     · exact mul_eq_zero.mpr (Or.inl hCommon)
     · rw [Finset.prod_eq_zero_iff] at hProd
       obtain ⟨j, _, hj⟩ := hProd
       apply mul_eq_zero.mpr; right
       rw [Finset.prod_eq_zero_iff]
-      refine ⟨baseIndexOf E stmt msg hkm (finCongr hkm j),
+      refine ⟨baseIndexOf E stmt msg j,
               Finset.mem_univ _, ?_⟩
       rw [baseAt_baseIndexOf]
-      have hEq : extractorBases E stmt msg hkm (finCongr hkm j) = stmt.bases j := by
+      have hEq : extractorBases E stmt msg j = stmt.bases j := by
         unfold extractorBases
         congr 1
       rw [hEq]
@@ -4783,8 +4781,7 @@ hAllZero + hRat with `distinctRCons` / `distinctMCons` and
 invariance (`hAllZero_baseAt_of_hAllZero_raw`) with the cons-form
 result (`polyG_zero_at_defined_betaCanonical_of_hAllZero_and_hRat`). -/
 private theorem polyG_zero_at_defined_distinctRCons_betaCanonical_of_hAllZero_and_hRat
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k)
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
     (gd : GeometricDivisorData E msg.toD)
     (hRat : gd_support_rational E msg.toD gd)
@@ -4792,18 +4789,18 @@ private theorem polyG_zero_at_defined_distinctRCons_betaCanonical_of_hAllZero_an
       A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
       logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
       logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-        (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0)
+        (fun i => msg.m i) A₀ A₁ = 0)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points) (hNV : A₀.1 ≠ A₁.1)
     (hDef : logDerivCheckFnDefined E msg.toD stmt.target
-      (baseAt E stmt msg hkm) A₀ A₁) :
+      (baseAt E stmt msg) A₀ A₁) :
     polyG E (zerosAt E msg.toD)
       (fun k' => ((multAt E (betaCanonical E msg.toD) msg.toD k' : ℕ) : ZMod E.q))
-      (distinctRCons E stmt msg hkm) (distinctMCons E stmt msg hkm)
+      (distinctRCons E stmt msg) (distinctMCons E stmt msg)
       A₀ A₁ = 0 := by
-  have hAllZeroDistinct := hAllZero_baseAt_of_hAllZero_raw E stmt msg hkm hAllZero
+  have hAllZeroDistinct := hAllZero_baseAt_of_hAllZero_raw E stmt msg hAllZero
   exact polyG_zero_at_defined_betaCanonical_of_hAllZero_and_hRat E msg.toD hDnz gd hRat
-    stmt.target (baseAt E stmt msg hkm) (distinctM'_tail E stmt msg hkm)
+    stmt.target (baseAt E stmt msg) (distinctM'_tail E stmt msg)
     hAllZeroDistinct A₀ A₁ hA₀ hA₁ hNV hDef
 
 /-- **Per-A₀ count of non-defined A₁ pairs.** For A₀ ∈ E.points outside
@@ -4813,33 +4810,29 @@ linearly in `D.degE + stmt.k`. Extracted from the internal proof in
 `ExtractorBridge.lean`. -/
 private theorem card_logDerivCheckFnDefined_complement_le
     (D : CoordRingElt E.q) (hDnz : ¬ (D.a = 0 ∧ D.b = 0))
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k)
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (hLargeQ : E.points.card >
         2 * (5 * (D.degE + stmt.k + 2) + 3) +
         21 * (D.degE + stmt.k + 2) + 72)
     (A₀ : ZMod E.q × ZMod E.q) (hA₀ : A₀ ∈ E.points)
     (_hA₀nz : A₀ ∉ zerosFinset E D)
-    (_hA₀nr : ∀ j : Fin (1 + baseImageCount E stmt msg hkm),
-        distinctR E stmt msg hkm j ≠ A₀)
+    (_hA₀nr : ∀ j : Fin (1 + baseImageCount E stmt msg),
+        distinctR E stmt msg j ≠ A₀)
     (hA₀NotBad : A₀ ∉ badDenomA0 E D stmt.target
-        (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm)) :
+        (baseImageCount E stmt msg) (baseAt E stmt msg)) :
     (E.points.filter (fun A₁ =>
         ¬logDerivCheckFnDefined E D stmt.target
-          (baseAt E stmt msg hkm) A₀ A₁)).card
+          (baseAt E stmt msg) A₀ A₁)).card
       ≤ 18 * D.degE + 10 * stmt.k + 112 := by
   classical
   let _ := hDnz
-  set k₀ := baseImageCount E stmt msg hkm with hk₀_def
-  set B₀ := baseAt E stmt msg hkm
+  set k₀ := baseImageCount E stmt msg with hk₀_def
+  set B₀ := baseAt E stmt msg
   set P₀ := stmt.target
-  have hBI : baseImageCount E stmt msg hkm ≤ stmt.k := by
-    calc baseImageCount E stmt msg hkm
-        ≤ msg.k := by
-          unfold baseImageCount baseImage
-          exact (Finset.card_image_le).trans
-            (by rw [Finset.card_univ, Fintype.card_fin])
-      _ = stmt.k := hkm.symm
+  have hBI : baseImageCount E stmt msg ≤ stmt.k := by
+    unfold baseImageCount baseImage
+    exact (Finset.card_image_le).trans
+      (by rw [Finset.card_univ, Fintype.card_fin])
   by_cases hWit : ∃ A₁ ∈ E.points, A₀.1 ≠ A₁.1 ∧
       logDerivCheckFnDefined E D P₀ B₀ A₀ A₁
   · -- Witness exists: use denomScaledPoly + card_zeros_on_E_le.
@@ -4956,14 +4949,13 @@ unmatched `distinctR` indices have `distinctM' = 0` by the reverse
 specialisation. -/
 private theorem sigma_data_of_gd_support_rational
     (stmt : DlogStatement E.q) (_hd : stmt.degBound < E.q)
-    (msg : MAProverMsg E.q) (_hDeg : msg.toD.degE ≤ stmt.degBound)
-    (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k) (_hDeg : msg.toD.degE ≤ stmt.degBound)
     (_hTargetOnE : stmt.target ∈ E.points)
     (_hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (_hLargeQ : E.points.card >
         2 * (5 * (msg.toD.degE + stmt.k + 2) + 3) +
         21 * (msg.toD.degE + stmt.k + 2) + 72)
-    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg).Nonempty)
     (_hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
     (gd : GeometricDivisorData E msg.toD)
     (_hRat : gd_support_rational E msg.toD gd)
@@ -4972,23 +4964,23 @@ private theorem sigma_data_of_gd_support_rational
         A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
         logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
         logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-          (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
+          (fun i => msg.m i) A₀ A₁ = 0) :
     ∃ (σ : Fin (zerosCard E msg.toD) ↪
-            Fin (1 + baseImageCount E stmt msg hkm)),
-      (∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ k)) ∧
+            Fin (1 + baseImageCount E stmt msg)),
+      (∀ k, zerosAt E msg.toD k = distinctR E stmt msg (σ k)) ∧
       (∀ k, ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q)
-            + distinctM' E stmt msg hkm (σ k) = 0) ∧
-      (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) := by
+            + distinctM' E stmt msg (σ k) = 0) ∧
+      (∀ j, j ∉ Set.range σ → distinctM' E stmt msg j = 0) := by
   classical
   let _ := gd
   -- Apply sigma_matching_from_polyGFull_vanishing. Three sub-hypotheses needed:
   -- (1) multAt(betaCanonical) cast to ZMod E.q is non-zero pointwise.
   -- (2) polyGFull (with zerosAt, multAt(betaCanonical), distinctR, distinctM')
-  --     vanishes on all of E × E.
+  -- vanishes on all of E × E.
   -- (3) Linear-threshold hypotheses (E.points.card vs d + M).
   -- (1) follows from betaCanonical_covers + sum_le_degE + hd.
   -- (2) is the substantial open piece: polyG vanishing extends from
-  --     defined non-vert pairs to all E × E via density + bivariate density.
+  -- defined non-vert pairs to all E × E via density + bivariate density.
   -- (3) follows from hLargeQ.
   have hBetaNz : ∀ k : Fin (zerosCard E msg.toD),
       ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q) ≠ 0 := by
@@ -5017,7 +5009,7 @@ private theorem sigma_data_of_gd_support_rational
         (lt_of_le_of_lt _hDeg _hd)
     exact absurd (Nat.le_of_dvd hPos hDvd) (Nat.not_le.mpr hLt)
   have hELargeDkl : E.points.card * E.points.card - 2 * E.points.card >
-        12 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) *
+        12 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg)) *
           E.points.card := by
     -- Compare `12·T·n` against `n² − 2n` directly; the linear
     -- threshold from `_hLargeQ` suffices.
@@ -5036,15 +5028,12 @@ private theorem sigma_data_of_gd_support_rational
             Finset.sum_le_sum (fun k _ => hβpos k)
         _ = ∑ P ∈ E.points, betaCanonical E msg.toD P := hβeq
         _ ≤ msg.toD.degE := hβsum
-    have hBI : baseImageCount E stmt msg hkm ≤ stmt.k := by
-      calc baseImageCount E stmt msg hkm
-          ≤ msg.k := by
-            unfold baseImageCount baseImage
-            exact (Finset.card_image_le).trans
-              (by rw [Finset.card_univ, Fintype.card_fin])
-        _ = stmt.k := hkm.symm
+    have hBI : baseImageCount E stmt msg ≤ stmt.k := by
+      unfold baseImageCount baseImage
+      exact (Finset.card_image_le).trans
+        (by rw [Finset.card_univ, Fintype.card_fin])
     set n := E.points.card with hn_def
-    set T := zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm) with hT_def
+    set T := zerosCard E msg.toD + (1 + baseImageCount E stmt msg) with hT_def
     set M := msg.toD.degE + (1 + stmt.k) with hM_def
     have hT_le_M : T ≤ M := by
       rw [hT_def, hM_def]
@@ -5067,7 +5056,7 @@ private theorem sigma_data_of_gd_support_rational
       A₀ ∈ E.points → A₁ ∈ E.points →
       bivEval₂ (polyGFull E (zerosAt E msg.toD)
         (fun k => ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q))
-        (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)) A₀ A₁ = 0 := by
+        (distinctR E stmt msg) (distinctM' E stmt msg)) A₀ A₁ = 0 := by
     -- Step A: polyG = 0 at defined non-vertical pairs (distinct form), via
     -- polyG_zero_at_defined_distinctRCons_betaCanonical + finCongr to convert
     -- distinctRCons / distinctMCons to distinctR / distinctM'.
@@ -5075,14 +5064,14 @@ private theorem sigma_data_of_gd_support_rational
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
           logDerivCheckFnDefined E msg.toD stmt.target
-            (baseAt E stmt msg hkm) A₀ A₁ →
+            (baseAt E stmt msg) A₀ A₁ →
           polyG E (zerosAt E msg.toD)
             (fun k' => ((multAt E (betaCanonical E msg.toD) msg.toD k' : ℕ) : ZMod E.q))
-            (distinctRCons E stmt msg hkm) (distinctMCons E stmt msg hkm)
+            (distinctRCons E stmt msg) (distinctMCons E stmt msg)
             A₀ A₁ = 0 :=
       fun A₀ A₁ hA₀ hA₁ hNV hDef =>
         polyG_zero_at_defined_distinctRCons_betaCanonical_of_hAllZero_and_hRat E
-          stmt msg hkm _hDnz gd _hRat _hAllZero A₀ A₁ hA₀ hA₁ hNV hDef
+          stmt msg _hDnz gd _hRat _hAllZero A₀ A₁ hA₀ hA₁ hNV hDef
     -- Step B: convert distinctRCons / distinctMCons to distinctR / distinctM'
     -- via polyG_reindex (composes with finCongr).
     -- polyG_reindex says: polyG over R∘e = polyG over R, for any equiv e on Fin.
@@ -5091,10 +5080,10 @@ private theorem sigma_data_of_gd_support_rational
         ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
           A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
           logDerivCheckFnDefined E msg.toD stmt.target
-            (baseAt E stmt msg hkm) A₀ A₁ →
+            (baseAt E stmt msg) A₀ A₁ →
           polyG E (zerosAt E msg.toD)
             (fun k' => ((multAt E (betaCanonical E msg.toD) msg.toD k' : ℕ) : ZMod E.q))
-            (distinctR E stmt msg hkm) (distinctM' E stmt msg hkm)
+            (distinctR E stmt msg) (distinctM' E stmt msg)
             A₀ A₁ = 0 := by
       intro A₀ A₁ hA₀ hA₁ hNV hDef
       have h := hAt_def_distinct A₀ A₁ hA₀ hA₁ hNV hDef
@@ -5110,10 +5099,10 @@ private theorem sigma_data_of_gd_support_rational
     set β_fn : Fin (zerosCard E msg.toD) → ZMod E.q :=
       fun k' => ((multAt E (betaCanonical E msg.toD) msg.toD k' : ℕ) : ZMod E.q)
       with hβ_fn_def
-    set R_fn : Fin (1 + baseImageCount E stmt msg hkm) → ZMod E.q × ZMod E.q :=
-      distinctR E stmt msg hkm with hR_fn_def
-    set m_fn : Fin (1 + baseImageCount E stmt msg hkm) → ZMod E.q :=
-      distinctM' E stmt msg hkm with hm_fn_def
+    set R_fn : Fin (1 + baseImageCount E stmt msg) → ZMod E.q × ZMod E.q :=
+      distinctR E stmt msg with hR_fn_def
+    set m_fn : Fin (1 + baseImageCount E stmt msg) → ZMod E.q :=
+      distinctM' E stmt msg with hm_fn_def
     -- Bound: zerosCard ≤ degE, baseImageCount ≤ k.
     have hZC : zerosCard E msg.toD ≤ msg.toD.degE := by
       have hβcov := betaCanonical_covers E msg.toD _hDnz
@@ -5130,13 +5119,10 @@ private theorem sigma_data_of_gd_support_rational
             Finset.sum_le_sum (fun k _ => hβpos k)
         _ = ∑ P ∈ E.points, betaCanonical E msg.toD P := hβeq
         _ ≤ msg.toD.degE := hβsum
-    have hBI : baseImageCount E stmt msg hkm ≤ stmt.k := by
-      calc baseImageCount E stmt msg hkm
-          ≤ msg.k := by
-            unfold baseImageCount baseImage
-            exact (Finset.card_image_le).trans
-              (by rw [Finset.card_univ, Fintype.card_fin])
-        _ = stmt.k := hkm.symm
+    have hBI : baseImageCount E stmt msg ≤ stmt.k := by
+      unfold baseImageCount baseImage
+      exact (Finset.card_image_le).trans
+        (by rw [Finset.card_univ, Fintype.card_fin])
     -- resultantX bound: ≤ 5*(d+K)+3 ≤ 5*(degE+1+k)+3 = 5*degE+5*k+8.
     have h_resultantX_le : ∀ A₀ : ZMod E.q × ZMod E.q,
         (resultantX E (polyGPoly (E := E) Q_fn β_fn R_fn m_fn A₀)).natDegree
@@ -5145,7 +5131,7 @@ private theorem sigma_data_of_gd_support_rational
       have h := resultantX_polyGPoly_natDegree_le E Q_fn β_fn R_fn m_fn A₀
       -- h: ≤ 5 * (zerosCard + (1 + baseImageCount)) + 3
       -- ≤ 5 * (degE + 1 + k) + 3 = 5*degE + 5*k + 8.
-      have hSum : zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)
+      have hSum : zerosCard E msg.toD + (1 + baseImageCount E stmt msg)
           ≤ msg.toD.degE + 1 + stmt.k := by omega
       omega
     -- The hLargeQ as the form needed by card_logDerivCheckFnDefined_complement_le.
@@ -5154,15 +5140,15 @@ private theorem sigma_data_of_gd_support_rational
         21 * (msg.toD.degE + stmt.k + 2) + 72 := _hLargeQ
     -- Per-A₀ non-defined count for non-special A₀ (also excluding badDenomA0).
     have h_card_nondef : ∀ A₀, A₀ ∈ E.points → A₀ ∉ zerosFinset E msg.toD →
-        (∀ j : Fin (1 + baseImageCount E stmt msg hkm), R_fn j ≠ A₀) →
+        (∀ j : Fin (1 + baseImageCount E stmt msg), R_fn j ≠ A₀) →
         A₀ ∉ badDenomA0 E msg.toD stmt.target
-          (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm) →
+          (baseImageCount E stmt msg) (baseAt E stmt msg) →
         (E.points.filter (fun A₁ =>
             ¬logDerivCheckFnDefined E msg.toD stmt.target
-              (baseAt E stmt msg hkm) A₀ A₁)).card
+              (baseAt E stmt msg) A₀ A₁)).card
           ≤ 18 * msg.toD.degE + 10 * stmt.k + 112 :=
       fun A₀ hA₀ hnz hnr hnbad =>
-        card_logDerivCheckFnDefined_complement_le E msg.toD _hDnz stmt msg hkm
+        card_logDerivCheckFnDefined_complement_le E msg.toD _hDnz stmt msg
           hLargeQ_alt A₀ hA₀ hnz hnr hnbad
     -- vertical exclusion: ≤ 2 same-x A₁'s.
     have h_vert : ∀ A₀ : ZMod E.q × ZMod E.q,
@@ -5170,22 +5156,22 @@ private theorem sigma_data_of_gd_support_rational
       fun A₀ => card_points_with_fst_eq_le E A₀.1
     -- Lower bound on # defined non-vert A₁'s for non-special A₀ (also non-badDenom).
     have h_card_def_lb : ∀ A₀, A₀ ∈ E.points → A₀ ∉ zerosFinset E msg.toD →
-        (∀ j : Fin (1 + baseImageCount E stmt msg hkm), R_fn j ≠ A₀) →
+        (∀ j : Fin (1 + baseImageCount E stmt msg), R_fn j ≠ A₀) →
         A₀ ∉ badDenomA0 E msg.toD stmt.target
-          (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm) →
+          (baseImageCount E stmt msg) (baseAt E stmt msg) →
         (E.points.filter (fun A₁ => A₀.1 ≠ A₁.1 ∧
             logDerivCheckFnDefined E msg.toD stmt.target
-              (baseAt E stmt msg hkm) A₀ A₁)).card
+              (baseAt E stmt msg) A₀ A₁)).card
           ≥ E.points.card - 2 - (18 * msg.toD.degE + 10 * stmt.k + 112) := by
       intro A₀ hA₀ hnz hnr hnbad
       have h_complement : E.points.filter
             (fun A₁ => ¬(A₀.1 ≠ A₁.1 ∧
               logDerivCheckFnDefined E msg.toD stmt.target
-                (baseAt E stmt msg hkm) A₀ A₁))
+                (baseAt E stmt msg) A₀ A₁))
           ⊆ E.points.filter (fun A₁ => A₁.1 = A₀.1) ∪
             E.points.filter (fun A₁ =>
               ¬logDerivCheckFnDefined E msg.toD stmt.target
-                (baseAt E stmt msg hkm) A₀ A₁) := by
+                (baseAt E stmt msg) A₀ A₁) := by
         intro A₁ hA₁
         simp only [Finset.mem_filter, Finset.mem_union, not_and_or, not_not] at hA₁ ⊢
         rcases hA₁ with ⟨hMem, h | h⟩
@@ -5195,7 +5181,7 @@ private theorem sigma_data_of_gd_support_rational
       have h_complement_card : (E.points.filter
             (fun A₁ => ¬(A₀.1 ≠ A₁.1 ∧
               logDerivCheckFnDefined E msg.toD stmt.target
-                (baseAt E stmt msg hkm) A₀ A₁))).card
+                (baseAt E stmt msg) A₀ A₁))).card
           ≤ 2 + (18 * msg.toD.degE + 10 * stmt.k + 112) := by
         calc _ ≤ _ := Finset.card_le_card h_complement
           _ ≤ _ + _ := Finset.card_union_le _ _
@@ -5204,20 +5190,20 @@ private theorem sigma_data_of_gd_support_rational
       have h_split := Finset.card_filter_add_card_filter_not (s := E.points)
         (p := fun A₁ => A₀.1 ≠ A₁.1 ∧
           logDerivCheckFnDefined E msg.toD stmt.target
-            (baseAt E stmt msg hkm) A₀ A₁)
+            (baseAt E stmt msg) A₀ A₁)
       omega
     -- For non-special non-badDenom A₀: polyGPoly(A₀) ≡ 0 mod curveEqPoly via density.
     have h_nonspec : ∀ A₀, A₀ ∈ E.points → A₀ ∉ zerosFinset E msg.toD →
-        (∀ j : Fin (1 + baseImageCount E stmt msg hkm), R_fn j ≠ A₀) →
+        (∀ j : Fin (1 + baseImageCount E stmt msg), R_fn j ≠ A₀) →
         A₀ ∉ badDenomA0 E msg.toD stmt.target
-          (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm) →
+          (baseImageCount E stmt msg) (baseAt E stmt msg) →
         ∀ A₁ ∈ E.points, polyG E Q_fn β_fn R_fn m_fn A₀ A₁ = 0 := by
       intro A₀ hA₀ hnz hnr hnbad A₁ hA₁
       have h_ge_def := h_card_def_lb A₀ hA₀ hnz hnr hnbad
       -- Sub: defined non-vert A₁'s ⊆ zeros of polyGPoly(A₀).
       have h_sub : E.points.filter (fun A₁' => A₀.1 ≠ A₁'.1 ∧
             logDerivCheckFnDefined E msg.toD stmt.target
-              (baseAt E stmt msg hkm) A₀ A₁')
+              (baseAt E stmt msg) A₀ A₁')
           ⊆ E.points.filter (fun p =>
             bivEval (polyGPoly (E := E) Q_fn β_fn R_fn m_fn A₀) p = 0) := by
         intro A₁' h
@@ -5244,9 +5230,9 @@ private theorem sigma_data_of_gd_support_rational
     -- For special A₀ via swap: get polyG = 0 from non-special non-badDenom A₁'s.
     have h_swap_zeros : ∀ A₀, A₀ ∈ E.points →
         ∀ A₁, A₁ ∈ E.points → A₁ ∉ zerosFinset E msg.toD →
-        (∀ j : Fin (1 + baseImageCount E stmt msg hkm), R_fn j ≠ A₁) →
+        (∀ j : Fin (1 + baseImageCount E stmt msg), R_fn j ≠ A₁) →
         A₁ ∉ badDenomA0 E msg.toD stmt.target
-          (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm) →
+          (baseImageCount E stmt msg) (baseAt E stmt msg) →
         A₀.1 ≠ A₁.1 →
         polyG E Q_fn β_fn R_fn m_fn A₀ A₁ = 0 := by
       intro A₀ hA₀ A₁ hA₁ hA₁nz hA₁nr hA₁nbad _hNV
@@ -5255,32 +5241,32 @@ private theorem sigma_data_of_gd_support_rational
     -- Bound on |badDenomA0| (multiplicative form).
     have hBadCardMul :
         (badDenomA0 E msg.toD stmt.target
-            (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm)).card
+            (baseImageCount E stmt msg) (baseAt E stmt msg)).card
           * (E.points.card - 2)
         ≤ (3 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := by
-      have hBI := show baseImageCount E stmt msg hkm ≤ stmt.k from by
+      have hBI := show baseImageCount E stmt msg ≤ stmt.k from by
         unfold baseImageCount baseImage
         exact (Finset.card_image_le).trans
-          (by rw [Finset.card_univ, Fintype.card_fin, hkm])
+          (by rw [Finset.card_univ, Fintype.card_fin])
       have h := badDenomA0_card_mul_card_sub_two_le E msg.toD _hDnz stmt.target
-        (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm)
+        (baseImageCount E stmt msg) (baseAt E stmt msg)
       calc _ ≤ _ := h
         _ ≤ (3 * msg.toD.degE + 9 * stmt.k + 71) * E.points.card := by
             apply Nat.mul_le_mul_right; omega
     -- For special A₀ (in zerosFinset, R-image, or badDenomA0): enough zeros via swap.
     have h_spec : ∀ A₀, A₀ ∈ E.points →
         (A₀ ∈ zerosFinset E msg.toD ∨
-          (∃ j : Fin (1 + baseImageCount E stmt msg hkm), R_fn j = A₀) ∨
+          (∃ j : Fin (1 + baseImageCount E stmt msg), R_fn j = A₀) ∨
           A₀ ∈ badDenomA0 E msg.toD stmt.target
-            (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm)) →
+            (baseImageCount E stmt msg) (baseAt E stmt msg)) →
         ∀ A₁ ∈ E.points, polyG E Q_fn β_fn R_fn m_fn A₀ A₁ = 0 := by
       intro A₀ hA₀ _hSpec A₁ hA₁
       -- # non-special non-badDenom A₁ with A₀.1 ≠ A₁.1.
       have h_sub : E.points.filter (fun A₁' =>
             A₁' ∉ zerosFinset E msg.toD ∧
-            (∀ j : Fin (1 + baseImageCount E stmt msg hkm), R_fn j ≠ A₁') ∧
+            (∀ j : Fin (1 + baseImageCount E stmt msg), R_fn j ≠ A₁') ∧
             A₁' ∉ badDenomA0 E msg.toD stmt.target
-              (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm) ∧
+              (baseImageCount E stmt msg) (baseAt E stmt msg) ∧
             A₀.1 ≠ A₁'.1)
           ⊆ E.points.filter (fun p =>
             bivEval (polyGPoly (E := E) Q_fn β_fn R_fn m_fn A₀) p = 0) := by
@@ -5292,16 +5278,16 @@ private theorem sigma_data_of_gd_support_rational
       -- # complement of (non-special ∧ non-badDenom ∧ non-vert): bounded.
       have h_complement : E.points.filter
             (fun A₁' => ¬(A₁' ∉ zerosFinset E msg.toD ∧
-              (∀ j : Fin (1 + baseImageCount E stmt msg hkm), R_fn j ≠ A₁') ∧
+              (∀ j : Fin (1 + baseImageCount E stmt msg), R_fn j ≠ A₁') ∧
               A₁' ∉ badDenomA0 E msg.toD stmt.target
-                (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm) ∧
+                (baseImageCount E stmt msg) (baseAt E stmt msg) ∧
               A₀.1 ≠ A₁'.1))
           ⊆ E.points.filter (fun A₁' => A₁' ∈ zerosFinset E msg.toD) ∪
             E.points.filter (fun A₁' =>
-              ∃ j : Fin (1 + baseImageCount E stmt msg hkm), R_fn j = A₁') ∪
+              ∃ j : Fin (1 + baseImageCount E stmt msg), R_fn j = A₁') ∪
             E.points.filter (fun A₁' =>
               A₁' ∈ badDenomA0 E msg.toD stmt.target
-                (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm)) ∪
+                (baseImageCount E stmt msg) (baseAt E stmt msg)) ∪
             E.points.filter (fun A₁' => A₁'.1 = A₀.1) := by
         intro A₁' h
         simp only [Finset.mem_filter, Finset.mem_union, not_and_or, not_not, not_forall,
@@ -5323,97 +5309,97 @@ private theorem sigma_data_of_gd_support_rational
           exact hx.2
         exact (Finset.card_le_card h1).trans hZC
       have h_RimageCard : (E.points.filter (fun A₁' =>
-            ∃ j : Fin (1 + baseImageCount E stmt msg hkm), R_fn j = A₁')).card
-          ≤ 1 + baseImageCount E stmt msg hkm := by
+            ∃ j : Fin (1 + baseImageCount E stmt msg), R_fn j = A₁')).card
+          ≤ 1 + baseImageCount E stmt msg := by
         have h1 : E.points.filter (fun A₁' =>
-              ∃ j : Fin (1 + baseImageCount E stmt msg hkm), R_fn j = A₁')
+              ∃ j : Fin (1 + baseImageCount E stmt msg), R_fn j = A₁')
             ⊆ Finset.univ.image R_fn := by
           intro x hx
           simp only [Finset.mem_filter, Finset.mem_image, Finset.mem_univ, true_and] at hx ⊢
           exact hx.2
-        have h2 : (Finset.univ.image R_fn).card ≤ 1 + baseImageCount E stmt msg hkm := by
+        have h2 : (Finset.univ.image R_fn).card ≤ 1 + baseImageCount E stmt msg := by
           refine Finset.card_image_le.trans ?_
           rw [Finset.card_univ, Fintype.card_fin]
         exact (Finset.card_le_card h1).trans h2
       have h_BadCardLe : (E.points.filter (fun A₁' =>
             A₁' ∈ badDenomA0 E msg.toD stmt.target
-              (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm))).card
+              (baseImageCount E stmt msg) (baseAt E stmt msg))).card
           ≤ (badDenomA0 E msg.toD stmt.target
-              (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm)).card := by
+              (baseImageCount E stmt msg) (baseAt E stmt msg)).card := by
         apply Finset.card_le_card
         intro x hx
         simp only [Finset.mem_filter] at hx
         exact hx.2
       have h_complement_card :
           (E.points.filter (fun A₁' => ¬(A₁' ∉ zerosFinset E msg.toD ∧
-            (∀ j : Fin (1 + baseImageCount E stmt msg hkm), R_fn j ≠ A₁') ∧
+            (∀ j : Fin (1 + baseImageCount E stmt msg), R_fn j ≠ A₁') ∧
             A₁' ∉ badDenomA0 E msg.toD stmt.target
-              (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm) ∧
+              (baseImageCount E stmt msg) (baseAt E stmt msg) ∧
             A₀.1 ≠ A₁'.1))).card
-          ≤ msg.toD.degE + (1 + baseImageCount E stmt msg hkm) +
+          ≤ msg.toD.degE + (1 + baseImageCount E stmt msg) +
             (badDenomA0 E msg.toD stmt.target
-              (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm)).card + 2 := by
+              (baseImageCount E stmt msg) (baseAt E stmt msg)).card + 2 := by
         have hCompL := Finset.card_le_card h_complement
         have hUL1 := Finset.card_union_le
             (E.points.filter (fun A₁' => A₁' ∈ zerosFinset E msg.toD) ∪
              E.points.filter (fun A₁' =>
-              ∃ j : Fin (1 + baseImageCount E stmt msg hkm), R_fn j = A₁') ∪
+              ∃ j : Fin (1 + baseImageCount E stmt msg), R_fn j = A₁') ∪
              E.points.filter (fun A₁' =>
               A₁' ∈ badDenomA0 E msg.toD stmt.target
-                (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm)))
+                (baseImageCount E stmt msg) (baseAt E stmt msg)))
             (E.points.filter (fun A₁' => A₁'.1 = A₀.1))
         have hUL2 := Finset.card_union_le
             (E.points.filter (fun A₁' => A₁' ∈ zerosFinset E msg.toD) ∪
              E.points.filter (fun A₁' =>
-              ∃ j : Fin (1 + baseImageCount E stmt msg hkm), R_fn j = A₁'))
+              ∃ j : Fin (1 + baseImageCount E stmt msg), R_fn j = A₁'))
             (E.points.filter (fun A₁' =>
               A₁' ∈ badDenomA0 E msg.toD stmt.target
-                (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm)))
+                (baseImageCount E stmt msg) (baseAt E stmt msg)))
         have hUL3 := Finset.card_union_le
             (E.points.filter (fun A₁' => A₁' ∈ zerosFinset E msg.toD))
             (E.points.filter (fun A₁' =>
-              ∃ j : Fin (1 + baseImageCount E stmt msg hkm), R_fn j = A₁'))
+              ∃ j : Fin (1 + baseImageCount E stmt msg), R_fn j = A₁'))
         have hVert := h_vert A₀
         omega
       have h_split := Finset.card_filter_add_card_filter_not (s := E.points)
         (p := fun A₁' => A₁' ∉ zerosFinset E msg.toD ∧
-          (∀ j : Fin (1 + baseImageCount E stmt msg hkm), R_fn j ≠ A₁') ∧
+          (∀ j : Fin (1 + baseImageCount E stmt msg), R_fn j ≠ A₁') ∧
           A₁' ∉ badDenomA0 E msg.toD stmt.target
-            (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm) ∧
+            (baseImageCount E stmt msg) (baseAt E stmt msg) ∧
           A₀.1 ≠ A₁'.1)
       have h_card_def : (E.points.filter (fun A₁' =>
             A₁' ∉ zerosFinset E msg.toD ∧
-            (∀ j : Fin (1 + baseImageCount E stmt msg hkm), R_fn j ≠ A₁') ∧
+            (∀ j : Fin (1 + baseImageCount E stmt msg), R_fn j ≠ A₁') ∧
             A₁' ∉ badDenomA0 E msg.toD stmt.target
-              (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm) ∧
+              (baseImageCount E stmt msg) (baseAt E stmt msg) ∧
             A₀.1 ≠ A₁'.1)).card
-          ≥ E.points.card - (msg.toD.degE + (1 + baseImageCount E stmt msg hkm)) -
+          ≥ E.points.card - (msg.toD.degE + (1 + baseImageCount E stmt msg)) -
               (badDenomA0 E msg.toD stmt.target
-                (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm)).card - 2 := by
+                (baseImageCount E stmt msg) (baseAt E stmt msg)).card - 2 := by
         omega
       have h_zeros_ge :
           (E.points.filter (fun p =>
             bivEval (polyGPoly (E := E) Q_fn β_fn R_fn m_fn A₀) p = 0)).card
-          ≥ E.points.card - (msg.toD.degE + (1 + baseImageCount E stmt msg hkm)) -
+          ≥ E.points.card - (msg.toD.degE + (1 + baseImageCount E stmt msg)) -
               (badDenomA0 E msg.toD stmt.target
-                (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm)).card - 2 :=
+                (baseImageCount E stmt msg) (baseAt E stmt msg)).card - 2 :=
         le_trans h_card_def (Finset.card_le_card h_sub)
       have h_resBd := h_resultantX_le A₀
-      have hBI : baseImageCount E stmt msg hkm ≤ stmt.k := by
+      have hBI : baseImageCount E stmt msg ≤ stmt.k := by
         unfold baseImageCount baseImage
         exact (Finset.card_image_le).trans
-          (by rw [Finset.card_univ, Fintype.card_fin, hkm])
+          (by rw [Finset.card_univ, Fintype.card_fin])
       -- Linear bound: |badDenomA0| ≤ n - 11·degE - 11·stmt.k - 20.
       -- (Stated in terms of stmt.k via the relaxed version.)
       have hBadLinear :
           (badDenomA0 E msg.toD stmt.target
-              (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm)).card
+              (baseImageCount E stmt msg) (baseAt E stmt msg)).card
             ≤ E.points.card - 11 * msg.toD.degE - 11 * stmt.k - 20 := by
         have hLargeQ_form : E.points.card ≥
             31 * msg.toD.degE + 31 * stmt.k + 141 := by
           have := _hLargeQ; omega
         exact badDenomA0_card_le_linear_relax E msg.toD _hDnz stmt.target
-          (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm) stmt.k hBI
+          (baseImageCount E stmt msg) (baseAt E stmt msg) stmt.k hBI
           hLargeQ_form
       have h_many : (E.points.filter (fun p =>
             bivEval (polyGPoly (E := E) Q_fn β_fn R_fn m_fn A₀) p = 0)).card
@@ -5434,9 +5420,9 @@ private theorem sigma_data_of_gd_support_rational
       intro A₀ A₁ hA₀ hA₁ _hNV
       by_cases hA₀nz : A₀ ∈ zerosFinset E msg.toD
       · exact h_spec A₀ hA₀ (Or.inl hA₀nz) A₁ hA₁
-      · by_cases hA₀nr : ∀ j : Fin (1 + baseImageCount E stmt msg hkm), R_fn j ≠ A₀
+      · by_cases hA₀nr : ∀ j : Fin (1 + baseImageCount E stmt msg), R_fn j ≠ A₀
         · by_cases hA₀nbad : A₀ ∈ badDenomA0 E msg.toD stmt.target
-              (baseImageCount E stmt msg hkm) (baseAt E stmt msg hkm)
+              (baseImageCount E stmt msg) (baseAt E stmt msg)
           · exact h_spec A₀ hA₀ (Or.inr (Or.inr hA₀nbad)) A₁ hA₁
           · exact h_nonspec A₀ hA₀ hA₀nz hA₀nr hA₀nbad A₁ hA₁
         · push Not at hA₀nr
@@ -5445,7 +5431,7 @@ private theorem sigma_data_of_gd_support_rational
     exact polyGFull_vanishes_on_ExE_of_polyG_zero E _ _ _ _
       hAt_nonvert hELargeDkl
   have hELargeThr : E.points.card > 4 * (zerosCard E msg.toD +
-        (1 + baseImageCount E stmt msg hkm)) + 2 := by
+        (1 + baseImageCount E stmt msg)) + 2 := by
     -- zerosCard ≤ msg.toD.degE ≤ stmt.degBound, baseImageCount ≤ stmt.k.
     have hZC : zerosCard E msg.toD ≤ msg.toD.degE := by
       have hβcov := betaCanonical_covers E msg.toD _hDnz
@@ -5462,14 +5448,11 @@ private theorem sigma_data_of_gd_support_rational
             Finset.sum_le_sum (fun k _ => hβpos k)
         _ = ∑ P ∈ E.points, betaCanonical E msg.toD P := hβeq
         _ ≤ msg.toD.degE := hβsum
-    have hBI : baseImageCount E stmt msg hkm ≤ stmt.k := by
-      calc baseImageCount E stmt msg hkm
-          ≤ msg.k := by
-            unfold baseImageCount baseImage
-            exact (Finset.card_image_le).trans
-              (by rw [Finset.card_univ, Fintype.card_fin])
-        _ = stmt.k := hkm.symm
-    have h1 : 4 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg hkm)) + 2
+    have hBI : baseImageCount E stmt msg ≤ stmt.k := by
+      unfold baseImageCount baseImage
+      exact (Finset.card_image_le).trans
+        (by rw [Finset.card_univ, Fintype.card_fin])
+    have h1 : 4 * (zerosCard E msg.toD + (1 + baseImageCount E stmt msg)) + 2
         ≤ 4 * (msg.toD.degE + (1 + stmt.k)) + 2 := by
       apply Nat.add_le_add_right
       apply Nat.mul_le_mul_left
@@ -5483,13 +5466,13 @@ private theorem sigma_data_of_gd_support_rational
   exact sigma_matching_from_polyGFull_vanishing E
     (zerosAt E msg.toD)
     (fun k => ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q))
-    (distinctR E stmt msg hkm)
-    (distinctM' E stmt msg hkm)
+    (distinctR E stmt msg)
+    (distinctM' E stmt msg)
     (zerosAt_injective E msg.toD)
-    (distinctR_injective E stmt msg hkm hNoNegP)
+    (distinctR_injective E stmt msg hNoNegP)
     hBetaNz
     (fun k => zerosAt_mem_E E msg.toD k)
-    (fun j => distinctR_mem_points E stmt msg hkm _hTargetOnE _hBasesOnE j)
+    (fun j => distinctR_mem_points E stmt msg _hTargetOnE _hBasesOnE j)
     hVanishing hELargeThr hELargeDkl
 
 /--
@@ -5786,8 +5769,7 @@ hypothesis on `logDerivCheckFn` over rational defined non-vertical pairs
 forces every `Q ∈ gd.support` to have `F_q`-rational coordinates. -/
 private theorem gd_support_rational_of_hAllZero
     (stmt : DlogStatement E.q) (_hd : stmt.degBound < E.q)
-    (msg : MAProverMsg E.q) (_hDeg : msg.toD.degE ≤ stmt.degBound)
-    (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k) (_hDeg : msg.toD.degE ≤ stmt.degBound)
     (_hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
     (_hTargetOnE : stmt.target ∈ E.points)
     (_hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
@@ -5796,7 +5778,7 @@ private theorem gd_support_rational_of_hAllZero
         21 * (msg.toD.degE + stmt.k + 2) + 72)
     (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
         (validPairs E).card)
-    (_hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (_hNoNegP : ¬ (negPIndexSet E stmt msg).Nonempty)
     (_hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
     (gd : GeometricDivisorData E msg.toD)
     (_hAllZero :
@@ -5804,7 +5786,7 @@ private theorem gd_support_rational_of_hAllZero
         A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
         logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
         logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-          (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
+          (fun i => msg.m i) A₀ A₁ = 0) :
     gd_support_rational E msg.toD gd := by
   classical
   rw [gd_support_rational_iff_frob_fixed]
@@ -5815,15 +5797,14 @@ private theorem gd_support_rational_of_hAllZero
     gd_mult_fqbar_ne_zero E msg.toD gd hDegLt Q hQ
   exact absurd
     (frob_descent_mult_zero_of_not_fixed E msg.toD gd hDegLt
-      _hDnz stmt.target stmt.bases (fun i => msg.m (hkm ▸ i))
+      _hDnz stmt.target stmt.bases (fun i => msg.m i)
       _hAllZero _hLargeQ hSample Q hQ hNotFixed)
     hMultNZ
 
 private theorem geometric_residue_match
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)
     (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
-    (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
@@ -5833,20 +5814,20 @@ private theorem geometric_residue_match
     (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
         (validPairs E).card)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg).Nonempty)
     (hAllZero :
       ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
         A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
         logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
         logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-          (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
+          (fun i => msg.m i) A₀ A₁ = 0) :
     splitsOnE E msg.toD ∧
     ∃ (σ : Fin (zerosCard E msg.toD) ↪
-            Fin (1 + baseImageCount E stmt msg hkm)),
-      (∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ k)) ∧
+            Fin (1 + baseImageCount E stmt msg)),
+      (∀ k, zerosAt E msg.toD k = distinctR E stmt msg (σ k)) ∧
       (∀ k, ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q)
-            + distinctM' E stmt msg hkm (σ k) = 0) ∧
-      (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) := by
+            + distinctM' E stmt msg (σ k) = 0) ∧
+      (∀ j, j ∉ Set.range σ → distinctM' E stmt msg j = 0) := by
   classical
   let _ := hd2
   have hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
@@ -5854,7 +5835,7 @@ private theorem geometric_residue_match
   obtain ⟨gd, _⟩ := exists_geometricDivisorData E msg.toD hDnz
   -- Step 1: gd.support is rational under hAllZero (deep residue-specialisation).
   have hRat : gd_support_rational E msg.toD gd :=
-    gd_support_rational_of_hAllZero E stmt hd msg hDeg hkm hSmooth hTargetOnE
+    gd_support_rational_of_hAllZero E stmt hd msg hDeg hSmooth hTargetOnE
       hBasesOnE hLargeQ hSample hNoNegP hDnz gd hAllZero
   -- Step 2: splitsOnE follows from rational support.
   have hSplit : splitsOnE E msg.toD :=
@@ -5862,7 +5843,7 @@ private theorem geometric_residue_match
   -- Step 3: σ-matching from rational support + chord-sum identity.
   -- (The per-A₀ denominator obstruction is absorbed via badDenomA0
   -- inside `sigma_data_of_gd_support_rational`.)
-  have hσ := sigma_data_of_gd_support_rational E stmt hd msg hDeg hkm hTargetOnE
+  have hσ := sigma_data_of_gd_support_rational E stmt hd msg hDeg hTargetOnE
     hBasesOnE hLargeQ hNoNegP hDnz gd hRat hAllZero
   exact ⟨hSplit, hσ⟩
 
@@ -5876,8 +5857,7 @@ content and `PROVIDED SOLUTION` outline.
 -/
 private theorem geometric_sigma_matching
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
-    (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
@@ -5887,27 +5867,26 @@ private theorem geometric_sigma_matching
     (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
         (validPairs E).card)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg).Nonempty)
     (hAllZero :
       ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
         A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
         logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
         logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-          (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
+          (fun i => msg.m i) A₀ A₁ = 0) :
     splitsOnE E msg.toD ∧
     ∃ (σ : Fin (zerosCard E msg.toD) ↪
-            Fin (1 + baseImageCount E stmt msg hkm)),
-      (∀ k, zerosAt E msg.toD k = distinctR E stmt msg hkm (σ k)) ∧
+            Fin (1 + baseImageCount E stmt msg)),
+      (∀ k, zerosAt E msg.toD k = distinctR E stmt msg (σ k)) ∧
       (∀ k, ((multAt E (betaCanonical E msg.toD) msg.toD k : ℕ) : ZMod E.q)
-            + distinctM' E stmt msg hkm (σ k) = 0) ∧
-      (∀ j, j ∉ Set.range σ → distinctM' E stmt msg hkm j = 0) :=
-  geometric_residue_match E stmt hd hd2 msg hDeg hkm hSmooth
+            + distinctM' E stmt msg (σ k) = 0) ∧
+      (∀ j, j ∉ Set.range σ → distinctM' E stmt msg j = 0) :=
+  geometric_residue_match E stmt hd hd2 msg hDeg hSmooth
     hTargetOnE hBasesOnE hLargeQ hSample hAdm hNoNegP hAllZero
 
 theorem extractor_of_logDerivCheck_all_zero_geometric_general
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
-    (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
@@ -5917,13 +5896,13 @@ theorem extractor_of_logDerivCheck_all_zero_geometric_general
     (hSample : 18 * (msg.toD.degE + stmt.k + 1) * E.q + 1 ≤
         (validPairs E).card)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hNoNegP : ¬ (negPIndexSet E stmt msg hkm).Nonempty)
+    (hNoNegP : ¬ (negPIndexSet E stmt msg).Nonempty)
     (hAllZero :
       ∀ A₀ A₁ : ZMod E.q × ZMod E.q,
         A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
         logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
         logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-          (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
+          (fun i => msg.m i) A₀ A₁ = 0) :
     ∃ wit : DlogWitness E.q,
       maExtractor E stmt msg = some wit
       ∧ relDlog E stmt wit := by
@@ -5931,23 +5910,23 @@ theorem extractor_of_logDerivCheck_all_zero_geometric_general
   have hDnz : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg hAdm
   obtain ⟨hSplit, σ, hσ_eq, hσ_betam, hσ_off⟩ :=
-    geometric_sigma_matching E stmt hd hd2 msg hDeg hkm hSmooth
+    geometric_sigma_matching E stmt hd hd2 msg hDeg hSmooth
       hTargetOnE hBasesOnE hLargeQ hSample hAdm hNoNegP hAllZero
   have hβsup := betaCanonical_support E msg.toD
   have hβcov := betaCanonical_covers E msg.toD hDnz
   have hβsum := betaCanonical_sum_le_degE E msg.toD
   have hβgroup := betaCanonical_group_sum_zero E msg.toD hSplit
   obtain ⟨hBound, hCanon, hNonCanon⟩ :=
-    extractorCoeffFromSigma_satisfies_D3 E stmt msg stmt.degBound hDeg hkm hNoNegP
+    extractorCoeffFromSigma_satisfies_D3 E stmt msg stmt.degBound hDeg hNoNegP
       (betaCanonical E msg.toD) hβsup hβcov hβsum σ hσ_eq hσ_betam hσ_off
   obtain ⟨hSucc, _⟩ :=
-    extractorSucceeds_of_natural_witness E stmt msg stmt.degBound hd hkm hNoNegP
-      (extractorCoeffFromSigma E stmt msg hkm (betaCanonical E msg.toD) σ)
+    extractorSucceeds_of_natural_witness E stmt msg stmt.degBound hd hNoNegP
+      (extractorCoeffFromSigma E stmt msg (betaCanonical E msg.toD) σ)
       hBound hCanon hNonCanon
-  have hEq : extractorDivisorCoeffs E stmt msg hkm =
+  have hEq : extractorDivisorCoeffs E stmt msg =
       dCoeffs E msg.toD (betaCanonical E msg.toD) :=
     funext fun P =>
-      extractorDivisorCoeffs_eq_dCoeffs E stmt msg stmt.degBound hDeg hd hkm
+      extractorDivisorCoeffs_eq_dCoeffs E stmt msg stmt.degBound hDeg hd
         hNoNegP (betaCanonical E msg.toD) hβsup hβcov hβsum σ hσ_eq hσ_betam
         hσ_off P
   have hβsup_P : ∀ P, betaCanonical E msg.toD P ≠ 0 → P ∈ E.points :=
@@ -5957,12 +5936,12 @@ theorem extractor_of_logDerivCheck_all_zero_geometric_general
   have hGSup :=
     dCoeffs_groupSum_zero E msg.toD (betaCanonical E msg.toD) hβsup_P hβgroup hFinSupp
   have hSupSub : Function.support (dCoeffs E msg.toD (betaCanonical E msg.toD))
-      ⊆ ↑(extractorDivisorCandidate E stmt msg hkm) := fun P hP =>
-    extractorDivisorCoeffs_support_subset_candidate E stmt msg hkm
-      (show extractorDivisorCoeffs E stmt msg hkm P ≠ 0 by rw [hEq]; exact hP)
-  have hFinSupp_sub : hFinSupp.toFinset ⊆ extractorDivisorCandidate E stmt msg hkm :=
+      ⊆ ↑(extractorDivisorCandidate E stmt msg) := fun P hP =>
+    extractorDivisorCoeffs_support_subset_candidate E stmt msg
+      (show extractorDivisorCoeffs E stmt msg P ≠ 0 by rw [hEq]; exact hP)
+  have hFinSupp_sub : hFinSupp.toFinset ⊆ extractorDivisorCandidate E stmt msg :=
     fun P hP => hSupSub ((Set.Finite.mem_toFinset hFinSupp).mp hP)
-  have hPad : ECPoint.weightedSum E (extractorDivisorCandidate E stmt msg hkm)
+  have hPad : ECPoint.weightedSum E (extractorDivisorCandidate E stmt msg)
           (fun P => ECPoint.zsmul E (dCoeffs E msg.toD (betaCanonical E msg.toD) P) P)
         = ECPoint.weightedSum E hFinSupp.toFinset
             (fun P => ECPoint.zsmul E (dCoeffs E msg.toD (betaCanonical E msg.toD) P) P) :=
@@ -5971,21 +5950,21 @@ theorem extractor_of_logDerivCheck_all_zero_geometric_general
         rw [Set.Finite.mem_toFinset, Function.mem_support, not_not] at hPnotSup
         rw [hPnotSup]
         exact ECPoint.zsmul_zero E P)
-  have hWSum : ECPoint.weightedSum E (extractorDivisorCandidate E stmt msg hkm)
-      (fun P => ECPoint.zsmul E (extractorDivisorCoeffs E stmt msg hkm P) P) = 0 := by
-    have : (fun P => ECPoint.zsmul E (extractorDivisorCoeffs E stmt msg hkm P) P) =
+  have hWSum : ECPoint.weightedSum E (extractorDivisorCandidate E stmt msg)
+      (fun P => ECPoint.zsmul E (extractorDivisorCoeffs E stmt msg P) P) = 0 := by
+    have : (fun P => ECPoint.zsmul E (extractorDivisorCoeffs E stmt msg P) P) =
         fun P => ECPoint.zsmul E (dCoeffs E msg.toD (betaCanonical E msg.toD) P) P := by
       ext P
       rw [congr_fun hEq P]
     rw [this, hPad]
     exact hGSup
   have hTarget :=
-    target_eq_weightedSum_of_weightedSum E stmt msg hkm hTargetOnE hBasesOnE
+    target_eq_weightedSum_of_weightedSum E stmt msg hTargetOnE hBasesOnE
       hNoNegP hWSum
-  exact ⟨⟨msg.k, extractedScalars E stmt msg hkm, stmt.degBound, hSucc⟩,
+  exact ⟨⟨stmt.k, extractedScalars E stmt msg, stmt.degBound, hSucc⟩,
     by
-      simp only [maExtractor, dif_pos hkm, dif_pos hSucc],
-    ⟨hkm, hTarget⟩⟩
+      simp only [maExtractor, dif_pos hSucc],
+    ⟨rfl, hTarget⟩⟩
 
 /--
 Geometric all-zero branch, including the degenerate case where `-P` is
@@ -5993,8 +5972,7 @@ already one of the advertised bases.
 -/
 theorem extractor_of_logDerivCheck_all_zero_geometric
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q) (hDeg : msg.toD.degE ≤ stmt.degBound)
-    (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k) (hDeg : msg.toD.degE ≤ stmt.degBound)
     (hSmooth : 4 * E.curveA ^ 3 + 27 * E.curveB ^ 2 ≠ 0)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
@@ -6009,20 +5987,20 @@ theorem extractor_of_logDerivCheck_all_zero_geometric
         A₀ ∈ E.points → A₁ ∈ E.points → A₀.1 ≠ A₁.1 →
         logDerivCheckFnDefined E msg.toD stmt.target stmt.bases A₀ A₁ →
         logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-          (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
+          (fun i => msg.m i) A₀ A₁ = 0) :
     ∃ wit : DlogWitness E.q,
       maExtractor E stmt msg = some wit
       ∧ relDlog E stmt wit := by
   classical
-  by_cases hNegP : (negPIndexSet E stmt msg hkm).Nonempty
-  · have hSucc : extractorSucceeds E stmt msg stmt.degBound hkm :=
-      extractorSucceeds_special E stmt msg stmt.degBound hkm hNegP hd2
-    refine ⟨⟨msg.k, extractedScalars E stmt msg hkm, stmt.degBound, hSucc⟩,
-      ?_, ⟨hkm, ?_⟩⟩
+  by_cases hNegP : (negPIndexSet E stmt msg).Nonempty
+  · have hSucc : extractorSucceeds E stmt msg stmt.degBound :=
+      extractorSucceeds_special E stmt msg stmt.degBound hNegP hd2
+    refine ⟨⟨stmt.k, extractedScalars E stmt msg, stmt.degBound, hSucc⟩,
+      ?_, ⟨rfl, ?_⟩⟩
     · unfold maExtractor
-      simp only [dif_pos hkm, dif_pos hSucc]
-    · exact extracted_scalars_valid_special E stmt msg hkm hNegP
+      simp only [dif_pos hSucc]
+    · exact extracted_scalars_valid_special E stmt msg hNegP
   · exact extractor_of_logDerivCheck_all_zero_geometric_general E stmt hd hd2
-      msg hDeg hkm hSmooth hTargetOnE hBasesOnE hLargeQ hSample hAdm hNegP hAllZero
+      msg hDeg hSmooth hTargetOnE hBasesOnE hLargeQ hSample hAdm hNegP hAllZero
 
 end Divisor

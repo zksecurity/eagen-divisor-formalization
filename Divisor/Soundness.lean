@@ -40,51 +40,50 @@ position in the group. For the group at `-P` the residue side carries a
 structural `+1` that must be subtracted off the combined total.
 -/
 
-/-- Transported bases: view `stmt.bases` as a function on `Fin msg.k`
-    using the equality `hk : stmt.k = msg.k`. -/
-def extractorBases (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
-    (hk : stmt.k = msg.k) : Fin msg.k → ZMod E.q × ZMod E.q :=
-  fun j => stmt.bases (Fin.cast hk.symm j)
+/-- The statement bases, indexed by the arity shared with the message. -/
+def extractorBases (stmt : DlogStatement E.q) (_msg : MAProverMsg E.q stmt.k) :
+    Fin stmt.k → ZMod E.q × ZMod E.q :=
+  stmt.bases
 
 /-- Finset of positions sharing base point with `i`. -/
-def extractorGroup (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
-    (hk : stmt.k = msg.k) (i : Fin msg.k) : Finset (Fin msg.k) :=
-  Finset.univ.filter (fun j => extractorBases E stmt msg hk j =
-    extractorBases E stmt msg hk i)
+def extractorGroup (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
+    (i : Fin stmt.k) : Finset (Fin stmt.k) :=
+  Finset.univ.filter (fun j => extractorBases E stmt msg j =
+    extractorBases E stmt msg i)
 
 lemma mem_extractorGroup_self (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (hk : stmt.k = msg.k) (i : Fin msg.k) :
-    i ∈ extractorGroup E stmt msg hk i :=
+    (msg : MAProverMsg E.q stmt.k) (i : Fin stmt.k) :
+    i ∈ extractorGroup E stmt msg i :=
   Finset.mem_filter.mpr ⟨Finset.mem_univ _, rfl⟩
 
 lemma extractorGroup_nonempty (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (hk : stmt.k = msg.k) (i : Fin msg.k) :
-    (extractorGroup E stmt msg hk i).Nonempty :=
-  ⟨i, mem_extractorGroup_self E stmt msg hk i⟩
+    (msg : MAProverMsg E.q stmt.k) (i : Fin stmt.k) :
+    (extractorGroup E stmt msg i).Nonempty :=
+  ⟨i, mem_extractorGroup_self E stmt msg i⟩
 
 /-- Combined coefficient at the group containing `i`, in `ZMod E.q`. -/
 def extractorGroupSum (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (hk : stmt.k = msg.k) (i : Fin msg.k) :
+    (msg : MAProverMsg E.q stmt.k) (i : Fin stmt.k) :
     ZMod E.q :=
-  (extractorGroup E stmt msg hk i).sum (fun j => msg.m j)
+  (extractorGroup E stmt msg i).sum (fun j => msg.m j)
 
 /-- Canonical predicate: `i` is the minimum-index representative of its
     equal-base group. -/
 def extractorIsCanonical (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (hk : stmt.k = msg.k) (i : Fin msg.k) : Prop :=
-  (extractorGroup E stmt msg hk i).min'
-    (extractorGroup_nonempty E stmt msg hk i) = i
+    (msg : MAProverMsg E.q stmt.k) (i : Fin stmt.k) : Prop :=
+  (extractorGroup E stmt msg i).min'
+    (extractorGroup_nonempty E stmt msg i) = i
 
 /-- Set of indices whose base point equals `-P`. -/
 def negPIndexSet (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (hk : stmt.k = msg.k) : Finset (Fin msg.k) :=
-  (Finset.univ : Finset (Fin msg.k)).filter
-    (fun j => extractorBases E stmt msg hk j = (stmt.target.1, -stmt.target.2))
+    (msg : MAProverMsg E.q stmt.k) : Finset (Fin stmt.k) :=
+  (Finset.univ : Finset (Fin stmt.k)).filter
+    (fun j => extractorBases E stmt msg j = (stmt.target.1, -stmt.target.2))
 
 /-- Constructive decision procedure for canonical extractor indices. -/
 def extractorIsCanonicalDecidable (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (hk : stmt.k = msg.k) (i : Fin msg.k) :
-    Decidable (extractorIsCanonical E stmt msg hk i) := by
+    (msg : MAProverMsg E.q stmt.k) (i : Fin stmt.k) :
+    Decidable (extractorIsCanonical E stmt msg i) := by
   unfold extractorIsCanonical
   infer_instance
 
@@ -112,19 +111,19 @@ def extractorIsCanonicalDecidable (stmt : DlogStatement E.q)
       `logDerivCheckFn`'s RHS sign (via the negated `distinctMCons`
       tail), so `groupSum.val` needs no extra negation. -/
 def extractedScalars (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (hk : stmt.k = msg.k) : Fin msg.k → ℤ :=
+    (msg : MAProverMsg E.q stmt.k) : Fin stmt.k → ℤ :=
   fun i =>
-    letI : Decidable ((negPIndexSet E stmt msg hk).Nonempty) :=
+    letI : Decidable ((negPIndexSet E stmt msg).Nonempty) :=
       Finset.decidableNonempty
-    letI : Decidable (extractorIsCanonical E stmt msg hk i) :=
-      extractorIsCanonicalDecidable E stmt msg hk i
-    if hNegP : (negPIndexSet E stmt msg hk).Nonempty then
+    letI : Decidable (extractorIsCanonical E stmt msg i) :=
+      extractorIsCanonicalDecidable E stmt msg i
+    if hNegP : (negPIndexSet E stmt msg).Nonempty then
       -- Special case: -P ∈ {B_j}. Trivial witness at j* = min.
-      if i = (negPIndexSet E stmt msg hk).min' hNegP then (-1 : ℤ) else 0
+      if i = (negPIndexSet E stmt msg).min' hNegP then (-1 : ℤ) else 0
     else
       -- General case: -P ∉ {B_j}. Residue matching (paper's positive form).
-      if extractorIsCanonical E stmt msg hk i then
-        ((extractorGroupSum E stmt msg hk i).val : ℤ)
+      if extractorIsCanonical E stmt msg i then
+        ((extractorGroupSum E stmt msg i).val : ℤ)
       else 0
 
 /-- Predicate: the extractor succeeds at bound `d` — every extracted
@@ -133,39 +132,34 @@ def extractedScalars (stmt : DlogStatement E.q)
     branch, which returns `-1` directly (`(-1).natAbs = 1 < d` for
     `d ≥ 2`). -/
 def extractorSucceeds (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (d : ℕ) (hk : stmt.k = msg.k) : Prop :=
-  ∀ i, ((extractedScalars E stmt msg hk i).natAbs) < d
+    (msg : MAProverMsg E.q stmt.k) (d : ℕ) : Prop :=
+  ∀ i, ((extractedScalars E stmt msg i).natAbs) < d
 
 /-- Constructive decision procedure for the extractor's finite range check. -/
 def extractorSucceedsDecidable (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (d : ℕ) (hk : stmt.k = msg.k) :
-    Decidable (extractorSucceeds E stmt msg d hk) := by
+    (msg : MAProverMsg E.q stmt.k) (d : ℕ) :
+    Decidable (extractorSucceeds E stmt msg d) := by
   unfold extractorSucceeds
   infer_instance
 
 /-- The full-grouping extractor.
 
     This is a total function on the public statement and Merlin message.
-    The arity check only makes the dependent indexing executable; soundness
-    is stated for every matching-arity message and does not assume anything
-    about the mismatch branch. The returned witness uses the statement's
-    public degree bound. Its finite grouping and range check take polynomial
-    time (quadratic in `msg.k` with the current direct implementation); the
-    message polynomials are not inspected. -/
+    The returned witness uses the statement's public degree bound. Its finite
+    grouping and range check take polynomial time (quadratic in `stmt.k` with
+    the current direct implementation); the message polynomials are not
+    inspected. -/
 def maExtractor (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) : Option (DlogWitness E.q) :=
-  if hk : stmt.k = msg.k then
-    letI : Decidable (extractorSucceeds E stmt msg stmt.degBound hk) :=
-      extractorSucceedsDecidable E stmt msg stmt.degBound hk
-    if h : extractorSucceeds E stmt msg stmt.degBound hk then
-      some {
-        k := msg.k
-        scalars := extractedScalars E stmt msg hk
-        degBound := stmt.degBound
-        hRange := h
-      }
-    else
-      none
+    (msg : MAProverMsg E.q stmt.k) : Option (DlogWitness E.q) :=
+  letI : Decidable (extractorSucceeds E stmt msg stmt.degBound) :=
+    extractorSucceedsDecidable E stmt msg stmt.degBound
+  if h : extractorSucceeds E stmt msg stmt.degBound then
+    some {
+      k := stmt.k
+      scalars := extractedScalars E stmt msg
+      degBound := stmt.degBound
+      hRange := h
+    }
   else
     none
 
@@ -173,7 +167,7 @@ def maExtractor (stmt : DlogStatement E.q)
     discrete-log relation. The `none` branch is false, so this pins validity
     to the witness returned by `maExtractor`. -/
 def maExtractorValid (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) : Prop :=
+    (msg : MAProverMsg E.q stmt.k) : Prop :=
   match maExtractor E stmt msg with
   | some wit => relDlog E stmt wit
   | none => False
@@ -182,8 +176,8 @@ def maExtractorValid (stmt : DlogStatement E.q)
 
 /-- BadRange: some extracted scalar is not in [0, d). -/
 noncomputable def eventBadRange (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (d : ℕ) (hk : stmt.k = msg.k) : Prop :=
-  ¬ extractorSucceeds E stmt msg d hk
+    (msg : MAProverMsg E.q stmt.k) (d : ℕ) : Prop :=
+  ¬ extractorSucceeds E stmt msg d
 
 /-! ## Bridge from log-derivative vanishing to extractor success
 
@@ -203,18 +197,17 @@ noncomputable def eventBadRange (stmt : DlogStatement E.q)
     `-1` at `j*` and `0` at all other indices. So `|scalars i|.natAbs`
     is either `1` (at `j*`) or `0` (elsewhere), both `< d` when `d ≥ 2`. -/
 theorem extractorSucceeds_special
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (d : ℕ)
-    (hkm : stmt.k = msg.k)
-    (hNegP : (negPIndexSet E stmt msg hkm).Nonempty)
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k) (d : ℕ)
+    (hNegP : (negPIndexSet E stmt msg).Nonempty)
     (hd2 : 2 ≤ d) :
-    extractorSucceeds E stmt msg d hkm := by
+    extractorSucceeds E stmt msg d := by
   intro i
-  show ((if hne : (negPIndexSet E stmt msg hkm).Nonempty
-         then (if i = (negPIndexSet E stmt msg hkm).min' hne
+  show ((if hne : (negPIndexSet E stmt msg).Nonempty
+         then (if i = (negPIndexSet E stmt msg).min' hne
                then (-1 : ℤ) else 0)
          else _)).natAbs < d
   rw [dif_pos hNegP]
-  by_cases hi : i = (negPIndexSet E stmt msg hkm).min' hNegP
+  by_cases hi : i = (negPIndexSet E stmt msg).min' hNegP
   · rw [if_pos hi]; exact hd2
   · rw [if_neg hi]; omega
 
@@ -233,35 +226,34 @@ theorem extractorSucceeds_special
     `Σ [n_i] · B_i = [-1] · B_{j*} = [-1](-P) = P` unconditionally,
     without inspecting `msg.m`. -/
 theorem extracted_scalars_valid_special
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k)
-    (hNegP : (negPIndexSet E stmt msg hkm).Nonempty) :
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
+    (hNegP : (negPIndexSet E stmt msg).Nonempty) :
     ECPoint.affine E stmt.target.1 stmt.target.2 =
-      ECPoint.weightedSum E (Finset.univ : Finset (Fin msg.k))
+      ECPoint.weightedSum E (Finset.univ : Finset (Fin stmt.k))
         (fun i => ECPoint.zsmul E
-                   (extractedScalars E stmt msg hkm i)
-                   (ECPoint.affine E (extractorBases E stmt msg hkm i).1
-                                     (extractorBases E stmt msg hkm i).2)) := by
+                   (extractedScalars E stmt msg i)
+                   (ECPoint.affine E (extractorBases E stmt msg i).1
+                                     (extractorBases E stmt msg i).2)) := by
   classical
-  set j_star : Fin msg.k :=
-    (negPIndexSet E stmt msg hkm).min' hNegP with hJStar_def
+  set j_star : Fin stmt.k :=
+    (negPIndexSet E stmt msg).min' hNegP with hJStar_def
   -- Base point at j_star is -P (by def of negPIndexSet).
-  have hBase : extractorBases E stmt msg hkm j_star =
+  have hBase : extractorBases E stmt msg j_star =
                (stmt.target.1, -stmt.target.2) := by
-    have hInSet : j_star ∈ negPIndexSet E stmt msg hkm :=
+    have hInSet : j_star ∈ negPIndexSet E stmt msg :=
       Finset.min'_mem _ _
     simpa [negPIndexSet] using hInSet
   -- Only the j_star term contributes.
   rw [ECPoint.weightedSum_eq_single (E := E)
-       (s := (Finset.univ : Finset (Fin msg.k)))
+       (s := (Finset.univ : Finset (Fin stmt.k)))
        (f := fun i => ECPoint.zsmul E
-                        (extractedScalars E stmt msg hkm i)
-                        (ECPoint.affine E (extractorBases E stmt msg hkm i).1
-                                          (extractorBases E stmt msg hkm i).2))
+                        (extractedScalars E stmt msg i)
+                        (ECPoint.affine E (extractorBases E stmt msg i).1
+                                          (extractorBases E stmt msg i).2))
        (a := j_star) (Finset.mem_univ j_star)]
-  · have hExtracted : extractedScalars E stmt msg hkm j_star = -1 := by
-      show (if hne : (negPIndexSet E stmt msg hkm).Nonempty
-            then (if j_star = (negPIndexSet E stmt msg hkm).min' hne then (-1 : ℤ) else 0)
+  · have hExtracted : extractedScalars E stmt msg j_star = -1 := by
+      show (if hne : (negPIndexSet E stmt msg).Nonempty
+            then (if j_star = (negPIndexSet E stmt msg).min' hne then (-1 : ℤ) else 0)
             else _) = -1
       rw [dif_pos hNegP]
       simp [hJStar_def]
@@ -272,9 +264,9 @@ theorem extracted_scalars_valid_special
     -- goal : affine E x y = -(affine E x (-y))
     rw [← h, neg_neg]
   · intro i _ hi_ne
-    have hExtracted : extractedScalars E stmt msg hkm i = 0 := by
-      show (if hne : (negPIndexSet E stmt msg hkm).Nonempty
-            then (if i = (negPIndexSet E stmt msg hkm).min' hne
+    have hExtracted : extractedScalars E stmt msg i = 0 := by
+      show (if hne : (negPIndexSet E stmt msg).Nonempty
+            then (if i = (negPIndexSet E stmt msg).min' hne
                   then (-1 : ℤ) else 0)
             else _) = 0
       rw [dif_pos hNegP, if_neg]
@@ -294,19 +286,19 @@ theorem extracted_scalars_valid_special
 
     Paper ↔ Lean (post-rename, primary names):
 
-    * `event_deg`               ↔ `eventDeg` (= `¬ logDerivCheckFnDefined`)
-    * `event_NotEq`             ↔ `eventNotEq` (Finset of bad challenges)
-    * `\relation^{dlog}`        ↔ `relDlog`
+    * `event_deg` ↔ `eventDeg` (= `¬ logDerivCheckFnDefined`)
+    * `event_NotEq` ↔ `eventNotEq` (Finset of bad challenges)
+    * `\relation^{dlog}` ↔ `relDlog`
     * `\relation^{dlog-honest}` ↔ `relDlogHonest`
-    * `\protMA`                 ↔ structure (`MAProverMsg`, `MAChallenge`,
+    * `\protMA` ↔ structure (`MAProverMsg`, `MAChallenge`,
                                               `maVerifierAccepts`,
                                               `MAProverMsg.isHonestFor`)
-    * `\protIP`                 ↔ structure (`IPProverMsg3`,
+    * `\protIP` ↔ structure (`IPProverMsg3`,
                                               `ipVerifierAccepts`,
                                               `computeA₂`,
                                               `ip_unique_third_round`)
-    * `f` (discrepancy)         ↔ `logDerivCheckFn`
-    * `\extractor`              ↔ `maExtractor` -/
+    * `f` (discrepancy) ↔ `logDerivCheckFn`
+    * `\extractor` ↔ `maExtractor` -/
 
 /-- The `event_deg` bad event from paper (`ip.tex \ref{thm:ma}`): some
     denominator in the verifier's field expression vanishes
@@ -407,22 +399,22 @@ full challenge space `E.points ×ˢ E.points`. -/
     `msg`. The soundness headlines (`ma_soundness_count_bound`, `ip_extractable`
     and variants) bound `(maAcceptSet …).card`. -/
 noncomputable def maAcceptSet (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
+    (msg : MAProverMsg E.q stmt.k) :
     Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
-  (validPairs E).filter (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)
+  (validPairs E).filter (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩)
 
 theorem maAcceptSet_eq (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
-    maAcceptSet E stmt msg hkm =
+    (msg : MAProverMsg E.q stmt.k) :
+    maAcceptSet E stmt msg =
       (validPairs E).filter
-        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) :=
+        (fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩) :=
   rfl
 
 @[simp] theorem mem_maAcceptSet {stmt : DlogStatement E.q}
-    {msg : MAProverMsg E.q} {hkm : stmt.k = msg.k}
+    {msg : MAProverMsg E.q stmt.k}
     {p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)} :
-    p ∈ maAcceptSet E stmt msg hkm ↔
-      p ∈ validPairs E ∧ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm := by
+    p ∈ maAcceptSet E stmt msg ↔
+      p ∈ validPairs E ∧ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ := by
   classical
   simp [maAcceptSet]
 
@@ -431,16 +423,16 @@ theorem maAcceptSet_eq (stmt : DlogStatement E.q)
     therefore models the protocol's valid-chord challenge distribution rather
     than conditioning an ambient sample after the fact. -/
 noncomputable def maAcceptanceProbability (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) : ENNReal :=
-  Pr[fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm |
+    (msg : MAProverMsg E.q stmt.k) : ENNReal :=
+  Pr[fun p => maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ |
     $ (validPairs E)]
 
 /-- The VCVio experiment is exactly the accept-set count divided by the
     number of valid challenge pairs. -/
 theorem maAcceptanceProbability_eq_card_div (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
-    maAcceptanceProbability E stmt msg hkm =
-      ((maAcceptSet E stmt msg hkm).card : ENNReal) /
+    (msg : MAProverMsg E.q stmt.k) :
+    maAcceptanceProbability E stmt msg =
+      ((maAcceptSet E stmt msg).card : ENNReal) /
         ((validPairs E).card : ENNReal) := by
   classical
   simp [maAcceptanceProbability, maAcceptSet]
@@ -491,9 +483,9 @@ theorem maSoundnessError_lt_one_of_large (stmt : DlogStatement E.q)
     separate from soundness so the headline does not carry a redundant
     non-vacuity premise. -/
 theorem maSoundnessError_lt_one_of_accept (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k)
     (hAccept : maSoundnessError E stmt <
-      maAcceptanceProbability E stmt msg hkm) :
+      maAcceptanceProbability E stmt msg) :
     maSoundnessError E stmt < 1 := by
   exact hAccept.trans_le (by
     unfold maAcceptanceProbability
@@ -503,24 +495,24 @@ theorem maSoundnessError_lt_one_of_accept (stmt : DlogStatement E.q)
     rejects `msg`. The completeness headlines (`ma_completeness` and
     variants) bound `(maRejectSet …).card`. -/
 noncomputable def maRejectSet (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
+    (msg : MAProverMsg E.q stmt.k) :
     Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
   (E.points ×ˢ E.points).filter
-    (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)
+    (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩)
 
 theorem maRejectSet_eq (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k) :
-    maRejectSet E stmt msg hkm =
+    (msg : MAProverMsg E.q stmt.k) :
+    maRejectSet E stmt msg =
       (E.points ×ˢ E.points).filter
-        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) :=
+        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩) :=
   rfl
 
 @[simp] theorem mem_maRejectSet {stmt : DlogStatement E.q}
-    {msg : MAProverMsg E.q} {hkm : stmt.k = msg.k}
+    {msg : MAProverMsg E.q stmt.k}
     {p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)} :
-    p ∈ maRejectSet E stmt msg hkm ↔
+    p ∈ maRejectSet E stmt msg ↔
       p ∈ E.points ×ˢ E.points ∧
-        ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm := by
+        ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ := by
   classical
   simp [maRejectSet]
 
@@ -529,7 +521,7 @@ theorem maRejectSet_eq (stmt : DlogStatement E.q)
     honest first-round message `msg` (whose divisor is principal and
     encodes the claimed scalars). -/
 def relDlogHonest (stmt : DlogStatement E.q) (wit : DlogWitness E.q) : Prop :=
-  ∃ (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k),
-    relDlog E stmt wit ∧ msg.isHonestFor E stmt wit hk hkm
+  ∃ (hk : stmt.k = wit.k) (msg : MAProverMsg E.q stmt.k),
+    relDlog E stmt wit ∧ msg.isHonestFor E stmt wit hk
 
 end Divisor

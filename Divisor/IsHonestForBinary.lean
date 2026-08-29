@@ -27,13 +27,12 @@ end LineAccum
 /-- Binary honest construction data for an MA prover message.
 
 The field `Ps` is the binary support list: `(-target)` together with the
-bases selected by scalar `1`.  The field `h_formal_eq_honest` is the
+bases selected by scalar `1`. The field `h_formal_eq_honest` is the
 binary-specific encoding obligation: it identifies the formal divisor of
 that list with the protocol-level `honestDivisorCoeffs`. -/
 structure MAProverMsg.IsHonestForBinary (E : ECSetup)
-    (msg : MAProverMsg E.q) (stmt : DlogStatement E.q)
-    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k) where
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k) where
   /-- Binary scalars in the witness. -/
   h_binary : forall i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1
   /-- The binary support list used by `lineBuild_singletons`. -/
@@ -51,7 +50,7 @@ structure MAProverMsg.IsHonestForBinary (E : ECSetup)
   /-- The message scalars reduce the integer witness scalars modulo `E.q`. -/
   h_scalars_match :
     forall i : Fin stmt.k,
-      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q))
+      msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q))
   /-- Binary divisor encoding obligation. -/
   h_formal_eq_honest :
     forall R : ECPoint E,
@@ -65,14 +64,13 @@ structure MAProverMsg.IsHonestForBinary (E : ECSetup)
 /-- Binary honest construction data where the committed divisor is a
     nonzero scalar multiple of the singleton line build.
 
-This is the admSet-agnostic normalization hook.  Parker/Eagen/hash
+This is the admSet-agnostic normalization hook. Parker/Eagen/hash
 specializations pick the scalar and discharge their own admissibility
 predicate; the divisor, split, degree, and zero-count facts are invariant
 under the nonzero scalar by `Divisor.CoordRingElt.Smul`. -/
 structure MAProverMsg.IsHonestForBinaryScaled (E : ECSetup)
-    (msg : MAProverMsg E.q) (stmt : DlogStatement E.q)
-    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k) where
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
+    (wit : DlogWitness E.q) (hk : stmt.k = wit.k) where
   /-- Binary scalars in the witness. -/
   h_binary : forall i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1
   /-- The binary support list used by `lineBuild_singletons`. -/
@@ -94,7 +92,7 @@ structure MAProverMsg.IsHonestForBinaryScaled (E : ECSetup)
   /-- The message scalars reduce the integer witness scalars modulo `E.q`. -/
   h_scalars_match :
     forall i : Fin stmt.k,
-      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q))
+      msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q))
   /-- Binary divisor encoding obligation. -/
   h_formal_eq_honest :
     forall R : ECPoint E,
@@ -110,9 +108,9 @@ namespace MAProverMsg.IsHonestForBinaryScaled
 /-- Existing unscaled binary witnesses are scaled witnesses with scalar `1`. -/
 def ofBinary
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm) :
-    MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm where
+    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk) :
+    MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk where
   h_binary := h_binary.h_binary
   Ps := h_binary.Ps
   c := 1
@@ -138,8 +136,8 @@ end MAProverMsg.IsHonestForBinaryScaled
     binary honesty witness. -/
 private theorem lineBuild_singletons_spec_of_isHonestForBinary
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_combine : LineAccum.PairwiseCombineHyp E) :
     let D := LineAccum.lineBuild_singletons E h_binary.Ps
     ¬ (D.a = 0 ∧ D.b = 0) ∧
@@ -151,8 +149,8 @@ private theorem lineBuild_singletons_spec_of_isHonestForBinary
 /-- The binary singleton build splits over `E`. -/
 theorem splitsOnE_msg_toD_binary_via_combineHyp
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_combine : LineAccum.PairwiseCombineHyp E) :
     splitsOnE E msg.toD := by
   rw [h_binary.h_toD_eq]
@@ -171,8 +169,8 @@ theorem splitsOnE_msg_toD_binary_via_combineHyp
     divisor. -/
 theorem divisor_identity_binary_via_combineHyp
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_combine : LineAccum.PairwiseCombineHyp E) :
     forall R : ECPoint E,
       divisorOfD E msg.toD R =
@@ -192,10 +190,10 @@ theorem divisor_identity_binary_via_combineHyp
     prover predicate (legacy: uses universal `PairwiseCombineHyp`). -/
 theorem isHonestFor_of_isHonestForBinary_via_combineHyp
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_combine : LineAccum.PairwiseCombineHyp E) :
-    msg.isHonestFor E stmt wit hk hkm := by
+    msg.isHonestFor E stmt wit hk := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · exact h_binary.h_scalars_match
   · exact splitsOnE_msg_toD_binary_via_combineHyp h_binary h_combine
@@ -206,8 +204,8 @@ theorem isHonestFor_of_isHonestForBinary_via_combineHyp
 /-- The scaled binary singleton build splits over `E`. -/
 theorem splitsOnE_msg_toD_binary_scaled_via_combineHyp
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_combine : LineAccum.PairwiseCombineHyp E) :
     splitsOnE E msg.toD := by
   rw [h_binary.h_toD_eq]
@@ -228,8 +226,8 @@ theorem splitsOnE_msg_toD_binary_scaled_via_combineHyp
     divisor. -/
 theorem divisor_identity_binary_scaled_via_combineHyp
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_combine : LineAccum.PairwiseCombineHyp E) :
     forall R : ECPoint E,
       divisorOfD E msg.toD R =
@@ -251,10 +249,10 @@ theorem divisor_identity_binary_scaled_via_combineHyp
     prover predicate (legacy: uses universal `PairwiseCombineHyp`). -/
 theorem isHonestFor_of_isHonestForBinaryScaled_via_combineHyp
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_combine : LineAccum.PairwiseCombineHyp E) :
-    msg.isHonestFor E stmt wit hk hkm := by
+    msg.isHonestFor E stmt wit hk := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · exact h_binary.h_scalars_match
   · exact splitsOnE_msg_toD_binary_scaled_via_combineHyp h_binary h_combine
@@ -263,96 +261,92 @@ theorem isHonestFor_of_isHonestForBinaryScaled_via_combineHyp
   · exact h_binary.h_bases_on_curve
 
 theorem ma_completeness_binary_via_combineHyp
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_combine : LineAccum.PairwiseCombineHyp E)
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness_base E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+  ma_completeness_base E stmt wit hk h_valid msg h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinary_via_combineHyp (E := E) h_binary h_combine)
 
 theorem ma_completeness_binary_with_scalar_via_combineHyp
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_combine : LineAccum.PairwiseCombineHyp E)
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness_base E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+  ma_completeness_base E stmt wit hk h_valid msg h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinaryScaled_via_combineHyp (E := E) h_binary h_combine)
 
 theorem ma_completeness_binary_via_combineHyp_clean
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_combine : LineAccum.PairwiseCombineHyp E)
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg h_adm
-  exact ma_completeness_degBound E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+  exact ma_completeness_degBound E stmt wit hk h_valid msg h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinary_via_combineHyp (E := E) h_binary h_combine)
     h_d
 
 theorem ma_completeness_binary_with_scalar_via_combineHyp_clean
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_combine : LineAccum.PairwiseCombineHyp E)
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg h_adm
-  exact ma_completeness_degBound E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+  exact ma_completeness_degBound E stmt wit hk h_valid msg h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinaryScaled_via_combineHyp (E := E) h_binary h_combine)
     h_d
 
 /-- M=3 binary completeness via the constructive length-4 simple bridge.
 
-This is the all-selected binary case: `stmt.k = msg.k = 3` is carried by
-`h_simple`, and every witness scalar is `1`.  Unlike
+This is the all-selected binary case: `stmt.k = 3` is carried by
+`h_simple`, and every witness scalar is `1`. Unlike
 `ma_completeness_binary_via_combineHyp`, this corollary does not need
 `PairwiseCombineHyp`; it composes through the existing
 `ma_completeness_for_length4Simple` proof, whose divisor witness is
 `lineBuild_length4_explicit`. -/
 theorem ma_completeness_binary_M_eq_3
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
     (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
-      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  have hkm_eq :
-      hkm = h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm :=
-    Subsingleton.elim _ _
-  rw [hkm_eq]
-  exact ma_completeness_for_length4Simple E stmt msg h_simple wit hk
+    (maRejectSet E stmt msg).card
+      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
+  ma_completeness_for_length4Simple E stmt msg h_simple wit hk
     h_scalars h_valid h_deg h_deg_k h_adm
 
 /-! ## Unconditional binary completeness — discharges `PairwiseCombineHyp`.
@@ -363,8 +357,8 @@ weaker than the universal `PairwiseCombineHyp E`. -/
 
 theorem splitsOnE_msg_toD_binary
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       LineAccum.LevelStepCombineExtras E
@@ -385,8 +379,8 @@ theorem splitsOnE_msg_toD_binary
 
 theorem divisor_identity_binary
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       LineAccum.LevelStepCombineExtras E
@@ -407,13 +401,13 @@ theorem divisor_identity_binary
 
 theorem isHonestFor_of_isHonestForBinary
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       LineAccum.LevelStepCombineExtras E
         (LineAccum.iterate E k (LineAccum.level0_singletons E h_binary.Ps))) :
-    msg.isHonestFor E stmt wit hk hkm := by
+    msg.isHonestFor E stmt wit hk := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · exact h_binary.h_scalars_match
   · exact splitsOnE_msg_toD_binary h_binary h_len h_extras
@@ -423,8 +417,8 @@ theorem isHonestFor_of_isHonestForBinary
 
 theorem splitsOnE_msg_toD_binary_scaled
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       LineAccum.LevelStepCombineExtras E
@@ -446,8 +440,8 @@ theorem splitsOnE_msg_toD_binary_scaled
 
 theorem divisor_identity_binary_scaled
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       LineAccum.LevelStepCombineExtras E
@@ -470,13 +464,13 @@ theorem divisor_identity_binary_scaled
 
 theorem isHonestFor_of_isHonestForBinaryScaled
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       LineAccum.LevelStepCombineExtras E
         (LineAccum.iterate E k (LineAccum.level0_singletons E h_binary.Ps))) :
-    msg.isHonestFor E stmt wit hk hkm := by
+    msg.isHonestFor E stmt wit hk := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · exact h_binary.h_scalars_match
   · exact splitsOnE_msg_toD_binary_scaled h_binary h_len h_extras
@@ -485,10 +479,10 @@ theorem isHonestFor_of_isHonestForBinaryScaled
   · exact h_binary.h_bases_on_curve
 
 theorem ma_completeness_binary_extras
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       LineAccum.LevelStepCombineExtras E
@@ -497,16 +491,16 @@ theorem ma_completeness_binary_extras
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness_base E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+  ma_completeness_base E stmt wit hk h_valid msg h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinary (E := E) h_binary h_len h_extras)
 
 theorem ma_completeness_binary_with_scalar_extras
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       LineAccum.LevelStepCombineExtras E
@@ -515,17 +509,17 @@ theorem ma_completeness_binary_with_scalar_extras
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness_base E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+  ma_completeness_base E stmt wit hk h_valid msg h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinaryScaled (E := E)
       h_binary h_len h_extras)
 
 theorem ma_completeness_binary_extras_clean
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       LineAccum.LevelStepCombineExtras E
@@ -534,19 +528,19 @@ theorem ma_completeness_binary_extras_clean
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg h_adm
-  exact ma_completeness_degBound E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+  exact ma_completeness_degBound E stmt wit hk h_valid msg h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinary (E := E) h_binary h_len h_extras)
     h_d
 
 theorem ma_completeness_binary_with_scalar_extras_clean
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       LineAccum.LevelStepCombineExtras E
@@ -555,20 +549,20 @@ theorem ma_completeness_binary_with_scalar_extras_clean
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
     admSet_implies_toD_nonzero stmt msg h_adm
-  exact ma_completeness_degBound E stmt wit hk h_valid msg hkm h_deg h_deg_k h_adm
+  exact ma_completeness_degBound E stmt wit hk h_valid msg h_deg h_deg_k h_adm
     (isHonestFor_of_isHonestForBinaryScaled (E := E)
       h_binary h_len h_extras)
     h_d
 
 private theorem admSetMax_of_isHonestForBinary
-    {E : ECSetup} {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    {wit : DlogWitness E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
+    {E : ECSetup} {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
+    {wit : DlogWitness E.q} {hk : stmt.k = wit.k}
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       LineAccum.LevelStepCombineExtras E
@@ -596,10 +590,10 @@ private theorem admSetMax_of_isHonestForBinary
   simpa [h_admSetMax, admSetMax] using hPair_ne
 
 private theorem admSetParker_of_isHonestForBinaryScaled
-    {E : ECSetup} {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    {wit : DlogWitness E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
+    {E : ECSetup} {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
+    {wit : DlogWitness E.q} {hk : stmt.k = wit.k}
     (h_admSetParker : stmt.admSet = admSetParker (q := E.q))
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_c_eq : h_binary.c =
       ((LineAccum.lineBuild_singletons E h_binary.Ps).a.coeff 1)⁻¹)
     (h_parker_pre :
@@ -613,10 +607,10 @@ private theorem admSetParker_of_isHonestForBinaryScaled
     inv_mul_cancel₀ h_parker_pre]
 
 private theorem admSetLine_of_isHonestForBinaryScaled
-    {E : ECSetup} {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    {wit : DlogWitness E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
+    {E : ECSetup} {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
+    {wit : DlogWitness E.q} {hk : stmt.k = wit.k}
     (h_admSetLine : stmt.admSet = admSetLine (q := E.q))
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_c_eq : h_binary.c =
       ((LineAccum.lineBuild_singletons E h_binary.Ps).a.coeff 0)⁻¹)
     (h_line_pre :
@@ -649,11 +643,11 @@ private theorem admSetHashInner_smul
     ring
 
 private theorem admSetHash_of_isHonestForBinaryScaled
-    {E : ECSetup} {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    {wit : DlogWitness E.q} {hk : stmt.k = wit.k} {hkm : stmt.k = msg.k}
+    {E : ECSetup} {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
+    {wit : DlogWitness E.q} {hk : stmt.k = wit.k}
     (r : ℕ → ZMod E.q)
     (h_admSetHash : stmt.admSet = admSetHash r)
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_c_eq : h_binary.c =
       (admSetHashInner r
         ((LineAccum.lineBuild_singletons E h_binary.Ps).a,
@@ -676,11 +670,11 @@ private theorem admSetHash_of_isHonestForBinaryScaled
   simp [inv_mul_cancel₀ h_hash_pre']
 
 theorem ma_completeness_binary_admSetMax_extras
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
+
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_len : 2 ≤ h_binary.Ps.length)
     (h_extras : ∀ k < h_binary.Ps.length,
       LineAccum.LevelStepCombineExtras E
@@ -688,19 +682,19 @@ theorem ma_completeness_binary_admSetMax_extras
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness_binary_extras E stmt msg wit hk hkm
+  ma_completeness_binary_extras E stmt msg wit hk
     h_binary h_len h_extras h_valid h_deg h_deg_k
     (admSetMax_of_isHonestForBinary
       h_admSetMax h_binary h_len h_extras)
 
 theorem ma_completeness_binary_admSetParker_extras
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
+
     (h_admSetParker : stmt.admSet = admSetParker (q := E.q))
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_c_eq : h_binary.c =
       ((LineAccum.lineBuild_singletons E h_binary.Ps).a.coeff 1)⁻¹)
     (h_parker_pre :
@@ -712,19 +706,19 @@ theorem ma_completeness_binary_admSetParker_extras
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness_binary_with_scalar_extras E stmt msg wit hk hkm
+  ma_completeness_binary_with_scalar_extras E stmt msg wit hk
     h_binary h_len h_extras h_valid h_deg h_deg_k
     (admSetParker_of_isHonestForBinaryScaled
       h_admSetParker h_binary h_c_eq h_parker_pre)
 
 theorem ma_completeness_binary_admSetLine_extras
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
+
     (h_admSetLine : stmt.admSet = admSetLine (q := E.q))
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_c_eq : h_binary.c =
       ((LineAccum.lineBuild_singletons E h_binary.Ps).a.coeff 0)⁻¹)
     (h_line_pre :
@@ -736,20 +730,20 @@ theorem ma_completeness_binary_admSetLine_extras
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness_binary_with_scalar_extras E stmt msg wit hk hkm
+  ma_completeness_binary_with_scalar_extras E stmt msg wit hk
     h_binary h_len h_extras h_valid h_deg h_deg_k
     (admSetLine_of_isHonestForBinaryScaled
       h_admSetLine h_binary h_c_eq h_line_pre)
 
 theorem ma_completeness_binary_admSetHash_extras
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
+
     (r : ℕ → ZMod E.q)
     (h_admSetHash : stmt.admSet = admSetHash r)
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_c_eq : h_binary.c =
       (admSetHashInner r
         ((LineAccum.lineBuild_singletons E h_binary.Ps).a,
@@ -765,18 +759,18 @@ theorem ma_completeness_binary_admSetHash_extras
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness_binary_with_scalar_extras E stmt msg wit hk hkm
+  ma_completeness_binary_with_scalar_extras E stmt msg wit hk
     h_binary h_len h_extras h_valid h_deg h_deg_k
     (admSetHash_of_isHonestForBinaryScaled
       r h_admSetHash h_binary h_c_eq h_hash_pre)
 
 theorem ma_completeness_binary_chain
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_len : 2 ≤ h_binary.Ps.length)
     (h_chain : LineAccum.IteratedLevelStepCombineExtras E h_binary.Ps.length
                   (LineAccum.level0_singletons E h_binary.Ps))
@@ -784,22 +778,22 @@ theorem ma_completeness_binary_chain
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_extras :
       ∀ k < h_binary.Ps.length,
         LineAccum.LevelStepCombineExtras E
           (LineAccum.iterate E k (LineAccum.level0_singletons E h_binary.Ps)) :=
     LineAccum.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
-  exact ma_completeness_binary_extras E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras E stmt msg wit hk
     h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 theorem ma_completeness_binary_chain_admSetParker
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
+
     (h_admSetParker : stmt.admSet = admSetParker (q := E.q))
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_c_eq : h_binary.c =
       ((LineAccum.lineBuild_singletons E h_binary.Ps).a.coeff 1)⁻¹)
     (h_parker_pre :
@@ -810,7 +804,7 @@ theorem ma_completeness_binary_chain_admSetParker
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_extras :
       ∀ k < h_binary.Ps.length,
@@ -818,15 +812,15 @@ theorem ma_completeness_binary_chain_admSetParker
           (LineAccum.iterate E k (LineAccum.level0_singletons E h_binary.Ps)) :=
     LineAccum.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
   exact ma_completeness_binary_admSetParker_extras
-    E stmt msg wit hk hkm h_admSetParker h_binary h_c_eq h_parker_pre
+    E stmt msg wit hk h_admSetParker h_binary h_c_eq h_parker_pre
     h_len h_extras h_valid h_deg h_deg_k
 
 theorem ma_completeness_binary_chain_admSetLine
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
+
     (h_admSetLine : stmt.admSet = admSetLine (q := E.q))
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_c_eq : h_binary.c =
       ((LineAccum.lineBuild_singletons E h_binary.Ps).a.coeff 0)⁻¹)
     (h_line_pre :
@@ -837,7 +831,7 @@ theorem ma_completeness_binary_chain_admSetLine
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_extras :
       ∀ k < h_binary.Ps.length,
@@ -845,16 +839,16 @@ theorem ma_completeness_binary_chain_admSetLine
           (LineAccum.iterate E k (LineAccum.level0_singletons E h_binary.Ps)) :=
     LineAccum.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
   exact ma_completeness_binary_admSetLine_extras
-    E stmt msg wit hk hkm h_admSetLine h_binary h_c_eq h_line_pre
+    E stmt msg wit hk h_admSetLine h_binary h_c_eq h_line_pre
     h_len h_extras h_valid h_deg h_deg_k
 
 theorem ma_completeness_binary_chain_admSetHash
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
+
     (r : ℕ → ZMod E.q)
     (h_admSetHash : stmt.admSet = admSetHash r)
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm)
+    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
     (h_c_eq : h_binary.c =
       (admSetHashInner r
         ((LineAccum.lineBuild_singletons E h_binary.Ps).a,
@@ -869,7 +863,7 @@ theorem ma_completeness_binary_chain_admSetHash
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_extras :
       ∀ k < h_binary.Ps.length,
@@ -877,14 +871,14 @@ theorem ma_completeness_binary_chain_admSetHash
           (LineAccum.iterate E k (LineAccum.level0_singletons E h_binary.Ps)) :=
     LineAccum.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
   exact ma_completeness_binary_admSetHash_extras
-    E stmt msg wit hk hkm r h_admSetHash h_binary h_c_eq h_hash_pre
+    E stmt msg wit hk r h_admSetHash h_binary h_c_eq h_hash_pre
     h_len h_extras h_valid h_deg h_deg_k
 
 theorem ma_completeness_binary_chain_clean
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_len : 2 ≤ h_binary.Ps.length)
     (h_chain : LineAccum.IteratedLevelStepCombineExtras E h_binary.Ps.length
                   (LineAccum.level0_singletons E h_binary.Ps))
@@ -892,36 +886,36 @@ theorem ma_completeness_binary_chain_clean
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   have h_extras :
       ∀ k < h_binary.Ps.length,
         LineAccum.LevelStepCombineExtras E
           (LineAccum.iterate E k (LineAccum.level0_singletons E h_binary.Ps)) :=
     LineAccum.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
-  exact ma_completeness_binary_extras_clean E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras_clean E stmt msg wit hk
     h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 theorem ma_completeness_binary_chain_admSetMax
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
+
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_len : 2 ≤ h_binary.Ps.length)
     (h_chain : LineAccum.IteratedLevelStepCombineExtras E h_binary.Ps.length
                   (LineAccum.level0_singletons E h_binary.Ps))
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_extras :
       ∀ k < h_binary.Ps.length,
         LineAccum.LevelStepCombineExtras E
           (LineAccum.iterate E k (LineAccum.level0_singletons E h_binary.Ps)) :=
     LineAccum.h_extras_of_iteratedLevelStepCombineExtras E h_binary.Ps h_chain
-  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
+  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk
     h_admSetMax h_binary h_len h_extras h_valid h_deg h_deg_k
 
 /-! ## Length-2 fully-unconditional binary completeness.
@@ -935,17 +929,17 @@ The result is a fully unconditional binary completeness theorem for
 length-2 inputs (no `h_extras`, no `PairwiseCombineHyp`). -/
 
 theorem ma_completeness_binary_length2
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_length2 : ∃ P Q : ZMod E.q × ZMod E.q,
       h_binary.Ps = [P, Q] ∧ P.1 = Q.1 ∧ Q.2 = -P.2)
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P, Q, h_ps_eq, hxx, hyy⟩ := h_length2
   have h_len : 2 ≤ h_binary.Ps.length := by rw [h_ps_eq]; simp
@@ -961,21 +955,21 @@ theorem ma_completeness_binary_length2
           (LineAccum.iterate E k (LineAccum.level0_singletons E h_binary.Ps)) := by
     rw [h_ps_eq]
     exact LineAccum.h_extras_holds_for_length2_sum_zero E P Q hP_on hQ_on hxx hyy
-  exact ma_completeness_binary_extras E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras E stmt msg wit hk
     h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 theorem ma_completeness_binary_length2_clean
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_length2 : ∃ P Q : ZMod E.q × ZMod E.q,
       h_binary.Ps = [P, Q] ∧ P.1 = Q.1 ∧ Q.2 = -P.2)
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   obtain ⟨P, R, h_ps_eq, hxx, hyy⟩ := h_length2
   have h_len : 2 ≤ h_binary.Ps.length := by rw [h_ps_eq]; simp
@@ -991,7 +985,7 @@ theorem ma_completeness_binary_length2_clean
           (LineAccum.iterate E k (LineAccum.level0_singletons E h_binary.Ps)) := by
     rw [h_ps_eq]
     exact LineAccum.h_extras_holds_for_length2_sum_zero E P R hP_on hR_on hxx hyy
-  exact ma_completeness_binary_extras_clean E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras_clean E stmt msg wit hk
     h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 namespace LineAccum
@@ -2029,10 +2023,10 @@ inverse-pair discharges, level 1 combines two zero-point accumulators,
 and later levels are singleton/vacuous. -/
 
 theorem ma_completeness_binary_length4
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_length4 : ∃ P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q,
       h_binary.Ps = [P₀, P₁, P₂, P₃] ∧
       P₁ = (P₀.1, -P₀.2) ∧
@@ -2041,7 +2035,7 @@ theorem ma_completeness_binary_length4
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, hP₁, hP₃⟩ := h_length4
   subst P₁
@@ -2064,14 +2058,14 @@ theorem ma_completeness_binary_length4
     rw [h_ps_eq]
     exact LineAccum.h_extras_holds_for_length4_two_inverse_pairs
       E P₀ P₂ hP₀_on hP₂_on
-  exact ma_completeness_binary_extras E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras E stmt msg wit hk
     h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 theorem ma_completeness_binary_length4_clean
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_length4 : ∃ P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q,
       h_binary.Ps = [P₀, P₁, P₂, P₃] ∧
       P₁ = (P₀.1, -P₀.2) ∧
@@ -2080,7 +2074,7 @@ theorem ma_completeness_binary_length4_clean
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, hP₁, hP₃⟩ := h_length4
   subst P₁
@@ -2103,14 +2097,14 @@ theorem ma_completeness_binary_length4_clean
     rw [h_ps_eq]
     exact LineAccum.h_extras_holds_for_length4_two_inverse_pairs
       E P₀ P₂ hP₀_on hP₂_on
-  exact ma_completeness_binary_extras_clean E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras_clean E stmt msg wit hk
     h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 theorem ma_completeness_binary_length4_chord
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_length4 : ∃ P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q,
       h_binary.Ps = [P₀, P₁, P₂, P₃] ∧
       P₀.1 ≠ P₁.1 ∧ P₂.1 ≠ P₃.1 ∧
@@ -2123,7 +2117,7 @@ theorem ma_completeness_binary_length4_chord
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, h01_x_ne, h23_x_ne,
     hP₀_y_ne, hP₁_y_ne, hP₂_y_ne, hP₃_y_ne,
@@ -2161,21 +2155,21 @@ theorem ma_completeness_binary_length4_chord
       hP₀_on hP₁_on hP₂_on hP₃_on h_nodup h_sum_zero
       h01_x_ne h23_x_ne hP₀_y_ne hP₁_y_ne hP₂_y_ne hP₃_y_ne
       hThird01_ne_P₀ hThird01_ne_P₁ hThird23_ne_P₂ hThird23_ne_P₃
-  exact ma_completeness_binary_extras E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras E stmt msg wit hk
     h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 theorem ma_completeness_binary_length2_admSetMax
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
+
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_length2 : ∃ P Q : ZMod E.q × ZMod E.q,
       h_binary.Ps = [P, Q] ∧ P.1 = Q.1 ∧ Q.2 = -P.2)
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P, Q, h_ps_eq, hxx, hyy⟩ := h_length2
   have h_len : 2 ≤ h_binary.Ps.length := by
@@ -2195,14 +2189,14 @@ theorem ma_completeness_binary_length2_admSetMax
           (LineAccum.iterate E k (LineAccum.level0_singletons E h_binary.Ps)) := by
     rw [h_ps_eq]
     exact LineAccum.h_extras_holds_for_length2_sum_zero E P Q hP_on hQ_on hxx hyy
-  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
+  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk
     h_admSetMax h_binary h_len h_extras h_valid h_deg h_deg_k
 
 theorem ma_completeness_binary_length6_chord
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_length6 : ∃ P₀ P₁ P₂ P₃ P₄ P₅ : ZMod E.q × ZMod E.q,
       h_binary.Ps = [P₀, P₁, P₂, P₃, P₄, P₅] ∧
       P₀.1 ≠ P₁.1 ∧ P₂.1 ≠ P₃.1 ∧ P₄.1 ≠ P₅.1 ∧
@@ -2222,7 +2216,7 @@ theorem ma_completeness_binary_length6_chord
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P₀, P₁, P₂, P₃, P₄, P₅, h_ps_eq,
     h01_x_ne, h23_x_ne, h45_x_ne,
@@ -2279,15 +2273,15 @@ theorem ma_completeness_binary_length6_chord
       hThird23_ne_P₂ hThird23_ne_P₃
       hThird45_ne_P₄ hThird45_ne_P₅
       hLevel1
-  exact ma_completeness_binary_extras E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras E stmt msg wit hk
     h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 theorem ma_completeness_binary_length4_admSetMax
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
+
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_length4 : ∃ P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q,
       h_binary.Ps = [P₀, P₁, P₂, P₃] ∧
       P₁ = (P₀.1, -P₀.2) ∧
@@ -2295,7 +2289,7 @@ theorem ma_completeness_binary_length4_admSetMax
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, hP₁, hP₃⟩ := h_length4
   subst P₁
@@ -2318,15 +2312,15 @@ theorem ma_completeness_binary_length4_admSetMax
     rw [h_ps_eq]
     exact LineAccum.h_extras_holds_for_length4_two_inverse_pairs
       E P₀ P₂ hP₀_on hP₂_on
-  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
+  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk
     h_admSetMax h_binary h_len h_extras h_valid h_deg h_deg_k
 
 theorem ma_completeness_binary_length4_chord_admSetMax
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
+
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_length4 : ∃ P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q,
       h_binary.Ps = [P₀, P₁, P₂, P₃] ∧
       P₀.1 ≠ P₁.1 ∧ P₂.1 ≠ P₃.1 ∧
@@ -2338,7 +2332,7 @@ theorem ma_completeness_binary_length4_chord_admSetMax
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, h01_x_ne, h23_x_ne,
     hP₀_y_ne, hP₁_y_ne, hP₂_y_ne, hP₃_y_ne,
@@ -2376,14 +2370,14 @@ theorem ma_completeness_binary_length4_chord_admSetMax
       hP₀_on hP₁_on hP₂_on hP₃_on h_nodup h_sum_zero
       h01_x_ne h23_x_ne hP₀_y_ne hP₁_y_ne hP₂_y_ne hP₃_y_ne
       hThird01_ne_P₀ hThird01_ne_P₁ hThird23_ne_P₂ hThird23_ne_P₃
-  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
+  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk
     h_admSetMax h_binary h_len h_extras h_valid h_deg h_deg_k
 
 theorem ma_completeness_binary_length8_chord
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_length8 : ∃ P₀ P₁ P₂ P₃ P₄ P₅ P₆ P₇ : ZMod E.q × ZMod E.q,
       h_binary.Ps = [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] ∧
       P₀.1 ≠ P₁.1 ∧ P₂.1 ≠ P₃.1 ∧ P₄.1 ≠ P₅.1 ∧ P₆.1 ≠ P₇.1 ∧
@@ -2423,7 +2417,7 @@ theorem ma_completeness_binary_length8_chord
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇, h_ps_eq,
     h01_x_ne, h23_x_ne, h45_x_ne, h67_x_ne,
@@ -2499,15 +2493,15 @@ theorem ma_completeness_binary_length8_chord
       hThird45_ne_P₄ hThird45_ne_P₅
       hThird67_ne_P₆ hThird67_ne_P₇
       hLevel1Left hLevel1Right
-  exact ma_completeness_binary_extras E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras E stmt msg wit hk
     h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 theorem ma_completeness_binary_length6_chord_admSetMax
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
+
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_length6 : ∃ P₀ P₁ P₂ P₃ P₄ P₅ : ZMod E.q × ZMod E.q,
       h_binary.Ps = [P₀, P₁, P₂, P₃, P₄, P₅] ∧
       P₀.1 ≠ P₁.1 ∧ P₂.1 ≠ P₃.1 ∧ P₄.1 ≠ P₅.1 ∧
@@ -2526,7 +2520,7 @@ theorem ma_completeness_binary_length6_chord_admSetMax
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P₀, P₁, P₂, P₃, P₄, P₅, h_ps_eq,
     h01_x_ne, h23_x_ne, h45_x_ne,
@@ -2583,15 +2577,15 @@ theorem ma_completeness_binary_length6_chord_admSetMax
       hThird23_ne_P₂ hThird23_ne_P₃
       hThird45_ne_P₄ hThird45_ne_P₅
       hLevel1
-  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
+  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk
     h_admSetMax h_binary h_len h_extras h_valid h_deg h_deg_k
 
 theorem ma_completeness_binary_length8_chord_admSetMax
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
+
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_length8 : ∃ P₀ P₁ P₂ P₃ P₄ P₅ P₆ P₇ : ZMod E.q × ZMod E.q,
       h_binary.Ps = [P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇] ∧
       P₀.1 ≠ P₁.1 ∧ P₂.1 ≠ P₃.1 ∧ P₄.1 ≠ P₅.1 ∧ P₆.1 ≠ P₇.1 ∧
@@ -2630,7 +2624,7 @@ theorem ma_completeness_binary_length8_chord_admSetMax
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   obtain ⟨P₀, P₁, P₂, P₃, P₄, P₅, P₆, P₇, h_ps_eq,
     h01_x_ne, h23_x_ne, h45_x_ne, h67_x_ne,
@@ -2706,14 +2700,14 @@ theorem ma_completeness_binary_length8_chord_admSetMax
       hThird45_ne_P₄ hThird45_ne_P₅
       hThird67_ne_P₆ hThird67_ne_P₇
       hLevel1Left hLevel1Right
-  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk hkm
+  exact ma_completeness_binary_admSetMax_extras E stmt msg wit hk
     h_admSetMax h_binary h_len h_extras h_valid h_deg h_deg_k
 
 theorem ma_completeness_binary_length4_chord_clean
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_binary : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm)
+
+    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
     (h_length4 : ∃ P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q,
       h_binary.Ps = [P₀, P₁, P₂, P₃] ∧
       P₀.1 ≠ P₁.1 ∧ P₂.1 ≠ P₃.1 ∧
@@ -2726,7 +2720,7 @@ theorem ma_completeness_binary_length4_chord_clean
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   obtain ⟨P₀, P₁, P₂, P₃, h_ps_eq, h01_x_ne, h23_x_ne,
     hP₀_y_ne, hP₁_y_ne, hP₂_y_ne, hP₃_y_ne,
@@ -2764,27 +2758,23 @@ theorem ma_completeness_binary_length4_chord_clean
       hP₀_on hP₁_on hP₂_on hP₃_on h_nodup h_sum_zero
       h01_x_ne h23_x_ne hP₀_y_ne hP₁_y_ne hP₂_y_ne hP₃_y_ne
       hThird01_ne_P₀ hThird01_ne_P₁ hThird23_ne_P₂ hThird23_ne_P₃
-  exact ma_completeness_binary_extras_clean E stmt msg wit hk hkm
+  exact ma_completeness_binary_extras_clean E stmt msg wit hk
     h_binary h_len h_extras h_valid h_deg h_deg_k h_adm
 
 /-- Point-count consolidated form of `ma_completeness_binary_M_eq_3`. -/
 theorem ma_completeness_binary_M_eq_3_clean
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
+    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (hkm : stmt.k = msg.k)
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
     (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound)
     (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg hkm).card
-      ≤ (3 * stmt.degBound + 4) * E.points.card := by
-  have hkm_eq :
-      hkm = h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm :=
-    Subsingleton.elim _ _
-  rw [hkm_eq]
-  exact ma_completeness_clean_for_length4Simple E stmt msg h_simple wit hk
+    (maRejectSet E stmt msg).card
+      ≤ (3 * stmt.degBound + 4) * E.points.card :=
+  ma_completeness_clean_for_length4Simple E stmt msg h_simple wit hk
     h_scalars h_valid h_deg h_deg_k h_adm
 
 /-! ## Automatic binary support constructors
@@ -2965,7 +2955,7 @@ theorem binarySupport_formalDivisorOfList_eq_honestDivisorCoeffs
     {E : ECSetup} (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (msg : MAProverMsg E.q)
+    (msg : MAProverMsg E.q stmt.k)
     (h_degE_eq :
       msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
     (R : ECPoint E) :
@@ -3042,7 +3032,7 @@ namespace MAProverMsg.IsHonestForBinary
 noncomputable def fromWitness
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
     (h_toD_eq : msg.toD = LineAccum.lineBuild_singletons E
@@ -3050,11 +3040,11 @@ noncomputable def fromWitness
     (h_degE_eq :
       msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
     (h_scalars_match : ∀ i : Fin stmt.k,
-      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+      msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i : Fin stmt.k, stmt.bases i ∈ E.points)
     (h_nodup : (binarySupport stmt wit hk h_binary).Nodup) :
-    MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm where
+    MAProverMsg.IsHonestForBinary E stmt msg wit hk where
   h_binary := h_binary
   Ps := binarySupport stmt wit hk h_binary
   h_toD_eq := h_toD_eq
@@ -3101,7 +3091,7 @@ namespace MAProverMsg.IsHonestForBinaryScaled
 noncomputable def fromWitness
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k)
     (c : ZMod E.q) (h_c_ne : c ≠ 0)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
@@ -3110,11 +3100,11 @@ noncomputable def fromWitness
     (h_degE_eq :
       msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
     (h_scalars_match : ∀ i : Fin stmt.k,
-      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+      msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i : Fin stmt.k, stmt.bases i ∈ E.points)
     (h_nodup : (binarySupport stmt wit hk h_binary).Nodup) :
-    MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm where
+    MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk where
   h_binary := h_binary
   Ps := binarySupport stmt wit hk h_binary
   c := c
@@ -3235,7 +3225,7 @@ from the witness support and then applies the chord-chain `admSetMax`
 completeness theorem. -/
 theorem ma_completeness_binary
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q stmt.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
     (h_toD_eq : msg.toD =
@@ -3244,7 +3234,7 @@ theorem ma_completeness_binary
     (h_degE_eq :
        msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
     (h_scalars_match : ∀ i : Fin stmt.k,
-       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+       msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
     (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
@@ -3255,10 +3245,10 @@ theorem ma_completeness_binary
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  let h_honest : MAProverMsg.IsHonestForBinary E msg stmt wit hk hkm :=
-    MAProverMsg.IsHonestForBinary.fromWitness E stmt wit hk msg hkm
+  let h_honest : MAProverMsg.IsHonestForBinary E stmt msg wit hk :=
+    MAProverMsg.IsHonestForBinary.fromWitness E stmt wit hk msg
       h_binary h_valid h_toD_eq h_degE_eq h_scalars_match
       h_target_on_curve h_bases_on_curve h_nodup
   have h_len : 2 ≤ h_honest.Ps.length := by
@@ -3270,13 +3260,13 @@ theorem ma_completeness_binary
         (LineAccum.level0_singletons E h_honest.Ps) := by
     simpa [h_honest, MAProverMsg.IsHonestForBinary.fromWitness, MAProverMsg.IsHonestForBinaryScaled.fromWitness] using h_chain
   exact ma_completeness_binary_chain_admSetMax
-    E stmt msg wit hk hkm h_admSetMax h_honest h_len h_chain
+    E stmt msg wit hk h_admSetMax h_honest h_len h_chain
     h_valid h_deg h_deg_k
 
 /-- End-to-end binary completeness for Parker normalization. -/
 theorem ma_completeness_binary_admSetParker
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q stmt.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
     (h_parker_pre :
@@ -3290,7 +3280,7 @@ theorem ma_completeness_binary_admSetParker
     (h_degE_eq :
        msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
     (h_scalars_match : ∀ i : Fin stmt.k,
-       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+       msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
     (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
@@ -3301,15 +3291,15 @@ theorem ma_completeness_binary_admSetParker
     (h_admSetParker : stmt.admSet = admSetParker (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   let c : ZMod E.q :=
     ((LineAccum.lineBuild_singletons E
       (binarySupport stmt wit hk h_binary)).a.coeff 1)⁻¹
   have hc_ne : c ≠ 0 := by
     exact inv_ne_zero h_parker_pre
-  let h_honest : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm :=
-    MAProverMsg.IsHonestForBinaryScaled.fromWitness E stmt wit hk msg hkm
+  let h_honest : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk :=
+    MAProverMsg.IsHonestForBinaryScaled.fromWitness E stmt wit hk msg
       c hc_ne h_binary h_valid h_toD_eq h_degE_eq h_scalars_match
       h_target_on_curve h_bases_on_curve h_nodup
   have h_len : 2 ≤ h_honest.Ps.length := by
@@ -3328,13 +3318,13 @@ theorem ma_completeness_binary_admSetParker
       (LineAccum.lineBuild_singletons E h_honest.Ps).a.coeff 1 ≠ 0 := by
     simpa [h_honest, MAProverMsg.IsHonestForBinary.fromWitness, MAProverMsg.IsHonestForBinaryScaled.fromWitness] using h_parker_pre
   exact ma_completeness_binary_chain_admSetParker
-    E stmt msg wit hk hkm h_admSetParker h_honest hc_eq h_pre
+    E stmt msg wit hk h_admSetParker h_honest hc_eq h_pre
     h_len h_chain h_valid h_deg h_deg_k
 
 /-- End-to-end binary completeness for line-build normalization. -/
 theorem ma_completeness_binary_admSetLine
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q stmt.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
     (h_line_pre :
@@ -3348,7 +3338,7 @@ theorem ma_completeness_binary_admSetLine
     (h_degE_eq :
        msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
     (h_scalars_match : ∀ i : Fin stmt.k,
-       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+       msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
     (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
@@ -3359,15 +3349,15 @@ theorem ma_completeness_binary_admSetLine
     (h_admSetLine : stmt.admSet = admSetLine (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   let c : ZMod E.q :=
     ((LineAccum.lineBuild_singletons E
       (binarySupport stmt wit hk h_binary)).a.coeff 0)⁻¹
   have hc_ne : c ≠ 0 := by
     exact inv_ne_zero h_line_pre
-  let h_honest : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm :=
-    MAProverMsg.IsHonestForBinaryScaled.fromWitness E stmt wit hk msg hkm
+  let h_honest : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk :=
+    MAProverMsg.IsHonestForBinaryScaled.fromWitness E stmt wit hk msg
       c hc_ne h_binary h_valid h_toD_eq h_degE_eq h_scalars_match
       h_target_on_curve h_bases_on_curve h_nodup
   have h_len : 2 ≤ h_honest.Ps.length := by
@@ -3386,13 +3376,13 @@ theorem ma_completeness_binary_admSetLine
       (LineAccum.lineBuild_singletons E h_honest.Ps).a.coeff 0 ≠ 0 := by
     simpa [h_honest, MAProverMsg.IsHonestForBinary.fromWitness, MAProverMsg.IsHonestForBinaryScaled.fromWitness] using h_line_pre
   exact ma_completeness_binary_chain_admSetLine
-    E stmt msg wit hk hkm h_admSetLine h_honest hc_eq h_pre
+    E stmt msg wit hk h_admSetLine h_honest hc_eq h_pre
     h_len h_chain h_valid h_deg h_deg_k
 
 /-- End-to-end binary completeness for hash normalization. -/
 theorem ma_completeness_binary_admSetHash
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q stmt.k)
     (r : ℕ → ZMod E.q)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
@@ -3413,7 +3403,7 @@ theorem ma_completeness_binary_admSetHash
     (h_degE_eq :
        msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
     (h_scalars_match : ∀ i : Fin stmt.k,
-       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+       msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
     (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
@@ -3424,7 +3414,7 @@ theorem ma_completeness_binary_admSetHash
     (h_admSetHash : stmt.admSet = admSetHash r)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   let c : ZMod E.q :=
     (admSetHashInner r
@@ -3434,8 +3424,8 @@ theorem ma_completeness_binary_admSetHash
         (binarySupport stmt wit hk h_binary)).b))⁻¹
   have hc_ne : c ≠ 0 := by
     exact inv_ne_zero h_hash_pre
-  let h_honest : MAProverMsg.IsHonestForBinaryScaled E msg stmt wit hk hkm :=
-    MAProverMsg.IsHonestForBinaryScaled.fromWitness E stmt wit hk msg hkm
+  let h_honest : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk :=
+    MAProverMsg.IsHonestForBinaryScaled.fromWitness E stmt wit hk msg
       c hc_ne h_binary h_valid h_toD_eq h_degE_eq h_scalars_match
       h_target_on_curve h_bases_on_curve h_nodup
   have h_len : 2 ≤ h_honest.Ps.length := by
@@ -3458,14 +3448,14 @@ theorem ma_completeness_binary_admSetHash
           (LineAccum.lineBuild_singletons E h_honest.Ps).b) ≠ 0 := by
     simpa [h_honest, MAProverMsg.IsHonestForBinary.fromWitness, MAProverMsg.IsHonestForBinaryScaled.fromWitness] using h_hash_pre
   exact ma_completeness_binary_chain_admSetHash
-    E stmt msg wit hk hkm r h_admSetHash h_honest hc_eq h_pre
+    E stmt msg wit hk r h_admSetHash h_honest hc_eq h_pre
     h_len h_chain h_valid h_deg h_deg_k
 
 /-- End-to-end binary completeness for the maximal admissible set, with the
     level-chain certificate supplied by the computable point skeleton. -/
 theorem ma_completeness_binary_point_certificate
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q stmt.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
     (h_toD_eq : msg.toD =
@@ -3474,7 +3464,7 @@ theorem ma_completeness_binary_point_certificate
     (h_degE_eq :
        msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
     (h_scalars_match : ∀ i : Fin stmt.k,
-       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+       msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
     (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
@@ -3485,7 +3475,7 @@ theorem ma_completeness_binary_point_certificate
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_chain :
       LineAccum.IteratedLevelStepCombineExtras E
@@ -3494,7 +3484,7 @@ theorem ma_completeness_binary_point_certificate
           (binarySupport stmt wit hk h_binary)) :=
     LineAccum.iteratedLevelStepCombineExtras_of_level0SingletonPoints
       E (binarySupport stmt wit hk h_binary) h_point_chain
-  exact ma_completeness_binary E stmt wit hk msg hkm h_binary h_valid
+  exact ma_completeness_binary E stmt wit hk msg h_binary h_valid
     h_toD_eq h_degE_eq h_scalars_match h_target_on_curve h_bases_on_curve
     h_nodup h_chain h_admSetMax h_deg h_deg_k
 
@@ -3502,7 +3492,7 @@ theorem ma_completeness_binary_point_certificate
     certificate. -/
 theorem ma_completeness_binary_admSetParker_point_certificate
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q stmt.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
     (h_parker_pre :
@@ -3516,7 +3506,7 @@ theorem ma_completeness_binary_admSetParker_point_certificate
     (h_degE_eq :
        msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
     (h_scalars_match : ∀ i : Fin stmt.k,
-       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+       msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
     (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
@@ -3527,7 +3517,7 @@ theorem ma_completeness_binary_admSetParker_point_certificate
     (h_admSetParker : stmt.admSet = admSetParker (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_chain :
       LineAccum.IteratedLevelStepCombineExtras E
@@ -3536,7 +3526,7 @@ theorem ma_completeness_binary_admSetParker_point_certificate
           (binarySupport stmt wit hk h_binary)) :=
     LineAccum.iteratedLevelStepCombineExtras_of_level0SingletonPoints
       E (binarySupport stmt wit hk h_binary) h_point_chain
-  exact ma_completeness_binary_admSetParker E stmt wit hk msg hkm
+  exact ma_completeness_binary_admSetParker E stmt wit hk msg
     h_binary h_valid h_parker_pre h_toD_eq h_degE_eq h_scalars_match
     h_target_on_curve h_bases_on_curve h_nodup h_chain h_admSetParker
     h_deg h_deg_k
@@ -3545,7 +3535,7 @@ theorem ma_completeness_binary_admSetParker_point_certificate
     point-chain certificate. -/
 theorem ma_completeness_binary_admSetLine_point_certificate
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q stmt.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
     (h_line_pre :
@@ -3559,7 +3549,7 @@ theorem ma_completeness_binary_admSetLine_point_certificate
     (h_degE_eq :
        msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
     (h_scalars_match : ∀ i : Fin stmt.k,
-       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+       msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
     (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
@@ -3570,7 +3560,7 @@ theorem ma_completeness_binary_admSetLine_point_certificate
     (h_admSetLine : stmt.admSet = admSetLine (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_chain :
       LineAccum.IteratedLevelStepCombineExtras E
@@ -3579,7 +3569,7 @@ theorem ma_completeness_binary_admSetLine_point_certificate
           (binarySupport stmt wit hk h_binary)) :=
     LineAccum.iteratedLevelStepCombineExtras_of_level0SingletonPoints
       E (binarySupport stmt wit hk h_binary) h_point_chain
-  exact ma_completeness_binary_admSetLine E stmt wit hk msg hkm
+  exact ma_completeness_binary_admSetLine E stmt wit hk msg
     h_binary h_valid h_line_pre h_toD_eq h_degE_eq h_scalars_match
     h_target_on_curve h_bases_on_curve h_nodup h_chain h_admSetLine
     h_deg h_deg_k
@@ -3588,7 +3578,7 @@ theorem ma_completeness_binary_admSetLine_point_certificate
     certificate. -/
 theorem ma_completeness_binary_admSetHash_point_certificate
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q stmt.k)
     (r : ℕ → ZMod E.q)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
@@ -3609,7 +3599,7 @@ theorem ma_completeness_binary_admSetHash_point_certificate
     (h_degE_eq :
        msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
     (h_scalars_match : ∀ i : Fin stmt.k,
-       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+       msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
     (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
@@ -3620,7 +3610,7 @@ theorem ma_completeness_binary_admSetHash_point_certificate
     (h_admSetHash : stmt.admSet = admSetHash r)
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_chain :
       LineAccum.IteratedLevelStepCombineExtras E
@@ -3629,7 +3619,7 @@ theorem ma_completeness_binary_admSetHash_point_certificate
           (binarySupport stmt wit hk h_binary)) :=
     LineAccum.iteratedLevelStepCombineExtras_of_level0SingletonPoints
       E (binarySupport stmt wit hk h_binary) h_point_chain
-  exact ma_completeness_binary_admSetHash E stmt wit hk msg hkm r
+  exact ma_completeness_binary_admSetHash E stmt wit hk msg r
     h_binary h_valid h_hash_pre h_toD_eq h_degE_eq h_scalars_match
     h_target_on_curve h_bases_on_curve h_nodup h_chain h_admSetHash
     h_deg h_deg_k

@@ -201,7 +201,7 @@ theorem hDen_of_hGood
     intro h
     apply hNotTangent_A₁
     -- From A_2.x = A_1.x, A_2.y = lam·A_1.x + μ = lam·A_1.x + A_0.y - lam·A_0.x
-    --                          = A_0.y + lam·(A_1.x - A_0.x) = A_1.y (by slope identity).
+    -- = A_0.y + lam·(A_1.x - A_0.x) = A_1.y (by slope identity).
     have hSlope : lam * (A₁.1 - A₀.1) = A₁.2 - A₀.2 := by
       show slopeOf A₀.1 A₀.2 A₁.1 A₁.2 * (A₁.1 - A₀.1) = A₁.2 - A₀.2
       unfold slopeOf
@@ -951,11 +951,9 @@ structures without requiring invasive changes to `isHonestFor` itself. -/
     with k=3 bases all at scalar 1. Captures all the genericity
     hypotheses needed for the length-4 simple discharge. -/
 structure MAProverMsg.IsHonestForLength4Simple (E : ECSetup)
-    (msg : MAProverMsg E.q) (stmt : DlogStatement E.q) where
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k) where
   /-- stmt has k=3 bases. -/
   hk_eq_3 : stmt.k = 3
-  /-- msg has k=3 scalar slots. -/
-  hkm_eq_3 : msg.k = 3
   /-- The four lineBuild input points. -/
   P₀ : ZMod E.q × ZMod E.q
   P₁ : ZMod E.q × ZMod E.q
@@ -970,7 +968,7 @@ structure MAProverMsg.IsHonestForLength4Simple (E : ECSetup)
   /-- msg.toD is the constructive lineBuild_length4 D. -/
   h_toD_eq : msg.toD = lineBuild_length4_explicit E P₀ P₁ P₂ P₃
   /-- All scalars in msg.m equal 1. -/
-  h_m_eq_one : ∀ i : Fin msg.k, msg.m i = 1
+  h_m_eq_one : ∀ i : Fin stmt.k, msg.m i = 1
   /-- Each input is on E. -/
   hP₀ : P₀ ∈ E.points
   hP₁ : P₁ ∈ E.points
@@ -1024,7 +1022,7 @@ structure MAProverMsg.IsHonestForLength4Simple (E : ECSetup)
 
 /-! ## Bridge theorem: `logDerivCheckFn = 0` from IsHonestForLength4Simple
 
-When the user has destructured `(stmt, msg)` with `stmt.k = msg.k = 3`
+When the user has destructured `(stmt, msg)` with `stmt.k = 3`
 already realized, this theorem provides a clean drop-in replacement
 for `weil_reciprocity_honest`. Takes raw fields rather than `stmt`/`msg`
 to avoid Lean's `subst` issues with projections. -/
@@ -1107,8 +1105,8 @@ Take a `IsHonestForLength4Simple` structure and produce
 the structure and applies the raw bridge. -/
 
 theorem logDerivCheckFn_zero_via_isHonestForLength4Simple
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
-    (h_honest : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
+    (h_honest : MAProverMsg.IsHonestForLength4Simple E stmt msg)
     (A₀ A₁ : ZMod E.q × ZMod E.q)
     (hA₀ : A₀ ∈ E.points) (hA₁ : A₁ ∈ E.points)
     (hNV : A₀.1 ≠ A₁.1)
@@ -1149,8 +1147,8 @@ set cardinality bound. Combines the structure's data with
 `rejectSet_bound_length4_simple`. -/
 
 theorem rejectSet_bound_via_isHonestForLength4Simple
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
-    (h_honest : MAProverMsg.IsHonestForLength4Simple E msg stmt) :
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
+    (h_honest : MAProverMsg.IsHonestForLength4Simple E stmt msg) :
     let B := fun i : Fin 3 => stmt.bases (h_honest.hk_eq_3 ▸ i)
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
@@ -1240,21 +1238,21 @@ bridge, hNV extractor, and structure bridge to instantiate
 Verified axiom closure: clean of `weil_reciprocity_honest`. -/
 
 theorem ma_completeness_via_isHonestForLength4Simple
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_honest : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
+    (h_honest : MAProverMsg.IsHonestForLength4Simple E stmt msg)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
-        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  apply ma_completeness_parameterized E stmt msg hkm hDegK hAdm
+  apply ma_completeness_parameterized E stmt msg hDegK hAdm
   intro A₀ A₁ hA₀ hA₁ hGood
   -- Extract hNV.
   have hNV : A₀.1 ≠ A₁.1 := hNV_of_hGood E hA₀ hA₁ hGood
   -- Apply the cast bridge: align stmt.k with 3.
   rw [logDerivCheckFn_eq_under_stmt_k_eq_three E msg.toD stmt.target
-      h_honest.hk_eq_3 stmt.bases (fun i => msg.m (hkm ▸ i))
-      (fun i => h_honest.h_m_eq_one (hkm ▸ i)) A₀ A₁]
+      h_honest.hk_eq_3 stmt.bases msg.m
+      h_honest.h_m_eq_one A₀ A₁]
   -- Now apply the structure bridge.
   exact logDerivCheckFn_zero_via_isHonestForLength4Simple E stmt msg
     h_honest A₀ A₁ hA₀ hA₁ hNV hGood
@@ -1268,14 +1266,14 @@ the constructive length-4 path. Axiom-free; convert to field-size
 units via `points_card_le_two_q`. -/
 
 theorem ma_completeness_clean_via_isHonestForLength4Simple
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_honest : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
+    (h_honest : MAProverMsg.IsHonestForLength4Simple E stmt msg)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
-        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩)).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
-  have hMA := ma_completeness_via_isHonestForLength4Simple E stmt msg hkm
+  have hMA := ma_completeness_via_isHonestForLength4Simple E stmt msg
     h_honest hDegK hAdm
   -- D is nonzero by length-4 construction.
   have hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) := by

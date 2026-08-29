@@ -28,8 +28,7 @@ variable (E : ECSetup)
 
 theorem ma_soundness_count_bound
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
@@ -40,15 +39,14 @@ theorem ma_soundness_count_bound
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg = some wit
         ∧ relDlog E stmt wit) ∨
-    (maAcceptSet E stmt msg hkm).card
+    (maAcceptSet E stmt msg).card
       ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card := by
   sorry
 
 theorem ma_soundness
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q)
     (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
@@ -57,14 +55,13 @@ theorem ma_soundness
     (hSample : 18 * (stmt.degBound + stmt.k + 1) * E.q + 1 ≤
         (validPairs E).card)
     (hAccept : maSoundnessError E stmt <
-        maAcceptanceProbability E stmt msg hkm) :
+        maAcceptanceProbability E stmt msg) :
     maExtractorValid E stmt msg := by
   sorry
 
 theorem ip_extractable
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg1 : MAProverMsg E.q)
-    (hkm : stmt.k = msg1.k)
+    (msg1 : MAProverMsg E.q stmt.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hLargeQ : E.points.card >
@@ -75,7 +72,7 @@ theorem ip_extractable
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 = some wit
          ∧ relDlog E stmt wit) ∨
-     (maAcceptSet E stmt msg1 hkm).card
+     (maAcceptSet E stmt msg1).card
       ≤ 24 * (stmt.degBound + stmt.k + 3) * E.points.card)
     ∧ IPUniqueThirdRound E stmt msg1 := by
   sorry
@@ -83,31 +80,31 @@ theorem ip_extractable
 theorem ma_completeness
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k)
     (hDeg : msg.toD.degE ≤ wit.degBound)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
+    (hHonestDivisor : msg.isHonestFor E stmt wit hk)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   sorry
 
 theorem ma_completeness_q
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k)
     (hDeg : msg.toD.degE ≤ wit.degBound)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
+    (hHonestDivisor : msg.isHonestFor E stmt wit hk)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
   sorry
 
 theorem ip_completeness
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
     ((E.points ×ˢ E.points).filter
@@ -118,7 +115,7 @@ theorem ip_completeness
   sorry
 
 theorem ip_completeness_q
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
     ((E.points ×ˢ E.points).filter
@@ -130,36 +127,34 @@ theorem ip_completeness_q
 
 theorem ma_soundness_count_bound_hasse
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg : MAProverMsg E.q)
-    (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hQbig : 72 * (stmt.degBound + stmt.k + 4) ≤ E.q) :
     (∃ wit : DlogWitness E.q,
         maExtractor E stmt msg = some wit
         ∧ relDlog E stmt wit) ∨
-    (maAcceptSet E stmt msg hkm).card
+    (maAcceptSet E stmt msg).card
       ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q := by
   sorry
 
 theorem ip_extractable_hasse
     (stmt : DlogStatement E.q) (hd : stmt.degBound < E.q) (hd2 : 2 ≤ stmt.degBound)
-    (msg1 : MAProverMsg E.q)
-    (hkm : stmt.k = msg1.k)
+    (msg1 : MAProverMsg E.q stmt.k)
     (hTargetOnE : stmt.target ∈ E.points)
     (hBasesOnE : ∀ j, stmt.bases j ∈ E.points)
     (hQbig : 72 * (stmt.degBound + stmt.k + 4) ≤ E.q) :
     ((∃ wit : DlogWitness E.q,
          maExtractor E stmt msg1 = some wit
          ∧ relDlog E stmt wit) ∨
-     (maAcceptSet E stmt msg1 hkm).card
+     (maAcceptSet E stmt msg1).card
       ≤ 36 * (stmt.degBound + stmt.k + 4) * E.q)
     ∧ IPUniqueThirdRound E stmt msg1 := by
   sorry
 
 theorem ma_completeness_binary_any_length
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q stmt.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
     (h_toD_eq : msg.toD =
@@ -168,7 +163,7 @@ theorem ma_completeness_binary_any_length
     (h_degE_eq :
        msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
     (h_scalars_match : ∀ i : Fin stmt.k,
-       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+       msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
     (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
@@ -176,13 +171,13 @@ theorem ma_completeness_binary_any_length
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   sorry
 
 theorem ma_completeness_binary_any_length_cert
     (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q stmt.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
     (h_valid : relDlog E stmt wit)
     (h_toD_eq : msg.toD =
@@ -191,7 +186,7 @@ theorem ma_completeness_binary_any_length_cert
     (h_degE_eq :
        msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
     (h_scalars_match : ∀ i : Fin stmt.k,
-       msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+       msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
     (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
@@ -199,7 +194,7 @@ theorem ma_completeness_binary_any_length_cert
     (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
     (h_deg : msg.toD.degE ≤ wit.degBound)
     (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   sorry
 

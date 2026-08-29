@@ -53,12 +53,12 @@ variable (E : ECSetup)
 theorem ma_completeness_base
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k)
     (hDeg : msg.toD.degE ≤ wit.degBound)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm) :
-    (maRejectSet E stmt msg hkm).card
+    (hHonestDivisor : msg.isHonestFor E stmt wit hk) :
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   let _ := hValid
   let _ := hDeg
@@ -71,7 +71,7 @@ theorem ma_completeness_base
   have h_bases : ∀ i : Fin stmt.k, stmt.bases i ∈ E.points :=
     hHonestDivisor.2.2.2.2
   -- Route through the explicit honest-divisor bridge (no axiom).
-  exact ma_completeness_via_isHonestForExplicit E stmt wit hk msg hkm
+  exact ma_completeness_via_isHonestForExplicit E stmt wit hk msg
     hHonestDivisor hD h_negT h_bases hDegK hAdm
 
 /-- Point-count consolidated form: applying the paper-tight
@@ -82,15 +82,15 @@ theorem ma_completeness_base
 theorem ma_completeness_degBound
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k)
     (hDeg : msg.toD.degE ≤ wit.degBound)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
-    (hHonestDivisor : msg.isHonestFor E stmt wit hk hkm)
+    (hHonestDivisor : msg.isHonestFor E stmt wit hk)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
-    (maRejectSet E stmt msg hkm).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
-  have hMA := ma_completeness_base E stmt wit hk hValid msg hkm hDeg hDegK hAdm hHonestDivisor
+  have hMA := ma_completeness_base E stmt wit hk hValid msg hDeg hDegK hAdm hHonestDivisor
   have hNZ : numZeros E msg.toD ≤ stmt.degBound := by
     have h1 := numZeros_le_degE E msg.toD hD
     omega
@@ -109,32 +109,31 @@ strengthened `isHonestFor` predicate constructively. Composing with
 case, validating the bridge end-to-end. -/
 
 theorem ma_completeness_for_length4Simple
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
     (hValid : relDlog E stmt wit)
     (hDeg : msg.toD.degE ≤ wit.degBound)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm)).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness_base E stmt wit hk hValid msg
-    (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm)
     hDeg hDegK hAdm
     (isHonestFor_of_isHonestForLength4Simple E h_simple hk h_scalars)
 
 /-- Point-count consolidated form for the length-4 simple bridge. -/
 theorem ma_completeness_clean_for_length4Simple
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
     (hValid : relDlog E stmt wit)
     (hDeg : msg.toD.degE ≤ wit.degBound)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm)).card
+    (maRejectSet E stmt msg).card
       ≤ (3 * stmt.degBound + 4) * E.points.card := by
   -- D ≠ 0 from the lineBuild_length4_explicit nonzero property + h_toD_eq.
   have hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) := by
@@ -145,7 +144,6 @@ theorem ma_completeness_clean_for_length4Simple
       h_simple.h_xx_01 h_simple.h_xx_23
       h_simple.h_third_match h_simple.h_y_match h_simple.h_Q₀_nontorsion
   exact ma_completeness_degBound E stmt wit hk hValid msg
-    (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm)
     hDeg hDegK hAdm
     (isHonestFor_of_isHonestForLength4Simple E h_simple hk h_scalars)
     hD
@@ -153,15 +151,15 @@ theorem ma_completeness_clean_for_length4Simple
 /-- Field-size form for the length-4 simple bridge (trivial fiber
     bound; no axiom). -/
 theorem ma_completeness_q_for_length4Simple
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q)
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
     (hValid : relDlog E stmt wit)
     (hDeg : msg.toD.degE ≤ wit.degBound)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm)).card
+    (maRejectSet E stmt msg).card
       ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
   have hMA := ma_completeness_clean_for_length4Simple E stmt msg h_simple wit hk
     h_scalars hValid hDeg hDegK hAdm
@@ -187,13 +185,12 @@ theorem ma_completeness_q_for_length4Simple
     accounted for — see `ip_completeness` below for the
     cardinality form. -/
 theorem ip_accept_off_eventDeg
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
     (chal : MAChallenge E.q)
     (hNotDeg : ¬ eventDeg E msg.toD stmt.target stmt.bases chal.A₀ chal.A₁)
     (hDegK : msg.toD.degE ≤ stmt.degBound) :
     ∃ msg3 : IPProverMsg3 E.q,
       ipVerifierAccepts E stmt msg chal (computeA₂ chal) msg3 := by
-  let _ := hkm
   -- Unfold ¬eventDeg = logDerivCheckFnDefined; extract the four nondegen
   -- facts via logDerivCheckFnDenom_factors_ne_zero.
   have hDef : logDerivCheckFnDefined E msg.toD stmt.target stmt.bases

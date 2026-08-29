@@ -90,7 +90,7 @@ noncomputable def Accum.fromChordPair_distinct
 noncomputable def Accum.fromChordPair_vertical
     (P Q : ZMod E.q × ZMod E.q) (_h_xx : P.1 = Q.1) (_h_yy : P.2 = -Q.2) :
     Accum E :=
-  { point := P,  -- Sentinel; level transitions handle this.
+  { point := P, -- Sentinel; level transitions handle this.
     poly := { a := Polynomial.X - Polynomial.C P.1, b := 0 } }
 
 /-- Process the initial input list, pairing adjacent points and building
@@ -191,7 +191,7 @@ noncomputable def lineBuild (Ps : List (ZMod E.q × ZMod E.q)) : CoordRingElt E.
   match final with
   | [] => { a := 1, b := 0 }
   | [single] => single.poly
-  | _ => { a := 1, b := 0 }  -- shouldn't happen if iterations sufficient
+  | _ => { a := 1, b := 0 } -- shouldn't happen if iterations sufficient
 
 /-! ## `IsHonestForExplicit` predicate (any-k completeness path)
 
@@ -201,10 +201,10 @@ extensional divisor identity (`.2.2.1`), and the on-curve invariants
 (`.2.2.2.1`, `.2.2.2.2`); call sites destructure it through those
 projections. -/
 
-def MAProverMsg.IsHonestForExplicit (E : ECSetup) (msg : MAProverMsg E.q)
-    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (hkm : stmt.k = msg.k) : Prop :=
-  msg.isHonestFor E stmt wit hk hkm
+def MAProverMsg.IsHonestForExplicit (E : ECSetup) (stmt : DlogStatement E.q)
+    (msg : MAProverMsg E.q stmt.k) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k) : Prop :=
+  msg.isHonestFor E stmt wit hk
 
 /-! ## General hQline derivation from `hGood`
 
@@ -278,8 +278,8 @@ For general k, the user provides them (e.g., via recursive lineBuild). -/
 theorem logDerivCheckFn_zero_via_isHonestForExplicit_with_sides
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (_h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
+    (msg : MAProverMsg E.q stmt.k)
+    (_h_honest : msg.IsHonestForExplicit E stmt wit hk)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
     (hSplit : splitsOnE E msg.toD)
     (hAccount : (∑ Q ∈ E.points, ordAt E msg.toD Q) = (normPoly E msg.toD).natDegree)
@@ -292,11 +292,11 @@ theorem logDerivCheckFn_zero_via_isHonestForExplicit_with_sides
           ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2)⁻¹)
         = ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval stmt.target.1 (-stmt.target.2))⁻¹
           + (Finset.univ : Finset (Fin stmt.k)).sum
-              (fun j => msg.m (hkm ▸ j) *
+              (fun j => msg.m j *
                 ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (stmt.bases j).1
                   (stmt.bases j).2)⁻¹)) :
     logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-      (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0 := by
+      (fun i => msg.m i) A₀ A₁ = 0 := by
   classical
   -- β_fun = ordAt = betaTrue (definitional).
   have hβsup : ∀ Q, ordAt E msg.toD Q ≠ 0 →
@@ -314,7 +314,7 @@ theorem logDerivCheckFn_zero_via_isHonestForExplicit_with_sides
   have hDen := hDen_of_hGood E msg.toD A₀ A₁ hA₀ hA₁ hNV hGood
   -- Apply logDerivCheckFn_zero_of_explicit_divisor_data.
   exact logDerivCheckFn_zero_of_explicit_divisor_data E msg.toD stmt.target
-    stmt.bases (fun i => msg.m (hkm ▸ i)) (ordAt E msg.toD)
+    stmt.bases (fun i => msg.m i) (ordAt E msg.toD)
     hD hSplit hβsup hβcov hAccount hβtrue
     A₀ A₁ hA₀ hA₁ hNV hGood hQline hDen hResidueMatch
 
@@ -327,8 +327,8 @@ match) as user-provided hypotheses. -/
 theorem ma_completeness_via_isHonestForExplicit_with_sides
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
+    (msg : MAProverMsg E.q stmt.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
     (hSplit : splitsOnE E msg.toD)
     (hAccount : (∑ Q ∈ E.points, ordAt E msg.toD Q) = (normPoly E msg.toD).natDegree)
@@ -341,18 +341,18 @@ theorem ma_completeness_via_isHonestForExplicit_with_sides
           ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2)⁻¹)
         = ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval stmt.target.1 (-stmt.target.2))⁻¹
           + (Finset.univ : Finset (Fin stmt.k)).sum
-              (fun j => msg.m (hkm ▸ j) *
+              (fun j => msg.m j *
                 ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval (stmt.bases j).1
                   (stmt.bases j).2)⁻¹)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  apply ma_completeness_parameterized E stmt msg hkm hDegK hAdm
+  apply ma_completeness_parameterized E stmt msg hDegK hAdm
   intro A₀ A₁ hA₀ hA₁ hGood
   have hNV : A₀.1 ≠ A₁.1 := hNV_of_hGood E hA₀ hA₁ hGood
   exact logDerivCheckFn_zero_via_isHonestForExplicit_with_sides E
-    stmt wit hk msg hkm h_honest hD hSplit hAccount A₀ A₁ hA₀ hA₁ hNV hGood
+    stmt wit hk msg h_honest hD hSplit hAccount A₀ A₁ hA₀ hA₁ hNV hGood
     (hResidueMatchAll A₀ A₁ hA₀ hA₁ hNV hGood)
 
 /-! ## Padding lemma: extend zerosFinset sum to E.points
@@ -394,7 +394,7 @@ affine points is `(ordAt msg.toD Q : ℤ) = honestDivisorCoeffs(affine Q)`. -/
 
 theorem ordAt_eq_honestDivisorCoeffs_at_affine
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q)
+    (msg : MAProverMsg E.q stmt.k)
     (h_div : ∀ R : ECPoint E,
       divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R)
     {Q : ZMod E.q × ZMod E.q} (hQ : Q ∈ E.points) :
@@ -416,7 +416,7 @@ via the ℤ→ZMod cast. -/
 
 theorem ordAt_cast_eq_honestDivisorCoeffs_cast_at_affine
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q)
+    (msg : MAProverMsg E.q stmt.k)
     (h_div : ∀ R : ECPoint E,
       divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R)
     {Q : ZMod E.q × ZMod E.q} (hQ : Q ∈ E.points) :
@@ -432,7 +432,7 @@ identity from `IsHonestForExplicit`. -/
 
 theorem residue_sum_eq_honest_via_isHonestForExplicit
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q)
+    (msg : MAProverMsg E.q stmt.k)
     (h_div : ∀ R : ECPoint E,
       divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
@@ -459,7 +459,7 @@ Sum over E.points + L-evaluation produces the protocol RHS form. -/
 
 theorem honestDivisorCoeffs_at_affine_split
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) {Q : ZMod E.q × ZMod E.q} (hQ : Q ∈ E.points) :
+    (msg : MAProverMsg E.q stmt.k) {Q : ZMod E.q × ZMod E.q} (hQ : Q ∈ E.points) :
     honestDivisorCoeffs E stmt wit hk msg (ECPoint.affine E Q.1 Q.2)
       = (if Q = (stmt.target.1, -stmt.target.2) then 1 else 0) +
         ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
@@ -538,8 +538,8 @@ the protocol RHS. -/
 
 theorem hResidueMatch_via_isHonestForExplicit
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
+    (msg : MAProverMsg E.q stmt.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
     (h_negT : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases : ∀ i : Fin stmt.k, stmt.bases i ∈ E.points)
@@ -593,26 +593,26 @@ Same as `ma_completeness_via_isHonestForExplicit_with_sides` but with
 theorem ma_completeness_via_isHonestForExplicit_no_residue_match
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
+    (msg : MAProverMsg E.q stmt.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
     (hSplit : splitsOnE E msg.toD)
     (hAccount : (∑ Q ∈ E.points, ordAt E msg.toD Q) = (normPoly E msg.toD).natDegree)
     (h_negT : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases : ∀ i : Fin stmt.k, stmt.bases i ∈ E.points)
     (h_m_eq_scalars : ∀ i : Fin stmt.k,
-      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ℤ) : ZMod E.q))
+      msg.m i = ((wit.scalars (hk ▸ i) : ℤ) : ZMod E.q))
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  apply ma_completeness_via_isHonestForExplicit_with_sides E stmt wit hk msg hkm
+  apply ma_completeness_via_isHonestForExplicit_with_sides E stmt wit hk msg
     h_honest hD hSplit hAccount hDegK hAdm
   intro A₀ A₁ hA₀ hA₁ hNV hGood
   -- Apply hResidueMatch_via_isHonestForExplicit with f = L^{-1}.
-  rw [hResidueMatch_via_isHonestForExplicit E stmt wit hk msg hkm h_honest hD
+  rw [hResidueMatch_via_isHonestForExplicit E stmt wit hk msg h_honest hD
       h_negT h_bases (fun Q => ((lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2)⁻¹)]
   -- Now we need: f(-target) + Σ_i (scalars : ZMod) · f(bases i) = ((lineThrough.eval target.1 (-target.2))⁻¹) + Σ_j m_j · ...
   congr 1
@@ -626,7 +626,7 @@ Cast the natural-number `∑ ordAt` to ℤ, using `divisorOfD = honestDivisorCoe
 
 theorem ordAt_sum_eq_honestDivisorCoeffs_sum_at_affines
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q)
+    (msg : MAProverMsg E.q stmt.k)
     (h_div : ∀ R : ECPoint E,
       divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R) :
     ((∑ Q ∈ E.points, ordAt E msg.toD Q : ℕ) : ℤ)
@@ -644,7 +644,7 @@ directly from the definition. -/
 
 theorem honestDivisorCoeffs_at_infinity
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) :
+    (msg : MAProverMsg E.q stmt.k) :
     honestDivisorCoeffs E stmt wit hk msg (0 : ECPoint E) = -(msg.toD.degE : ℤ) := rfl
 
 /-! ## honestDivisorCoeffs has finite support (via divisor identity)
@@ -654,7 +654,7 @@ divisorOfD, hence is also finitely supported. -/
 
 theorem honestDivisorCoeffs_finiteSupport_of_divisor_identity
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q)
+    (msg : MAProverMsg E.q stmt.k)
     (h_div : ∀ R : ECPoint E,
       divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R) :
     Set.Finite (Function.support (honestDivisorCoeffs E stmt wit hk msg)) := by
@@ -692,7 +692,7 @@ The infinity ECPoint is the additional element. Hence the support of
 
 theorem honestDivisorCoeffs_support_subset_affineAndInfinity
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) :
+    (msg : MAProverMsg E.q stmt.k) :
     Function.support (honestDivisorCoeffs E stmt wit hk msg)
       ⊆ ↑(insert (0 : ECPoint E) (ECPoint.affinePoints E)) := by
   classical
@@ -756,8 +756,8 @@ for `D = 0`, but `divisorOfD 0 = 0`, so the identity would force
 
 theorem honestDivisorCoeffs_deg_zero_of_isHonestForExplicit
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm) :
+    (msg : MAProverMsg E.q stmt.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk) :
     ∃ hFinSupp : Set.Finite (Function.support
         (honestDivisorCoeffs E stmt wit hk msg)),
       ∑ P ∈ hFinSupp.toFinset, honestDivisorCoeffs E stmt wit hk msg P = 0 := by
@@ -830,13 +830,13 @@ unfolding. -/
 
 theorem honestDivisorCoeffs_affine_sum_eq_degE
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm) :
+    (msg : MAProverMsg E.q stmt.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk) :
     (∑ R ∈ ECPoint.affinePoints E, honestDivisorCoeffs E stmt wit hk msg R)
       = (msg.toD.degE : ℤ) := by
   classical
   obtain ⟨hFin, hSum_zero⟩ :=
-    honestDivisorCoeffs_deg_zero_of_isHonestForExplicit E stmt wit hk msg hkm h_honest
+    honestDivisorCoeffs_deg_zero_of_isHonestForExplicit E stmt wit hk msg h_honest
   have hSubset := honestDivisorCoeffs_support_subset_affineAndInfinity E stmt wit hk msg
   have hZeroNotIn := zero_notMem_affinePoints E
   have h_ext_sum : (∑ R ∈ insert (0 : ECPoint E) (ECPoint.affinePoints E),
@@ -862,32 +862,32 @@ theorem honestDivisorCoeffs_affine_sum_eq_degE
 
 theorem ordAt_sum_eq_degE_of_isHonestForExplicit
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm) :
+    (msg : MAProverMsg E.q stmt.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk) :
     ((∑ Q ∈ E.points, ordAt E msg.toD Q : ℕ) : ℤ) = (msg.toD.degE : ℤ) := by
   rw [ordAt_sum_eq_honestDivisorCoeffs_sum_at_affines E stmt wit hk msg h_honest.2.2.1]
   rw [← affinePoints_sum_eq_image_sum E (honestDivisorCoeffs E stmt wit hk msg)]
-  exact honestDivisorCoeffs_affine_sum_eq_degE E stmt wit hk msg hkm h_honest
+  exact honestDivisorCoeffs_affine_sum_eq_degE E stmt wit hk msg h_honest
 
 /-! ## ∑ ordAt = degE (cast back to ℕ) and natDegree = degE -/
 
 theorem ordAt_sum_eq_degE_nat_of_isHonestForExplicit
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm) :
+    (msg : MAProverMsg E.q stmt.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk) :
     (∑ Q ∈ E.points, ordAt E msg.toD Q) = msg.toD.degE := by
-  have h := ordAt_sum_eq_degE_of_isHonestForExplicit E stmt wit hk msg hkm h_honest
+  have h := ordAt_sum_eq_degE_of_isHonestForExplicit E stmt wit hk msg h_honest
   exact_mod_cast h
 
 theorem natDegree_normPoly_eq_degE_of_isHonestForExplicit
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm) :
+    (msg : MAProverMsg E.q stmt.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk) :
     (normPoly E msg.toD).natDegree = msg.toD.degE := by
   -- ∑ ordAt ≤ natDegree ≤ degE (existing infrastructure).
   -- ∑ ordAt = degE (step 4).
   -- Pinch.
-  have hSum := ordAt_sum_eq_degE_nat_of_isHonestForExplicit E stmt wit hk msg hkm h_honest
+  have hSum := ordAt_sum_eq_degE_nat_of_isHonestForExplicit E stmt wit hk msg h_honest
   have hLe1 : (∑ P ∈ E.points, ordAt E msg.toD P) ≤ (normPoly E msg.toD).natDegree := by
     classical
     rw [sum_E_points_eq_sum_fiberwise E]
@@ -919,23 +919,23 @@ theorem natDegree_normPoly_eq_degE_of_isHonestForExplicit
 
 theorem hAccount_of_isHonestForExplicit
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm) :
+    (msg : MAProverMsg E.q stmt.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk) :
     (∑ Q ∈ E.points, ordAt E msg.toD Q) = (normPoly E msg.toD).natDegree := by
-  rw [ordAt_sum_eq_degE_nat_of_isHonestForExplicit E stmt wit hk msg hkm h_honest,
-      natDegree_normPoly_eq_degE_of_isHonestForExplicit E stmt wit hk msg hkm h_honest]
+  rw [ordAt_sum_eq_degE_nat_of_isHonestForExplicit E stmt wit hk msg h_honest,
+      natDegree_normPoly_eq_degE_of_isHonestForExplicit E stmt wit hk msg h_honest]
 
 /-! ## normPoly splits — `Multiset.card .roots = natDegree` -/
 
 theorem normPoly_splits_of_isHonestForExplicit
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
+    (msg : MAProverMsg E.q stmt.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
     normPoly_splits_over_Fq E msg.toD := by
   classical
   -- Pinching: ∑ ordAt ≤ ∑ rootMult ≤ natDegree, with ∑ ordAt = natDegree.
-  have hSum := hAccount_of_isHonestForExplicit E stmt wit hk msg hkm h_honest
+  have hSum := hAccount_of_isHonestForExplicit E stmt wit hk msg h_honest
   have hFiber : ∀ x₀ : ZMod E.q,
       (∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E msg.toD P)
         ≤ rootMultiplicity x₀ (normPoly E msg.toD) :=
@@ -965,8 +965,8 @@ Reason: rootMult > 0 + fiber sum equality from pinching ⇒ fiber non-empty. -/
 
 theorem fiber_rationality_of_isHonestForExplicit
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
+    (msg : MAProverMsg E.q stmt.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
     ∀ α ∈ (normPoly E msg.toD).roots, ∃ y : ZMod E.q, (α, y) ∈ E.points := by
   classical
@@ -978,7 +978,7 @@ theorem fiber_rationality_of_isHonestForExplicit
   -- From the pinching equality (proved in normPoly_splits_of_isHonestForExplicit),
   -- ∑ x₀, fiber_sum x₀ = ∑ x₀, rootMult x₀.
   -- With pointwise fiber_sum ≤ rootMult, and total equality, pointwise equality holds.
-  have hSum := hAccount_of_isHonestForExplicit E stmt wit hk msg hkm h_honest
+  have hSum := hAccount_of_isHonestForExplicit E stmt wit hk msg h_honest
   have hFiber_sum_eq_total : (∑ x₀ : ZMod E.q,
       ∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E msg.toD P)
         = ∑ Q ∈ E.points, ordAt E msg.toD Q := by
@@ -1036,12 +1036,12 @@ theorem fiber_rationality_of_isHonestForExplicit
 
 theorem splitsOnE_of_isHonestForExplicit
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
+    (msg : MAProverMsg E.q stmt.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)) :
     splitsOnE E msg.toD :=
-  ⟨normPoly_splits_of_isHonestForExplicit E stmt wit hk msg hkm h_honest hD,
-   fiber_rationality_of_isHonestForExplicit E stmt wit hk msg hkm h_honest hD⟩
+  ⟨normPoly_splits_of_isHonestForExplicit E stmt wit hk msg h_honest hD,
+   fiber_rationality_of_isHonestForExplicit E stmt wit hk msg h_honest hD⟩
 
 /-! ## Bridge: IsHonestForLength4Simple → isHonestFor
 
@@ -1053,8 +1053,8 @@ conjunct, assembled in `isHonestFor_of_isHonestForLength4Simple`. -/
 /-- Divisor identity at infinity: both `divisorOfD` and
     `honestDivisorCoeffs` evaluate to `-4` at the point at infinity. -/
 theorem divisor_identity_at_infinity_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
     {wit : DlogWitness E.q} (hk : stmt.k = wit.k) :
     divisorOfD E msg.toD (0 : ECPoint E)
       = honestDivisorCoeffs E stmt wit hk msg (0 : ECPoint E) := by
@@ -1078,8 +1078,8 @@ theorem divisor_identity_at_infinity_for_length4Simple
 
 /-- On-curve invariant for `(-target)`: `(target.1, -target.2) ∈ E.points`. -/
 theorem negTarget_on_curve_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt) :
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg) :
     (stmt.target.1, -stmt.target.2) ∈ E.points := by
   rw [← h_simple.h_P₀_eq]
   exact h_simple.hP₀
@@ -1096,8 +1096,8 @@ private theorem cast_subst_val_l4
     cast-rewriting is encapsulated here so the bridge theorem doesn't
     need to fight Lean's dependent-type machinery directly. -/
 private theorem bases_at_cast_index_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
     (j : Fin 3) :
     stmt.bases (h_simple.hk_eq_3 ▸ j) ∈ E.points := by
   fin_cases j
@@ -1116,8 +1116,8 @@ private theorem bases_at_cast_index_for_length4Simple
     `divisorOfD = 1` and `honestDivisorCoeffs = 1` (under the simple-case
     hypotheses with `wit.scalars = 1`). -/
 theorem divisor_identity_at_affine_off_support_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
     {wit : DlogWitness E.q} (hk : stmt.k = wit.k)
     (_h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
     {x y : ZMod E.q} (hns : E.toW.toAffine.Nonsingular x y)
@@ -1240,8 +1240,8 @@ readability. -/
 /-- Helper: extract divisorOfD msg.toD = 1 at any of P_0..P_3 (under
     IsHonestForLength4Simple's hypotheses). -/
 private theorem div_eq_one_at_P_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
     {x y : ZMod E.q} (hns : E.toW.toAffine.Nonsingular x y)
     (h_xy : (x, y) = h_simple.P₀ ∨ (x, y) = h_simple.P₁ ∨
             (x, y) = h_simple.P₂ ∨ (x, y) = h_simple.P₃) :
@@ -1302,8 +1302,8 @@ For each j : Fin 3, the filter `{i : Fin stmt.k | stmt.bases i = stmt.bases (h3 
 is the singleton `{h3 ▸ j}`. Uses `h_inputs_distinct` (P_1, P_2, P_3 distinct
 modulo P_0 not being a basis index). -/
 private theorem bases_filter_singleton_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
     (j : Fin 3) :
     (Finset.univ : Finset (Fin stmt.k)).filter
         (fun i => stmt.bases i = stmt.bases (h_simple.hk_eq_3 ▸ j))
@@ -1375,8 +1375,8 @@ private theorem bases_filter_singleton_for_length4Simple
 
 /-- For (x, y) = P_0: filter (bases i = (x, y)) is empty (P_0 ∉ bases). -/
 private theorem bases_filter_empty_at_P0
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt) :
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg) :
     (Finset.univ : Finset (Fin stmt.k)).filter
         (fun i => stmt.bases i = h_simple.P₀) = ∅ := by
   classical
@@ -1406,8 +1406,8 @@ private theorem bases_filter_empty_at_P0
 
 /-- Helper: at any (x, y) = P_k for k ∈ {0, 1, 2, 3}, honestDivisorCoeffs = 1. -/
 private theorem honestCoeffs_eq_one_at_P_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
     {wit : DlogWitness E.q} (hk : stmt.k = wit.k)
     (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
     {x y : ZMod E.q} (hns : E.toW.toAffine.Nonsingular x y)
@@ -1480,8 +1480,8 @@ and the affine off-support case (R ∉ {P_0..P_3}). -/
 
 /-- Universal divisor identity: `∀ R : ECPoint E, divisorOfD msg.toD R = honestDivisorCoeffs R`. -/
 theorem divisor_identity_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
     {wit : DlogWitness E.q} (hk : stmt.k = wit.k)
     (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1) :
     ∀ R : ECPoint E,
@@ -1513,8 +1513,8 @@ Direct dispatch to `splitsOnE_lineBuild_length4` (existing
 infrastructure in `Divisor/IncrementalConstruction.lean`). -/
 
 theorem splitsOnE_msg_toD_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt) :
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg) :
     splitsOnE E msg.toD := by
   rw [h_simple.h_toD_eq]
   exact splitsOnE_lineBuild_length4 E
@@ -1531,22 +1531,21 @@ theorem splitsOnE_msg_toD_for_length4Simple
 
 /-- Scalar reduction for the length-4 simple case (with `wit.scalars = 1`). -/
 theorem scalar_reduction_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
     {wit : DlogWitness E.q} (hk : stmt.k = wit.k)
     (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1) :
-    let hkm : stmt.k = msg.k := h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm
     ∀ i : Fin stmt.k,
-      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)) := by
-  intro hkm i
-  rw [h_simple.h_m_eq_one (hkm ▸ i)]
+      msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)) := by
+  intro i
+  rw [h_simple.h_m_eq_one i]
   rw [h_scalars (hk ▸ i)]
   push_cast; rfl
 
 /-- On-curve invariant: every `bases i` is on E. -/
 theorem bases_on_curve_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt) :
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg) :
     ∀ i : Fin stmt.k, stmt.bases i ∈ E.points := by
   intro i
   have h3 := h_simple.hk_eq_3
@@ -1583,12 +1582,11 @@ This is the construction-side validation that the strengthened
 `isHonestFor` is satisfiable for the length-4 simple case. -/
 
 theorem isHonestFor_of_isHonestForLength4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E msg stmt)
+    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
+    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
     {wit : DlogWitness E.q} (hk : stmt.k = wit.k)
     (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1) :
-    msg.isHonestFor E stmt wit hk
-      (h_simple.hk_eq_3.trans h_simple.hkm_eq_3.symm) := by
+    msg.isHonestFor E stmt wit hk := by
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · exact scalar_reduction_for_length4Simple E h_simple hk h_scalars
   · exact splitsOnE_msg_toD_for_length4Simple E h_simple
@@ -1604,8 +1602,8 @@ The remaining hypotheses are just protocol-level invariants. -/
 theorem ma_completeness_via_isHonestForExplicit
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
-    (h_honest : msg.IsHonestForExplicit E stmt wit hk hkm)
+    (msg : MAProverMsg E.q stmt.k)
+    (h_honest : msg.IsHonestForExplicit E stmt wit hk)
     (hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0))
     (h_negT : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases : ∀ i : Fin stmt.k, stmt.bases i ∈ E.points)
@@ -1613,18 +1611,18 @@ theorem ma_completeness_via_isHonestForExplicit
     (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
     ((E.points ×ˢ E.points).filter
         (fun p : (ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q) =>
-          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+          ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   -- The scalar reduction (`isHonestFor`'s first conjunct) gives us h_m_eq_scalars.
   have h_m_eq_scalars : ∀ i : Fin stmt.k,
-      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ℤ) : ZMod E.q) := by
+      msg.m i = ((wit.scalars (hk ▸ i) : ℤ) : ZMod E.q) := by
     intro i
     have := h_honest.1 i
     convert this
-  apply ma_completeness_via_isHonestForExplicit_no_residue_match E stmt wit hk msg hkm
+  apply ma_completeness_via_isHonestForExplicit_no_residue_match E stmt wit hk msg
     h_honest hD
-    (splitsOnE_of_isHonestForExplicit E stmt wit hk msg hkm h_honest hD)
-    (hAccount_of_isHonestForExplicit E stmt wit hk msg hkm h_honest)
+    (splitsOnE_of_isHonestForExplicit E stmt wit hk msg h_honest hD)
+    (hAccount_of_isHonestForExplicit E stmt wit hk msg h_honest)
     h_negT h_bases h_m_eq_scalars hDegK hAdm
 
 end Divisor

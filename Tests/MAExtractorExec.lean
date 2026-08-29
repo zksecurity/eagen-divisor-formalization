@@ -1,7 +1,7 @@
 /-
   Tests/MAExtractorExec.lean
 
-  Native-code smoke test for the public MA recovery function.  The base is
+  Native-code smoke test for the public MA recovery function. The base is
   `-target`, so the extractor takes its unconditional special branch and
   returns the scalar `-1`.
 -/
@@ -28,8 +28,7 @@ private def oneCoeff : ℕ →₀ ZMod E17.q where
     intro n
     simp
 
-private def msg : MAProverMsg E17.q where
-  k := 1
+private def msg : MAProverMsg E17.q stmt.k where
   m := fun _ => 0
   polyA := Polynomial.ofFinsupp
     (AddMonoidAlgebra.ofCoeff oneCoeff)

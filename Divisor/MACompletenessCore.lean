@@ -30,7 +30,7 @@ variable (E : ECSetup)
     on the `weil_reciprocity_honest` axiom. -/
 theorem ma_completeness_parameterized
     (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (hkm : stmt.k = msg.k)
+    (msg : MAProverMsg E.q stmt.k)
     (hDegK : msg.toD.degE ≤ stmt.degBound)
     (hAdm : stmt.admSet (msg.polyA, msg.polyB))
     (h_logDerivCheckFn_zero :
@@ -38,13 +38,13 @@ theorem ma_completeness_parameterized
         A₀ ∈ E.points → A₁ ∈ E.points →
         (A₀, A₁) ∉ badChallengesCompleteness E msg.toD →
         logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-          (fun i => msg.m (hkm ▸ i)) A₀ A₁ = 0) :
+          msg.m A₀ A₁ = 0) :
     ((E.points ×ˢ E.points).filter
-        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm)).card
+        (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩)).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   set rejectSet : Finset ((ZMod E.q × ZMod E.q) × (ZMod E.q × ZMod E.q)) :=
     (E.points ×ˢ E.points).filter
-      (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩ hkm) with hRS
+      (fun p => ¬ maVerifierAccepts E stmt msg ⟨p.1, p.2⟩) with hRS
   have hSub : rejectSet ⊆ badChallengesCompleteness E msg.toD := by
     intro p hp
     simp only [hRS, Finset.mem_filter] at hp

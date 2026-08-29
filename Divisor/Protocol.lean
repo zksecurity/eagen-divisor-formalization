@@ -17,10 +17,10 @@ variable {q : ℕ} [hq : Fact (Nat.Prime q)]
 
     Paper `\protMA` (Eagen, Bassa25) parameterizes soundness by
     `admSet`. Common choices:
-    * Maximal:    `{(a, b) : (a, b) ≠ (0, 0)}`
-    * Parker:     `{(a, b) : a₁ = 1}` (coefficient of x in a is 1)
-    * Eagen:      `{(a, b) : a₀ = 1}` (constant coefficient of a is 1)
-    * Hash:       `{(a, b) : ⟨r, a ‖ b⟩ ≠ 0}` for some challenge r ∈ F_q^n.
+    * Maximal: `{(a, b) : (a, b) ≠ (0, 0)}`
+    * Parker: `{(a, b) : a₁ = 1}` (coefficient of x in a is 1)
+    * Eagen: `{(a, b) : a₀ = 1}` (constant coefficient of a is 1)
+    * Hash: `{(a, b) : ⟨r, a ‖ b⟩ ≠ 0}` for some challenge r ∈ F_q^n.
 
     Axiomatic use of `admSet`: downstream proofs only depend on
     `(0, 0) ∉ admSet`, captured by the `admSet_excludes_zero` field. -/
@@ -129,13 +129,12 @@ def relDlog (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q) :
 
 /-! ## MA Protocol -/
 
-structure MAProverMsg (q : ℕ) [Fact (Nat.Prime q)] where
-  k : ℕ
+structure MAProverMsg (q k : ℕ) [Fact (Nat.Prime q)] where
   m : Fin k → ZMod q
   polyA : Polynomial (ZMod q)
   polyB : Polynomial (ZMod q)
 
-def MAProverMsg.toD (msg : MAProverMsg q) : CoordRingElt q :=
+def MAProverMsg.toD {k : ℕ} (msg : MAProverMsg q k) : CoordRingElt q :=
   { a := msg.polyA, b := msg.polyB }
 
 /-- A `CoordRingElt` is the zero element of `F_q[E]` iff both its `a(x)`
@@ -148,8 +147,8 @@ def CoordRingElt.isZero (D : CoordRingElt q) : Prop :=
     passing the admissible-set check has `D = msg.toD ≠ 0` in `F_q[E]`.
     This is the form the soundness proof actually consumes (paper
     obs:zero-divisor: the log-derivative identity requires `D ≠ 0`). -/
-theorem admSet_implies_toD_nonzero (stmt : DlogStatement q)
-    (msg : MAProverMsg q) (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
+theorem admSet_implies_toD_nonzero {k : ℕ} (stmt : DlogStatement q)
+    (msg : MAProverMsg q k) (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
     ¬ msg.toD.isZero := by
   intro hZero
   obtain ⟨ha, hb⟩ := hZero
@@ -180,9 +179,10 @@ recovers the degree-zero accounting via
 /-- Target divisor coefficients for the honest prover's `D`:
     `+1` at `-P`, `n_i` at each `B_i` (with duplicates summed), and
     `-degE(D)` at `∞`. All other points get `0`. -/
-noncomputable def honestDivisorCoeffs (E : ECSetup) (stmt : DlogStatement E.q)
+noncomputable def honestDivisorCoeffs {msgK : ℕ} (E : ECSetup)
+    (stmt : DlogStatement E.q)
     (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (msg : MAProverMsg E.q) : ECPoint E → ℤ
+    (msg : MAProverMsg E.q msgK) : ECPoint E → ℤ
   | 0 => -(msg.toD.degE : ℤ)
   | @WeierstrassCurve.Affine.Point.some _ _ _ x y _ =>
       (if (x, y) = (stmt.target.1, -stmt.target.2) then 1 else 0) +
@@ -208,11 +208,11 @@ noncomputable def honestDivisorCoeffs (E : ECSetup) (stmt : DlogStatement E.q)
       `div(msg.toD)`, no opaque "exists f" claim required).
     * **On-curve wellformedness**: `(-P)` and every `B_i` are points
       on `E`. (Statement-level invariants for the dlog relation.) -/
-def MAProverMsg.isHonestFor (E : ECSetup) (msg : MAProverMsg E.q)
-    (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (hkm : stmt.k = msg.k) : Prop :=
+def MAProverMsg.isHonestFor (E : ECSetup) (stmt : DlogStatement E.q)
+    (msg : MAProverMsg E.q stmt.k) (wit : DlogWitness E.q)
+    (hk : stmt.k = wit.k) : Prop :=
   (∀ i : Fin stmt.k,
-      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+      msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
   ∧ splitsOnE E msg.toD
   ∧ (∀ R : ECPoint E,
       divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R)
@@ -223,14 +223,8 @@ structure MAChallenge (q : ℕ) [Fact (Nat.Prime q)] where
   A₀ : ZMod q × ZMod q
   A₁ : ZMod q × ZMod q
 
-def verifierDegreeCheck (msg : MAProverMsg q) (d : ℕ) : Prop :=
+def verifierDegreeCheck {k : ℕ} (msg : MAProverMsg q k) (d : ℕ) : Prop :=
   msg.toD.degE ≤ d
-
-/-- Helper to evaluate `msg.m` at an index of statement type,
-    transporting via `hk : stmt.k = msg.k`. Hides the `hk ▸` cast. -/
-def MAProverMsg.mAt {stmt : DlogStatement q} {msg : MAProverMsg q}
-    (hk : stmt.k = msg.k) (i : Fin stmt.k) : ZMod q :=
-  msg.m (hk ▸ i)
 
 /-- The MA verifier accepts iff the degree, admissible-set, AND
     log-derivative checks all pass. This matches paper `\protMA`
@@ -243,12 +237,11 @@ def MAProverMsg.mAt {stmt : DlogStatement q} {msg : MAProverMsg q}
     branch in `extractedScalars` (the paper's special case), rather than
     through a verifier-side check on `D(-P)`. -/
 def maVerifierAccepts (E : ECSetup) (stmt : DlogStatement E.q)
-    (msg : MAProverMsg E.q) (chal : MAChallenge E.q)
-    (hk : stmt.k = msg.k) : Prop :=
+    (msg : MAProverMsg E.q stmt.k) (chal : MAChallenge E.q) : Prop :=
   verifierDegreeCheck msg stmt.degBound ∧
   stmt.admSet (msg.polyA, msg.polyB) ∧
   logDerivCheckFn E msg.toD stmt.target stmt.k stmt.bases
-    (fun i => msg.m (hk ▸ i)) chal.A₀ chal.A₁ = 0
+    msg.m chal.A₀ chal.A₁ = 0
 
 /-! ## Three-Round IP Protocol -/
 
@@ -281,7 +274,7 @@ noncomputable def computeA₂ (chal : MAChallenge q) : ZMod q × ZMod q :=
     and g is determined by L and P (check 3).
     So acceptance uniquely determines msg3. -/
 def ipVerifierAccepts (E : ECSetup) (stmt : DlogStatement E.q)
-    (msg1 : MAProverMsg E.q) (chal : MAChallenge E.q)
+    (msg1 : MAProverMsg E.q stmt.k) (chal : MAChallenge E.q)
     (A₂ : ZMod E.q × ZMod E.q)
     (msg3 : IPProverMsg3 E.q) : Prop :=
   let D := msg1.toD
@@ -300,7 +293,7 @@ def ipVerifierAccepts (E : ECSetup) (stmt : DlogStatement E.q)
     If D(A₀) ≠ 0 and D(A₁) ≠ 0 and L(-P) ≠ 0,
     then there is at most one msg3 the verifier accepts. -/
 theorem ip_unique_third_round (E : ECSetup)
-    (stmt : DlogStatement E.q) (msg1 : MAProverMsg E.q)
+    (stmt : DlogStatement E.q) (msg1 : MAProverMsg E.q stmt.k)
     (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
     (msg3 msg3' : IPProverMsg3 E.q)
     (hD₀ : msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0)
@@ -332,7 +325,7 @@ theorem ip_unique_third_round (E : ECSetup)
     (`ipUniqueThirdRound_holds`); the headline IP theorems conjoin it
     with the MA dichotomy. -/
 def IPUniqueThirdRound (E : ECSetup) (stmt : DlogStatement E.q)
-    (msg1 : MAProverMsg E.q) : Prop :=
+    (msg1 : MAProverMsg E.q stmt.k) : Prop :=
   ∀ (chal : MAChallenge E.q) (A₂ : ZMod E.q × ZMod E.q)
       (msg3 msg3' : IPProverMsg3 E.q),
       msg1.toD.eval chal.A₀.1 chal.A₀.2 ≠ 0 →
@@ -345,7 +338,7 @@ def IPUniqueThirdRound (E : ECSetup) (stmt : DlogStatement E.q)
       msg3 = msg3'
 
 theorem ipUniqueThirdRound_holds (E : ECSetup)
-    (stmt : DlogStatement E.q) (msg1 : MAProverMsg E.q) :
+    (stmt : DlogStatement E.q) (msg1 : MAProverMsg E.q stmt.k) :
     IPUniqueThirdRound E stmt msg1 :=
   fun chal A₂ msg3 msg3' hD₀ hD₁ hD₂ hLP hAcc hAcc' =>
     ip_unique_third_round E stmt msg1 chal A₂ msg3 msg3'

@@ -66,15 +66,12 @@ private theorem binarySupport_eq_support :
     binarySupport stmt wit hk h_binary = support := by
   native_decide
 
-private noncomputable def msg : MAProverMsg E17.q where
-  k := 3
+private noncomputable def msg : MAProverMsg E17.q stmt.k where
   m := fun _ => 1
   polyA := (LineAccum.lineBuild_singletons E17
     (binarySupport stmt wit hk h_binary)).a
   polyB := (LineAccum.lineBuild_singletons E17
     (binarySupport stmt wit hk h_binary)).b
-
-private theorem hkm : stmt.k = msg.k := rfl
 
 private theorem aff_1_6 :
     ECPoint.affine E17 (1 : ZMod E17.q) (6 : ZMod E17.q) =
@@ -142,7 +139,7 @@ private theorem h_valid : relDlog E17 stmt wit := by
 example :
     ((E17.points ×ˢ E17.points).filter
         (fun p : (ZMod E17.q × ZMod E17.q) × (ZMod E17.q × ZMod E17.q) =>
-          ¬ maVerifierAccepts E17 stmt msg ⟨p.1, p.2⟩ hkm)).card
+          ¬ maVerifierAccepts E17 stmt msg ⟨p.1, p.2⟩)).card
       ≤ (3 * numZeros E17 msg.toD + 4) * E17.numAffine := by
   have h_support_len : (binarySupport stmt wit hk h_binary).length = 4 := by
     native_decide
@@ -151,7 +148,7 @@ example :
   have h_deg_e : msg.toD.degE = (binarySupport stmt wit hk h_binary).length := by
     rw [h_toD, binarySupport_eq_support, support_degE]
   have h_scalars : ∀ i : Fin stmt.k,
-      msg.m (hkm ▸ i) = ((wit.scalars (hk ▸ i) : ZMod E17.q)) := by
+      msg.m i = ((wit.scalars (hk ▸ i) : ZMod E17.q)) := by
     intro i
     fin_cases i <;> rfl
   have h_target_on : (stmt.target.1, -stmt.target.2) ∈ E17.points := by
@@ -173,7 +170,7 @@ example :
   have h_deg_k : msg.toD.degE ≤ stmt.degBound := by
     rw [h_deg_e, h_support_len]
     norm_num [stmt]
-  exact ma_completeness_binary_point_certificate E17 stmt wit hk msg hkm
+  exact ma_completeness_binary_point_certificate E17 stmt wit hk msg
     h_binary h_valid h_toD h_deg_e h_scalars h_target_on h_bases_on h_nodup h_point_chain
     rfl h_deg h_deg_k
 
