@@ -202,9 +202,6 @@ vanishes on enough defined pairs, the divisor argument recovers the group
 equation and proves the extracted scalars valid. A message whose degree check
 fails is handled before either case: its accept set is empty.
 
-This is why `ma_soundness` is the right name. The extractor is just a fixed
-algorithm; the theorem says that frequent acceptance makes its output valid.
-
 ## MA Completeness
 
 Soundness quantifies over malicious messages. Completeness is the opposite
