@@ -1,4 +1,4 @@
-# MA soundness for divisor protocols
+# MA Soundness for Divisor Protocols
 
 This repository formalizes the divisor techniques behind the
 Eagen/Bassa/Parker protocols in Lean 4. The headline result is a soundness
@@ -15,7 +15,7 @@ does not have to come from a witness at all. Soundness is precisely the claim
 that a malicious message cannot be accepted too often unless the fixed
 recovery function turns it into a valid witness.
 
-## The statement, message, and relation
+## The Statement, Message, and Relation
 
 `DlogStatement E.q` contains the public data:
 
@@ -34,12 +34,12 @@ it is shorthand for `stmt.degBound`. These proof arguments certify the public
 instance; none says that the prover is honest.
 
 The structure does not define a language by itself. A `DlogWitness` separately
-bundles its scalars with their range proof. The relation `relDlog E stmt wit`
-then says that `(stmt, wit)` has matching arity and satisfies the following
-group equation:
+bundles its scalars with their range proof. Write `P = stmt.target` and
+`B_i = stmt.bases i`. The relation `relDlog E stmt wit` then says that
+`(stmt, wit)` has matching arity and satisfies the following group equation:
 
 $$
-\operatorname{target} = \sum_{i=0}^{k-1} [n_i]\operatorname{bases}_i
+P = \sum_{i=0}^{k-1} [n_i] B_i
 $$
 
 Here the `n_i` are signed integers. This is deliberate: the extractor's
@@ -55,7 +55,7 @@ special case uses the scalar `-1`.
 There is no honesty field in this structure. The soundness theorem quantifies
 over all of it.
 
-## The recovery function
+## The Recovery Function
 
 The public recovery interface is:
 
@@ -78,7 +78,7 @@ necessary special case: if some base is `-target`, the extractor returns `-1`
 at the least such index and zero elsewhere. This already gives:
 
 $$
-[-1](-\operatorname{target}) = \operatorname{target}
+[-1](-P) = P
 $$
 
 The final finite check verifies `|n_i| < stmt.degBound` for every extracted
@@ -87,39 +87,36 @@ the message polynomials are not inspected. `Tests/MAExtractorExec.lean`
 compiles the function to native code and evaluates the special branch to
 `some (1, -1)`.
 
-## Arthur's experiment
+## Arthur's Experiment
 
 Arthur samples uniformly from `validPairs E`: pairs of affine curve points
-which are distinct and do not form a vertical chord. For fixed `stmt` and
-`msg`, VCVio defines the acceptance probability as:
+which are distinct and do not form a vertical chord. Write `V = validPairs E`,
+`s = stmt`, `m = msg`, and let `A(E,s,m,A₀,A₁)` mean that the MA verifier
+accepts. For fixed `stmt` and `msg`, VCVio defines the acceptance probability
+`p_A` as:
 
 $$
-p_{\mathrm{acc}} =
-\Pr_{(A_0,A_1)\leftarrow\operatorname{validPairs}(E)}
-[\operatorname{maVerifierAccepts}(E,\operatorname{stmt},\operatorname{msg},A_0,A_1)]
+p_A = \Pr_{(A_0,A_1)\leftarrow V}[A(E,s,m,A_0,A_1)]
 $$
 
 The formal bridge `maAcceptanceProbability_eq_card_div` proves that this is
-exactly the finite ratio:
+exactly the finite ratio below, where `S_A = maAcceptSet E stmt msg hkm`:
 
 $$
-p_{\mathrm{acc}} =
-\frac{|\operatorname{maAcceptSet}(E,\operatorname{stmt},\operatorname{msg})|}
-{|\operatorname{validPairs}(E)|}
+p_A = \frac{|S_A|}{|V|}
 $$
 
 Write `d = stmt.degBound`, `k = stmt.k`, and
 `n = E.points.card`. The advertised knowledge error is:
 
 $$
-\varepsilon(E,\operatorname{stmt}) =
-\frac{24(d+k+3)n}{|\operatorname{validPairs}(E)|}
+\varepsilon(E,s) = \frac{24(d+k+3)n}{|V|}
 $$
 
 Observe that the error depends on the public statement and the curve, not on
 the prover's claimed message degree.
 
-## The headline theorem
+## The Headline Theorem
 
 The named predicate is intentionally boring: it says that the *exact* output
 of `maExtractor`, rather than some unrelated existential witness, is valid.
@@ -180,14 +177,13 @@ or are derived from acceptance:
 Hence a malicious message cannot manufacture the theorem's antecedent by
 failing a side condition; failure gives acceptance probability zero.
 
-## Why the implication is non-vacuous
+## Why the Implication Is Non-Vacuous
 
-The implication points in the useful direction:
+Write `R(E,s,m)` for `maExtractorValid E stmt msg`. The implication points in
+the useful direction:
 
 $$
-\varepsilon(E,\operatorname{stmt}) < p_{\mathrm{acc}}
-\quad\Longrightarrow\quad
-\operatorname{maExtractorValid}(E,\operatorname{stmt},\operatorname{msg})
+\varepsilon(E,s) < p_A \quad\Longrightarrow\quad R(E,s,m)
 $$
 
 The antecedent is not a reformulation of the conclusion, nor does it assume
@@ -201,9 +197,7 @@ look at `msg` or assume `hAccept`. We also prove the exact arithmetic
 criterion, provided `validPairs E` is nonempty:
 
 $$
-\varepsilon(E,\operatorname{stmt}) < 1
-\quad\Longleftrightarrow\quad
-24(d+k+3)n < |\operatorname{validPairs}(E)|
+\varepsilon(E,s) < 1 \quad\Longleftrightarrow\quad 24(d+k+3)n < |V|
 $$
 
 Finally, `maSoundnessError_lt_one_of_accept` records the independent sanity
@@ -212,7 +206,7 @@ since every VCVio event probability is at most one. These facts are kept
 separate from `ma_soundness`; adding `ε < 1` as another premise would merely
 repeat a proved consequence of `hLargeQ`.
 
-## What the proof does
+## What the Proof Does
 
 The proof is a short probabilistic wrapper around a long counting argument:
 
@@ -233,7 +227,7 @@ fails is handled before either case: its accept set is empty.
 This is why `ma_soundness` is the right name. The extractor is just a fixed
 algorithm; the theorem says that frequent acceptance makes its output valid.
 
-## MA completeness
+## MA Completeness
 
 Soundness quantifies over malicious messages. Completeness is the opposite
 direction and therefore has an honesty premise. `ma_completeness` starts from
@@ -250,41 +244,13 @@ decidable `SafePairs` general-position condition. These results are separate
 from soundness; no honesty predicate is used by `ma_soundness` or its proof
 chain.
 
-## Axiom surface and independent checking
-
-The axiom-free headlines live in `Divisor/Headlines.lean`. Their closures are
-the Lean/mathlib core three: `propext`, `Classical.choice`, and `Quot.sound`.
-There is no `sorry` in the library proof chain.
-
-The project has one named mathematical axiom,
-`Divisor.hasse_weil_textbook`, in
-`Divisor/Axioms/AxiomHasseWeil.lean`. It is the classical Hasse-Weil point
-count:
-
-```lean
-axiom hasse_weil_textbook (E : ECSetup) :
-  |(((E.numPoints : ℤ) - E.q - 1 : ℤ) : ℝ)| ≤
-    2 * Real.sqrt (E.q : ℝ)
-```
-
-Within the library, only `Divisor/Hasse.lean` imports this axiom;
-`Challenge.lean` also imports it so the independent judge can pin its exact
-statement. The main theorem above is in the point-count currency and does not
-depend on it. The Hasse-priced corollaries replace explicit point-count
-hypotheses by bounds in `q`; their names end in `_hasse`. Corresponding
-`_of_count` theorems accept two checkable integer point-count bounds instead
-and remain axiom-free.
-
-`Tests/AxiomClosurePin.lean` and `Tests/F5RegressionAxiomClosure.lean` pin the
-exact axiom closure of the headlines. CI also compares their exported types
-against `Challenge.lean`, checks the axiom allowlist, and replays the export
-through a fresh Lean kernel. The details are in `Judge/README.md`.
-
 ## Build
 
-The repository pins Lean and all dependencies:
+The repository pins Lean and all dependencies. Fetch the matching Mathlib
+cache, then build:
 
 ```bash
+lake exe cache get
 lake build
 ```
 
