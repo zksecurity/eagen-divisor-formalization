@@ -47,30 +47,18 @@ $$
 P, B_i \in \mathbb{E}(\mathbb{F}_q)
 $$
 
-Thus `d` is not another input hidden beside `stmt`: it is shorthand for
-`stmt.degBound`. These proof arguments certify the public instance; none says
-that the prover is honest.
-
-The structure does not define a language by itself. A `DlogWitness` separately
-bundles its scalars with their range proof. The relation `relDlog E stmt wit`
-then says that `(stmt, wit)` has matching arity and satisfies the following
-group equation:
+We then define the relation `relDlog E stmt wit` that says that `wit`, containing scalars $n_i$, satisfies the following group equation:
 
 $$
 P = \sum_{i=0}^{k-1} [n_i] \cdot B_i
 $$
 
-Here the `n_i` are signed integers. This is deliberate: the extractor's
-special case uses the scalar `-1`.
+Here the $n_i$ are *signed integers*. This is deliberate: the extractor's special case uses the scalar `-1`.
 
 `MAProverMsg E.q stmt.k` is just prover-controlled data:
 
 - residues `m : Fin stmt.k → ZMod q`;
-- polynomials `polyA` and `polyB`, representing the coordinate-ring element
-  `msg.toD`.
-
-There is no honesty field in this structure. The soundness theorem quantifies
-over all of it.
+- polynomials `polyA` and `polyB`, representing the coordinate-ring element `msg.toD`.
 
 ## The Recovery Function
 
