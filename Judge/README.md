@@ -47,6 +47,16 @@ this project's `lakefile.toml`, the Lean kernel, and the sandbox.
 axiom**: it is the statement of record. The definitions it imports
 are part of that statement.
 
+That last sentence has teeth. The judge compares *exported types*, and
+challenge and solution resolve a definition such as
+`Divisor.CoordRingElt.degE` through the same module. Changing the body
+of such a definition changes what every frozen statement mentioning it
+asserts, while the judge stays green. Definitions reachable from
+`Challenge.lean` therefore need the same review as the statements
+themselves; where their intended semantics is not evident from the
+statement, it is pinned separately as a theorem under `Tests/` (for
+`degE`, in `Tests/DegreeExactRegression.lean`).
+
 ## Running locally
 
 Build the three binaries (once):

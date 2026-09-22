@@ -60,6 +60,14 @@ Here the $n_i$ are *signed integers*. This is deliberate: the extractor's specia
 - residues `m : Fin stmt.k → ZMod q`;
 - polynomials `polyA` and `polyB`, representing the coordinate-ring element `msg.toD`.
 
+The element `D = a(x) - b(x) y` has a pole at the point at infinity, and its
+order there is `msg.toD.degE`. This is the *exact* order: `degE` equals the
+degree of the norm polynomial `a² - b² (x³ + Ax + B)` for every `D`, with no
+side condition (`Divisor.normPoly_natDegree_eq`). A vertical line `x - c` has
+order two, a nonzero constant order zero, and `-y` order three. This matters
+for both the public degree budget and the honest-prover divisor, which are
+stated in terms of `degE`.
+
 ## The Recovery Function
 
 The public recovery interface is:
@@ -166,7 +174,10 @@ premise saying that `msg` is honest, admissible, nonzero, split over the base
 field, or within the degree bound. Those checks are internal to the verifier
 or are derived from acceptance:
 
-- If `msg.toD.degE > stmt.degBound`, the verifier rejects at every point.
+- If `msg.toD.degE > stmt.degBound`, the verifier rejects at every point. Since
+  `degE` is the exact pole order, the smallest admitted budget `d = 2` accepts
+  exactly the messages `D = a(x)` with `deg a ≤ 1`, the vertical lines and
+  constants.
 - If `(msg.polyA, msg.polyB)` is outside `stmt.admSet`, the verifier rejects at
   every point.
 - If the verifier accepts, admissibility and the statement's
@@ -211,6 +222,18 @@ built with `LineAccum.lineBuild_singletons` for binary witnesses under the
 decidable `SafePairs` general-position condition. These results are separate
 from soundness; no honesty predicate is used by `ma_soundness` or its proof
 chain.
+
+The honesty premise pins the divisor of `msg.toD` to the target divisor, whose
+coefficient at infinity is `-degE`. Because `degE` is exact, that equation
+matches `divisorOfD` unconditionally and
+`LineAccum.degE_lineBuild_singletons_eq_length` turns the support-length
+hypothesis `msg.toD.degE = support.length` into a theorem, at every length. The
+smallest case is a two-point support `{P, -P}` with `D = x - x(P)`:
+`Tests/Length2CompletenessSmoke.lean` builds that instance on a concrete curve,
+proves every field of the honesty record, and instantiates both
+`ma_completeness_binary_length2` and `ma_completeness_binary_any_length_cert`
+at public degree bound two. `Tests/DegreeExactRegression.lean` pins the degree
+semantics the honesty record depends on.
 
 ## Build
 

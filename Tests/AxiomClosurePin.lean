@@ -38,6 +38,13 @@
   The `example` block below additionally re-states the
   divisor-multiplicity theorem's exact shape, guarding the
   `splitsOnE` gating of its accounting and group-sum-zero clauses.
+
+  Axiom pins cannot see a change in what a statement *means*. The
+  meaning of every `degE`-bearing statement here rests on
+  `CoordRingElt.degE` being the exact pole order at infinity; that is
+  pinned separately, as an equation against the norm polynomial, in
+  `Tests/DegreeExactRegression.lean`, and exercised end to end in
+  `Tests/Length2CompletenessSmoke.lean`.
 -/
 import Divisor.SafeSupport
 import Divisor.Hasse
@@ -588,3 +595,31 @@ info: 'Divisor.validPairs_card_ge_q_of_count' depends on axioms: [propext,
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.validPairs_card_ge_q_of_count
+
+/-! ## Exact degree at infinity
+
+`CoordRingElt.degE` is the degree of the norm polynomial, with no
+honesty or nonzero premise, and the singleton line build attains its
+support length. Both underpin the binary completeness chain above. -/
+
+/--
+info: 'Divisor.normPoly_natDegree_eq' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.normPoly_natDegree_eq
+/--
+info: 'Divisor.LineAccum.degE_lineBuild_singletons_eq_length' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.LineAccum.degE_lineBuild_singletons_eq_length
+/--
+info: 'Divisor.LineAccum.degE_lineBuild_singletons_eq_length_of_pointChordCase' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Divisor.LineAccum.degE_lineBuild_singletons_eq_length_of_pointChordCase

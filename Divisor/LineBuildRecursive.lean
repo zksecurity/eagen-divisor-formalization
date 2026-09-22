@@ -876,41 +876,21 @@ theorem ordAt_sum_eq_degE_nat_of_isHonestForExplicit
   have h := ordAt_sum_eq_degE_of_isHonestForExplicit E stmt wit hk msg h_honest
   exact_mod_cast h
 
+/-- Agreement of `degE` with the norm degree.
+
+    This is now a direct corollary of `normPoly_natDegree_eq`, which
+    holds for every coordinate-ring element: with `degE` the exact pole
+    order at infinity, `divisorOfD` and `honestDivisorCoeffs` place the
+    same coefficient there unconditionally. The honesty premise is
+    retained only so the downstream accounting lemmas keep their
+    signatures; the equation itself does not depend on it, which is what
+    makes the support-length equation satisfiable at length two. -/
 theorem natDegree_normPoly_eq_degE_of_isHonestForExplicit
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (msg : MAProverMsg E.q stmt.k)
-    (h_honest : msg.IsHonestForExplicit E stmt wit hk) :
-    (normPoly E msg.toD).natDegree = msg.toD.degE := by
-  -- ∑ ordAt ≤ natDegree ≤ degE (existing infrastructure).
-  -- ∑ ordAt = degE (step 4).
-  -- Pinch.
-  have hSum := ordAt_sum_eq_degE_nat_of_isHonestForExplicit E stmt wit hk msg h_honest
-  have hLe1 : (∑ P ∈ E.points, ordAt E msg.toD P) ≤ (normPoly E msg.toD).natDegree := by
-    classical
-    rw [sum_E_points_eq_sum_fiberwise E]
-    by_cases hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)
-    · calc (∑ x₀ : ZMod E.q,
-              ∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E msg.toD P)
-          ≤ ∑ x₀ : ZMod E.q, rootMultiplicity x₀ (normPoly E msg.toD) :=
-            Finset.sum_le_sum (fun x₀ _ => sum_ordAt_fst_eq_le E msg.toD hD x₀)
-        _ ≤ (normPoly E msg.toD).natDegree :=
-            sum_rootMultiplicity_le_natDegree E (normPoly E msg.toD)
-    · push Not at hD
-      have : ∀ P ∈ E.points, ordAt E msg.toD P = 0 :=
-        fun P _ => ordAt_eq_zero_of_zero E hD P
-      have h_inner : ∀ x₀ : ZMod E.q,
-          (∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E msg.toD P) = 0 := by
-        intro x₀
-        apply Finset.sum_eq_zero
-        intro P hP
-        exact this P (Finset.mem_filter.mp hP).1
-      rw [show (∑ x₀ : ZMod E.q,
-              ∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E msg.toD P) = 0 from
-            Finset.sum_eq_zero (fun x₀ _ => h_inner x₀)]
-      exact Nat.zero_le _
-  have hLe2 : (normPoly E msg.toD).natDegree ≤ msg.toD.degE :=
-    normPoly_natDegree_le E msg.toD
-  omega
+    (_h_honest : msg.IsHonestForExplicit E stmt wit hk) :
+    (normPoly E msg.toD).natDegree = msg.toD.degE :=
+  normPoly_natDegree_eq E msg.toD
 
 /-! ## hAccount from isHonestForExplicit (no splitsOnE needed) -/
 

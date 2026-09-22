@@ -121,7 +121,6 @@ private theorem support_degE :
       (Polynomial.monic_X : (Polynomial.X : (ZMod E17.q)[X]).Monic).ne_zero]
     simp
   rw [hnat]
-  norm_num
 
 private theorem h_valid : relDlog E17 stmt wit := by
   refine ⟨hk, ?_⟩
