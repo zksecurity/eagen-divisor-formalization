@@ -18,6 +18,11 @@
   The public degree bound is `2`, the smallest `ma_soundness` admits
   (`hd2 : 2 ≤ stmt.degBound`); the old definition rejected *every*
   message at that bound.
+
+  The same message also inhabits every judged MA completeness headline:
+  `ma_completeness` and `ma_completeness_q` through the protocol predicate
+  `isHonestFor`, and both any-length forms (`SafePairs` and its
+  certificate).
 -/
 import Divisor.Headlines
 import Divisor.IsHonestForBinary
@@ -201,6 +206,39 @@ theorem any_length_completeness_at_length_two :
     h_toD_eq h_degE_eq h_scalars_match h_target_on h_bases_on h_nodup
     (by rw [binarySupport_eq_support]; decide) rfl h_deg h_deg_k
 
+/-! ## Protocol-level honesty
+
+The binary record implies the protocol predicate `isHonestFor`, so the
+general completeness headlines are inhabited by the same message. -/
+
+private theorem h_honest : msg.isHonestFor E17 stmt wit hk :=
+  isHonestFor_of_isHonestForBinary honest
+    (by rw [show honest.Ps = binarySupport stmt wit hk h_binary from rfl,
+      h_support_len]) h_extras
+
+private theorem h_D : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
+  admSet_implies_toD_nonzero stmt msg h_adm
+
+/-- The judged `ma_completeness`, instantiated. -/
+theorem completeness :
+    (maRejectSet E17 stmt msg).card ≤ (3 * stmt.degBound + 4) * E17.points.card :=
+  ma_completeness E17 stmt wit hk h_valid msg h_deg h_deg_k h_adm h_honest h_D
+
+/-- The judged `ma_completeness_q`, instantiated. -/
+theorem completeness_q :
+    (maRejectSet E17 stmt msg).card ≤ (6 * (stmt.degBound + 1) + 6) * E17.q :=
+  ma_completeness_q E17 stmt wit hk h_valid msg h_deg h_deg_k h_adm h_honest h_D
+
+/-- The judged `ma_completeness_binary_any_length`, instantiated through
+    the semantic general-position hypothesis `SafePairs`. -/
+theorem any_length_completeness_safePairs :
+    (maRejectSet E17 stmt msg).card
+      ≤ (3 * numZeros E17 msg.toD + 4) * E17.numAffine :=
+  ma_completeness_binary_any_length E17 stmt wit hk msg h_binary h_valid
+    h_toD_eq h_degE_eq h_scalars_match h_target_on h_bases_on h_nodup
+    (LineAccum.SafePairs.of_cert E17 h_ps_on
+      (by rw [binarySupport_eq_support]; decide)) rfl h_deg h_deg_k
+
 /-! ## Axiom closure
 
 The instantiations stay at the Lean core three, so the non-vacuity
@@ -227,5 +265,26 @@ info: 'Tests.Length2CompletenessSmoke.any_length_completeness_at_length_two' dep
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms any_length_completeness_at_length_two
+/--
+info: 'Tests.Length2CompletenessSmoke.completeness' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms completeness
+/--
+info: 'Tests.Length2CompletenessSmoke.completeness_q' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms completeness_q
+/--
+info: 'Tests.Length2CompletenessSmoke.any_length_completeness_safePairs' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms any_length_completeness_safePairs
 
 end Tests.Length2CompletenessSmoke
