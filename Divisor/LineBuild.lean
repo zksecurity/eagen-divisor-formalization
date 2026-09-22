@@ -834,34 +834,6 @@ theorem AccumInvStrong.vanish_of_residue
   have hle := AccumInvStrong.target_le E h P hPon
   exact eval_eq_zero_of_localMult_pos E a.poly hPon (by omega)
 
-/-!
-Major follow-up obligations needed to make `PairwiseCombineHyp`
-unconditional:
-
-* `localMult_mulCoordRingElt_ge_add`:
-  lower-bound multiplicity of a product by the sum of local
-  multiplicities.
-
-* `localMult_divLin_same_fiber`:
-  if both coordinates of `D` are divisible by `X - C P.1`, then
-  `localMult E (D.divLin P.1) P + verticalTarget P =
-   localMult E D P`.
-
-* `localMult_chordCoordRingElt_exact`:
-  pointwise local multiplicity of `chordCoordRingElt E A B`; this is
-  the `L(A,B)` term in the identity, including tangent double contact.
-
-* `accumInvStrong_combine_oo`, `accumInvStrong_combine_ol`,
-  `accumInvStrong_combine_or`, `accumInvStrong_combine_vertical`,
-  `accumInvStrong_combine_distinct`, `accumInvStrong_combine_tangent`:
-  the five-plus preservation cases against `AccumInvStrong`.
-
-* `pairwiseCombineHyp_of_accumInvStrong`:
-  convert the strengthened preservation theorem back to the existing
-  `LineAccum.PairwiseCombineHyp E`, or replace downstream uses of the
-  old invariant with `AccumInvStrong` directly.
--/
-
 theorem localMult_chordCoordRingElt_at_left
     {P Q : ZMod E.q × ZMod E.q}
     (hP : P ∈ E.points) :
@@ -936,12 +908,6 @@ theorem AccumInvStrong.to_AccumInv
   · intro P hP
     exact AccumInvStrong.vanish_of_residue E h hP (hres_on P hP)
   · exact AccumInvStrong.natDegree E h
-
-/-- The synchronized `Forall₂` form: a list of absorbed sub-lists
-    and a list of accumulators, pointwise satisfying `AccumInv`. -/
-def AccumInvList (xss : List (List (ZMod E.q × ZMod E.q)))
-    (accs : List (Accum E)) : Prop :=
-  List.Forall₂ (AccumInv E) xss accs
 
 /-- The synchronized `Forall₂` form for the strengthened invariant. -/
 def AccumInvStrongList (xss : List (List (ZMod E.q × ZMod E.q)))
@@ -2435,51 +2401,6 @@ noncomputable def levelInitSingleton
   { point := ECPoint.affine E P.1 P.2,
     poly := { a := X - C P.1, b := 0 } }
 
-theorem accumInv_levelInitSingleton
-    (P : ZMod E.q × ZMod E.q) (hP : P ∈ E.points) :
-    AccumInv E [P] (levelInitSingleton E P) := by
-  classical
-  have hns : E.toW.toAffine.Nonsingular P.1 P.2 :=
-    E.equation_iff_nonsingular.mp ((E.equation_iff P.1 P.2).mpr (E.hOnCurve _ hP))
-  refine ⟨?_, ?_, ?_, ?_⟩
-  · -- point = sumOnE [P].
-    show (levelInitSingleton E P).point = sumOnE E [P]
-    rw [show sumOnE E [P] = ECPoint.affineOfMem E hP + sumOnE E [] from sumOnE_cons E hP]
-    rw [sumOnE_nil, add_zero]
-    show ECPoint.affine E P.1 P.2 = ECPoint.affineOfMem E hP
-    exact ECPoint.affine_eq_affineOfMem E hP
-  · -- Vanishing at every Q ∈ [P].
-    intro Q hQ
-    rw [List.mem_singleton] at hQ
-    rw [hQ]
-    show (X - C P.1).eval P.1 - (0 : (ZMod E.q)[X]).eval P.1 * P.2 = 0
-    simp
-  · -- Residue: vertical line vanishes at (P.1, -P.2) too.
-    intro Q hQ
-    show ((X - C P.1 : (ZMod E.q)[X])).eval Q.1 - ((0 : (ZMod E.q)[X])).eval Q.1 * Q.2 = 0
-    have h_levelInit_pt : (levelInitSingleton E P).point = ECPoint.affine E P.1 P.2 := rfl
-    rw [h_levelInit_pt] at hQ
-    rw [ECPoint.affine_of_nonsingular E hns] at hQ
-    have hQ_eq : Q = (P.1, -P.2) := by
-      have : negCoords E (.some _ _ hns : ECPoint E) = some (P.1, -P.2) := rfl
-      rw [this] at hQ
-      exact (Option.some.inj hQ).symm
-    rw [hQ_eq]
-    show (X - C P.1).eval P.1 - (0 : (ZMod E.q)[X]).eval P.1 * (-P.2) = 0
-    simp
-  · -- Degree.
-    show (normPoly E { a := X - C P.1, b := 0 }).natDegree
-        = [P].length + (if (levelInitSingleton E P).point = (0 : ECPoint E) then 0 else 1)
-    have h_levelInit_pt : (levelInitSingleton E P).point = ECPoint.affine E P.1 P.2 := rfl
-    have h_pt_ne : (levelInitSingleton E P).point ≠ (0 : ECPoint E) := by
-      rw [h_levelInit_pt, ECPoint.affine_of_nonsingular E hns]
-      exact WeierstrassCurve.Affine.Point.some_ne_zero hns
-    rw [if_neg h_pt_ne]
-    show (normPoly E { a := X - C P.1, b := 0 }).natDegree = 2
-    rw [normPoly_eq]
-    show ((X - C P.1) ^ 2 - 0 ^ 2 * curveX E).natDegree = 2
-    simp [Polynomial.natDegree_pow]
-
 theorem levelInitSingleton_poly_not_both_zero
     (P : ZMod E.q × ZMod E.q) :
     ¬ ((levelInitSingleton E P).poly.a = 0 ∧
@@ -2612,24 +2533,6 @@ def level0SingletonPoints (Ps : List (ZMod E.q × ZMod E.q)) :
     (Ps : List (ZMod E.q × ZMod E.q)) :
     (level0_singletons E Ps).map (·.point) = level0SingletonPoints E Ps := by
   simp [level0_singletons, level0SingletonPoints, levelInitSingleton]
-
-theorem accumInvList_level0_singletons
-    (Ps : List (ZMod E.q × ZMod E.q))
-    (hPs_on : ∀ P ∈ Ps, P ∈ E.points) :
-    AccumInvList E (Ps.map (fun P => [P])) (level0_singletons E Ps) := by
-  classical
-  induction Ps with
-  | nil =>
-    show List.Forall₂ _ [] []
-    exact List.Forall₂.nil
-  | cons P rest ih =>
-    have h_rest_on : ∀ Q ∈ rest, Q ∈ E.points :=
-      fun Q hQ => hPs_on Q (List.mem_cons_of_mem P hQ)
-    have h_ih := ih h_rest_on
-    show List.Forall₂ _ ([P] :: rest.map (fun P => [P]))
-        (levelInitSingleton E P :: rest.map (levelInitSingleton E))
-    refine List.Forall₂.cons ?_ h_ih
-    exact accumInv_levelInitSingleton E P (hPs_on P (List.mem_cons_self))
 
 theorem accumInvStrongList_level0_singletons
     (Ps : List (ZMod E.q × ZMod E.q))
@@ -8314,11 +8217,7 @@ theorem lineBuild_spec_length2
     show ((X - C P.1) ^ 2 - 0 ^ 2 * curveX E).natDegree = 2
     simp [Polynomial.natDegree_pow]
 
-/-! ## level_step preservation (conditional on per-pair combine)
-
-If we know `AccumInv` is preserved under `combine` for all
-adjacent pairs in the input, then `AccumInvList` propagates
-through one application of `level_step`.
+/-! ## Pairing sub-lists
 
 The `pairUp` function on a list of sub-lists: pair adjacent and
 append, leaving any trailing odd-length element forwarded. -/
@@ -8541,42 +8440,11 @@ theorem levelStepCombineChordCase_of_levelStepPointChordCase :
       exact ⟨PointChordCase.to_combineCanFire_chordCase E a b h.1,
         levelStepCombineChordCase_of_levelStepPointChordCase rest h.2⟩
 
-theorem accumInvList_preservation_under_level_step
-    (xss : List (List (ZMod E.q × ZMod E.q)))
-    (accs : List (Accum E))
-    (h : AccumInvList E xss accs)
-    (h_combine : ∀ (xs ys : List (ZMod E.q × ZMod E.q))
-        (a b : Accum E),
-      AccumInv E xs a → AccumInv E ys b →
-      AccumInv E (xs ++ ys) (Accum.combine E a b)) :
-    AccumInvList E (pairUp xss) (level_step E accs) := by
-  classical
-  match xss, accs, h with
-  | [], [], _ =>
-    show AccumInvList E [] (level_step E [])
-    show List.Forall₂ _ [] []
-    exact List.Forall₂.nil
-  | [xs], [a], h =>
-    show AccumInvList E [xs] (level_step E [a])
-    show List.Forall₂ _ [xs] [a]
-    exact h
-  | xs :: ys :: rest_xs, a :: b :: rest_acc, h =>
-    obtain ⟨h_a, h_rest⟩ := List.forall₂_cons.mp h
-    obtain ⟨h_b, h_rest_rest⟩ := List.forall₂_cons.mp h_rest
-    show AccumInvList E (pairUp (xs :: ys :: rest_xs))
-                              (level_step E (a :: b :: rest_acc))
-    show List.Forall₂ _ ((xs ++ ys) :: pairUp rest_xs)
-                          (Accum.combine E a b :: level_step E rest_acc)
-    refine List.Forall₂.cons ?_ ?_
-    · exact h_combine xs ys a b h_a h_b
-    · exact accumInvList_preservation_under_level_step rest_xs rest_acc h_rest_rest h_combine
+/-! ## Iterated pairing
 
-/-! ## iterate preservation
-
-If `AccumInvList` holds for the input and per-pair combine preserves
-AccumInv, then iterating `level_step` `n` times preserves the
-property (with the corresponding number of `pairUp` operations on
-the index list). -/
+`pairUpN n` mirrors `iterate E n` on the index list: each level pairs
+adjacent sub-lists the way `level_step` combines adjacent
+accumulators. -/
 
 def pairUpN {α : Type*} : ℕ → List (List α) → List (List α)
   | 0, xss => xss
@@ -8752,32 +8620,6 @@ theorem h_extras_of_iteratedLevelStepCombineExtras
       LevelStepCombineExtras E (iterate E k (level0_singletons E Ps)) :=
   (iteratedLevelStepCombineExtras_iff_forall_lt E
     Ps.length (level0_singletons E Ps)).mp h
-
-theorem accumInvList_preservation_under_iterate
-    (n : ℕ)
-    (xss : List (List (ZMod E.q × ZMod E.q)))
-    (accs : List (Accum E))
-    (h : AccumInvList E xss accs)
-    (h_combine : ∀ (xs ys : List (ZMod E.q × ZMod E.q))
-        (a b : Accum E),
-      AccumInv E xs a → AccumInv E ys b →
-      AccumInv E (xs ++ ys) (Accum.combine E a b)) :
-    AccumInvList E (pairUpN n xss) (iterate E n accs) := by
-  classical
-  induction n generalizing xss accs with
-  | zero => exact h
-  | succ n ih =>
-    have h_lengths : xss.length = accs.length := List.Forall₂.length_eq h
-    rw [iterate_succ_eq, pairUpN_succ_eq]
-    by_cases hLen : accs.length ≤ 1
-    · have h_xss_len : xss.length ≤ 1 := h_lengths ▸ hLen
-      rw [if_pos hLen, if_pos h_xss_len]
-      exact h
-    · have h_xss_len : ¬ xss.length ≤ 1 := h_lengths ▸ hLen
-      rw [if_neg hLen, if_neg h_xss_len]
-      have h_step : AccumInvList E (pairUp xss) (level_step E accs) :=
-        accumInvList_preservation_under_level_step E xss accs h h_combine
-      exact ih (pairUp xss) (level_step E accs) h_step
 
 /-! ## Top-level driver: lineBuild via singletons
 
@@ -8992,30 +8834,6 @@ theorem accumInvStrongList_level_step
   · rw [level_step_lists_flatten]
     exact hNodup_concat
   · exact level_step_lists_forall_mem E xss hxss_on
-
-/-! ## LineAccum theorem (conditional on per-pair combine)
-
-Combining levelInitSingleton, level_step preservation, iterate
-preservation, and the pairUp/flatten helpers:
-
-  Given a list of points all on `E`, the iterate of level0_singletons
-  produces a list of accumulators each satisfying AccumInv with
-  its corresponding sub-list partition. -/
-
-theorem accumInvList_lineBuild_singletons
-    (Ps : List (ZMod E.q × ZMod E.q))
-    (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
-    (h_combine : ∀ (xs ys : List (ZMod E.q × ZMod E.q))
-        (a b : Accum E),
-      AccumInv E xs a → AccumInv E ys b →
-      AccumInv E (xs ++ ys) (Accum.combine E a b)) :
-    AccumInvList E (pairUpN Ps.length (Ps.map (fun P => [P])))
-                       (iterate E Ps.length (level0_singletons E Ps)) := by
-  classical
-  have h_init : AccumInvList E (Ps.map (fun P => [P]))
-                                  (level0_singletons E Ps) :=
-    accumInvList_level0_singletons E Ps hPs_on
-  exact accumInvList_preservation_under_iterate E Ps.length _ _ h_init h_combine
 
 /-! ## Convergence of pairUpN
 
@@ -9238,144 +9056,6 @@ theorem accumInvStrong_lineBuild_singletons
   | _ :: _ :: _ =>
       rw [h_iter_eq] at h_iter_le
       simp at h_iter_le
-
-/-! ## Final build theorem (conditional on combine) -/
-
-theorem lineBuild_singletons_spec
-    (Ps : List (ZMod E.q × ZMod E.q))
-    (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
-    (hSumZero : sumOnE E Ps = 0)
-    (hNonEmpty : Ps ≠ [])
-    (h_combine : ∀ (xs ys : List (ZMod E.q × ZMod E.q))
-        (a b : Accum E),
-      AccumInv E xs a → AccumInv E ys b →
-      AccumInv E (xs ++ ys) (Accum.combine E a b)) :
-    let D := lineBuild_singletons E Ps
-    ¬ (D.a = 0 ∧ D.b = 0) ∧
-    (∀ P ∈ Ps, D.eval P.1 P.2 = 0) ∧
-    (normPoly E D).natDegree = Ps.length := by
-  classical
-  -- The iterate output has length ≤ 1 with sufficient fuel.
-  have h_init_len : (level0_singletons E Ps).length = Ps.length := by
-    show (Ps.map _).length = Ps.length
-    exact List.length_map ..
-  have h_iter_le : (iterate E Ps.length (level0_singletons E Ps)).length ≤ 1 :=
-    iterate_length_le_one_of_fuel_geq E Ps.length _ (by rw [h_init_len])
-  -- AccumInvList for the iterated.
-  have h_inv_list : AccumInvList E
-      (pairUpN Ps.length (Ps.map (fun P => [P])))
-      (iterate E Ps.length (level0_singletons E Ps)) :=
-    accumInvList_lineBuild_singletons E Ps hPs_on h_combine
-  -- Pair up partition has same length as iterate output (Forall₂).
-  have h_lens : (pairUpN Ps.length (Ps.map (fun P => [P]))).length
-      = (iterate E Ps.length (level0_singletons E Ps)).length :=
-    List.Forall₂.length_eq h_inv_list
-  -- The iterate output has length ≥ 1 (since input non-empty).
-  have h_init_pos : (level0_singletons E Ps).length ≥ 1 := by
-    rw [h_init_len]
-    cases Ps with
-    | nil => exact (hNonEmpty rfl).elim
-    | cons _ _ => simp
-  -- ... actually iterate doesn't preserve length ≥ 1 in general, need to handle.
-  -- For Ps.length ≥ 1, after iterate the output is exactly length 1.
-  -- This requires: iterate doesn't drop to 0 if input was non-empty.
-  -- Skip rigorous proof of this, take from the AccumInvList structure:
-  -- pairUpN starts with non-empty (Ps.map fun P => [P]) and pairUp preserves
-  -- non-empty (when input non-empty). So pairUpN result is non-empty.
-  -- Hence iterate result is non-empty (same length).
-  -- Combined with h_iter_le: length is exactly 1.
-  -- ...
-  -- For now, use pairUpN_flatten + non-empty as a proxy.
-  have h_pairUp_flatten : (pairUpN Ps.length (Ps.map (fun P => [P]))).flatten
-      = Ps := by
-    rw [pairUpN_flatten, map_singleton_flatten]
-  -- pairUpN result has length ≥ 1 (since flatten = Ps non-empty).
-  have h_pair_ne_empty : pairUpN Ps.length (Ps.map (fun P => [P])) ≠ [] := by
-    intro h
-    rw [h] at h_pairUp_flatten
-    simp at h_pairUp_flatten
-    exact hNonEmpty h_pairUp_flatten
-  have h_pair_len_pos : (pairUpN Ps.length (Ps.map (fun P => [P]))).length ≥ 1 := by
-    cases h_pair_eq : pairUpN Ps.length (Ps.map (fun P => [P])) with
-    | nil => exact (h_pair_ne_empty h_pair_eq).elim
-    | cons _ _ => simp
-  -- So both lists have length 1.
-  have h_pair_len_one : (pairUpN Ps.length (Ps.map (fun P => [P]))).length = 1 := by
-    rw [h_lens]; omega
-  -- pairUpN result = [Ps].
-  have h_pair_eq_singleton :
-      pairUpN Ps.length (Ps.map (fun P => [P])) = [Ps] := by
-    have := pairUpN_eq_singleton_of_len_one Ps.length
-              (Ps.map (fun P => [P])) h_pair_len_one
-    rw [this, map_singleton_flatten]
-  -- iterate result has length 1: extract the singleton.
-  match h_iter_eq : iterate E Ps.length (level0_singletons E Ps) with
-  | [] =>
-    rw [h_iter_eq] at h_lens
-    simp at h_lens
-    rw [h_lens] at h_pair_len_one
-    simp at h_pair_len_one
-  | [final_acc] =>
-    -- AccumInv E Ps final_acc.
-    rw [h_pair_eq_singleton, h_iter_eq] at h_inv_list
-    have h_inv : AccumInv E Ps final_acc := by
-      cases h_inv_list with
-      | cons h_head h_tail => exact h_head
-    obtain ⟨h_pt, h_van, h_res, h_deg⟩ := h_inv
-    -- final_acc.point = sumOnE Ps = 0.
-    have h_pt_zero : final_acc.point = (0 : ECPoint E) := by
-      rw [h_pt]; exact hSumZero
-    -- D = lineBuild_singletons Ps = final_acc.poly.
-    have h_D_eq : lineBuild_singletons E Ps = final_acc.poly := by
-      show (match iterate E Ps.length (level0_singletons E Ps) with
-            | [a] => a.poly
-            | _ => { a := 1, b := 0 }) = final_acc.poly
-      rw [h_iter_eq]
-    -- Degree.
-    rw [if_pos h_pt_zero] at h_deg
-    -- Show all three conjuncts.
-    refine ⟨?_, ?_, ?_⟩
-    · -- D ≠ 0.
-      intro ⟨ha, hb⟩
-      rw [h_D_eq] at ha hb
-      have hNorm : normPoly E final_acc.poly = 0 := by
-        rw [normPoly_eq]
-        rw [ha, hb]
-        ring
-      rw [hNorm, Polynomial.natDegree_zero] at h_deg
-      have : Ps.length = 0 := by linarith
-      have : Ps = [] := List.length_eq_zero_iff.mp this
-      exact hNonEmpty this
-    · -- D vanishes at every P ∈ Ps.
-      intro P hP
-      rw [h_D_eq]
-      exact h_van P hP
-    · -- (normPoly D).natDegree = Ps.length.
-      rw [h_D_eq, h_deg]
-      omega
-  | _ :: _ :: _ =>
-    rw [h_iter_eq] at h_iter_le
-    simp at h_iter_le
-
-
-/-! ## Path to an unconditional build theorem
-
-Making lineBuild_singletons_spec unconditional (no h_combine
-hypothesis) requires strengthening AccumInv with point/sheet-level
-multiplicity tracking:
-
-  - Define a constructive local multiplicity mult E D P : Nat for
-    D : CoordRingElt, P : ZMod q x q, returning 0 if D does not
-    vanish at P, otherwise matching geometric ord.
-  - Strengthen AccumInv:
-      target xs R P := xs.count P + (if negCoords R = some P then 1 else 0)
-      forall P in E.points, target xs a.point P <= mult E a.poly P
-      (normPoly a.poly).natDegree = sum P in E.points, target xs a.point P
-  - combine_distinct becomes a multiplicity identity:
-      M(xs,A) + M(ys,B) + L(A,B) - V(A) - V(B) = M(xs++ys, A+B)
-    where chord/divLin contributions cancel at fiber collisions.
-
-Estimated: ~600-1000 LOC of new infrastructure. -/
 
 
 /-! ## Bridge: build theorem → full divisor identity (uses splitsOnE machinery) -/
@@ -9657,42 +9337,14 @@ theorem splitsOnE_of_lineBuild
     rw [← hPx]
     simpa using hPs_on P hPmem⟩
 
-theorem lineBuild_singletons_divisor_identity
-    (Ps : List (ZMod E.q × ZMod E.q))
-    (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
-    (hSumZero : sumOnE E Ps = 0)
-    (hNonEmpty : Ps ≠ [])
-    (hNodup : Ps.Nodup)
-    (h_combine : ∀ (xs ys : List (ZMod E.q × ZMod E.q))
-        (a b : Accum E),
-      AccumInv E xs a → AccumInv E ys b →
-      AccumInv E (xs ++ ys) (Accum.combine E a b)) :
-    ∀ R : ECPoint E,
-      divisorOfD E (lineBuild_singletons E Ps) R
-        = formalDivisorOfList E Ps R := by
-  classical
-  let D := lineBuild_singletons E Ps
-  have h_inv :
-      ¬ (D.a = 0 ∧ D.b = 0) ∧
-      (∀ P ∈ Ps, D.eval P.1 P.2 = 0) ∧
-      (normPoly E D).natDegree = Ps.length := by
-    simpa [D] using
-      lineBuild_singletons_spec E Ps hPs_on hSumZero hNonEmpty h_combine
-  obtain ⟨hD, hVan, hDeg⟩ := h_inv
-  have hSplit : splitsOnE E D :=
-    splitsOnE_of_lineBuild E Ps D hPs_on hNodup hD hVan hDeg
-  simpa [D] using
-    divisorOfD_eq_formalDivisorOfList_of_lineBuild
-      E Ps D hPs_on hNodup hD hVan hDeg hSplit
-
 /-! ## Unconditional build theorems (using `AccumInvStrong`) -/
 
 /-- Unconditional build theorem: derived from `accumInvStrong_lineBuild_singletons`,
     requires only Nodup, on-curve, sum-zero, length ≥ 2, plus per-input `h_extras`
     (geometric side conditions for each level of iterate).
 
-    Eliminates the `PairwiseCombineHyp E` quantifying over all xs/ys/a/b — replaced by
-    `h_extras`, which is a SPECIFIC condition on this `Ps`'s iterate states. -/
+    `h_extras` is a condition on this `Ps`'s iterate states only, not on
+    arbitrary accumulator pairs. -/
 theorem lineBuild_singletons_spec_unconditional
     (Ps : List (ZMod E.q × ZMod E.q))
     (hPs_on : ∀ P ∈ Ps, P ∈ E.points)

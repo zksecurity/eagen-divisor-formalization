@@ -195,8 +195,8 @@ info: 'Divisor.ma_soundness_paper' depends on axioms: [propext,
 /-! ## Binary completeness chain
 
   The binary chain (`ma_completeness_binary_extras` and its `_clean`
-  variant, gated on the per-input `h_extras` certificate rather than
-  the universal `PairwiseCombineHyp`) has the same closure as
+  variant, gated on the per-input `h_extras` certificate) has the
+  same closure as
   `ma_completeness*`: the AccumInvStrong infrastructure introduces
   no axioms. -/
 /--

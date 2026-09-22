@@ -12,18 +12,6 @@ namespace Divisor
 
 open Classical
 
-namespace LineAccum
-
-/-- The per-pair preservation hypothesis needed by the conditional
-    `lineBuild_singletons` build theorem. -/
-abbrev PairwiseCombineHyp (E : ECSetup) : Prop :=
-  forall (xs ys : List (ZMod E.q × ZMod E.q))
-      (a b : Accum E),
-    AccumInv E xs a -> AccumInv E ys b ->
-      AccumInv E (xs ++ ys) (Accum.combine E a b)
-
-end LineAccum
-
 /-- Binary honest construction data for an MA prover message.
 
 The field `Ps` is the binary support list: `(-target)` together with the
@@ -132,207 +120,11 @@ def ofBinary
 
 end MAProverMsg.IsHonestForBinaryScaled
 
-/-- The build-theorem facts for the singleton line build attached to a
-    binary honesty witness. -/
-private theorem lineBuild_singletons_spec_of_isHonestForBinary
-    {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
-    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
-    (h_combine : LineAccum.PairwiseCombineHyp E) :
-    let D := LineAccum.lineBuild_singletons E h_binary.Ps
-    ¬ (D.a = 0 ∧ D.b = 0) ∧
-    (∀ P ∈ h_binary.Ps, D.eval P.1 P.2 = 0) ∧
-    (normPoly E D).natDegree = h_binary.Ps.length := by
-  exact LineAccum.lineBuild_singletons_spec E h_binary.Ps
-    h_binary.h_ps_on h_binary.h_sum_zero h_binary.h_nonempty h_combine
-
-/-- The binary singleton build splits over `E`. -/
-theorem splitsOnE_msg_toD_binary_via_combineHyp
-    {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
-    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
-    (h_combine : LineAccum.PairwiseCombineHyp E) :
-    splitsOnE E msg.toD := by
-  rw [h_binary.h_toD_eq]
-  set D := LineAccum.lineBuild_singletons E h_binary.Ps
-  have h_inv :
-      ¬ (D.a = 0 ∧ D.b = 0) ∧
-      (∀ P ∈ h_binary.Ps, D.eval P.1 P.2 = 0) ∧
-      (normPoly E D).natDegree = h_binary.Ps.length := by
-    simpa [D] using
-      lineBuild_singletons_spec_of_isHonestForBinary h_binary h_combine
-  exact LineAccum.splitsOnE_of_lineBuild E h_binary.Ps D
-    h_binary.h_ps_on h_binary.h_nodup
-    h_inv.1 h_inv.2.1 h_inv.2.2
-
-/-- The divisor of the binary singleton build is the protocol honest
-    divisor. -/
-theorem divisor_identity_binary_via_combineHyp
-    {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
-    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
-    (h_combine : LineAccum.PairwiseCombineHyp E) :
-    forall R : ECPoint E,
-      divisorOfD E msg.toD R =
-        honestDivisorCoeffs E stmt wit hk msg R := by
-  intro R
-  rw [h_binary.h_toD_eq]
-  calc
-    divisorOfD E (LineAccum.lineBuild_singletons E h_binary.Ps) R
-        = LineAccum.formalDivisorOfList E h_binary.Ps R := by
-          exact LineAccum.lineBuild_singletons_divisor_identity E h_binary.Ps
-            h_binary.h_ps_on h_binary.h_sum_zero h_binary.h_nonempty
-            h_binary.h_nodup h_combine R
-    _ = honestDivisorCoeffs E stmt wit hk msg R :=
-          h_binary.h_formal_eq_honest R
-
-/-- Bridge from binary construction data to the protocol-level honest
-    prover predicate (legacy: uses universal `PairwiseCombineHyp`). -/
-theorem isHonestFor_of_isHonestForBinary_via_combineHyp
-    {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
-    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
-    (h_combine : LineAccum.PairwiseCombineHyp E) :
-    msg.isHonestFor E stmt wit hk := by
-  refine ⟨?_, ?_, ?_, ?_, ?_⟩
-  · exact h_binary.h_scalars_match
-  · exact splitsOnE_msg_toD_binary_via_combineHyp h_binary h_combine
-  · exact divisor_identity_binary_via_combineHyp h_binary h_combine
-  · exact h_binary.h_target_on_curve
-  · exact h_binary.h_bases_on_curve
-
-/-- The scaled binary singleton build splits over `E`. -/
-theorem splitsOnE_msg_toD_binary_scaled_via_combineHyp
-    {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
-    (h_combine : LineAccum.PairwiseCombineHyp E) :
-    splitsOnE E msg.toD := by
-  rw [h_binary.h_toD_eq]
-  set D := LineAccum.lineBuild_singletons E h_binary.Ps
-  have h_inv :
-      ¬ (D.a = 0 ∧ D.b = 0) ∧
-      (∀ P ∈ h_binary.Ps, D.eval P.1 P.2 = 0) ∧
-      (normPoly E D).natDegree = h_binary.Ps.length := by
-    simpa [D] using
-      LineAccum.lineBuild_singletons_spec E h_binary.Ps
-        h_binary.h_ps_on h_binary.h_sum_zero h_binary.h_nonempty h_combine
-  exact (splitsOnE_smul E h_binary.c h_binary.h_c_ne D).mpr
-    (LineAccum.splitsOnE_of_lineBuild E h_binary.Ps D
-      h_binary.h_ps_on h_binary.h_nodup
-      h_inv.1 h_inv.2.1 h_inv.2.2)
-
-/-- The divisor of a scaled binary singleton build is the protocol honest
-    divisor. -/
-theorem divisor_identity_binary_scaled_via_combineHyp
-    {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
-    (h_combine : LineAccum.PairwiseCombineHyp E) :
-    forall R : ECPoint E,
-      divisorOfD E msg.toD R =
-        honestDivisorCoeffs E stmt wit hk msg R := by
-  intro R
-  rw [h_binary.h_toD_eq]
-  set D := LineAccum.lineBuild_singletons E h_binary.Ps
-  calc
-    divisorOfD E (h_binary.c • D) R
-        = divisorOfD E D R := divisorOfD_smul E h_binary.c h_binary.h_c_ne D R
-    _ = LineAccum.formalDivisorOfList E h_binary.Ps R := by
-          exact LineAccum.lineBuild_singletons_divisor_identity E h_binary.Ps
-            h_binary.h_ps_on h_binary.h_sum_zero h_binary.h_nonempty
-            h_binary.h_nodup h_combine R
-    _ = honestDivisorCoeffs E stmt wit hk msg R :=
-          h_binary.h_formal_eq_honest R
-
-/-- Bridge from scaled binary construction data to the protocol-level honest
-    prover predicate (legacy: uses universal `PairwiseCombineHyp`). -/
-theorem isHonestFor_of_isHonestForBinaryScaled_via_combineHyp
-    {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
-    {msg : MAProverMsg E.q stmt.k} {hk : stmt.k = wit.k}
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
-    (h_combine : LineAccum.PairwiseCombineHyp E) :
-    msg.isHonestFor E stmt wit hk := by
-  refine ⟨?_, ?_, ?_, ?_, ?_⟩
-  · exact h_binary.h_scalars_match
-  · exact splitsOnE_msg_toD_binary_scaled_via_combineHyp h_binary h_combine
-  · exact divisor_identity_binary_scaled_via_combineHyp h_binary h_combine
-  · exact h_binary.h_target_on_curve
-  · exact h_binary.h_bases_on_curve
-
-theorem ma_completeness_binary_via_combineHyp
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
-    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-
-    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
-    (h_combine : LineAccum.PairwiseCombineHyp E)
-    (h_valid : relDlog E stmt wit)
-    (h_deg : msg.toD.degE ≤ wit.degBound)
-    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
-    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg).card
-      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness_base E stmt wit hk h_valid msg h_deg h_deg_k h_adm
-    (isHonestFor_of_isHonestForBinary_via_combineHyp (E := E) h_binary h_combine)
-
-theorem ma_completeness_binary_with_scalar_via_combineHyp
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
-    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
-    (h_combine : LineAccum.PairwiseCombineHyp E)
-    (h_valid : relDlog E stmt wit)
-    (h_deg : msg.toD.degE ≤ wit.degBound)
-    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
-    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg).card
-      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness_base E stmt wit hk h_valid msg h_deg h_deg_k h_adm
-    (isHonestFor_of_isHonestForBinaryScaled_via_combineHyp (E := E) h_binary h_combine)
-
-theorem ma_completeness_binary_via_combineHyp_clean
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
-    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-
-    (h_binary : MAProverMsg.IsHonestForBinary E stmt msg wit hk)
-    (h_combine : LineAccum.PairwiseCombineHyp E)
-    (h_valid : relDlog E stmt wit)
-    (h_deg : msg.toD.degE ≤ wit.degBound)
-    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
-    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg).card
-      ≤ (3 * stmt.degBound + 4) * E.points.card := by
-  have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
-    admSet_implies_toD_nonzero stmt msg h_adm
-  exact ma_completeness_degBound E stmt wit hk h_valid msg h_deg h_deg_k h_adm
-    (isHonestFor_of_isHonestForBinary_via_combineHyp (E := E) h_binary h_combine)
-    h_d
-
-theorem ma_completeness_binary_with_scalar_via_combineHyp_clean
-    (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
-    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-
-    (h_binary : MAProverMsg.IsHonestForBinaryScaled E stmt msg wit hk)
-    (h_combine : LineAccum.PairwiseCombineHyp E)
-    (h_valid : relDlog E stmt wit)
-    (h_deg : msg.toD.degE ≤ wit.degBound)
-    (h_deg_k : msg.toD.degE ≤ stmt.degBound)
-    (h_adm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg).card
-      ≤ (3 * stmt.degBound + 4) * E.points.card := by
-  have h_d : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) :=
-    admSet_implies_toD_nonzero stmt msg h_adm
-  exact ma_completeness_degBound E stmt wit hk h_valid msg h_deg h_deg_k h_adm
-    (isHonestFor_of_isHonestForBinaryScaled_via_combineHyp (E := E) h_binary h_combine)
-    h_d
-
 /-- M=3 binary completeness via the constructive length-4 simple bridge.
 
 This is the all-selected binary case: `stmt.k = 3` is carried by
-`h_simple`, and every witness scalar is `1`. Unlike
-`ma_completeness_binary_via_combineHyp`, this corollary does not need
-`PairwiseCombineHyp`; it composes through the existing
-`ma_completeness_for_length4Simple` proof, whose divisor witness is
+`h_simple`, and every witness scalar is `1`. It composes through the
+existing `ma_completeness_for_length4Simple` proof, whose divisor witness is
 `lineBuild_length4_explicit`. -/
 theorem ma_completeness_binary_M_eq_3
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
@@ -349,11 +141,11 @@ theorem ma_completeness_binary_M_eq_3
   ma_completeness_for_length4Simple E stmt msg h_simple wit hk
     h_scalars h_valid h_deg h_deg_k h_adm
 
-/-! ## Unconditional binary completeness — discharges `PairwiseCombineHyp`.
+/-! ## Binary completeness under per-input side conditions.
 
-The new conditional hypothesis `h_extras` is a per-input geometric side
-condition (no chord/tangent collinearities at any iterate level), strictly
-weaker than the universal `PairwiseCombineHyp E`. -/
+The hypothesis `h_extras` is a per-input geometric side condition (no
+chord/tangent collinearities at any iterate level) on the specific
+support being built. -/
 
 theorem splitsOnE_msg_toD_binary
     {E : ECSetup} {stmt : DlogStatement E.q} {wit : DlogWitness E.q}
@@ -926,7 +718,7 @@ hypotheses, so `h_extras` is discharged by
 `LineAccum.h_extras_holds_for_length2_sum_zero`.
 
 The result is a fully unconditional binary completeness theorem for
-length-2 inputs (no `h_extras`, no `PairwiseCombineHyp`). -/
+length-2 inputs (no `h_extras`). -/
 
 theorem ma_completeness_binary_length2
     (E : ECSetup) (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
