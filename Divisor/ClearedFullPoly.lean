@@ -376,6 +376,42 @@ noncomputable def correctionA₂CoreFull (D : CoordRingElt E.q) :
   (-DbAtA₂TightFull E D) * dydzNumA₂Full E
     * lamDenFull E ^ (D.degE - 2 * D.b.natDegree - 3)
 
+/-! ### Vanishing of the `b`-dependent pieces
+
+    With `D.b = 0` there is no `y` term to clear, so every piece built
+    from `D.b` is the zero polynomial. The exact `degE` no longer pads
+    for an absent term, so the degree bounds below take this route in
+    the `b = 0` branch instead of relying on `3 + 2·deg b ≤ degE`. -/
+
+private lemma liftPoly_eq_zero (i : Fin 4) : liftPoly E 0 i = 0 := by
+  unfold liftPoly
+  simp
+
+private lemma DBdydzAtA₀Full_eq_zero (D : CoordRingElt E.q) (hb : D.b = 0) :
+    DBdydzAtA₀Full E D = 0 := by
+  unfold DBdydzAtA₀Full
+  rw [hb, liftPoly_eq_zero]
+  simp
+
+private lemma DBdydzAtA₁Full_eq_zero (D : CoordRingElt E.q) (hb : D.b = 0) :
+    DBdydzAtA₁Full E D = 0 := by
+  unfold DBdydzAtA₁Full
+  rw [hb, liftPoly_eq_zero]
+  simp
+
+private lemma DbAtA₂TightFull_eq_zero (D : CoordRingElt E.q) (hb : D.b = 0) :
+    DbAtA₂TightFull E D = 0 := by
+  unfold DbAtA₂TightFull
+  refine Finset.sum_eq_zero ?_
+  intro n _
+  simp [hb]
+
+private lemma correctionA₂CoreFull_eq_zero (D : CoordRingElt E.q) (hb : D.b = 0) :
+    correctionA₂CoreFull E D = 0 := by
+  unfold correctionA₂CoreFull
+  rw [DbAtA₂TightFull_eq_zero E D hb]
+  simp
+
 /-! ## 6 term Full definitions. -/
 
 /-- LHS i=0 term (Full). -/
@@ -931,23 +967,23 @@ private lemma liftPoly_bi_2 (p : (ZMod E.q)[X]) :
    liftPoly_degreeOf_target_le E p 2⟩
 
 private lemma a_natDegree_le_degE (D : CoordRingElt E.q) :
-    D.a.natDegree ≤ D.degE := by
-  unfold CoordRingElt.degE
-  exact le_trans (Nat.le_mul_of_pos_left _ (by omega)) (le_max_left _ _)
+    D.a.natDegree ≤ D.degE :=
+  CoordRingElt.a_natDegree_le_degE D
 
 private lemma b_natDegree_le_degE (D : CoordRingElt E.q) :
-    D.b.natDegree ≤ D.degE := by
-  unfold CoordRingElt.degE
-  exact le_trans (le_trans (Nat.le_mul_of_pos_left _ (by omega))
-    (Nat.le_add_left _ _)) (le_max_right _ _)
+    D.b.natDegree ≤ D.degE :=
+  CoordRingElt.b_natDegree_le_degE D
 
 private lemma two_a_le_degE (D : CoordRingElt E.q) :
-    2 * D.a.natDegree ≤ D.degE := by
-  unfold CoordRingElt.degE; exact le_max_left _ _
+    2 * D.a.natDegree ≤ D.degE :=
+  CoordRingElt.two_a_le_degE D
 
-private lemma two_b_plus_3_le_degE (D : CoordRingElt E.q) :
-    3 + 2 * D.b.natDegree ≤ D.degE := by
-  unfold CoordRingElt.degE; exact le_max_right _ _
+/-- Needs `D.b ≠ 0`: with no `y` term the exact `degE` has nothing to
+    pad for, and the bound is false for e.g. a nonzero constant. Callers
+    split on `D.b = 0`, where the `b`-dependent polynomial vanishes. -/
+private lemma two_b_plus_3_le_degE (D : CoordRingElt E.q) (hb : D.b ≠ 0) :
+    3 + 2 * D.b.natDegree ≤ D.degE :=
+  CoordRingElt.three_add_two_b_le_degE hb
 
 private lemma deriv_a_natDegree_le_degE (D : CoordRingElt E.q) :
     (Polynomial.derivative D.a).natDegree ≤ D.degE :=
@@ -1008,8 +1044,12 @@ private lemma APartScaledFull_bi (a_coeff : ℕ → ZMod E.q) (deg bound : ℕ)
   · omega
   · omega
 
+/-- The `y`-carrying part. The exponent budget is guarded by the
+    coefficient: `3 + 2·deg ≤ bound` is false for the exact `degE` when
+    there is no `y` term, but every summand it would justify is then the
+    zero polynomial. -/
 private lemma BPartScaledFull_bi (b_coeff : ℕ → ZMod E.q) (deg bound : ℕ)
-    (hbd : deg ≤ bound) (h3d : 3 + 2 * deg ≤ bound) :
+    (h3d : ∀ n, b_coeff n ≠ 0 → 2 * n + 3 ≤ bound) :
     bi_x_degree_le E
       (∑ n ∈ Finset.range (deg + 1),
         (MvPolynomial.C (b_coeff n) : FourVarPoly E.q)
@@ -1018,15 +1058,16 @@ private lemma BPartScaledFull_bi (b_coeff : ℕ → ZMod E.q) (deg bound : ℕ)
       (2 * bound) (2 * bound) := by
   apply bi_x_degree_le.sum
   intro n hn
-  simp only [Finset.mem_range] at hn
-  have hn' : n ≤ deg := by omega
+  rcases eq_or_ne (b_coeff n) 0 with hc | hc
+  · rw [hc]
+    simp only [map_zero, zero_mul]
+    exact bi_x_degree_le.zero
+  have h3 := h3d n hc
   apply bi_x_degree_le.mono
   · exact (((bi_x_degree_le.C _).mul ((x₂ScaledFull_bi E).pow n)).mul
       (y₂ScaledFull_bi E)).mul ((lamDenFull_bi E).pow (bound - 2 * n - 3))
-  · have : 2 * n + 3 ≤ bound := by omega
-    omega
-  · have : 2 * n + 3 ≤ bound := by omega
-    omega
+  · omega
+  · omega
 
 private lemma DAtA₂ScaledFull_bi (D : CoordRingElt E.q) :
     bi_x_degree_le E (DAtA₂ScaledFull E D) (2 * D.degE) (2 * D.degE) := by
@@ -1038,29 +1079,30 @@ private lemma DAtA₂ScaledFull_bi (D : CoordRingElt E.q) :
   have hB : bi_x_degree_le E (DBPartAtA₂ScaledFull E D) (2 * D.degE) (2 * D.degE) := by
     unfold DBPartAtA₂ScaledFull
     exact BPartScaledFull_bi E (D.b.coeff) D.b.natDegree D.degE
-      (b_natDegree_le_degE E D) (two_b_plus_3_le_degE E D)
+      (fun _n hcn => CoordRingElt.two_mul_add_three_le_degE hcn)
   exact hA.sub hB
 
 private lemma DDerivAtA₂ScaledFull_bi (D : CoordRingElt E.q) :
     bi_x_degree_le E (DDerivAtA₂ScaledFull E D) (2 * D.degE) (2 * D.degE) := by
   unfold DDerivAtA₂ScaledFull
   have hda := deriv_a_natDegree_le_degE E D
-  have hdb := deriv_b_natDegree_le_degE E D
   have h2da : 2 * (Polynomial.derivative D.a).natDegree ≤ D.degE := by
     have := Polynomial.natDegree_derivative_le D.a
     have := two_a_le_degE E D; omega
-  have h2db : 2 * (Polynomial.derivative D.b).natDegree ≤ D.degE := by
+  have h3db : ∀ n, (Polynomial.derivative D.b).coeff n ≠ 0 → 2 * n + 3 ≤ D.degE := by
+    intro n hcn
+    have hbne : D.b ≠ 0 := by intro h; exact hcn (by simp [h])
+    have hn : n ≤ (Polynomial.derivative D.b).natDegree :=
+      Polynomial.le_natDegree_of_ne_zero hcn
     have := Polynomial.natDegree_derivative_le D.b
-    have := two_b_plus_3_le_degE E D; omega
-  have h3db : 3 + 2 * (Polynomial.derivative D.b).natDegree ≤ D.degE := by
-    have := Polynomial.natDegree_derivative_le D.b
-    have := two_b_plus_3_le_degE E D; omega
+    have := two_b_plus_3_le_degE E D hbne
+    omega
   have hA : bi_x_degree_le E (DDerivAPartAtA₂ScaledFull E D) (2 * D.degE) (2 * D.degE) := by
     unfold DDerivAPartAtA₂ScaledFull
     exact APartScaledFull_bi E _ _ _ hda h2da
   have hB : bi_x_degree_le E (DDerivBPartAtA₂ScaledFull E D) (2 * D.degE) (2 * D.degE) := by
     unfold DDerivBPartAtA₂ScaledFull
-    exact BPartScaledFull_bi E _ _ _ hdb h3db
+    exact BPartScaledFull_bi E _ _ _ h3db
   exact hA.sub hB
 
 private lemma dxdzDenA₀Full_bi : bi_x_degree_le E (dxdzDenA₀Full E) 3 1 := by
@@ -1108,9 +1150,12 @@ private lemma dxdzDenA₂Full_bi : bi_x_degree_le E (dxdzDenA₂Full E) 6 6 := b
 
 private lemma DBdydzAtA₀Full_bi (D : CoordRingElt E.q) :
     bi_x_degree_le E (DBdydzAtA₀Full E D) D.degE 0 := by
+  by_cases hbz : D.b = 0
+  · rw [DBdydzAtA₀Full_eq_zero E D hbz]
+    exact bi_x_degree_le.zero
   unfold DBdydzAtA₀Full
   have hb := b_natDegree_le_degE E D
-  have hb3 := two_b_plus_3_le_degE E D
+  have hb3 := two_b_plus_3_le_degE E D hbz
   have hx0 : bi_x_degree_le E (varA₀x E) 1 0 := by unfold varA₀x; exact bi_x_degree_le.X₀
   have h3x2a : bi_x_degree_le E
       ((MvPolynomial.C (3 : ZMod E.q) : FourVarPoly E.q) * varA₀x E ^ 2
@@ -1120,9 +1165,12 @@ private lemma DBdydzAtA₀Full_bi (D : CoordRingElt E.q) :
 
 private lemma DBdydzAtA₁Full_bi (D : CoordRingElt E.q) :
     bi_x_degree_le E (DBdydzAtA₁Full E D) 0 D.degE := by
+  by_cases hbz : D.b = 0
+  · rw [DBdydzAtA₁Full_eq_zero E D hbz]
+    exact bi_x_degree_le.zero
   unfold DBdydzAtA₁Full
   have hb := b_natDegree_le_degE E D
-  have hb3 := two_b_plus_3_le_degE E D
+  have hb3 := two_b_plus_3_le_degE E D hbz
   have hx1 : bi_x_degree_le E (varA₁x E) 0 1 := by unfold varA₁x; exact bi_x_degree_le.X₁
   have h3x2a : bi_x_degree_le E
       ((MvPolynomial.C (3 : ZMod E.q) : FourVarPoly E.q) * varA₁x E ^ 2
@@ -1133,9 +1181,12 @@ private lemma DBdydzAtA₁Full_bi (D : CoordRingElt E.q) :
 private lemma correctionA₂CoreFull_bi (D : CoordRingElt E.q) :
     bi_x_degree_le E (correctionA₂CoreFull E D)
       (2 * D.degE + 3) (2 * D.degE + 3) := by
+  by_cases hbz : D.b = 0
+  · rw [correctionA₂CoreFull_eq_zero E D hbz]
+    exact bi_x_degree_le.zero
   unfold correctionA₂CoreFull
   have hb := b_natDegree_le_degE E D
-  have h2b3 := two_b_plus_3_le_degE E D
+  have h2b3 := two_b_plus_3_le_degE E D hbz
   have hDb : bi_x_degree_le E (DbAtA₂TightFull E D)
       (3 * D.b.natDegree) (3 * D.b.natDegree) := by
     unfold DbAtA₂TightFull
@@ -1486,16 +1537,22 @@ private theorem DAtA₀Full_td (D : CoordRingElt E.q) :
   unfold DAtA₀Full
   apply total_degree_le.sub
   · exact (liftPoly_total_degree_le E D.a 0).mono (a_natDegree_le_degE E D)
-  · exact (total_degree_le.mul (liftPoly_total_degree_le E D.b 0) (varA₀y_td E)).mono
-      (by have := two_b_plus_3_le_degE E D; omega)
+  · by_cases hb : D.b = 0
+    · rw [hb, liftPoly_eq_zero, zero_mul]
+      exact total_degree_le.zero
+    · exact (total_degree_le.mul (liftPoly_total_degree_le E D.b 0) (varA₀y_td E)).mono
+        (by have := two_b_plus_3_le_degE E D hb; omega)
 
 private theorem DAtA₁Full_td (D : CoordRingElt E.q) :
     total_degree_le E (DAtA₁Full E D) D.degE := by
   unfold DAtA₁Full
   apply total_degree_le.sub
   · exact (liftPoly_total_degree_le E D.a 2).mono (a_natDegree_le_degE E D)
-  · exact (total_degree_le.mul (liftPoly_total_degree_le E D.b 2) (varA₁y_td E)).mono
-      (by have := two_b_plus_3_le_degE E D; omega)
+  · by_cases hb : D.b = 0
+    · rw [hb, liftPoly_eq_zero, zero_mul]
+      exact total_degree_le.zero
+    · exact (total_degree_le.mul (liftPoly_total_degree_le E D.b 2) (varA₁y_td E)).mono
+        (by have := two_b_plus_3_le_degE E D hb; omega)
 
 private theorem DDerivAtA₀Full_td (D : CoordRingElt E.q) :
     total_degree_le E (DDerivAtA₀Full E D) D.degE := by
@@ -1503,10 +1560,13 @@ private theorem DDerivAtA₀Full_td (D : CoordRingElt E.q) :
   apply total_degree_le.sub
   · exact (liftPoly_total_degree_le E (Polynomial.derivative D.a) 0).mono
       (deriv_a_natDegree_le_degE E D)
-  · exact (total_degree_le.mul
-      (liftPoly_total_degree_le E (Polynomial.derivative D.b) 0) (varA₀y_td E)).mono
-      (by have := Polynomial.natDegree_derivative_le D.b
-          have := two_b_plus_3_le_degE E D; omega)
+  · by_cases hb : D.b = 0
+    · rw [hb, Polynomial.derivative_zero, liftPoly_eq_zero, zero_mul]
+      exact total_degree_le.zero
+    · exact (total_degree_le.mul
+        (liftPoly_total_degree_le E (Polynomial.derivative D.b) 0) (varA₀y_td E)).mono
+        (by have := Polynomial.natDegree_derivative_le D.b
+            have := two_b_plus_3_le_degE E D hb; omega)
 
 private theorem DDerivAtA₁Full_td (D : CoordRingElt E.q) :
     total_degree_le E (DDerivAtA₁Full E D) D.degE := by
@@ -1514,10 +1574,13 @@ private theorem DDerivAtA₁Full_td (D : CoordRingElt E.q) :
   apply total_degree_le.sub
   · exact (liftPoly_total_degree_le E (Polynomial.derivative D.a) 2).mono
       (deriv_a_natDegree_le_degE E D)
-  · exact (total_degree_le.mul
-      (liftPoly_total_degree_le E (Polynomial.derivative D.b) 2) (varA₁y_td E)).mono
-      (by have := Polynomial.natDegree_derivative_le D.b
-          have := two_b_plus_3_le_degE E D; omega)
+  · by_cases hb : D.b = 0
+    · rw [hb, Polynomial.derivative_zero, liftPoly_eq_zero, zero_mul]
+      exact total_degree_le.zero
+    · exact (total_degree_le.mul
+        (liftPoly_total_degree_le E (Polynomial.derivative D.b) 2) (varA₁y_td E)).mono
+        (by have := Polynomial.natDegree_derivative_le D.b
+            have := two_b_plus_3_le_degE E D hb; omega)
 
 private theorem dxdzDenA₀Full_td : total_degree_le E (dxdzDenA₀Full E) 3 := by
   unfold dxdzDenA₀Full
@@ -1582,10 +1645,12 @@ private theorem DBPartAtA₂ScaledFull_td (D : CoordRingElt E.q) :
   unfold DBPartAtA₂ScaledFull
   apply total_degree_le.sum
   intro n hn
-  have hn' : n ≤ D.b.natDegree := by
-    simp [Finset.mem_range] at hn; omega
-  have hb := two_b_plus_3_le_degE E D
-  -- bound: 0 + 3*n + 4 + 1*(D.degE-2*n-3) ≤ D.degE+n+1 ≤ D.degE+b.nd+1 ≤ 2*D.degE
+  rcases eq_or_ne (D.b.coeff n) 0 with hc | hc
+  · rw [hc]
+    simp only [map_zero, zero_mul]
+    exact total_degree_le.zero
+  have hb := CoordRingElt.two_mul_add_three_le_degE hc
+  -- bound: 0 + 3*n + 4 + 1*(D.degE-2*n-3) = D.degE+n+1 ≤ 2*D.degE
   exact (total_degree_le.mul
     (total_degree_le.mul
       (total_degree_le.mul (total_degree_le.C _)
@@ -1619,10 +1684,15 @@ private theorem DDerivBPartAtA₂ScaledFull_td (D : CoordRingElt E.q) :
   unfold DDerivBPartAtA₂ScaledFull
   apply total_degree_le.sum
   intro n hn
-  have hn' : n ≤ (Polynomial.derivative D.b).natDegree := by
-    simp [Finset.mem_range] at hn; omega
+  rcases eq_or_ne ((Polynomial.derivative D.b).coeff n) 0 with hc | hc
+  · rw [hc]
+    simp only [map_zero, zero_mul]
+    exact total_degree_le.zero
+  have hbne : D.b ≠ 0 := by intro h; exact hc (by simp [h])
+  have hn' : n ≤ (Polynomial.derivative D.b).natDegree :=
+    Polynomial.le_natDegree_of_ne_zero hc
   have hdb := Polynomial.natDegree_derivative_le D.b
-  have hb := two_b_plus_3_le_degE E D
+  have hb := two_b_plus_3_le_degE E D hbne
   exact (total_degree_le.mul
     (total_degree_le.mul
       (total_degree_le.mul (total_degree_le.C _)
@@ -1685,6 +1755,9 @@ private theorem dxdzAllFull_td : total_degree_le E (dxdzAllFull E) 12 := by
 
 private theorem DBdydzAtA₀Full_td (D : CoordRingElt E.q) :
     total_degree_le E (DBdydzAtA₀Full E D) D.degE := by
+  by_cases hbz : D.b = 0
+  · rw [DBdydzAtA₀Full_eq_zero E D hbz]
+    exact total_degree_le.zero
   unfold DBdydzAtA₀Full
   have hb : total_degree_le E (-liftPoly E D.b 0) D.b.natDegree :=
     total_degree_le.neg (liftPoly_total_degree_le E D.b 0)
@@ -1695,10 +1768,13 @@ private theorem DBdydzAtA₀Full_td (D : CoordRingElt E.q) :
     (total_degree_le.C _).mono (Nat.zero_le _)
   have hq : total_degree_le E _ 2 := total_degree_le.add hCmul hCa
   exact (total_degree_le.mul hb hq).mono
-    (by have := two_b_plus_3_le_degE E D; omega)
+    (by have := two_b_plus_3_le_degE E D hbz; omega)
 
 private theorem DBdydzAtA₁Full_td (D : CoordRingElt E.q) :
     total_degree_le E (DBdydzAtA₁Full E D) D.degE := by
+  by_cases hbz : D.b = 0
+  · rw [DBdydzAtA₁Full_eq_zero E D hbz]
+    exact total_degree_le.zero
   unfold DBdydzAtA₁Full
   have hb : total_degree_le E (-liftPoly E D.b 2) D.b.natDegree :=
     total_degree_le.neg (liftPoly_total_degree_le E D.b 2)
@@ -1709,7 +1785,7 @@ private theorem DBdydzAtA₁Full_td (D : CoordRingElt E.q) :
     (total_degree_le.C _).mono (Nat.zero_le _)
   have hq : total_degree_le E _ 2 := total_degree_le.add hCmul hCa
   exact (total_degree_le.mul hb hq).mono
-    (by have := two_b_plus_3_le_degE E D; omega)
+    (by have := two_b_plus_3_le_degE E D hbz; omega)
 
 private theorem DbAtA₂TightFull_td (D : CoordRingElt E.q) :
     total_degree_le E (DbAtA₂TightFull E D) (3 * D.b.natDegree) := by
@@ -1733,14 +1809,17 @@ private theorem dydzNumA₂Full_td : total_degree_le E (dydzNumA₂Full E) 6 := 
   exact total_degree_le.add h1 (h2.mono (by omega))
 
 private theorem correctionA₂CoreFull_td (D : CoordRingElt E.q) :
-    total_degree_le E (correctionA₂CoreFull E D) (D.degE + D.b.natDegree + 3) := by
+    total_degree_le E (correctionA₂CoreFull E D) (2 * D.degE) := by
+  by_cases hbz : D.b = 0
+  · rw [correctionA₂CoreFull_eq_zero E D hbz]
+    exact total_degree_le.zero
   unfold correctionA₂CoreFull
   have h1 : total_degree_le E (-DbAtA₂TightFull E D) (3 * D.b.natDegree) :=
     total_degree_le.neg (DbAtA₂TightFull_td E D)
   have h2 := dydzNumA₂Full_td E
   have h3 := (lamDenFull_td E).pow (D.degE - 2 * D.b.natDegree - 3)
   exact (total_degree_le.mul (total_degree_le.mul h1 h2) h3).mono
-    (by have := two_b_plus_3_le_degE E D; omega)
+    (by have := two_b_plus_3_le_degE E D hbz; omega)
 
 /-! ### Total-degree bound on `clearedFullPoly`.
 
@@ -1852,8 +1931,7 @@ private theorem correctionTerm2Full_td (D : CoordRingElt E.q) (P : ZMod E.q × Z
           (dxdzDenA₀Full_td E))
         (dxdzDenA₁Full_td E))
       (linesProductFull_td E P B))
-    ((lamDenFull_td E).pow 2)).mono
-    (by have := two_b_plus_3_le_degE E D; omega)
+    ((lamDenFull_td E).pow 2)).mono (by omega)
 
 private theorem rhsTermNegPFull_td (D : CoordRingElt E.q)
     {k : ℕ} (B : Fin k → ZMod E.q × ZMod E.q) :

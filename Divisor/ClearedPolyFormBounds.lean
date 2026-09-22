@@ -1276,6 +1276,12 @@ theorem DBPartAtA₂Scaled_natDegree_le (D : CoordRingElt E.q)
   unfold DBPartAtA₂Scaled
   refine Polynomial.natDegree_sum_le_of_forall_le _ _ ?_
   intro n hn
+  -- The exact `degE` pads the `y` term only when there is one; the
+  -- vanishing-coefficient summand is handled directly.
+  rcases eq_or_ne (D.b.coeff n) 0 with hc | hc
+  · have hz : embedScalar (E := E) (D.b.coeff n) = 0 := by simp [hc, embedScalar]
+    rw [hz]
+    simp
   have hn' : n ≤ D.b.natDegree := Nat.le_of_lt_succ (Finset.mem_range.mp hn)
   have hx := x₂Scaled_natDegree_le E A₀
   have h1 : (embedScalar (E := E) (D.b.coeff n)
@@ -1288,10 +1294,7 @@ theorem DBPartAtA₂Scaled_natDegree_le (D : CoordRingElt E.q)
   have h2 : (y₂Scaled (E := E) A₀).natDegree ≤ 3 := y₂Scaled_natDegree_le E A₀
   have h3 : (lamDenPoly (E := E) A₀ ^ (D.degE - 2 * n - 3)).natDegree = 0 := by
     rw [Polynomial.natDegree_pow, lamDenPoly_natDegree_le, Nat.mul_zero]
-  have h4 : 2 * n + 3 ≤ D.degE := by
-    have hmax : 3 + 2 * D.b.natDegree ≤ D.degE := le_max_right _ _
-    have : 2 * n ≤ 2 * D.b.natDegree := Nat.mul_le_mul_left 2 hn'
-    omega
+  have h4 : 2 * n + 3 ≤ D.degE := CoordRingElt.two_mul_add_three_le_degE hc
   refine natDegree_mul_le.trans ?_
   have hmul : (embedScalar (E := E) _ * x₂Scaled (E := E) A₀ ^ n
                * y₂Scaled (E := E) A₀).natDegree ≤ 2 * n + 3 :=
@@ -1338,8 +1341,14 @@ theorem DDerivBPartAtA₂Scaled_natDegree_le (D : CoordRingElt E.q)
   unfold DDerivBPartAtA₂Scaled
   refine Polynomial.natDegree_sum_le_of_forall_le _ _ ?_
   intro n hn
+  rcases eq_or_ne ((Polynomial.derivative D.b).coeff n) 0 with hc | hc
+  · have hz : embedScalar (E := E) ((Polynomial.derivative D.b).coeff n) = 0 := by
+      simp [hc, embedScalar]
+    rw [hz]
+    simp
+  have hbne : D.b ≠ 0 := by intro h; exact hc (by simp [h])
   have hn' : n ≤ (Polynomial.derivative D.b).natDegree :=
-    Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+    Polynomial.le_natDegree_of_ne_zero hc
   have hdb : (Polynomial.derivative D.b).natDegree ≤ D.b.natDegree :=
     (Polynomial.natDegree_derivative_le _).trans (Nat.sub_le _ _)
   have hnDb : n ≤ D.b.natDegree := hn'.trans hdb
@@ -1355,8 +1364,7 @@ theorem DDerivBPartAtA₂Scaled_natDegree_le (D : CoordRingElt E.q)
   have h3 : (lamDenPoly (E := E) A₀ ^ (D.degE - 2 * n - 3)).natDegree = 0 := by
     rw [Polynomial.natDegree_pow, lamDenPoly_natDegree_le, Nat.mul_zero]
   have h4 : 2 * n + 3 ≤ D.degE := by
-    have hmax : 3 + 2 * D.b.natDegree ≤ D.degE := le_max_right _ _
-    have : 2 * n ≤ 2 * D.b.natDegree := Nat.mul_le_mul_left 2 hnDb
+    have := CoordRingElt.three_add_two_b_le_degE hbne
     omega
   refine natDegree_mul_le.trans ?_
   have hmul : (embedScalar (E := E) _ * x₂Scaled (E := E) A₀ ^ n
@@ -1680,6 +1688,10 @@ theorem correctionTerm2Scaled_natDegree_le (D : CoordRingElt E.q)
     (A₀ : ZMod E.q × ZMod E.q) :
     (correctionTerm2Scaled (E := E) D P k B A₀).natDegree ≤ D.degE + k + 8 := by
   unfold correctionTerm2Scaled
+  by_cases hb : D.b = 0
+  · -- No `y` term to clear: the correction core is the zero polynomial.
+    rw [correctionA₂ScaledCore_eq_zero_of_b_eq_zero E D A₀ hb]
+    simp
   have h1 := correctionA₂ScaledCore_natDegree_le E D A₀
   have h2 : (DAtA₀Poly (E := E) D A₀).natDegree ≤ 0 :=
     (DAtA₀Poly_natDegree_le E D A₀).le
@@ -1692,8 +1704,7 @@ theorem correctionTerm2Scaled_natDegree_le (D : CoordRingElt E.q)
   have h7 : (lamDenPoly (E := E) A₀ ^ 2).natDegree = 0 := by
     rw [Polynomial.natDegree_pow, lamDenPoly_natDegree_le, Nat.mul_zero]
   have hbMain : 2 * D.b.natDegree + 4 ≤ D.degE + 3 := by
-    have : 2 * D.b.natDegree + 3 ≤ D.degE := by
-      unfold CoordRingElt.degE; omega
+    have := CoordRingElt.three_add_two_b_le_degE hb
     omega
   refine le_trans ?_ (by omega : (D.degE + 3) + 0 + 1 + 1 + 2 + (k + 1) + 0
                                   ≤ D.degE + k + 8)
@@ -2066,7 +2077,7 @@ theorem InnerDegLe_DAtA₁Poly (D : CoordRingElt E.q) :
   have h3 : InnerDegLe (E := E) (embedInnerPoly (E := E) D.b * outerA₁y (E := E))
                       D.b.natDegree := (h2.mul InnerDegLe_outerA₁y).weaken (by simp)
   have hDa : 2 * D.a.natDegree ≤ D.degE := le_max_left _ _
-  have hDb : 3 + 2 * D.b.natDegree ≤ D.degE := le_max_right _ _
+  have hDb : D.b.natDegree ≤ D.degE := CoordRingElt.b_natDegree_le_degE D
   exact (h1.sub h3).weaken (by simp; omega)
 
 theorem InnerDegLe_DDerivAtA₁Poly (D : CoordRingElt E.q) :
@@ -2087,7 +2098,7 @@ theorem InnerDegLe_DDerivAtA₁Poly (D : CoordRingElt E.q) :
   have hdB : (Polynomial.derivative D.b).natDegree ≤ D.b.natDegree :=
     (Polynomial.natDegree_derivative_le _).trans (Nat.sub_le _ _)
   have hDa : 2 * D.a.natDegree ≤ D.degE := le_max_left _ _
-  have hDb : 3 + 2 * D.b.natDegree ≤ D.degE := le_max_right _ _
+  have hDb : D.b.natDegree ≤ D.degE := CoordRingElt.b_natDegree_le_degE D
   exact (h1.sub h3).weaken (by simp; omega)
 
 theorem InnerDegLe_DAPartAtA₂Scaled (D : CoordRingElt E.q) (A₀ : ZMod E.q × ZMod E.q) :
@@ -2107,8 +2118,13 @@ theorem InnerDegLe_DBPartAtA₂Scaled (D : CoordRingElt E.q) (A₀ : ZMod E.q ×
   unfold DBPartAtA₂Scaled
   refine InnerDegLe.sum _ _ _ ?_
   intro n hn
+  rcases eq_or_ne (D.b.coeff n) 0 with hc | hc
+  · have hz : embedScalar (E := E) (D.b.coeff n) = 0 := by simp [hc, embedScalar]
+    rw [hz]
+    intro i
+    simp
   have hn' : n ≤ D.b.natDegree := Nat.le_of_lt_succ (Finset.mem_range.mp hn)
-  have hDb : 3 + 2 * D.b.natDegree ≤ D.degE := le_max_right _ _
+  have hDb : 2 * n + 3 ≤ D.degE := CoordRingElt.two_mul_add_three_le_degE hc
   have h1 := InnerDegLe_embedScalar (E := E) (D.b.coeff n)
   have h2 := (InnerDegLe_x₂Scaled (E := E) A₀).pow n
   have h3 := InnerDegLe_y₂Scaled (E := E) A₀
@@ -2141,11 +2157,19 @@ theorem InnerDegLe_DDerivBPartAtA₂Scaled (D : CoordRingElt E.q) (A₀ : ZMod E
   unfold DDerivBPartAtA₂Scaled
   refine InnerDegLe.sum _ _ _ ?_
   intro n hn
+  rcases eq_or_ne ((Polynomial.derivative D.b).coeff n) 0 with hc | hc
+  · have hz : embedScalar (E := E) ((Polynomial.derivative D.b).coeff n) = 0 := by
+      simp [hc, embedScalar]
+    rw [hz]
+    intro i
+    simp
+  have hbne : D.b ≠ 0 := by intro h; exact hc (by simp [h])
   have hn' : n ≤ (Polynomial.derivative D.b).natDegree :=
-    Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+    Polynomial.le_natDegree_of_ne_zero hc
   have hdB : (Polynomial.derivative D.b).natDegree ≤ D.b.natDegree :=
     (Polynomial.natDegree_derivative_le _).trans (Nat.sub_le _ _)
-  have hDb : 3 + 2 * D.b.natDegree ≤ D.degE := le_max_right _ _
+  have hDb : 3 + 2 * D.b.natDegree ≤ D.degE :=
+    CoordRingElt.three_add_two_b_le_degE hbne
   have h1 := InnerDegLe_embedScalar (E := E) ((Polynomial.derivative D.b).coeff n)
   have h2 := (InnerDegLe_x₂Scaled (E := E) A₀).pow n
   have h3 := InnerDegLe_y₂Scaled (E := E) A₀
@@ -2368,7 +2392,7 @@ theorem InnerDegLe_correctionTerm1Scaled (D : CoordRingElt E.q) (P : ZMod E.q ×
   have h4 := InnerDegLe_dxdzDenA₀Scaled A₀
   have h5 := InnerDegLe_dxdzDenA₂Scaled A₀
   have h6 := InnerDegLe_linesProductScaled P k B A₀
-  have hDb : 3 + 2 * D.b.natDegree ≤ D.degE := le_max_right _ _
+  have hDb : D.b.natDegree ≤ D.degE := CoordRingElt.b_natDegree_le_degE D
   exact (((((h1.mul h2).mul h3).mul h4).mul h5).mul h6).weaken (by omega)
 
 theorem InnerDegLe_correctionTerm2Scaled (D : CoordRingElt E.q) (P : ZMod E.q × ZMod E.q)
@@ -2376,6 +2400,11 @@ theorem InnerDegLe_correctionTerm2Scaled (D : CoordRingElt E.q) (P : ZMod E.q ×
     InnerDegLe (E := E) (correctionTerm2Scaled (E := E) D P k B A₀)
         (3 * D.degE + k + 10) := by
   unfold correctionTerm2Scaled
+  by_cases hb : D.b = 0
+  · -- No `y` term to clear: the correction core is the zero polynomial.
+    rw [correctionA₂ScaledCore_eq_zero_of_b_eq_zero E D A₀ hb]
+    intro i
+    simp
   have h1 := InnerDegLe_correctionA₂ScaledCore D A₀
   have h2 := InnerDegLe_DAtA₀Poly D A₀
   have h3 := InnerDegLe_DAtA₁Poly (E := E) D
@@ -2383,7 +2412,8 @@ theorem InnerDegLe_correctionTerm2Scaled (D : CoordRingElt E.q) (P : ZMod E.q ×
   have h5 := InnerDegLe_dxdzDenA₁Scaled A₀
   have h6 := InnerDegLe_linesProductScaled P k B A₀
   have h7 := InnerDegLe.pow (InnerDegLe_lamDenPoly A₀) 2
-  have hDb : 3 + 2 * D.b.natDegree ≤ D.degE := le_max_right _ _
+  have hDb : 3 + 2 * D.b.natDegree ≤ D.degE :=
+    CoordRingElt.three_add_two_b_le_degE hb
   exact ((((((h1.mul h2).mul h3).mul h4).mul h5).mul h6).mul h7).weaken (by omega)
 
 /-! ### Inner bound for `clearedFiberPoly`. -/

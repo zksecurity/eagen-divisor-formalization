@@ -9738,6 +9738,42 @@ theorem lineBuild_singletons_spec_unconditional
   · rw [h_D_eq]
     exact h_natDegree'
 
+/-- The exact pole order of a singleton line build **is** its support
+    length.
+
+    With the corrected `degE` this is a theorem rather than a premise:
+    `degE` equals `natDegree (normPoly ·)` unconditionally
+    (`normPoly_natDegree_eq`), and the unconditional build theorem
+    already delivers that norm degree. Under the old definition the
+    equation was unsatisfiable at support length two, since every
+    element was assigned degree at least three. -/
+theorem degE_lineBuild_singletons_eq_length
+    (Ps : List (ZMod E.q × ZMod E.q))
+    (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
+    (hSumZero : sumOnE E Ps = 0)
+    (hNodup : Ps.Nodup)
+    (hLen : 2 ≤ Ps.length)
+    (h_extras : ∀ k < Ps.length,
+      LevelStepCombineExtras E (iterate E k (level0_singletons E Ps))) :
+    (lineBuild_singletons E Ps).degE = Ps.length := by
+  have h := lineBuild_singletons_spec_unconditional E Ps hPs_on hSumZero hNodup hLen h_extras
+  rw [← normPoly_natDegree_eq]
+  exact h.2.2
+
+/-- `degE_lineBuild_singletons_eq_length` from the decidable
+    point-chord certificate. -/
+theorem degE_lineBuild_singletons_eq_length_of_pointChordCase
+    (Ps : List (ZMod E.q × ZMod E.q))
+    (hPs_on : ∀ P ∈ Ps, P ∈ E.points)
+    (hSumZero : sumOnE E Ps = 0)
+    (hNodup : Ps.Nodup)
+    (hLen : 2 ≤ Ps.length)
+    (h_chain : IteratedPointChordCase E Ps.length (level0SingletonPoints E Ps)) :
+    (lineBuild_singletons E Ps).degE = Ps.length :=
+  degE_lineBuild_singletons_eq_length E Ps hPs_on hSumZero hNodup hLen
+    (h_extras_of_iteratedLevelStepCombineExtras E Ps
+      (iteratedLevelStepCombineExtras_of_level0SingletonPoints E Ps h_chain))
+
 /-- Unconditional divisor identity: derived from the unconditional build theorem
     plus the existing `splitsOnE_of_lineBuild` and `divisorOfD_eq_formalDivisorOfList_of_lineBuild`. -/
 theorem lineBuild_singletons_divisor_identity_unconditional

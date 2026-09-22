@@ -126,6 +126,11 @@ noncomputable def curveEq₁ (E : ECSetup) : FourVarPoly E.q :=
 def bi_x_degree_le (_E : ECSetup) (f : FourVarPoly _E.q) (dX dY : ℕ) : Prop :=
   f.degreeOf 0 ≤ dX ∧ f.degreeOf 2 ≤ dY
 
+theorem bi_x_degree_le.zero
+    {E : ECSetup} {dX dY : ℕ} :
+    bi_x_degree_le E (0 : FourVarPoly E.q) dX dY :=
+  ⟨by simp, by simp⟩
+
 theorem bi_x_degree_le.add
     {E : ECSetup} {f g : FourVarPoly E.q} {dX dY : ℕ}
     (hf : bi_x_degree_le E f dX dY) (hg : bi_x_degree_le E g dX dY) :
@@ -266,6 +271,11 @@ theorem bi_y_linear.of_degreeOf {E : ECSetup} {f : FourVarPoly E.q}
     degree at most `9·D`, with `≤ 9·D·q` `F_q`-points. -/
 def total_degree_le (_E : ECSetup) (f : FourVarPoly _E.q) (D : ℕ) : Prop :=
   f.totalDegree ≤ D
+
+theorem total_degree_le.zero
+    {E : ECSetup} {D : ℕ} :
+    total_degree_le E (0 : FourVarPoly E.q) D := by
+  simp [total_degree_le]
 
 theorem total_degree_le.add
     {E : ECSetup} {f g : FourVarPoly E.q} {D : ℕ}

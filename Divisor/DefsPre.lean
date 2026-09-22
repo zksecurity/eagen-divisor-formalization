@@ -167,8 +167,71 @@ noncomputable instance CoordRingElt.instSMul {q : ℕ} [Fact (Nat.Prime q)] :
     (c : ZMod q) (D : CoordRingElt q) :
     (c • D).b = c • D.b := rfl
 
+/-- The pole order of `D = a(x) − b(x)·y` at the point at infinity.
+
+    This is the exact order, equal to `natDegree (normPoly E D)` (see
+    `Divisor.normPoly_natDegree_eq`): the norm `a² − b²·c(X)` has degree
+    `2·deg a` in its first summand and `3 + 2·deg b` in its second, and
+    when both are nonzero those degrees have opposite parity, so their
+    leading terms cannot cancel.
+
+    The `if` matters: `Polynomial.natDegree 0 = 0`, so without it an
+    absent `b(x)·y` term would still contribute `3`, forcing every
+    element to order at least three. A vertical line `X − C c` has
+    order two and a nonzero constant order zero. -/
 noncomputable def CoordRingElt.degE (D : CoordRingElt q) : ℕ :=
-  max (2 * D.a.natDegree) (3 + 2 * D.b.natDegree)
+  max (2 * D.a.natDegree)
+    (if D.b = 0 then 0 else 3 + 2 * D.b.natDegree)
+
+namespace CoordRingElt
+
+variable {D : CoordRingElt q}
+
+theorem degE_of_b_eq_zero (h : D.b = 0) : D.degE = 2 * D.a.natDegree := by
+  simp [CoordRingElt.degE, h]
+
+theorem degE_of_b_ne_zero (h : D.b ≠ 0) :
+    D.degE = max (2 * D.a.natDegree) (3 + 2 * D.b.natDegree) := by
+  simp [CoordRingElt.degE, h]
+
+theorem two_a_le_degE (D : CoordRingElt q) : 2 * D.a.natDegree ≤ D.degE :=
+  le_max_left _ _
+
+theorem a_natDegree_le_degE (D : CoordRingElt q) : D.a.natDegree ≤ D.degE :=
+  le_trans (Nat.le_mul_of_pos_left _ (by omega)) (two_a_le_degE D)
+
+theorem three_add_two_b_le_degE (h : D.b ≠ 0) :
+    3 + 2 * D.b.natDegree ≤ D.degE := by
+  rw [degE_of_b_ne_zero h]; exact le_max_right _ _
+
+/-- The workhorse replacing the old unconditional
+    `3 + 2 * D.b.natDegree ≤ D.degE`. Guarding on a nonzero coefficient
+    is exactly what the per-summand denominator-clearing proofs need,
+    and it holds for the exact degree: `D.b.coeff n ≠ 0` gives both
+    `D.b ≠ 0` and `n ≤ D.b.natDegree`. -/
+theorem two_mul_add_three_le_degE {n : ℕ} (h : D.b.coeff n ≠ 0) :
+    2 * n + 3 ≤ D.degE := by
+  have hb : D.b ≠ 0 := fun hz => h (by simp [hz])
+  have hn : n ≤ D.b.natDegree := Polynomial.le_natDegree_of_ne_zero h
+  have := three_add_two_b_le_degE hb
+  omega
+
+theorem b_natDegree_le_degE (D : CoordRingElt q) : D.b.natDegree ≤ D.degE := by
+  by_cases hb : D.b = 0
+  · simp [hb]
+  · have := three_add_two_b_le_degE hb; omega
+
+/-- The old, conservative formula bounds the exact degree from above.
+    Lets any surviving `D.degE ≤ X` goal reuse a pre-existing bound. -/
+theorem degE_le_max (D : CoordRingElt q) :
+    D.degE ≤ max (2 * D.a.natDegree) (3 + 2 * D.b.natDegree) := by
+  unfold CoordRingElt.degE
+  split_ifs <;> omega
+
+@[simp] theorem degE_zero : (⟨0, 0⟩ : CoordRingElt q).degE = 0 := by
+  simp [CoordRingElt.degE]
+
+end CoordRingElt
 
 def CoordRingElt.eval (D : CoordRingElt q) (x y : ZMod q) : ZMod q :=
   D.a.eval x - D.b.eval x * y

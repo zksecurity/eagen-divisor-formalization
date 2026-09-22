@@ -63,9 +63,18 @@ theorem divLin_smul (c : ZMod E.q) (D : CoordRingElt E.q) (x : ZMod E.q) :
 
 theorem degE_smul (c : ZMod E.q) (hc : c ≠ 0) (D : CoordRingElt E.q) :
     (c • D).degE = D.degE := by
+  -- A nonzero scalar cannot create or destroy the `y` term, so the two
+  -- branches of `degE` line up.
+  have hbz : (c • D).b = 0 ↔ D.b = 0 := by
+    rw [CoordRingElt.smul_b, smul_eq_zero]
+    simp [hc]
   unfold CoordRingElt.degE
-  simp [CoordRingElt.smul_a, CoordRingElt.smul_b,
-    Polynomial.natDegree_smul _ hc]
+  by_cases h : D.b = 0
+  · rw [if_pos (hbz.mpr h), if_pos h]
+    simp [CoordRingElt.smul_a, Polynomial.natDegree_smul _ hc]
+  · rw [if_neg (fun hz => h (hbz.mp hz)), if_neg h]
+    simp [CoordRingElt.smul_a, CoordRingElt.smul_b,
+      Polynomial.natDegree_smul _ hc]
 
 end CoordRingElt
 

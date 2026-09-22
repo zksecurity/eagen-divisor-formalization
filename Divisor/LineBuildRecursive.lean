@@ -749,10 +749,10 @@ theorem affinePoints_sum_eq_image_sum {α : Type*} [AddCommMonoid α]
 
 Replaces the prior route via `principal_divisor_iff`. Uses only
 the `splitsOnE` and divisor-identity conjuncts of `isHonestFor`,
-plus `sum_ordAt_eq_natDegree_under_split`. The constant-D edge
-case is ruled out by the divisor identity at infinity (`degE = 3`
-for `D = 0`, but `divisorOfD 0 = 0`, so the identity would force
-`-3 = 0`). -/
+plus `sum_ordAt_eq_natDegree_under_split`. For `D = 0` every
+coefficient vanishes (`degE 0 = 0` and `ordAt 0 = 0`), so the sum is
+zero outright; nonzeroness is enforced by the verifier's admissible-set
+check, not by this accounting. -/
 
 theorem honestDivisorCoeffs_deg_zero_of_isHonestForExplicit
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
@@ -792,18 +792,15 @@ theorem honestDivisorCoeffs_deg_zero_of_isHonestForExplicit
   rw [h_aff_sum]
   -- Reduce to: -(degE) + Σ_{Q ∈ E.points} ordAt = 0.
   by_cases hD : msg.toD.a = 0 ∧ msg.toD.b = 0
-  · -- Constant-zero D: ruled out by divisor identity at infinity.
-    exfalso
-    have h_id_at_zero := h_div_id 0
-    have hNorm0 : normPoly E msg.toD = 0 := by
-      rw [normPoly_eq, hD.1, hD.2]; ring
-    have hLHS0 : divisorOfD E msg.toD (0 : ECPoint E) = 0 := by
-      show -((normPoly E msg.toD).natDegree : ℤ) = 0
-      rw [hNorm0]; simp
-    rw [hLHS0, honestDivisorCoeffs_at_infinity] at h_id_at_zero
-    have hDegE : msg.toD.degE = 3 := by
+  · -- `D = 0`: the exact `degE` is zero and every `ordAt` is zero, so
+    -- the accounting closes with no contribution from either side.
+    have hDegE : msg.toD.degE = 0 := by
       simp [CoordRingElt.degE, hD.1, hD.2]
-    omega
+    have hOrd0 : ∀ Q ∈ E.points, (ordAt E msg.toD Q : ℤ) = 0 := by
+      intro Q _
+      exact_mod_cast congrArg (fun n : ℕ => (n : ℤ)) (ordAt_eq_zero_of_zero E hD Q)
+    rw [hDegE, Finset.sum_congr rfl hOrd0]
+    simp
   · -- splitsOnE + D ≠ 0 ⇒ Σ ordAt = natDegree(normPoly).
     have hOrdSum : (∑ Q ∈ E.points, ordAt E msg.toD Q) = (normPoly E msg.toD).natDegree :=
       sum_ordAt_eq_natDegree_under_split E msg.toD hD h_split

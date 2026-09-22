@@ -5930,7 +5930,7 @@ theorem lineBuild_length4_explicit_degE_le_four
     (P₀ P₁ P₂ P₃ : ZMod E.q × ZMod E.q)
     (h_xx_01 : P₀.1 ≠ P₁.1) (h_xx_23 : P₂.1 ≠ P₃.1) :
     (lineBuild_length4_explicit E P₀ P₁ P₂ P₃).degE ≤ 4 := by
-  unfold CoordRingElt.degE
+  refine le_trans (CoordRingElt.degE_le_max _) ?_
   have ha := lineBuild_length4_explicit_a_natDegree_le_two E P₀ P₁ P₂ P₃ h_xx_01 h_xx_23
   have hb := lineBuild_length4_explicit_b_natDegree_le_zero E P₀ P₁ P₂ P₃ h_xx_01 h_xx_23
   refine max_le ?_ ?_

@@ -18,6 +18,10 @@ variable (E : ECSetup)
 noncomputable def curvePoly : Polynomial (ZMod E.q) :=
   Polynomial.X ^ 3 + Polynomial.C E.curveA * Polynomial.X + Polynomial.C E.curveB
 
+lemma curvePoly_natDegree_le_three : (curvePoly E).natDegree ≤ 3 := by
+  unfold curvePoly
+  compute_degree
+
 @[simp]
 lemma curvePoly_eval (x : ZMod E.q) :
     (curvePoly E).eval x = x ^ 3 + E.curveA * x + E.curveB := by
@@ -130,13 +134,19 @@ lemma zeros_card_le_degE (D : CoordRingElt E.q) (hDnz : ¬(D.a = 0 ∧ D.b = 0))
         · exact ne_of_apply_ne ( fun p => p.coeff 3 ) ( by simp +decide [ curvePoly ] );
       omega
   have hN_deg : N.natDegree ≤ D.degE := by
-    refine' le_trans ( Polynomial.natDegree_sub_le _ _ ) _;
-    refine' max_le _ _;
-    · simp +decide [ CoordRingElt.degE ];
-    · refine' le_trans ( Polynomial.natDegree_mul_le .. ) _ ; norm_num [ curvePoly ];
-      rw [ Polynomial.natDegree_add_eq_left_of_natDegree_lt ] <;> by_cases h : E.curveA = 0 <;> simp +decide [ h ];
-      · exact le_max_of_le_right ( by linarith );
-      · exact le_max_of_le_right ( by linarith );
+    by_cases hb : D.b = 0
+    · -- `b = 0`: the norm is `a²`, of degree exactly `2·deg a = degE`.
+      have hNa : N = D.a ^ 2 := by rw [hN_def, hb]; ring
+      simp [hNa, CoordRingElt.degE_of_b_eq_zero hb, Polynomial.natDegree_pow]
+    · rw [CoordRingElt.degE_of_b_ne_zero hb]
+      refine' le_trans ( Polynomial.natDegree_sub_le _ _ ) _;
+      refine' max_le _ _;
+      · exact le_trans (le_of_eq (Polynomial.natDegree_pow _ _)) (le_max_left _ _)
+      · refine le_trans Polynomial.natDegree_mul_le ?_
+        rw [Polynomial.natDegree_pow]
+        refine le_max_of_le_right ?_
+        have := curvePoly_natDegree_le_three E
+        omega
   -- For each x₀ with N(x₀) = 0:
   -- - If D.b(x₀) ≠ 0: y = D.a(x₀)/D.b(x₀) is unique, at most 1 zero on E above x₀.
   -- - If D.b(x₀) = 0: then D.a(x₀)² = 0, so D.a(x₀) = 0. All ≤ 2 points on E above x₀ are zeros.
@@ -200,7 +210,8 @@ lemma toCoordRingElt_not_zero (g : MvPolynomial (Fin 2) (ZMod E.q))
 lemma toCoordRingElt_degE_le (g : MvPolynomial (Fin 2) (ZMod E.q)) (d : ℕ) (hd : d ≥ 1)
     (hDeg : g.totalDegree ≤ d) :
     (toCoordRingElt E g).degE ≤ 3 * d := by
-  unfold CoordRingElt.degE toCoordRingElt
+  refine le_trans (CoordRingElt.degE_le_max _) ?_
+  unfold toCoordRingElt
   simp only [Polynomial.natDegree_neg]
   exact degE_bound E g d hd hDeg
 
