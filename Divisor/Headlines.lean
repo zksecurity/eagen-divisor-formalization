@@ -265,8 +265,6 @@ theorem ma_completeness_binary_any_length
     (h_toD_eq : msg.toD =
        LineAccum.lineBuild_singletons E
          (binarySupport stmt wit hk h_binary))
-    (h_degE_eq :
-       msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
     (h_scalars_match : ∀ i : Fin stmt.k,
        msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
@@ -280,11 +278,19 @@ theorem ma_completeness_binary_any_length
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
   have h_ps_on := binarySupport_on_curve stmt wit hk h_binary
     h_target_on_curve h_bases_on_curve
+  have h_chain := LineAccum.iteratedPointChordCase_of_safePairs E
+    (binarySupport stmt wit hk h_binary) h_ps_on h_safe
+  have h_degE_eq :
+      msg.toD.degE = (binarySupport stmt wit hk h_binary).length := by
+    rw [h_toD_eq]
+    exact LineAccum.degE_lineBuild_singletons_eq_length_of_pointChordCase E _
+      h_ps_on (binarySupport_sumOnE_eq_zero stmt wit hk h_binary h_valid h_ps_on)
+      h_nodup
+      (binarySupport_length_ge_two stmt wit hk h_binary h_valid h_target_on_curve)
+      h_chain
   exact ma_completeness_binary_point_certificate E stmt wit hk msg
     h_binary h_valid h_toD_eq h_degE_eq h_scalars_match
-    h_target_on_curve h_bases_on_curve h_nodup
-    (LineAccum.iteratedPointChordCase_of_safePairs E
-      (binarySupport stmt wit hk h_binary) h_ps_on h_safe)
+    h_target_on_curve h_bases_on_curve h_nodup h_chain
     h_admSetMax h_deg h_deg_k
 
 /-- Any-length binary completeness with the general-position
@@ -298,8 +304,6 @@ theorem ma_completeness_binary_any_length_cert
     (h_toD_eq : msg.toD =
        LineAccum.lineBuild_singletons E
          (binarySupport stmt wit hk h_binary))
-    (h_degE_eq :
-       msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
     (h_scalars_match : ∀ i : Fin stmt.k,
        msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
@@ -312,7 +316,7 @@ theorem ma_completeness_binary_any_length_cert
     (maRejectSet E stmt msg).card
       ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
   ma_completeness_binary_any_length E stmt wit hk msg h_binary h_valid
-    h_toD_eq h_degE_eq h_scalars_match h_target_on_curve h_bases_on_curve
+    h_toD_eq h_scalars_match h_target_on_curve h_bases_on_curve
     h_nodup
     (LineAccum.SafePairs.of_cert E
       (binarySupport_on_curve stmt wit hk h_binary

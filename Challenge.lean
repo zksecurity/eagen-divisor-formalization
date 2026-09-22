@@ -160,8 +160,6 @@ theorem ma_completeness_binary_any_length
     (h_toD_eq : msg.toD =
        LineAccum.lineBuild_singletons E
          (binarySupport stmt wit hk h_binary))
-    (h_degE_eq :
-       msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
     (h_scalars_match : ∀ i : Fin stmt.k,
        msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
@@ -183,8 +181,6 @@ theorem ma_completeness_binary_any_length_cert
     (h_toD_eq : msg.toD =
        LineAccum.lineBuild_singletons E
          (binarySupport stmt wit hk h_binary))
-    (h_degE_eq :
-       msg.toD.degE = (binarySupport stmt wit hk h_binary).length)
     (h_scalars_match : ∀ i : Fin stmt.k,
        msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)

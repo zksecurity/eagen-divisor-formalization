@@ -2940,7 +2940,7 @@ end MAProverMsg.IsHonestForBinaryScaled
 
 /-- A valid binary witness with an affine target has at least one selected
     base, so its binary support has length at least two. -/
-private theorem binarySupport_length_ge_two
+theorem binarySupport_length_ge_two
     {E : ECSetup} (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k)
     (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)

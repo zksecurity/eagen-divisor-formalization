@@ -203,7 +203,7 @@ theorem any_length_completeness_at_length_two :
     (maRejectSet E17 stmt msg).card
       ≤ (3 * numZeros E17 msg.toD + 4) * E17.numAffine :=
   ma_completeness_binary_any_length_cert E17 stmt wit hk msg h_binary h_valid
-    h_toD_eq h_degE_eq h_scalars_match h_target_on h_bases_on h_nodup
+    h_toD_eq h_scalars_match h_target_on h_bases_on h_nodup
     (by rw [binarySupport_eq_support]; decide) rfl h_deg h_deg_k
 
 /-! ## Protocol-level honesty
@@ -235,7 +235,7 @@ theorem any_length_completeness_safePairs :
     (maRejectSet E17 stmt msg).card
       ≤ (3 * numZeros E17 msg.toD + 4) * E17.numAffine :=
   ma_completeness_binary_any_length E17 stmt wit hk msg h_binary h_valid
-    h_toD_eq h_degE_eq h_scalars_match h_target_on h_bases_on h_nodup
+    h_toD_eq h_scalars_match h_target_on h_bases_on h_nodup
     (LineAccum.SafePairs.of_cert E17 h_ps_on
       (by rw [binarySupport_eq_support]; decide)) rfl h_deg h_deg_k
 
