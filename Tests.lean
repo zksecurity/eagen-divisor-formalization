@@ -7,6 +7,7 @@ import Tests.DegreeExactRegression
 import Tests.LineBuildEvalSmokeTest
 import Tests.MAExtractorExec
 import Tests.ProverSmoke
+import Tests.ProverTricky
 import Tests.F5RegressionAxiomClosure
 import Tests.HasseCardBridge
 import Tests.IncrementalSmokeTest

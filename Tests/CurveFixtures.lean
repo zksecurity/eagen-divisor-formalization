@@ -8,6 +8,7 @@
 
   * `E17`: `y² = x³ + 1` over `F₁₇`.
   * `E43`: `y² = x³ + 1` over `F₄₃`.
+  * `E23`: `y² = x³ − x` over `F₂₃` (full 2-torsion, `A ≠ 0`).
 -/
 import Divisor.DefsPre
 
@@ -37,5 +38,7 @@ abbrev mkFilteredCurve (q : ℕ) [NeZero q] (hq : Nat.Prime q)
 def E17 : ECSetup := mkFilteredCurve 17 (by decide) 0 1 (by decide) (by decide)
 
 def E43 : ECSetup := mkFilteredCurve 43 (by decide) 0 1 (by decide) (by decide)
+
+def E23 : ECSetup := mkFilteredCurve 23 (by decide) (-1) 0 (by decide) (by decide)
 
 end Tests.CurveFixtures
