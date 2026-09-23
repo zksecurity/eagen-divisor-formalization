@@ -31,6 +31,11 @@ jobs:
           # statements the Comparator judge below compares against.
           build-args: "Divisor Tests Challenge"
 
+      # Library and tests must be warning-free. Challenge is excluded: its
+      # frozen statements are `sorry` by design. Reuses the build above.
+      - name: Warnings as errors
+        run: lake build --wfail Divisor Tests
+
       # Kernel replay of every declaration-bearing module in this
       # library with the toolchain's built-in leanchecker. Catches
       # "environment hacking": declarations added to the environment
