@@ -41,6 +41,7 @@ import Divisor.CoordRingElt.Smul
 import Divisor.PolyGBridge
 import Divisor.PolyGDensity
 import Divisor.Protocol
+import Divisor.AdmNormalizer
 import Divisor.DivisorPrincipal
 import Divisor.Soundness
 import Divisor.Completeness
