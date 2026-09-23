@@ -252,10 +252,10 @@ theorem ip_completeness_q
 /-! ## Prover completeness -/
 
 /-- **The honest prover succeeds for every valid witness.** For a
-witness with nonnegative scalars and points on the curve, `prove` (the
-line build over `(−P) + Σ nᵢ·(Bᵢ)`, rescaled by the admissible set's
-normalizer) returns a message that is honest, admissible, nonzero and
-of pole order `1 + Σ nᵢ`. If it returns nothing, no honest message is
+witness with nonnegative scalars and points on the curve, the executable
+prover `proveC` (the line build over `(−P) + Σ nᵢ·(Bᵢ)`, rescaled by the
+admissible set's normalizer) returns an output whose message is honest,
+admissible, nonzero and of pole order `1 + Σ nᵢ`. If it returns nothing, no honest message is
 admissible for the statement. No general-position hypothesis. -/
 theorem prover_complete
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
@@ -263,14 +263,14 @@ theorem prover_complete
     (hValid : relDlog E stmt wit) (hNonneg : ∀ i, 0 ≤ wit.scalars i)
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points) :
-    (∀ msg, prove E stmt wit hk N = some msg →
-      msg.isHonestFor E stmt wit hk ∧ stmt.admSet (msg.polyA, msg.polyB) ∧
-        ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) ∧
-        msg.toD.degE = 1 + ∑ i, (wit.scalars i).toNat) ∧
-    (prove E stmt wit hk N = none →
+    (∀ out, proveC E stmt wit hk N = some out →
+      out.toMsg.isHonestFor E stmt wit hk ∧ stmt.admSet (out.toMsg.polyA, out.toMsg.polyB) ∧
+        ¬ (out.toMsg.toD.a = 0 ∧ out.toMsg.toD.b = 0) ∧
+        out.toMsg.toD.degE = 1 + ∑ i, (wit.scalars i).toNat) ∧
+    (proveC E stmt wit hk N = none →
       ∀ msg : MAProverMsg E.q stmt.k, msg.isHonestFor E stmt wit hk →
         ¬ stmt.admSet (msg.polyA, msg.polyB)) :=
-  prove_spec N hN hValid hNonneg h_target_on_curve h_bases_on_curve
+  proveC_spec N hN hValid hNonneg h_target_on_curve h_bases_on_curve
 
 /-- **MA completeness of the honest prover.** Within the degree budget
 `1 + Σ nᵢ`, the prover's message is rejected on at most
@@ -285,12 +285,12 @@ theorem ma_completeness_prover
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
     (hBudgetW : 1 + ∑ i, (wit.scalars i).toNat ≤ wit.degBound)
     (hBudgetS : 1 + ∑ i, (wit.scalars i).toNat ≤ stmt.degBound) :
-    (∀ msg, prove E stmt wit hk N = some msg →
-      (maRejectSet E stmt msg).card ≤ (3 * stmt.degBound + 4) * E.points.card) ∧
-    (prove E stmt wit hk N = none →
+    (∀ out, proveC E stmt wit hk N = some out →
+      (maRejectSet E stmt out.toMsg).card ≤ (3 * stmt.degBound + 4) * E.points.card) ∧
+    (proveC E stmt wit hk N = none →
       ∀ msg : MAProverMsg E.q stmt.k, msg.isHonestFor E stmt wit hk →
         ¬ stmt.admSet (msg.polyA, msg.polyB)) :=
-  prove_rejectSet_bound N hN hValid hNonneg h_target_on_curve h_bases_on_curve
+  proveC_rejectSet_bound N hN hValid hNonneg h_target_on_curve h_bases_on_curve
     hBudgetW hBudgetS
 
 /-! ## Soundness probability and contrapositives -/

@@ -6,6 +6,7 @@ import Tests.CurveFixtures
 import Tests.DegreeExactRegression
 import Tests.LineBuildEvalSmokeTest
 import Tests.MAExtractorExec
+import Tests.ProverSmoke
 import Tests.F5RegressionAxiomClosure
 import Tests.HasseCardBridge
 import Tests.IncrementalSmokeTest
