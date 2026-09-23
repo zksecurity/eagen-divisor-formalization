@@ -27,8 +27,7 @@ replays the whole solution export through a fresh kernel.
   `ma_soundness_count_bound`,
   `ip_extractable`, `ma_completeness`, `ma_completeness_q`,
   `ip_completeness`, `ip_completeness_q`,
-  `ma_completeness_binary_any_length`,
-  `ma_completeness_binary_any_length_cert`), permitted axioms exactly
+  `prover_complete`, `ma_completeness_prover`), permitted axioms exactly
   `propext`, `Quot.sound`, `Classical.choice`.
 * `hasse.json` — the Hasse–Weil-priced variants
   (`ma_soundness_count_bound_hasse`, `ip_extractable_hasse`), additionally
@@ -40,8 +39,9 @@ replays the whole solution export through a fresh kernel.
 
 To trust a green judge run you must trust: `Challenge.lean` and its
 transitive imports (`Divisor.Soundness` for the protocol/extractor
-definitions and `Divisor.SafeSupportDefs` for the binary-support and
-general-position definitions; nothing that proves a judged theorem),
+definitions and `Divisor.ProverDefs` for the executable prover `proveC`,
+its admissible-set normalizers and the `MsgC.toMsg` reading of its output;
+nothing that proves a judged theorem),
 this project's `lakefile.toml`, the Lean kernel, and the sandbox.
 **Review changes to `Challenge.lean` with the same care as an
 axiom**: it is the statement of record. The definitions it imports
@@ -55,7 +55,11 @@ asserts, while the judge stays green. Definitions reachable from
 `Challenge.lean` therefore need the same review as the statements
 themselves; where their intended semantics is not evident from the
 statement, it is pinned separately as a theorem under `Tests/` (for
-`degE`, in `Tests/DegreeExactRegression.lean`).
+`degE`, in `Tests/DegreeExactRegression.lean`). The prover headlines
+quantify over `proveC`'s output read through `MsgC.toMsg`; a `toMsg`
+that ignored its input would make them hold of a meaningless prover,
+so it is kept a plain coefficient-wise map and pinned on a literal in
+`Tests/ProverSmoke.lean`, which also runs `proveC` on concrete curves.
 
 ## Running locally
 
