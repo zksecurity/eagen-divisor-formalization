@@ -12,6 +12,8 @@ import Divisor.OrdP.Units
 import Divisor.OrdP.LineDivisor
 import Divisor.LineBuildExact.Combine
 import Divisor.LineBuildExact
+import Divisor.ProverDefs
+import Divisor.Prover
 import Divisor.Bridges
 import Divisor.ChordCubicSymmetric
 import Divisor.PartialFractionHelper
