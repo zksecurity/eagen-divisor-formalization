@@ -65,8 +65,6 @@ import Divisor.SlopeChoice
 import Divisor.GeometricSoundness
 import Divisor.CoordRingEltC
 import Divisor.CoordRingEltC.Bridge
-import Divisor.LineBuildComputable
-import Divisor.LineBuildComputable.Bridge
 import Divisor.LineBuildComputable.Singletons
 import Divisor.Headlines
 import Divisor.Hasse

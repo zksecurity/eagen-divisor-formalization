@@ -14,10 +14,9 @@
   rewrites of `logDerivCheckFn`.
 
   **`logDerivCheckFn_zero_of_explicit_divisor_data`** (the external
-  entry point, consumed by `LineBuildRecursive` and
-  `LogDerivEagenLength4`): `logDerivCheckFn = 0` given an explicit
-  divisor multiplicity function `β_fun` matching `D`'s zero divisor,
-  plus the per-challenge geometric side conditions.
+  entry point, consumed by `HonestForExplicit`): `logDerivCheckFn = 0`
+  given an explicit divisor multiplicity function `β_fun` matching
+  `D`'s zero divisor, plus the per-challenge geometric side conditions.
 
   The completeness path goes through `MACompletenessCore`; the
   honest-divisor identification is supplied by the

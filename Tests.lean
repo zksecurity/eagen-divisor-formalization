@@ -4,7 +4,6 @@ import Tests.CoeffPolyEvalSmokeTest
 import Tests.CrossCaseSmokeTest
 import Tests.CurveFixtures
 import Tests.DegreeExactRegression
-import Tests.LineBuildEvalSmokeTest
 import Tests.MAExtractorExec
 import Tests.ProverPrimeOrder
 import Tests.ProverSmoke

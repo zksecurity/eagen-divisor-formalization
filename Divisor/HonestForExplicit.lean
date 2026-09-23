@@ -1,43 +1,13 @@
 /-
-  Divisor/LineBuildRecursive.lean
+  Divisor/HonestForExplicit.lean
 
-  Two things live here:
-
-  1. The recursive `lineBuild` driver for general-N point lists,
-     following Eagen §3.1.1 ("Incremental construction") in 596.pdf.
-  2. The `IsHonestForExplicit` completeness bridge: from an honest
-     message (divisor identity + on-curve invariants) to verifier
-     acceptance off the bad-challenge set, culminating in
-     `ma_completeness_via_isHonestForExplicit`.
-
-  ## The construction (for sum-zero list `Ps`)
-
-  **Level 0**: pair adjacent inputs `(P_2i, P_2i+1)`, build chord line
-  `L_i` through them with third intersection `Q_i = -(P_2i + P_2i+1)`.
-  Each such pair produces a level-1 entry `(-Q_i, L_i)` — point is
-  `-Q_i = P_2i + P_2i+1` (group sum), polynomial is the chord line.
-
-  **Level k → k+1** (k ≥ 1): given level-k entries `(a_pt, a_poly)` and
-  `(b_pt, b_poly)` (where the points are `-Q_*` from previous level),
-  build chord line `L'` through `a_pt, b_pt` with third intersection
-  `Q'`. The level-(k+1) entry is `(-Q', M)` where:
-
-      M = (L' · a_poly · b_poly) / ((X - x(a_pt)) · (X - x(b_pt)))
-
-  Both `(X - x(a_pt))` and `(X - x(b_pt))` divide cleanly because the
-  numerator vanishes at both `±a_pt.1` (since `L'` vanishes at `a_pt`
-  and `a_poly` vanishes at `-(a_pt) = Q_{prev}`) and similarly for
-  `b_pt`.
-
-  **Termination**: when the input list is sum-zero, the final third
-  intersection at the top level is `O` (infinity). The output polynomial
-  has divisor exactly `Σ(P_i) - n·O`.
-
-  **Odd lengths**: carry the unpaired entry forward to the next level.
-
-  No correctness theorem for the recursive driver is proved here; the
-  production completeness chain goes through the LineAccum route
-  (`LineBuild.lean`, `LineBuildExact.lean`, `Prover.lean`).
+  The completeness bridge from an honest message to verifier
+  acceptance. `MAProverMsg.IsHonestForExplicit` is a definitional alias
+  of `isHonestFor` (divisor identity, splitting, on-curve invariants);
+  from it this file derives the residue match, the degree accounting
+  and `splitsOnE`, culminating in
+  `ma_completeness_via_isHonestForExplicit`, the core of
+  `ma_completeness`.
 -/
 
 import Divisor.LogDerivEagenLength4
@@ -47,147 +17,6 @@ open Polynomial Finset Classical
 namespace Divisor
 
 variable (E : ECSetup)
-
-/-- An "accumulator" entry at level k > 0: a point (= -Q from prior
-    level chord = group-sum of absorbed P's at this level) and the
-    accumulated polynomial whose divisor incorporates the absorbed P's
-    plus the third intersection. -/
-structure Accum where
-  point : ZMod E.q × ZMod E.q
-  poly : CoordRingElt E.q
-
-/-! ## Level-0 step: build chord lines from input points
-
-For a list of input points `[P_0, P_1, ..., P_{n-1}]`, pair them up and
-build chord lines. Each pair `(P_2i, P_2i+1)` produces a level-1 entry
-`(-Q_i, L_i)`.
-
-Odd-length input: the last (unpaired) point becomes a level-1 entry
-`(P_{n-1}, 1)` carrying just the point with identity polynomial. -/
-
-/-- Build a level-1 accumulator from two distinct affine points.
-    The chord through `P, Q` has third intersection `-(P+Q)`; the new
-    accumulator is `(-(P+Q), chord)`. -/
-noncomputable def Accum.fromChordPair_distinct
-    (P Q : ZMod E.q × ZMod E.q) (_h_xx : P.1 ≠ Q.1) : Accum E :=
-  let chord := chordCoordRingElt E P Q
-  let lam := slopeOf P.1 P.2 Q.1 Q.2
-  let Qx := lam ^ 2 - P.1 - Q.1
-  let Qy := lam * Qx + (P.2 - lam * P.1)
-  -- Third intersection is (Qx, Qy). The "next-level input" is its negation.
-  { point := (Qx, -Qy), poly := chord }
-
-/-- Build a level-1 accumulator from two points that are negatives of
-    each other (`P = -Q`, so same x, opposite y, sum-zero in group law).
-    The chord through `(P, -P)` is the vertical line `(X - x(P))`, which
-    has divisor `(P) + (-P) - 2·O`. The "third intersection" is `O`;
-    the new accumulator carries the vertical line as polynomial and `P`
-    as point (sentinel — actual contribution is at infinity). -/
-noncomputable def Accum.fromChordPair_vertical
-    (P Q : ZMod E.q × ZMod E.q) (_h_xx : P.1 = Q.1) (_h_yy : P.2 = -Q.2) :
-    Accum E :=
-  { point := P, -- Sentinel; level transitions handle this.
-    poly := { a := Polynomial.X - Polynomial.C P.1, b := 0 } }
-
-/-- Process the initial input list, pairing adjacent points and building
-    chord lines. Returns the level-1 accumulator list. Odd input lengths
-    carry the last point forward as `(P_last, 1)`. -/
-noncomputable def lineBuild_level0 (Ps : List (ZMod E.q × ZMod E.q)) :
-    List (Accum E) :=
-  match Ps with
-  | [] => []
-  | [P] => [{ point := P, poly := { a := 1, b := 0 } }]
-  | P :: Q :: rest =>
-      if h : P.1 ≠ Q.1 then
-        Accum.fromChordPair_distinct E P Q h :: lineBuild_level0 rest
-      else if hYY : P.2 = -Q.2 then
-        -- Vertical chord case: P = -Q.
-        Accum.fromChordPair_vertical E P Q
-          (Classical.byContradiction (fun h_neq => h h_neq)) hYY ::
-          lineBuild_level0 rest
-      else
-        -- Tangent doubling case (P = Q): deferred.
-        { point := P, poly := { a := 1, b := 0 } } :: lineBuild_level0 rest
-
-/-! ## Level-(k+1) step (k ≥ 1): combine two level-k accumulators
-
-Combine `(a_pt, a_poly)` and `(b_pt, b_poly)` per the paper formula:
-    `new_poly = chord(a_pt, b_pt) · a_poly · b_poly / divLin(a_pt.1) / divLin(b_pt.1)`. -/
-
-noncomputable def Accum.combine_higher_distinct
-    (a b : Accum E) (_h_xx : a.point.1 ≠ b.point.1) : Accum E :=
-  let chord := chordCoordRingElt E a.point b.point
-  let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
-  let Qx := lam ^ 2 - a.point.1 - b.point.1
-  let Qy := lam * Qx + (a.point.2 - lam * a.point.1)
-  let mul_with_chord := mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly
-  let after_div_a := mul_with_chord.divLin a.point.1
-  let after_div_b := after_div_a.divLin b.point.1
-  { point := (Qx, -Qy), poly := after_div_b }
-
-/-- Combine two accumulators when their points are negatives of each
-    other (`a.point = -b.point`, so `a.point.1 = b.point.1`). The chord
-    through `(P, -P)` is the vertical line `(X - x(P))`. Their group sum
-    is `0` (the identity = ∞), so the level-(k+1) "third intersection"
-    is also `O`.
-
-    Polynomial: `(X - x(a.point)) · a.poly · b.poly / (X - x(a.point))^2
-                = a.poly · b.poly / (X - x(a.point))`. -/
-noncomputable def Accum.combine_higher_vertical
-    (a b : Accum E)
-    (_h_xx : a.point.1 = b.point.1) (_h_yy : a.point.2 = -b.point.2) :
-    Accum E :=
-  -- Combined = a.poly · b.poly / (X - x(a.point)).
-  let mul_ab := mulCoordRingElt E a.poly b.poly
-  let combined := mul_ab.divLin a.point.1
-  -- "New point" is the identity (= O). Encode as the affine pair (a.point.1, 0)
-  -- as a sentinel; in the divisor equation, the actual contribution is at ∞.
-  -- Since the recursion should terminate here for sum-zero inputs, the
-  -- output is whatever consumer extracts.
-  { point := a.point, poly := combined }
-
-/-- Process a level-k (k ≥ 1) accumulator list, pairing adjacent entries
-    and combining each pair. Odd-length lists carry the last entry forward. -/
-noncomputable def lineBuild_level_step (xs : List (Accum E)) :
-    List (Accum E) :=
-  match xs with
-  | [] => []
-  | [a] => [a]
-  | a :: b :: rest =>
-      if h : a.point.1 ≠ b.point.1 then
-        Accum.combine_higher_distinct E a b h :: lineBuild_level_step rest
-      else if hYY : a.point.2 = -b.point.2 then
-        -- Vertical chord case (a.point = -b.point).
-        Accum.combine_higher_vertical E a b
-          (Classical.byContradiction (fun h_neq => h h_neq)) hYY ::
-          lineBuild_level_step rest
-      else
-        -- Tangent doubling: a.point = b.point. Deferred.
-        a :: b :: lineBuild_level_step rest
-
-/-! ## Top-level driver
-
-Iterate `lineBuild_level_step` until the list reduces to one entry. Use
-`fuel := xs.length` as a termination measure (each step at least halves
-the list, so log₂ of length is sufficient; length itself is overkill but
-safe). -/
-
-noncomputable def lineBuild_iterate :
-    ℕ → List (Accum E) → List (Accum E)
-  | 0, xs => xs
-  | n + 1, xs =>
-      if xs.length ≤ 1 then xs
-      else lineBuild_iterate n (lineBuild_level_step E xs)
-
-/-- Top-level lineBuild: from a list of input points (assumed sum-zero),
-    produces the polynomial witness whose divisor is `Σ (P_i) - n·O`. -/
-noncomputable def lineBuild (Ps : List (ZMod E.q × ZMod E.q)) : CoordRingElt E.q :=
-  let level1 := lineBuild_level0 E Ps
-  let final := lineBuild_iterate E Ps.length level1
-  match final with
-  | [] => { a := 1, b := 0 }
-  | [single] => single.poly
-  | _ => { a := 1, b := 0 } -- shouldn't happen if iterations sufficient
 
 /-! ## `IsHonestForExplicit` predicate (any-k completeness path)
 

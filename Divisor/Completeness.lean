@@ -43,10 +43,8 @@ variable (E : ECSetup)
 
     Factored through `ma_completeness_parameterized`
     (`Divisor/MACompletenessCore.lean`), which takes the per-pair
-    `logDerivCheckFn = 0` claim as a hook, so specialized integrations
-    (the length-4 simple bridge in `Divisor.LogDerivEagenLength4`, the
-    explicit honest-divisor identity in `Divisor.LineBuildRecursive`)
-    can supply it directly. -/
+    `logDerivCheckFn = 0` claim as a hook, which the explicit
+    honest-divisor identity in `Divisor.HonestForExplicit` supplies. -/
 theorem ma_completeness_base
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)

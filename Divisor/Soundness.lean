@@ -19,7 +19,7 @@
   `Divisor/Completeness.lean`.
 -/
 import Divisor.Bridges
-import Divisor.LineBuildRecursive
+import Divisor.HonestForExplicit
 import VCVio.OracleComp.ProbComp
 
 namespace Divisor

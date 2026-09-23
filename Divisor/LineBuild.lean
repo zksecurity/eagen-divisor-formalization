@@ -14,9 +14,8 @@
   denominators cleared, follows Eagen, ePrint 2022/596, §3.1.1
   ("Incremental construction").
 
-  The recursion data model is a sub-namespace `Divisor.LineAccum`
-  to avoid clashing with the chord-only path in
-  `Divisor.LineBuildRecursive`. The `Accum.point` field uses
+  The recursion data model lives in the sub-namespace
+  `Divisor.LineAccum`. The `Accum.point` field uses
   `ECPoint E` so the `O` carry (running sum of an absorbed sub-list
   hitting the identity) is representable.
 
@@ -444,8 +443,7 @@ theorem iterate_length_le_one_of_fuel_geq
 
 /-! ## Formal divisor of a support list -/
 
-/-- The formal divisor `Σ_{P ∈ Ps} (P) − |Ps|·(∞)` of a support list
-(local copy; avoids importing `Divisor.LineBuildRecursive`). -/
+/-- The formal divisor `Σ_{P ∈ Ps} (P) − |Ps|·(∞)` of a support list. -/
 noncomputable def formalDivisorOfList
     (Ps : List (ZMod E.q × ZMod E.q)) : ECPoint E → ℤ :=
   fun R =>
