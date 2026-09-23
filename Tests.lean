@@ -6,6 +6,7 @@ import Tests.CurveFixtures
 import Tests.DegreeExactRegression
 import Tests.LineBuildEvalSmokeTest
 import Tests.MAExtractorExec
+import Tests.ProverPrimeOrder
 import Tests.ProverSmoke
 import Tests.ProverTricky
 import Tests.F5RegressionAxiomClosure
