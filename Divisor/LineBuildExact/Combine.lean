@@ -11,7 +11,7 @@
   `combineCanFire` side conditions.
 -/
 import Divisor.OrdP.LineDivisor
-import Divisor.SafeSupport
+import Divisor.PointCombine
 
 open Polynomial WeierstrassCurve WeierstrassCurve.Affine
 

@@ -13,6 +13,7 @@ import Divisor.ProverDefs
 import Divisor.OrdP.Units
 import Divisor.LineBuildExact
 import Divisor.Completeness
+import Divisor.CoordRingElt.Smul
 
 open Polynomial
 
