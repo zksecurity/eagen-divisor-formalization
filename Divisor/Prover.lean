@@ -5,8 +5,8 @@
   (`Divisor/ProverDefs.lean`) is honest (`isHonestFor`), nonzero, and of
   pole order `1 + Σ nᵢ`, with no general-position hypothesis.
 
-  `prover_complete`: the prover's message is honest and admissible, or
-  no honest message is admissible at all. `ma_completeness_prover`
+  `prove_spec`: the prover's message is honest and admissible, or
+  no honest message is admissible at all. `prove_rejectSet_bound`
   composes this with the unchanged `ma_completeness` bound.
 -/
 import Divisor.ProverDefs
@@ -83,7 +83,7 @@ include hN hValid hNonneg h_target_on_curve h_bases_on_curve
 /-- **Prover completeness.** The prover's message is honest, admissible,
     nonzero and of pole order `1 + Σ nᵢ`; if it returns nothing, no honest
     message is admissible for this statement. -/
-theorem prover_complete :
+theorem prove_spec :
     (∀ msg, prove E stmt wit hk N = some msg →
       msg.isHonestFor E stmt wit hk ∧ stmt.admSet (msg.polyA, msg.polyB) ∧
         ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) ∧
@@ -121,7 +121,7 @@ theorem prover_complete :
     `ma_completeness`: within the degree budget, the prover's message is
     rejected on at most `(3·d + 4)·|E|` challenge pairs, and when the
     prover returns nothing no honest message is admissible. -/
-theorem ma_completeness_prover
+theorem prove_rejectSet_bound
     (hBudgetW : 1 + ∑ i, (wit.scalars i).toNat ≤ wit.degBound)
     (hBudgetS : 1 + ∑ i, (wit.scalars i).toNat ≤ stmt.degBound) :
     (∀ msg, prove E stmt wit hk N = some msg →
@@ -130,7 +130,7 @@ theorem ma_completeness_prover
       ∀ msg : MAProverMsg E.q stmt.k, msg.isHonestFor E stmt wit hk →
         ¬ stmt.admSet (msg.polyA, msg.polyB)) := by
   obtain ⟨hsome, hnone⟩ :=
-    prover_complete N hN hValid hNonneg h_target_on_curve h_bases_on_curve
+    prove_spec N hN hValid hNonneg h_target_on_curve h_bases_on_curve
   refine ⟨fun msg hmsg => ?_, hnone⟩
   obtain ⟨hhon, hadm, hD, hdeg⟩ := hsome msg hmsg
   exact ma_completeness_degBound E stmt wit hk hValid msg (hdeg ▸ hBudgetW) (hdeg ▸ hBudgetS)

@@ -17,8 +17,8 @@
     It includes the soundness headlines (`ma_soundness`, `ma_soundness_count_bound`,
     `ip_extractable` and their `_base`/`_paper`/probability/
     contrapositive forms), the whole completeness side
-    (`ma_completeness*`, `ip_completeness*`, the binary chain, the
-    any-length `SafePairs` route), the divisor-multiplicity bridge
+    (`ma_completeness*`, `ip_completeness*`, the binary chain,
+    `prover_complete`), the divisor-multiplicity bridge
     (`CoordRingElt.exists_divisor_multiplicity*`,
     `ordAt_group_sum_zero_under_split`), and the leaf's `_of_count`
     flavors (field-size forms with explicit count-bound hypotheses).
@@ -420,26 +420,24 @@ info: 'Divisor.ma_completeness_binary_admSetHash_point_certificate' depends on a
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_completeness_binary_admSetHash_point_certificate
 
-/-! Any-length binary completeness (`Divisor/Headlines.lean`):
-  the chain certificate discharged for ANY support length from the
-  semantic general-position hypothesis `SafePairs` (decidable per
-  instance via `SafePairsCert`). Axiom-free, like the rest of the
-  completeness side. `pointCombine_eq_add` is the enabling bridge:
-  the computable point skeleton is mathlib's group law. -/
+/-! Prover completeness (`Divisor/Headlines.lean`): the honest prover
+  (line build over `(−P) + Σ nᵢ·(Bᵢ)`, rescaled by the admissible
+  set's normalizer) succeeds for every valid witness with nonnegative
+  scalars. Axiom-free, like the rest of the completeness side. -/
 /--
-info: 'Divisor.ma_completeness_binary_any_length' depends on axioms: [propext,
+info: 'Divisor.prover_complete' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_any_length
+#print axioms Divisor.prover_complete
 /--
-info: 'Divisor.ma_completeness_binary_any_length_cert' depends on axioms: [propext,
+info: 'Divisor.ma_completeness_prover' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_any_length_cert
+#print axioms Divisor.ma_completeness_prover
 /--
 info: 'Divisor.LineAccum.pointCombine_eq_add' depends on axioms: [propext,
  Classical.choice,

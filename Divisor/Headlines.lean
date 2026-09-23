@@ -13,16 +13,17 @@
     third-round uniqueness).
   * **Completeness** — `ma_completeness` (reject set ≤ `(3d+4)·|E|`),
     `ma_completeness_q`, `ip_completeness`, `ip_completeness_q`.
-  * **Binary any-length completeness** —
-    `ma_completeness_binary_any_length` and its decidable-certificate
-    form, under the `SafePairs` general-position hypothesis.
+  * **Prover completeness** — `prover_complete`, `ma_completeness_prover`:
+    the honest prover produces an admissible honest message for every
+    valid witness with nonnegative scalars, with no general-position
+    hypothesis.
   * **Soundness probability and contrapositives** —
     `ma_soundness_ratio_bound` and the `witness_of_excess` family:
     observed acceptance above the bound forces extraction.
 -/
 import Divisor.ExtractorBridgeTheorems
 import Divisor.Completeness
-import Divisor.SafeSupport
+import Divisor.Prover
 
 open Polynomial Finset Classical
 
@@ -248,81 +249,49 @@ theorem ip_completeness_q
         Nat.mul_le_mul (by omega) hHasse
     _ ≤ 18 * (stmt.degBound + stmt.k + 12) * E.q := by ring_nf; omega
 
-/-! ## Binary any-length completeness -/
+/-! ## Prover completeness -/
 
-/-- **Any-length binary completeness.** For a binary
-witness whose support satisfies the semantic general-position
-hypothesis `SafePairs` — every nonempty split of every sublist has a
-chord-safe pair of subset sums — the honest line-build-singletons
-message achieves the completeness bound, at ANY support length. The
-hypothesis is decidable per instance via `SafePairsCert` +
-`SafePairs.of_cert`. -/
-theorem ma_completeness_binary_any_length
-    (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q stmt.k)
-    (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (h_valid : relDlog E stmt wit)
-    (h_toD_eq : msg.toD =
-       LineAccum.lineBuild_singletons E
-         (binarySupport stmt wit hk h_binary))
-    (h_scalars_match : ∀ i : Fin stmt.k,
-       msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+/-- **The honest prover succeeds for every valid witness.** For a
+witness with nonnegative scalars and points on the curve, `prove` (the
+line build over `(−P) + Σ nᵢ·(Bᵢ)`, rescaled by the admissible set's
+normalizer) returns a message that is honest, admissible, nonzero and
+of pole order `1 + Σ nᵢ`. If it returns nothing, no honest message is
+admissible for the statement. No general-position hypothesis. -/
+theorem prover_complete
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (N : AdmNormalizer E.q) (hN : stmt.admSet = N.admSet)
+    (hValid : relDlog E stmt wit) (hNonneg : ∀ i, 0 ≤ wit.scalars i)
+    (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
+    (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points) :
+    (∀ msg, prove E stmt wit hk N = some msg →
+      msg.isHonestFor E stmt wit hk ∧ stmt.admSet (msg.polyA, msg.polyB) ∧
+        ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) ∧
+        msg.toD.degE = 1 + ∑ i, (wit.scalars i).toNat) ∧
+    (prove E stmt wit hk N = none →
+      ∀ msg : MAProverMsg E.q stmt.k, msg.isHonestFor E stmt wit hk →
+        ¬ stmt.admSet (msg.polyA, msg.polyB)) :=
+  prove_spec N hN hValid hNonneg h_target_on_curve h_bases_on_curve
+
+/-- **MA completeness of the honest prover.** Within the degree budget
+`1 + Σ nᵢ`, the prover's message is rejected on at most
+`(3·d + 4)·|E.points|` challenge pairs; when the prover returns nothing,
+no honest message is admissible. Composes `prover_complete` with
+`ma_completeness`. -/
+theorem ma_completeness_prover
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (N : AdmNormalizer E.q) (hN : stmt.admSet = N.admSet)
+    (hValid : relDlog E stmt wit) (hNonneg : ∀ i, 0 ≤ wit.scalars i)
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
-    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
-    (h_safe : LineAccum.SafePairs E (binarySupport stmt wit hk h_binary))
-    (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
-    (h_deg : msg.toD.degE ≤ wit.degBound)
-    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg).card
-      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
-  have h_ps_on := binarySupport_on_curve stmt wit hk h_binary
-    h_target_on_curve h_bases_on_curve
-  have h_chain := LineAccum.iteratedPointChordCase_of_safePairs E
-    (binarySupport stmt wit hk h_binary) h_ps_on h_safe
-  have h_degE_eq :
-      msg.toD.degE = (binarySupport stmt wit hk h_binary).length := by
-    rw [h_toD_eq]
-    exact LineAccum.degE_lineBuild_singletons_eq_length_of_pointChordCase E _
-      h_ps_on (binarySupport_sumOnE_eq_zero stmt wit hk h_binary h_valid h_ps_on)
-      h_nodup
-      (binarySupport_length_ge_two stmt wit hk h_binary h_valid h_target_on_curve)
-      h_chain
-  exact ma_completeness_binary_point_certificate E stmt wit hk msg
-    h_binary h_valid h_toD_eq h_degE_eq h_scalars_match
-    h_target_on_curve h_bases_on_curve h_nodup h_chain
-    h_admSetMax h_deg h_deg_k
-
-/-- Any-length binary completeness with the general-position
-hypothesis supplied by the computable certificate
-(`decide`/`native_decide`-friendly). -/
-theorem ma_completeness_binary_any_length_cert
-    (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q stmt.k)
-    (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (h_valid : relDlog E stmt wit)
-    (h_toD_eq : msg.toD =
-       LineAccum.lineBuild_singletons E
-         (binarySupport stmt wit hk h_binary))
-    (h_scalars_match : ∀ i : Fin stmt.k,
-       msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
-    (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
-    (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
-    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
-    (h_cert : LineAccum.SafePairsCert E (binarySupport stmt wit hk h_binary))
-    (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
-    (h_deg : msg.toD.degE ≤ wit.degBound)
-    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg).card
-      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness_binary_any_length E stmt wit hk msg h_binary h_valid
-    h_toD_eq h_scalars_match h_target_on_curve h_bases_on_curve
-    h_nodup
-    (LineAccum.SafePairs.of_cert E
-      (binarySupport_on_curve stmt wit hk h_binary
-        h_target_on_curve h_bases_on_curve)
-      h_cert)
-    h_admSetMax h_deg h_deg_k
+    (hBudgetW : 1 + ∑ i, (wit.scalars i).toNat ≤ wit.degBound)
+    (hBudgetS : 1 + ∑ i, (wit.scalars i).toNat ≤ stmt.degBound) :
+    (∀ msg, prove E stmt wit hk N = some msg →
+      (maRejectSet E stmt msg).card ≤ (3 * stmt.degBound + 4) * E.points.card) ∧
+    (prove E stmt wit hk N = none →
+      ∀ msg : MAProverMsg E.q stmt.k, msg.isHonestFor E stmt wit hk →
+        ¬ stmt.admSet (msg.polyA, msg.polyB)) :=
+  prove_rejectSet_bound N hN hValid hNonneg h_target_on_curve h_bases_on_curve
+    hBudgetW hBudgetS
 
 /-! ## Soundness probability and contrapositives -/
 

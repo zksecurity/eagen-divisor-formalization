@@ -3,8 +3,8 @@
 
   This module states the headline theorems with `sorry`, importing only
   the definition layer (`Divisor.Soundness` for the protocol, extractor
-  and accept/reject-set definitions; `Divisor.SafeSupportDefs` for the
-  binary-support and general-position definitions;
+  and accept/reject-set definitions; `Divisor.ProverDefs` for the
+  honest prover's definitions;
   `Divisor.Axioms.AxiomHasseWeil` so the judge can also pin the
   statement of the one permitted axiom). No import proves any of the
   theorems below.
@@ -17,7 +17,7 @@
   independence.
 -/
 import Divisor.Soundness
-import Divisor.SafeSupportDefs
+import Divisor.ProverDefs
 import Divisor.Axioms.AxiomHasseWeil
 
 namespace Divisor
@@ -152,46 +152,34 @@ theorem ip_extractable_hasse
     ∧ IPUniqueThirdRound E stmt msg1 := by
   sorry
 
-theorem ma_completeness_binary_any_length
-    (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q stmt.k)
-    (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (h_valid : relDlog E stmt wit)
-    (h_toD_eq : msg.toD =
-       LineAccum.lineBuild_singletons E
-         (binarySupport stmt wit hk h_binary))
-    (h_scalars_match : ∀ i : Fin stmt.k,
-       msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+theorem prover_complete
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (N : AdmNormalizer E.q) (hN : stmt.admSet = N.admSet)
+    (hValid : relDlog E stmt wit) (hNonneg : ∀ i, 0 ≤ wit.scalars i)
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
-    (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
-    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
-    (h_safe : LineAccum.SafePairs E (binarySupport stmt wit hk h_binary))
-    (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
-    (h_deg : msg.toD.degE ≤ wit.degBound)
-    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg).card
-      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+    (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points) :
+    (∀ msg, prove E stmt wit hk N = some msg →
+      msg.isHonestFor E stmt wit hk ∧ stmt.admSet (msg.polyA, msg.polyB) ∧
+        ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) ∧
+        msg.toD.degE = 1 + ∑ i, (wit.scalars i).toNat) ∧
+    (prove E stmt wit hk N = none →
+      ∀ msg : MAProverMsg E.q stmt.k, msg.isHonestFor E stmt wit hk →
+        ¬ stmt.admSet (msg.polyA, msg.polyB)) := by
   sorry
 
-theorem ma_completeness_binary_any_length_cert
-    (E : ECSetup) (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
-    (hk : stmt.k = wit.k) (msg : MAProverMsg E.q stmt.k)
-    (h_binary : ∀ i : Fin wit.k, wit.scalars i = 0 ∨ wit.scalars i = 1)
-    (h_valid : relDlog E stmt wit)
-    (h_toD_eq : msg.toD =
-       LineAccum.lineBuild_singletons E
-         (binarySupport stmt wit hk h_binary))
-    (h_scalars_match : ∀ i : Fin stmt.k,
-       msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)))
+theorem ma_completeness_prover
+    (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
+    (N : AdmNormalizer E.q) (hN : stmt.admSet = N.admSet)
+    (hValid : relDlog E stmt wit) (hNonneg : ∀ i, 0 ≤ wit.scalars i)
     (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
     (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points)
-    (h_nodup : (binarySupport stmt wit hk h_binary).Nodup)
-    (h_cert : LineAccum.SafePairsCert E (binarySupport stmt wit hk h_binary))
-    (h_admSetMax : stmt.admSet = admSetMax (q := E.q))
-    (h_deg : msg.toD.degE ≤ wit.degBound)
-    (h_deg_k : msg.toD.degE ≤ stmt.degBound) :
-    (maRejectSet E stmt msg).card
-      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine := by
+    (hBudgetW : 1 + ∑ i, (wit.scalars i).toNat ≤ wit.degBound)
+    (hBudgetS : 1 + ∑ i, (wit.scalars i).toNat ≤ stmt.degBound) :
+    (∀ msg, prove E stmt wit hk N = some msg →
+      (maRejectSet E stmt msg).card ≤ (3 * stmt.degBound + 4) * E.points.card) ∧
+    (prove E stmt wit hk N = none →
+      ∀ msg : MAProverMsg E.q stmt.k, msg.isHonestFor E stmt wit hk →
+        ¬ stmt.admSet (msg.polyA, msg.polyB)) := by
   sorry
 
 end Divisor
