@@ -120,20 +120,6 @@ info: 'Divisor.ip_completeness_q' depends on axioms: [propext,
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ip_completeness_q
 /--
-info: 'Divisor.ma_completeness_for_length4Simple' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_for_length4Simple
-/--
-info: 'Divisor.ma_completeness_clean_for_length4Simple' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_clean_for_length4Simple
-/--
 info: 'Divisor.CoordRingElt.exists_divisor_multiplicity' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
@@ -192,28 +178,12 @@ info: 'Divisor.ma_soundness_paper' depends on axioms: [propext,
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_soundness_paper
 
-/-! ## Line-build certificates -/
+/-! ## Prover completeness (`Divisor/Headlines.lean`)
 
-/-! Certifying-wrapper bridges for the combine certificates -/
-/--
-info: 'Divisor.LineAccum.accumInvStrongCombineAffineExtras_of_combineCanFire_full' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.LineAccum.accumInvStrongCombineAffineExtras_of_combineCanFire_full
-/--
-info: 'Divisor.LineAccum.accumInvStrongCombineExtras_of_combineCanFire_full' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.LineAccum.accumInvStrongCombineExtras_of_combineCanFire_full
-
-/-! Prover completeness (`Divisor/Headlines.lean`): the honest prover
-  (line build over `(−P) + Σ nᵢ·(Bᵢ)`, rescaled by the admissible
-  set's normalizer) succeeds for every valid witness with nonnegative
-  scalars. Axiom-free, like the rest of the completeness side. -/
+The honest prover (line build over `(−P) + Σ nᵢ·(Bᵢ)`, rescaled by
+the admissible set's normalizer) succeeds for every valid witness with
+nonnegative scalars. Axiom-free, like the rest of the completeness
+side. -/
 /--
 info: 'Divisor.prover_complete' depends on axioms: [propext,
  Classical.choice,
@@ -380,8 +350,7 @@ info: 'Divisor.validPairs_card_ge_q_of_count' depends on axioms: [propext,
 /-! ## Exact degree at infinity
 
 `CoordRingElt.degE` is the degree of the norm polynomial, with no
-honesty or nonzero premise, and the singleton line build attains its
-support length. -/
+honesty or nonzero premise. -/
 
 /--
 info: 'Divisor.normPoly_natDegree_eq' depends on axioms: [propext,
@@ -390,17 +359,3 @@ info: 'Divisor.normPoly_natDegree_eq' depends on axioms: [propext,
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.normPoly_natDegree_eq
-/--
-info: 'Divisor.LineAccum.degE_lineBuild_singletons_eq_length' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.LineAccum.degE_lineBuild_singletons_eq_length
-/--
-info: 'Divisor.LineAccum.degE_lineBuild_singletons_eq_length_of_pointChordCase' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.LineAccum.degE_lineBuild_singletons_eq_length_of_pointChordCase

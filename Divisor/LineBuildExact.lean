@@ -145,23 +145,3 @@ theorem lineBuild_singletons_divisor_exact (Ps : List (ZMod E.q × ZMod E.q))
     rw [Bool.eq_iff_iff, beq_iff_eq, decide_eq_true_iff]
 
 end Divisor.LineAccum.Exact
-
-namespace Divisor
-
-variable (E : ECSetup)
-
-/-- **Line-build specification** (prover interface): for an on-curve
-support multiset summing to zero, the singleton line build is nonzero,
-has order `Ps.count Q` at every rational `Q`, splits over `E`, and has
-`degE = Ps.length`. -/
-theorem lineBuild_exact_spec (Ps : List (ZMod E.q × ZMod E.q))
-    (hPs_on : ∀ P ∈ Ps, P ∈ E.points) (hSum : LineAccum.sumOnE E Ps = 0)
-    (hLen : 2 ≤ Ps.length) :
-    let D := LineAccum.lineBuild_singletons E Ps
-    ¬ (D.a = 0 ∧ D.b = 0) ∧ (∀ Q ∈ E.points, ordAt E D Q = Ps.count Q) ∧
-      splitsOnE E D ∧ D.degE = Ps.length := by
-  have hne : Ps ≠ [] := by rintro rfl; simp at hLen
-  obtain ⟨h1, -, h3, h4, h5⟩ := LineAccum.Exact.lineBuild_singletons_exact E Ps hPs_on hSum hne
-  exact ⟨h1, h3, h4, h5⟩
-
-end Divisor

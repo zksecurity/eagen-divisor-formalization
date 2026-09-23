@@ -8,7 +8,7 @@
   are handled uniformly by `span_chord` / `span_verticalElt`; every
   vertical division is exact because the product ideal lies in
   `(X − x₀)`. There are no root-multiplicity caps, no `Nodup`, and no
-  `combineCanFire` side conditions.
+  per-level side conditions.
 -/
 import Divisor.OrdP.LineDivisor
 import Divisor.PointCombine
@@ -34,11 +34,6 @@ theorem pointZero_eq : (WeierstrassCurve.Affine.Point.zero : ECPoint E) = 0 := r
 
 theorem resList_some {x y : ZMod E.q} (h : E.toW.toAffine.Nonsingular x y) :
     resList E (WeierstrassCurve.Affine.Point.some _ _ h) = [(x, -y)] := rfl
-
-theorem resList_on (R : ECPoint E) : ∀ P ∈ resList E R, P ∈ E.points := by
-  intro P hP
-  unfold resList at hP
-  exact negCoords_mem_points_of_some E (Option.mem_toList.mp hP)
 
 theorem resList_affine {P : ZMod E.q × ZMod E.q} (hP : P ∈ E.points) :
     resList E (ECPoint.affine E P.1 P.2) = [(P.1, -P.2)] := by
@@ -324,74 +319,5 @@ theorem exactInv_combine {xs ys : List (ZMod E.q × ZMod E.q)} {a b : Accum E}
           rw [chordThird_tangent E hy0]; rfl
         rw [hc, hpt', resList_neg_affine E hT, if_neg (neg_affine_ne_zero E hT)]
         exact ⟨hs, hd⟩
-
-/-! ## Bridge to `AccumInvStrong` -/
-
-theorem on_append {xs ys : List (ZMod E.q × ZMod E.q)}
-    (hxs : ∀ P ∈ xs, P ∈ E.points) (hys : ∀ P ∈ ys, P ∈ E.points) :
-    ∀ P ∈ xs ++ ys, P ∈ E.points :=
-  fun P hP => (List.mem_append.mp hP).elim (hxs P) (hys P)
-
-/-- The strong-invariant target is the multiplicity in `xs ++ resList`. -/
-theorem target_eq_count (xs : List (ZMod E.q × ZMod E.q)) (R : ECPoint E)
-    (P : ZMod E.q × ZMod E.q) :
-    target E xs R P = (xs ++ resList E R).count P := by
-  rw [target_def, List.count_append]
-  congr 1
-  unfold resList
-  rcases negCoords E R with _ | Q
-  · simp
-  · by_cases h : Q = P
-    · subst h; simp
-    · simp [h]
-
-/-- `ExactInv` gives `AccumInvStrong`, with equality in the pointwise bound. -/
-theorem accumInvStrong_of_exactInv {xs : List (ZMod E.q × ZMod E.q)} {a : Accum E}
-    (hxs : ∀ P ∈ xs, P ∈ E.points) (h : ExactInv E xs a) : AccumInvStrong E xs a := by
-  refine ⟨h.1, fun P hP => ?_, h.2.2⟩
-  rw [localMult_eq_ordAt, ordAt_eq_count_of_span_eq_listIdeal E _ _
-    (on_append E hxs (resList_on E a.point)) h.2.1 hP,
-    target_eq_count]
-
-/-- A nonzero `AccumInvStrong` accumulator already satisfies `ExactInv`:
-the pointwise bound plus the degree identity force exact orders and
-splitting, hence the ideal factorisation. -/
-theorem exactInv_of_accumInvStrong {xs : List (ZMod E.q × ZMod E.q)} {a : Accum E}
-    (hxs : ∀ P ∈ xs, P ∈ E.points) (h : AccumInvStrong E xs a)
-    (hD : ¬ (a.poly.a = 0 ∧ a.poly.b = 0)) : ExactInv E xs a := by
-  classical
-  refine ⟨h.1, ?_, h.2.2⟩
-  have hord : ∀ P ∈ E.points, ordAt E a.poly P = (xs ++ resList E a.point).count P := by
-    intro P hP
-    rw [← localMult_eq_ordAt, localMult_eq_target_of_accumInvStrong E xs a hxs h hD P hP,
-      target_eq_count]
-  have hsum : ∑ P ∈ E.points, ordAt E a.poly P = (normPoly E a.poly).natDegree := by
-    rw [← targetMass_eq_natDegree_of_accumInvStrong E xs a hxs h, targetMass]
-    exact Finset.sum_congr rfl fun P hP => by rw [hord P hP, target_eq_count]
-  have hL : ∀ P ∈ xs ++ resList E a.point, P ∈ E.points :=
-    on_append E hxs (resList_on E a.point)
-  rw [span_toCoordinateRing_eq_prod E a.poly hD (splitsOnE_of_sum_ordAt_eq E a.poly hD hsum),
-    listIdeal, Finset.prod_list_map_count,
-    Finset.prod_attach E.points (fun P => CoordinateRing.XYIdeal E.toW.toAffine P.1
-      (Polynomial.C P.2) ^ ordAt E a.poly P)]
-  rw [← Finset.prod_subset (s₁ := (xs ++ resList E a.point).toFinset)
-    (fun P hP => hL P (List.mem_toFinset.mp hP))
-    (fun P hP hPn => by
-      rw [hord P hP, List.count_eq_zero_of_not_mem (by simpa using hPn), pow_zero])]
-  refine Finset.prod_congr rfl fun P hP => ?_
-  rw [hord P (hL P (List.mem_toFinset.mp hP)), count_beq_eq]
-  rfl
-
-/-- **Exact `AccumInvStrong` preservation by every `Accum.combine` branch**:
-no root-multiplicity caps, no `Nodup`, no `combineCanFire`. -/
-theorem accumInvStrong_combine_exact {xs ys : List (ZMod E.q × ZMod E.q)} {a b : Accum E}
-    (hxs : ∀ P ∈ xs, P ∈ E.points) (hys : ∀ P ∈ ys, P ∈ E.points)
-    (ha : AccumInvStrong E xs a) (hb : AccumInvStrong E ys b)
-    (haD : ¬ (a.poly.a = 0 ∧ a.poly.b = 0)) (hbD : ¬ (b.poly.a = 0 ∧ b.poly.b = 0)) :
-    AccumInvStrong E (xs ++ ys) (Accum.combine E a b) ∧
-      ¬ ((Accum.combine E a b).poly.a = 0 ∧ (Accum.combine E a b).poly.b = 0) := by
-  have h := exactInv_combine E (exactInv_of_accumInvStrong E hxs ha haD)
-    (exactInv_of_accumInvStrong E hys hb hbD)
-  exact ⟨accumInvStrong_of_exactInv E (on_append E hxs hys) h, h.not_both_zero⟩
 
 end Divisor.LineAccum.Exact

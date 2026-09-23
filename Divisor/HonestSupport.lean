@@ -113,26 +113,6 @@ theorem honestSupport_count_eq (hNonneg : ∀ i, 0 ≤ wit.scalars i)
   simp only [finCongr_apply, hcast]
   split_ifs <;> simp [Int.toNat_of_nonneg (hNonneg i)]
 
-/-- A valid witness selects at least one base: the support has length at
-    least two. -/
-theorem honestSupport_length_ge_two (hValid : relDlog E stmt wit)
-    (hNonneg : ∀ i, 0 ≤ wit.scalars i)
-    (h_target_on_curve : (stmt.target.1, -stmt.target.2) ∈ E.points)
-    (h_bases_on_curve : ∀ i, stmt.bases i ∈ E.points) :
-    2 ≤ (honestSupport stmt wit hk).length := by
-  have hsum := honestSupport_sumOnE_eq_zero stmt wit hk hValid hNonneg
-    h_target_on_curve h_bases_on_curve
-  by_contra hlt
-  have hnil : (List.finRange wit.k).flatMap (fun i =>
-      List.replicate (wit.scalars i).toNat (stmt.bases (Fin.cast hk.symm i))) = [] := by
-    apply List.eq_nil_of_length_eq_zero
-    have := honestSupport_length stmt wit hk
-    simp only [honestSupport, List.length_cons] at hlt
-    omega
-  rw [honestSupport, hnil, LineAccum.sumOnE_cons E h_target_on_curve,
-    LineAccum.sumOnE_nil, add_zero] at hsum
-  exact WeierstrassCurve.Affine.Point.some_ne_zero _ hsum
-
 end
 
 end Divisor

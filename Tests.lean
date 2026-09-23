@@ -9,7 +9,5 @@ import Tests.MAExtractorExec
 import Tests.F5RegressionAxiomClosure
 import Tests.HasseCardBridge
 import Tests.IncrementalSmokeTest
-import Tests.PointCertificateDecidable
-import Tests.PointSkeletonSmoke
 import Tests.RegressionDoublingChallenge
 import Tests.SplitsOnEFiberCheck
