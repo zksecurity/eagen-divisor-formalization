@@ -10,6 +10,7 @@ import Divisor.OrdP.ChordFraction
 import Divisor.OrdP.ChordResultant
 import Divisor.OrdP.Units
 import Divisor.OrdP.LineDivisor
+import Divisor.LineBuildExact.Combine
 import Divisor.Bridges
 import Divisor.ChordCubicSymmetric
 import Divisor.PartialFractionHelper
