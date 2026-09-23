@@ -39,8 +39,8 @@
 
   No correctness theorem for the recursive driver is proved here; the
   production completeness chain goes through the LineAccum route
-  (`LineBuild.lean`, `IsHonestForBinary.lean`,
-  `SafeSupport.lean`). The length-4 base case is handled explicitly in
+  (`LineBuild.lean`, `LineBuildExact.lean`, `Prover.lean`). The length-4
+  base case is handled explicitly in
   `Divisor/IncrementalConstruction.lean`.
 -/
 

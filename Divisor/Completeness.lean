@@ -19,8 +19,8 @@
   IP side: `ip_accept_off_eventDeg` — the honest third-round response
   exists off `eventDeg`; the headline bounds follow from it.
 
-  The constructive any-length supply for binary witnesses is in
-  `Divisor/IsHonestForBinary.lean` and `Divisor/SafeSupport.lean`.
+  The honest message itself is produced, for every valid witness with
+  nonnegative scalars, by the prover in `Divisor/Prover.lean`.
 -/
 import Divisor.Soundness
 

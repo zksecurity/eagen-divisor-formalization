@@ -17,7 +17,7 @@
     It includes the soundness headlines (`ma_soundness`, `ma_soundness_count_bound`,
     `ip_extractable` and their `_base`/`_paper`/probability/
     contrapositive forms), the whole completeness side
-    (`ma_completeness*`, `ip_completeness*`, the binary chain,
+    (`ma_completeness*`, `ip_completeness*`,
     `prover_complete`), the divisor-multiplicity bridge
     (`CoordRingElt.exists_divisor_multiplicity*`,
     `ordAt_group_sum_zero_under_split`), and the leaf's `_of_count`
@@ -43,10 +43,10 @@
   meaning of every `degE`-bearing statement here rests on
   `CoordRingElt.degE` being the exact pole order at infinity; that is
   pinned separately, as an equation against the norm polynomial, in
-  `Tests/DegreeExactRegression.lean`, and exercised end to end in
-  `Tests/Length2CompletenessSmoke.lean`.
+  `Tests/DegreeExactRegression.lean`, and exercised end to end by the
+  prover instances in `Tests/ProverSmoke.lean`.
 -/
-import Divisor.SafeSupport
+import Divisor.Headlines
 import Divisor.Hasse
 
 /--
@@ -192,187 +192,7 @@ info: 'Divisor.ma_soundness_paper' depends on axioms: [propext,
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.ma_soundness_paper
 
-/-! ## Binary completeness chain
-
-  The binary chain (`ma_completeness_binary_extras` and its `_clean`
-  variant, gated on the per-input `h_extras` certificate) has the
-  same closure as
-  `ma_completeness*`: the AccumInvStrong infrastructure introduces
-  no axioms. -/
-/--
-info: 'Divisor.ma_completeness_binary_extras' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_extras
-/--
-info: 'Divisor.ma_completeness_binary_extras_clean' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_extras_clean
-
-/-! Unconditional binary corollaries (no `h_extras`):
-  `ma_completeness_binary_length2` (`Ps = [P, -P]`) and
-  `ma_completeness_binary_length4` (two inverse pairs). -/
-/--
-info: 'Divisor.ma_completeness_binary_length2' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_length2
-/--
-info: 'Divisor.ma_completeness_binary_length2_clean' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_length2_clean
-/--
-info: 'Divisor.ma_completeness_binary_length4' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_length4
-/--
-info: 'Divisor.ma_completeness_binary_length4_clean' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_length4_clean
-/--
-info: 'Divisor.ma_completeness_binary_length4_chord' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_length4_chord
-/--
-info: 'Divisor.ma_completeness_binary_length4_chord_clean' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_length4_chord_clean
-/--
-info: 'Divisor.ma_completeness_binary_length6_chord' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_length6_chord
-/--
-info: 'Divisor.ma_completeness_binary_length8_chord' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_length8_chord
-/--
-info: 'Divisor.ma_completeness_binary_chain' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_chain
-/--
-info: 'Divisor.ma_completeness_binary_chain_clean' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_chain_clean
-/--
-info: 'Divisor.ma_completeness_binary_admSetMax_extras' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_admSetMax_extras
-/--
-info: 'Divisor.ma_completeness_binary_chain_admSetMax' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_chain_admSetMax
-/--
-info: 'Divisor.ma_completeness_binary_admSetParker_extras' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_admSetParker_extras
-/--
-info: 'Divisor.ma_completeness_binary_chain_admSetParker' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_chain_admSetParker
-/--
-info: 'Divisor.ma_completeness_binary_admSetLine_extras' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_admSetLine_extras
-/--
-info: 'Divisor.ma_completeness_binary_chain_admSetLine' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_chain_admSetLine
-/--
-info: 'Divisor.ma_completeness_binary_admSetHash_extras' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_admSetHash_extras
-/--
-info: 'Divisor.ma_completeness_binary_chain_admSetHash' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_chain_admSetHash
-
-/-! Top-level all-in-one user-facing binary theorems -/
-/--
-info: 'Divisor.ma_completeness_binary' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary
-/--
-info: 'Divisor.ma_completeness_binary_admSetParker' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_admSetParker
-/--
-info: 'Divisor.ma_completeness_binary_admSetLine' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_admSetLine
-/--
-info: 'Divisor.ma_completeness_binary_admSetHash' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_admSetHash
+/-! ## Line-build certificates -/
 
 /-! Certifying-wrapper bridges for the combine certificates -/
 /--
@@ -389,36 +209,6 @@ info: 'Divisor.LineAccum.accumInvStrongCombineExtras_of_combineCanFire_full' dep
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.LineAccum.accumInvStrongCombineExtras_of_combineCanFire_full
-
-/-! Point-skeleton certificate — Decidable, native_decide-able -/
-/--
-info: 'Divisor.ma_completeness_binary_point_certificate' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_point_certificate
-/--
-info: 'Divisor.ma_completeness_binary_admSetParker_point_certificate' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_admSetParker_point_certificate
-/--
-info: 'Divisor.ma_completeness_binary_admSetLine_point_certificate' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_admSetLine_point_certificate
-/--
-info: 'Divisor.ma_completeness_binary_admSetHash_point_certificate' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.ma_completeness_binary_admSetHash_point_certificate
 
 /-! Prover completeness (`Divisor/Headlines.lean`): the honest prover
   (line build over `(−P) + Σ nᵢ·(Bᵢ)`, rescaled by the admissible
@@ -445,13 +235,6 @@ info: 'Divisor.LineAccum.pointCombine_eq_add' depends on axioms: [propext,
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Divisor.LineAccum.pointCombine_eq_add
-/--
-info: 'Divisor.LineAccum.iteratedPointChordCase_of_safePairs' depends on axioms: [propext,
- Classical.choice,
- Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Divisor.LineAccum.iteratedPointChordCase_of_safePairs
 
 /-! ## Terminal Hasse layer (`Divisor/Hasse.lean`)
 
@@ -598,7 +381,7 @@ info: 'Divisor.validPairs_card_ge_q_of_count' depends on axioms: [propext,
 
 `CoordRingElt.degE` is the degree of the norm polynomial, with no
 honesty or nonzero premise, and the singleton line build attains its
-support length. Both underpin the binary completeness chain above. -/
+support length. -/
 
 /--
 info: 'Divisor.normPoly_natDegree_eq' depends on axioms: [propext,
