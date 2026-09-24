@@ -130,8 +130,9 @@ def admNormLine : AdmNormalizer q where
     split_ifs at h with hD
     simp [admSetLine, CoeffPoly.toPolynomial_coeff, hD]
 
-/-- The hash functional is linear in the coefficients, and scaling by a
-    nonzero constant preserves both degrees. -/
+/-- The hash functional is homogeneous under nonzero scaling: scaling
+    preserves both degrees, so every coefficient keeps its position.
+    (It is not additive: a sum can lower `a`'s degree and shift `b`.) -/
 theorem admSetHashInner_smul (r : ℕ → ZMod q) (c : ZMod q) (hc : c ≠ 0)
     (D : CoordRingElt q) :
     admSetHashInner r ((c • D).a, (c • D).b) = c * admSetHashInner r (D.a, D.b) := by
