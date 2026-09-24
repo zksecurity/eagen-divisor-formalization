@@ -206,12 +206,6 @@ $$
 (3 \cdot d + 4) \cdot n
 $$
 
-The constructive `ma_completeness_binary_any_length` family verifies messages
-built with `LineAccum.lineBuild_singletons` for binary witnesses under the
-decidable `SafePairs` general-position condition. These results are separate
-from soundness; no honesty predicate is used by `ma_soundness` or its proof
-chain.
-
 ## Build
 
 The repository pins Lean and all dependencies. Fetch the matching Mathlib

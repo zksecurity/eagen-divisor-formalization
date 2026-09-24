@@ -1,47 +1,13 @@
 /-
-  Divisor/LineBuildRecursive.lean
+  Divisor/HonestForExplicit.lean
 
-  Two things live here:
-
-  1. The recursive `lineBuild` driver for general-N point lists,
-     following Eagen §3.1.1 ("Incremental construction") in 596.pdf.
-  2. The `IsHonestForExplicit` completeness bridge: from an honest
-     message (divisor identity + on-curve invariants) to verifier
-     acceptance off the bad-challenge set, culminating in
-     `ma_completeness_via_isHonestForExplicit` and the length-4-simple
-     instantiation `isHonestFor_of_isHonestForLength4Simple` consumed
-     by `Divisor/Completeness.lean`.
-
-  ## The construction (for sum-zero list `Ps`)
-
-  **Level 0**: pair adjacent inputs `(P_2i, P_2i+1)`, build chord line
-  `L_i` through them with third intersection `Q_i = -(P_2i + P_2i+1)`.
-  Each such pair produces a level-1 entry `(-Q_i, L_i)` — point is
-  `-Q_i = P_2i + P_2i+1` (group sum), polynomial is the chord line.
-
-  **Level k → k+1** (k ≥ 1): given level-k entries `(a_pt, a_poly)` and
-  `(b_pt, b_poly)` (where the points are `-Q_*` from previous level),
-  build chord line `L'` through `a_pt, b_pt` with third intersection
-  `Q'`. The level-(k+1) entry is `(-Q', M)` where:
-
-      M = (L' · a_poly · b_poly) / ((X - x(a_pt)) · (X - x(b_pt)))
-
-  Both `(X - x(a_pt))` and `(X - x(b_pt))` divide cleanly because the
-  numerator vanishes at both `±a_pt.1` (since `L'` vanishes at `a_pt`
-  and `a_poly` vanishes at `-(a_pt) = Q_{prev}`) and similarly for
-  `b_pt`.
-
-  **Termination**: when the input list is sum-zero, the final third
-  intersection at the top level is `O` (infinity). The output polynomial
-  has divisor exactly `Σ(P_i) - n·O`.
-
-  **Odd lengths**: carry the unpaired entry forward to the next level.
-
-  No correctness theorem for the recursive driver is proved here; the
-  production completeness chain goes through the LineAccum route
-  (`LineBuild.lean`, `IsHonestForBinary.lean`,
-  `SafeSupport.lean`). The length-4 base case is handled explicitly in
-  `Divisor/IncrementalConstruction.lean`.
+  The completeness bridge from an honest message to verifier
+  acceptance. `MAProverMsg.IsHonestForExplicit` is a definitional alias
+  of `isHonestFor` (divisor identity, splitting, on-curve invariants);
+  from it this file derives the residue match, the degree accounting
+  and `splitsOnE`, culminating in
+  `ma_completeness_via_isHonestForExplicit`, the core of
+  `ma_completeness`.
 -/
 
 import Divisor.LogDerivEagenLength4
@@ -51,147 +17,6 @@ open Polynomial Finset Classical
 namespace Divisor
 
 variable (E : ECSetup)
-
-/-- An "accumulator" entry at level k > 0: a point (= -Q from prior
-    level chord = group-sum of absorbed P's at this level) and the
-    accumulated polynomial whose divisor incorporates the absorbed P's
-    plus the third intersection. -/
-structure Accum where
-  point : ZMod E.q × ZMod E.q
-  poly : CoordRingElt E.q
-
-/-! ## Level-0 step: build chord lines from input points
-
-For a list of input points `[P_0, P_1, ..., P_{n-1}]`, pair them up and
-build chord lines. Each pair `(P_2i, P_2i+1)` produces a level-1 entry
-`(-Q_i, L_i)`.
-
-Odd-length input: the last (unpaired) point becomes a level-1 entry
-`(P_{n-1}, 1)` carrying just the point with identity polynomial. -/
-
-/-- Build a level-1 accumulator from two distinct affine points.
-    The chord through `P, Q` has third intersection `-(P+Q)`; the new
-    accumulator is `(-(P+Q), chord)`. -/
-noncomputable def Accum.fromChordPair_distinct
-    (P Q : ZMod E.q × ZMod E.q) (_h_xx : P.1 ≠ Q.1) : Accum E :=
-  let chord := chordCoordRingElt E P Q
-  let lam := slopeOf P.1 P.2 Q.1 Q.2
-  let Qx := lam ^ 2 - P.1 - Q.1
-  let Qy := lam * Qx + (P.2 - lam * P.1)
-  -- Third intersection is (Qx, Qy). The "next-level input" is its negation.
-  { point := (Qx, -Qy), poly := chord }
-
-/-- Build a level-1 accumulator from two points that are negatives of
-    each other (`P = -Q`, so same x, opposite y, sum-zero in group law).
-    The chord through `(P, -P)` is the vertical line `(X - x(P))`, which
-    has divisor `(P) + (-P) - 2·O`. The "third intersection" is `O`;
-    the new accumulator carries the vertical line as polynomial and `P`
-    as point (sentinel — actual contribution is at infinity). -/
-noncomputable def Accum.fromChordPair_vertical
-    (P Q : ZMod E.q × ZMod E.q) (_h_xx : P.1 = Q.1) (_h_yy : P.2 = -Q.2) :
-    Accum E :=
-  { point := P, -- Sentinel; level transitions handle this.
-    poly := { a := Polynomial.X - Polynomial.C P.1, b := 0 } }
-
-/-- Process the initial input list, pairing adjacent points and building
-    chord lines. Returns the level-1 accumulator list. Odd input lengths
-    carry the last point forward as `(P_last, 1)`. -/
-noncomputable def lineBuild_level0 (Ps : List (ZMod E.q × ZMod E.q)) :
-    List (Accum E) :=
-  match Ps with
-  | [] => []
-  | [P] => [{ point := P, poly := { a := 1, b := 0 } }]
-  | P :: Q :: rest =>
-      if h : P.1 ≠ Q.1 then
-        Accum.fromChordPair_distinct E P Q h :: lineBuild_level0 rest
-      else if hYY : P.2 = -Q.2 then
-        -- Vertical chord case: P = -Q.
-        Accum.fromChordPair_vertical E P Q
-          (Classical.byContradiction (fun h_neq => h h_neq)) hYY ::
-          lineBuild_level0 rest
-      else
-        -- Tangent doubling case (P = Q): deferred.
-        { point := P, poly := { a := 1, b := 0 } } :: lineBuild_level0 rest
-
-/-! ## Level-(k+1) step (k ≥ 1): combine two level-k accumulators
-
-Combine `(a_pt, a_poly)` and `(b_pt, b_poly)` per the paper formula:
-    `new_poly = chord(a_pt, b_pt) · a_poly · b_poly / divLin(a_pt.1) / divLin(b_pt.1)`. -/
-
-noncomputable def Accum.combine_higher_distinct
-    (a b : Accum E) (_h_xx : a.point.1 ≠ b.point.1) : Accum E :=
-  let chord := chordCoordRingElt E a.point b.point
-  let lam := slopeOf a.point.1 a.point.2 b.point.1 b.point.2
-  let Qx := lam ^ 2 - a.point.1 - b.point.1
-  let Qy := lam * Qx + (a.point.2 - lam * a.point.1)
-  let mul_with_chord := mulCoordRingElt E (mulCoordRingElt E chord a.poly) b.poly
-  let after_div_a := mul_with_chord.divLin a.point.1
-  let after_div_b := after_div_a.divLin b.point.1
-  { point := (Qx, -Qy), poly := after_div_b }
-
-/-- Combine two accumulators when their points are negatives of each
-    other (`a.point = -b.point`, so `a.point.1 = b.point.1`). The chord
-    through `(P, -P)` is the vertical line `(X - x(P))`. Their group sum
-    is `0` (the identity = ∞), so the level-(k+1) "third intersection"
-    is also `O`.
-
-    Polynomial: `(X - x(a.point)) · a.poly · b.poly / (X - x(a.point))^2
-                = a.poly · b.poly / (X - x(a.point))`. -/
-noncomputable def Accum.combine_higher_vertical
-    (a b : Accum E)
-    (_h_xx : a.point.1 = b.point.1) (_h_yy : a.point.2 = -b.point.2) :
-    Accum E :=
-  -- Combined = a.poly · b.poly / (X - x(a.point)).
-  let mul_ab := mulCoordRingElt E a.poly b.poly
-  let combined := mul_ab.divLin a.point.1
-  -- "New point" is the identity (= O). Encode as the affine pair (a.point.1, 0)
-  -- as a sentinel; in the divisor equation, the actual contribution is at ∞.
-  -- Since the recursion should terminate here for sum-zero inputs, the
-  -- output is whatever consumer extracts.
-  { point := a.point, poly := combined }
-
-/-- Process a level-k (k ≥ 1) accumulator list, pairing adjacent entries
-    and combining each pair. Odd-length lists carry the last entry forward. -/
-noncomputable def lineBuild_level_step (xs : List (Accum E)) :
-    List (Accum E) :=
-  match xs with
-  | [] => []
-  | [a] => [a]
-  | a :: b :: rest =>
-      if h : a.point.1 ≠ b.point.1 then
-        Accum.combine_higher_distinct E a b h :: lineBuild_level_step rest
-      else if hYY : a.point.2 = -b.point.2 then
-        -- Vertical chord case (a.point = -b.point).
-        Accum.combine_higher_vertical E a b
-          (Classical.byContradiction (fun h_neq => h h_neq)) hYY ::
-          lineBuild_level_step rest
-      else
-        -- Tangent doubling: a.point = b.point. Deferred.
-        a :: b :: lineBuild_level_step rest
-
-/-! ## Top-level driver
-
-Iterate `lineBuild_level_step` until the list reduces to one entry. Use
-`fuel := xs.length` as a termination measure (each step at least halves
-the list, so log₂ of length is sufficient; length itself is overkill but
-safe). -/
-
-noncomputable def lineBuild_iterate :
-    ℕ → List (Accum E) → List (Accum E)
-  | 0, xs => xs
-  | n + 1, xs =>
-      if xs.length ≤ 1 then xs
-      else lineBuild_iterate n (lineBuild_level_step E xs)
-
-/-- Top-level lineBuild: from a list of input points (assumed sum-zero),
-    produces the polynomial witness whose divisor is `Σ (P_i) - n·O`. -/
-noncomputable def lineBuild (Ps : List (ZMod E.q × ZMod E.q)) : CoordRingElt E.q :=
-  let level1 := lineBuild_level0 E Ps
-  let final := lineBuild_iterate E Ps.length level1
-  match final with
-  | [] => { a := 1, b := 0 }
-  | [single] => single.poly
-  | _ => { a := 1, b := 0 } -- shouldn't happen if iterations sufficient
 
 /-! ## `IsHonestForExplicit` predicate (any-k completeness path)
 
@@ -272,8 +97,7 @@ Takes a generic msg with `IsHonestForExplicit` plus the splitsOnE,
 hAccount, and residue-match side conditions (protocol- and D-specific).
 Produces logDerivCheckFn = 0.
 
-For length-4 simple, all these can be discharged via length-4 work.
-For general k, the user provides them (e.g., via recursive lineBuild). -/
+The caller provides them (e.g., via recursive lineBuild). -/
 
 theorem logDerivCheckFn_zero_via_isHonestForExplicit_with_sides
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
@@ -320,7 +144,6 @@ theorem logDerivCheckFn_zero_via_isHonestForExplicit_with_sides
 
 /-! ## Any-k MA completeness via IsHonestForExplicit + side conditions
 
-This is the any-k analog of `ma_completeness_via_isHonestForLength4Simple`.
 Takes the protocol-level side conditions (splitsOnE, hAccount, residue
 match) as user-provided hypotheses. -/
 
@@ -749,10 +572,10 @@ theorem affinePoints_sum_eq_image_sum {α : Type*} [AddCommMonoid α]
 
 Replaces the prior route via `principal_divisor_iff`. Uses only
 the `splitsOnE` and divisor-identity conjuncts of `isHonestFor`,
-plus `sum_ordAt_eq_natDegree_under_split`. The constant-D edge
-case is ruled out by the divisor identity at infinity (`degE = 3`
-for `D = 0`, but `divisorOfD 0 = 0`, so the identity would force
-`-3 = 0`). -/
+plus `sum_ordAt_eq_natDegree_under_split`. For `D = 0` every
+coefficient vanishes (`degE 0 = 0` and `ordAt 0 = 0`), so the sum is
+zero outright; nonzeroness is enforced by the verifier's admissible-set
+check, not by this accounting. -/
 
 theorem honestDivisorCoeffs_deg_zero_of_isHonestForExplicit
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
@@ -792,18 +615,15 @@ theorem honestDivisorCoeffs_deg_zero_of_isHonestForExplicit
   rw [h_aff_sum]
   -- Reduce to: -(degE) + Σ_{Q ∈ E.points} ordAt = 0.
   by_cases hD : msg.toD.a = 0 ∧ msg.toD.b = 0
-  · -- Constant-zero D: ruled out by divisor identity at infinity.
-    exfalso
-    have h_id_at_zero := h_div_id 0
-    have hNorm0 : normPoly E msg.toD = 0 := by
-      rw [normPoly_eq, hD.1, hD.2]; ring
-    have hLHS0 : divisorOfD E msg.toD (0 : ECPoint E) = 0 := by
-      show -((normPoly E msg.toD).natDegree : ℤ) = 0
-      rw [hNorm0]; simp
-    rw [hLHS0, honestDivisorCoeffs_at_infinity] at h_id_at_zero
-    have hDegE : msg.toD.degE = 3 := by
+  · -- `D = 0`: the exact `degE` is zero and every `ordAt` is zero, so
+    -- the accounting closes with no contribution from either side.
+    have hDegE : msg.toD.degE = 0 := by
       simp [CoordRingElt.degE, hD.1, hD.2]
-    omega
+    have hOrd0 : ∀ Q ∈ E.points, (ordAt E msg.toD Q : ℤ) = 0 := by
+      intro Q _
+      exact_mod_cast congrArg (fun n : ℕ => (n : ℤ)) (ordAt_eq_zero_of_zero E hD Q)
+    rw [hDegE, Finset.sum_congr rfl hOrd0]
+    simp
   · -- splitsOnE + D ≠ 0 ⇒ Σ ordAt = natDegree(normPoly).
     have hOrdSum : (∑ Q ∈ E.points, ordAt E msg.toD Q) = (normPoly E msg.toD).natDegree :=
       sum_ordAt_eq_natDegree_under_split E msg.toD hD h_split
@@ -879,41 +699,21 @@ theorem ordAt_sum_eq_degE_nat_of_isHonestForExplicit
   have h := ordAt_sum_eq_degE_of_isHonestForExplicit E stmt wit hk msg h_honest
   exact_mod_cast h
 
+/-- Agreement of `degE` with the norm degree.
+
+    This is now a direct corollary of `normPoly_natDegree_eq`, which
+    holds for every coordinate-ring element: with `degE` the exact pole
+    order at infinity, `divisorOfD` and `honestDivisorCoeffs` place the
+    same coefficient there unconditionally. The honesty premise is
+    retained only so the downstream accounting lemmas keep their
+    signatures; the equation itself does not depend on it, which is what
+    makes the support-length equation satisfiable at length two. -/
 theorem natDegree_normPoly_eq_degE_of_isHonestForExplicit
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (msg : MAProverMsg E.q stmt.k)
-    (h_honest : msg.IsHonestForExplicit E stmt wit hk) :
-    (normPoly E msg.toD).natDegree = msg.toD.degE := by
-  -- ∑ ordAt ≤ natDegree ≤ degE (existing infrastructure).
-  -- ∑ ordAt = degE (step 4).
-  -- Pinch.
-  have hSum := ordAt_sum_eq_degE_nat_of_isHonestForExplicit E stmt wit hk msg h_honest
-  have hLe1 : (∑ P ∈ E.points, ordAt E msg.toD P) ≤ (normPoly E msg.toD).natDegree := by
-    classical
-    rw [sum_E_points_eq_sum_fiberwise E]
-    by_cases hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0)
-    · calc (∑ x₀ : ZMod E.q,
-              ∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E msg.toD P)
-          ≤ ∑ x₀ : ZMod E.q, rootMultiplicity x₀ (normPoly E msg.toD) :=
-            Finset.sum_le_sum (fun x₀ _ => sum_ordAt_fst_eq_le E msg.toD hD x₀)
-        _ ≤ (normPoly E msg.toD).natDegree :=
-            sum_rootMultiplicity_le_natDegree E (normPoly E msg.toD)
-    · push Not at hD
-      have : ∀ P ∈ E.points, ordAt E msg.toD P = 0 :=
-        fun P _ => ordAt_eq_zero_of_zero E hD P
-      have h_inner : ∀ x₀ : ZMod E.q,
-          (∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E msg.toD P) = 0 := by
-        intro x₀
-        apply Finset.sum_eq_zero
-        intro P hP
-        exact this P (Finset.mem_filter.mp hP).1
-      rw [show (∑ x₀ : ZMod E.q,
-              ∑ P ∈ E.points.filter (fun P => P.1 = x₀), ordAt E msg.toD P) = 0 from
-            Finset.sum_eq_zero (fun x₀ _ => h_inner x₀)]
-      exact Nat.zero_le _
-  have hLe2 : (normPoly E msg.toD).natDegree ≤ msg.toD.degE :=
-    normPoly_natDegree_le E msg.toD
-  omega
+    (_h_honest : msg.IsHonestForExplicit E stmt wit hk) :
+    (normPoly E msg.toD).natDegree = msg.toD.degE :=
+  normPoly_natDegree_eq E msg.toD
 
 /-! ## hAccount from isHonestForExplicit (no splitsOnE needed) -/
 
@@ -1042,557 +842,6 @@ theorem splitsOnE_of_isHonestForExplicit
     splitsOnE E msg.toD :=
   ⟨normPoly_splits_of_isHonestForExplicit E stmt wit hk msg h_honest hD,
    fiber_rationality_of_isHonestForExplicit E stmt wit hk msg h_honest hD⟩
-
-/-! ## Bridge: IsHonestForLength4Simple → isHonestFor
-
-From a length-4-simple honest message to the strengthened
-`MAProverMsg.isHonestFor`: the divisor identity (at infinity, then at
-every affine point), the on-curve invariants, and the `splitsOnE`
-conjunct, assembled in `isHonestFor_of_isHonestForLength4Simple`. -/
-
-/-- Divisor identity at infinity: both `divisorOfD` and
-    `honestDivisorCoeffs` evaluate to `-4` at the point at infinity. -/
-theorem divisor_identity_at_infinity_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
-    {wit : DlogWitness E.q} (hk : stmt.k = wit.k) :
-    divisorOfD E msg.toD (0 : ECPoint E)
-      = honestDivisorCoeffs E stmt wit hk msg (0 : ECPoint E) := by
-  rw [h_simple.h_toD_eq]
-  rw [lineBuild_length4_div_at_infinity E
-        h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
-        h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
-        h_simple.h_xx_01 h_simple.h_xx_23
-        h_simple.h_P₂_ne_A2_23 h_simple.h_P₃_ne_A2_23
-        h_simple.h_third_match h_simple.h_y_match h_simple.h_Q₀_nontorsion]
-  show (-4 : ℤ) = -((msg.toD.degE : ℤ))
-  have h_degE : msg.toD.degE = 4 := by
-    rw [h_simple.h_toD_eq]
-    exact lineBuild_length4_explicit_degE_eq_four E
-      h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
-      h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
-      h_simple.h_xx_01 h_simple.h_xx_23
-      h_simple.h_P₂_ne_A2_23 h_simple.h_P₃_ne_A2_23
-      h_simple.h_third_match h_simple.h_y_match h_simple.h_Q₀_nontorsion
-  rw [h_degE]; norm_num
-
-/-- On-curve invariant for `(-target)`: `(target.1, -target.2) ∈ E.points`. -/
-theorem negTarget_on_curve_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg) :
-    (stmt.target.1, -stmt.target.2) ∈ E.points := by
-  rw [← h_simple.h_P₀_eq]
-  exact h_simple.hP₀
-
-/-- Cast helper: `(h ▸ jj : Fin stmt.k).val = jj.val` where `h : stmt.k = 3`. -/
-private theorem cast_subst_val_l4
-    {stmt : DlogStatement E.q} (h : stmt.k = 3) (jj : Fin 3) :
-    ((h ▸ jj : Fin stmt.k)).val = jj.val := by
-  generalize stmt.k = k at h jj
-  cases h
-  rfl
-
-/-- Helper: extract a specific basis from IsHonestForLength4Simple. The
-    cast-rewriting is encapsulated here so the bridge theorem doesn't
-    need to fight Lean's dependent-type machinery directly. -/
-private theorem bases_at_cast_index_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
-    (j : Fin 3) :
-    stmt.bases (h_simple.hk_eq_3 ▸ j) ∈ E.points := by
-  fin_cases j
-  · show stmt.bases (h_simple.hk_eq_3 ▸ (⟨0, by decide⟩ : Fin 3)) ∈ E.points
-    have : (⟨0, by decide⟩ : Fin 3) = (0 : Fin 3) := rfl
-    rw [this, ← h_simple.h_P₁_eq]; exact h_simple.hP₁
-  · show stmt.bases (h_simple.hk_eq_3 ▸ (⟨1, by decide⟩ : Fin 3)) ∈ E.points
-    have : (⟨1, by decide⟩ : Fin 3) = (1 : Fin 3) := rfl
-    rw [this, ← h_simple.h_P₂_eq]; exact h_simple.hP₂
-  · show stmt.bases (h_simple.hk_eq_3 ▸ (⟨2, by decide⟩ : Fin 3)) ∈ E.points
-    have : (⟨2, by decide⟩ : Fin 3) = (2 : Fin 3) := rfl
-    rw [this, ← h_simple.h_P₃_eq]; exact h_simple.hP₃
-
-/-- Affine divisor identity at points in `{P_0..P_3}`: at any of the
-    four sum-zero affine points (each appearing with multiplicity 1),
-    `divisorOfD = 1` and `honestDivisorCoeffs = 1` (under the simple-case
-    hypotheses with `wit.scalars = 1`). -/
-theorem divisor_identity_at_affine_off_support_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
-    {wit : DlogWitness E.q} (hk : stmt.k = wit.k)
-    (_h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
-    {x y : ZMod E.q} (hns : E.toW.toAffine.Nonsingular x y)
-    (hP : (x, y) ∈ E.points)
-    (h_off : (x, y) ≠ h_simple.P₀ ∧ (x, y) ≠ h_simple.P₁ ∧
-             (x, y) ≠ h_simple.P₂ ∧ (x, y) ≠ h_simple.P₃) :
-    divisorOfD E msg.toD (WeierstrassCurve.Affine.Point.some _ _ hns)
-      = honestDivisorCoeffs E stmt wit hk msg
-          (WeierstrassCurve.Affine.Point.some _ _ hns) := by
-  classical
-  -- divisorOfD = ordAt (cast to ℤ) at affine.
-  rw [show (WeierstrassCurve.Affine.Point.some _ _ hns : ECPoint E)
-        = ECPoint.affine E x y from (ECPoint.affine_of_nonsingular E hns).symm]
-  -- Step 1: divisorOfD = 0. Use zerosFinset characterization.
-  have h_zeros := zerosFinset_lineBuild_length4_eq E
-    h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
-    h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
-    h_simple.h_xx_01 h_simple.h_xx_23
-    h_simple.h_P₀_ne_A2_01 h_simple.h_P₁_ne_A2_01
-    h_simple.h_P₂_ne_A2_23 h_simple.h_P₃_ne_A2_23
-    h_simple.h_P₀_off_L₂ h_simple.h_P₁_off_L₂ h_simple.h_P₂_off_L₁ h_simple.h_P₃_off_L₁
-    h_simple.h_third_match h_simple.h_y_match h_simple.h_Q₀_nontorsion
-    h_simple.h_Q₀_off_L₂_inputs h_simple.h_negQ₀_off_L₁_inputs
-  have h_notin : (x, y) ∉ zerosFinset E msg.toD := by
-    rw [h_simple.h_toD_eq, h_zeros]
-    simp only [Finset.mem_insert, Finset.mem_singleton]
-    push Not
-    exact ⟨h_off.1, h_off.2.1, h_off.2.2.1, h_off.2.2.2⟩
-  have h_eval_ne : msg.toD.eval x y ≠ 0 := by
-    intro h
-    apply h_notin
-    unfold zerosFinset zeros
-    rw [Finset.mem_filter]
-    exact ⟨hP, h⟩
-  have hD_NZ : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) := by
-    rw [h_simple.h_toD_eq]
-    exact lineBuild_length4_explicit_ne_zero E
-      h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
-      h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
-      h_simple.h_xx_01 h_simple.h_xx_23
-      h_simple.h_third_match h_simple.h_y_match h_simple.h_Q₀_nontorsion
-  have h_ord_zero : ordAt E msg.toD (x, y) = 0 := by
-    by_contra h_ne
-    have h_pos : 0 < ordAt E msg.toD (x, y) := Nat.pos_of_ne_zero h_ne
-    have := (ordAt_pos_iff_zero E msg.toD hD_NZ (x, y) hP).mp h_pos
-    exact h_eval_ne this
-  -- Step 2: honestDivisorCoeffs = 0. (x, y) ≠ -target = P_0, no base = (x, y).
-  have h_negT : (stmt.target.1, -stmt.target.2) = h_simple.P₀ := h_simple.h_P₀_eq.symm
-  have h_indic_zero : ((x, y) = (stmt.target.1, -stmt.target.2)) = False := by
-    apply propext
-    constructor
-    · intro h; rw [h_negT] at h; exact h_off.1 h
-    · intro h; exact False.elim h
-  -- Bases at h_simple.hk_eq_3 ▸ (0,1,2) are P_1, P_2, P_3, none equal (x, y).
-  have h_bases_ne : ∀ i : Fin stmt.k, stmt.bases i ≠ (x, y) := by
-    intro i
-    have h3 := h_simple.hk_eq_3
-    -- Helper: stmt.bases (h3 ▸ j) ≠ (x, y) for any j : Fin 3.
-    have h_b_ne_at : ∀ (j : Fin 3), stmt.bases (h3 ▸ j) ≠ (x, y) := by
-      intro j
-      fin_cases j
-      · show stmt.bases (h3 ▸ (⟨0, by decide⟩ : Fin 3)) ≠ (x, y)
-        have heq3 : (⟨0, by decide⟩ : Fin 3) = (0 : Fin 3) := rfl
-        rw [heq3, ← h_simple.h_P₁_eq]
-        intro h; exact h_off.2.1 h.symm
-      · show stmt.bases (h3 ▸ (⟨1, by decide⟩ : Fin 3)) ≠ (x, y)
-        have heq3 : (⟨1, by decide⟩ : Fin 3) = (1 : Fin 3) := rfl
-        rw [heq3, ← h_simple.h_P₂_eq]
-        intro h; exact h_off.2.2.1 h.symm
-      · show stmt.bases (h3 ▸ (⟨2, by decide⟩ : Fin 3)) ≠ (x, y)
-        have heq3 : (⟨2, by decide⟩ : Fin 3) = (2 : Fin 3) := rfl
-        rw [heq3, ← h_simple.h_P₃_eq]
-        intro h; exact h_off.2.2.2 h.symm
-    -- Cast i to Fin 3 and apply.
-    have h_eq : stmt.bases i = stmt.bases (h3 ▸ Fin.cast h3 i) := by
-      congr 1
-      apply Fin.ext
-      have h_subst_val : ∀ (h : stmt.k = 3) (jj : Fin 3),
-          ((h ▸ jj : Fin stmt.k)).val = jj.val := by
-        intro h jj
-        generalize stmt.k = k at h jj
-        cases h
-        rfl
-      rw [h_subst_val h3]
-      rfl
-    rw [h_eq]
-    exact h_b_ne_at (Fin.cast h3 i)
-  -- Now compute both sides.
-  -- divisorOfD at affine = (ordAt : ℤ).
-  rw [show divisorOfD E msg.toD (ECPoint.affine E x y)
-        = (ordAt E msg.toD (x, y) : ℤ) by
-      rw [ECPoint.affine_of_nonsingular E hns]; rfl]
-  rw [h_ord_zero]
-  show (0 : ℤ) = honestDivisorCoeffs E stmt wit hk msg (ECPoint.affine E x y)
-  rw [show honestDivisorCoeffs E stmt wit hk msg (ECPoint.affine E x y)
-        = (if (x, y) = (stmt.target.1, -stmt.target.2) then (1 : ℤ) else 0) +
-          ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
-            (fun i => stmt.bases i = (x, y)),
-            (wit.scalars (hk ▸ i)) by
-        rw [ECPoint.affine_of_nonsingular E hns]; rfl]
-  rw [if_neg (by intro h; rw [h_negT] at h; exact h_off.1 h)]
-  -- The bases-filter is empty since no base = (x, y).
-  have h_filter_empty : (Finset.univ : Finset (Fin stmt.k)).filter
-        (fun i => stmt.bases i = (x, y)) = ∅ := by
-    rw [Finset.filter_eq_empty_iff]
-    intro i _
-    exact h_bases_ne i
-  rw [h_filter_empty]
-  simp
-
-/-! ### Affine on-support case: R ∈ {P_0..P_3}
-
-For each P_i, the divisor identity at .some P_i is `1 = 1`:
-* `divisorOfD = 1` from `lineBuild_length4_div_at_P_i`.
-* `honestDivisorCoeffs = 1` from indicator (i = 0) or base-sum (i ≥ 1).
-
-Each sub-case is structurally the same; we keep them separate for
-readability. -/
-
-/-- Helper: extract divisorOfD msg.toD = 1 at any of P_0..P_3 (under
-    IsHonestForLength4Simple's hypotheses). -/
-private theorem div_eq_one_at_P_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
-    {x y : ZMod E.q} (hns : E.toW.toAffine.Nonsingular x y)
-    (h_xy : (x, y) = h_simple.P₀ ∨ (x, y) = h_simple.P₁ ∨
-            (x, y) = h_simple.P₂ ∨ (x, y) = h_simple.P₃) :
-    divisorOfD E msg.toD (WeierstrassCurve.Affine.Point.some _ _ hns) = 1 := by
-  rw [show (WeierstrassCurve.Affine.Point.some _ _ hns : ECPoint E)
-        = ECPoint.affine E x y from (ECPoint.affine_of_nonsingular E hns).symm]
-  rw [h_simple.h_toD_eq]
-  rcases h_xy with h0 | h1 | h2 | h3
-  · -- (x, y) = P_0: divisorOfD = 1.
-    have hx : x = h_simple.P₀.1 := by rw [show x = (x, y).1 from rfl, h0]
-    have hy : y = h_simple.P₀.2 := by rw [show y = (x, y).2 from rfl, h0]
-    rw [hx, hy]
-    exact lineBuild_length4_div_at_P₀ E
-      h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
-      h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
-      h_simple.h_xx_01 h_simple.h_xx_23
-      h_simple.h_P₀_ne_A2_01 h_simple.h_P₁_ne_A2_01
-      h_simple.h_P₂_ne_A2_23 h_simple.h_P₃_ne_A2_23
-      h_simple.h_P₀_off_L₂ h_simple.h_third_match h_simple.h_y_match
-      h_simple.h_Q₀_nontorsion
-  · have hx : x = h_simple.P₁.1 := by rw [show x = (x, y).1 from rfl, h1]
-    have hy : y = h_simple.P₁.2 := by rw [show y = (x, y).2 from rfl, h1]
-    rw [hx, hy]
-    exact lineBuild_length4_div_at_P₁ E
-      h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
-      h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
-      h_simple.h_xx_01 h_simple.h_xx_23
-      h_simple.h_P₀_ne_A2_01 h_simple.h_P₁_ne_A2_01
-      h_simple.h_P₂_ne_A2_23 h_simple.h_P₃_ne_A2_23
-      h_simple.h_P₁_off_L₂ h_simple.h_third_match h_simple.h_y_match
-      h_simple.h_Q₀_nontorsion
-  · have hx : x = h_simple.P₂.1 := by rw [show x = (x, y).1 from rfl, h2]
-    have hy : y = h_simple.P₂.2 := by rw [show y = (x, y).2 from rfl, h2]
-    rw [hx, hy]
-    exact lineBuild_length4_div_at_P₂ E
-      h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
-      h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
-      h_simple.h_xx_01 h_simple.h_xx_23
-      h_simple.h_P₀_ne_A2_01 h_simple.h_P₁_ne_A2_01
-      h_simple.h_P₂_ne_A2_23 h_simple.h_P₃_ne_A2_23
-      h_simple.h_P₂_off_L₁ h_simple.h_third_match h_simple.h_y_match
-      h_simple.h_Q₀_nontorsion
-  · have hx : x = h_simple.P₃.1 := by rw [show x = (x, y).1 from rfl, h3]
-    have hy : y = h_simple.P₃.2 := by rw [show y = (x, y).2 from rfl, h3]
-    rw [hx, hy]
-    exact lineBuild_length4_div_at_P₃ E
-      h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
-      h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
-      h_simple.h_xx_01 h_simple.h_xx_23
-      h_simple.h_P₀_ne_A2_01 h_simple.h_P₁_ne_A2_01
-      h_simple.h_P₂_ne_A2_23 h_simple.h_P₃_ne_A2_23
-      h_simple.h_P₃_off_L₁ h_simple.h_third_match h_simple.h_y_match
-      h_simple.h_Q₀_nontorsion
-
-/-! ### On-support helper: filter-singleton characterisation
-
-For each j : Fin 3, the filter `{i : Fin stmt.k | stmt.bases i = stmt.bases (h3 ▸ j)}`
-is the singleton `{h3 ▸ j}`. Uses `h_inputs_distinct` (P_1, P_2, P_3 distinct
-modulo P_0 not being a basis index). -/
-private theorem bases_filter_singleton_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
-    (j : Fin 3) :
-    (Finset.univ : Finset (Fin stmt.k)).filter
-        (fun i => stmt.bases i = stmt.bases (h_simple.hk_eq_3 ▸ j))
-      = {h_simple.hk_eq_3 ▸ j} := by
-  classical
-  have h3 := h_simple.hk_eq_3
-  have h_dist := h_simple.h_inputs_distinct
-  -- The base identifications.
-  have hb0 : stmt.bases (h3 ▸ (0 : Fin 3)) = h_simple.P₁ := h_simple.h_P₁_eq.symm
-  have hb1 : stmt.bases (h3 ▸ (1 : Fin 3)) = h_simple.P₂ := h_simple.h_P₂_eq.symm
-  have hb2 : stmt.bases (h3 ▸ (2 : Fin 3)) = h_simple.P₃ := h_simple.h_P₃_eq.symm
-  -- Distinctness facts in the form needed.
-  have hP12 : h_simple.P₁ ≠ h_simple.P₂ := h_dist.2.2.2.1
-  have hP13 : h_simple.P₁ ≠ h_simple.P₃ := h_dist.2.2.2.2.1
-  have hP23 : h_simple.P₂ ≠ h_simple.P₃ := h_dist.2.2.2.2.2
-  apply Finset.ext
-  intro i
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_singleton]
-  constructor
-  · -- Forward: stmt.bases i = stmt.bases (h3 ▸ j) → i = h3 ▸ j.
-    intro h_bi
-    -- Cast i to a fresh Fin 3 variable ji by obtaining.
-    obtain ⟨ji, hji⟩ : ∃ ji : Fin 3, ji = Fin.cast h3 i := ⟨Fin.cast h3 i, rfl⟩
-    -- Show stmt.bases i = stmt.bases (h3 ▸ ji).
-    have h_i_eq : stmt.bases i = stmt.bases (h3 ▸ ji) := by
-      congr 1
-      apply Fin.ext
-      rw [cast_subst_val_l4 (E := E) h3 ji, hji]
-      rfl
-    rw [h_i_eq] at h_bi
-    -- Now stmt.bases (h3 ▸ ji) = stmt.bases (h3 ▸ j). Case-split on ji and j.
-    have h_eq : ji = j := by
-      have h_contra : ∀ (h_bi' : stmt.bases (h3 ▸ (0 : Fin 3))
-                              = stmt.bases (h3 ▸ (1 : Fin 3))), False := fun h =>
-        hP12 ((hb0.symm.trans h).trans hb1)
-      have h_contra2 : ∀ (h_bi' : stmt.bases (h3 ▸ (0 : Fin 3))
-                              = stmt.bases (h3 ▸ (2 : Fin 3))), False := fun h =>
-        hP13 ((hb0.symm.trans h).trans hb2)
-      have h_contra3 : ∀ (h_bi' : stmt.bases (h3 ▸ (1 : Fin 3))
-                              = stmt.bases (h3 ▸ (0 : Fin 3))), False := fun h =>
-        (Ne.symm hP12) ((hb1.symm.trans h).trans hb0)
-      have h_contra4 : ∀ (h_bi' : stmt.bases (h3 ▸ (1 : Fin 3))
-                              = stmt.bases (h3 ▸ (2 : Fin 3))), False := fun h =>
-        hP23 ((hb1.symm.trans h).trans hb2)
-      have h_contra5 : ∀ (h_bi' : stmt.bases (h3 ▸ (2 : Fin 3))
-                              = stmt.bases (h3 ▸ (0 : Fin 3))), False := fun h =>
-        (Ne.symm hP13) ((hb2.symm.trans h).trans hb0)
-      have h_contra6 : ∀ (h_bi' : stmt.bases (h3 ▸ (2 : Fin 3))
-                              = stmt.bases (h3 ▸ (1 : Fin 3))), False := fun h =>
-        (Ne.symm hP23) ((hb2.symm.trans h).trans hb1)
-      fin_cases ji <;> fin_cases j
-      · rfl
-      · exact (h_contra h_bi).elim
-      · exact (h_contra2 h_bi).elim
-      · exact (h_contra3 h_bi).elim
-      · rfl
-      · exact (h_contra4 h_bi).elim
-      · exact (h_contra5 h_bi).elim
-      · exact (h_contra6 h_bi).elim
-      · rfl
-    -- ji = j, recover i.
-    apply Fin.ext
-    rw [cast_subst_val_l4 (E := E) h3 j]
-    rw [show j.val = ji.val from h_eq ▸ rfl, hji]
-    rfl
-  · -- Backward.
-    intro h_eq
-    rw [h_eq]
-
-/-- For (x, y) = P_0: filter (bases i = (x, y)) is empty (P_0 ∉ bases). -/
-private theorem bases_filter_empty_at_P0
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg) :
-    (Finset.univ : Finset (Fin stmt.k)).filter
-        (fun i => stmt.bases i = h_simple.P₀) = ∅ := by
-  classical
-  rw [Finset.filter_eq_empty_iff]
-  intro i _
-  -- Cast i to Fin 3 and case-split.
-  have h3 := h_simple.hk_eq_3
-  have h_dist := h_simple.h_inputs_distinct
-  obtain ⟨ji, hji⟩ : ∃ ji : Fin 3, ji = Fin.cast h3 i := ⟨Fin.cast h3 i, rfl⟩
-  have h_i_eq : stmt.bases i = stmt.bases (h3 ▸ ji) := by
-    congr 1
-    apply Fin.ext
-    rw [cast_subst_val_l4 (E := E) h3 ji, hji]
-    rfl
-  rw [h_i_eq]
-  fin_cases ji
-  · -- ji = 0: bases (h3 ▸ 0) = P_1 ≠ P_0.
-    simp only [show (⟨0, by decide⟩ : Fin 3) = 0 from rfl]
-    rw [← h_simple.h_P₁_eq]
-    exact (Ne.symm h_dist.1)
-  · simp only [show (⟨1, by decide⟩ : Fin 3) = 1 from rfl]
-    rw [← h_simple.h_P₂_eq]
-    exact (Ne.symm h_dist.2.1)
-  · simp only [show (⟨2, by decide⟩ : Fin 3) = 2 from rfl]
-    rw [← h_simple.h_P₃_eq]
-    exact (Ne.symm h_dist.2.2.1)
-
-/-- Helper: at any (x, y) = P_k for k ∈ {0, 1, 2, 3}, honestDivisorCoeffs = 1. -/
-private theorem honestCoeffs_eq_one_at_P_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
-    {wit : DlogWitness E.q} (hk : stmt.k = wit.k)
-    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
-    {x y : ZMod E.q} (hns : E.toW.toAffine.Nonsingular x y)
-    (h_xy : (x, y) = h_simple.P₀ ∨ (x, y) = h_simple.P₁ ∨
-            (x, y) = h_simple.P₂ ∨ (x, y) = h_simple.P₃) :
-    honestDivisorCoeffs E stmt wit hk msg
-        (WeierstrassCurve.Affine.Point.some _ _ hns) = 1 := by
-  classical
-  rw [show (WeierstrassCurve.Affine.Point.some _ _ hns : ECPoint E)
-        = ECPoint.affine E x y from (ECPoint.affine_of_nonsingular E hns).symm]
-  rw [show honestDivisorCoeffs E stmt wit hk msg (ECPoint.affine E x y)
-        = (if (x, y) = (stmt.target.1, -stmt.target.2) then (1 : ℤ) else 0) +
-          ∑ i ∈ (Finset.univ : Finset (Fin stmt.k)).filter
-            (fun i => stmt.bases i = (x, y)),
-            (wit.scalars (hk ▸ i)) by
-        rw [ECPoint.affine_of_nonsingular E hns]; rfl]
-  have h_negT : (stmt.target.1, -stmt.target.2) = h_simple.P₀ := h_simple.h_P₀_eq.symm
-  have h_dist := h_simple.h_inputs_distinct
-  rcases h_xy with h0 | h1 | h2 | h3'
-  · -- (x, y) = P_0. Indicator = 1, filter = ∅, sum = 0. Total = 1.
-    have h_eq_negT : (x, y) = (stmt.target.1, -stmt.target.2) := by
-      rw [h_negT]; exact h0
-    rw [if_pos h_eq_negT]
-    -- Filter is empty.
-    have h_filter_eq : (Finset.univ : Finset (Fin stmt.k)).filter
-        (fun i => stmt.bases i = (x, y)) =
-        (Finset.univ : Finset (Fin stmt.k)).filter
-        (fun i => stmt.bases i = h_simple.P₀) := by
-      rw [h0]
-    rw [h_filter_eq, bases_filter_empty_at_P0 E h_simple]
-    simp
-  · -- (x, y) = P_1. Indicator = 0, filter = {h3 ▸ 0}, sum = 1. Total = 1.
-    have h_ne_negT : (x, y) ≠ (stmt.target.1, -stmt.target.2) := by
-      rw [h_negT, h1]; exact (Ne.symm h_dist.1)
-    rw [if_neg h_ne_negT, zero_add]
-    have h_filter_eq : (Finset.univ : Finset (Fin stmt.k)).filter
-        (fun i => stmt.bases i = (x, y)) =
-        (Finset.univ : Finset (Fin stmt.k)).filter
-        (fun i => stmt.bases i = stmt.bases (h_simple.hk_eq_3 ▸ (0 : Fin 3))) := by
-      rw [h1, ← h_simple.h_P₁_eq]
-    rw [h_filter_eq, bases_filter_singleton_for_length4Simple E h_simple 0]
-    rw [Finset.sum_singleton, h_scalars]
-  · -- (x, y) = P_2.
-    have h_ne_negT : (x, y) ≠ (stmt.target.1, -stmt.target.2) := by
-      rw [h_negT, h2]; exact (Ne.symm h_dist.2.1)
-    rw [if_neg h_ne_negT, zero_add]
-    have h_filter_eq : (Finset.univ : Finset (Fin stmt.k)).filter
-        (fun i => stmt.bases i = (x, y)) =
-        (Finset.univ : Finset (Fin stmt.k)).filter
-        (fun i => stmt.bases i = stmt.bases (h_simple.hk_eq_3 ▸ (1 : Fin 3))) := by
-      rw [h2, ← h_simple.h_P₂_eq]
-    rw [h_filter_eq, bases_filter_singleton_for_length4Simple E h_simple 1]
-    rw [Finset.sum_singleton, h_scalars]
-  · -- (x, y) = P_3.
-    have h_ne_negT : (x, y) ≠ (stmt.target.1, -stmt.target.2) := by
-      rw [h_negT, h3']; exact (Ne.symm h_dist.2.2.1)
-    rw [if_neg h_ne_negT, zero_add]
-    have h_filter_eq : (Finset.univ : Finset (Fin stmt.k)).filter
-        (fun i => stmt.bases i = (x, y)) =
-        (Finset.univ : Finset (Fin stmt.k)).filter
-        (fun i => stmt.bases i = stmt.bases (h_simple.hk_eq_3 ▸ (2 : Fin 3))) := by
-      rw [h3', ← h_simple.h_P₃_eq]
-    rw [h_filter_eq, bases_filter_singleton_for_length4Simple E h_simple 2]
-    rw [Finset.sum_singleton, h_scalars]
-
-/-! ### Full divisor identity ∀ R for length-4 simple
-
-Combines the infinity case, the affine on-support case (R ∈ {P_0..P_3}),
-and the affine off-support case (R ∉ {P_0..P_3}). -/
-
-/-- Universal divisor identity: `∀ R : ECPoint E, divisorOfD msg.toD R = honestDivisorCoeffs R`. -/
-theorem divisor_identity_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
-    {wit : DlogWitness E.q} (hk : stmt.k = wit.k)
-    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1) :
-    ∀ R : ECPoint E,
-      divisorOfD E msg.toD R = honestDivisorCoeffs E stmt wit hk msg R := by
-  classical
-  intro R
-  match R with
-  | WeierstrassCurve.Affine.Point.zero =>
-    exact divisor_identity_at_infinity_for_length4Simple E h_simple hk
-  | WeierstrassCurve.Affine.Point.some (x := x) (y := y) hns =>
-    have hOC : y ^ 2 = x ^ 3 + E.curveA * x + E.curveB :=
-      (E.equation_iff x y).mp ((E.equation_iff_nonsingular).mpr hns)
-    have hP : (x, y) ∈ E.points := E.hComplete x y hOC
-    -- Case-split on (x, y) ∈ {P_0..P_3} or not.
-    by_cases h_in : (x, y) = h_simple.P₀ ∨ (x, y) = h_simple.P₁ ∨
-                    (x, y) = h_simple.P₂ ∨ (x, y) = h_simple.P₃
-    · -- On support.
-      rw [div_eq_one_at_P_for_length4Simple E h_simple hns h_in]
-      rw [honestCoeffs_eq_one_at_P_for_length4Simple E h_simple hk h_scalars hns h_in]
-    · -- Off support.
-      push Not at h_in
-      obtain ⟨h0, h1, h2, h3⟩ := h_in
-      exact divisor_identity_at_affine_off_support_for_length4Simple E h_simple hk h_scalars
-        hns hP ⟨h0, h1, h2, h3⟩
-
-/-! ### `splitsOnE msg.toD` for length-4 simple
-
-Direct dispatch to `splitsOnE_lineBuild_length4` (existing
-infrastructure in `Divisor/IncrementalConstruction.lean`). -/
-
-theorem splitsOnE_msg_toD_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg) :
-    splitsOnE E msg.toD := by
-  rw [h_simple.h_toD_eq]
-  exact splitsOnE_lineBuild_length4 E
-    h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
-    h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
-    h_simple.h_xx_01 h_simple.h_xx_23
-    h_simple.h_P₀_ne_A2_01 h_simple.h_P₁_ne_A2_01
-    h_simple.h_P₂_ne_A2_23 h_simple.h_P₃_ne_A2_23
-    h_simple.h_P₀_off_L₂ h_simple.h_P₁_off_L₂
-    h_simple.h_P₂_off_L₁ h_simple.h_P₃_off_L₁
-    h_simple.h_third_match h_simple.h_y_match h_simple.h_Q₀_nontorsion
-    h_simple.h_Q₀_off_L₂_inputs h_simple.h_negQ₀_off_L₁_inputs
-    h_simple.h_inputs_distinct
-
-/-- Scalar reduction for the length-4 simple case (with `wit.scalars = 1`). -/
-theorem scalar_reduction_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
-    {wit : DlogWitness E.q} (hk : stmt.k = wit.k)
-    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1) :
-    ∀ i : Fin stmt.k,
-      msg.m i = ((wit.scalars (hk ▸ i) : ZMod E.q)) := by
-  intro i
-  rw [h_simple.h_m_eq_one i]
-  rw [h_scalars (hk ▸ i)]
-  push_cast; rfl
-
-/-- On-curve invariant: every `bases i` is on E. -/
-theorem bases_on_curve_for_length4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg) :
-    ∀ i : Fin stmt.k, stmt.bases i ∈ E.points := by
-  intro i
-  have h3 := h_simple.hk_eq_3
-  -- We need: stmt.bases i ∈ E.points.
-  -- Strategy: show stmt.bases i = stmt.bases (h3 ▸ Fin.cast h3 i) and use the helper.
-  set j : Fin 3 := Fin.cast h3 i with hj_def
-  have h_eq : stmt.bases i = stmt.bases (h3 ▸ j) := by
-    congr 1
-    -- Goal: i = h3 ▸ j (in Fin stmt.k).
-    apply Fin.ext
-    -- Goal: i.val = (h3 ▸ j).val
-    -- (Fin.cast h3 i).val = i.val by definition.
-    have h_cast_val : (Fin.cast h3 i).val = i.val := rfl
-    -- (h3 ▸ j).val = j.val (cast preserves val).
-    -- This is the tricky part; use generalization.
-    have h_subst_val : ∀ (h : stmt.k = 3) (j : Fin 3),
-        ((h ▸ j : Fin stmt.k)).val = j.val := by
-      intro h jj
-      -- Case on h.
-      generalize stmt.k = k at h jj
-      cases h
-      rfl
-    rw [h_subst_val h3 j, hj_def, h_cast_val]
-  rw [h_eq]
-  exact bases_at_cast_index_for_length4Simple E h_simple j
-
-/-! ## Bridge: IsHonestForLength4Simple → isHonestFor (full assembly)
-
-Combines all 5 helper components into the full bridge theorem.
-Given a `IsHonestForLength4Simple` plus a `DlogWitness` with all
-scalars = 1, produces the strengthened `isHonestFor` predicate.
-
-This is the construction-side validation that the strengthened
-`isHonestFor` is satisfiable for the length-4 simple case. -/
-
-theorem isHonestFor_of_isHonestForLength4Simple
-    {stmt : DlogStatement E.q} {msg : MAProverMsg E.q stmt.k}
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
-    {wit : DlogWitness E.q} (hk : stmt.k = wit.k)
-    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1) :
-    msg.isHonestFor E stmt wit hk := by
-  refine ⟨?_, ?_, ?_, ?_, ?_⟩
-  · exact scalar_reduction_for_length4Simple E h_simple hk h_scalars
-  · exact splitsOnE_msg_toD_for_length4Simple E h_simple
-  · exact divisor_identity_for_length4Simple E h_simple hk h_scalars
-  · exact negTarget_on_curve_for_length4Simple E h_simple
-  · exact bases_on_curve_for_length4Simple E h_simple
 
 /-! ## Hypothesis-light any-k completeness
 

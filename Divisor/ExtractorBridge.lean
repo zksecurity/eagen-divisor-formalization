@@ -2967,10 +2967,30 @@ theorem polyG_zero_trace_formula
                 ∃ Q ∈ zerosFinset E D,
                   (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 = 0)).card
               ≤ 3 * D.degE := by
-            -- D.degE ≥ 3 for any CoordRingElt
-            have hDegE3 : 3 ≤ D.degE := by
-              show 3 ≤ max (2 * D.a.natDegree) (3 + 2 * D.b.natDegree)
+            -- `3 ≤ D.degE` was an artifact of the old degree formula
+            -- (`natDegree 0 = 0` padding an absent `y` term); the exact
+            -- degree of a nonzero constant is zero. Such a `D` has no
+            -- zeros at all, so split on whether `D` vanishes anywhere:
+            -- if it does, the pole order is at least two, which is all
+            -- the counting below needs.
+            have hDnz : ¬ (D.a = 0 ∧ D.b = 0) := by
+              intro h
+              apply hA₀nz
+              simp only [zerosFinset, zeros, Finset.mem_filter]
+              exact ⟨hA₀, by unfold CoordRingElt.eval; rw [h.1, h.2]; simp⟩
+            rcases Finset.eq_empty_or_nonempty (zerosFinset E D) with hzE | hzN
+            · have hE : (E.points.filter (fun A₁ =>
+                    ∃ Q ∈ zerosFinset E D,
+                      (lineThrough A₀.1 A₀.2 A₁.1 A₁.2).eval Q.1 Q.2 = 0)).card = 0 := by
+                rw [Finset.card_eq_zero, Finset.filter_eq_empty_iff]
+                intro A₁ _
+                simp [hzE]
               omega
+            obtain ⟨Q₀, hQ₀⟩ := hzN
+            have hQ₀z : D.eval Q₀.1 Q₀.2 = 0 := by
+              simp only [zerosFinset, zeros, Finset.mem_filter] at hQ₀
+              exact hQ₀.2
+            have hDegE3 : 2 ≤ D.degE := two_le_degE_of_eval_zero E hDnz hQ₀z
             -- Split filter into non-vertical (A₁.1 ≠ A₀.1) and vertical (A₁.1 = A₀.1)
             set S := E.points.filter (fun A₁ =>
               ∃ Q ∈ zerosFinset E D,

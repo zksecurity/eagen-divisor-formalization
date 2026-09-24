@@ -66,9 +66,42 @@ theorem normPoly_ne_zero (D : CoordRingElt E.q)
     (hD : ¬ (D.a = 0 ∧ D.b = 0)) : normPoly E D ≠ 0 := by
   rw [normPoly_eq]; exact resultantX_aux_ne_zero E hD
 
+/-- `degE` is the *exact* degree of the norm polynomial.
+
+    This is what makes `divisorOfD` (which places
+    `-(normPoly E D).natDegree` at infinity) and `honestDivisorCoeffs`
+    (which places `-D.degE` there) agree unconditionally, rather than
+    only under an honesty premise. -/
+theorem normPoly_natDegree_eq (D : CoordRingElt E.q) :
+    (normPoly E D).natDegree = D.degE :=
+  resultantX_DAtA₁Poly_natDegree_eq E D
+
 theorem normPoly_natDegree_le (D : CoordRingElt E.q) :
     (normPoly E D).natDegree ≤ D.degE :=
-  resultantX_DAtA₁Poly_natDegree_le E D
+  le_of_eq (normPoly_natDegree_eq E D)
+
+/-- A nonzero `D` that vanishes anywhere has pole order at least two.
+
+    The old degree definition made `3 ≤ D.degE` unconditional — an
+    artifact of `Polynomial.natDegree 0 = 0`, not a real fact. Proofs
+    that leaned on that slack use this instead, which is true of the
+    exact degree: if `b = 0` then `a ≠ 0` has a root, so `deg a ≥ 1` and
+    `degE = 2·deg a ≥ 2`; if `b ≠ 0` then `degE ≥ 3`. -/
+theorem two_le_degE_of_eval_zero {D : CoordRingElt E.q} {x y : ZMod E.q}
+    (hD : ¬ (D.a = 0 ∧ D.b = 0)) (hZ : D.eval x y = 0) : 2 ≤ D.degE := by
+  by_cases hb : D.b = 0
+  · have ha : D.a ≠ 0 := fun h => hD ⟨h, hb⟩
+    have hroot : D.a.IsRoot x := by
+      simpa [CoordRingElt.eval, hb] using hZ
+    have h1 : 1 ≤ D.a.natDegree := by
+      have hdvd : (Polynomial.X - Polynomial.C x) ∣ D.a :=
+        Polynomial.dvd_iff_isRoot.mpr hroot
+      simpa [Polynomial.natDegree_X_sub_C] using
+        Polynomial.natDegree_le_of_dvd hdvd ha
+    rw [CoordRingElt.degE_of_b_eq_zero hb]
+    omega
+  · have := CoordRingElt.three_add_two_b_le_degE hb
+    omega
 
 /-- `N(D).eval x₀ = (D.a.eval x₀)^2 - (D.b.eval x₀)^2 · (x₀^3 + A·x₀ + B)`. -/
 theorem normPoly_eval (D : CoordRingElt E.q) (x₀ : ZMod E.q) :

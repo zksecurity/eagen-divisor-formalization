@@ -572,6 +572,16 @@ noncomputable def DbAtA₂TightScaled (D : CoordRingElt E.q)
       * x₂Scaled (E := E) A₀ ^ n
       * lamDenPoly (E := E) A₀ ^ (2 * D.b.natDegree - 2 * n)
 
+/-- With no `y` term there is nothing to clear: the tight `b`-part of
+    `D` at `A₂` is the zero polynomial. -/
+theorem DbAtA₂TightScaled_eq_zero_of_b_eq_zero (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) (hb : D.b = 0) :
+    DbAtA₂TightScaled (E := E) D A₀ = 0 := by
+  unfold DbAtA₂TightScaled
+  refine Finset.sum_eq_zero ?_
+  intro n _
+  simp [hb, embedScalar]
+
 /-- `(3·chordX₂² + curveA) · lamDen^4`, as a polynomial. -/
 noncomputable def dydzNumA₂Scaled (A₀ : ZMod E.q × ZMod E.q) :
     (ZMod E.q)[X][X] :=
@@ -597,6 +607,14 @@ noncomputable def correctionA₂ScaledCore (D : CoordRingElt E.q)
   (- DbAtA₂TightScaled (E := E) D A₀)
     * dydzNumA₂Scaled (E := E) A₀
     * lamDenPoly (E := E) A₀ ^ (D.degE - 2 * D.b.natDegree - 3)
+
+/-- Corollary of `DbAtA₂TightScaled_eq_zero_of_b_eq_zero`. -/
+theorem correctionA₂ScaledCore_eq_zero_of_b_eq_zero (D : CoordRingElt E.q)
+    (A₀ : ZMod E.q × ZMod E.q) (hb : D.b = 0) :
+    correctionA₂ScaledCore (E := E) D A₀ = 0 := by
+  unfold correctionA₂ScaledCore
+  rw [DbAtA₂TightScaled_eq_zero_of_b_eq_zero E D A₀ hb]
+  simp
 
 /-- LHS i=0 term: the `num_x·2y` factor only (pre-correction). -/
 noncomputable def lhsTerm0Scaled (D : CoordRingElt E.q)
@@ -786,22 +804,42 @@ theorem DAtA₁Poly_yPart (D : CoordRingElt E.q) :
     yPart E (DAtA₁Poly (E := E) D %ₘ curveEqPoly E) = -D.b := by
   rw [DAtA₁Poly_modByMonic_self, yPart, DAtA₁Poly_coeff_one]
 
-/-- `(resultantX (DAtA₁Poly D)).natDegree ≤ D.degE`. -/
-theorem resultantX_DAtA₁Poly_natDegree_le (D : CoordRingElt E.q) :
-    (resultantX E (DAtA₁Poly (E := E) D)).natDegree ≤ D.degE := by
+/-- `resultantX (DAtA₁Poly D) = D.a² − D.b²·curveX` — the norm polynomial. -/
+theorem resultantX_DAtA₁Poly_eq (D : CoordRingElt E.q) :
+    resultantX E (DAtA₁Poly (E := E) D) = D.a ^ 2 - D.b ^ 2 * curveX E := by
   unfold resultantX
   rw [DAtA₁Poly_xPart, DAtA₁Poly_yPart]
-  refine (Polynomial.natDegree_sub_le _ _).trans ?_
-  refine max_le ?_ ?_
-  · -- (D.a^2).natDegree ≤ 2·D.a.natDegree ≤ D.degE
-    rw [Polynomial.natDegree_pow]
-    exact le_max_left _ _
-  · -- ((-D.b)^2 * curveX).natDegree ≤ 2·D.b.natDegree + 3 ≤ D.degE
-    refine Polynomial.natDegree_mul_le.trans ?_
-    rw [Polynomial.natDegree_pow, Polynomial.natDegree_neg]
-    refine le_trans (Nat.add_le_add_left (curveX_natDegree_le_three E) _) ?_
-    rw [Nat.add_comm]
-    exact le_max_right _ _
+  ring
+
+/-- `(resultantX (DAtA₁Poly D)).natDegree = D.degE`: the corrected `degE`
+    is the *exact* degree of the norm polynomial, not merely a bound.
+
+    When `D.b = 0` the norm is `a²`. Otherwise the two summands have
+    degrees `2·deg a` (even) and `3 + 2·deg b` (odd), so their leading
+    terms cannot cancel and the degree of the difference is the maximum. -/
+theorem resultantX_DAtA₁Poly_natDegree_eq (D : CoordRingElt E.q) :
+    (resultantX E (DAtA₁Poly (E := E) D)).natDegree = D.degE := by
+  classical
+  rw [resultantX_DAtA₁Poly_eq]
+  by_cases hb : D.b = 0
+  · simp [CoordRingElt.degE_of_b_eq_zero hb, hb, Polynomial.natDegree_pow]
+  · have haDeg : (D.a ^ 2).natDegree = 2 * D.a.natDegree :=
+      Polynomial.natDegree_pow _ _
+    have hbDeg : (D.b ^ 2 * curveX E).natDegree = 3 + 2 * D.b.natDegree := by
+      rw [Polynomial.natDegree_mul (pow_ne_zero _ hb) (curveX_ne_zero E),
+        Polynomial.natDegree_pow, natDegree_curveX_eq]
+      omega
+    rw [CoordRingElt.degE_of_b_ne_zero hb]
+    by_cases hlt : 2 * D.a.natDegree < 3 + 2 * D.b.natDegree
+    · rw [Polynomial.natDegree_sub_eq_right_of_natDegree_lt (by omega), hbDeg,
+        max_eq_right (by omega)]
+    · rw [Polynomial.natDegree_sub_eq_left_of_natDegree_lt (by omega), haDeg,
+        max_eq_left (by omega)]
+
+/-- `(resultantX (DAtA₁Poly D)).natDegree ≤ D.degE`. -/
+theorem resultantX_DAtA₁Poly_natDegree_le (D : CoordRingElt E.q) :
+    (resultantX E (DAtA₁Poly (E := E) D)).natDegree ≤ D.degE :=
+  le_of_eq (resultantX_DAtA₁Poly_natDegree_eq E D)
 
 /-- **Helper**: `numZeros E D ≤ D.degE` whenever `D` is not the zero
     coord-ring element.
@@ -1008,10 +1046,16 @@ theorem bivEval_DBPartAtA₂Scaled_eq (D : CoordRingElt E.q)
       Finset.sum_mul, Finset.mul_sum]
   apply Finset.sum_congr rfl
   intro n hn
-  have h2n3le : 2 * n + 3 ≤ D.degE := by
-    have hn' : n ≤ D.b.natDegree := Nat.le_of_lt_succ (Finset.mem_range.mp hn)
-    unfold CoordRingElt.degE
-    omega
+  -- The exact `degE` no longer bounds `2n + 3` unconditionally: when
+  -- `D.b = 0` there is no `y` term to clear. But the summand carries
+  -- `D.b.coeff n` as a factor, so that case is the zero summand.
+  rcases eq_or_ne (D.b.coeff n) 0 with hc | hc
+  · simp only [bivEval_mul, bivEval_pow, bivEval_embedScalar, bivEval_lamDenPoly,
+               bivEval_x₂Scaled_eq _ _ _ hNV,
+               bivEval_y₂Scaled_eq _ _ _ hNV, hc]
+    ring
+  have h2n3le : 2 * n + 3 ≤ D.degE :=
+    CoordRingElt.two_mul_add_three_le_degE hc
   simp only [bivEval_mul, bivEval_pow, bivEval_embedScalar, bivEval_lamDenPoly,
              bivEval_x₂Scaled_eq _ _ _ hNV,
              bivEval_y₂Scaled_eq _ _ _ hNV]
@@ -1120,13 +1164,20 @@ theorem bivEval_DDerivBPartAtA₂Scaled_eq (D : CoordRingElt E.q)
       Finset.sum_mul, Finset.mul_sum]
   apply Finset.sum_congr rfl
   intro n hn
+  -- Same shape as `bivEval_DBPartAtA₂Scaled_eq`: the zero summand covers
+  -- the `D.b = 0` case that the exact `degE` no longer pads for.
+  rcases eq_or_ne ((Polynomial.derivative D.b).coeff n) 0 with hc | hc
+  · simp only [bivEval_mul, bivEval_pow, bivEval_embedScalar, bivEval_lamDenPoly,
+               bivEval_x₂Scaled_eq _ _ _ hNV,
+               bivEval_y₂Scaled_eq _ _ _ hNV, hc]
+    ring
   have h2n3le : 2 * n + 3 ≤ D.degE := by
+    have hbne : D.b ≠ 0 := by intro h; exact hc (by simp [h])
     have hn' : n ≤ (Polynomial.derivative D.b).natDegree :=
-      Nat.le_of_lt_succ (Finset.mem_range.mp hn)
+      Polynomial.le_natDegree_of_ne_zero hc
     have hdb : (Polynomial.derivative D.b).natDegree ≤ D.b.natDegree :=
       (Polynomial.natDegree_derivative_le _).trans (Nat.sub_le _ _)
-    have : n ≤ D.b.natDegree := hn'.trans hdb
-    unfold CoordRingElt.degE
+    have := CoordRingElt.three_add_two_b_le_degE hbne
     omega
   simp only [bivEval_mul, bivEval_pow, bivEval_embedScalar, bivEval_lamDenPoly,
              bivEval_x₂Scaled_eq _ _ _ hNV,
@@ -1301,8 +1352,11 @@ theorem bivEval_correctionA₂ScaledCore_eq (D : CoordRingElt E.q)
   simp only [bivEval_mul, bivEval_neg, bivEval_pow, bivEval_lamDenPoly,
              bivEval_DbAtA₂TightScaled_eq _ _ _ _ hNV,
              bivEval_dydzNumA₂Scaled_eq _ _ _ hNV]
+  by_cases hb : D.b = 0
+  · -- No `y` term to clear: both sides vanish.
+    simp [hb]
   have hb_le : 2 * D.b.natDegree + 3 ≤ D.degE := by
-    unfold CoordRingElt.degE
+    have := CoordRingElt.three_add_two_b_le_degE hb
     omega
   have hpow : (A₁.1 - A₀.1) ^ (2 * D.b.natDegree) * (A₁.1 - A₀.1) ^ 4
               * (A₁.1 - A₀.1) ^ (D.degE - 2 * D.b.natDegree - 3)

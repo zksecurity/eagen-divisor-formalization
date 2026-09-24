@@ -8,6 +8,13 @@ import Divisor.OrdP.ChordAlgebra
 import Divisor.OrdP.ChordNorm
 import Divisor.OrdP.ChordFraction
 import Divisor.OrdP.ChordResultant
+import Divisor.OrdP.Units
+import Divisor.OrdP.LineDivisor
+import Divisor.PointCombine
+import Divisor.LineBuildExact.Combine
+import Divisor.LineBuildExact
+import Divisor.ProverDefs
+import Divisor.Prover
 import Divisor.Bridges
 import Divisor.ChordCubicSymmetric
 import Divisor.PartialFractionHelper
@@ -40,6 +47,8 @@ import Divisor.CoordRingElt.Smul
 import Divisor.PolyGBridge
 import Divisor.PolyGDensity
 import Divisor.Protocol
+import Divisor.AdmNormalizer
+import Divisor.HonestSupport
 import Divisor.DivisorPrincipal
 import Divisor.Soundness
 import Divisor.Completeness
@@ -54,13 +63,9 @@ import Divisor.GeomLocalOrder
 import Divisor.FrobDescentHelpers
 import Divisor.SlopeChoice
 import Divisor.GeometricSoundness
-import Divisor.SafeSupportDefs
-import Divisor.IsHonestForBinary
-import Divisor.SafeSupport
 import Divisor.CoordRingEltC
 import Divisor.CoordRingEltC.Bridge
-import Divisor.LineBuildComputable
-import Divisor.LineBuildComputable.Bridge
+import Divisor.LineBuildComputable.Singletons
 import Divisor.Headlines
 import Divisor.Hasse
 import Divisor.Sketch.ChordFiberProductConcrete

@@ -12,15 +12,13 @@
     for any honest message (`isHonestFor`).
   * `ma_completeness_degBound` — consolidated point-count form
     ≤ (3d + 4)·|E|.
-  * `ma_completeness_*_for_length4Simple` — the same chain with the
-    honesty predicate supplied constructively by the length-4 simple
-    bridge.
 
   IP side: `ip_accept_off_eventDeg` — the honest third-round response
   exists off `eventDeg`; the headline bounds follow from it.
 
-  The constructive any-length supply for binary witnesses is in
-  `Divisor/IsHonestForBinary.lean` and `Divisor/SafeSupport.lean`.
+  The honest message itself is produced by the prover in
+  `Divisor/Prover.lean`, whenever the witness has nonnegative scalars
+  and some honest message for it is admissible.
 -/
 import Divisor.Soundness
 
@@ -46,10 +44,8 @@ variable (E : ECSetup)
 
     Factored through `ma_completeness_parameterized`
     (`Divisor/MACompletenessCore.lean`), which takes the per-pair
-    `logDerivCheckFn = 0` claim as a hook, so specialized integrations
-    (the length-4 simple bridge in `Divisor.LogDerivEagenLength4`, the
-    explicit honest-divisor identity in `Divisor.LineBuildRecursive`)
-    can supply it directly. -/
+    `logDerivCheckFn = 0` claim as a hook, which the explicit
+    honest-divisor identity in `Divisor.HonestForExplicit` supplies. -/
 theorem ma_completeness_base
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q)
     (hk : stmt.k = wit.k) (hValid : relDlog E stmt wit)
@@ -98,76 +94,6 @@ theorem ma_completeness_degBound
     _ ≤ (3 * stmt.degBound + 4) * E.points.card := by
         unfold ECSetup.numAffine
         exact Nat.mul_le_mul_right _ (by omega)
-
-/-! ## Length-4 simple completeness via the constructive bridge
-
-For length-4 simple sum-zero quadruples (`P_0 + P_1 + P_2 + P_3 = O`
-on `E`) with all witness scalars equal to 1, the
-`isHonestFor_of_isHonestForLength4Simple` bridge supplies the
-strengthened `isHonestFor` predicate constructively. Composing with
-`ma_completeness_base` gives an axiom-clean completeness theorem for this
-case, validating the bridge end-to-end. -/
-
-theorem ma_completeness_for_length4Simple
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
-    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg).card
-      ≤ (3 * numZeros E msg.toD + 4) * E.numAffine :=
-  ma_completeness_base E stmt wit hk hValid msg
-    hDeg hDegK hAdm
-    (isHonestFor_of_isHonestForLength4Simple E h_simple hk h_scalars)
-
-/-- Point-count consolidated form for the length-4 simple bridge. -/
-theorem ma_completeness_clean_for_length4Simple
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
-    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg).card
-      ≤ (3 * stmt.degBound + 4) * E.points.card := by
-  -- D ≠ 0 from the lineBuild_length4_explicit nonzero property + h_toD_eq.
-  have hD : ¬ (msg.toD.a = 0 ∧ msg.toD.b = 0) := by
-    rw [h_simple.h_toD_eq]
-    exact lineBuild_length4_explicit_ne_zero E
-      h_simple.P₀ h_simple.P₁ h_simple.P₂ h_simple.P₃
-      h_simple.hP₀ h_simple.hP₁ h_simple.hP₂ h_simple.hP₃
-      h_simple.h_xx_01 h_simple.h_xx_23
-      h_simple.h_third_match h_simple.h_y_match h_simple.h_Q₀_nontorsion
-  exact ma_completeness_degBound E stmt wit hk hValid msg
-    hDeg hDegK hAdm
-    (isHonestFor_of_isHonestForLength4Simple E h_simple hk h_scalars)
-    hD
-
-/-- Field-size form for the length-4 simple bridge (trivial fiber
-    bound; no axiom). -/
-theorem ma_completeness_q_for_length4Simple
-    (stmt : DlogStatement E.q) (msg : MAProverMsg E.q stmt.k)
-    (h_simple : MAProverMsg.IsHonestForLength4Simple E stmt msg)
-    (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
-    (h_scalars : ∀ i : Fin wit.k, wit.scalars i = 1)
-    (hValid : relDlog E stmt wit)
-    (hDeg : msg.toD.degE ≤ wit.degBound)
-    (hDegK : msg.toD.degE ≤ stmt.degBound)
-    (hAdm : stmt.admSet (msg.polyA, msg.polyB)) :
-    (maRejectSet E stmt msg).card
-      ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by
-  have hMA := ma_completeness_clean_for_length4Simple E stmt msg h_simple wit hk
-    h_scalars hValid hDeg hDegK hAdm
-  have hHasse : E.points.card ≤ 2 * E.q := points_card_le_two_q E
-  calc _ ≤ (3 * stmt.degBound + 4) * E.points.card := hMA
-    _ ≤ (3 * stmt.degBound + 4) * (2 * E.q) := Nat.mul_le_mul_left _ hHasse
-    _ ≤ (6 * (stmt.degBound + 1) + 6) * E.q := by ring_nf; omega
-
 
 /-- **IP Completeness (off `eventDeg`).** On every challenge where
     `eventDeg` does **not** hold (paper: `¬event_deg`), the honest IP
