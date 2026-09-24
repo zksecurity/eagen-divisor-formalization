@@ -326,7 +326,7 @@ private theorem proveL_none : proveC E17 stmtL witL rfl admNormLine = none := by
     CoeffPoly.toPolynomial_coeff] at hcoeff
   simp [proveC, admNormLine, hcoeff]
 
-/-- No honest message lies in `admSetLine` for this statement. -/
+/-- No honest message for this witness lies in `admSetLine`. -/
 theorem line_none_no_admissible :
     ∀ msg : MAProverMsg E17.q stmtL.k, msg.isHonestFor E17 stmtL witL rfl →
       ¬ stmtL.admSet (msg.polyA, msg.polyB) :=
@@ -383,7 +383,7 @@ private theorem proveP_none : proveC E17 stmtP witP rfl admNormParker = none := 
     CoeffPoly.toPolynomial_coeff] at hcoeff
   simp [proveC, admNormParker, hcoeff]
 
-/-- No honest message lies in `admSetParker` for this statement. -/
+/-- No honest message for this witness lies in `admSetParker`. -/
 theorem parker_none_no_admissible :
     ∀ msg : MAProverMsg E17.q stmtP.k, msg.isHonestFor E17 stmtP witP rfl →
       ¬ stmtP.admSet (msg.polyA, msg.polyB) :=

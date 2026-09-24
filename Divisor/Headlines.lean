@@ -14,9 +14,9 @@
   * **Completeness** — `ma_completeness` (reject set ≤ `(3d+4)·|E|`),
     `ma_completeness_q`, `ip_completeness`, `ip_completeness_q`.
   * **Prover completeness** — `prover_complete`, `ma_completeness_prover`:
-    the honest prover produces an admissible honest message for every
-    valid witness with nonnegative scalars, with no general-position
-    hypothesis.
+    for a valid witness with nonnegative scalars, the honest prover
+    returns an admissible honest message or certifies that none exists
+    for that witness, with no general-position hypothesis.
   * **Soundness probability and contrapositives** —
     `ma_soundness_ratio_bound` and the `witness_of_excess` family:
     observed acceptance above the bound forces extraction.
