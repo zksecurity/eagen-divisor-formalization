@@ -32,20 +32,23 @@
      `admNormParker` `none` on `T₂ = T₂ + 2·T₃` (`D ∝ x² − 1`), and
      `admNormHash r` with `r i = i + 1` `none` on `(3,22) = 2·(18,15)`.
 
-  Every run is checked against the full divisor `Σ (Pᵢ) − n·(O)`: `D`
-  vanishes on the support, is nonzero at every other affine point, and
-  its norm `a² − b²·(x³ + Ax + B)` is a nonzero multiple of
-  `∏ (X − x_P)` over the support. A, B and C also instantiate
+  Every run is checked with `Tests.DivisorOracle.divisorExact`: `D ≠ 0`,
+  and at every affine point `Q` of `E` the order of `D` (from a local
+  power-series expansion) equals the multiplicity of `Q` in the support,
+  so `div D = Σ (Pᵢ) − n·(O)` exactly. Negative controls check that the
+  oracle rejects a wrong support, including one with the multiplicities
+  of `P` and `−P` swapped. A, B and C also instantiate
   `ma_completeness_prover` with every premise constructed.
 -/
 import Divisor.Headlines
 import Tests.CurveFixtures
+import Tests.DivisorOracle
 
 open Polynomial WeierstrassCurve WeierstrassCurve.Affine
 
 namespace Tests.ProverTricky
 
-open Divisor
+open Divisor Tests.DivisorOracle
 
 private abbrev E23 : ECSetup := Tests.CurveFixtures.E23
 
@@ -220,42 +223,7 @@ theorem prover_chord_endpoint :
     (mem 10 1 (by decide)) (fun i => by fin_cases i <;> exact mem _ _ (by decide))
     (by decide) (by decide)).1
 
-/-! ## Divisor checker -/
-
-/-- All affine points of `E(F₂₃)`. -/
-private def curvePts : List (F × F) :=
-  ((List.range E23.q).flatMap fun x => (List.range E23.q).map fun y => ((x : F), (y : F))).filter
-    fun p => p.2 ^ 2 == p.1 ^ 3 + E23.curveA * p.1 + E23.curveB
-
-/-- `N(D) = a² − b²·(x³ + Ax + B)`. -/
-private def normC (a b : CoeffPoly E23.q) : CoeffPoly E23.q :=
-  a * a - b * b * ⟨[E23.curveB, E23.curveA, 0, 1]⟩
-
-/-- Coefficients with trailing zeros dropped, scaled to leading coefficient `1`;
-    `[]` for the zero polynomial. -/
-private def monicC (p : CoeffPoly E23.q) : List F :=
-  let l := (p.coeffs.reverse.dropWhile (· == 0)).reverse
-  match l.getLast? with
-  | some c => l.map (· * c⁻¹)
-  | none => []
-
-/-- `∏ (X − x_P)` over the support. -/
-private def fiberPoly (S : List (F × F)) : CoeffPoly E23.q :=
-  S.foldr (fun P acc => (CoeffPoly.X - CoeffPoly.C P.1) * acc) 1
-
-/-- `D = a − b·y` has divisor `Σ_{P ∈ S} (P) − |S|·(O)`, fiber by fiber:
-    zeros on `S`, no other affine zeros, norm a nonzero multiple of
-    `∏ (X − x_P)`. -/
-private def divisorOk (a b : CoeffPoly E23.q) (S : List (F × F)) : Bool :=
-  let D : CoordRingEltC E23.q := ⟨a, b⟩
-  S.all (fun P => D.eval P.1 P.2 == 0) &&
-    monicC (normC a b) != [] && monicC (normC a b) == monicC (fiberPoly S) &&
-    (curvePts.filter (· ∉ S)).all fun Q => D.eval Q.1 Q.2 != 0
-
-private def checkRun {k : ℕ} (out : Option (MsgC E23.q k)) (S : List (F × F)) : Bool :=
-  match out with
-  | some o => divisorOk o.a o.b S
-  | none => false
+/-! ## List-built instances -/
 
 /-- A statement from lists (`admSetMax`; `proveC` takes its normalizer
     separately). -/
@@ -277,20 +245,20 @@ private def wt (ns : List ℕ) : DlogWitness E23.q where
 /-- Run `proveC` on list data and check the full divisor. -/
 private def run (bs : List (F × F)) (ns : List ℕ) (P : F × F) (N : AdmNormalizer E23.q)
     (h : bs.length = ns.length) : Bool :=
-  checkRun (proveC E23 (st bs P) (wt ns) h N) (honestSupport (st bs P) (wt ns) h)
+  msgExact E23 (proveC E23 (st bs P) (wt ns) h N) (honestSupport (st bs P) (wt ns) h)
 
-#guard curvePts.length = 23
+#guard (curvePts E23).length = 23
 
 /-! ## Executed runs -/
 
 -- A, B, C: supports and full divisors.
 #guard honestSupport stmtA witA rfl = [(22, 0), (0, 0), (1, 0), (22, 0), (22, 0)]
-#guard checkRun (proveC E23 stmtA witA rfl admNormMax) (honestSupport stmtA witA rfl)
+#guard msgExact E23 (proveC E23 stmtA witA rfl admNormMax) (honestSupport stmtA witA rfl)
 #guard honestSupport stmtB witB rfl = (19, 20) :: List.replicate 15 (10, 1)
-#guard checkRun (proveC E23 stmtB witB rfl admNormParker) (honestSupport stmtB witB rfl)
+#guard msgExact E23 (proveC E23 stmtB witB rfl admNormParker) (honestSupport stmtB witB rfl)
 #guard (proveC E23 stmtB witB rfl (admNormHash fun i => ((i + 1 : ℕ) : F))).isSome
 #guard honestSupport stmtC witC rfl = [(10, 1), (3, 1), (10, 1)]
-#guard checkRun (proveC E23 stmtC witC rfl admNormLine) (honestSupport stmtC witC rfl)
+#guard msgExact E23 (proveC E23 stmtC witC rfl admNormLine) (honestSupport stmtC witC rfl)
 -- The tangent at `G` has slope `0`, so `D ∝ y − 1` and Parker has no scale.
 #guard (proveC E23 stmtC witC rfl admNormParker).isNone
 
@@ -340,10 +308,19 @@ private def run (bs : List (F × F)) (ns : List ℕ) (P : F × F) (N : AdmNormal
 #guard run [(18, 15)] [2] (3, 22) admNormMax rfl
 #guard run [(18, 15)] [2] (3, 22) admNormParker rfl
 
--- The checker is not vacuous: instance A's output fails against B's support,
--- and against A's support with one point moved to its negative.
-#guard !checkRun (proveC E23 stmtA witA rfl admNormMax) (honestSupport stmtB witB rfl)
-#guard !checkRun (proveC E23 stmtC witC rfl admNormMax) [(10, 1), (3, 1), (10, 22)]
+-- Negative controls: instance A's output fails against B's support, and C's
+-- against its support with one point moved to its negative.
+#guard !msgExact E23 (proveC E23 stmtA witA rfl admNormMax) (honestSupport stmtB witB rfl)
+#guard !msgExact E23 (proveC E23 stmtC witC rfl admNormMax) [(10, 1), (3, 1), (10, 22)]
+
+-- Opposite multiplicities across `±F`, `F = (2, 11)` the flex: `F = 4·F`, support
+-- `[−F, F⁴]`. The output fails against `[F, (−F)⁴]`, which has the same zeros
+-- and the same norm.
+#guard honestSupport (st [(2, 11)] (2, 11)) (wt [4]) rfl =
+  [(2, 12), (2, 11), (2, 11), (2, 11), (2, 11)]
+#guard run [(2, 11)] [4] (2, 11) admNormMax rfl
+#guard !msgExact E23 (proveC E23 (st [(2, 11)] (2, 11)) (wt [4]) rfl admNormMax)
+  [(2, 11), (2, 12), (2, 12), (2, 12), (2, 12)]
 
 /-! ## Axiom closure -/
 
