@@ -26,9 +26,10 @@
      `(4,16) = 2·(22,5)`.
 
   Every run is checked with `Tests.DivisorOracle.divisorExact`: `D ≠ 0`,
-  and at every affine point `Q` of `E` the order of `D` (from a local
+  at every rational affine point `Q` of `E` the order of `D` (from a local
   power-series expansion) equals the multiplicity of `Q` in the support,
-  so `div D = Σ (Pᵢ) − n·(O)` exactly. Negative controls check that the
+  and `degE(D)` equals the support length, so `div D = Σ (Pᵢ) − n·(O)`
+  exactly. Negative controls check that the
   oracle rejects supports with the multiplicities of `Q` and `−Q` swapped.
   A also instantiates `ma_completeness_prover` with every premise
   constructed.
@@ -159,7 +160,7 @@ theorem prover_prime_order_chain :
     separately). -/
 private def st (bs : List (F × F)) (P : F × F) : DlogStatement E.q where
   k := bs.length
-  degBound := 30
+  degBound := 31
   bases i := bs[i]
   target := P
   admSet := admSetMax (q := E.q)

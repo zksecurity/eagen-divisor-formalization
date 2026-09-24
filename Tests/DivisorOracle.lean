@@ -18,9 +18,10 @@
   is the pole order at `O`; every affine order is at most `degE`, so the
   valuation is exact.
 
-  `divisorExact E D S`: `D ≠ 0`, `S` lies on `E`, and `localOrder D Q =
-  S.count Q` at every affine point `Q`. Since `D` has poles only at `O`,
-  this is the full divisor.
+  `divisorExact E D S`: `D ≠ 0`, `S` lies on `E`, `localOrder D Q =
+  S.count Q` at every rational affine point `Q`, and `degE(D) = |S|`.
+  The degree check accounts for zeros at non-rational points, which the
+  pointwise scan cannot see; together they give the full divisor.
 -/
 import Divisor.ProverDefs
 import Tests.CurveFixtures
@@ -118,11 +119,13 @@ def curvePts : List (ZMod E.q × ZMod E.q) :=
       (List.range E.q).map fun y => ((x : ZMod E.q), (y : ZMod E.q))).filter fun p =>
     p.2 ^ 2 == p.1 ^ 3 + E.curveA * p.1 + E.curveB
 
-/-- `D` has divisor exactly `Σ_{P ∈ S} (P) − |S|·(O)`: `D ≠ 0`, `S ⊆ E`, and
-    the order of `D` at every affine point `Q` is the count of `Q` in `S`. -/
+/-- `D` has divisor exactly `Σ_{P ∈ S} (P) − |S|·(O)`: `D ≠ 0`, `S ⊆ E`,
+    the order of `D` at every rational affine point `Q` is the count of `Q`
+    in `S`, and the pole order at `O` is `|S|`. The last check catches
+    zeros at non-rational points, which the pointwise scan cannot see. -/
 def divisorExact (D : CoordRingEltC E.q) (S : List (ZMod E.q × ZMod E.q)) : Bool :=
   let pts := curvePts E
-  (lenC E D.a != 0 || lenC E D.b != 0) &&
+  (lenC E D.a != 0 || lenC E D.b != 0) && precision E D == S.length + 1 &&
     S.all (fun P => P ∈ pts) && pts.all fun Q => localOrder E D Q == S.count Q
 
 /-- `divisorExact` on a prover output; `false` on `none`. -/
@@ -174,5 +177,12 @@ private def vertTimesFlex : CoordRingEltC E23.q :=
 #guard localOrder E23 vertTimesFlex (2, 12) = 1
 #guard divisorExact E23 vertTimesFlex [(2, 11), (2, 11), (2, 11), (2, 11), (2, 12)]
 #guard !divisorExact E23 vertTimesFlex [(2, 11), (2, 12), (2, 12), (2, 12), (2, 12)]
+
+-- Zeros at non-rational points are seen: `x² + 1` has none over `F₂₃`
+-- (`−1` is a nonsquare), so it vanishes at no rational point but has pole
+-- order `4`. Both hidden-factor supports fail.
+#guard !divisorExact E23 (D [1, 0, 1] []) []
+#guard !divisorExact E23 (D [-2, 1, -2, 1] []) [(2, 11), (2, 12)]
+#guard divisorExact E23 (D [-2, 1] []) [(2, 11), (2, 12)]
 
 end Tests.DivisorOracle

@@ -33,9 +33,10 @@
      `admNormHash r` with `r i = i + 1` `none` on `(3,22) = 2·(18,15)`.
 
   Every run is checked with `Tests.DivisorOracle.divisorExact`: `D ≠ 0`,
-  and at every affine point `Q` of `E` the order of `D` (from a local
+  at every rational affine point `Q` of `E` the order of `D` (from a local
   power-series expansion) equals the multiplicity of `Q` in the support,
-  so `div D = Σ (Pᵢ) − n·(O)` exactly. Negative controls check that the
+  and `degE(D)` equals the support length, so `div D = Σ (Pᵢ) − n·(O)`
+  exactly. Negative controls check that the
   oracle rejects a wrong support, including one with the multiplicities
   of `P` and `−P` swapped. A, B and C also instantiate
   `ma_completeness_prover` with every premise constructed.
