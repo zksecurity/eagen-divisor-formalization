@@ -17,7 +17,8 @@
      `admSetLine` normalizer returns `none` on `(0,1) = 1·(0,1)`
      (`D ∝ x`), and `admSetParker` returns `none` on
      `(1,6) = (1,6) + 2·(16,0)` (`D ∝ x² − 1`); in both cases the
-     completeness theorem then shows no honest message is admissible.
+     completeness theorem then shows no honest message for that witness
+     is admissible.
 
   The `none` cases identify the interpolated `D` up to a scalar through
   its ideal: the line build generates `∏ ⟨P⟩` over the support, and so

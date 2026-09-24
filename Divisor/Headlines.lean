@@ -251,12 +251,13 @@ theorem ip_completeness_q
 
 /-! ## Prover completeness -/
 
-/-- **The honest prover succeeds for every valid witness.** For a
-witness with nonnegative scalars and points on the curve, the executable
-prover `proveC` (the line build over `(−P) + Σ nᵢ·(Bᵢ)`, rescaled by the
-admissible set's normalizer) returns an output whose message is honest,
-admissible, nonzero and of pole order `1 + Σ nᵢ`. If it returns nothing, no honest message is
-admissible for the statement. No general-position hypothesis. -/
+/-- **Completeness of the honest prover.** For a witness with nonnegative
+scalars and points on the curve, the executable prover `proveC` (the line
+build over `(−P) + Σ nᵢ·(Bᵢ)`, rescaled by the admissible set's
+normalizer) either returns an output whose message is honest, admissible,
+nonzero and of pole order `1 + Σ nᵢ`, or returns nothing, in which case
+no honest message for this witness is admissible. (Another witness of the
+same statement may still have one.) No general-position hypothesis. -/
 theorem prover_complete
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (N : AdmNormalizer E.q) (hN : stmt.admSet = N.admSet)
@@ -275,8 +276,8 @@ theorem prover_complete
 /-- **MA completeness of the honest prover.** Within the degree budget
 `1 + Σ nᵢ`, the prover's message is rejected on at most
 `(3·d + 4)·|E.points|` challenge pairs; when the prover returns nothing,
-no honest message is admissible. Composes `prover_complete` with
-`ma_completeness`. -/
+no honest message for this witness is admissible. Composes
+`prover_complete` with `ma_completeness`. -/
 theorem ma_completeness_prover
     (stmt : DlogStatement E.q) (wit : DlogWitness E.q) (hk : stmt.k = wit.k)
     (N : AdmNormalizer E.q) (hN : stmt.admSet = N.admSet)

@@ -16,8 +16,9 @@
   IP side: `ip_accept_off_eventDeg` — the honest third-round response
   exists off `eventDeg`; the headline bounds follow from it.
 
-  The honest message itself is produced, for every valid witness with
-  nonnegative scalars, by the prover in `Divisor/Prover.lean`.
+  The honest message itself is produced by the prover in
+  `Divisor/Prover.lean`, whenever the witness has nonnegative scalars
+  and some honest message for it is admissible.
 -/
 import Divisor.Soundness
 

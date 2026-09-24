@@ -181,8 +181,9 @@ info: 'Divisor.ma_soundness_paper' depends on axioms: [propext,
 /-! ## Prover completeness (`Divisor/Headlines.lean`)
 
 The honest prover (line build over `(−P) + Σ nᵢ·(Bᵢ)`, rescaled by
-the admissible set's normalizer) succeeds for every valid witness with
-nonnegative scalars. Axiom-free, like the rest of the completeness
+the admissible set's normalizer) returns an honest admissible message
+for a valid witness with nonnegative scalars, or certifies that none
+exists for that witness. Axiom-free, like the rest of the completeness
 side. -/
 /--
 info: 'Divisor.prover_complete' depends on axioms: [propext,

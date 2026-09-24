@@ -8,7 +8,8 @@
   it (`lineBuildC_singletons_toCoordRingElt`), up to the normalizer's scale.
 
   `proveC_spec`: the prover's output is honest and admissible, or no
-  honest message is admissible at all. `proveC_rejectSet_bound` composes
+  honest message for the given witness is admissible.
+  `proveC_rejectSet_bound` composes
   this with the unchanged `ma_completeness` bound.
 -/
 import Divisor.ProverDefs
@@ -116,7 +117,7 @@ include hN hValid hNonneg h_target_on_curve h_bases_on_curve
 
 /-- **Prover completeness.** The prover's output is honest, admissible,
     nonzero and of pole order `1 + Σ nᵢ`; if it returns nothing, no honest
-    message is admissible for this statement. -/
+    message for this witness is admissible. -/
 theorem proveC_spec :
     (∀ out, proveC E stmt wit hk N = some out →
       out.toMsg.isHonestFor E stmt wit hk ∧ stmt.admSet (out.toMsg.polyA, out.toMsg.polyB) ∧
