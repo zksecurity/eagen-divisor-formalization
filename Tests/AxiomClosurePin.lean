@@ -1,50 +1,24 @@
 /-
   Tests/AxiomClosurePin.lean
 
-  Pin the axiom closure of every headline theorem. Each
-  `#print axioms` below is wrapped in `#guard_msgs`, so the build
-  FAILS if any closure drifts from the expected list — a new axiom, a
-  revived `sorryAx`, or `Lean.ofReduceBool` in a closure is caught
-  without reading the build log.
-
-  Expected closures come in exactly two classes:
+  Pins the axiom closure of every headline theorem with
+  `#guard_msgs`, so a new axiom, `sorryAx` or `Lean.ofReduceBool`
+  fails the build. Two classes:
 
   * **Lean core three** (`propext`, `Classical.choice`, `Quot.sound`)
-    — every theorem outside the terminal leaf `Divisor/Hasse.lean`.
-    The library is stated in the point-count currency
-    `n = E.points.card`, and the leaf is the only module importing
-    the axiom file, so this class is axiom-free by construction.
-    It includes the soundness headlines (`ma_soundness`, `ma_soundness_count_bound`,
-    `ip_extractable` and their `_base`/`_paper`/probability/
-    contrapositive forms), the whole completeness side
-    (`ma_completeness*`, `ip_completeness*`,
-    `prover_complete`), the divisor-multiplicity bridge
-    (`CoordRingElt.exists_divisor_multiplicity*`,
-    `ordAt_group_sum_zero_under_split`), and the leaf's `_of_count`
-    flavors (field-size forms with explicit count-bound hypotheses).
+    — every theorem outside `Divisor/Hasse.lean`, the only module that
+    imports the axiom.
 
   * **Core three + `Divisor.hasse_weil_textbook`** (Silverman V.1.1)
-    — the leaf's `_hasse` theorems only. These pins certify the
-    entire axiom surface of the project: one axiom, nothing else.
+    — the `_hasse` theorems only.
 
-  Suffix conventions: short name = point-count form; `_q` =
-  field-size form via the trivial fiber bound `|E| ≤ 2q` (axiom-free,
-  completeness side); `_hasse` = field-size form priced by the axiom,
-    which supplies the lower bound `q ≤ 2n + 3` the soundness side
-    needs (density/sampling hypotheses and the `36·(d+k+4)·q`
-  constant); `_of_count` = the same conversion with the count bounds
-  as explicit hypotheses.
+  Suffixes: short name = point-count form; `_q` = field-size form via
+  `|E| ≤ 2q`; `_hasse` = field-size form using the axiom's
+  `q ≤ 2n + 3`; `_of_count` = the same with the count bounds as
+  hypotheses.
 
-  The `example` block below additionally re-states the
-  divisor-multiplicity theorem's exact shape, guarding the
-  `splitsOnE` gating of its accounting and group-sum-zero clauses.
-
-  Axiom pins cannot see a change in what a statement *means*. The
-  meaning of every `degE`-bearing statement here rests on
-  `CoordRingElt.degE` being the exact pole order at infinity; that is
-  pinned separately, as an equation against the norm polynomial, in
-  `Tests/DegreeExactRegression.lean`, and exercised end to end by the
-  prover instances in `Tests/ProverSmoke.lean`.
+  The `example` below also pins the shape of the divisor-multiplicity
+  theorem.
 -/
 import Divisor.Headlines
 import Divisor.Hasse

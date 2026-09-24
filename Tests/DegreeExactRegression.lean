@@ -1,17 +1,9 @@
 /-
   Tests/DegreeExactRegression.lean
 
-  Pins the semantics of `CoordRingElt.degE` as the *exact* pole order
-  at the point at infinity.
-
-  The Comparator judge (`Judge/README.md`) compares exported types, and
-  `degE` is a named constant resolved through `Divisor/DefsPre.lean` by
-  both `Challenge.lean` and the library. A change to its body therefore
-  shifts the meaning of every frozen statement that mentions it while
-  leaving the judge green. These regressions are the audit trail for
-  that: they fail loudly if the definition ever drifts back to the old
-  `max (2·deg a) (3 + 2·deg b)`, which — because `natDegree 0 = 0` —
-  assigned order three to every element, including the vertical line.
+  Pins `CoordRingElt.degE` as the exact pole order at infinity. The old
+  `max (2·deg a) (3 + 2·deg b)` gave every element order at least three
+  (`natDegree 0 = 0`), including the vertical line.
 -/
 import Divisor.BetaConstructive
 import Divisor.Protocol

@@ -32,14 +32,10 @@
      `admNormParker` `none` on `T₂ = T₂ + 2·T₃` (`D ∝ x² − 1`), and
      `admNormHash r` with `r i = i + 1` `none` on `(3,22) = 2·(18,15)`.
 
-  Every run is checked with `Tests.DivisorOracle.divisorExact`: `D ≠ 0`,
-  at every rational affine point `Q` of `E` the order of `D` (from a local
-  power-series expansion) equals the multiplicity of `Q` in the support,
-  and `degE(D)` equals the support length, so `div D = Σ (Pᵢ) − n·(O)`
-  exactly. Negative controls check that the
-  oracle rejects a wrong support, including one with the multiplicities
-  of `P` and `−P` swapped. A, B and C also instantiate
-  `ma_completeness_prover` with every premise constructed.
+  Every run is checked against its support's exact divisor
+  (`Tests.DivisorOracle.divisorExact`), with negative controls for
+  swapped `±P` multiplicities. A, B and C also instantiate
+  `ma_completeness_prover`.
 -/
 import Divisor.Headlines
 import Tests.CurveFixtures

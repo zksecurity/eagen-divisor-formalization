@@ -1,29 +1,16 @@
 /-
   Divisor/LineBuild.lean
 
-  Data model and driver for the recursive line-build construction.
+  The line build: Miller's construction (J. Cryptology 17(4), 2004)
+  with Eagen's level-by-level schedule (ePrint 2022/596, §3.1.1).
+  Adjacent accumulators are combined through the line between their
+  running points, the odd one is carried up a level, and vertical
+  factors are divided out. `Accum.point` is an `ECPoint`, so a running
+  sum may be `O`.
 
-  The construction is Miller's: it builds a function with a
-  prescribed degree-0 divisor by combining points pairwise, each step
-  taking the line through the two running points and multiplying the
-  accumulated functions (Victor S. Miller, "Short Programs for
-  functions on Curves", unpublished manuscript, 1986; published as
-  "The Weil Pairing, and Its Efficient Calculation", J. Cryptology
-  17(4):235-261, 2004). The level-by-level scheduling implemented
-  here, with the odd point carried up a level and vertical
-  denominators cleared, follows Eagen, ePrint 2022/596, §3.1.1
-  ("Incremental construction").
-
-  The recursion data model lives in the sub-namespace
-  `Divisor.LineAccum`. The `Accum.point` field uses
-  `ECPoint E` so the `O` carry (running sum of an absorbed sub-list
-  hitting the identity) is representable.
-
-  This file holds only the construction (`Accum.combine`,
-  `level_step`, `iterate`, `lineBuild_singletons`) and the list
-  bookkeeping around it (`sumOnE`, `pairUp`, `pairUpN`, length
-  bounds, `formalDivisorOfList`). Correctness of the build, for every
-  on-curve support summing to zero, is proved in `Divisor.LineBuildExact`.
+  This file holds the construction (`Accum.combine`, `level_step`,
+  `iterate`, `lineBuild_singletons`) and its list bookkeeping. Its
+  correctness is proved in `Divisor.LineBuildExact`.
 -/
 import Divisor.IncrementalConstruction
 
